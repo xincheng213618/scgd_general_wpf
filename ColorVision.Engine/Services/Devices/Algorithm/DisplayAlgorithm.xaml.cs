@@ -637,20 +637,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLedCheckTemplate, "请先选择灯珠检测模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate1, "请先选择关注点模板")) return;
 
+            if (ComboxPoiTemplate1.SelectedValue is not PoiParam poiParam) return;
+            if (ComboxLedCheckTemplate.SelectedValue is not LedCheckParam ledCheckParam) return;
+
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = LedCheckParam.LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-                var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
-
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 {
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
+                    MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, sn, ledCheckParam, poiParam);
+                    ServicesHelper.SendCommand(ss, "正在计算灯珠");
                 }
-                MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
-                ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
 

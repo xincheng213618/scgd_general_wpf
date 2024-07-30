@@ -224,15 +224,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
+        public MsgRecord LedCheck(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck.LedCheckParam ledCheckParam, PoiParam poiParam)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
+            Params.Add("TemplateParam", new CVTemplateParam() {ID = ledCheckParam.Id, Name = ledCheckParam.Name });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
 
             MsgSend msg = new()
             {
