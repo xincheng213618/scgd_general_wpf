@@ -80,7 +80,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 Application.Current.Dispatcher.Invoke(()=> UploadMsgManager.UploadList.Add(uploadMeta));
                 ;
                 await Task.Delay(1);
-                var msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, uploadMeta.FileName, uploadMeta.FilePath, 3);
+                var msgRecord = await DService.UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, uploadMeta.FileName, uploadMeta.FilePath, 3);
                 if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
                 {
                     uploadMeta.UploadStatus = UploadStatus.Completed;
