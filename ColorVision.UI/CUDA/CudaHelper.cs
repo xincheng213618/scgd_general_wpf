@@ -63,6 +63,8 @@ namespace ColorVision.UI.CUDA
         [DllImport("nvcuda.dll")]
         private static extern int cuDeviceTotalMem(out ulong bytes, int dev);
 
+        [DllImport("nvcuda.dll", EntryPoint = "cuDeviceTotalMem_v2")]
+        private static extern int cuDeviceTotalMem_v2(out ulong bytes, int device);
         public static ConfigCuda Config => ConfigCuda.Instance;
 
         public int Order => 7;
@@ -97,7 +99,7 @@ namespace ColorVision.UI.CUDA
                     Config.ComputeCapabilities[i] = (major, minor);
 
                     // 获取总内存
-                    cuDeviceTotalMem(out ulong totalMem, i);
+                    cuDeviceTotalMem_v2(out ulong totalMem, i);
                     Config.TotalMemories[i] = totalMem;
                 }
 
