@@ -84,9 +84,9 @@
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
                             <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Content="刷新" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                                <Button Content="刷新服务" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
+                                <Button Content="重置服务" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

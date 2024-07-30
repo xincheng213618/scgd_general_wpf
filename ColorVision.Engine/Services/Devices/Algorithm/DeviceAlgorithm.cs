@@ -41,11 +41,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public override UserControl GetDeviceInfo() => new InfoAlgorithm(this);
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
-
-
-        public override MQTTServiceBase? GetMQTTService()
-        {
-            return DService;
-        }
+        public override MQTTServiceBase? GetMQTTService() => DService;
     }
 }

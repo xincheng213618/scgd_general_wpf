@@ -33,6 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public RelayCommand OpenCalibrationParamsCommand { get; set; }
 
+
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCamera(Config);
@@ -54,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(), b => AccessControl.Check(ServiceClear) && PhyCamera != null);
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
@@ -65,6 +66,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             RefreshCommand = new RelayCommand(a => RestartRCService());
             ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
         }
+
+
+
+
         public CameraVideoControl CameraVideoControl { get; set; }
 
         public new void RestartRCService()
