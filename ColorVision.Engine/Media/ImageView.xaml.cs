@@ -22,7 +22,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,7 +53,7 @@ namespace ColorVision.Engine.Media
             return imageView;
         }
 
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ToolBarTop ToolBarTop { get; set; }
 
@@ -559,7 +558,7 @@ namespace ColorVision.Engine.Media
             if (!Config.ConvertXYZhandleOnce)
             {
                 int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
-                logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
+                log.Info($"ConvertXYZ.CM_InitXYZ :{result}");
                 Config.ConvertXYZhandleOnce = true;
             }
             Config.FilePath = filePath;
@@ -571,7 +570,7 @@ namespace ColorVision.Engine.Media
                     Config.IsCVCIE = true;
                     CVFileUtil.ReadCIEFileData(Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
-                    logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
+                    log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                     ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
                     ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
                 }
@@ -580,6 +579,7 @@ namespace ColorVision.Engine.Media
 
         public void OpenImage(string? filePath)
         {
+            log.Info($"OpenImageFile :{filePath}");
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
 
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
@@ -817,7 +817,7 @@ namespace ColorVision.Engine.Media
                     uint min = (uint)PseudoSlider.ValueStart;
                     uint max = (uint)PseudoSlider.ValueEnd;
 
-                    logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
                         int ret = OpenCVHelper.CM_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
@@ -876,7 +876,7 @@ namespace ColorVision.Engine.Media
                         float dZVal = 0;
                         float dx = 0, dy = 0, du = 0, dv = 0;
                         int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
-                        logger.Debug($"CM_GetXYZxyuvRect :{result},res");
+                        log.Debug($"CM_GetXYZxyuvRect :{result},res");
                         windowCIE.ChangeSelect(dx, dy);
                     }
                     else

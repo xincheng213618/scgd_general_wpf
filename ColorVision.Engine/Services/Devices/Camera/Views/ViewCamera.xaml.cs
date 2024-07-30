@@ -1,23 +1,16 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Draw;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
-using CVCommCore.CVAlgorithm;
-using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
@@ -27,13 +20,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
-using ColorVision.Engine.Impl.CVFile.Export;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
