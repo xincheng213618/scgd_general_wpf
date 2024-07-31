@@ -11,9 +11,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         {
             InitializeComponent();
         }
-        public FindDotsArrayParam Param { get; set; }
+        public ModThirdPartyParam Param { get; set; }
 
-        public void SetParam(FindDotsArrayParam param)
+        public void SetParam(ModThirdPartyParam param)
         {
             Param = param;
             this.DataContext = Param;

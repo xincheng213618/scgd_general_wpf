@@ -11,9 +11,9 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public class TemplateThirdParty : ITemplate<FindDotsArrayParam>
+    public class TemplateThirdParty : ITemplate<ModThirdPartyParam>
     {
-        public static Dictionary<string, ObservableCollection<TemplateModel<FindDotsArrayParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<FindDotsArrayParam>>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<ModThirdPartyParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ModThirdPartyParam>>>();
 
         public ThirdPartyAlgorithmsModel ThirdPartyAlgorithmsModel { get; set; }
 
@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             }
             else
             {
-                templatesParams = new ObservableCollection<TemplateModel<FindDotsArrayParam>>();
+                templatesParams = new ObservableCollection<TemplateModel<ModThirdPartyParam>>();
                 TemplateParams = templatesParams;
                 Params.Add(Code, templatesParams);
             }
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 {
                     if (dbModel != null)
                     {
-                        if (Activator.CreateInstance(typeof(FindDotsArrayParam), [dbModel]) is FindDotsArrayParam t)
+                        if (Activator.CreateInstance(typeof(ModThirdPartyParam), [dbModel]) is ModThirdPartyParam t)
                         {
                             if (backup.TryGetValue(t.Id, out var model))
                             {
@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                             }
                             else
                             {
-                                var templateModel = new TemplateModel<FindDotsArrayParam>(dbModel.Name ?? "default", t);
+                                var templateModel = new TemplateModel<ModThirdPartyParam>(dbModel.Name ?? "default", t);
                                 TemplateParams.Add(templateModel);
                             }
                         }
@@ -123,8 +123,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = ThirdPartyAlgorithmsModel.Id, Code = Code, Name = templateName, JsonVal = ThirdPartyAlgorithmsModel.DefaultCfg };
 
             ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
-            FindDotsArrayParam templateFindDotsArrayParam = new FindDotsArrayParam(thirdPartyAlgorithmsModel);
-            TemplateModel<FindDotsArrayParam> templateModel = new TemplateModel<FindDotsArrayParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
+            ModThirdPartyParam templateFindDotsArrayParam = new ModThirdPartyParam(thirdPartyAlgorithmsModel);
+            TemplateModel<ModThirdPartyParam> templateModel = new TemplateModel<ModThirdPartyParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
             TemplateParams.Add(templateModel);
         }
     }

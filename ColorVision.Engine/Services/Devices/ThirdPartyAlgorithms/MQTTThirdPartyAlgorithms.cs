@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord CallFunction(FindDotsArrayParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        public MsgRecord CallFunction(ModThirdPartyParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {
             serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
             

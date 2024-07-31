@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (sender is UniformGrid uniformGrid)
             {
-                uniformGrid.AutoUpdateLayout(180);
+                uniformGrid.AutoUpdateLayout();
             }
         }
     }

@@ -9,14 +9,14 @@ using System;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
 
-    public class FindDotsArrayParam : ParamBase
+    public class ModThirdPartyParam : ParamBase
     {
 
-        public FindDotsArrayParam() 
+        public ModThirdPartyParam() 
         {
         }
 
-        public FindDotsArrayParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
+        public ModThirdPartyParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
         {
             ModThirdPartyAlgorithmsModel = modThirdPartyAlgorithmsModel;
         }

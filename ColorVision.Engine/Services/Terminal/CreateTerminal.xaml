@@ -25,7 +25,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+        <Border Grid.Row="0"  CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="{x:Static properties:Resources.Code}" MinWidth="50" />

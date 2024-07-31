@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout(180);
+                uniformGrid.AutoUpdateLayout();
         }
     }
 }

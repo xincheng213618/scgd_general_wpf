@@ -47,4 +47,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
     }
 
 
+
+
 }

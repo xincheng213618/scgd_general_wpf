@@ -111,7 +111,7 @@ namespace ColorVision.UI.CUDA
                         _messageUpdater.UpdateMessage($"Device {i}:");
                         _messageUpdater.UpdateMessage($"  Name: {Config.DeviceNames[i]}");
                         _messageUpdater.UpdateMessage($"  Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
-                        _messageUpdater.UpdateMessage($"  Total Memory: {Config.TotalMemories[i] / (1024 * 1024 * 1024)} GB");
+                        _messageUpdater.UpdateMessage($"  Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
                     }
                     await Task.Delay(100);
                 }
