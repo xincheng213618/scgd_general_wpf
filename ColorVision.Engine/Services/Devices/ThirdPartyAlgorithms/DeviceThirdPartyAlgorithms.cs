@@ -18,6 +18,8 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -26,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public AlgorithmView View { get; set; }
         public RelayCommand UploadPluginCommand { get; set; }
+        public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
         public DeviceThirdPartyAlgorithms(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -46,6 +49,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
             UploadPluginCommand = new RelayCommand(a => UploadPlugin(), a => AccessControl.Check(PermissionMode.Administrator));
+
+            ThirdPartyAlgorithmsManagerCommand = new RelayCommand(a => ThirdPartyAlgorithmsManager(), a => AccessControl.Check(PermissionMode.Administrator));
+        }
+
+        public static void ThirdPartyAlgorithmsManager()
+        {
+            new WindowTemplate(new TemplateThirdPartyManager()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UploadMsgManager UploadMsgManager { get; set; } = new UploadMsgManager();

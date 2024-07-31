@@ -86,8 +86,9 @@
                             <UniformGrid Margin="5" Columns="4" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                                 <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
                                 <Button Content="重启服务" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
+                                <Button Content="配置第三方算法" Margin="5" Height="100" Width="180" Command="{Binding ThirdPartyAlgorithmsManagerCommand}"/>
                                 <Button Content="上传第三方插件" Margin="5" Height="100" Width="180" Command="{Binding UploadPluginCommand}"/>
-                                <Button Content="初始化参数" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                                <Button Content="重置服务" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </Grid>
                     </TabItem>
