@@ -506,52 +506,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 uploadMeta.UploadStatus = UploadStatus.Uploading;
                                 Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
                                 await Task.Delay(10);
-                                switch (item1.CalibrationType)
-                                {
-                                    case CalibrationType.DarkNoise:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
-                                        break;
-                                    case CalibrationType.DefectWPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DefectBPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DefectPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DSNU:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DSNU);
-                                        break;
-                                    case CalibrationType.Uniformity:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Uniformity);
-                                        break;
-                                    case CalibrationType.Luminance:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Luminance);
-                                        break;
-                                    case CalibrationType.LumOneColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
-                                        break;
-                                    case CalibrationType.LumFourColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
-                                        break;
-                                    case CalibrationType.LumMultiColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
-                                        break;
-                                    case CalibrationType.LumColor:
-                                        break;
-                                    case CalibrationType.Distortion:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Distortion);
-                                        break;
-                                    case CalibrationType.ColorShift:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.ColorShift);
-                                        break;
-                                    case CalibrationType.Empty_Num:
-                                        break;
-                                    default:
-                                        break;
-                                }
-
+                                msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath);
                                 if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
                                 {
                                     uploadMeta.UploadStatus = UploadStatus.Completed;

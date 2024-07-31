@@ -153,7 +153,7 @@
 
     <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
         <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Margin" Value="4,1"/>
         <Setter Property="CornerRadius" Value="5"/>
