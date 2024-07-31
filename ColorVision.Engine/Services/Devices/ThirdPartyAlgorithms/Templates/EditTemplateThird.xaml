@@ -16,6 +16,7 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <TextBox Text="{Binding JsonValue}" TextWrapping="Wrap" Grid.Row="1" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top"/>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <TextBox Text="{Binding JsonValue}" TextWrapping="Wrap" Grid.Row="1" Margin="5" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top"/>
     </Grid>
 </UserControl>

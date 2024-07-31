@@ -775,4 +775,10 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自动曝光模板</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>编辑第三方算法模板</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>修改配置</value>
+  </data>
 </root>

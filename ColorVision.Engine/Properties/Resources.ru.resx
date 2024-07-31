@@ -795,4 +795,10 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>Шаблон автоматической экспозиции</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>Редактировать шаблоны сторонних алгоритмов</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>Изменить настройку</value>
+  </data>
 </root>

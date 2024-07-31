@@ -574,6 +574,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑第三方算法模板 的本地化字符串。
+        /// </summary>
+        public static string EditThirdPartyAlgorithmTemplate {
+            get {
+                return ResourceManager.GetString("EditThirdPartyAlgorithmTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 启用数据库 的本地化字符串。
         /// </summary>
         public static string EnableDatabase {
@@ -1299,6 +1308,15 @@ namespace ColorVision.Engine.Properties {
         public static string Minimize {
             get {
                 return ResourceManager.GetString("Minimize", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 修改配置 的本地化字符串。
+        /// </summary>
+        public static string ModifyConfiguration {
+            get {
+                return ResourceManager.GetString("ModifyConfiguration", resourceCulture);
             }
         }
         

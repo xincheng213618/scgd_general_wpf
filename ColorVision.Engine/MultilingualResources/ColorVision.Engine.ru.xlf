@@ -231,6 +231,10 @@
           <source>编辑</source>
           <target state="new">Редактировать</target>
         </trans-unit>
+        <trans-unit id="EditThirdPartyAlgorithmTemplate" translate="yes" xml:space="preserve">
+          <source>编辑第三方算法模板</source>
+          <target state="new">Редактировать шаблоны сторонних алгоритмов</target>
+        </trans-unit>
         <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
           <source>启用数据库</source>
           <target state="new">Включить базу данных</target>
@@ -562,6 +566,10 @@
         <trans-unit id="Minimize" translate="yes" xml:space="preserve">
           <source>最小化</source>
           <target state="new">минимизировать</target>
+        </trans-unit>
+        <trans-unit id="ModifyConfiguration" translate="yes" xml:space="preserve">
+          <source>修改配置</source>
+          <target state="new">Изменить настройку</target>
         </trans-unit>
         <trans-unit id="MqttConnection" translate="yes" xml:space="preserve">
           <source>MQTT连接</source>

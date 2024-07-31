@@ -795,4 +795,10 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>Auto Exposure Template</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>Editing third-party algorithm templates</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>Change setting</value>
+  </data>
 </root>

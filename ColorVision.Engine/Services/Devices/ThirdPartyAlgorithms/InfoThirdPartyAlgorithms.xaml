@@ -88,7 +88,7 @@
                                 <Button Content="重启服务" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="配置第三方算法" Margin="5" Height="100" Width="180" Command="{Binding ThirdPartyAlgorithmsManagerCommand}"/>
                                 <Button Content="上传第三方插件" Margin="5" Height="100" Width="180" Command="{Binding UploadPluginCommand}"/>
-                                <Button Content="重置服务" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                                <Button Content="重置服务" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </Grid>
                     </TabItem>

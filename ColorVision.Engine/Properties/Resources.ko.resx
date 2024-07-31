@@ -795,4 +795,10 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>자동 노출 템플릿</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>타사 알고리즘 템플릿 편집</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>설정을 바꾸다</value>
+  </data>
 </root>

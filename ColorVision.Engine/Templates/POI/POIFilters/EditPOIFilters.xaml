@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI.POIFilters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:POIFilterParam}"
-             d:DesignHeight="450" d:DesignWidth="400" Initialized="UserControl_Initialized">
+             d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -23,27 +23,27 @@
                     <StackPanel Margin="5">
                         <TextBlock Text="三个全为False时执行会报错" Foreground="Red" Margin="0,0,0,5"/>
                         <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="关注点过滤启用" Width="90"/>
+                            <TextBlock Text="关注点过滤启用" MinWidth="100"/>
                             <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding Enable}"/>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
-                            <TextBlock  Text="NoAreaEnable" Width="90"/>
+                            <TextBlock  Text="NoAreaEnable" MinWidth="100"/>
                             <ToggleButton   Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding NoAreaEnable}"/>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
-                            <TextBlock  Text="XYZEnable"  Width="90" />
+                            <TextBlock  Text="XYZEnable"  MinWidth="100" />
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding XYZEnable}"/>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5" Visibility="{Binding XYZEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                            <TextBlock HorizontalAlignment="Left" Text="XYZType"  MinWidth="90"/>
+                            <TextBlock HorizontalAlignment="Left" Text="XYZType"  MinWidth="100"/>
                             <ComboBox Name="ComboBoxXYZType"  SelectedValue="{Binding XYZType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
                         <DockPanel  >
                             <DockPanel Margin="5,0,0,0" DockPanel.Dock="Right">
-                                <TextBlock Text="阈值启用百分比"  MinWidth="90"/>
+                                <TextBlock Text="阈值启用百分比"  MinWidth="100"/>
                                 <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding  ThresholdUsePercent}"/>
                             </DockPanel>
-                            <TextBlock Text="Threshold"  MinWidth="90"/>
+                            <TextBlock Text="Threshold"  MinWidth="100"/>
                             <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
 
