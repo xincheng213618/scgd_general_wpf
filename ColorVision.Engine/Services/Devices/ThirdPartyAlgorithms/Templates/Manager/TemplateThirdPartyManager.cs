@@ -6,6 +6,13 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
+using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.SysDictionary;
+using NPOI.SS.Formula.Functions;
+using System.Collections.Generic;
+using System.Windows;
+using ColorVision.Common.Utilities;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {
@@ -106,12 +113,36 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
         public override void Create(string templateName)
         {
-            ThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = 1, Code = Code, Name = templateName };
+            ModThirdPartyManagerParam? AddParamMode()
+            {
+                ThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel;
+                if (CreateTemp != null)
+                {
+                    thirdPartyAlgorithmsModel = CreateTemp.ModThirdPartyAlgorithmsModel;
+                    thirdPartyAlgorithmsModel.Id = 0;
+                }
+                else
+                {
+                   thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = 1, Code = templateName, Name = templateName };
+                }
+                ThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
+                if (thirdPartyAlgorithmsModel.Id > 0)
+                    return new ModThirdPartyManagerParam(thirdPartyAlgorithmsModel);
+                return null;
+            }
 
-            ThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
-            ModThirdPartyManagerParam templateFindDotsArrayParam = new ModThirdPartyManagerParam(thirdPartyAlgorithmsModel);
-            TemplateModel<ModThirdPartyManagerParam> templateModel = new TemplateModel<ModThirdPartyManagerParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
-            TemplateParams.Add(templateModel);
+
+            ModThirdPartyManagerParam? param = AddParamMode();
+            if (param != null)
+            {
+                var a = new TemplateModel<ModThirdPartyManagerParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(ModThirdPartyManagerParam)}模板失败", "ColorVision");
+            }
+
         }
     }
 }

@@ -62,12 +62,14 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -76,6 +78,7 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -84,6 +87,7 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -176,6 +180,8 @@
   <ItemGroup>
     <ClInclude Include="algorithm.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="CUDA\cudamath.h" />
+    <ClInclude Include="CUDA\Fusion.h" />
     <ClInclude Include="Customfile.h" />
     <ClInclude Include="export.h" />
     <ClInclude Include="framework.h" />
@@ -186,6 +192,7 @@
   <ItemGroup>
     <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="common.cpp" />
+    <ClCompile Include="CUDA\FusionCuda.cpp" />
     <ClCompile Include="Customfile.cpp" />
     <ClCompile Include="export.cpp" />
     <ClCompile Include="dllmain.cpp" />

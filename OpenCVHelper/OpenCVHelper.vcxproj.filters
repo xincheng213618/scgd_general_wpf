@@ -19,6 +19,9 @@
     <Filter Include="Util">
       <UniqueIdentifier>{8b95d4d5-2c37-45bc-9609-7fe82a5733c0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="CUDA">
+      <UniqueIdentifier>{18c0b3b7-82ce-49ea-9a84-00e9b3823f8f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -45,6 +48,12 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CUDA\cudamath.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
+    <ClInclude Include="CUDA\Fusion.h">
+      <Filter>CUDA</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -70,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="Utilcom.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="CUDA\FusionCuda.cpp">
+      <Filter>CUDA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

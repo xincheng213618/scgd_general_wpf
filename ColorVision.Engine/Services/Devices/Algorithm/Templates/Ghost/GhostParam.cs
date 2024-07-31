@@ -33,6 +33,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
         [Category("Ghost"), Description("待检测鬼影的中心灰度百分比下限")]
         public float Ghost_ratioL { get => GetValue(_Ghost_ratioL); set { SetProperty(ref _Ghost_ratioL, value); } }
         private float _Ghost_ratioL = 0.2f;
+
+        [Category("Ghost"), Description("是否开启debug ")]
+        public bool IsDebug { get => GetValue(_IsDebug); set { SetProperty(ref _IsDebug, value); } }
+        private bool _IsDebug;
+
+        [Category("Ghost"), Description("存图路径")]
+        public string? SaveName { get => GetValue(_SaveName); set { SetProperty(ref _SaveName, value); } }
+        private string? _SaveName = "binim.tif";
     }
 
 

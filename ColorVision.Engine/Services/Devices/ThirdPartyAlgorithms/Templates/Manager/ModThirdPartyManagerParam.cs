@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
         public ModThirdPartyManagerParam()
         {
+            ModThirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel();
         }
 
         public ModThirdPartyManagerParam(ThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
