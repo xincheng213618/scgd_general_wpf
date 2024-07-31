@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1806
+using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
 using System.Runtime.InteropServices;
 
