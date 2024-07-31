@@ -27,16 +27,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         }
         public void SelectFile()
         {
-            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
+            using (var dialog = new System.Windows.Forms.SaveFileDialog())
             {
-                dialog.Description = "Select a folder";
-                dialog.ShowNewFolderButton = true;
-                dialog.RootFolder = Environment.SpecialFolder.MyComputer;
+                dialog.FileName = "binim.tif";
+                dialog.DefaultExt = ".tif";
+                dialog.Filter = "TIFF files (*.tif)|*.tif|All files (*.*)|*.*";
 
                 if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    string folderPath = dialog.SelectedPath;
-                    SaveName = Path.Combine(folderPath, "binim.tif");
+                    SaveName = dialog.FileName;
                 }
             }
         }

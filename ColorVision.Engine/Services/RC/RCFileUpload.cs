@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.RC
             return PublishAsyncClient(msg); 
         }
 
-        public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int fileType, int timeout = 50000)
+        public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int timeout = 50000)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
