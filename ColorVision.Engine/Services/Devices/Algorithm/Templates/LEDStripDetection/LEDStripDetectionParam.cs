@@ -55,6 +55,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public int ValidateCIEId { get => GetValue(_ValidateCIEId); set { SetProperty(ref _ValidateCIEId, value); } }
         private int _ValidateCIEId;
 
+
+        [Category("LEDStripDetection"), Description("是否开启debug ")]
+        public bool LEDStripDetection { get => GetValue(_IsDebug); set { SetProperty(ref _IsDebug, value); } }
+        private bool _IsDebug;
+
+        [Category("LEDStripDetection"), Description("存图路径")]
+        public string? SaveName { get => GetValue(_SaveName); set { SetProperty(ref _SaveName, value); } }
+        private string? _SaveName = "binim.tif";
+
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {
             var Template = new TemplateComplyParam("Comply.CIE.AVG");
