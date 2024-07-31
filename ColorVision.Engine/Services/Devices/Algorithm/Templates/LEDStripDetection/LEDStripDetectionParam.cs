@@ -1,17 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
-using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
@@ -24,9 +19,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public LEDStripDetectionParam()
         {
         }
+        public RelayCommand SelectFileCommand { get; set; }
+
         public LEDStripDetectionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
+            SelectFileCommand = new RelayCommand(a => SelectFile());
+        }
+        public void SelectFile()
+        {
+            using (var dialog = new System.Windows.Forms.FolderBrowserDialog())
+            {
+                dialog.Description = "Select a folder";
+                dialog.ShowNewFolderButton = true;
+                dialog.RootFolder = Environment.SpecialFolder.MyComputer;
 
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    string folderPath = dialog.SelectedPath;
+                    SaveName = Path.Combine(folderPath, "binim.tif");
+                }
+            }
         }
 
         [Category("LEDStripDetection"), Description("method")]
@@ -57,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
 
         [Category("LEDStripDetection"), Description("是否开启debug ")]
-        public bool LEDStripDetection { get => GetValue(_IsDebug); set { SetProperty(ref _IsDebug, value); } }
+        public bool IsDebug { get => GetValue(_IsDebug); set { SetProperty(ref _IsDebug, value); } }
         private bool _IsDebug;
 
         [Category("LEDStripDetection"), Description("存图路径")]
