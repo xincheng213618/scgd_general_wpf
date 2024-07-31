@@ -48,12 +48,6 @@
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CUDA\cudamath.h">
-      <Filter>CUDA</Filter>
-    </ClInclude>
-    <ClInclude Include="CUDA\Fusion.h">
-      <Filter>CUDA</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -79,9 +73,6 @@
     </ClCompile>
     <ClCompile Include="Utilcom.cpp">
       <Filter>Util</Filter>
-    </ClCompile>
-    <ClCompile Include="CUDA\FusionCuda.cpp">
-      <Filter>CUDA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
