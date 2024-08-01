@@ -1290,5 +1290,14 @@ namespace ColorVision.Engine.Media
 
         }
 
+        private void Button_3D_Click(object sender, RoutedEventArgs e)
+        {
+            if (ImageShow.Source is WriteableBitmap writeableBitmap)
+            {
+                Window3D window3D = new Window3D(writeableBitmap);
+                window3D.Show();
+            }
+
+        }
     }
 }

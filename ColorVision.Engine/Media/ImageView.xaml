@@ -259,6 +259,7 @@
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
                     </ToggleButton>
+                    <ToggleButton  Content="3D" Click="Button_3D_Click" Margin="0,0,0,2"/>
 
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
