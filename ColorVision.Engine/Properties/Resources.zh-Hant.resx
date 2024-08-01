@@ -801,4 +801,16 @@
   <data name="ModifyConfiguration" xml:space="preserve">
     <value>修改配置</value>
   </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>重新整理服務</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>重置服務</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>管理實體相機</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>資料載入中</value>
+  </data>
 </root>

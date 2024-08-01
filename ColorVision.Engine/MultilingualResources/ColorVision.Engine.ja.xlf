@@ -175,6 +175,10 @@
           <source>当前版本已经是最新版本</source>
           <target state="new">現在のバージョンはすでに最新バージョンです</target>
         </trans-unit>
+        <trans-unit id="DataLoading" translate="yes" xml:space="preserve">
+          <source>数据加载中</source>
+          <target state="new">読み込み中</target>
+        </trans-unit>
         <trans-unit id="Database" translate="yes" xml:space="preserve">
           <source>数据库名称</source>
           <target state="new">名前データベース</target>
@@ -398,6 +402,10 @@
         <trans-unit id="Male" translate="yes" xml:space="preserve">
           <source>男</source>
           <target state="new">男性</target>
+        </trans-unit>
+        <trans-unit id="ManagePhysicalCamera" translate="yes" xml:space="preserve">
+          <source>管理物理相机</source>
+          <target state="new">物理カメラを管理する</target>
         </trans-unit>
         <trans-unit id="Manager" translate="yes" xml:space="preserve">
           <source>管理</source>
@@ -671,6 +679,10 @@
           <source>刷新</source>
           <target state="new">リフレッシュする</target>
         </trans-unit>
+        <trans-unit id="RefreshService" translate="yes" xml:space="preserve">
+          <source>刷新服务</source>
+          <target state="new">リフレッシュサービス</target>
+        </trans-unit>
         <trans-unit id="RegistryCenter" translate="yes" xml:space="preserve">
           <source>注册中心</source>
           <target state="new">登録センター</target>
@@ -678,6 +690,10 @@
         <trans-unit id="Reset" translate="yes" xml:space="preserve">
           <source>重置</source>
           <target state="new">リセット</target>
+        </trans-unit>
+        <trans-unit id="ResetService" translate="yes" xml:space="preserve">
+          <source>重置服务</source>
+          <target state="new">リセットサービス</target>
         </trans-unit>
         <trans-unit id="Reseted" translate="yes" xml:space="preserve">
           <source>已重置</source>
