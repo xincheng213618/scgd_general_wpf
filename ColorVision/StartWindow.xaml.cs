@@ -71,6 +71,7 @@ namespace ColorVision
             {
                 TextBoxMsg.Text += $"{Environment.NewLine}{message}";
             });
+            log.Info(message);
         }
         public static string? GetTargetFrameworkVersion()
         {

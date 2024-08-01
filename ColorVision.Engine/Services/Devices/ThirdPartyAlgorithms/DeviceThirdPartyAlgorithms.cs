@@ -65,13 +65,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             UploadWindow uploadwindow = new("插件(*.zip, *.dll,*.*)|*.zip;*.dll;*.*") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                if (s is Upload upload)
-                {
-                    UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
-                    uploadMsg.Show();
-                    string path = upload.UploadFilePath;
-                    Task.Run(() => UploadPluginData(path));
-                }
+                UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
+                uploadMsg.Show();
+                Task.Run(() => UploadPluginData(e.UploadFilePath));
             };
             uploadwindow.ShowDialog();
         }

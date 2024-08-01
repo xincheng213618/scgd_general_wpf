@@ -66,14 +66,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             UploadWindow uploadwindow = new() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                if (s is Upload upload)
-                {
-                    UploadMsg uploadMsg = new(this);
-                    uploadMsg.Show();
-                    string name = upload.UploadFileName;
-                    string path = upload.UploadFilePath;
-                    Task.Run(() => UploadData(name, path));
-                }
+                UploadMsg uploadMsg = new(this);
+                uploadMsg.Show();
+                string name = e.UploadFileName;
+                string path = e.UploadFilePath;
+                Task.Run(() => UploadData(name, path));
             };
             uploadwindow.ShowDialog();
         }

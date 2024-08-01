@@ -363,13 +363,9 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                if (s is Upload upload)
-                {
-                    UploadMsg uploadMsg = new(this);
-                    uploadMsg.Show();
-                    string path = upload.UploadFilePath;
-                    Task.Run(() => UploadData(path));
-                }
+                UploadMsg uploadMsg = new(this);
+                uploadMsg.Show();
+                Task.Run(() => UploadData(e.UploadFilePath));
             };
             uploadwindow.ShowDialog();
         }
