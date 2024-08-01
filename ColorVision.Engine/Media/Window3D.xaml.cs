@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Media
             int newWidth = colorBitmap.PixelWidth / scaleFactor;
             int newHeight = colorBitmap.PixelHeight / scaleFactor;
 
-            int stride = colorBitmap.PixelWidth * 3;
+            int stride = colorBitmap.PixelWidth * (colorBitmap.Format.BitsPerPixel/8);
             byte[] originalPixels = new byte[colorBitmap.PixelHeight * stride];
             colorBitmap.CopyPixels(originalPixels, stride, 0);
 
