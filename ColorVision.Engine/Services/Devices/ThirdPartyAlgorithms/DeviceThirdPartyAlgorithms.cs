@@ -20,6 +20,8 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -53,9 +55,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             ThirdPartyAlgorithmsManagerCommand = new RelayCommand(a => ThirdPartyAlgorithmsManager(), a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public static void ThirdPartyAlgorithmsManager()
+        public  void ThirdPartyAlgorithmsManager()
         {
-            new WindowTemplate(new TemplateThirdPartyManager()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            var model = SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
+            if (model ==null)
+            {
+                MessageBox1.Show("请先在配置中配置关联的dll");
+                return;
+            }
+            TemplateThirdPartyManager.Params.Clear();
+            new WindowTemplate(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UploadMsgManager UploadMsgManager { get; set; } = new UploadMsgManager();

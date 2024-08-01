@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
             return EditTemplateThirdManager;
         }
 
+        public int DLLId { get; set; } = -1;
 
         public override void Load()
         {
@@ -48,8 +49,17 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var smus = ThirdPartyAlgorithmsDao.Instance.GetAll();
-                foreach (var dbModel in smus)
+                List<ThirdPartyAlgorithmsModel> models = new List<ThirdPartyAlgorithmsModel>();
+                if (DLLId > 0)
+                {
+                    models = ThirdPartyAlgorithmsDao.Instance.GetAllByPid(DLLId);
+                }
+                else
+                {
+                    models = ThirdPartyAlgorithmsDao.Instance.GetAll();
+                }
+
+                foreach (var dbModel in models)
                 {
                     if (dbModel != null)
                     {
@@ -123,7 +133,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
                 }
                 else
                 {
-                   thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = 1, Code = templateName, Name = templateName };
+                   thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = DLLId >0? 1 :DLLId, Code = templateName, Name = templateName };
                 }
                 ThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
                 if (thirdPartyAlgorithmsModel.Id > 0)
