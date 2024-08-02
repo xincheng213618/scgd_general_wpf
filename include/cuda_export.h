@@ -11,3 +11,5 @@
 #define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
+
+extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);

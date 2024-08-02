@@ -87,9 +87,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\packages\CUDA.props" />
     <Import Project="..\packages\OpenCV.Release.x64.props" />
-    <Import Project="..\packages\NativeCopy.props" />
-    <Import Project="..\packages\spdlog.props" />
-    <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\include\include.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -164,11 +161,13 @@
   <ItemGroup>
     <ClInclude Include="..\include\cuda_export.h" />
     <ClInclude Include="..\include\custom_structs.h" />
+    <ClInclude Include="cudamath.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Fusion.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cuda_export.cpp" />
+    <CudaCompile Include="cuda_export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
