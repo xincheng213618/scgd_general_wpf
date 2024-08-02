@@ -9,10 +9,10 @@ namespace ColorVision.UI.CUDA
     {
         public static ConfigCuda Instance => ConfigHandler.GetInstance().GetRequiredService<ConfigCuda>();
 
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
+        public bool IsEnabled { get => _IsEnabled; set { if (!IsCudaSupported) return;  _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;
 
-        public bool IsCudaSupported { get => _IsCudaSupported; set { _IsCudaSupported = value; NotifyPropertyChanged(); } }
+        public bool IsCudaSupported { get => _IsCudaSupported; set { _IsCudaSupported = value; NotifyPropertyChanged(); if (!value) IsEnabled = false; } }
         private bool _IsCudaSupported;
 
         public int DeviceCount { get => _DeviceCount; set { _DeviceCount = value; NotifyPropertyChanged(); } }

@@ -196,14 +196,13 @@ namespace ColorVision.Engine
 
     public static class OpenCVHelper
     {
-        private const string LibOpenCVHelper = "libs\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\OpenCVHelper.dll";
 
 
-
-        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
         public static extern void ReadCVFile(string FullPath);
 
-        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
         /// <summary>
@@ -215,7 +214,7 @@ namespace ColorVision.Engine
         /// <param name="max"></param>
         /// <param name="colormapTypes"></param>
         /// <returns></returns>
-        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int CM_PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
 
         /// <summary>
@@ -224,7 +223,7 @@ namespace ColorVision.Engine
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
         public static extern int CM_AutoLevelsAdjust(HImage image, out HImage hImage);
 
         /// <summary>
@@ -233,7 +232,7 @@ namespace ColorVision.Engine
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
         public static extern int CM_AutomaticColorAdjustment(HImage image, out HImage hImage);
 
         /// <summary>
@@ -242,29 +241,35 @@ namespace ColorVision.Engine
         /// <param name="image"></param>
         /// <param name="hImage"></param>
         /// <returns></returns>
-        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
         public static extern int CM_AutomaticToneAdjustment(HImage image, out HImage hImage);
 
 
-        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int CM_ExtractChannel(HImage image, out HImage hImage, int channel);
 
 
-        [DllImport(LibOpenCVHelper)]
+        [DllImport(LibPath)]
         public static extern int CM_Fusion(string fusionjson, out HImage hImage);
 
-        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeHImageData(IntPtr data);
 
-        [DllImport(LibOpenCVHelper)]
+        [DllImport(LibPath)]
         public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
-        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
         public static extern void ReadVideoTest(string FullPath);
 
+    }
+
+    public static class OpenCVCuda
+    {
+        private const string LibPath = "libs\\opencv_cuda.dll";
 
 
-
+        [DllImport(LibPath)]
+        public static extern int CM_Fusion(string fusionjson, out HImage hImage);
 
     }
 }

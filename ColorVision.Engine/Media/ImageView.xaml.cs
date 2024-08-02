@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.CUDA;
 using ColorVision.UI.Draw;
 using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Views;
@@ -16,9 +17,11 @@ using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1065,6 +1068,38 @@ namespace ColorVision.Engine.Media
                         ImageShow.Source = PseudoImage;
                     }
                 }
+
+                //string directoryPath = @"C:\Users\17917\Desktop\Serial 7";
+                //// 获取目录下的所有文件路径
+                //string[] files = Directory.GetFiles(directoryPath);
+
+                //string lists = JsonConvert.SerializeObject(files);
+                //if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.IsEnabled)
+                //{
+                //    int ret = OpenCVCuda.CM_Fusion(lists, out HImage hImageProcessed);
+                //    // 获取并输出经过的时间
+
+
+                //}
+                //else
+                //{
+                //    int ret = OpenCVHelper.CM_Fusion(lists, out HImage hImageProcessed);
+                //    if (ret == 0)
+                //    {
+                //        var image = hImageProcessed.ToWriteableBitmap();
+                //        OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                //        hImageProcessed.pData = IntPtr.Zero;
+
+                //        PseudoImage = image;
+                //        if (toggleButton.IsChecked == true)
+                //        {
+                //            ImageShow.Source = PseudoImage;
+                //        }
+                //    }
+                //}
+
+
+
             };
         }
 

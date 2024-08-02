@@ -88,6 +88,9 @@
     <Import Project="..\packages\CUDA.props" />
     <Import Project="..\packages\OpenCV.Release.x64.props" />
     <Import Project="..\include\include.props" />
+    <Import Project="..\packages\nlohmann.props" />
+    <Import Project="..\packages\NativeCopy.props" />
+    <Import Project="..\packages\spdlog.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

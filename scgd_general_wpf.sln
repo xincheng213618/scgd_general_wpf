@@ -367,8 +367,8 @@ Global
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|Any CPU.Build.0 = Debug|x64
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|ARM64.ActiveCfg = Debug|x64
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|ARM64.Build.0 = Debug|x64
-		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x64.ActiveCfg = Debug|x64
-		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x64.Build.0 = Debug|x64
+		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x64.ActiveCfg = Release|x64
+		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x64.Build.0 = Release|x64
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x86.ActiveCfg = Debug|Win32
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Debug|x86.Build.0 = Debug|Win32
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Release|Any CPU.ActiveCfg = Release|x64
@@ -405,12 +405,12 @@ Global
 		{7568CD41-78C1-415F-9F3B-73283392B60D} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
-		RESX_EnableXlifSync = True
-		RESX_AutoCreateNewLanguageFiles = True
 		RESX_ConfirmAddLanguageFile = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_EnableXlifSync = True
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal

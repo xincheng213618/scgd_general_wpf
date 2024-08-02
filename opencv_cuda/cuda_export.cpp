@@ -74,7 +74,7 @@ COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	std::cout << "fusionÖ´ÐÐÊ±¼ä: " << duration.count() / 1000.0 << " ºÁÃë" << std::endl;
 
-	//MatToHImage(out, outImage);
+	MatToHImage(out, outImage);
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	std::cout << "MatToHImage: " << duration.count() / 1000.0 << " ºÁÃë" << std::endl;
 	return 0;
