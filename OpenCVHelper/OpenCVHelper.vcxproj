@@ -62,6 +62,7 @@
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
     <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -69,24 +70,27 @@
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
     <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\OpenCV.Debug.x64.props" />
-    <Import Project="..\props\NativeCopy.props" />
+    <Import Project="..\packages\OpenCV.Debug.x64.props" />
+    <Import Project="..\packages\NativeCopy.props" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
     <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\OpenCV.Release.x64.props" />
-    <Import Project="..\props\NativeCopy.props" />
+    <Import Project="..\packages\OpenCV.Release.x64.props" />
+    <Import Project="..\packages\NativeCopy.props" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
     <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -177,10 +181,11 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\custom_structs.h" />
+    <ClInclude Include="..\include\opencv_export.h" />
     <ClInclude Include="algorithm.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="Customfile.h" />
-    <ClInclude Include="export.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />

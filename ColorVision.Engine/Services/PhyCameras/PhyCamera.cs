@@ -365,7 +365,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 UploadMsg uploadMsg = new(this);
                 uploadMsg.Show();
-                Task.Run(() => UploadData(e.UploadFilePath));
+                string uploadfilepath = e.UploadFilePath;
+                Task.Run(() => UploadData(uploadfilepath));
             };
             uploadwindow.ShowDialog();
         }

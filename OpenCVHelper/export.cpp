@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "export.h"
+#include "opencv_export.h"
 #include "algorithm.h"
 #include <opencv2/opencv.hpp>
 #include <nlohmann\json.hpp>
@@ -39,6 +39,8 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	outImage->depth = bitsPerElement; // 设置每像素位数
 	outImage->stride = (int)mat.step; // 设置图像的步长
 }
+
+
 
 int CM_AutoLevelsAdjust(HImage img, HImage* outImage)
 {

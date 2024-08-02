@@ -1,27 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Interfaces;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
-using ColorVision.Themes.Controls;
-using System.Threading.Tasks;
-using System.IO;
-using System.Linq;
-using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.PhyCameras.Group;
-using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Security.Cryptography;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -76,7 +70,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             {
                 UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
                 uploadMsg.Show();
-                Task.Run(() => UploadPluginData(e.UploadFilePath));
+                string uploadfilepath = e.UploadFilePath;
+                Task.Run(() => UploadPluginData(uploadfilepath));
             };
             uploadwindow.ShowDialog();
         }

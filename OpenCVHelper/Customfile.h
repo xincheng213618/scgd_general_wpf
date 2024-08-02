@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <opencv2/opencv.hpp>
 
 #ifdef OPENCV_EXPORTS
@@ -8,8 +7,6 @@
 #else
 #define COLORVISIONCORE_API __declspec(dllimport)
 #endif
-
-
 
 typedef struct CustomFile
 {
