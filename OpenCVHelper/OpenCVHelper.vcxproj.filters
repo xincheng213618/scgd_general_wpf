@@ -19,18 +19,15 @@
     <Filter Include="Util">
       <UniqueIdentifier>{8b95d4d5-2c37-45bc-9609-7fe82a5733c0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="自定义文件">
+      <UniqueIdentifier>{0b7ad77d-7271-4be7-92cf-c0f18b2b3f6d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Customfile.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="common.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="algorithm.h">
@@ -48,8 +45,14 @@
     <ClInclude Include="..\include\opencv_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="opencv_media_export.h">
+    <ClInclude Include="..\include\common.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\opencv_media_export.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\custom_file.h">
+      <Filter>自定义文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -59,10 +62,7 @@
     <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="export.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Customfile.cpp">
+    <ClCompile Include="opencv_export.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="common.cpp">
@@ -79,6 +79,9 @@
     </ClCompile>
     <ClCompile Include="opencv_media_export.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="custom_file.cpp">
+      <Filter>自定义文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
