@@ -72,3 +72,16 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	MatToHImage(mat, outImage);
 	return 0;
 }
+
+COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	cv::Mat outMat;
+	int i = extractChannel(mat, outMat, channel);
+	if (i != 0)
+		return i;
+	MatToHImage(outMat, outImage);
+	return 0;
+}

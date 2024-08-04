@@ -16,3 +16,6 @@ extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
 
 extern "C" COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types = cv::ColormapTypes::COLORMAP_JET);
 
+extern "C" COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel);
+
+

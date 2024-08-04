@@ -279,11 +279,12 @@ namespace ColorVision
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int CM_ExtractChannel(HImage image, out HImage hImage, int channel);
+        public static extern int M_ExtractChannel(HImage image, out HImage hImage, int channel);
 
 
         [DllImport(LibPath)]
         public static extern int CM_Fusion(string fusionjson, out HImage hImage);
+
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_FreeHImageData(IntPtr data);

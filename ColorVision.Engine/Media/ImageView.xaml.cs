@@ -19,6 +19,7 @@ using log4net;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -806,6 +807,36 @@ namespace ColorVision.Engine.Media
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
+
+        public bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
+        {
+            if (PseudoImage is WriteableBitmap writeableBitmap && writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            {
+                writeableBitmap.Lock();
+                unsafe
+                {
+                    byte* src = (byte*)hImage.pData;
+                    byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                    for (int y = 0; y < hImage.rows; y++)
+                    {
+                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                        src += hImage.stride;
+                        dst += writeableBitmap.BackBufferStride;
+                    }
+                }
+
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
+                writeableBitmap.Unlock();
+
+                OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
+                hImage.pData = IntPtr.Zero;
+                return true;
+            }
+            return false;
+        }
+
+
         public void RenderPseudo()
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -832,38 +863,13 @@ namespace ColorVision.Engine.Media
                         {
                             if (ret == 0)
                             {
-
-                                if (PseudoImage is WriteableBitmap writeableBitmap && writeableBitmap.PixelHeight == hImageProcessed.rows && writeableBitmap.PixelWidth == hImageProcessed.cols)
-                                {
-                                    writeableBitmap.Lock();
-                                    unsafe
-                                    {
-                                        byte* src = (byte*)hImageProcessed.pData;
-                                        byte* dst = (byte*)writeableBitmap.BackBuffer;
-
-                                        for (int y = 0; y < hImageProcessed.rows; y++)
-                                        {
-                                            RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImageProcessed.cols * hImageProcessed.channels * (hImageProcessed.depth / 8)));
-                                            src += hImageProcessed.stride;
-                                            dst += writeableBitmap.BackBufferStride;
-                                        }
-                                    }
-
-                                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImageProcessed.cols, hImageProcessed.rows));
-                                    writeableBitmap.Unlock();
-
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
-                                }
-                                else
+                                if (!UpdateWriteableBitmap(PseudoImage , hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
-
-                                    //OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = IntPtr.Zero;
                                     PseudoImage = image;
                                 }
-
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = PseudoImage;
@@ -1021,18 +1027,28 @@ namespace ColorVision.Engine.Media
                 return;
             }
             if (HImageCache == null) return;
-
-            int ret = OpenCVHelper.CM_ExtractChannel((HImage)HImageCache, out HImage hImageProcessed, channel);
-            if (ret == 0)
+            Task.Run(() =>
             {
-                var image = hImageProcessed.ToWriteableBitmap();
-                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                hImageProcessed.pData = IntPtr.Zero;
-                PseudoImage = image;
-                ImageShow.Source = PseudoImage;
-                Config.Channel = 1;
-                UpdateZoomAndScale();
-            }
+                int ret = OpenCVMediaHelper.M_ExtractChannel((HImage)HImageCache, out HImage hImageProcessed, channel);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (ret == 0)
+                    {
+                        if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        {
+                            var image = hImageProcessed.ToWriteableBitmap();
+
+                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                            hImageProcessed.pData = IntPtr.Zero;
+                            PseudoImage = image;
+                            UpdateZoomAndScale();
+                        }
+                        ImageShow.Source = PseudoImage;
+                        Config.Channel = 1;
+                    }
+                });
+            });
+
         }
 
         private void UpdateZoomAndScale()
@@ -1106,19 +1122,19 @@ namespace ColorVision.Engine.Media
                 //string lists = JsonConvert.SerializeObject(files);
                 //if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.IsEnabled)
                 //{
-                //    int ret = OpenCVCuda.CM_Fusion(lists, out HImage hImageProcessed);
+                //    int ret = OpenCVCuda.CM_Fusion(lists, out HImage hImage);
                 //    // 获取并输出经过的时间
 
 
                 //}
                 //else
                 //{
-                //    int ret = OpenCVHelper.CM_Fusion(lists, out HImage hImageProcessed);
+                //    int ret = OpenCVHelper.CM_Fusion(lists, out HImage hImage);
                 //    if (ret == 0)
                 //    {
-                //        var image = hImageProcessed.ToWriteableBitmap();
-                //        OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                //        hImageProcessed.pData = IntPtr.Zero;
+                //        var image = hImage.ToWriteableBitmap();
+                //        OpenCVHelper.FreeHImageData(hImage.pData);
+                //        hImage.pData = IntPtr.Zero;
 
                 //        PseudoImage = image;
                 //        if (toggleButton.IsChecked == true)

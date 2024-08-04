@@ -138,8 +138,7 @@ COLORVISIONCORE_API int CM_ExtractChannel(HImage img, HImage* outImage, int chan
 	if (i != 0)
 		return i;
 	MatToHImage(outMat, outImage);
-	return 0;
-	
+	return 0;	
 }
 
 COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types)
