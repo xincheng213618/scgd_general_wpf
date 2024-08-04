@@ -16,6 +16,7 @@ using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
@@ -25,6 +26,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -801,6 +803,8 @@ namespace ColorVision.Engine.Media
                 menuPop1.IsOpen = false;
             }
         }
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
         public void RenderPseudo()
         {
@@ -823,21 +827,47 @@ namespace ColorVision.Engine.Media
                     log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVHelper.CM_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
+                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
                             {
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
 
-                                PseudoImage = image;
+                                if (PseudoImage is WriteableBitmap writeableBitmap && writeableBitmap.PixelHeight == hImageProcessed.rows && writeableBitmap.PixelWidth == hImageProcessed.cols)
+                                {
+                                    writeableBitmap.Lock();
+                                    unsafe
+                                    {
+                                        byte* src = (byte*)hImageProcessed.pData;
+                                        byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                                        for (int y = 0; y < hImageProcessed.rows; y++)
+                                        {
+                                            RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImageProcessed.cols * hImageProcessed.channels * (hImageProcessed.depth / 8)));
+                                            src += hImageProcessed.stride;
+                                            dst += writeableBitmap.BackBufferStride;
+                                        }
+                                    }
+
+                                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImageProcessed.cols, hImageProcessed.rows));
+                                    writeableBitmap.Unlock();
+
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+                                }
+                                else
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+
+                                    //OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+                                    PseudoImage = image;
+                                }
+
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = PseudoImage;
                                 }
-
                             }
                         });
                     });
@@ -1132,7 +1162,7 @@ namespace ColorVision.Engine.Media
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 30, (e) =>
             {
                 RenderPseudo();
             }, e.NewValue);

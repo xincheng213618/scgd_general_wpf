@@ -187,6 +187,7 @@
     <ClInclude Include="common.h" />
     <ClInclude Include="Customfile.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="opencv_media_export.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Utilcom.h" />
@@ -198,6 +199,7 @@
     <ClCompile Include="export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />
+    <ClCompile Include="opencv_media_export.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -89,7 +89,6 @@ namespace ColorVision
 
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
             writeableBitmap.Unlock();
-            writeableBitmap.Freeze();
             return writeableBitmap;
         }
 
@@ -220,8 +219,7 @@ namespace ColorVision
 
         public void SetEnvironmentVariable()
         {    
-            string currentPath = Environment.GetEnvironmentVariable("PATH");
-            Environment.SetEnvironmentVariable("PATH", currentPath + ";" + OpenCVHelperLibPath);
+
         }
 
         public string OpenCVHelperLibPath { get => _OpenCVHelperLibPath; set { _OpenCVHelperLibPath = value;NotifyPropertyChanged(); } }
@@ -235,9 +233,71 @@ namespace ColorVision
     }
 
 
+    public static class OpenCVMediaHelper
+    {
+        private const string LibPath = "libs\\OpenCVHelper.dll";
+
+
+        /// <summary>
+        /// 伪彩色
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <param name="colormapTypes"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_PseudoColor(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes = ColormapTypes.COLORMAP_JET);
+
+        /// <summary>
+        /// 自动对比度
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutoLevelsAdjust(HImage image, out HImage hImage);
+
+        /// <summary>
+        /// 自动颜色
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutomaticColorAdjustment(HImage image, out HImage hImage);
+
+        /// <summary>
+        /// 自动色调
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutomaticToneAdjustment(HImage image, out HImage hImage);
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int CM_ExtractChannel(HImage image, out HImage hImage, int channel);
+
+
+        [DllImport(LibPath)]
+        public static extern int CM_Fusion(string fusionjson, out HImage hImage);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void M_FreeHImageData(IntPtr data);
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void M_SetHImageData(IntPtr data);
+
+    }
+
+
     public static class OpenCVHelper
     {
-        private const string LibPath = "lib\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\OpenCVHelper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
@@ -294,6 +354,10 @@ namespace ColorVision
 
 
     }
+
+
+
+
 
     public static class OpenCVCuda
     {

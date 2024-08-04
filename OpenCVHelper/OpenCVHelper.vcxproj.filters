@@ -48,6 +48,9 @@
     <ClInclude Include="..\include\opencv_export.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="opencv_media_export.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -73,6 +76,9 @@
     </ClCompile>
     <ClCompile Include="Utilcom.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="opencv_media_export.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
