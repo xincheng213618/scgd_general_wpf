@@ -63,6 +63,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ColorVision", "ColorVision"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_cuda", "opencv_cuda\opencv_cuda.vcxproj", "{7568CD41-78C1-415F-9F3B-73283392B60D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CVImageChannelLib", "CVImageChannelLib\CVImageChannelLib.csproj", "{58990754-1AD1-4F33-A90E-C421AA309A6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -379,6 +381,22 @@ Global
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Release|x64.Build.0 = Release|x64
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Release|x86.ActiveCfg = Release|Win32
 		{7568CD41-78C1-415F-9F3B-73283392B60D}.Release|x86.Build.0 = Release|Win32
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|Any CPU.Build.0 = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|ARM64.Build.0 = Debug|ARM64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|x64.ActiveCfg = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|x64.Build.0 = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|x86.ActiveCfg = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Debug|x86.Build.0 = Debug|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|Any CPU.ActiveCfg = Release|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|Any CPU.Build.0 = Release|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|ARM64.ActiveCfg = Release|ARM64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|ARM64.Build.0 = Release|ARM64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|x64.ActiveCfg = Release|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|x64.Build.0 = Release|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|x86.ActiveCfg = Release|x64
+		{58990754-1AD1-4F33-A90E-C421AA309A6F}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -403,14 +421,15 @@ Global
 		{3593FFAA-9AB9-47DC-8D13-A943A469384A} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{7736CE9C-0059-420C-A841-5B71293C1A88} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{7568CD41-78C1-415F-9F3B-73283392B60D} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
+		{58990754-1AD1-4F33-A90E-C421AA309A6F} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal

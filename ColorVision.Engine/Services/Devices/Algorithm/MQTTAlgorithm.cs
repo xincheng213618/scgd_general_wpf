@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICal;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Themes;
@@ -53,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam pOIFilterParam, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam pOIFilterParam, POICalParam pOICalParam, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -62,6 +63,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             if (pOIFilterParam.Id !=-1)
                 Params.Add("FilterTemplate", new CVTemplateParam() { ID = pOIFilterParam.Id, Name = pOIFilterParam.Name });
+            if (pOICalParam.Id != -1)
+            {
+                Params.Add("POICalTemplate", new CVTemplateParam() { ID = pOICalParam.Id, Name = pOICalParam.Name });
+
+            }
 
             MsgSend msg = new()
             {

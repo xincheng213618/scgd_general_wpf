@@ -34,17 +34,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    if(IsResize(bmp.Width, bmp.Height)) {
-                        System.Drawing.Bitmap bmpNew = ReSize(bmp);
-                        CameraVideoFrameReceived?.Invoke(bmpNew);
-                        bmpNew.Dispose();
-                        bmp.Dispose();
-                    }
-                    else
-                    {
-                        CameraVideoFrameReceived?.Invoke(bmp);
-                        bmp.Dispose();
-                    }
+                    CameraVideoFrameReceived?.Invoke(bmp);
+                    bmp.Dispose();
                 });
             }
         }
@@ -52,15 +43,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         {
             if(IsEnableResize) return (this.width != width || this.height != height);
             else return false;
-        }
-        private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
-        {
-            var data = bmp.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), bmp.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, bmp.PixelFormat);
-            OpenCvSharp.Mat src = Mat.FromPixelData(bmp.Height, bmp.Width, MatType.CV_8UC3, data.Scan0);
-            bmp.UnlockBits(data);
-            OpenCvSharp.Mat dst = new();
-            Cv2.Resize(src, dst, new OpenCvSharp.Size(width, height));
-            return dst.ToBitmap();
         }
         public void Start(bool isLocal, string mapName, uint width, uint height)
         {

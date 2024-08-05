@@ -39,10 +39,6 @@
 			<HintPath>..\DLL\CVCommCore.dll</HintPath>
 			<Private>True</Private>
 		</Reference>
-		<Reference Include="CVImageChannelLib">
-			<HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
 		<Reference Include="FlowEngineLib">
 			<HintPath>..\DLL\FlowEngineLib.dll</HintPath>
 			<Private>True</Private>
@@ -114,6 +110,7 @@
     <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+    <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
