@@ -8,8 +8,13 @@ using json = nlohmann::json;
 
 std::vector<std::pair<int, cv::Mat>> MediaList;
 
+std::mutex mediaListMutex; // 定义一个互斥锁
+
 static void MatToHImage(cv::Mat& mat, HImage* outImage)
 {
+	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
+
+
 	outImage->rows = mat.rows;
 	outImage->cols = mat.cols;
 	outImage->channels = mat.channels();
@@ -42,6 +47,7 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
+	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
 	auto it = std::find_if(MediaList.begin(), MediaList.end(),
 		[data](const std::pair<int, cv::Mat>& pair) {
 			return pair.first == reinterpret_cast<int>(data);

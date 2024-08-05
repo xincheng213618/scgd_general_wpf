@@ -804,6 +804,8 @@ namespace ColorVision.Engine.Media
                 menuPop1.IsOpen = false;
             }
         }
+
+
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
@@ -866,7 +868,7 @@ namespace ColorVision.Engine.Media
                                 if (!UpdateWriteableBitmap(PseudoImage , hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = IntPtr.Zero;
                                     PseudoImage = image;
                                 }
@@ -985,19 +987,76 @@ namespace ColorVision.Engine.Media
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
                     if (comboBoxItem.Content.ToString() == "Src")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!UpdateWriteableBitmap(PseudoImage, (HImage)HImageCache))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
+                            }
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "R")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                            }
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "G")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                            }
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "B")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                            }
+
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "X")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                            }
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "Y")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                            }
+                        }
+                    }
                     if (comboBoxItem.Content.ToString() == "Z")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                    {
+                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
+                        {
+                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).UpdateWriteableBitmap(writeableBitmap))
+                            {
+                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -1178,7 +1237,7 @@ namespace ColorVision.Engine.Media
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 30, (e) =>
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 10, (e) =>
             {
                 RenderPseudo();
             }, e.NewValue);
