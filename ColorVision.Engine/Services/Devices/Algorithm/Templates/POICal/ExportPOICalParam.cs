@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POICal
 {
-    public class ExportDataLoadParam : ExportTemplateBase
+    public class ExportPOICalParam : ExportTemplateBase
     {
         public override string OwnerGuid => "TemplateAlgorithm";
         public override string GuidId => "POICal";
