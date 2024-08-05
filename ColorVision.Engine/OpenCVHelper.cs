@@ -38,7 +38,6 @@ namespace ColorVision
             }
             GC.SuppressFinalize(this);
         }
-
     }
 
 
@@ -47,7 +46,7 @@ namespace ColorVision
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
-        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        public static PixelFormat ToPixelFormat(this HImage hImage)
         {
             PixelFormat format = hImage.channels switch
             {
@@ -61,12 +60,17 @@ namespace ColorVision
                 {
                     8 => PixelFormats.Bgr24,
                     16 => PixelFormats.Rgb48,
-                     _=> PixelFormats.Bgr24,
+                    _ => PixelFormats.Bgr24,
                 },
                 4 => PixelFormats.Bgr32,
                 _ => PixelFormats.Default,
             };
+            return format;
+        }
 
+        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        {
+            PixelFormat format = hImage.ToPixelFormat();
             WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
 
             writeableBitmap.Lock();
@@ -257,7 +261,7 @@ namespace ColorVision
         /// <param name="hImage"></param>
         /// <returns></returns>
         [DllImport(LibPath, CharSet = CharSet.Unicode)]
-        public static extern int CM_AutoLevelsAdjust(HImage image, out HImage hImage);
+        public static extern int M_AutoLevelsAdjust(HImage image, out HImage hImage);
 
         /// <summary>
         /// 自动颜色
@@ -266,7 +270,7 @@ namespace ColorVision
         /// <param name="hImage"></param>
         /// <returns></returns>
         [DllImport(LibPath, CharSet = CharSet.Unicode)]
-        public static extern int CM_AutomaticColorAdjustment(HImage image, out HImage hImage);
+        public static extern int M_AutomaticColorAdjustment(HImage image, out HImage hImage);
 
         /// <summary>
         /// 自动色调
@@ -275,7 +279,7 @@ namespace ColorVision
         /// <param name="hImage"></param>
         /// <returns></returns>
         [DllImport(LibPath, CharSet = CharSet.Unicode)]
-        public static extern int CM_AutomaticToneAdjustment(HImage image, out HImage hImage);
+        public static extern int M_AutomaticToneAdjustment(HImage image, out HImage hImage);
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]

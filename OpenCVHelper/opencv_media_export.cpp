@@ -79,6 +79,55 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	return 0;
 }
 
+COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	if (mat.channels() != 3) {
+		return -1;
+	}
+	if (mat.depth() == CV_16U) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+	cv::Mat outMat;
+	autoLevelsAdjust(mat, outMat);
+	MatToHImage(outMat, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	if (mat.channels() != 3) {
+		return -1;
+	}
+	if (mat.depth() == CV_16U) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+	automaticColorAdjustment(mat);
+	MatToHImage(mat, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	if (mat.channels() != 3) {
+		return -1;
+	}
+	if (mat.depth() == CV_16U) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+	automaticToneAdjustment(mat, 1);
+	MatToHImage(mat, outImage);
+	return 0;
+}
+
 COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

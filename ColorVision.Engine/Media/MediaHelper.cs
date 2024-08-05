@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Media
 
                 if (src == null)
                 {
+                    return false;
 #pragma warning disable CA2201 // 不要引发保留的异常类型
                     throw new Exception("Unsupported file format.");
 #pragma warning restore CA2201 // 不要引发保留的异常类型
@@ -54,6 +55,7 @@ namespace ColorVision.Engine.Media
                     writeableBitmap.PixelHeight != dst.Height ||
                     writeableBitmap.Format != GetPixelFormat(dst))
                 {
+                    return false;
                     throw new InvalidOperationException("The existing WriteableBitmap does not match the dimensions or format of the new image.");
                 }
 
@@ -74,9 +76,8 @@ namespace ColorVision.Engine.Media
                 writeableBitmap.Unlock();
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), $"更新文件失败:{ex.Message} ", "ColorVision");
                 return false;
             }
             finally

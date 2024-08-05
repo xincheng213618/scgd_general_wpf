@@ -11,12 +11,15 @@ namespace ColorVision.Engine.Media
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
         private string _FilePath;
+        [JsonIgnore]
+        public bool ConvertXYZhandleOnce { get; set; }
 
         [JsonIgnore]
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
         [JsonIgnore]
-        public bool ConvertXYZhandleOnce { get; set; }
+        public bool ConvertXYZSetBuffer { get; set; } = false;
+
 
         [JsonIgnore]
         public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); }  }

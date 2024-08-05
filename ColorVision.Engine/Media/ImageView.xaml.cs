@@ -883,7 +883,6 @@ namespace ColorVision.Engine.Media
             });
         }
 
-        private bool disposedValue;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
@@ -952,29 +951,6 @@ namespace ColorVision.Engine.Media
         }
 
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    int result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
-                    ToolBarTop.ClearImageEventHandler -= Clear;
-                    ToolBarTop.Dispose();
-                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
-                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
-                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
-                    PreviewKeyDown -= ImageView_PreviewKeyDown;
-                    Drop -= ImageView_Drop;
-                }
-                disposedValue = true;
-            }
-        }
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
-        }
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -988,74 +964,36 @@ namespace ColorVision.Engine.Media
 
                     if (comboBoxItem.Content.ToString() == "Src")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!UpdateWriteableBitmap(PseudoImage, (HImage)HImageCache))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
-                            }
-                        }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
                     }
                     if (comboBoxItem.Content.ToString() == "R")
                     {
                         if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
-                            }
-                        }
+                            OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
+
                     }
                     if (comboBoxItem.Content.ToString() == "G")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
-                            }
-                        }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
+
                     }
                     if (comboBoxItem.Content.ToString() == "B")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
-                            }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
 
-                        }
                     }
                     if (comboBoxItem.Content.ToString() == "X")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
-                            }
-                        }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
                     }
                     if (comboBoxItem.Content.ToString() == "Y")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
-                            }
-                        }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+
                     }
                     if (comboBoxItem.Content.ToString() == "Z")
                     {
-                        if (ImageShow.Source is WriteableBitmap writeableBitmap)
-                        {
-                            if (!CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).UpdateWriteableBitmap(writeableBitmap))
-                            {
-                                OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
-                            }
-                        }
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
                     }
                 }
                 else
@@ -1132,19 +1070,20 @@ namespace ColorVision.Engine.Media
             }
             if (HImageCache != null)
             {
-                int ret = OpenCVHelper.CM_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
+                int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
 
                 if (ret == 0)
                 {
-                    var image = hImageProcessed.ToWriteableBitmap();
-                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                    hImageProcessed.pData = IntPtr.Zero;
-
-                    PseudoImage = image;
-                    if (toggleButton.IsChecked == true)
+                    if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                     {
-                        ImageShow.Source = PseudoImage;
+                        var image = hImageProcessed.ToWriteableBitmap();
+
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        PseudoImage = image;
+                        UpdateZoomAndScale();
                     }
+                    ImageShow.Source = PseudoImage;
                 }
             };
         }
@@ -1160,18 +1099,19 @@ namespace ColorVision.Engine.Media
             }
             if (HImageCache != null)
             {
-                int ret = OpenCVHelper.CM_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
+                int ret = OpenCVMediaHelper.M_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    var image = hImageProcessed.ToWriteableBitmap();
-                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                    hImageProcessed.pData = IntPtr.Zero;
-
-                    PseudoImage = image;
-                    if (toggleButton.IsChecked == true)
+                    if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                     {
-                        ImageShow.Source = PseudoImage;
+                        var image = hImageProcessed.ToWriteableBitmap();
+
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        PseudoImage = image;
+                        UpdateZoomAndScale();
                     }
+                    ImageShow.Source = PseudoImage;
                 }
 
                 //string directoryPath = @"C:\Users\17917\Desktop\Serial 7";
@@ -1217,22 +1157,22 @@ namespace ColorVision.Engine.Media
                 PseudoImage = null;
                 return;
             }
-            if (HImageCache != null)
+            if (HImageCache == null) return;
+
+            int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
+            if (ret == 0)
             {
-                int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
-                if (ret == 0)
+                if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                 {
                     var image = hImageProcessed.ToWriteableBitmap();
-                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                    hImageProcessed.pData = IntPtr.Zero;
 
+                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                    hImageProcessed.pData = IntPtr.Zero;
                     PseudoImage = image;
-                    if (toggleButton.IsChecked == true)
-                    {
-                        ImageShow.Source = PseudoImage;
-                    }
+                    UpdateZoomAndScale();
                 }
-            };
+                ImageShow.Source = PseudoImage;
+            }
         }
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
@@ -1438,6 +1378,33 @@ namespace ColorVision.Engine.Media
                 window3D.Show();
             }
 
+        }
+
+
+
+        private bool disposedValue;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    int result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
+                    ToolBarTop.ClearImageEventHandler -= Clear;
+                    ToolBarTop.Dispose();
+                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+                    PreviewKeyDown -= ImageView_PreviewKeyDown;
+                    Drop -= ImageView_Drop;
+                }
+                disposedValue = true;
+            }
+        }
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

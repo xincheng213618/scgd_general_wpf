@@ -18,7 +18,6 @@ namespace ColorVision.UI.CUDA
 
         public async Task InitializeAsync()
         {
-            await Task.Delay(30);
             _messageUpdater.UpdateMessage("Debug Mode: " + SystemHelper.IsDebugMode());
             _messageUpdater.UpdateMessage("OS Version: " + SystemHelper.GetOSVersion());
             _messageUpdater.UpdateMessage(".NET Version: " + SystemHelper.GetDotNetVersion());
@@ -28,7 +27,7 @@ namespace ColorVision.UI.CUDA
             _messageUpdater.UpdateMessage("Memory Info: " + SystemHelper.GetMemoryInfo());
             _messageUpdater.UpdateMessage("System Language: " + SystemHelper.GetSystemLanguage());
             _messageUpdater.UpdateMessage("Screen Resolution: " + SystemHelper.GetScreenResolution());
-            await Task.Delay(30);
+            await Task.Delay(1);
 
         }
 

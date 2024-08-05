@@ -64,13 +64,12 @@ namespace ColorVision.UI.CUDA
                 {
                     for (int i = 0; i < Config.DeviceCount; i++)
                     {
-                        await Task.Delay(10);
                         _messageUpdater.UpdateMessage($"Device {i}:");
                         _messageUpdater.UpdateMessage($"  Name: {Config.DeviceNames[i]}");
                         _messageUpdater.UpdateMessage($"  Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
                         _messageUpdater.UpdateMessage($"  Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
                     }
-                    await Task.Delay(100);
+                    await Task.Delay(1);
                 }
             }
             else
