@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 Params.Add("FilterTemplate", new CVTemplateParam() { ID = pOIFilterParam.Id, Name = pOIFilterParam.Name });
             if (pOICalParam.Id != -1)
             {
-                Params.Add("POICalTemplate", new CVTemplateParam() { ID = pOICalParam.Id, Name = pOICalParam.Name });
+                Params.Add("CaliTemplate", new CVTemplateParam() { ID = pOICalParam.Id, Name = pOICalParam.Name });
 
             }
 

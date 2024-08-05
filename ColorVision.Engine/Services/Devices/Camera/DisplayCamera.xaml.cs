@@ -321,7 +321,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     string host = Device.Config.VideoConfig.Host;
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
                     port = Device.CameraVideoControl.Open(host, port);
-                    Device.CameraVideoControl.IsEnableResize = Device.Config.VideoConfig.IsEnableResize;
                     if (port > 0)
                     {
                         MsgRecord msg = DService.OpenVideo(host, port);
@@ -355,25 +354,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         }
 
-        public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
+        public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
-            if (View.ImageView.ImageShow.Source is WriteableBitmap bitmap)
-            {
-                if(bitmap.Width!= bmp.Width)
-                {
-                    WriteableBitmap writeableBitmap = ImageUtils.ToWriteableBitmap(bmp);
-                    View.ImageView.ImageShow.Source = writeableBitmap;
-                }
-                else
-                {
-                    ImageUtils.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
-                }
-            }
-            else
-            {
-                WriteableBitmap writeableBitmap = ImageUtils.ToWriteableBitmap(bmp);
-                View.ImageView.ImageShow.Source = writeableBitmap;
-            }
+            View.ImageView.ImageShow.Source = bmp;
         }
 
 

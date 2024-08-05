@@ -58,7 +58,7 @@ public class VideoReader : CVImageReaderProxy
 		{
 			try
 			{
-                Bitmap bmp = reader?.Subscribe();
+                WriteableBitmap bmp = reader?.Subscribe();
 				if (bmp != null)
 				{
 					this.OnFrameRecv?.Invoke(bmp);
@@ -72,12 +72,12 @@ public class VideoReader : CVImageReaderProxy
 		}
 	}
 
-	private void H264Reader_H264ReaderRecv(Bitmap bmp)
+	private void H264Reader_H264ReaderRecv(WriteableBitmap bmp)
 	{
 		this.OnFrameRecv?.Invoke(bmp);
 	}
 
-	public override Bitmap Subscribe()
+	public override WriteableBitmap Subscribe()
 	{
 		return reader?.Subscribe();
 	}

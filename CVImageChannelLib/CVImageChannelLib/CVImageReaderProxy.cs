@@ -6,7 +6,7 @@ namespace CVImageChannelLib;
 
 public abstract class CVImageReaderProxy : IDisposable
 {
-	public abstract Bitmap Subscribe();
+	public abstract WriteableBitmap Subscribe();
 
 	public virtual void Dispose()
 	{

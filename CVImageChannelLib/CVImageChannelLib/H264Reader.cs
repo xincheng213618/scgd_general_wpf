@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Windows;
 using System.Windows.Media.Imaging;
 
 namespace CVImageChannelLib;
@@ -23,11 +24,12 @@ public class H264Reader : CVImageReaderProxy
         Bitmap bitmap = Decoder.Decode(args.data, args.len);
 		if (bitmap != null)
 		{
-			this.H264ReaderRecv?.Invoke(bitmap);
+			MessageBox.Show("µÈ´ýÐÞ¸´");
+			//this.H264ReaderRecv?.Invoke(bitmap);
 		}
 	}
 
-	public override Bitmap Subscribe()
+	public override WriteableBitmap Subscribe()
 	{
 		return null;
 	}

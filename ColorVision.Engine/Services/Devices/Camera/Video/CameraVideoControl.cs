@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using CVImageChannelLib;
 using log4net;
 using OpenCvSharp;
@@ -9,16 +10,14 @@ using OpenCvSharp.Extensions;
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
 
-    public delegate void CameraVideoFrameHandler(System.Drawing.Bitmap bitmap);
+    public delegate void CameraVideoFrameHandler(WriteableBitmap bitmap);
 
-    public class CameraVideoControl : System.IDisposable
+    public class CameraVideoControl
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(CameraVideoControl));
         private VideoReader reader;
-        private int width;
-        private int height;
-        public bool IsEnableResize { get; set; }
+
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
+
         public int Open(string Host, int Port)
         {
             int ret = 1;
@@ -28,29 +27,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             return ret;
         }
 
-        private void Reader_OnFrameRecv(System.Drawing.Bitmap bmp)
+        private void Reader_OnFrameRecv(WriteableBitmap bmp)
         {
-            if (bmp != null && Application.Current !=null)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    CameraVideoFrameReceived?.Invoke(bmp);
-                    bmp.Dispose();
-                });
-            }
-        }
-        private bool IsResize(int width,int height)
-        {
-            if(IsEnableResize) return (this.width != width || this.height != height);
-            else return false;
+                CameraVideoFrameReceived?.Invoke(bmp);
+            });
         }
         public void Start(bool isLocal, string mapName, uint width, uint height)
         {
-            this.width = (int)width;
-            this.height = (int)height;
-            IsEnableResize = true;
-            //this.rows = 5544;
-            //this.cols = 3684;
             if (reader != null) reader.Startup(mapName, isLocal);
         }
 
@@ -62,11 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 System.Threading.Thread.Sleep(500);
                 reader?.Dispose();
             });
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
         }
     }
 }
