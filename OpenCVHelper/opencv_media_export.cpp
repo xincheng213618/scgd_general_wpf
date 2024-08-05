@@ -67,31 +67,35 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	if (mat.empty())
 		return -1;
 
-	if (mat.channels() != 1) {
-		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
+	cv::Mat out = mat.clone();
+	if (out.channels() != 1) {
+		cv::cvtColor(out, out, cv::COLOR_BGR2GRAY);
 	}
-	if (mat.depth() == CV_16U) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	if (out.depth() == CV_16U) {
+		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
-	pseudoColor(mat, min, max, types);
+	pseudoColor(out, min, max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
-	MatToHImage(mat, outImage);
+	MatToHImage(out, outImage);
 	return 0;
 }
 
 COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
 	if (mat.empty())
 		return -1;
 	if (mat.channels() != 3) {
 		return -1;
 	}
-	if (mat.depth() == CV_16U) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	cv::Mat out = mat.clone();
+	if (out.depth() == CV_16U) {
+		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 	cv::Mat outMat;
-	autoLevelsAdjust(mat, outMat);
+	autoLevelsAdjust(out, outMat);
+	out.release();
 	MatToHImage(outMat, outImage);
 	return 0;
 }
@@ -104,11 +108,12 @@ COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
 	if (mat.channels() != 3) {
 		return -1;
 	}
-	if (mat.depth() == CV_16U) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	cv::Mat out = mat.clone();
+	if (out.depth() == CV_16U) {
+		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
-	automaticColorAdjustment(mat);
-	MatToHImage(mat, outImage);
+	automaticColorAdjustment(out);
+	MatToHImage(out, outImage);
 	return 0;
 }
 
@@ -120,11 +125,12 @@ COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
 	if (mat.channels() != 3) {
 		return -1;
 	}
+	cv::Mat out = mat.clone();
 	if (mat.depth() == CV_16U) {
-		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
-	automaticToneAdjustment(mat, 1);
-	MatToHImage(mat, outImage);
+	automaticToneAdjustment(out, 1);
+	MatToHImage(out, outImage);
 	return 0;
 }
 
