@@ -186,6 +186,10 @@
                     </GroupBox>
                     <GroupBox Header="缓存" Margin="0,5" >
                         <StackPanel Margin="5">
+                            <DockPanel>
+                                <TextBlock Text="极速模式" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding IsSupperSpeed}"/>
+                            </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="启用:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
