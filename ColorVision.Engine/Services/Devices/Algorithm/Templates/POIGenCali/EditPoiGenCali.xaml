@@ -26,59 +26,129 @@
                 <DockPanel  Margin="0,0,0,5" Visibility="{Binding XYZEnable,Converter={StaticResource bool2VisibilityConverter}}">
                     <TextBlock HorizontalAlignment="Left" Text="对标参数"  MinWidth="100"/>
                 </DockPanel>
-                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5" >
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="5">
-                        <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="使用XYZ" MinWidth="100"/>
-                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding XYZIsEnable}"/>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用X" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding XIsEnable}"/>
                         </DockPanel>
-                        <DockPanel  Margin="0,0,0,5" Visibility="{Binding XYZIsEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                            <TextBlock HorizontalAlignment="Left" Text="计算方式"  MinWidth="100"/>
-                            <ComboBox Name="CobXYZGenType"  SelectedValue="{Binding XGenType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding XIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobXGenType" SelectedValue="{Binding XGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
                         </DockPanel>
-                        <DockPanel Visibility="{Binding XYZIsEnable,Converter={StaticResource bool2VisibilityConverter}}" >
-                            <TextBlock Text="Threshold"  MinWidth="100"/>
-                            <TextBox Text="{Binding XYZIsEnable}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                        </DockPanel>
-
-
-
-                    </StackPanel>
-                </Border>
-
-                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
-                    <StackPanel Margin="5">
-                        <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="使用xy" MinWidth="100"/>
-                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding xyIsEnable}"/>
-                        </DockPanel>
-                        <DockPanel  Margin="0,0,0,5" Visibility="{Binding xyIsEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                            <TextBlock HorizontalAlignment="Left" Text="计算方式"  MinWidth="100"/>
-                            <ComboBox Name="CobxyGenType"  SelectedValue="{Binding xyGenType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                        </DockPanel>
-                        <DockPanel Visibility="{Binding xyIsEnable,Converter={StaticResource bool2VisibilityConverter}}"  >
-                            <TextBlock Text="Threshold"  MinWidth="100"/>
-                            <TextBox Text="{Binding xyThreshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        <DockPanel Visibility="{Binding XIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding XThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
-
-                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
+                <!-- Y Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="5">
-                        <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="使用uv" MinWidth="100"/>
-                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding uvIsEnable}"/>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用Y" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding YIsEnable}"/>
                         </DockPanel>
-                        <DockPanel  Margin="0,0,0,5" Visibility="{Binding uvIsEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                            <TextBlock HorizontalAlignment="Left" Text="计算方式"  MinWidth="100"/>
-                            <ComboBox Name="CobuvGenType"  SelectedValue="{Binding uvGenType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding YIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobYGenType" SelectedValue="{Binding YGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
                         </DockPanel>
-                        <DockPanel Visibility="{Binding uvIsEnable,Converter={StaticResource bool2VisibilityConverter}}"  >
-                            <TextBlock Text="Threshold"  MinWidth="100"/>
-                            <TextBox Text="{Binding uvThreshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        <DockPanel Visibility="{Binding YIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding YThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
+
+                <!-- Z Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用Z" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding ZIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding ZIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobZGenType" SelectedValue="{Binding ZGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding ZIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding ZThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- x Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用x" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding xIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding xIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobxGenType" SelectedValue="{Binding xGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding xIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding xThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- y Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用y" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding yIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding yIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobyGenType" SelectedValue="{Binding yGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding yIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding yThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+                <!-- u Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用u" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding uIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding uIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobuGenType" SelectedValue="{Binding uGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding uIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding uThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- v Configuration -->
+                <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="使用v" MinWidth="100"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding vIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5" Visibility="{Binding vIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Left" Text="计算方式" MinWidth="100"/>
+                            <ComboBox Name="CobvGenType" SelectedValue="{Binding vGenType}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key" DisplayMemberPath="Value"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding vIsEnable, Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="Threshold" MinWidth="100"/>
+                            <TextBox Text="{Binding vThreshold}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
 
                 <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="5">

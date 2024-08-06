@@ -16,33 +16,74 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
 
         }
 
-        public bool XYZIsEnable { get =>GetValue(_XYZIsEnable); set { SetProperty(ref _XYZIsEnable, value); NotifyPropertyChanged(); } }
-        private bool _XYZIsEnable;
+        public bool XIsEnable { get => GetValue(_XIsEnable); set { SetProperty(ref _XIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _XIsEnable;
 
-        public double XYZThreshold { get => GetValue(_XYZThreshold); set { SetProperty(ref _XYZThreshold, value); NotifyPropertyChanged(); } }
-        private double _XYZThreshold = 1;
+        public bool YIsEnable { get => GetValue(_YIsEnable); set { SetProperty(ref _YIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _YIsEnable;
 
-        public GenType XYZXGenType { get => GetValue(_XYZXGenType); set { SetProperty(ref _XYZXGenType, value); NotifyPropertyChanged(); } }
-        private GenType _XYZXGenType;
+        public bool ZIsEnable { get => GetValue(_ZIsEnable); set { SetProperty(ref _ZIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _ZIsEnable;
 
-        public bool xyIsEnable { get => GetValue(_xyIsEnable); set { SetProperty(ref _xyIsEnable, value); NotifyPropertyChanged(); } }
-        private bool _xyIsEnable;
+        public double XThreshold { get => GetValue(_XThreshold); set { SetProperty(ref _XThreshold, value); NotifyPropertyChanged(); } }
+        private double _XThreshold = 1;
 
-        public double xyThreshold { get => GetValue(_xyThreshold); set { SetProperty(ref _xyThreshold, value); NotifyPropertyChanged(); } }
-        private double _xyThreshold = 1;
+        public double YThreshold { get => GetValue(_YThreshold); set { SetProperty(ref _YThreshold, value); NotifyPropertyChanged(); } }
+        private double _YThreshold = 1;
 
-        public GenType xyGenType { get => GetValue(_xyGenType); set { SetProperty(ref _xyGenType, value); NotifyPropertyChanged(); } }
-        private GenType _xyGenType;
+        public double ZThreshold { get => GetValue(_ZThreshold); set { SetProperty(ref _ZThreshold, value); NotifyPropertyChanged(); } }
+        private double _ZThreshold = 1;
+
+        public GenType XGenType { get => GetValue(_XGenType); set { SetProperty(ref _XGenType, value); NotifyPropertyChanged(); } }
+        private GenType _XGenType;
+
+        public GenType YGenType { get => GetValue(_YGenType); set { SetProperty(ref _YGenType, value); NotifyPropertyChanged(); } }
+        private GenType _YGenType;
+
+        public GenType ZGenType { get => GetValue(_ZGenType); set { SetProperty(ref _ZGenType, value); NotifyPropertyChanged(); } }
+        private GenType _ZGenType;
 
 
-        public bool uvIsEnable { get => GetValue(_uvIsEnable); set { SetProperty(ref _uvIsEnable, value); NotifyPropertyChanged(); } }
-        private bool _uvIsEnable;
 
-        public double uvThreshold { get => GetValue(_uvThreshold); set { SetProperty(ref _uvThreshold, value); NotifyPropertyChanged(); } }
-        private double _uvThreshold = 1;
+        public bool xIsEnable { get => GetValue(_xIsEnable); set { SetProperty(ref _xIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _xIsEnable;
 
-        public GenType uvGenType { get => GetValue(_uvGenType); set { SetProperty(ref _uvGenType, value); NotifyPropertyChanged(); } }
-        private GenType _uvGenType;
+        public bool yIsEnable { get => GetValue(_yIsEnable); set { SetProperty(ref _yIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _yIsEnable;
+
+        public double xThreshold { get => GetValue(_xThreshold); set { SetProperty(ref _xThreshold, value); NotifyPropertyChanged(); } }
+        private double _xThreshold = 1;
+
+        public double yThreshold { get => GetValue(_yThreshold); set { SetProperty(ref _yThreshold, value); NotifyPropertyChanged(); } }
+        private double _yThreshold = 1;
+
+
+        public GenType xGenType { get => GetValue(_xGenType); set { SetProperty(ref _xGenType, value); NotifyPropertyChanged(); } }
+        private GenType _xGenType = GenType.Difference;
+
+        public GenType yGenType { get => GetValue(_yGenType); set { SetProperty(ref _yGenType, value); NotifyPropertyChanged(); } }
+        private GenType _yGenType;
+
+
+
+        public bool uIsEnable { get => GetValue(_uIsEnable); set { SetProperty(ref _uIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _uIsEnable;
+
+        public bool vIsEnable { get => GetValue(_vIsEnable); set { SetProperty(ref _vIsEnable, value); NotifyPropertyChanged(); } }
+        private bool _vIsEnable;
+
+        public double uThreshold { get => GetValue(_uThreshold); set { SetProperty(ref _uThreshold, value); NotifyPropertyChanged(); } }
+        private double _uThreshold = 1;
+
+        public double vThreshold { get => GetValue(_vThreshold); set { SetProperty(ref _vThreshold, value); NotifyPropertyChanged(); } }
+        private double _vThreshold = 1;
+
+        public GenType uGenType { get => GetValue(_uGenType); set { SetProperty(ref _uGenType, value); NotifyPropertyChanged(); } }
+        private GenType _uGenType;
+
+        public GenType vGenType { get => GetValue(_vGenType); set { SetProperty(ref _vGenType, value); NotifyPropertyChanged(); } }
+        private GenType _vGenType;
+
 
 
         public bool LabIsEnable { get => GetValue(_LabIsEnable); set { SetProperty(ref _LabIsEnable, value); NotifyPropertyChanged(); } }
@@ -52,10 +93,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
         private double _LabThreshold = 1;
 
         public GenType LabGenType { get => GetValue(_LabGenType); set { SetProperty(ref _LabGenType, value); NotifyPropertyChanged(); } }
-        private GenType _LabGenType;
+        private GenType _LabGenType = GenType.Difference;
 
         public GenCalibrationType GenCalibrationType { get => GetValue(_GenCalibrationType); set { SetProperty(ref _GenCalibrationType, value); NotifyPropertyChanged(); } }
-        private GenCalibrationType _GenCalibrationType;
+        private GenCalibrationType _GenCalibrationType = GenCalibrationType.BrightnessAndChroma;
 
 
     }
