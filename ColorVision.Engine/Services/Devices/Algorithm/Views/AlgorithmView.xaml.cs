@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             int id = 0;
                             foreach (var item in POIPointResultModels)
                             {
@@ -250,7 +250,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             int id = 0;
                             foreach (var item in POIPointResultModels)
                             {
@@ -279,7 +279,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultCIEYData poiResultCIExyuvData = new(item);
@@ -345,7 +345,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 ViewResultMTF mTFResultData = new(item);
@@ -475,7 +475,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultLedcheckModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
@@ -504,7 +504,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 ViewResultBuildPoi mTFResultData = new(item);

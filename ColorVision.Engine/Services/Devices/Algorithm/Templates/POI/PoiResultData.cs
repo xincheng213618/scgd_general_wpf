@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
         private double _Y;
 
-        public PoiResultCIEYData(POIPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
+        public PoiResultCIEYData(PoiPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
         {
             if (pOIPointResultModel.Value != null)
             {
@@ -33,9 +33,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         }
         public ObservableCollection<ValidateRuleResult>? ValidateSingles { get; set; }
 
-        public POIPointResultModel POIPointResultModel { get; set; }
+        public PoiPointResultModel POIPointResultModel { get; set; }
 
-        public PoiResultData(POIPointResultModel pOIPointResultModel)
+        public PoiResultData(PoiPointResultModel pOIPointResultModel)
         {
             POIPointResultModel = pOIPointResultModel;
             if (pOIPointResultModel.ValidateResult != null)

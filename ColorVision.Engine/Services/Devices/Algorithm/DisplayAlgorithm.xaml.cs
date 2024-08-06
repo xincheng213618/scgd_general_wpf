@@ -9,7 +9,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICal;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICali;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -191,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
             ComboxPoiFilter.SelectedIndex = 0;
 
-            ComboxPoiCal.ItemsSource = TemplatePOICalParam.Params.CreateEmpty();
+            ComboxPoiCal.ItemsSource = TemplatePoiCaliParam.Params.CreateEmpty();
             ComboxPoiCal.SelectedIndex = 0;
 
 
@@ -265,7 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
-            if (ComboxPoiCal.SelectedValue is not POICalParam pOICalParam) return;
+            if (ComboxPoiCal.SelectedValue is not PoiCaliParam pOICalParam) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
@@ -608,7 +608,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplatePOIFilterParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "PoiCal":
-                        new WindowTemplate(new TemplatePOICalParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePoiCaliParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

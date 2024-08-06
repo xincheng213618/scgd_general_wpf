@@ -8,6 +8,11 @@
 	</PropertyGroup>
   <PropertyGroup />
   <ItemGroup>
+    <Content Include="..\DLL\openh264-2.3.1-win64.dll" Link="openh264-2.3.1-win64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20240616" />
   </ItemGroup>

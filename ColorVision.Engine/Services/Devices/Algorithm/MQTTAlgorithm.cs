@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICal;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICali;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam pOIFilterParam, POICalParam pOICalParam, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam pOIFilterParam, PoiCaliParam pOICalParam, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

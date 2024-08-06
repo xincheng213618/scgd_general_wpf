@@ -228,7 +228,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in resultMaster)
                             {
-                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(item.Id);
+                                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
 
                                 foreach (var pointResultModel in POIPointResultModels)
                                 {
