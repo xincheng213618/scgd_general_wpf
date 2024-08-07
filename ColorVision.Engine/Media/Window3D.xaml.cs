@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Media
 
                 },
                 ShowFrameRate = true,
-                ZoomExtentsWhenLoaded = true,
+                ZoomExtentsWhenLoaded =true
             };
 
             viewport.Children.Add(new DefaultLights());
@@ -63,11 +63,11 @@ namespace ColorVision.Engine.Media
                 ArrowLengths = newWidth / 10 // 调整坐标轴大小，使其与点云比例相当
             };
             viewport.Children.Add(coordinateSystem);
-
             ContentGrid.Children.Add(viewport);
             await Task.Delay(10);
 
             GenOpenGLAsync(heightScale); // 异步调用
+            viewport.CameraController.AddRotateForce(0,4.5);
         }
 
         int FindClosestFactor(int value, int[] factors)
@@ -82,21 +82,22 @@ namespace ColorVision.Engine.Media
             }
             return closest;
         }
-        public void GenGrayPixels()
+        public void GenGrayPixels(int scaleFactor =-1)
         {
-            scaleFactor = 4; // 降低分辨率的比例因子，例如 4 表示将分辨率降低到原来的 1/4
-            int targetPixels = 512 * 512; // 目标像素数
+            if (scaleFactor == -1)
+            {
+                int targetPixels = 512 * 512; // 目标像素数
 
-            int originalWidth = colorBitmap.PixelWidth;
-            int originalHeight = colorBitmap.PixelHeight;
+                int originalWidth = colorBitmap.PixelWidth;
+                int originalHeight = colorBitmap.PixelHeight;
 
-            // 计算初始比例因子
-            double initialScaleFactor = Math.Sqrt((double)originalWidth * originalHeight / targetPixels);
+                // 计算初始比例因子
+                double initialScaleFactor = Math.Sqrt((double)originalWidth * originalHeight / targetPixels);
 
-            // 确保比例因子是 1、2、4、8 等倍数
-            int[] allowedFactors = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
-            scaleFactor = FindClosestFactor((int)Math.Round(initialScaleFactor), allowedFactors);
-
+                // 确保比例因子是 1、2、4、8 等倍数
+                int[] allowedFactors = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+                scaleFactor = FindClosestFactor((int)Math.Round(initialScaleFactor), allowedFactors);
+            }
             newWidth = colorBitmap.PixelWidth / scaleFactor;
             newHeight = colorBitmap.PixelHeight / scaleFactor;
 
@@ -198,8 +199,6 @@ namespace ColorVision.Engine.Media
                     }
                 }
             }
-
-
         }
 
         public void GenOpenGLAsync(double heightScale)
