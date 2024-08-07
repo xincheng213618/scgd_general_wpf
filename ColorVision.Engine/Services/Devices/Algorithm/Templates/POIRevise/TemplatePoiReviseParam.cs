@@ -9,8 +9,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
 
         public TemplatePoiReviseParam()
         {
-            Title = "POICal算法设置";
-            Code = "POICal";
+            Title = "Poi修正算法设置";
+            Code = "PoiRevise";
             TemplateParams = Params;
         }
     }

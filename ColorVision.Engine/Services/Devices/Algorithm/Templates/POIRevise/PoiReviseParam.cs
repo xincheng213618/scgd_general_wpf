@@ -21,11 +21,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
         public float M { get => GetValue(_M); set { SetProperty(ref _M, value); } }
         private float _M = 0.01f;
 
-        [Category("PoiCaliParam"), Description("N")]
+        [Category("PoiReviseParam"), Description("N")]
         public float N { get => GetValue(_N); set { SetProperty(ref _N, value); } }
         private float _N = 0.01f;
 
-        [Category("PoiCaliParam"), Description("P")]
+        [Category("PoiReviseParam"), Description("P")]
         public float P { get => GetValue(_P); set { SetProperty(ref _P, value); } }
         private float _P = 0.01f;
 
