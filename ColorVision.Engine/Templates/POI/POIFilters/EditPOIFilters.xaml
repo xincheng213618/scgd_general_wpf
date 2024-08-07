@@ -38,7 +38,7 @@
                             <TextBlock HorizontalAlignment="Left" Text="XYZType"  MinWidth="100"/>
                             <ComboBox Name="ComboBoxXYZType"  SelectedValue="{Binding XYZType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                         </DockPanel>
-                        <DockPanel  >
+                        <DockPanel  Margin="0,0,0,5" >
                             <DockPanel Margin="5,0,0,0" DockPanel.Dock="Right">
                                 <TextBlock Text="阈值启用百分比"  MinWidth="100"/>
                                 <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding  ThresholdUsePercent}"/>
@@ -46,7 +46,11 @@
                             <TextBlock Text="Threshold"  MinWidth="100"/>
                             <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
-
+                        
+                        <DockPanel>
+                            <TextBlock Text="MaxPercent"  MinWidth="100"/>
+                            <TextBox Text="{Binding MaxPercent}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                        </DockPanel>
 
 
                     </StackPanel>

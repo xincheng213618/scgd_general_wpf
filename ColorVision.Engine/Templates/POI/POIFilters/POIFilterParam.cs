@@ -31,6 +31,9 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
         private bool _ThresholdUsePercent;
         public float Threshold { get => GetValue(_Threshold); set { if (ThresholdUsePercent && value >= 1) value = 1; if (ThresholdUsePercent && value <= 0) value = 0; SetProperty(ref _Threshold, value); NotifyPropertyChanged(); } }
         private float _Threshold = 50;
+
+        public float MaxPercent { get => GetValue(_MaxPercent); set { SetProperty(ref _MaxPercent, value); NotifyPropertyChanged(); if (Threshold >= 1) Threshold = 1; if (Threshold <= 0) Threshold = 0; } }
+        private float _MaxPercent;
     }
 
 

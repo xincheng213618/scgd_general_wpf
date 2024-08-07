@@ -171,6 +171,8 @@ namespace ColorVision.Engine.Media
             {
                 for (int y = 0; y < newHeight - 1; y++)
                 {
+                    int flippedY = newHeight - 1 - y;
+
                     double z1 = grayPixels[y * newWidth + x] / 255.0 * heightScale;
                     double z2 = grayPixels[y * newWidth + (x + 1)] / 255.0 * heightScale;
                     double z3 = grayPixels[(y + 1) * newWidth + x] / 255.0 * heightScale;
@@ -179,7 +181,6 @@ namespace ColorVision.Engine.Media
                     // 创建两个三角形来表示一个网格单元
                     meshBuilder.AddTriangle(new Point3D(x, y, z1), new Point3D(x + 1, y, z2), new Point3D(x, y + 1, z3));
                     meshBuilder.AddTriangle(new Point3D(x + 1, y, z2), new Point3D(x + 1, y + 1, z4), new Point3D(x, y + 1, z3));
-
                 }
             }
 
