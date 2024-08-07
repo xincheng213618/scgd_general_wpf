@@ -7,6 +7,11 @@
         mc:Ignorable="d"
         Title="Window3D" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
-        
+        <Button Content="+"  Click="Button_Click"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99"/>
+        <Grid x:Name="ContentGrid" >
+
+
+        </Grid>
     </Grid>
+
 </Window>

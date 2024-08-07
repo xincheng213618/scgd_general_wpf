@@ -640,10 +640,9 @@ namespace ColorVision.Engine.Media
                             {
                                 byte[] imageData = File.ReadAllBytes(filePath);
                                 BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
-
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    SetImageSource(bitmapImage);
+                                    SetImageSource(bitmapImage.ToWriteableBitmap());
                                     WaitControl.Visibility = Visibility.Collapsed;
                                 });
                             });
@@ -653,7 +652,7 @@ namespace ColorVision.Engine.Media
                         {
                             Config.FilePath = filePath;
                             BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                            SetImageSource(bitmapImage);
+                            SetImageSource(bitmapImage.ToWriteableBitmap());
                         };
 
                     }
@@ -708,18 +707,6 @@ namespace ColorVision.Engine.Media
                 })));
             }
 
-            if (imageSource is BitmapImage bitmapImage)
-            {
-                Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
-                {
-                    HImageCache = bitmapImage.ToHImage();
-                    if (HImageCache is HImage hImage)
-                    {
-                        Config.Channel = hImage.channels;
-                        Config.Ochannel = Config.Channel;
-                    }
-                })));
-            }
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
