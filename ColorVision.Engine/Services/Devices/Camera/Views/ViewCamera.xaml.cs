@@ -272,6 +272,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResultCameras[listView1.SelectedIndex];
+
+                if (string.IsNullOrWhiteSpace(data.FileUrl)) return;
                 if (File.Exists(data.FileUrl))
                 {
                     ImageView.OpenImage(data.FileUrl);
