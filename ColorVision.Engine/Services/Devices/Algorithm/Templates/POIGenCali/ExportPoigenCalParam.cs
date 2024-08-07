@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POICali;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
