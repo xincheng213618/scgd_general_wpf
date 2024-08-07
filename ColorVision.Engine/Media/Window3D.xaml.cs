@@ -34,8 +34,8 @@ namespace ColorVision.Engine.Media
             {
                 Camera = new PerspectiveCamera
                 {
-                    Position = new Point3D(newWidth / 2, newHeight * 1.5, newHeight / 2), // 相机位置
-                    LookDirection = new Vector3D(0, -newHeight * 1.5, -newHeight / 2), // 看向模型中心
+                    Position = new Point3D(newWidth / 2,- newHeight * 1.5, newHeight / 2), // 相机位置
+                    LookDirection = new Vector3D(0, newHeight * 1.5, -newHeight / 2), // 看向模型中心
                     UpDirection = new Vector3D(0, 0, 1), // Z 轴向上
                     FieldOfView = 60,
                 }
@@ -179,8 +179,8 @@ namespace ColorVision.Engine.Media
                     double z4 = grayPixels[(y + 1) * newWidth + (x + 1)] / 255.0 * heightScale;
 
                     // 创建两个三角形来表示一个网格单元
-                    meshBuilder.AddTriangle(new Point3D(x, y, z1), new Point3D(x + 1, y, z2), new Point3D(x, y + 1, z3));
-                    meshBuilder.AddTriangle(new Point3D(x + 1, y, z2), new Point3D(x + 1, y + 1, z4), new Point3D(x, y + 1, z3));
+                    meshBuilder.AddTriangle(new Point3D(x, flippedY, z1), new Point3D(x + 1, flippedY, z2), new Point3D(x, flippedY + 1, z3));
+                    meshBuilder.AddTriangle(new Point3D(x + 1, flippedY, z2), new Point3D(x + 1, flippedY + 1, z4), new Point3D(x, flippedY + 1, z3));
                 }
             }
 
