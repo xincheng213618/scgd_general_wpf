@@ -116,12 +116,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
         private bool _IsAutoOpen = true;
 
-        /// <summary>
-        /// 极速模式
-        /// </summary>
-        public bool IsSupperSpeed { get => _IsSupperSpeed; set { _IsSupperSpeed = value; NotifyPropertyChanged(); } }
-        private bool _IsSupperSpeed = true;
-
 
         public static CameraType GetCameraType(CameraMode camMode, CameraModel camModel)
         {
