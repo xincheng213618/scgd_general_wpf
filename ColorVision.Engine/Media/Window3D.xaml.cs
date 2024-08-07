@@ -3,6 +3,8 @@ using ScottPlot.Styles;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -34,14 +36,24 @@ namespace ColorVision.Engine.Media
             {
                 Camera = new PerspectiveCamera
                 {
-                    Position = new Point3D(newWidth / 2,- newHeight * 1.5, newHeight / 2), // 相机位置
+                    Position = new Point3D(newWidth / 2, -newHeight * 1.5, newHeight / 2), // 相机位置
                     LookDirection = new Vector3D(0, newHeight * 1.5, -newHeight / 2), // 看向模型中心
                     UpDirection = new Vector3D(0, 0, 1), // Z 轴向上
                     FieldOfView = 60,
-                }
+
+                },
+                ShowFrameRate = true
             };
 
             viewport.Children.Add(new DefaultLights());
+            // 添加 GridLinesVisual3D
+            GridLinesVisual3D gridLinesVisual3D = new GridLinesVisual3D
+            {
+                Length = newWidth, // 网格线的长度
+                Width = newHeight, // 网格线的宽度
+                Center = new Point3D(newWidth / 2, newHeight / 2, 0) // 将网格线的中心移动到图像的中心
+            };
+            viewport.Children.Add(gridLinesVisual3D);
 
             // 添加坐标轴
             var coordinateSystem = new CoordinateSystemVisual3D
@@ -187,10 +199,6 @@ namespace ColorVision.Engine.Media
             var mesh = meshBuilder.ToMesh();
             mesh.TextureCoordinates = null;
 
-            var gradientBrush = new LinearGradientBrush();
-            gradientBrush.GradientStops.Add(new GradientStop(Colors.Red, 0));
-            gradientBrush.GradientStops.Add(new GradientStop(Colors.Black, 1));
-
             var material = new DiffuseMaterial { Brush = Brushes.White };
             var geometryModel = new GeometryModel3D(mesh, material);
 
@@ -223,6 +231,12 @@ namespace ColorVision.Engine.Media
         {
             // 更改 heightScale 的值
             heightScale += 10.0; // 例如，每次点击增加 10.0
+            GenOpenGLAsync(heightScale); // 异步调用
+        }
+        private async void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            // 更改 heightScale 的值
+            heightScale -= 10.0; // 例如，每次点击增加 10.0
             GenOpenGLAsync(heightScale); // 异步调用
         }
     }

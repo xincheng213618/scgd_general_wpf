@@ -6,9 +6,15 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
         mc:Ignorable="d"
         Title="Window3D" Height="450" Width="800" Initialized="Window_Initialized">
-    <Grid>
-        <Button Content="+"  Click="Button_Click"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99"/>
-        <Grid x:Name="ContentGrid" >
+    <Grid Background="Black">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*"/>
+            <RowDefinition Height="143*"/>
+        </Grid.RowDefinitions>
+        <Button Content="+"  Click="Button_Click"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99" Grid.RowSpan="2"/>
+        <Button Content="-"  Click="Button_Click_1"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99" Grid.RowSpan="2"/>
+
+        <Grid x:Name="ContentGrid" Grid.RowSpan="2" >
 
 
         </Grid>
