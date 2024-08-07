@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using Quartz;
 using Quartz.Impl;

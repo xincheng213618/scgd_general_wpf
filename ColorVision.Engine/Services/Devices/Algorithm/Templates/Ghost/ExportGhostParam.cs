@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
 {

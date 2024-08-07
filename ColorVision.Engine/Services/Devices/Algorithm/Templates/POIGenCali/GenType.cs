@@ -1,5 +1,4 @@
-﻿#pragma warning disable IDE1006
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
 {

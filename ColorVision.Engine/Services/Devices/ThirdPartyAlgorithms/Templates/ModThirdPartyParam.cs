@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707,IDE1006
-
+﻿
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using Newtonsoft.Json.Linq;

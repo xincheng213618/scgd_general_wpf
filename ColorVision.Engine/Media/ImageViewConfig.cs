@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;

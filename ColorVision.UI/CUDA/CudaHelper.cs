@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1806
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
 
 namespace ColorVision.UI.CUDA

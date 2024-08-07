@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604,CS8629
-using ColorVision.UI.Sorts;
+﻿using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Dao;
 using MQTTMessageLib.Camera;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
