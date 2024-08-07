@@ -7,17 +7,23 @@
         mc:Ignorable="d"
         Title="Window3D" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid Background="Black">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="2*"/>
-            <RowDefinition Height="143*"/>
-        </Grid.RowDefinitions>
-        <Button Content="+"  Click="Button_Click"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99" Grid.RowSpan="2"/>
-        <Button Content="-"  Click="Button_Click_1"  VerticalAlignment="Top" HorizontalAlignment="Left" Panel.ZIndex="99" Grid.RowSpan="2"/>
-
         <Grid x:Name="ContentGrid" Grid.RowSpan="2" >
 
 
         </Grid>
+        <StackPanel  VerticalAlignment="Top" HorizontalAlignment="Left">
+            <Button Content="+"  Click="Button_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="-"  Click="Button_Click_1"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="L"  Click="L_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="R"  Click="R_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="T"  Click="T_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="B"  Click="B_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="D"  Click="D_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="F"  Click="F_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="A"  Click="A_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+            <Button Content="C"  Click="C_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
+
+        </StackPanel>
     </Grid>
 
 </Window>
