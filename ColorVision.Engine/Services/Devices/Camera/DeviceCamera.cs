@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(), b => AccessControl.Check(ServiceClear) && PhyCamera != null);
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(), b => AccessControl.Check(OpenPhyCameraManger));
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
