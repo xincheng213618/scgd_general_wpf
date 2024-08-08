@@ -42,6 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 if (e != null)
                     View.SpectrumDrawPlot(e);
             };
+
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
