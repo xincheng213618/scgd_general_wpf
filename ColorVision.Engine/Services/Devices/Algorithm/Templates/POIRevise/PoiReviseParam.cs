@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali;
+using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -29,5 +30,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
         public float P { get => GetValue(_P); set { SetProperty(ref _P, value); } }
         private float _P = 0.01f;
 
+        [Category("PoiReviseParam"), Description("修正方式")]
+        public GenCalibrationType GenCalibrationType { get => GetValue(_GenCalibrationType); set { SetProperty(ref _GenCalibrationType, value); NotifyPropertyChanged(); } }
+        private GenCalibrationType _GenCalibrationType = GenCalibrationType.BrightnessAndChroma;
     }
 }
