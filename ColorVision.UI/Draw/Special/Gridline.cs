@@ -1,14 +1,8 @@
-﻿using ColorVision.UI.Extension;
-using System.Windows;
-using System.Windows.Media.Effects;
+﻿using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
-using ColorVision.Common.Utilities;
-using Microsoft.VisualBasic.Devices;
-using ColorVision.Util.Draw.Special;
 using System.Globalization;
-using System.Security.Cryptography;
 
 namespace ColorVision.UI.Draw.Special
 {

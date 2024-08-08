@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI.Configs;
 using ColorVision.UI.Properties;
-using ColorVision.UI.Views;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.UI.HotKey

@@ -15,7 +15,6 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using Quartz;
 using System;
 using System.Collections.ObjectModel;
@@ -26,7 +25,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ZstdSharp.Unsafe;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {

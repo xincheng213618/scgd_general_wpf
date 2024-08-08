@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.PhyCameras.Group;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;

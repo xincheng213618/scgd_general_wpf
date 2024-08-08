@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using System;
 using System.Windows;
-using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices
 {

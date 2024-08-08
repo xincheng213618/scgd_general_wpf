@@ -5,7 +5,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.Util.Interfaces;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;

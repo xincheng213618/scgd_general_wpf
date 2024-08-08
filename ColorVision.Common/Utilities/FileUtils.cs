@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-
-namespace ColorVision.Common.Utilities
+﻿namespace ColorVision.Common.Utilities
 {
     public static class FileUtils
     {

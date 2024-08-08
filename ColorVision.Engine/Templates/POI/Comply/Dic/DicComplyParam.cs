@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.SysDictionary;
+﻿using ColorVision.Engine.Services.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 

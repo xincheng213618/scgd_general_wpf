@@ -6,7 +6,6 @@ using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras.Dao
 {

@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services;
-using ColorVision.UI.Extension;
+﻿using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;

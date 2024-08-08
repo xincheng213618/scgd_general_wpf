@@ -1,12 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Net.Http;
 using System.Windows;
 
 namespace EventVWR

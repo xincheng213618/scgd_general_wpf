@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.SysDictionary;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;

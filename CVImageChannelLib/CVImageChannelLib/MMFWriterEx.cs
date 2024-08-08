@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
-using System.Security.AccessControl;
 using log4net;
 
 namespace CVImageChannelLib;

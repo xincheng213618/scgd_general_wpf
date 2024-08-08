@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ColorVision.UI.Authorizations
+﻿namespace ColorVision.UI.Authorizations
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequiresPermissionAttribute : Attribute

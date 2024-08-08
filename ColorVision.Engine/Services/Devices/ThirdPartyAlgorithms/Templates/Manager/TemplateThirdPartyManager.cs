@@ -6,13 +6,9 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
-using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.SysDictionary;
-using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Windows;
 using ColorVision.Common.Utilities;
-using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {

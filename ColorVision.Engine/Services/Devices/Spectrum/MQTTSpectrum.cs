@@ -11,10 +11,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Common.Utilities;
-using MQTTMessageLib.FileServer;
-using System.Diagnostics;
-using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

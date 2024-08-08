@@ -1,10 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
-using ColorVision.UI.Menus;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading.Tasks;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {

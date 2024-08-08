@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.Net;
 using ColorVision.UI;
 using System;
 using System.Windows;

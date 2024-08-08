@@ -1,11 +1,7 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using CVImageChannelLib;
-using log4net;
-using OpenCvSharp;
-using OpenCvSharp.Extensions;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {

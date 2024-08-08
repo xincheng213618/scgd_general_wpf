@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates.POI.Comply;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;

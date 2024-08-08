@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;

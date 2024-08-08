@@ -1,11 +1,8 @@
 ﻿#pragma warning disable CA1707,IDE1006
 
 using ColorVision.Engine.Templates;
-using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 {

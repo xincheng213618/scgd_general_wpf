@@ -2,7 +2,6 @@
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
-using ColorVision.Themes;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
@@ -10,7 +9,6 @@ using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {

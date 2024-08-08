@@ -2,11 +2,9 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Comply;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection

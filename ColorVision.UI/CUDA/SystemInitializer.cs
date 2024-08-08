@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace ColorVision.UI.CUDA
+﻿namespace ColorVision.UI.CUDA
 {
     public class SystemInitializer : IInitializer
     {

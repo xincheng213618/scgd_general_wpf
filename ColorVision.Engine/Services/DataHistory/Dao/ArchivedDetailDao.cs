@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CA1720,CS8601
 
 using ColorVision.Engine.MySql.ORM;
-using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace ColorVision.Engine.Services.DataHistory.Dao
 {

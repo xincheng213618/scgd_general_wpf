@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI.Configs;
 using ColorVision.UI.Properties;
-using ColorVision.UI.Views;
 using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Data;

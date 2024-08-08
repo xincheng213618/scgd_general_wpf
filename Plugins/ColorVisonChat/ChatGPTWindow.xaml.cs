@@ -1,11 +1,9 @@
 ﻿using ChatGPT.Net;
-using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

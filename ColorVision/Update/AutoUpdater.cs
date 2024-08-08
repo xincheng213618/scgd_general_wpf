@@ -4,7 +4,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using log4net;
-using MySqlX.XDevAPI;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

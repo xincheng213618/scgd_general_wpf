@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using System;
 using System.ComponentModel;
-using System.Threading.Tasks;
 
 namespace ColorVision.Scheduler
 {

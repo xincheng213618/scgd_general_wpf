@@ -1,5 +1,15 @@
 #   CHANGELOAG
 
+## [1.1.3.5] 2024.08.08
+
+1.修复安装包中缺少msvr100的问题
+
+2.添加一个可以录制视频的插件
+
+3.优化3D图像
+
+4.一些其他的使用体验上的BUG修复
+
 ## [1.1.3.2] 2024.08.05
 
 1.优化视频模式的内存占用问题，重写部分函数
@@ -520,7 +530,7 @@
 
 详细：
 
-更新了CHANGELOG.md文件，添加了版本1.0.10.2的更新内容，包括更新项目的代码依赖环境和增加ColorVision.UI这个依赖库。在ColorVision.Net.csproj，ColorVision.Util.csproj和ColorVision.csproj文件中，log4net的版本从2.0.15更新到了2.0.17，同时在ColorVision.Util.csproj中，其他几个依赖库的版本也进行了更新。在ColorVision.csproj文件中，添加了对ColorVision.UI的项目引用。在IDisPlayControl.cs文件中，原有的代码被删除，可能是因为这部分代码被移动到了其他地方。在MainWindow.Menu.cs文件中，添加了对ColorVision.Engine.Controls，ColorVision.Services.PhyCameras和ColorVision.UI的引用。在MainWindow.xaml.cs和其他多个.xaml.cs文件中，添加了对ColorVision.UI的引用。在SettingWindow.xaml文件中，TabControl的样式进行了微调。在Directory.Build.props文件中，项目的版本号从1.0.10.1更新到了1.0.10.2。在scgd_general_wpf.sln文件中，添加了对ColorVision.UI项目的引用。新增了ColorVision.UI.csproj项目文件，该项目引用了log4net库，并且引用了ColorVision.Common和ColorVision.Util两个项目。新增了IDisPlayControl.cs和MenuManager.cs两个文件，这两个文件定义了一些接口和类。新增了Resources.Designer.cs文件，该文件是由工具自动生成的，用于查找本地化的字符串等资源。在其他多个文件中，删除了对ColorVision.Util.Interfaces的引用，可能是因为这部分代码被移动到了其他地方。新增了多个资源文件，用于存储不同语言环境下的字符串和其他资源，以实现应用程序的本地化。在每个资源文件中，都添加了一个名为`MenuFile`的数据项，其值分别为不同语言环境下显示菜单项“文件”的文本。
+更新了CHANGELOG.md文件，添加了版本1.0.10.2的更新内容，包括更新项目的代码依赖环境和增加ColorVision.UI这个依赖库。在ColorVision.Net.csproj，ColorVision.Util.csproj和ColorVision.csproj文件中，log4net的版本从2.0.15更新到了2.0.17，同时在ColorVision.Util.csproj中，其他几个依赖库的版本也进行了更新。在ColorVision.csproj文件中，添加了对ColorVision.UI的项目引用。在IDisPlayControl.cs文件中，原有的代码被删除，可能是因为这部分代码被移动到了其他地方。在MainWindow.Menu.cs文件中，添加了对ColorVision.Engine.Controls，ColorVision.Services.PhyCameras和ColorVision.UI的引用。在MainWindow.xaml.cs和其他多个.xaml.cs文件中，添加了对ColorVision.UI的引用。在SettingWindow.xaml文件中，TabControl的样式进行了微调。在Directory.Build.props文件中，项目的版本号从1.0.10.1更新到了1.0.10.2。在scgd_general_wpf.sln文件中，添加了对ColorVision.UI项目的引用。新增了ColorVision.UI.csproj项目文件，该项目引用了log4net库，并且引用了ColorVision.Common和ColorVision.Util两个项目。新增了IDisPlayControl.cs和MenuManager.cs两个文件，这两个文件定义了一些接口和类。新增了Resources.Designer.cs文件，该文件是由工具自动生成的，用于查找本地化的字符串等资源。在其他多个文件中，删除了对ColorVision.UI的引用，可能是因为这部分代码被移动到了其他地方。新增了多个资源文件，用于存储不同语言环境下的字符串和其他资源，以实现应用程序的本地化。在每个资源文件中，都添加了一个名为`MenuFile`的数据项，其值分别为不同语言环境下显示菜单项“文件”的文本。
 
 ## [1.0.10.1] 2024-04-24
 

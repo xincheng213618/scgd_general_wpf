@@ -4,7 +4,6 @@ using ColorVision.Solution.Properties;
 using ColorVision.RecentFile;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;

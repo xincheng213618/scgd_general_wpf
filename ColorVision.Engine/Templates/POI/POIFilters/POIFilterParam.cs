@@ -1,7 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
-using ColorVision.Engine.Templates.POI;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.POI.POIFilters
 {

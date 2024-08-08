@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using ColorVision.UI.Draw;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;

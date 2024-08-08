@@ -1,8 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.UI.Extension;
+﻿using ColorVision.UI.Extension;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;

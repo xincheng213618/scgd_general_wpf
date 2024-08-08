@@ -1,7 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Windows;
-using System.Windows.Controls;
+﻿using System.Windows;
 
 namespace ColorVision.Themes.Controls
 {

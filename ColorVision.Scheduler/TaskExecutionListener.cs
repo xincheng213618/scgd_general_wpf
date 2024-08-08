@@ -1,9 +1,6 @@
 ﻿
 using Quartz;
 using Quartz.Listener;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace ColorVision.Scheduler
 {

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.NativeMethods;
 using System.Collections.ObjectModel;
-using System.Linq;
 
 namespace ColorVision.UI.Sorts
 {

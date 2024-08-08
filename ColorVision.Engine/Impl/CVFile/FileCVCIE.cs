@@ -6,7 +6,6 @@ using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
 using ColorVision.Solution;
 using ColorVision.Solution.V.Files;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp;
@@ -16,7 +15,6 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
-using ColorVision.Engine.Impl.SolutionProcess;
 
 namespace ColorVision.Engine.Impl.CVFile
 {

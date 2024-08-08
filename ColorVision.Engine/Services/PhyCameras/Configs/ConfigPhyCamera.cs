@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
 using cvColorVision;
-using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
 

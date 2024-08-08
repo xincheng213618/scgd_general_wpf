@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Configs;
 using System.Windows;
 
 namespace ColorVision.UI.Menus

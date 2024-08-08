@@ -2,10 +2,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Windows.Controls;
-using System.Collections.ObjectModel;
-using SkiaSharp;
 
 namespace ColorVision.Engine.Templates
 {

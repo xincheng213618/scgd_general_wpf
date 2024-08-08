@@ -1,6 +1,5 @@
 ﻿using cvColorVision;
 using ColorVision.Common.MVVM;
-using System.Windows.Documents;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs

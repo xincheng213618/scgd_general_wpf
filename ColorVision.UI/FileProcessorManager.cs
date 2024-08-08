@@ -1,23 +1,5 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.Configs;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ColorVision.UI
+﻿namespace ColorVision.UI
 {
-    public interface IFileProcessor
-    {
-        int Order { get; }
-        bool CanProcess(string filePath);
-        void Process(string filePath);
-    }
-
-
-
     public class FileProcessorManager
     {
         private static FileProcessorManager _instance;

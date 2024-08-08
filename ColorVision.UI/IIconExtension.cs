@@ -3,13 +3,8 @@ using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Util.Interfaces
+namespace ColorVision.UI
 {
-    public interface IIcon
-    {
-        public ImageSource Icon { get; set; }
-    }
-
     public static class IIconExtension
     {
         public static void SetIconResource(this IIcon Class, string ResourceName)

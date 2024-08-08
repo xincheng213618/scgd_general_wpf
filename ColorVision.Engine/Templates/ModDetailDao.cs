@@ -1,8 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {

@@ -1,11 +1,7 @@
 ﻿using HelixToolkit.Wpf;
-using ScottPlot.Styles;
 using System;
-using System.Security.Policy;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;

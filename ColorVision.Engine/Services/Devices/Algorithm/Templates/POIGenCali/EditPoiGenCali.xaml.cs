@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
 {

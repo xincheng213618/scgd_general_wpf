@@ -1,16 +1,6 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Spectrum;
-using cvColorVision;
-using SkiaSharp;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Drawing.Text;
-using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;

@@ -4,7 +4,6 @@ using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using System;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

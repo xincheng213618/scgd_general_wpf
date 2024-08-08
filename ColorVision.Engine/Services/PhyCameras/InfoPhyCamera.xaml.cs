@@ -1,8 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Templates;
-using ColorVision.UI.Extension;
+﻿using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.HotKey;
+﻿using ColorVision.UI.HotKey;
 using System;
 using System.Windows;
 using System.Windows.Input;
 using ColorVision.UI.Menus;
 using ColorVision.Themes;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update

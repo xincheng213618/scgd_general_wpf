@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
-using System.Data;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {

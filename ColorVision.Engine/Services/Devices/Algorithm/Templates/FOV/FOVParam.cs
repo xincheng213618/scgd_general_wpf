@@ -1,15 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Templates;
-using ColorVision.UI.Menus;
+﻿using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
-using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {

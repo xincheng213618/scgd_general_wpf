@@ -1,4 +1,6 @@
-﻿namespace ColorVision.UI.Menus
+﻿using System.Collections.Generic;
+
+namespace ColorVision.UI.Menus
 {
     public interface IMenuItemProvider
     {

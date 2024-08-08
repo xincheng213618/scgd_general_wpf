@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql.ORM;
 using System;
 using System.Data;
 

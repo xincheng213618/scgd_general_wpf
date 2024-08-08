@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CS4014
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using NPOI.Util.Collections;
 using System;
 using System.IO;
 using System.Windows;

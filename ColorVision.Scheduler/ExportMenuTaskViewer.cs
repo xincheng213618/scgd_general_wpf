@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Windows;
-using System.Xml.Linq;
 
 namespace ColorVision.Scheduler
 {

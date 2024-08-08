@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.UI.Authorizations;
-using ColorVision.Util.Interfaces;
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 

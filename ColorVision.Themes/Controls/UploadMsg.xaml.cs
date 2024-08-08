@@ -1,10 +1,5 @@
-﻿using ColorVision.Themes;
-using System;
-using System.Drawing;
-using System.Globalization;
+﻿using System;
 using System.Windows;
-using System.Windows.Data;
-using System.Windows.Documents;
 
 namespace ColorVision.Themes.Controls
 {

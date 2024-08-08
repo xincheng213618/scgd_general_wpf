@@ -1,5 +1,4 @@
 ﻿using System.Data;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
