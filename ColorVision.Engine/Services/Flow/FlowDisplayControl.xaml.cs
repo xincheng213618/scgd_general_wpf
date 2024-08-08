@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
@@ -83,15 +82,6 @@ namespace ColorVision.Engine.Services.Flow
             MenuItem menuItem2 = new() { Header = Properties.Resources.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
-
-            Selected += (s, e) =>
-            {
-                MenuManager.GetInstance().AddMenuItem(menuItem, 1);
-            };
-            Unselected += (s, e) =>
-            {
-                MenuManager.GetInstance().RemoveMenuItem(menuItem);
-            };
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
