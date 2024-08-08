@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             ViewResultSpectrum viewResultSpectrum = new(sss);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                DeviceSpectrum.View.ViewResultSpectrums.Add(viewResultSpectrum);
+                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
                             });
                         }
                         else if (json.EventName == "GetDataAuto")
