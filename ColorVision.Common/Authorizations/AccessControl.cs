@@ -1,11 +1,12 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.UI.Authorizations
 {
     public class Authorization : IConfig
     {
-        public static Authorization Instance => ConfigHandler.GetInstance().GetRequiredService<Authorization>();
+        public static Authorization Instance { get; set; } 
 
         public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; OnPermissionModeChanged();  } }
         private PermissionMode _PermissionMode = PermissionMode.Administrator;
@@ -25,6 +26,7 @@ namespace ColorVision.UI.Authorizations
             var attribute = action.Method.GetCustomAttribute<RequiresPermissionAttribute>();
             return attribute == null || Authorization.Instance.PermissionMode <= attribute.RequiredPermission;
         }
+
         public static bool Check(PermissionMode permissionMode) =>  Authorization.Instance.PermissionMode <= permissionMode;
 
         public static void ExecuteWithPermissionCheck(Action action, PermissionMode currentPermission)

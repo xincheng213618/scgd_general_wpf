@@ -187,8 +187,6 @@ namespace ColorVision.UI
             File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
         }
 
-
-
         public override void LoadConfigs(string fileName)
         {
             Configs = new Dictionary<Type, IConfig>();

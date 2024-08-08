@@ -2,6 +2,7 @@
 using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Shell;
 using ColorVision.Wizards;
@@ -65,6 +66,7 @@ namespace ColorVision
 
             PluginLoader.LoadPluginsAssembly("Plugins");
             ConfigHandler.GetInstance();
+            Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
 
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
