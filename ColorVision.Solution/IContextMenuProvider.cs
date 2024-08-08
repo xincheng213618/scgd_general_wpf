@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI.Menus;
-using System.Collections.Generic;
 
 namespace ColorVision.Solution
 {

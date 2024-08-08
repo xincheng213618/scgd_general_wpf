@@ -1,35 +1,32 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using ColorVision.UI.Extension;
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑
     /// </summary>
-    public partial class InfoSMU : UserControl, IDisposable
+    public partial class InfoSMU : UserControl
     {
-        public DeviceSMU MQTTDeviceSMU { get; set; }
-        public ServiceManager ServiceControl { get; set; }
-
-        public InfoSMU(DeviceSMU mqttDeviceSMU)
+        public DeviceSMU DeviceSMU { get; set; }
+        public InfoSMU(DeviceSMU device)
         {
-            MQTTDeviceSMU = mqttDeviceSMU;
+            DeviceSMU = device;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = MQTTDeviceSMU;
+            DataContext = DeviceSMU;
         }
 
-
-
-        public void Dispose()
+        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            GC.SuppressFinalize(this);
+            if (sender is UniformGrid uniformGrid)
+                uniformGrid.AutoUpdateLayout();
         }
-
     }
 }

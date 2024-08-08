@@ -10,7 +10,6 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
 using log4net;
 using Microsoft.Xaml.Behaviors;

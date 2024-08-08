@@ -16,9 +16,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
             Point = point;
             Articulation = articulation;
         }
-        public POIPointResultModel AlgResultMTFModel { get; set; }
+        public PoiPointResultModel AlgResultMTFModel { get; set; }
 
-        public ViewResultMTF(POIPointResultModel detail)
+        public ViewResultMTF(PoiPointResultModel detail)
         {
             AlgResultMTFModel = detail;
             Point = new POIPoint(detail.PoiId ?? -1, -1, detail.PoiName, detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);

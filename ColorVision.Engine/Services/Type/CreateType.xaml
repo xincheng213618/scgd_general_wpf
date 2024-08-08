@@ -25,8 +25,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
-            <StackPanel>
+        <Border Grid.Row="0" CornerRadius="4">
+            <StackPanel  Margin="5" >
                 <DockPanel Margin="2" >
                     <TextBlock Text="{x:Static properties:Resources.Code}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />

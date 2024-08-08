@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.Services.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -452,6 +451,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             ViewResultSpectrums.Clear();
             ScatterPlots.Clear();
+        }
+
+        public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
+        {
+            viewResultSpectrum.V = float.NaN;
+            viewResultSpectrum.I = float.NaN;
+            ViewResultSpectrums.Add(viewResultSpectrum);
+            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+            listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)

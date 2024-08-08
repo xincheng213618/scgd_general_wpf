@@ -65,11 +65,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\NativeCopyToD.props" />
+    <Import Project="..\packages\NativeCopyToD.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\NativeCopyToD.props" />
+    <Import Project="..\packages\NativeCopyToD.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -116,10 +116,8 @@
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows");
-	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows");
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows";
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows";</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

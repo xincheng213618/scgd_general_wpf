@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -9,14 +10,12 @@ using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
-using ColorVision.Util.Interfaces;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -42,6 +41,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand UploadCalibrationCommand { get; set; }
         public RelayCommand CalibrationEditCommand { get; set; }
+
+        public RelayCommand CalibrationTemplateOpenCommand { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand UploadLincenseCommand { get; set; }
@@ -108,7 +109,22 @@ namespace ColorVision.Engine.Services.PhyCameras
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
             Name = Code ?? string.Empty;
+
+            CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
         }
+
+        private void CalibrationTemplateOpen(object sender)
+        {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(this);
+            new WindowTemplate(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+        }
+
+
 
         public void Reset()
         {
@@ -344,13 +360,10 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                if (s is Upload upload)
-                {
-                    UploadMsg uploadMsg = new(this);
-                    uploadMsg.Show();
-                    string path = upload.UploadFilePath;
-                    Task.Run(() => UploadData(path));
-                }
+                UploadMsg uploadMsg = new(this);
+                uploadMsg.Show();
+                string uploadfilepath = e.UploadFilePath;
+                Task.Run(() => UploadData(uploadfilepath));
             };
             uploadwindow.ShowDialog();
         }
@@ -487,52 +500,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 uploadMeta.UploadStatus = UploadStatus.Uploading;
                                 Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
                                 await Task.Delay(10);
-                                switch (item1.CalibrationType)
-                                {
-                                    case CalibrationType.DarkNoise:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
-                                        break;
-                                    case CalibrationType.DefectWPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DefectBPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DefectPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                        break;
-                                    case CalibrationType.DSNU:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DSNU);
-                                        break;
-                                    case CalibrationType.Uniformity:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Uniformity);
-                                        break;
-                                    case CalibrationType.Luminance:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Luminance);
-                                        break;
-                                    case CalibrationType.LumOneColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
-                                        break;
-                                    case CalibrationType.LumFourColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
-                                        break;
-                                    case CalibrationType.LumMultiColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
-                                        break;
-                                    case CalibrationType.LumColor:
-                                        break;
-                                    case CalibrationType.Distortion:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Distortion);
-                                        break;
-                                    case CalibrationType.ColorShift:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.ColorShift);
-                                        break;
-                                    case CalibrationType.Empty_Num:
-                                        break;
-                                    default:
-                                        break;
-                                }
-
+                                msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath);
                                 if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
                                 {
                                     uploadMeta.UploadStatus = UploadStatus.Completed;

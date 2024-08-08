@@ -3,12 +3,9 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Templates;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 {

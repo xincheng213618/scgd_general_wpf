@@ -47,4 +47,11 @@
 	  </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\DLL\scgd_internal_dll\cvCalibration.dll" Link="libs\cvCalibration.dll" />
+    <None Include="..\DLL\scgd_internal_dll\cvTableList.dll" Link="libs\cvTableList.dll" />
+    <None Include="..\DLL\scgd_internal_dll\msvcr100.dll" Link="libs\msvcr100.dll" />
+    <None Include="..\DLL\scgd_internal_dll\toupcam.dll" Link="libs\toupcam.dll" />
+  </ItemGroup>
+
 </Project>

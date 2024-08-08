@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -63,10 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
         {
             if (sender is UniformGrid uniformGrid)
-            {
-                uniformGrid.Columns = uniformGrid.ActualWidth > 0 ? (int)(uniformGrid.ActualWidth / 200) : 1;
-                uniformGrid.Rows = (int)Math.Ceiling(uniformGrid.Children.Count / (double)uniformGrid.Columns);
-            }
+                uniformGrid.AutoUpdateLayout();
         }
     }
 }

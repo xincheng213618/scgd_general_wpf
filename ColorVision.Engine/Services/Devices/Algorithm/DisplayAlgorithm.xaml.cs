@@ -9,13 +9,11 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Templates;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -190,6 +188,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
             ComboxPoiFilter.SelectedIndex = 0;
 
+            ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
+            ComboxPoiCal.SelectedIndex = 0;
+
+
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -260,6 +262,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
+            if (ComboxPoiCal.SelectedValue is not PoiReviseParam pOICalParam) return;
+
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
             string type = string.Empty;
@@ -269,7 +273,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, sn);
+            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {
@@ -600,6 +604,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     case "POIFilter":
                         new WindowTemplate(new TemplatePOIFilterParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
+                    case "PoiRevise":
+                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
@@ -637,20 +644,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLedCheckTemplate, "请先选择灯珠检测模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate1, "请先选择关注点模板")) return;
 
+            if (ComboxPoiTemplate1.SelectedValue is not PoiParam poiParam) return;
+            if (ComboxLedCheckTemplate.SelectedValue is not LedCheckParam ledCheckParam) return;
+
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = LedCheckParam.LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-                var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
-
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 {
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
+                    MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, sn, ledCheckParam, poiParam);
+                    ServicesHelper.SendCommand(ss, "正在计算灯珠");
                 }
-                MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
-                ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
 

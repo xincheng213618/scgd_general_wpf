@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using System;
 using System.Text;
 
 namespace ColorVision.Projects.ProjectHeyuan

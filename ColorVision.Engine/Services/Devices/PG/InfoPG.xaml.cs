@@ -1,7 +1,8 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
@@ -20,6 +21,14 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DevicePG;
+        }
+
+        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (sender is UniformGrid uniformGrid)
+            {
+                uniformGrid.AutoUpdateLayout();
+            }
         }
     }
 }

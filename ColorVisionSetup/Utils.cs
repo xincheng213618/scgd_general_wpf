@@ -1,14 +1,10 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Reflection;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Windows.Navigation;
-using Microsoft.Win32;
 
 namespace ColorVisionSetup
 {

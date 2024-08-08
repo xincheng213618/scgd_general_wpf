@@ -1,14 +1,8 @@
-﻿using ColorVision.UI.Extension;
-using System.Windows;
-using System.Windows.Media.Effects;
+﻿using System.Windows;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
-using ColorVision.Common.Utilities;
-using Microsoft.VisualBasic.Devices;
-using ColorVision.Util.Draw.Special;
 using System.Globalization;
-using System.Security.Cryptography;
 
 namespace ColorVision.UI.Draw.Special
 {
@@ -39,14 +33,23 @@ namespace ColorVision.UI.Draw.Special
                     DrawCanvas.MouseEnter += MouseEnter;
                     DrawCanvas.MouseLeave += MouseLeave;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                    DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
                 }
                 else
                 {
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
-                }   
+                    DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
+
+                }
             }
+        }
+
+        private void Defalut_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            Radio = ZoomboxSub.ContentMatrix.M11;
+            DrawImage();
         }
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)

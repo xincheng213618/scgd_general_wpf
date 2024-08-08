@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.POIFilters

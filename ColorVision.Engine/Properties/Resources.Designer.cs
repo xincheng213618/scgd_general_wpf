@@ -466,6 +466,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 数据加载中 的本地化字符串。
+        /// </summary>
+        public static string DataLoading {
+            get {
+                return ResourceManager.GetString("DataLoading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 截至时间 的本地化字符串。
         /// </summary>
         public static string Deadline {
@@ -570,6 +579,15 @@ namespace ColorVision.Engine.Properties {
         public static string Edit {
             get {
                 return ResourceManager.GetString("Edit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 编辑第三方算法模板 的本地化字符串。
+        /// </summary>
+        public static string EditThirdPartyAlgorithmTemplate {
+            get {
+                return ResourceManager.GetString("EditThirdPartyAlgorithmTemplate", resourceCulture);
             }
         }
         
@@ -921,6 +939,15 @@ namespace ColorVision.Engine.Properties {
         public static string Male {
             get {
                 return ResourceManager.GetString("Male", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 管理物理相机 的本地化字符串。
+        /// </summary>
+        public static string ManagePhysicalCamera {
+            get {
+                return ResourceManager.GetString("ManagePhysicalCamera", resourceCulture);
             }
         }
         
@@ -1303,6 +1330,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 修改配置 的本地化字符串。
+        /// </summary>
+        public static string ModifyConfiguration {
+            get {
+                return ResourceManager.GetString("ModifyConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 MQTT连接 的本地化字符串。
         /// </summary>
         public static string MqttConnection {
@@ -1546,6 +1582,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 刷新服务 的本地化字符串。
+        /// </summary>
+        public static string RefreshService {
+            get {
+                return ResourceManager.GetString("RefreshService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册中心 的本地化字符串。
         /// </summary>
         public static string RegistryCenter {
@@ -1569,6 +1614,15 @@ namespace ColorVision.Engine.Properties {
         public static string Reseted {
             get {
                 return ResourceManager.GetString("Reseted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置服务 的本地化字符串。
+        /// </summary>
+        public static string ResetService {
+            get {
+                return ResourceManager.GetString("ResetService", resourceCulture);
             }
         }
         

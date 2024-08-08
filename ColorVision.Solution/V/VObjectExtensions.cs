@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace ColorVision.Solution.V
+﻿namespace ColorVision.Solution.V
 {
     public static class VObjectExtensions
     {

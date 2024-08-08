@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using System.Windows;

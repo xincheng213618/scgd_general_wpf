@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
+using ColorVision.UI;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -41,11 +41,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public override UserControl GetDeviceInfo() => new InfoAlgorithm(this);
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
-
-
-        public override MQTTServiceBase? GetMQTTService()
-        {
-            return DService;
-        }
+        public override MQTTServiceBase? GetMQTTService() => DService;
     }
 }

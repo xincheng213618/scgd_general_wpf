@@ -1,5 +1,4 @@
 ﻿using log4net;
-using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -187,8 +186,6 @@ namespace ColorVision.UI
 
             File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
         }
-
-
 
         public override void LoadConfigs(string fileName)
         {

@@ -1,12 +1,9 @@
-﻿#pragma warning disable CS8604
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Scheduler

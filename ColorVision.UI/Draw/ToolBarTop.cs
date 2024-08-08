@@ -3,7 +3,6 @@ using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Draw.Special;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
-using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -11,7 +10,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace ColorVision.UI.Draw
 {

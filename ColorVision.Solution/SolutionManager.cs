@@ -5,13 +5,11 @@ using ColorVision.RecentFile;
 using ColorVision.Solution.V;
 using ColorVision.UI;
 using log4net;
-using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Threading.Tasks;
 using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution

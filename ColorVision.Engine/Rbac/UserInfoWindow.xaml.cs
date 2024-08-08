@@ -1,11 +1,5 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services;
-using ColorVision.Themes;
-using ColorVision.UI.Authorizations;
-using cvColorVision;
+﻿using ColorVision.Themes;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Engine.Rbac

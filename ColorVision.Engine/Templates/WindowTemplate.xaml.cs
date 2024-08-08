@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Sorts;
 using System;
@@ -73,8 +72,17 @@ namespace ColorVision.Engine.Templates
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
-                GridProperty.Children.Add(ITemplate.GetUserControl());
-                Width = Width + 200;
+                UserControl userControl = ITemplate.GetUserControl();
+                GridProperty.Children.Add(userControl);
+                if (!double.IsNaN(userControl.Width))
+                {
+                    Width = userControl.Width + 300;
+                    userControl.Width = double.NaN;
+                }
+                else
+                {
+                    Width = Width + 200;
+                }
             }
 
             Title = ITemplate.Title;

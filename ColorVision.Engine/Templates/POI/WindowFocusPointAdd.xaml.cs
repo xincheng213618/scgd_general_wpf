@@ -1,6 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Templates.POI;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

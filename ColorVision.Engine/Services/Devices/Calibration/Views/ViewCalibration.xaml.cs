@@ -13,7 +13,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.Calibration;
 using MQTTMessageLib.Camera;
@@ -29,7 +28,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Globalization;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views

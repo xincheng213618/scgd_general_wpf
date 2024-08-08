@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Rbac;
 using cvColorVision;
-using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

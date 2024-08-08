@@ -1,13 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -15,6 +23,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
     {
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public AlgorithmView View { get; set; }
+        public RelayCommand UploadPluginCommand { get; set; }
+        public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
         public DeviceThirdPartyAlgorithms(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -33,7 +43,71 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
+
+            UploadPluginCommand = new RelayCommand(a => UploadPlugin(), a => AccessControl.Check(PermissionMode.Administrator));
+
+            ThirdPartyAlgorithmsManagerCommand = new RelayCommand(a => ThirdPartyAlgorithmsManager(), a => AccessControl.Check(PermissionMode.Administrator));
         }
+
+        public  void ThirdPartyAlgorithmsManager()
+        {
+            var model = SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
+            if (model ==null)
+            {
+                MessageBox1.Show("请先在配置中配置关联的dll");
+                return;
+            }
+            TemplateThirdPartyManager.Params.Clear();
+            new WindowTemplate(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public UploadMsgManager UploadMsgManager { get; set; } = new UploadMsgManager();
+
+        public void UploadPlugin()
+        {
+            UploadWindow uploadwindow = new("插件(*.zip, *.dll,*.*)|*.zip;*.dll;*.*") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            uploadwindow.OnUpload += (s, e) =>
+            {
+                UploadMsg uploadMsg = new UploadMsg(UploadMsgManager);
+                uploadMsg.Show();
+                string uploadfilepath = e.UploadFilePath;
+                Task.Run(() => UploadPluginData(uploadfilepath));
+            };
+            uploadwindow.ShowDialog();
+        }
+
+        public async void UploadPluginData(string path)
+        {
+            Application.Current.Dispatcher.Invoke(UploadMsgManager.UploadList.Clear);
+            await Task.Delay(10);
+            if (File.Exists(path))
+            {
+                FileUploadInfo uploadMeta = new FileUploadInfo();
+                uploadMeta.FilePath = path;
+                uploadMeta.FileName = Path.GetFileName(path);
+                uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(path));
+                uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
+                Application.Current.Dispatcher.Invoke(()=> UploadMsgManager.UploadList.Add(uploadMeta));
+                ;
+                await Task.Delay(1);
+                var msgRecord = await DService.UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, uploadMeta.FileName, uploadMeta.FilePath, 3);
+                if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
+                {
+                    uploadMeta.UploadStatus = UploadStatus.Completed;
+                    string FileName = msgRecord.MsgReturn.Data.FileName;
+
+                }
+                else
+                {
+                    uploadMeta.UploadStatus = UploadStatus.Failed;
+                }
+                UploadMsgManager.Msg = "1s 后关闭窗口";
+                await Task.Delay(1000);
+                UploadMsgManager.Close();
+            }
+
+        }
+
 
         readonly Lazy<DisplayThirdPartyAlgorithms> DisplayAlgorithmControlLazy;
         public DisplayThirdPartyAlgorithms DisplayAlgorithmControl { get; set; }

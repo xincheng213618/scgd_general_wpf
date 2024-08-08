@@ -795,4 +795,22 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>Шаблон автоматической экспозиции</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>Редактировать шаблоны сторонних алгоритмов</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>Изменить настройку</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>обновить сервис</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>Сбросить сервис</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>Управление физическими камерами</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>загрузка</value>
+  </data>
 </root>

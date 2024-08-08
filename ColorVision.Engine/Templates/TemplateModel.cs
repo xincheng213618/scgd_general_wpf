@@ -2,9 +2,7 @@
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Windows.Controls;
-using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates
 {
@@ -37,13 +35,19 @@ namespace ColorVision.Engine.Templates
         public RelayCommand ReNameCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
 
+        public RelayCommand CopyNameCommand { get; set; }
+
+
         public TemplateModel(string Key, T Value) :base()
         {
             this.Value = Value;
             this.Key = Key;
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
+            CopyNameCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Key));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "复制名称", Command = CopyNameCommand });
+
         }
 
         [JsonIgnore]

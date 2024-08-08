@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using System.Windows;
@@ -28,6 +29,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
+
+            CobBingCode.ItemsSource = SysResourceTpaDLLDao.Instance.GetAll();
+            CobBingCode.DisplayMemberPath = "Code";
+
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

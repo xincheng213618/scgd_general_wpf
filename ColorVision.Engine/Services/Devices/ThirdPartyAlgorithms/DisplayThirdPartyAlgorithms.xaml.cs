@@ -16,7 +16,6 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -292,7 +291,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindDotsArray_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxTemplateFindDotsArray.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (ComboxTemplateFindDotsArray.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -305,7 +304,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void RebuildPixelsImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTRebuildPixelsImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTRebuildPixelsImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -318,7 +317,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindPixelDefectsForRebuildPicImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFindPixelDefectsForRebuildPicImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFindPixelDefectsForRebuildPicImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -331,7 +330,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindPixelDefectsForRebuildPicGradingImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFindPixelDefectsForRebuildPicGradingImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFindPixelDefectsForRebuildPicGradingImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -344,7 +343,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindParticlesForRebuildPicImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFindParticlesForRebuildPicImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFindParticlesForRebuildPicImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -357,7 +356,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FillParticlesImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFillParticlesImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFillParticlesImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -370,7 +369,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindMuraImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFindMuraImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFindMuraImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -383,7 +382,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void FindLineImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTFindLineImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTFindLineImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -396,7 +395,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void CombineSpacingDataImp_Click(object sender, RoutedEventArgs e)
         {
-            if (CTCombineSpacingDataImp.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CTCombineSpacingDataImp.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;

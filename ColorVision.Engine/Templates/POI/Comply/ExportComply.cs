@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;

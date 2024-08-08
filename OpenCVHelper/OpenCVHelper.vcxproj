@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <VCProjectVersion>16.0</VCProjectVersion>
+    <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{aa343239-476e-43e3-bee3-d3313c883341}</ProjectGuid>
-    <RootNamespace>CalArtculation</RootNamespace>
+    <RootNamespace>OpenCVHelper</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -53,8 +53,7 @@
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionSettings" />
   <ImportGroup Label="Shared">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -62,28 +61,36 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\OpenCV.Debug.x64.props" />
-    <Import Project="..\props\NativeCopy.props" />
+    <Import Project="..\packages\OpenCV.Debug.x64.props" />
+    <Import Project="..\packages\NativeCopy.props" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\props\OpenCV.Release.x64.props" />
-    <Import Project="..\props\NativeCopy.props" />
+    <Import Project="..\packages\OpenCV.Release.x64.props" />
+    <Import Project="..\packages\NativeCopy.props" />
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
+    <Import Project="..\packages\CUDA.props" />
+    <Import Project="..\include\include.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -99,7 +106,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;CALARTCULATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;OPENCV_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -116,7 +123,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;CALARTCULATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;OPENCV_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -174,10 +181,12 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\common.h" />
+    <ClInclude Include="..\include\custom_file.h" />
+    <ClInclude Include="..\include\custom_structs.h" />
+    <ClInclude Include="..\include\opencv_export.h" />
+    <ClInclude Include="..\include\opencv_media_export.h" />
     <ClInclude Include="algorithm.h" />
-    <ClInclude Include="common.h" />
-    <ClInclude Include="Customfile.h" />
-    <ClInclude Include="export.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />
@@ -186,10 +195,11 @@
   <ItemGroup>
     <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="common.cpp" />
-    <ClCompile Include="Customfile.cpp" />
-    <ClCompile Include="export.cpp" />
+    <ClCompile Include="custom_file.cpp" />
+    <ClCompile Include="opencv_export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="fusion.cpp" />
+    <ClCompile Include="opencv_media_export.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -202,6 +212,5 @@
     <ResourceCompile Include="OpenCVHelper.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System;
 using System.Threading.Tasks;
 using System.Windows;
 

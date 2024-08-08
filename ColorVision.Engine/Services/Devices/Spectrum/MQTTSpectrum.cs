@@ -11,10 +11,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Common.Utilities;
-using MQTTMessageLib.FileServer;
-using System.Diagnostics;
-using CVCommCore;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -28,8 +28,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
-        public MQTTSpectrum(ConfigSpectrum spectrumConfig) : base(spectrumConfig)
+        public DeviceSpectrum DeviceSpectrum { get; set; }
+
+        public MQTTSpectrum(DeviceSpectrum DeviceSpectrum) : base(DeviceSpectrum.Config)
         {
+            this.DeviceSpectrum = DeviceSpectrum;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             cmdMap = new Dictionary<string, MsgSend>();
         }
@@ -45,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    if (json.Code == 0)
+                    if (json.Code == 0 || json.Code == 102)
                     {
                         if (json.EventName == "SetParam")
                         {
@@ -55,13 +58,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (json.EventName == "GetData")
                         {
-                            JObject data = json.Data;
-                            SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                            if (cmdMap.ContainsKey(json.MsgID))
+                            int MasterId = json.Data.MasterId;
+                            var sss = SpectumResultDao.Instance.GetById(MasterId);
+                            ViewResultSpectrum viewResultSpectrum = new(sss);
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
-                                cmdMap.Remove(json.MsgID);
-                            }
+                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                            });
                         }
                         else if (json.EventName == "GetDataAuto")
                         {
@@ -70,7 +73,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             if (cmdMap.ContainsKey(json.MsgID))
                             {
                                 Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
-                                //cmdMap.Remove(json.MsgID);
                             }
                         }
                         else if (json.EventName == "Close")

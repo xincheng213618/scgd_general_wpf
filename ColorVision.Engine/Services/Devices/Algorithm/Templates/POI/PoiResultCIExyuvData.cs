@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public PoiResultCIExyuvData() { }
 
-        public PoiResultCIExyuvData(POIPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
+        public PoiResultCIExyuvData(PoiPointResultModel pOIPointResultModel) : base(pOIPointResultModel)
         {
             if (pOIPointResultModel.Value != null)
             {

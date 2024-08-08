@@ -1,11 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using NPOI.SS.Formula.Functions;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {
@@ -38,7 +33,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         public string? Remark { get; set; }
 
         [Column("tenant_id")]
-        public string? TenantId { get; set; } 
+        public string? TenantId { get; set; }
+
     }
 
     public class ModThirdPartyAlgorithmsDao : BaseTableDao<ModThirdPartyAlgorithmsModel>

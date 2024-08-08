@@ -1,23 +1,15 @@
-﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Draw;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
-using CVCommCore.CVAlgorithm;
-using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
@@ -27,13 +19,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
-using ColorVision.Engine.Impl.CVFile.Export;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -97,10 +86,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             };
 
             listView1.ItemsSource = ViewResultCameras;
-
-
-            ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
-            ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
             {
@@ -286,6 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResultCameras[listView1.SelectedIndex];
+                if (string.IsNullOrWhiteSpace(data.FileUrl)) return;
                 if (File.Exists(data.FileUrl))
                 {
                     ImageView.OpenImage(data.FileUrl);
@@ -440,49 +426,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 }
             }
         }
-        private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
-            {
-                if (poiParams.Id == -1)
-                {
-                    ImageView.ImageShow.Clear();
-                    return;
-                }
-                ImageView.ImageShow.Clear();
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    switch (item.PointType)
-                    {
-                        case RiPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                            Circle.Attribute.Radius = item.PixHeight/2;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.Id = item.Id;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Render();
-                            ImageView.ImageShow.AddVisual(Circle);
-                            break;
-                        case RiPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Name = item.Name;
-                            Rectangle.Render();
-                            ImageView.ImageShow.AddVisual(Rectangle);
-                            break;
-                        case RiPointTypes.Mask:
-                            break;
-                    }
-                }
-            }
-
-        }
 
         private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
         {
@@ -500,75 +443,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
                 }
             }
-        }
-
-        private void CalculPOI_Click(object sender, RoutedEventArgs e)
-        {
-            if (!ImageView.Config.IsCVCIE)
-            {
-                MessageBox1.Show("仅对CVCIE图像支持");
-                return;
-            }
-            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
-            {
-                MessageBox1.Show("需要配置关注点");
-                return;
-            }
-
-            if (poiParams.Id == -1)
-            {
-                ImageView.ImageShow.Clear();
-                return;
-            }
-            PoiParam.LoadPoiDetailFromDB(poiParams);
-
-            ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
-            log.Info($"CM_SetFilter: {result}");
-            result = ConvertXYZ.CM_SetFilterNoArea(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterXYZ(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
-
-            foreach (var item in poiParams.PoiPoints)
-            {
-                POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
-                var sss = GetCVCIE(pOIPoint);
-                PoiResultCIExyuvDatas.Add(sss);
-            }
-            WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
-            windowCIE.Show();
-        }
-
-        public  PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
-        {
-            int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
-            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
-            poiResultCIExyuvData.Point = pOIPoint;
-            float dXVal = 0;
-            float dYVal = 0;
-            float dZVal = 0;
-            float dx = 0;
-            float dy = 0;
-            float du = 0;
-            float dv = 0;
-            float CCT = 0;
-            float Wave = 0;
-
-            _ = pOIPoint.PointType switch
-            {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
-            };
-            poiResultCIExyuvData.u = du;
-            poiResultCIExyuvData.v = dv;
-            poiResultCIExyuvData.x = dx;
-            poiResultCIExyuvData.y = dy;
-            poiResultCIExyuvData.X = dXVal;
-            poiResultCIExyuvData.Y = dYVal;
-            poiResultCIExyuvData.Z = dZVal;
-            poiResultCIExyuvData.CCT = CCT;
-            poiResultCIExyuvData.Wave = Wave;
-            return poiResultCIExyuvData;
         }
 
         private void MenuItem_ExportFile_Click(object sender, RoutedEventArgs e)

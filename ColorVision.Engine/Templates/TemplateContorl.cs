@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using System;
 using System.Linq;

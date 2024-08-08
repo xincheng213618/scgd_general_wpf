@@ -7,6 +7,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>True</UseWindowsForms>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
+		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
@@ -35,10 +37,6 @@
 	<ItemGroup>
 		<Reference Include="CVCommCore">
 			<HintPath>..\DLL\CVCommCore.dll</HintPath>
-			<Private>True</Private>
-		</Reference>
-		<Reference Include="CVImageChannelLib">
-			<HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
 			<Private>True</Private>
 		</Reference>
 		<Reference Include="FlowEngineLib">
@@ -98,13 +96,6 @@
     <None Remove="Assets\Sounds\error.wav" />
     <None Remove="Assets\Sounds\success.wav" />
   </ItemGroup>
-	
-
-  <ItemGroup>
-    <Content Include="..\DLL\openh264-2.3.1-win64.dll" Link="openh264-2.3.1-win64.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
@@ -112,6 +103,7 @@
     <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+    <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -165,6 +157,12 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\POIGenCali\EditPoiGenCali.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">

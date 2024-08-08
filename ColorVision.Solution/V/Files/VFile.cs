@@ -2,10 +2,7 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.UI.Menus;
 using ColorVision.Solution.Properties;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
 

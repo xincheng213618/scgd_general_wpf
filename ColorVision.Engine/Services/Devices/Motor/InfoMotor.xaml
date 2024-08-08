@@ -16,6 +16,16 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
@@ -38,9 +48,10 @@
                         <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
                     </DockPanel>
                 </Border>
+
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
-                    <DockPanel Margin="0,0,10,0">
-                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                    <DockPanel Margin="0,0,5,0">
+                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0"  Padding="5,3">
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -57,7 +68,7 @@
                             </TextBlock>
                         </Button>
 
-                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,10,0">
+                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,5,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
                             <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
@@ -67,6 +78,7 @@
                         </Grid>
                     </DockPanel>
                 </Border>
+
             </Grid>
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">

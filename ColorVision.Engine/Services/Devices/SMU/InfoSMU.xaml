@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.SMU"
-             xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
@@ -15,6 +15,16 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -39,8 +49,8 @@
                     </DockPanel>
                 </Border>
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
-                    <DockPanel Margin="0,0,10,0">
-                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                    <DockPanel Margin="0,0,5,0">
+                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0"  Padding="5,3">
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -57,7 +67,7 @@
                             </TextBlock>
                         </Button>
 
-                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,10,0">
+                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,5,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
                             <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
@@ -67,11 +77,21 @@
                         </Grid>
                     </DockPanel>
                 </Border>
+
             </Grid>
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                <StackPanel Margin="5,0">
-                    <GroupBox Header="基本信息" Margin="0,5">
+                <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
+                    <TabItem Header="{x:Static properties:Resources.Manager}">
+                        <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
+                            <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                                <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
+                                <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
+                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                            </UniformGrid>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="基本信息">
                         <StackPanel Margin="5">
                             <DockPanel>
                                 <TextBlock Text="设备类型:" Width="120"/>
@@ -106,8 +126,8 @@
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoStart}"/>
                             </DockPanel>
                         </StackPanel>
-                    </GroupBox>
-                </StackPanel>
+                    </TabItem>
+                </TabControl>
 
             </Border>
         </Grid>

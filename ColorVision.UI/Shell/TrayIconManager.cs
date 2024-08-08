@@ -1,7 +1,5 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
-using System.Configuration;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;

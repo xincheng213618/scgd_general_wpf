@@ -1,9 +1,5 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using NPOI.SS.Formula.Functions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {

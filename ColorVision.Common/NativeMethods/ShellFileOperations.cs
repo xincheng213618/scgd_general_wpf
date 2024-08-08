@@ -1,11 +1,7 @@
 ﻿#pragma warning disable CA1707,CA1401 // 标识符不应包含下划线
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Common.NativeMethods
 {

@@ -1,7 +1,5 @@
 ﻿using System.Windows;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.ComponentModel;
 
 namespace ColorVision.Common.Utilities

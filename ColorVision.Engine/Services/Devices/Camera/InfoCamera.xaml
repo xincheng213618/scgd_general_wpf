@@ -7,7 +7,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:dao ="clr-namespace:ColorVision.Engine.Services.PhyCameras.Dao"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
@@ -17,6 +17,16 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
     <Grid>
@@ -41,8 +51,8 @@
                     </DockPanel>
                 </Border>
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
-                    <DockPanel Margin="0,0,10,0">
-                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                    <DockPanel Margin="0,0,5,0">
+                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0"  Padding="5,3">
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -59,7 +69,7 @@
                             </TextBlock>
                         </Button>
 
-                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,10,0">
+                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,5,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
                             <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
@@ -69,10 +79,23 @@
                         </Grid>
                     </DockPanel>
                 </Border>
+            
             </Grid>
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                <TabControl BorderThickness="0,1,0,0" >
+                <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
+                    <TabItem Header="{x:Static properties:Resources.Manager}">
+                        <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
+                            <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                                <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
+                                <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
+                                <Button Content="刷新设备列表" Margin="5" Height="100" Width="180"  Command="{Binding RefreshDeviceIdCommand}" />
+                                <Button Content="管理物理相机"  Margin="5" Height="100" Width="180" Command="{Binding OpenPhyCameraMangerCommand}"  />
+                                <Button Content="清理服务缓存" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ServiceClearCommand }"/>
+                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                            </UniformGrid>
+                        </ScrollViewer>
+                    </TabItem>
                     <TabItem Header="基本信息">
                         <StackPanel Margin="5">
                             <Grid>
@@ -110,7 +133,6 @@
                                         <TextBlock Text="绑定物理相机代码"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.CameraCode ,Mode=OneWay }"/>
                                     </DockPanel>
-                                    <Button Content="刷新设备列表" Command="{Binding RefreshDeviceIdCommand}" Margin="0,5"/>
                                 </StackPanel>
                             </Grid>
 
@@ -258,7 +280,7 @@
                                         <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.SaveDays}"/>
                                     </DockPanel>
                                     <DockPanel>
-                                        <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
+                                        <Button DockPanel.Dock="Right" Content="清理"  Command="{Binding ServiceClearCommand}"/>
                                         <TextBlock Text="服务缓存"/>
                                     </DockPanel>
                                 </StackPanel>

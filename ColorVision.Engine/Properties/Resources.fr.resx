@@ -795,4 +795,22 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>Modèle d'exposition automatique</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>Modifier des modèles d'algorithmes tiers</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>Modifier le paramètre</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>service de rafraîchissement</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>Service de réinitialisation</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>Gérer les caméras physiques</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>chargement</value>
+  </data>
 </root>

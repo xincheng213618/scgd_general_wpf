@@ -795,4 +795,22 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自動露出テンプレート</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>サードパーティのアルゴリズムテンプレートを編集する</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>設定変更</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>リフレッシュサービス</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>リセットサービス</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>物理カメラを管理する</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>読み込み中</value>
+  </data>
 </root>

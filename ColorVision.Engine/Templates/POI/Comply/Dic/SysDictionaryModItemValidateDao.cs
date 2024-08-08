@@ -1,8 +1,4 @@
-﻿#pragma warning disable CS8601
-
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
-using System.Data;
+﻿using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.POI.Comply.Dic
 {

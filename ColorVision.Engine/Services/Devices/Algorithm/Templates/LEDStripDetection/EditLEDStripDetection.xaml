@@ -4,58 +4,79 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection"
+             xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:LEDStripDetectionParam}"
              d:DesignHeight="450" d:DesignWidth="400" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid>
-        <StackPanel>
-            <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
-                <StackPanel Margin="2">
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="Method"  MinWidth="100" Margin="2,0" />
-                        <TextBox  Text="{Binding  Method}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="PointNumber"  MinWidth="100" Margin="2,0" />
-                        <TextBox  Text="{Binding  PointNumber}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="PointDistance"  MinWidth="100" Margin="2,0" />
-                        <TextBox  Text="{Binding  PointDistance}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="StartPosition"  MinWidth="100" Margin="2,0" />
-                        <TextBox  Text="{Binding  StartPosition}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="BinaryPercentage"  MinWidth="100" Margin="2,0" />
-                        <TextBox  Text="{Binding  BinaryPercentage}" Style="{StaticResource TextBox.Small}"/>
-                    </DockPanel>
-                </StackPanel>
-            </Border>
-
-
-
-            <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
-                <StackPanel Margin="2">
-                    <StackPanel Margin="0,2" Orientation="Horizontal">
-                        <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="均值合规模板" Width="100"/>
-                        <ComboBox x:Name="ComboBoxValidate" SelectedValue="{Binding ValidateCIEAVGId}" Width="90" SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
-                        <Grid Width="20" Margin="5,0"  DockPanel.Dock="Right">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding ValidateCIEAVGCommand}"/>
-                        </Grid>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <ScrollViewer>
+            <StackPanel Margin="5">
+                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" >
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="开启debug"  MinWidth="110"  />
+                            <ui:ToggleSwitch IsChecked="{Binding IsDebug}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding SelectFileCommand}" Margin="5,0,0,0"/>
+                            <TextBlock Text="保存路径"  MinWidth="110"  />
+                            <TextBox  Text="{Binding  SaveName}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="Method"  MinWidth="110"  />
+                            <TextBox  Text="{Binding  Method}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="PointNumber"  MinWidth="110"  />
+                            <TextBox  Text="{Binding  PointNumber}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="PointDistance"  MinWidth="110"  />
+                            <TextBox  Text="{Binding  PointDistance}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="StartPosition"  MinWidth="110"/>
+                            <TextBox  Text="{Binding  StartPosition}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="BinaryPercentage"  MinWidth="110"  />
+                            <TextBox  Text="{Binding  BinaryPercentage}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
                     </StackPanel>
-                    <StackPanel Margin="0,2" Orientation="Horizontal">
-                        <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="合规模板" Width="100"/>
-                        <ComboBox x:Name="ComboBoxValidateCIE" Width="90"  SelectedValue="{Binding ValidateCIEId}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
-                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" >
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding ValidateCIECommand}"/>
-                        </Grid>
+                </Border>
+
+
+
+                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
+                    <StackPanel Margin="5">
+                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="均值合规模板" MinWidth="110"/>
+                            <ComboBox x:Name="ComboBoxValidate" SelectedValue="{Binding ValidateCIEAVGId}" Width="90" SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
+                            <Grid Width="20" Margin="5,0"  DockPanel.Dock="Right">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding ValidateCIEAVGCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel  Orientation="Horizontal">
+                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="合规模板" MinWidth="110"/>
+                            <ComboBox x:Name="ComboBoxValidateCIE" Width="90"  SelectedValue="{Binding ValidateCIEId}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
+                            <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" >
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding ValidateCIECommand}"/>
+                            </Grid>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
-            </Border>
-        </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </UserControl>

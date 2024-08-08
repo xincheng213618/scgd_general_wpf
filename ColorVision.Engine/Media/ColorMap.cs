@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Media
             }
             else
             {
-                //logger.Error("加载ColorMap失败，请确认当前目录是否存在colormap.png");
+                //log.Error("加载ColorMap失败，请确认当前目录是否存在colormap.png");
             }
         }
         private double getStepVal(Mat src)//计算输入图片的伪彩色步长

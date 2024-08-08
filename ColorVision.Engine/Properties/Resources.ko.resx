@@ -795,4 +795,22 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>자동 노출 템플릿</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>타사 알고리즘 템플릿 편집</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>설정을 바꾸다</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>새로 고침 서비스</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>서비스 재설정</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>물리적 카메라 관리</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>로드 중</value>
+  </data>
 </root>

@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
     {
         public override string OwnerGuid => "Template";
         public override string GuidId => "ThirdPartyAlgorithms";
-        public override string Header => "ThirdPartyAlgorithms";
+        public override string Header => ColorVision.Engine.Properties.Resources.EditThirdPartyAlgorithmTemplate;
         public override int Order => 3;
     }
 
@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             return items;
         }
     }
+
+
 
 
 }

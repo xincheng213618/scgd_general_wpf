@@ -27,18 +27,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public override UserControl GetDeviceInfo() => new InfoPG(this);
 
         public override UserControl GetDisplayControl() => new DisplayPG(this);
-        public override MQTTServiceBase? GetMQTTService()
-        {
-            return DService;
-        }
-        public string IsNet
-        {
-            get
-            {
-                if (Config.IsNet) { return "网络"; }
-                else { return "串口"; }
-            }
-            set { }
-        }
+
+        public override MQTTServiceBase? GetMQTTService() => DService;
     }
 }

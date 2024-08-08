@@ -1,5 +1,4 @@
-﻿using ColorVision.Themes;
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
 
@@ -45,7 +44,7 @@ namespace ColorVision.Themes.Controls
                             Close();
                             return;
                         }
-                        OnUpload?.Invoke(Upload1, new EventArgs());
+                        OnUpload?.Invoke(this, Upload1);
                         Close();
                     }
                     else
@@ -61,7 +60,7 @@ namespace ColorVision.Themes.Controls
             e.Effects = DragDropEffects.Copy;
         }
 
-        public EventHandler OnUpload { get; set; }
+        public EventHandler<Upload> OnUpload { get; set; }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -71,7 +70,7 @@ namespace ColorVision.Themes.Controls
                 Close();
                 return;
             }
-            OnUpload?.Invoke(Upload1,new EventArgs());
+            OnUpload?.Invoke(this,Upload1);
             Close();
         }
     }

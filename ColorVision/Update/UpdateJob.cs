@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8602
-using ColorVision.Scheduler;
+﻿using ColorVision.Scheduler;
 using Quartz;
 using System.Linq;
 using System.Threading.Tasks;

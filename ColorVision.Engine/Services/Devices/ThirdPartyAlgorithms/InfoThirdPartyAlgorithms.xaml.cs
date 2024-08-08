@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -39,6 +41,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                     };
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }
+            }
+        }
+
+        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (sender is UniformGrid uniformGrid)
+            {
+                uniformGrid.AutoUpdateLayout();
             }
         }
     }

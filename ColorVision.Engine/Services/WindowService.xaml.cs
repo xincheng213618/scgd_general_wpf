@@ -1,15 +1,12 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using ColorVision.Engine.Rbac;
 using System;
 using System.Windows;
-using ColorVision.Engine.Utilities;
 
 namespace ColorVision.Engine.Services
 {

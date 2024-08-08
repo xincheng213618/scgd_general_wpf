@@ -151,41 +151,9 @@
         </Setter>
     </Style>
 
-
-
-    <!--<Style  TargetType="{x:Type Button}" >
-        <Style.Triggers>
-            <Trigger Property="UIElement.IsMouseOver" Value="True">
-                <Setter Property="UIElement.Opacity" Value=".7" />
-            </Trigger>
-            <Trigger Property="IsPressed" Value="True">
-                <Setter Property="UIElement.Opacity" Value=".6" />
-            </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="UIElement.Opacity" Value="0.4" />
-            </Trigger>
-        </Style.Triggers>
-        <Setter Property="Background" Value="{DynamicResource ButtonBackground}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource ButtonBorderBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
-
-        <Setter Property="BorderThickness" Value="1,1,1,1"/>
-        <Setter Property="Padding" Value="8,2"/>
-        <Setter Property="Template" >
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type Button}">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="4"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" >
-                        <ContentPresenter Margin="{TemplateBinding Padding}"  Content="{TemplateBinding Content}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>-->
-
-
     <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
         <Setter Property="Background" Value="{DynamicResource GlobalBorderBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Margin" Value="4,1"/>
         <Setter Property="CornerRadius" Value="5"/>
@@ -284,8 +252,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-
-
 
     <ControlTemplate x:Key="LM_SliderControlTemplate2"  TargetType="Slider">
         <Grid>

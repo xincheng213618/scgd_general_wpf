@@ -11,7 +11,6 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
-using ColorVision.Util.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -47,7 +46,6 @@ namespace ColorVision.Engine.Services.Devices
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
         public RelayCommand RefreshCommand { get; set; }
-
         public RelayCommand EditCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
@@ -136,7 +134,6 @@ namespace ColorVision.Engine.Services.Devices
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });
-
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";

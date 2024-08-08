@@ -4,8 +4,6 @@ using ColorVision.Engine.Services;
 using ColorVision.Themes;
 using ColorVision.UI.Languages;
 using ColorVision.UI;
-using System.Configuration;
-using System.Data;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;

@@ -31,6 +31,7 @@ namespace ColorVision.Engine.Services.Dao
     public class MeasureImgResultDao : BaseDaoMaster<MeasureImgResultModel>
     {
 
+        public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
 
         public MeasureImgResultDao() : base("v_scgd_measure_result_img", "t_scgd_measure_result_img", "id", false)
         {

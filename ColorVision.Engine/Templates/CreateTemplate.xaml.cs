@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Templates
 {

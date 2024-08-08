@@ -1,17 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
-using ColorVision.UI.Menus;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
@@ -24,9 +17,25 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public LEDStripDetectionParam()
         {
         }
+        public RelayCommand SelectFileCommand { get; set; }
+
         public LEDStripDetectionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
+            SelectFileCommand = new RelayCommand(a => SelectFile());
+        }
+        public void SelectFile()
+        {
+            using (var dialog = new System.Windows.Forms.SaveFileDialog())
+            {
+                dialog.FileName = "binim.tif";
+                dialog.DefaultExt = ".tif";
+                dialog.Filter = "TIFF files (*.tif)|*.tif|All files (*.*)|*.*";
 
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    SaveName = dialog.FileName;
+                }
+            }
         }
 
         [Category("LEDStripDetection"), Description("method")]
@@ -54,6 +63,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
         public int ValidateCIEId { get => GetValue(_ValidateCIEId); set { SetProperty(ref _ValidateCIEId, value); } }
         private int _ValidateCIEId;
+
+
+        [Category("LEDStripDetection"), Description("是否开启debug ")]
+        public bool IsDebug { get => GetValue(_IsDebug); set { SetProperty(ref _IsDebug, value); } }
+        private bool _IsDebug;
+
+        [Category("LEDStripDetection"), Description("存图路径")]
+        public string? SaveName { get => GetValue(_SaveName); set { SetProperty(ref _SaveName, value); } }
+        private string? _SaveName = "binim.tif";
 
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {

@@ -52,7 +52,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="算法未注册" Command="{Binding EditCommand}"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
                         <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
@@ -63,7 +63,7 @@
                             <TabItem x:Name="POITabItem" Header="POI" IsSelected="True">
                                 <StackPanel Margin="0,5" >
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="POI" Width="30"/>
+                                        <TextBlock Text="POI" Width="40"/>
                                         <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
                                         <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -72,11 +72,19 @@
                                         </Grid>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="Filter" Width="30"/>
+                                        <TextBlock Text="Filter" Width="40"/>
                                         <ComboBox  x:Name="ComboxPoiFilter"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="POIFilter" Click="MenuItem_Template"/>
+                                        </Grid>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="Revise" Width="40"/>
+                                        <ComboBox  x:Name="ComboxPoiCal"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="PoiRevise" Click="MenuItem_Template"/>
                                         </Grid>
                                     </DockPanel>
                                 </StackPanel>

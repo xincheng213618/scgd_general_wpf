@@ -9,9 +9,8 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Util.Interfaces;
+using ColorVision.UI;
 using log4net;
-using Mysqlx.Connection;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -32,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public RelayCommand DisPlaySaveCommand { get; set; }
 
         public RelayCommand OpenCalibrationParamsCommand { get; set; }
+
 
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(), b => AccessControl.Check(OpenPhyCameraManger));
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
@@ -63,7 +63,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
+            ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
         }
+
+
+
+
         public CameraVideoControl CameraVideoControl { get; set; }
 
         public new void RestartRCService()
@@ -94,6 +99,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
             Save();
+        }
+
+        public RelayCommand ServiceClearCommand { get; set; }
+        [RequiresPermission(PermissionMode.Administrator)]
+        private void ServiceClear()
+        {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            {
+                var MsgRecord = DService.CacheClear();
+                MsgRecord.MsgSucessed += (s) =>
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
+                    MsgRecord.ClearMsgRecordSucessChangedHandler();
+                };
+            }
         }
 
         [RequiresPermission(PermissionMode.Administrator)]

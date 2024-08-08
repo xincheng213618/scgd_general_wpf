@@ -1,11 +1,9 @@
 ﻿#pragma warning disable CS8603
-using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
-using ColorVision.UI.Extension;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;

@@ -4,17 +4,11 @@ using ColorVision.Solution.V.Folders;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Solution.V;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using Wpf.Ui.Appearance;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Solution.V
 {

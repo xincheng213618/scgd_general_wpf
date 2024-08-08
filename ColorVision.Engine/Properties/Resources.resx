@@ -775,4 +775,22 @@
   <data name="AutoExploreTemplate" xml:space="preserve">
     <value>自动曝光模板</value>
   </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>编辑第三方算法模板</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>修改配置</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>刷新服务</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>重置服务</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>管理物理相机</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>数据加载中</value>
+  </data>
 </root>

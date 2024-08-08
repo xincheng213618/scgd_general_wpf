@@ -1,9 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Media;
 using System.Windows.Input;
-using System;
 using System.Globalization;
-using System.Collections.Generic;
 using ColorVision.UI.Draw;
 
 namespace ColorVision.Util.Draw.Special

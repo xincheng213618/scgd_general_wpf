@@ -8,7 +8,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Util.Interfaces;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTSpectrum(Config);
+            DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);
             View.View.Title = $"光谱仪视图 - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
@@ -66,14 +66,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             UploadWindow uploadwindow = new() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                if (s is Upload upload)
-                {
-                    UploadMsg uploadMsg = new(this);
-                    uploadMsg.Show();
-                    string name = upload.UploadFileName;
-                    string path = upload.UploadFilePath;
-                    Task.Run(() => UploadData(name, path));
-                }
+                UploadMsg uploadMsg = new(this);
+                uploadMsg.Show();
+                string name = e.UploadFileName;
+                string path = e.UploadFilePath;
+                Task.Run(() => UploadData(name, path));
             };
             uploadwindow.ShowDialog();
         }

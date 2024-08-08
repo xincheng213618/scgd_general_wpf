@@ -175,6 +175,10 @@
           <source>当前版本已经是最新版本</source>
           <target state="new">The current version is already the latest version</target>
         </trans-unit>
+        <trans-unit id="DataLoading" translate="yes" xml:space="preserve">
+          <source>数据加载中</source>
+          <target state="new">loading</target>
+        </trans-unit>
         <trans-unit id="Database" translate="yes" xml:space="preserve">
           <source>数据库名称</source>
           <target state="new">Database</target>
@@ -230,6 +234,10 @@
         <trans-unit id="Edit" translate="yes" xml:space="preserve">
           <source>编辑</source>
           <target state="new">Edit</target>
+        </trans-unit>
+        <trans-unit id="EditThirdPartyAlgorithmTemplate" translate="yes" xml:space="preserve">
+          <source>编辑第三方算法模板</source>
+          <target state="new">Editing third-party algorithm templates</target>
         </trans-unit>
         <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
           <source>启用数据库</source>
@@ -394,6 +402,10 @@
         <trans-unit id="Male" translate="yes" xml:space="preserve">
           <source>男</source>
           <target state="new">Male</target>
+        </trans-unit>
+        <trans-unit id="ManagePhysicalCamera" translate="yes" xml:space="preserve">
+          <source>管理物理相机</source>
+          <target state="new">Managing Physical Cameras</target>
         </trans-unit>
         <trans-unit id="Manager" translate="yes" xml:space="preserve">
           <source>管理</source>
@@ -563,6 +575,10 @@
           <source>最小化</source>
           <target state="new">Minimize</target>
         </trans-unit>
+        <trans-unit id="ModifyConfiguration" translate="yes" xml:space="preserve">
+          <source>修改配置</source>
+          <target state="new">Change setting</target>
+        </trans-unit>
         <trans-unit id="MqttConnection" translate="yes" xml:space="preserve">
           <source>MQTT连接</source>
           <target state="new">MQTT Connection</target>
@@ -663,6 +679,10 @@
           <source>刷新</source>
           <target state="new">Refresh</target>
         </trans-unit>
+        <trans-unit id="RefreshService" translate="yes" xml:space="preserve">
+          <source>刷新服务</source>
+          <target state="new">Refresh Service</target>
+        </trans-unit>
         <trans-unit id="RegistryCenter" translate="yes" xml:space="preserve">
           <source>注册中心</source>
           <target state="new">Registration center</target>
@@ -670,6 +690,10 @@
         <trans-unit id="Reset" translate="yes" xml:space="preserve">
           <source>重置</source>
           <target state="new">Reset</target>
+        </trans-unit>
+        <trans-unit id="ResetService" translate="yes" xml:space="preserve">
+          <source>重置服务</source>
+          <target state="new">Reset Service</target>
         </trans-unit>
         <trans-unit id="Reseted" translate="yes" xml:space="preserve">
           <source>已重置</source>

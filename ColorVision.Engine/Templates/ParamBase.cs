@@ -135,6 +135,7 @@ namespace ColorVision.Engine.Templates
                     else if (typeof(T).IsEnum)
                     {
                         Enum.TryParse(typeof(T), val, out object obj);
+                        if (obj == null) return (T)default;
                         return (T)obj;
                     }
                     else if (typeof(T) == typeof(double[]))

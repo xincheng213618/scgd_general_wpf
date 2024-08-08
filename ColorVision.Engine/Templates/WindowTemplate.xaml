@@ -94,7 +94,7 @@
             <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
 
         </Grid>
-        <GridSplitter HorizontalAlignment="Right"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="2"/>
+        <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
 
         <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->

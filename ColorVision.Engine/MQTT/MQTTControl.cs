@@ -2,13 +2,10 @@
 using log4net;
 using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Packets;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel.Design;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace ColorVision.Engine.MQTT

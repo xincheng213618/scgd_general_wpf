@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1401,CA1708,CA1707,CA2101,CA1711
+﻿#pragma warning disable CA1401,CA1708,CA1707,CA2101,CA1711,SYSLIB1054
 using System;
 using System.Runtime.InteropServices;
 
@@ -9,8 +9,6 @@ namespace cvColorVision
         private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
 
         #region cvConvertXYZ.cpp
-
-        public static IntPtr Handle { get; set; } = IntPtr.Zero;
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_InitXYZ(IntPtr handle);

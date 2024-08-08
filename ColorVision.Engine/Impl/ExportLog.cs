@@ -1,9 +1,6 @@
-﻿#pragma warning disable CS4014
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
-using System.Windows;
 
 namespace ColorVision.Engine.Impl
 {

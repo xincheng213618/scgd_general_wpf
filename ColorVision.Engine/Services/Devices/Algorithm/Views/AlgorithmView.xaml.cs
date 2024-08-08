@@ -13,7 +13,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -224,7 +223,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             int id = 0;
                             foreach (var item in POIPointResultModels)
                             {
@@ -250,7 +249,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             int id = 0;
                             foreach (var item in POIPointResultModels)
                             {
@@ -279,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultCIEYData poiResultCIExyuvData = new(item);
@@ -345,7 +344,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 ViewResultMTF mTFResultData = new(item);
@@ -475,7 +474,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultLedcheckModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
@@ -504,7 +503,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 ViewResultBuildPoi mTFResultData = new(item);
@@ -687,7 +686,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                         Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Attribute.Text = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;

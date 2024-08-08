@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.Services.Msg;
 using CVCommCore;
-using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.FlowDevice
 {

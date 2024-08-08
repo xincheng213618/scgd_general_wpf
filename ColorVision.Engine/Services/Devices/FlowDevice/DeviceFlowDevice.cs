@@ -1,12 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.FlowDevice

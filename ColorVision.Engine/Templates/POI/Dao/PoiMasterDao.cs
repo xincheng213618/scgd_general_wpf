@@ -1,6 +1,4 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.POI;
-using ScottPlot;
 using System;
 using System.Data;
 
