@@ -63,26 +63,6 @@ namespace ColorVision.UI
 
         public static void LoadPluginsAssembly(string path)
         {
-            string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\{path}";
-            if (!Directory.Exists(DirectoryPath))
-                Directory.CreateDirectory(DirectoryPath);
-
-            // 获取所有 dll 文件
-            foreach (string file in Directory.GetFiles(DirectoryPath, "*.dll"))
-            {
-                try
-                {
-                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(file);
-                    string version = versionInfo.FileVersion;
-                    byte[] assemblyBytes = File.ReadAllBytes(file);
-                    Assembly assembly = Assembly.Load(assemblyBytes); 
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                }
-            }
-
             if (!Directory.Exists(path)) 
                 return ;
             // 获取所有 dll 文件
