@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DService = new MQTTSpectrum(Config);
+            DService = new MQTTSpectrum(this);
             View = new ViewSpectrum(this);
             View.View.Title = $"光谱仪视图 - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
