@@ -45,7 +45,7 @@ public class MMFReader : CVImageReaderProxy
 			CVImagePacket cVImagePacket = subscriber.Subscribe();
 			if (cVImagePacket != null && cVImagePacket.len > 0)
 			{
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     if (writeableBitmap == null || writeableBitmap.PixelWidth != cVImagePacket.width || writeableBitmap.PixelHeight != cVImagePacket.height)
                     {

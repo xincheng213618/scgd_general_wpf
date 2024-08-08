@@ -112,6 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
 
+
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
