@@ -9,7 +9,7 @@
         xmlns:local="clr-namespace:ScreenRecorder"
         xmlns:sources="clr-namespace:ScreenRecorder.Sources"
         mc:Ignorable="d"
-        Title="ScreenRecorderLib Demo"
+        Title="录制视频"
         Height="800"
         Width="1000"
         SizeToContent="Height"
@@ -129,18 +129,14 @@
                               Filter="WindowsViewSource_Filter"
                               IsLiveSortingRequested="True">
         </CollectionViewSource>
-
     </Window.Resources>
     <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Auto">
-            <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Top"
-                        Margin="20,0">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" >
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Center">
                     <ComboBox x:Name="SourceComboBox"
@@ -582,7 +578,6 @@
                         </Grid.ColumnDefinitions>
                         <Label Content="Final output:" />
                         <StackPanel Orientation="Horizontal"
-                                    Margin="5,0,145,0"
                                     Grid.Column="1">
                             <CheckBox VerticalAlignment="Center"
                                       Content="Video"
@@ -664,7 +659,7 @@
                         <StackPanel Margin="0,0,50,5"
                                     x:Name="VideoSettingsPanel">
                             <StackPanel Orientation="Horizontal">
-                                <Label Content="Mode"
+                                <TextBlock Text="Mode"
                                        Width="85"
                                        VerticalAlignment="Center" />
                                 <ComboBox x:Name="RecordingModeComboBox"
@@ -677,7 +672,7 @@
                             <StackPanel x:Name="EncoderOptionsPanel">
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="VideoEncoderPanel">
-                                    <Label Content="Encoder"
+                                    <TextBlock Text="Encoder"
                                            Width="85"
                                            VerticalAlignment="Center" />
                                     <ComboBox x:Name="VideoEncoderComboBox"
@@ -691,7 +686,7 @@
                                 <StackPanel x:Name="H264OptionsPanel">
                                     <StackPanel Orientation="Horizontal"
                                                 x:Name="H264VideoBitrateModePanel">
-                                        <Label Content="Bitrate Mode"
+                                        <TextBlock Text="Bitrate Mode"
                                                Width="85"
                                                VerticalAlignment="Center" />
                                         <ComboBox x:Name="H264VideoBitrateModeComboBox"
@@ -704,7 +699,7 @@
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal"
                                                 x:Name="H264VideoProfilePanel">
-                                        <Label Content="H264 profile"
+                                        <TextBlock Text="H264 profile"
                                                Width="85"
                                                VerticalAlignment="Center" />
                                         <ComboBox x:Name="H264VideoProfileComboBox"
@@ -719,7 +714,7 @@
                                             Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal"
                                                 x:Name="H265VideoBitrateModePanel">
-                                        <Label Content="Bitrate Mode"
+                                        <TextBlock Text="Bitrate Mode"
                                                Width="85"
                                                VerticalAlignment="Center" />
                                         <ComboBox x:Name="H265VideoBitrateModeComboBox"
@@ -732,7 +727,7 @@
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal"
                                                 x:Name="H265VideoProfilePanel">
-                                        <Label Content="H265 profile"
+                                        <TextBlock Text ="H265 profile"
                                                Width="85"
                                                VerticalAlignment="Center" />
                                         <ComboBox x:Name="H265VideoProfileComboBox"
@@ -745,7 +740,7 @@
                                 </StackPanel>
                                 <StackPanel x:Name="VideoEncoderOptionsPanel">
                                     <StackPanel Orientation="Horizontal">
-                                        <Label Content="Framerate"
+                                        <TextBlock Text="Framerate"
                                                Width="85" />
                                         <TextBox x:Name="FpsTextBox"
                                                  Width="30"
@@ -757,7 +752,7 @@
                                     <StackPanel Orientation="Horizontal"
                                                 x:Name="VideoBitratePanel"
                                                 Visibility="Collapsed">
-                                        <Label Content="Bitrate"
+                                        <TextBlock Text="Bitrate"
                                                Width="85" />
                                         <TextBox x:Name="BitrateTextBox"
                                                  MinWidth="30"
@@ -770,7 +765,7 @@
                                                 x:Name="VideoQualityPanel"
                                                 Visibility="Visible"
                                                 Margin="0,0,0,5">
-                                        <Label Content="Quality"
+                                        <TextBlock Text="Quality"
                                                Width="85" />
                                         <TextBox x:Name="QualityTextBox"
                                                  MinWidth="30"
@@ -855,7 +850,7 @@
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="MouseClickModePanel"
                                             Visibility="Visible">
-                                    <Label Content="Mouse detection mode"
+                                    <TextBlock Text = "Mouse detection mode"
                                            Width="140" />
                                     <ComboBox x:Name="MouseDetectionModeComboBox"
                                               ItemsSource="{Binding Source={StaticResource MouseDetectionModeData}}"
@@ -864,7 +859,7 @@
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="MouseLeftClickColorPanel"
                                             Visibility="Visible">
-                                    <Label Content="Left click color"
+                                    <TextBlock Text ="Left click color"
                                            Width="85" />
                                     <TextBox x:Name="LeftMouseColorTextBox"
                                              MinWidth="60"
@@ -876,7 +871,7 @@
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="MouseRightClickColorPanel"
                                             Visibility="Visible">
-                                    <Label Content="Right click col"
+                                    <TextBlock Text="Right click col"
                                            Width="85" />
                                     <TextBox x:Name="RightMouseColorTextBox"
                                              MinWidth="60"
@@ -888,7 +883,7 @@
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="MouseClickRadiusPanel"
                                             Visibility="Visible">
-                                    <Label Content="Click radius"
+                                    <TextBlock Text="Click radius"
                                            Width="85" />
                                     <TextBox x:Name="RadiusTextBox"
                                              MinWidth="30"
@@ -899,7 +894,7 @@
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="MouseClickDurationPanel"
                                             Visibility="Visible">
-                                    <Label Content="Click duration"
+                                    <TextBlock Text="Click duration"
                                            Width="85" />
                                     <TextBox x:Name="DurationTextBox"
                                              MinWidth="30"
@@ -924,7 +919,7 @@
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal"
                                             x:Name="LogLevelPanel">
-                                    <Label Content="Log level"
+                                    <TextBlock Text="Log level"
                                            Width="85"
                                            VerticalAlignment="Center" />
                                     <ComboBox x:Name="LogLevelComboBox"

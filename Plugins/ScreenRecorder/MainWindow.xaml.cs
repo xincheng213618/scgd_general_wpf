@@ -1,19 +1,17 @@
-﻿using ScreenRecorderLib;
-using System;
-using System.Collections.Generic;
+﻿#pragma warning disable CS8602,CS8603,CS8622,CS8625,CS8604,CS8619,CS8605,CS8604
+
+using ScreenRecorder.Sources;
+using ScreenRecorderLib;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
-using ScreenRecorder.Sources;
 
 namespace ScreenRecorder
 {
@@ -500,18 +498,18 @@ namespace ScreenRecorder
             if (RecorderOptions.OutputOptions.RecorderMode == RecorderMode.Video)
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                videoPath = Path.Combine(Path.GetTempPath(), "ScreenRecorder", timestamp, timestamp + ".mp4");
+                videoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenRecorder", timestamp, timestamp + ".mp4");
             }
             else if (RecorderOptions.OutputOptions.RecorderMode == RecorderMode.Slideshow)
             {
                 //For slideshow just give a folder path as input.
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss");
-                videoPath = Path.Combine(Path.GetTempPath(), "ScreenRecorder", timestamp) + "\\";
+                videoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenRecorder", timestamp) + "\\";
             }
             else if (RecorderOptions.OutputOptions.RecorderMode == RecorderMode.Screenshot)
             {
                 string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss-ff");
-                videoPath = Path.Combine(Path.GetTempPath(), "ScreenRecorder", timestamp, timestamp + GetImageExtension());
+                videoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenRecorder", timestamp, timestamp + GetImageExtension());
             }
 
             IVideoEncoder videoEncoder;
@@ -803,10 +801,27 @@ namespace ScreenRecorder
             SetOutputDimensions();
             ((CollectionViewSource)Resources["SelectedRecordingSourcesViewSource"]).View.Refresh();
         }
+        public static void OpenFolder(string folder)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("explorer.exe", $"{folder}");
+            }
+
+            if (OperatingSystem.IsMacOS())
+            {
+                Process.Start("open", $"\"{folder}\"");
+            }
+
+            if (OperatingSystem.IsLinux())
+            {
+                Process.Start("xdg-open", $"\"{folder}\"");
+            }
+        }
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(this.OutputResultTextBlock.Text);
+            OpenFolder(this.OutputResultTextBlock.Text);
         }
 
         private void TextBox_GotFocus(object sender, RoutedEventArgs e)
@@ -821,7 +836,7 @@ namespace ScreenRecorder
         {
             try
             {
-                Directory.Delete(Path.Combine(Path.GetTempPath(), "ScreenRecorder"), true);
+                Directory.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenRecorder"), true);
                 MessageBox.Show("Temp files deleted");
             }
             catch (Exception ex)
@@ -831,12 +846,12 @@ namespace ScreenRecorder
         }
         private void OpenRecordedFilesFolderButton_Click(object sender, RoutedEventArgs e)
         {
-            string directory = Path.Combine(Path.GetTempPath(), "ScreenRecorder");
+            string directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenRecorder");
             if (!Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);
             }
-            Process.Start(directory);
+            OpenFolder(directory);
         }
 
         private void VideoEncoderComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

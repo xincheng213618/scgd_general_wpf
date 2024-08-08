@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8602,CS8603
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

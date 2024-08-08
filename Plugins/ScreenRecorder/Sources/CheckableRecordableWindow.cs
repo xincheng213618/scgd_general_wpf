@@ -1,4 +1,6 @@
-﻿using ScreenRecorderLib;
+﻿#pragma warning disable CS8602,CS8603,CS8622,CS8625
+
+using ScreenRecorderLib;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
