@@ -453,6 +453,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             ScatterPlots.Clear();
         }
 
+        public void AddViewResultSpectrum(ViewResultSpectrum viewResultSpectrum)
+        {
+            viewResultSpectrum.V = float.NaN;
+            viewResultSpectrum.I = float.NaN;
+            ViewResultSpectrums.Add(viewResultSpectrum);
+            ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
+            listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
+        }
+
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResultSpectrums.Clear();
