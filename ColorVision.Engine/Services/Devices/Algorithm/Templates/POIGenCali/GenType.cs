@@ -18,6 +18,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
 
     public enum GenCalibrationType
     {
+        [Description("不修正")]
+        None =-1,
         /// <summary>
         /// 只修亮度
         /// </summary>
