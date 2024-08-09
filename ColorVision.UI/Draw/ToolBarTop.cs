@@ -45,6 +45,10 @@ namespace ColorVision.UI.Draw
         public RelayCommand RotateLeftCommand { get; set; }
         public RelayCommand RotateRightCommand { get; set; }
 
+        public RelayCommand FlipHorizontalCommand { get; set; }
+        public RelayCommand FlipVerticalCommand { get; set; }
+
+
         public RelayCommand SaveImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
 
@@ -102,6 +106,9 @@ namespace ColorVision.UI.Draw
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image.Source != null);
             ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image.Source != null);
             ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image.Source != null);
+
+            FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image.Source != null);
+            FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image.Source != null);
             OpenProperty = new RelayCommand(a => new DrawProperties() {Owner = Window.GetWindow(Parent),WindowStartupLocation =WindowStartupLocation.CenterOwner }.Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zoombox.Cursor = Cursors.Hand;
@@ -160,13 +167,13 @@ namespace ColorVision.UI.Draw
 
             contextMenu.Items.Add(menuItemZoom);
 
-            MenuItem menuItemScalingMode = new() { Header = "BitmapScalingMode" };
-            contextMenu.Items.Add(menuItemScalingMode);
-
-
 
             contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
             contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
+
+            contextMenu.Items.Add(new MenuItem() { Header = "水平翻转", Command = FlipHorizontalCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
+
             contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
             contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
 
@@ -178,6 +185,54 @@ namespace ColorVision.UI.Draw
 
 
             ZoomboxSub.ContextMenu = contextMenu;
+        }
+
+        public void FlipHorizontal()
+        {
+            if (Image.RenderTransform is TransformGroup transformGroup)
+            {
+                var scaleTransform = transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault();
+                if (scaleTransform != null)
+                {
+                    scaleTransform.ScaleX *= -1;
+                }
+                else
+                {
+                    scaleTransform = new ScaleTransform { ScaleX = -1 };
+                    transformGroup.Children.Add(scaleTransform);
+                }
+            }
+            else
+            {
+                transformGroup = new TransformGroup();
+                transformGroup.Children.Add(new ScaleTransform { ScaleX = -1 });
+                Image.RenderTransform = transformGroup;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
+        }
+
+        public void FlipVertical()
+        {
+            if (Image.RenderTransform is TransformGroup transformGroup)
+            {
+                var scaleTransform = transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault();
+                if (scaleTransform != null)
+                {
+                    scaleTransform.ScaleY *= -1;
+                }
+                else
+                {
+                    scaleTransform = new ScaleTransform { ScaleY = -1 };
+                    transformGroup.Children.Add(scaleTransform);
+                }
+            }
+            else
+            {
+                transformGroup = new TransformGroup();
+                transformGroup.Children.Add(new ScaleTransform { ScaleY = -1 });
+                Image.RenderTransform = transformGroup;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
         }
 
         public void RotateRight()
