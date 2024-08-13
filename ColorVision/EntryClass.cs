@@ -60,7 +60,7 @@ namespace ColorVision
                         char separator = '\u0001';
                         string combinedArgs = string.Join(separator.ToString(), args);
                         ushort atom = GlobalAddAtom(combinedArgs);
-                        SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
+                        SendMessage(hWnd, WM_USER + 1, IntPtr.Zero,(IntPtr)atom);  // 发送消息
                     }
                     log.Info("程序已经打开");
                     Environment.Exit(0);
