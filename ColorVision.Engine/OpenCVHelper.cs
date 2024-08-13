@@ -199,7 +199,7 @@ namespace ColorVision
     
     public static class OpenCVMediaHelper
     {
-        private const string LibPath = "libs\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\opencv_helper.dll";
 
 
         /// <summary>
@@ -262,7 +262,7 @@ namespace ColorVision
 
     public static class OpenCVHelper
     {
-        private const string LibPath = "libs\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
