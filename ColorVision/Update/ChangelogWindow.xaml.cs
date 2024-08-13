@@ -22,8 +22,8 @@ namespace ColorVision.Update
 
     public class MenuForceUpdate : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => "Update";
+        public override string OwnerGuid => "Update";
+        public override string GuidId => "ForceUpdate";
         public override string Header => Resources.ForceUpdate;
         public override int Order => 10001;
 

@@ -151,8 +151,10 @@ namespace ColorVision.Update
         public async Task ForceUpdate()
         {
             LatestVersion = await GetLatestVersionNumber(UpdateUrl);
-            Update(LatestVersion, Path.GetTempPath());
-
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Update(LatestVersion, Path.GetTempPath());
+            });
         }
 
         // 调用函数以删除所有更新文件
