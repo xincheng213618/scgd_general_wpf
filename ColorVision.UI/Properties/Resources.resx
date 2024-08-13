@@ -178,4 +178,16 @@
   <data name="MenuExit" xml:space="preserve">
     <value>退出(_X)</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>日志</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>打开配置文件</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打开配置文件夹</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>打开日志文件夹</value>
+  </data>
 </root>

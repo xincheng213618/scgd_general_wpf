@@ -10,8 +10,6 @@ using log4net.Repository.Hierarchy;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,34 +18,6 @@ using System.Windows.Input;
 
 namespace ColorVision
 {
-    public class ExportConfigOpen : MenuItemBase
-    {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => "LogOpen";
-        public override int Order => 1;
-        public override string Header => "打开配置文件(_S)";
-        public override void Execute()
-        {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
-        }
-    }
-
-    public class ExportConfigPathOpen : MenuItemBase
-    {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => "LogOpen";
-        public override int Order => 2;
-        public override string Header => "打开配置文件夹(_F)";
-        public override void Execute()
-        {
-            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
-            bool result = Tool.HasDefaultProgram(fileName);
-            if (!result)
-                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
-        }
-    }
-
-
     public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider, IFullScreenState
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));

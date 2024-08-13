@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
@@ -24,7 +25,7 @@ namespace ColorVision
 {
     public class WindowLogExport : MenuItemBase, IHotKey
     {
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => "Log";
         public override string GuidId => "WindowLog";
         public override int Order => 10005;
         public override string Header => Properties.Resources.Log;
@@ -35,23 +36,6 @@ namespace ColorVision
             new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
-
-    public class ExportLogOpen : MenuItemBase
-    {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => "LogOpen";
-        public override int Order => 3;
-        public override string Header => "打开日志文件夹(_L)";
-        public override void Execute()
-        {
-            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
-            if (fileAppender != null)
-            {
-                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
-            }
-        }
-    }
-
 
     public enum LogLoadState
     {

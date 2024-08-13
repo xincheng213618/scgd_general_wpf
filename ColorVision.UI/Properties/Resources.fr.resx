@@ -198,4 +198,16 @@
   <data name="MenuExit" xml:space="preserve">
     <value>Quitter (X)</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>Ouvrir le fichier de configuration</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>Ouvrir le dossier de configuration</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>Dossier OpenLog</value>
+  </data>
 </root>

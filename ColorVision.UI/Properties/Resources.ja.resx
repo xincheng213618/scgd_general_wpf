@@ -198,4 +198,16 @@
   <data name="MenuExit" xml:space="preserve">
     <value>終了する (_X)</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>設定ファイルを開く</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>設定フォルダーを開く</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>ログフォルダを開く</value>
+  </data>
 </root>

@@ -198,4 +198,16 @@
   <data name="MenuExit" xml:space="preserve">
     <value>Выход(Х)</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>Бревно</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>OpenConfigFile</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>ОткрытьКонфигурациюПапка</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>OpenLogFolder</value>
+  </data>
 </root>

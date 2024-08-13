@@ -15,7 +15,7 @@ namespace ColorVision.Engine.MQTT
 {
     public class ExportMQTTTool : MenuItemBase,IHotKey
     {
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => "Log";
         public override string GuidId => "MQTTLog";
         public override string Header => Resources.MQTTLog;
         public override int Order => 1;
