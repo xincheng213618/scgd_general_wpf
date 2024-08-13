@@ -29,8 +29,10 @@ namespace ColorVision
         public override string GuidId => "WindowLog";
         public override int Order => 10005;
         public override string Header => Properties.Resources.Log;
-        public override string InputGestureText => "Ctrl + F2";
-        public HotKeys HotKeys => new(Properties.Resources.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
+        public override string InputGestureText => Hotkey.ToString();
+
+        public static Hotkey Hotkey { get; set; } = new Hotkey(Key.F2, ModifierKeys.Control);
+        public HotKeys HotKeys => new(Properties.Resources.Log, Hotkey, Execute);
         public override void Execute()
         {
             new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
