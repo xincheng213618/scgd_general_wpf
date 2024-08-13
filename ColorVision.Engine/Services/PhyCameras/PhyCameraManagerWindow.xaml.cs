@@ -25,24 +25,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         });
     }
 
-
-    public sealed class NameStringConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is string name)
-            {
-                return string.IsNullOrWhiteSpace(name) ?  "没有配置相机ID" : name;
-            }
-            return string.Empty;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
-        }
-    }
-
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
