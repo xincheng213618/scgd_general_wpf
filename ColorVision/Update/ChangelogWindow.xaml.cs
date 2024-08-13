@@ -25,7 +25,7 @@ namespace ColorVision.Update
         public override string OwnerGuid => "Update";
         public override string GuidId => "ForceUpdate";
         public override string Header => Resources.ForceUpdate;
-        public override int Order => 10001;
+        public override int Order => 10;
 
         public override void Execute()
         {
@@ -38,7 +38,7 @@ namespace ColorVision.Update
         public override string OwnerGuid => "Update";
         public override string GuidId => "ChangeLog";
         public override string Header => Resources.ChangeLog;
-        public override int Order => 10001;
+        public override int Order => 1;
 
         [RequiresPermissionAttribute(PermissionMode.Administrator)]
         public override void Execute()
