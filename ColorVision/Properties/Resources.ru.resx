@@ -363,4 +363,7 @@
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Автоматически прокручивать вниз</value>
   </data>
+  <data name="ForceUpdate" xml:space="preserve">
+    <value>ForceUpdate</value>
+  </data>
 </root>

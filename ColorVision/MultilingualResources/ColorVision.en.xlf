@@ -99,6 +99,10 @@
           <source>过滤器支持正则</source>
           <target state="new">Filter supports regular</target>
         </trans-unit>
+        <trans-unit id="ForceUpdate" translate="yes" xml:space="preserve">
+          <source>强制更新</source>
+          <target state="new">_ForceUpdate</target>
+        </trans-unit>
         <trans-unit id="General" translate="yes" xml:space="preserve">
           <source>通用</source>
           <target state="new">Universal</target>

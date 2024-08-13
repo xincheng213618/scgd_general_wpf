@@ -99,6 +99,10 @@
           <source>过滤器支持正则</source>
           <target state="new">필터는 정규식을 지원합니다</target>
         </trans-unit>
+        <trans-unit id="ForceUpdate" translate="yes" xml:space="preserve">
+          <source>强制更新</source>
+          <target state="new">강제 업데이트</target>
+        </trans-unit>
         <trans-unit id="General" translate="yes" xml:space="preserve">
           <source>通用</source>
           <target state="new">만능인</target>

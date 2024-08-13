@@ -363,4 +363,7 @@
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>Faire défiler automatiquement vers le bas</value>
   </data>
+  <data name="ForceUpdate" xml:space="preserve">
+    <value>Mise à jour forcée</value>
+  </data>
 </root>
