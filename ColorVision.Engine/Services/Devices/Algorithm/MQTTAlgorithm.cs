@@ -240,6 +240,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             MsgSend msg = new()
             {
+                EventName = "LedCheck2",
+                SerialNumber = sn,
+                Params = Params
+            };
+
+            return PublishAsyncClient(msg, 60000);
+        }
+
+        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck2.LedCheck2Param ledCheck2Param, PoiParam poiParam)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = ledCheck2Param.Id, Name = ledCheck2Param.Name });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+
+            MsgSend msg = new()
+            {
                 EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
                 SerialNumber = sn,
                 Params = Params
@@ -247,6 +267,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             return PublishAsyncClient(msg, 60000);
         }
+
+
 
         public MsgRecord LEDStripDetection(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {

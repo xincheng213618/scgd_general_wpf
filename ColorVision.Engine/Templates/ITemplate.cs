@@ -226,10 +226,12 @@ namespace ColorVision.Engine.Templates
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
+
+                    //foreach (var dbDetail in smuDetails)
+                    //{
+                    //    dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    //}
+
                     if (dbModel != null && smuDetails != null)
                     {
                         if (Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }) is T t)
