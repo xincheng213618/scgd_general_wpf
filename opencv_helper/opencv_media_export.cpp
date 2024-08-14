@@ -6,7 +6,7 @@
 
 using json = nlohmann::json;
 
-std::vector<std::pair<int, cv::Mat>> MediaList;
+std::vector<std::pair<uintptr_t, cv::Mat>> MediaList;
 
 std::mutex mediaListMutex; // 定义一个互斥锁
 
@@ -42,7 +42,7 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	}
 	outImage->depth = bitsPerElement; // 设置每像素位数
 	outImage->stride = (int)mat.step; // 设置图像的步长
-	MediaList.push_back(std::make_pair(reinterpret_cast<int>(outImage->pData), mat));
+	MediaList.push_back(std::make_pair(reinterpret_cast<uintptr_t>(outImage->pData), mat));
 }
 
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
@@ -50,7 +50,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
 	auto it = std::find_if(MediaList.begin(), MediaList.end(),
 		[data](const std::pair<int, cv::Mat>& pair) {
-			return pair.first == reinterpret_cast<int>(data);
+			return pair.first == reinterpret_cast<uintptr_t>(data);
 		});
 	if (it != MediaList.end()) {
 		it->second.release();

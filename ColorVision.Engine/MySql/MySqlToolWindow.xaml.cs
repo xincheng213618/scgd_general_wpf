@@ -10,7 +10,7 @@ namespace ColorVision.Engine.MySql
 {
     public class ExportMySqlTool : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => "Log";
         public override string GuidId => "MySqlTool";
         public override string Header => "MySqlTool";
         public override int Order => 2;

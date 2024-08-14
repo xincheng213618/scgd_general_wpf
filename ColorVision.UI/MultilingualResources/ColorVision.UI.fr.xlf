@@ -43,6 +43,10 @@
           <source>您必须重新启动才能使用新的语言设置</source>
           <target state="new">Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</target>
         </trans-unit>
+        <trans-unit id="Log" translate="yes" xml:space="preserve">
+          <source>日志</source>
+          <target state="new">Enregistrer</target>
+        </trans-unit>
         <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
           <source>退出(_X)</source>
           <target state="new">Quitter (X)</target>
@@ -70,6 +74,18 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">Outil(T)</target>
+        </trans-unit>
+        <trans-unit id="OpenConfigFile" translate="yes" xml:space="preserve">
+          <source>打开配置文件</source>
+          <target state="new">Ouvrir le fichier de configuration</target>
+        </trans-unit>
+        <trans-unit id="OpenConfigFolder" translate="yes" xml:space="preserve">
+          <source>打开配置文件夹</source>
+          <target state="new">Ouvrir le dossier de configuration</target>
+        </trans-unit>
+        <trans-unit id="OpenLogFolder" translate="yes" xml:space="preserve">
+          <source>打开日志文件夹</source>
+          <target state="new">Dossier OpenLog</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

@@ -187,6 +187,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 日志 的本地化字符串。
+        /// </summary>
+        public static string Log {
+            get {
+                return ResourceManager.GetString("Log", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 退出(_X) 的本地化字符串。
         /// </summary>
         public static string MenuExit {
@@ -246,6 +255,33 @@ namespace ColorVision.UI.Properties {
         public static string MenuTool {
             get {
                 return ResourceManager.GetString("MenuTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开配置文件 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFile {
+            get {
+                return ResourceManager.GetString("OpenConfigFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开配置文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenConfigFolder {
+            get {
+                return ResourceManager.GetString("OpenConfigFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开日志文件夹 的本地化字符串。
+        /// </summary>
+        public static string OpenLogFolder {
+            get {
+                return ResourceManager.GetString("OpenLogFolder", resourceCulture);
             }
         }
         

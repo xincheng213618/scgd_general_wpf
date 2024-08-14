@@ -43,6 +43,10 @@
           <source>您必须重新启动才能使用新的语言设置</source>
           <target state="new">Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</target>
         </trans-unit>
+        <trans-unit id="Log" translate="yes" xml:space="preserve">
+          <source>日志</source>
+          <target state="new">Бревно</target>
+        </trans-unit>
         <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
           <source>退出(_X)</source>
           <target state="new">Выход(Х)</target>
@@ -70,6 +74,18 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">Инструмент(Т)</target>
+        </trans-unit>
+        <trans-unit id="OpenConfigFile" translate="yes" xml:space="preserve">
+          <source>打开配置文件</source>
+          <target state="new">OpenConfigFile</target>
+        </trans-unit>
+        <trans-unit id="OpenConfigFolder" translate="yes" xml:space="preserve">
+          <source>打开配置文件夹</source>
+          <target state="new">ОткрытьКонфигурациюПапка</target>
+        </trans-unit>
+        <trans-unit id="OpenLogFolder" translate="yes" xml:space="preserve">
+          <source>打开日志文件夹</source>
+          <target state="new">OpenLogFolder</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

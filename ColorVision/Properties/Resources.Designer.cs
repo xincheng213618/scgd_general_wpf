@@ -277,6 +277,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 强制更新 的本地化字符串。
+        /// </summary>
+        public static string ForceUpdate {
+            get {
+                return ResourceManager.GetString("ForceUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 通用 的本地化字符串。
         /// </summary>
         public static string General {

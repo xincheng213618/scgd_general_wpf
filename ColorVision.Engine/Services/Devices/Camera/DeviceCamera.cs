@@ -54,7 +54,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
-            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(), b => AccessControl.Check(OpenPhyCameraManger));
+
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+
             PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
@@ -130,7 +132,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()
         {
-            DService.GetAllCameraID();
+            if (PhyCamera != null)
+            {
+                foreach (var item in PhyCameraManager.GetInstance().PhyCameras)
+                {
+                    item.IsSelected = false;
+                }
+                PhyCamera.IsSelected = true;
+            }
+            else
+            {
+                DService.GetAllCameraID();
+            }
             PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }

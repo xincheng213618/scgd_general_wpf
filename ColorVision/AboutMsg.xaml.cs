@@ -18,25 +18,19 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision
 {
-    public class AboutMsgExport : IHotKey,IMenuItem
+    public class AboutMsgExport : MenuItemBase,IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
 
-        public string? OwnerGuid => "Help";
-        public string? GuidId => "AboutMsg";
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "AboutMsg";
 
-        public int Order => 100000;
-        public Visibility Visibility => Visibility.Visible;
+        public override int Order => 100000;
+        public override string Header => Resources.MenuAbout;
 
-        public string? Header => Resources.MenuAbout;
+        public override string InputGestureText => "Ctrl + F1";
 
-        public string? InputGestureText => "Ctrl + F1";
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A=> Execute());
-
-        private void Execute()
+        public override void Execute()
         {
             new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

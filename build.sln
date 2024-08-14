@@ -46,7 +46,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "Color
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "ColorVision.Solution\ColorVision.Solution.csproj", "{01B0715F-F5DE-4B00-9E0E-7E257782CD85}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCVHelper", "OpenCVHelper\OpenCVHelper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CVImageChannelLib", "CVImageChannelLib\CVImageChannelLib.csproj", "{19D29263-A775-41D1-A263-943E99B3A09B}"
 EndProject

@@ -31,7 +31,7 @@ namespace ColorVision
                     try
                     {
                         char[] chars = new char[1024];
-                        int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
+                        int size = GlobalGetAtomName((ushort)lParam, chars, chars.Length);
                         if (size > 0)
                         {
                             string receivedString = new(chars, 0, size);

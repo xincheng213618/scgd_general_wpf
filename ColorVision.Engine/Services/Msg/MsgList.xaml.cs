@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Msg
 {
     public class ExportMsgList : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => "Log";
         public override string GuidId => "MsgList";
         public override string Header => "MQTTMsg";
         public override int Order => 2;

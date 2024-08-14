@@ -148,6 +148,14 @@ namespace ColorVision.Update
             }
             return false;
         }
+        public async Task ForceUpdate()
+        {
+            LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Update(LatestVersion, Path.GetTempPath());
+            });
+        }
 
         // 调用函数以删除所有更新文件
         public async Task CheckAndUpdate(bool detection = true)
@@ -236,7 +244,9 @@ namespace ColorVision.Update
             return versionString;
         }
 
-        private async Task<Version> GetLatestVersionNumber(string url)
+
+
+        public async Task<Version> GetLatestVersionNumber(string url)
         {
             using HttpClient _httpClient = new();
             string versionString = null;

@@ -363,4 +363,7 @@
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>自動的に一番下までスクロールします</value>
   </data>
+  <data name="ForceUpdate" xml:space="preserve">
+    <value>強制アップデート</value>
+  </data>
 </root>

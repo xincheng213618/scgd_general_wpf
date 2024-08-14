@@ -198,4 +198,16 @@
   <data name="MenuExit" xml:space="preserve">
     <value>退出(_X)</value>
   </data>
+  <data name="Log" xml:space="preserve">
+    <value>紀錄</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>開啟設定檔</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>打開設定資料夾</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>打開日誌資料夾</value>
+  </data>
 </root>

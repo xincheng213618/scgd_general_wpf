@@ -22,7 +22,7 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{aa343239-476e-43e3-bee3-d3313c883341}</ProjectGuid>
-    <RootNamespace>OpenCVHelper</RootNamespace>
+    <RootNamespace>opencv_helper</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -209,7 +209,7 @@
     <ClCompile Include="Utilcom.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OpenCVHelper.rc" />
+    <ResourceCompile Include="opencv_helper.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
