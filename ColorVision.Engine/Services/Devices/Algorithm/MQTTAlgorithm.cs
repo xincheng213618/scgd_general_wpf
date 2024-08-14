@@ -240,7 +240,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             MsgSend msg = new()
             {
-                EventName = "LedCheck2",
+                EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -260,7 +260,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
+                EventName = "FindDotsArray",
                 SerialNumber = sn,
                 Params = Params
             };
