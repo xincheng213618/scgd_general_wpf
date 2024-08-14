@@ -199,6 +199,11 @@
                             <TabItem Header="LedCheck2">
                                 <StackPanel>
                                     <DockPanel Margin="0,2">
+                                        <TextBlock Text="CVOLED_COLOR" Width="60"/>
+                                        <ComboBox  x:Name="ComboxCVOLEDCOLOR"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    </DockPanel>
+
+                                    <DockPanel Margin="0,2">
                                         <TextBlock Text="POI" Width="60"/>
                                         <ComboBox  x:Name="ComboxPoiTemplate3"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">

@@ -207,6 +207,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
             ComboxPoiTemplate3.SelectedIndex = 0;
 
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -688,6 +691,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
             if (ComboxLedCheck2Template.SelectedValue is not LedCheck2Param ledCheck2Param) return;
+            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
+
+            
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
@@ -697,7 +703,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 {
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
-                    MsgRecord ss = Service.LedCheck2(code, type, imgFileName, fileExtType, sn, ledCheck2Param, poiParam);
+                    MsgRecord ss = Service.LedCheck2(code, type, imgFileName, fileExtType, sn, ledCheck2Param, poiParam, color);
                     ServicesHelper.SendCommand(ss, "正在计算灯珠检测2");
                 }
             }

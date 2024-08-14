@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -248,7 +249,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return PublishAsyncClient(msg, 60000);
         }
 
-        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck2.LedCheck2Param ledCheck2Param, PoiParam poiParam)
+
+
+        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck2.LedCheck2Param ledCheck2Param, PoiParam poiParam, CVOLEDCOLOR cOLOR)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -257,6 +260,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = ledCheck2Param.Id, Name = ledCheck2Param.Name });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+            Params.Add("Color", cOLOR);
 
             MsgSend msg = new()
             {
