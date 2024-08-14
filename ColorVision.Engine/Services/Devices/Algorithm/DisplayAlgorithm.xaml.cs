@@ -204,7 +204,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxLedCheck2Template.ItemsSource = TemplateLedCheck2Param.Params;
             ComboxLedCheck2Template.SelectedIndex = 0;
 
-            ComboxPoiTemplate3.ItemsSource = PoiParam.Params;
+            ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
             ComboxPoiTemplate3.SelectedIndex = 0;
 
 
