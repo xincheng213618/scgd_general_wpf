@@ -21,17 +21,22 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
+using LiveChartsCore.Measure;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using OpenCvSharp;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -693,7 +698,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
+                var lEDStripDetectionParam  = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
 
                 string type = string.Empty;
                 string code = string.Empty;
@@ -702,8 +707,27 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, lEDStripDetectionParam.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯带检测");
+                //int h = 0;
+                //int w = 0;
+                //int nbpp = 0;
+                //int nChannels = 3; // Assuming 3 channels as per the function check
+                //int method = 0;
+                //int pointNumber = 10; // Example value
+                //int pointDistance = 0;
+                //int startPosition = 0;
+                //int binaryPercentage = 0;
+
+                //Mat img = Cv2.ImRead(imgFileName);
+                //byte[] inputim = img.ToBytes();
+
+                //int pointname = lEDStripDetectionParam.PointNumber;
+
+                //int i = Algorithms.forPoint(inputim, out int[] xPos,out int[] yPos, img.Rows,img.Cols,img.Depth(),img.Channels(), lEDStripDetectionParam.Method,ref pointname, lEDStripDetectionParam.PointDistance,lEDStripDetectionParam.StartPosition,lEDStripDetectionParam.BinaryPercentage);
+                //MessageBox.Show("1");
+
+
             }
         }
     }

@@ -207,6 +207,7 @@
 
   <ItemGroup>
     <Folder Include="libs\" />
+    <Folder Include="Services\Devices\Algorithm\Templates\LedCheck2\" />
   </ItemGroup>
 
   <ItemGroup>

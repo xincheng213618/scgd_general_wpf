@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -272,9 +273,36 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             {
                 var data = ViewResultCameras[listView1.SelectedIndex];
                 if (string.IsNullOrWhiteSpace(data.FileUrl)) return;
+
                 if (File.Exists(data.FileUrl))
                 {
-                    ImageView.OpenImage(data.FileUrl);
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(data.FileUrl);
+                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            if (fileInfo.Length > 0)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ImageView.OpenImage(data.FileUrl);
+                                });
+                            }
+                        }
+                        catch(Exception ex)
+                        {
+                            log.Warn("文件还在写入");
+                            await Task.Delay(Device.Config.ViewImageReadDelay);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ImageView.OpenImage(data.FileUrl);
+                            });
+                        }
+
+
+                    });
+
                 }
                 else
                 {

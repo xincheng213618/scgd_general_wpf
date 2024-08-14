@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.Dump
 {
-    public class ExportDump : IMenuItemMeta
+    public class MenuDump : IMenuItemMeta
     {
         public string? OwnerGuid => "Help";
 
