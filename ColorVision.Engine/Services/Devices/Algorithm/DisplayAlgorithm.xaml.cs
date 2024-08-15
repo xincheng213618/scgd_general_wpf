@@ -689,11 +689,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLedCheck2Template, "请先选择灯珠检测模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate3, "请先选择关注点模板")) return;
 
-            if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
             if (ComboxLedCheck2Template.SelectedValue is not LedCheck2Param ledCheck2Param) return;
             if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
+            if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
 
-            
+
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
