@@ -39,6 +39,13 @@ namespace ColorVision.UI.Draw
             visuals.Clear();
 
         }
+        public void OnlyAddVisual(Visual visual)
+        {
+            visuals.Add(visual);
+
+            AddVisualChild(visual);
+            AddLogicalChild(visual);
+        }
 
 
         public void AddVisual(Visual visual)

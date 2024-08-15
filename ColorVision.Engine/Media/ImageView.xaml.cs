@@ -206,13 +206,17 @@ namespace ColorVision.Engine.Media
             }
         }
 
+        bool IsLayoutUpdated = false;
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            foreach (var item in DrawingVisualLists)
+            if (IsLayoutUpdated)
             {
-                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                item.Render();
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    item.Render();
+                }
             }
         }
 
@@ -1387,6 +1391,19 @@ namespace ColorVision.Engine.Media
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        private void Test_Click(object sender, RoutedEventArgs e)
+        {
+            for (int i = 0; i < 600; i++)
+            {
+                for (int j = 0; j < 700; j++)
+                {
+                    DVCircle dVCircle = new DVCircle() { Center = new Point(i*5, j*5), Radius = 1,Pen = new Pen(Brushes.Red, 0.1) };
+                    dVCircle.Render();
+                    ImageShow.OnlyAddVisual(dVCircle);
+                }
+            }
         }
     }
 }
