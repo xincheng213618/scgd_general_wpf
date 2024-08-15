@@ -375,9 +375,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(ghostResultData);
                             }
                         }
+
                         if (result.ViewResults.Count != 0 && result.ViewResults[0] is ViewResultGhost viewResultGhost)
                         {
-
                             try
                             {
                                 string GhostPixels = viewResultGhost.GhostPixels;
@@ -441,10 +441,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
 
                         }
-
                         header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
                         bdHeader = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
-
                         break;
                     case AlgorithmResultType.Distortion:
                         if (result.ViewResults == null)
@@ -470,6 +468,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             AddPoint(points1);
                         }
                         break;
+
                     case AlgorithmResultType.LedCheck:
                         if (result.ViewResults == null)
                         {

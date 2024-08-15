@@ -489,7 +489,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             string type = deviceService.ServiceTypes.ToString();
             string code = deviceService.Code;
 
-            DService.CallFunction(param, sn, imgFileName, fileExtType, code, type, color,  poiParam);
+            DService.CallFunction(param, sn, imgFileName, fileExtType, code, type,   poiParam,color);
         }
     }
 }
