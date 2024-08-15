@@ -81,7 +81,7 @@
                                         <ComboBox  x:Name="ComboxLedCheck2Template"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheck2Param" Click="MenuItem_Template"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheck2" Click="TemplateSetting_Click"/>
                                         </Grid>
                                     </DockPanel>
                                 </StackPanel>
