@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (revise.Id != -1)
                 Params.Add("ReviseTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
             if (output.Id != -1)
-                Params.Add("OutputTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
+                Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
 
             MsgSend msg = new()
             {
