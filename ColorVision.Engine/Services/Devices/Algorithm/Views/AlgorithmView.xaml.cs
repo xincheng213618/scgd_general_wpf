@@ -51,6 +51,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private bool _IsShowListView = true;
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowSideListView = true;
+
+
+        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
+        private bool _AutoRefreshView;
+
     }
 
 
@@ -82,10 +87,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-
-
             listView1.ItemsSource = AlgResults;
-
+            Config.AutoRefreshView = true;
             var keyValuePairs =
             TextBoxType.ItemsSource = Enum.GetValues(typeof(AlgorithmResultType))
                 .Cast<AlgorithmResultType>()
@@ -185,7 +188,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 AlgResults.AddUnique(algorithmResult);
-                RefreshResultListView();
+                if (Config.AutoRefreshView)
+                    RefreshResultListView();
             }
         }
 
@@ -287,10 +291,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(poiResultCIExyuvData);
                             };
                         }
-                        //亮度
+
                         header = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
                         bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
-
                         foreach (var item in result.ViewResults)
                         {
                             if (item is PoiResultData poiResultData)
@@ -298,6 +301,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 DrawPoiPoint.Add(poiResultData.Point);
                             }
                         }
+
                         AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
@@ -518,7 +522,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         break;
                     case AlgorithmResultType.BuildPOI:
-                        if (result.ViewResults == null)
+                        if (result.ViewResults == null)  
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
                             List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
@@ -695,6 +699,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public async void AddPOIPoint(List<POIPoint> PoiPoints)
         {
             ImageView.ImageShow.Clear();
+            await Task.Delay(1000);
             for (int i = 0; i < PoiPoints.Count; i++)
             {
                 if (i % 10000 == 0)
@@ -725,13 +730,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case POIPointTypes.Mask:
                         break;
                     case POIPointTypes.SolidPoint:
-                        DVCircleText Circle1 = new();
+                        DVCircle Circle1 = new();
                         Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle1.Attribute.Radius = 10;
                         Circle1.Attribute.Brush = Brushes.Red;
                         Circle1.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle1.Attribute.Id = item.Id ?? -1;
-                        Circle1.Attribute.Text = item.Name;
                         Circle1.Render();
                         ImageView.AddVisual(Circle1);
                         break;

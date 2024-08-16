@@ -582,7 +582,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        public void OpenImage(string? filePath)
+        public async void OpenImage(string? filePath)
         {
             log.Info($"OpenImageFile :{filePath}");
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
@@ -604,6 +604,7 @@ namespace ColorVision.Engine.Media
                         if (Config.IsShowLoadImage && isLargeFile)
                         {  
                             WaitControl.Visibility = Visibility.Visible;
+                            await Task.Delay(100);
                             Task.Run(() =>
                             {
                                 CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);

@@ -10,6 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     public class AlgResultMasterModel : PKModel
     {
         public AlgResultMasterModel() { }
+
         public AlgResultMasterModel(int? tid, string tname, string imgFile, string pms, AlgorithmResultType imgFileType, int? batchId, int? resultCode, string result)
         {
             TId = tid;
