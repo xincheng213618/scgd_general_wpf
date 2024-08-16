@@ -37,6 +37,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
+
+        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
+        private bool _AutoRefreshView;
     }
 
 
@@ -49,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
-        public MQTTCamera DeviceService{ get; set; }
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
@@ -57,7 +59,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public ViewCamera(DeviceCamera device)
         {
             Device = device;
-            DeviceService = device.DService;
             InitializeComponent();
         }
 
@@ -98,7 +99,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-            DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
+            Device.DService.MsgReturnReceived += DeviceService_OnMessageRecved;
         }
 
 
@@ -327,7 +328,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
                             ImageView.Config.FilePath = localName;
-                            MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
+                            MsgRecord msgRecord = Device.DService.DownloadFile(data.FilePath, fileExt);
                         }
                         else
                         {
@@ -357,8 +358,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCamera result = new(model);
             ViewResultCameras.AddUnique(result);
 
-            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
-            listView1.ScrollIntoView(listView1.SelectedItem);
+            if (Config.AutoRefreshView)
+            {
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                listView1.ScrollIntoView(listView1.SelectedItem);
+            }
         }
 
 
