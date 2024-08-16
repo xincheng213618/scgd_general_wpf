@@ -287,7 +287,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(poiResultCIExyuvData);
                             };
                         }
-
                         //亮度
                         header = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
                         bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
@@ -643,6 +642,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
+            AlgResults.Clear();
+            List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
+            foreach (var item in algResults)
+            {
+                AlgorithmResult algorithmResult = new(item);
+                AlgResults.AddUnique(algorithmResult);
+            }
+        }
+        private void Search_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
             SerchPopup.IsOpen = true;
             TextBoxType.SelectedIndex = -1;
             TextBoxId.Text = string.Empty;
@@ -683,10 +692,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
 
-        public void AddPOIPoint(List<POIPoint> PoiPoints)
+        public async void AddPOIPoint(List<POIPoint> PoiPoints)
         {
-            foreach (var item in PoiPoints)
+            ImageView.ImageShow.Clear();
+            for (int i = 0; i < PoiPoints.Count; i++)
             {
+                if (i % 10000 == 0)
+                    await Task.Delay(30);
+
+                var item = PoiPoints[i];
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
@@ -694,7 +708,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle.Attribute.Id = item.Id ?? -1;
                         Circle.Render();
                         ImageView.AddVisual(Circle);
@@ -703,7 +717,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         DVRectangle Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Rectangle.Attribute.Id = item.Id ?? -1;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
@@ -715,7 +729,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle1.Attribute.Radius = 10;
                         Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle1.Attribute.Id = item.Id ?? -1;
                         Circle1.Attribute.Text = item.Name;
                         Circle1.Render();
@@ -773,48 +787,69 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex>0 && listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+            if (listView1.SelectedItems.Count > 0)
             {
-                if (listView1.SelectedIndex < 0)
-                {
-                    MessageBox.Show("您需要先选择数据");
-                    return;
-                }
-                using var dialog = new System.Windows.Forms.SaveFileDialog();
-                dialog.Filter = "CSV files (*.csv) | *.csv";
-                dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-                dialog.RestoreDirectory = true;
+                using var dialog = new System.Windows.Forms.FolderBrowserDialog();
+                dialog.Description = "请选择保存文件的文件夹";
+                dialog.ShowNewFolderButton = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                switch (result.ResultType)
-                {   
-                    case AlgorithmResultType.POI:
-                        break;
-                    case AlgorithmResultType.POI_XYZ:
-                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                        PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
-                        break;
-                    case AlgorithmResultType.POI_Y:
-                        break;
-                    case AlgorithmResultType.FOV:
-                        break;
-                    case AlgorithmResultType.SFR:
-                        break;
-                    case AlgorithmResultType.MTF:
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        break;
-                    case AlgorithmResultType.LedCheck:
-                        break;
-                    case AlgorithmResultType.LightArea:
-                        break;
-                    case AlgorithmResultType.Distortion:
-                        break;
-                    case AlgorithmResultType.BuildPOI:
-                        break;
-                    default:
-                        break;
+                string selectedPath = dialog.SelectedPath;
+
+                foreach (var selectedItem in listView1.SelectedItems)
+                {
+                    if (selectedItem is AlgorithmResult result)
+                    {
+                        string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
+
+                        switch (result.ResultType)
+                        {
+                            case AlgorithmResultType.POI:
+                                // Handle POI result saving logic here
+                                break;
+                            case AlgorithmResultType.POI_XYZ:
+                                var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
+                                PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
+                                break;
+                            case AlgorithmResultType.POI_Y:
+                                var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
+                                PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
+                                // Handle POI_Y result saving logic here
+                                break;
+                            case AlgorithmResultType.FOV:
+                                // Handle FOV result saving logic here
+                                break;
+                            case AlgorithmResultType.SFR:
+                                // Handle SFR result saving logic here
+                                break;
+                            case AlgorithmResultType.MTF:
+                                // Handle MTF result saving logic here
+                                break;
+                            case AlgorithmResultType.Ghost:
+                                // Handle Ghost result saving logic here
+                                break;
+                            case AlgorithmResultType.LedCheck:
+                                // Handle LedCheck result saving logic here
+                                break;
+                            case AlgorithmResultType.LightArea:
+                                // Handle LightArea result saving logic here
+                                break;
+                            case AlgorithmResultType.Distortion:
+                                // Handle Distortion result saving logic here
+                                break;
+                            case AlgorithmResultType.BuildPOI:
+                                // Handle BuildPOI result saving logic here
+                                break;
+                            default:
+                                // Handle default case here
+                                break;
+                        }
+                    }
                 }
+            }
+            else
+            {
+                MessageBox.Show("您需要先选择数据");
             }
         }
 
@@ -848,5 +883,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 MessageBox.Show("没有选择条目");
             }
         }
+
+
     }
 }
