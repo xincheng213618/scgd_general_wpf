@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput
 {
     public class ExportPoiGenCalParam : ExportTemplateBase
     {
-        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string OwnerGuid => "TemplatePOI";
         public override string GuidId => "PoiOutput";
         public override string Header => "PoiOutput算法设置";
         public override int Order => 0;

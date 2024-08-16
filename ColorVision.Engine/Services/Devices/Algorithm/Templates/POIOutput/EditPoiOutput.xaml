@@ -14,6 +14,9 @@
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
@@ -28,6 +31,11 @@
                             <TextBlock Text="使用X" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding XIsEnable}"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding XSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding XFileName}"/>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
                 <!-- Y Configuration -->
@@ -36,6 +44,11 @@
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="使用Y" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding YIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding YSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding YFileName}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
@@ -47,6 +60,11 @@
                             <TextBlock Text="使用Z" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding ZIsEnable}"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding ZSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding ZFileName}"/>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
@@ -56,6 +74,11 @@
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="使用x" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding xIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding xSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding xFileName}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
@@ -67,6 +90,11 @@
                             <TextBlock Text="使用y" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding yIsEnable}"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding ySetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding yFileName}"/>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
                 <!-- u Configuration -->
@@ -75,6 +103,11 @@
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="使用u" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding uIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding uSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding uFileName}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
@@ -86,6 +119,11 @@
                             <TextBlock Text="使用v" MinWidth="100"/>
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding vIsEnable}"/>
                         </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding vSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding vFileName}"/>
+                        </DockPanel>
                     </StackPanel>
                 </Border>
 
@@ -93,8 +131,27 @@
                 <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="5,5,5,0">
                         <DockPanel  Margin="0,0,0,5">
-                            <TextBlock Text="使用Lab" MinWidth="100"/>
-                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding LabIsEnable}"/>
+                            <TextBlock Text="使用CCT" MinWidth="100"/>
+                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding CCTIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding CCTSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding CCTFileName}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
+                    <StackPanel Margin="5,5,5,0">
+                        <DockPanel  Margin="0,0,0,5">
+                            <TextBlock Text="使用Wave" MinWidth="100"/>
+                            <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding WaveIsEnable}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding WaveSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding WaveFileName}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>

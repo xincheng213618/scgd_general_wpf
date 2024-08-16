@@ -10,5 +10,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
         public override int Order => 2;
     }
 
+    public class ExportMenuItemPOI : MenuItemBase
+    {
+        public override string OwnerGuid => "Template";
+        public override string GuidId => "TemplatePOI";
+        public override string Header => "POI相关模板";
+        public override int Order => 2;
+    }
+
 
 }
