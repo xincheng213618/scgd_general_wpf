@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
@@ -53,20 +54,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam filter, PoiReviseParam revise, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam filter, PoiReviseParam revise, PoiOutputParam output,string sn)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
+            sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
+
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             if (filter.Id !=-1)
                 Params.Add("FilterTemplate", new CVTemplateParam() { ID = filter.Id, Name = filter.Name });
             if (revise.Id != -1)
-            {
                 Params.Add("ReviseTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
-
-            }
+            if (output.Id != -1)
+                Params.Add("OutputTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
 
             MsgSend msg = new()
             {

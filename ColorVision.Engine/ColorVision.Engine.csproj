@@ -165,6 +165,9 @@
     <Compile Update="Services\Devices\Algorithm\Templates\POIGenCali\EditPoiGenCali.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\POIOutput\EditPoiOutput.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

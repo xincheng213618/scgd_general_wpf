@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -200,7 +201,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiCal.SelectedIndex = 0;
 
-
             ComboxLedCheck2Template.ItemsSource = TemplateLedCheck2Param.Params;
             ComboxLedCheck2Template.SelectedIndex = 0;
 
@@ -210,6 +210,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;
+
+            ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
+            ComboxPoiOutput.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -282,6 +285,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
             if (ComboxPoiCal.SelectedValue is not PoiReviseParam pOICalParam) return;
+            if (ComboxPoiOutput.SelectedValue is not PoiOutputParam poiOutputParam) return;
+
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
@@ -292,7 +297,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, sn);
+            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {
@@ -624,10 +629,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "POIFilter":
-                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxPoiFilter.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "PoiRevise":
-                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxPoiCal.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
+                    case "PoiOutput":
+                        new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

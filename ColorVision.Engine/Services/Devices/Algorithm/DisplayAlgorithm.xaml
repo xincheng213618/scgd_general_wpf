@@ -87,6 +87,14 @@
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="PoiRevise" Click="MenuItem_Template"/>
                                         </Grid>
                                     </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="Output" Width="40"/>
+                                        <ComboBox  x:Name="ComboxPoiOutput"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="PoiOutput" Click="MenuItem_Template"/>
+                                        </Grid>
+                                    </DockPanel>
                                 </StackPanel>
                             </TabItem>
                             <TabItem Header="FOV">
