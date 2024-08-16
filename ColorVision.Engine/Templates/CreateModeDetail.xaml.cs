@@ -37,14 +37,15 @@ namespace ColorVision.Engine.Templates
             SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid);
             BorderEdit.DataContext = CreateConfig;
 
-            var values = SysDictionaryModDetaiModels
-                            .Select(item => new KeyValuePair<int, string>((int)item.AddressCode,item.Name ?? item.Symbol??item.AddressCode.ToString() ))
-                            .ToList();
-            CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
-            CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
-
-            ComboBoxSymbol.ItemsSource = values;
-
+            if (SysDictionaryModDetaiModels.Count > 0)
+            {
+                var values = SysDictionaryModDetaiModels
+                .Select(item => new KeyValuePair<int, string>((int)item.AddressCode, item.Name ?? item.Symbol ?? item.AddressCode.ToString()))
+                .ToList();
+                CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
+                CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
+                ComboBoxSymbol.ItemsSource = values;
+            }
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

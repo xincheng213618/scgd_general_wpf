@@ -33,6 +33,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
+using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -468,7 +470,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             AddPoint(points1);
                         }
                         break;
-
+                    case AlgorithmResultType.FindDotsArrayMem:
                     case AlgorithmResultType.LedCheck:
                         if (result.ViewResults == null)
                         {
@@ -484,19 +486,37 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         bdHeader = new List<string> { "Point", "Radius" };
 
                         List<Point> points = new();
+                        List<double> Radius = new();
+
+
                         foreach (var item in result.ViewResults)
                         {
                             if (item is ViewResultLedCheck viewResultLedCheck)
                             {
+                                points.Add(viewResultLedCheck.Point);
+                                Radius.Add(viewResultLedCheck.Radius);
+                            }
+                        }
+                        Application.Current.Dispatcher.Invoke(async () =>
+                        {
+                            for (int i = 0; i < points.Count; i++)
+                            {
+                                if (i % 10000 == 0)
+                                    await Task.Delay(30);
+
                                 DVCircle Circle = new();
-                                Circle.Attribute.Center = viewResultLedCheck.Point;
-                                Circle.Attribute.Radius = viewResultLedCheck.Radius;
+                                Circle.Attribute.Center = points[i];
+                                Circle.Attribute.Radius = Radius[i];
                                 Circle.Attribute.Brush = Brushes.Transparent;
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
                                 Circle.Render();
-                                ImageView.ImageShow.AddVisual(Circle);
+                                ImageView.ImageShow.OnlyAddVisual(Circle);
                             }
-                        }
+                        });
+
+
+
+
                         break;
                     case AlgorithmResultType.BuildPOI:
                         if (result.ViewResults == null)
@@ -662,6 +682,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
+
         public void AddPOIPoint(List<POIPoint> PoiPoints)
         {
             foreach (var item in PoiPoints)
@@ -669,23 +690,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircleText Circle = new();
+                        DVCircle Circle = new();
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                         Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangleText Rectangle = new();
+                        DVRectangle Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                         Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Text = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
