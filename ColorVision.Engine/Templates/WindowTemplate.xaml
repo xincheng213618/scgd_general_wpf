@@ -105,20 +105,20 @@
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
-            <UniformGrid x:Name="FunctionGrid"  Margin="0,2"   Columns="5">
-                <Button  Click="Button_New_Click" Margin="2" >
+            <UniformGrid x:Name="FunctionGrid"    Columns="5">
+                <Button  Click="Button_New_Click" Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.New}"/>
                 </Button>
-                <Button   Click="Button_Del_Click"  Margin="2" >
+                <Button   Click="Button_Del_Click"  Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.Delete}"/>
                 </Button>
-                <Button   Click="Button_Save_Click" Margin="2" >
+                <Button   Click="Button_Save_Click" Margin="0,0,5,0"  >
                     <TextBlock Text="{x:Static properties:Resources.Save}"/>
                 </Button>
-                <Button    Click="Button_Export_Click" Margin="2" >
+                <Button    Click="Button_Export_Click" Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.Export}"/>
                 </Button>
-                <Button Click="Button_Import_Click" Margin="2" >
+                <Button Click="Button_Import_Click">
                     <TextBlock Text="{x:Static properties:Resources.Import}"/>
                 </Button>
 

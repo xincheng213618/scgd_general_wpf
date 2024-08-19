@@ -22,15 +22,15 @@
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
         <ScrollViewer>
             <StackPanel Margin="5">
-                <DockPanel  Margin="0,0,0,5" >
+                <DockPanel  Margin="5,0,0,5" >
                     <TextBlock HorizontalAlignment="Left" Text="Heigth"  MinWidth="100"/>
                     <TextBox Text="{Binding Height}"  Width="100" HorizontalAlignment="Left"/>
                 </DockPanel>
-                <DockPanel  Margin="0,0,0,5" >
+                <DockPanel  Margin="5,0,0,5" >
                     <TextBlock HorizontalAlignment="Left" Text="Width"  MinWidth="100"/>
                     <TextBox Text="{Binding Width}" Width="100" HorizontalAlignment="Left"/>
                 </DockPanel>
-                <DockPanel  Margin="0,0,0,5" >
+                <DockPanel  Margin="5,0,0,5" >
                     <TextBlock HorizontalAlignment="Left" Text="对标参数"  MinWidth="100"/>
                 </DockPanel>
                 <Border Grid.Row="1" Style="{StaticResource BorderModuleArea}" CornerRadius="5" Margin="0,0,0,5">
