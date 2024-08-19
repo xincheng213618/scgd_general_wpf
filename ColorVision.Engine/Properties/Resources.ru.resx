@@ -447,9 +447,6 @@
   <data name="MenuLogin" xml:space="preserve">
     <value>Вход в аккаунт(_L)</value>
   </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>ия шариков лампы (L)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Настройки шаблона призрака (G)</value>
   </data>

@@ -471,10 +471,6 @@
           <source>鬼影模板设置(_G)</source>
           <target state="new">Paramètres du modèle fantôme (G)</target>
         </trans-unit>
-        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
-          <source>灯珠检测模板设置(_L)</source>
-          <target state="new">Paramètre du modèle de détection de perles de lampe (L)</target>
-        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">Compte de connexion (_L)</target>

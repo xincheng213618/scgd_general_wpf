@@ -16,6 +16,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -201,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiCal.SelectedIndex = 0;
 
-            ComboxLedCheck2Template.ItemsSource = TemplateLedCheck2Param.Params;
+            ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxLedCheck2Template.SelectedIndex = 0;
 
             ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
@@ -614,7 +615,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplateLedCheckParam(), ComboxLedCheckTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "LedCheck2Param":
-                        new WindowTemplate(new TemplateLedCheck2Param(), ComboxLedCheck2Template.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateThirdParty("LedCheck2"), ComboxLedCheck2Template.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FocusPointsParam":
                         new WindowTemplate(new TemplateFocusPointsParam(),ComboxFocusPointsTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -697,7 +698,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLedCheck2Template, "请先选择灯珠检测模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate3, "请先选择关注点模板")) return;
 
-            if (ComboxLedCheck2Template.SelectedValue is not LedCheck2Param ledCheck2Param) return;
+            if (ComboxLedCheck2Template.SelectedValue is not ModThirdPartyParam ledCheck2Param) return;
             if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
             if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
 

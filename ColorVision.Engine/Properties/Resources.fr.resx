@@ -447,9 +447,6 @@
   <data name="MenuLogin" xml:space="preserve">
     <value>Compte de connexion (_L)</value>
   </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>Paramètre du modèle de détection de perles de lampe (L)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Paramètres du modèle fantôme (G)</value>
   </data>

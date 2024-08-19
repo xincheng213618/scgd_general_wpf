@@ -447,9 +447,6 @@
   <data name="MenuLogin" xml:space="preserve">
     <value>登入帳號(_L)</value>
   </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>燈珠偵測模板設定(L)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板設定(G)</value>
   </data>

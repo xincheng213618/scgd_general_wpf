@@ -59,11 +59,11 @@
                         <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <StackPanel>
-                        <TabControl>
+                        <TabControl BorderThickness="0" Background="Transparent">
                             <TabItem x:Name="POITabItem" Header="POI" IsSelected="True">
                                 <StackPanel Margin="0,5" >
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="POI" Width="40"/>
+                                        <TextBlock Text="POI" Width="50"/>
                                         <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
                                         <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -72,7 +72,7 @@
                                         </Grid>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="Filter" Width="40"/>
+                                        <TextBlock Text="Filter" Width="50"/>
                                         <ComboBox  x:Name="ComboxPoiFilter"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -80,7 +80,7 @@
                                         </Grid>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="Revise" Width="40"/>
+                                        <TextBlock Text="revise" Width="50"/>
                                         <ComboBox  x:Name="ComboxPoiCal"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -88,7 +88,7 @@
                                         </Grid>
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="Output" Width="40"/>
+                                        <TextBlock Text="output" Width="50"/>
                                         <ComboBox  x:Name="ComboxPoiOutput"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -182,7 +182,7 @@
                                     </DockPanel>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="LedCheck">
+                            <TabItem Header="灯珠检测">
                                 <StackPanel>
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="POI" Width="60"/>
@@ -204,7 +204,7 @@
                                 </StackPanel>
                             </TabItem>
 
-                            <TabItem Header="LedCheck2">
+                            <TabItem Header="灯珠检测2">
                                 <StackPanel>
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="CVOLED_COLOR" Width="60"/>

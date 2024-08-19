@@ -471,10 +471,6 @@
           <source>鬼影模板设置(_G)</source>
           <target state="new">Настройки шаблона призрака (G)</target>
         </trans-unit>
-        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
-          <source>灯珠检测模板设置(_L)</source>
-          <target state="new">ия шариков лампы (L)</target>
-        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">Вход в аккаунт(_L)</target>

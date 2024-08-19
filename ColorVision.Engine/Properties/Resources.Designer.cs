@@ -1096,15 +1096,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 灯珠检测模板设置(_L) 的本地化字符串。
-        /// </summary>
-        public static string MenuLedCheck {
-            get {
-                return ResourceManager.GetString("MenuLedCheck", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 登录账号(_L) 的本地化字符串。
         /// </summary>
         public static string MenuLogin {

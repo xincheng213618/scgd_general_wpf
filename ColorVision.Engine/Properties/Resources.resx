@@ -427,9 +427,6 @@
   <data name="MenuLogin" xml:space="preserve">
     <value>登录账号(_L)</value>
   </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>灯珠检测模板设置(_L)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板设置(_G)</value>
   </data>

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -251,7 +252,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
 
 
-        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck2.LedCheck2Param ledCheck2Param, PoiParam poiParam, CVOLEDCOLOR cOLOR)
+        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, ModThirdPartyParam ledCheck2Param, PoiParam poiParam, CVOLEDCOLOR cOLOR)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

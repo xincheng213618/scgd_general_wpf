@@ -447,9 +447,6 @@
   <data name="MenuLogin" xml:space="preserve">
     <value>_Login account</value>
   </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>_Led Check</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>_Ghost</value>
   </data>

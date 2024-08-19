@@ -471,10 +471,6 @@
           <source>鬼影模板设置(_G)</source>
           <target state="new">鬼影模板設定(G)</target>
         </trans-unit>
-        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
-          <source>灯珠检测模板设置(_L)</source>
-          <target state="new">燈珠偵測模板設定(L)</target>
-        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">登入帳號(_L)</target>

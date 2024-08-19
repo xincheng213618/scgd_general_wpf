@@ -156,9 +156,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\LedCheck2\EditLedCheck2.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
