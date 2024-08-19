@@ -48,7 +48,7 @@
                         </Button>
                         <Button  Content="{x:Static properties:Resources.Exchange}" Click="Exchange_Click" Margin="2,0,0,0"/>
                         
-                        <Button x:Name="Search" Content="{x:Static properties:Resources.Inquire}" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Search" Content="{x:Static properties:Resources.Inquire}" PreviewMouseRightButtonUp="Search_PreviewMouseRightButtonUp" Click="Search1_Click" Margin="2,0,0,0"/>
                         <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                             <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
                                 <StackPanel Margin="5">
@@ -80,9 +80,9 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
                         <Button x:Name="ButtonChart" Content="{x:Static properties:Resources.Chart}" Click="ButtonChart_Click"/>
+                        <ToggleButton x:Name="tbAutoRefreshView" Style="{StaticResource ToggleButtonSwitch}" Content="自动刷新" IsChecked="{Binding Config.AutoRefreshView}"/>
                     </ToolBar>
                 </ToolBarTray>
                 <ListView Grid.Row="1" x:Name="listView1" Height="250" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}"  BorderThickness="0"  Padding="0" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >

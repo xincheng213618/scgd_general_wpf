@@ -9,7 +9,6 @@
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Window.Resources>
-        <local:NameStringConverter x:Key="NameStringConverter"/>
         <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
@@ -43,10 +42,9 @@
                 <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
-                            <StackPanel Margin="5">
+                            <StackPanel Margin="-15,5,0,5">
                                 <TextBlock Text="{Binding Id}"/>
-                                <TextBlock Text="{Binding CameraLicenseModel.Model}"/>
-                                <TextBlock Text="{Binding Name,Converter={StaticResource NameStringConverter}}"/>
+                                <TextBlock Text="{Binding Code}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                     </TreeView.Resources>

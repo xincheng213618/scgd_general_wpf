@@ -363,4 +363,7 @@
   <data name="AutoScrollToEnd" xml:space="preserve">
     <value>自动滚动到底部</value>
   </data>
+  <data name="ForceUpdate" xml:space="preserve">
+    <value>强制更新</value>
+  </data>
 </root>

@@ -72,6 +72,7 @@
                             </StackPanel>
                         </Border>
                     </Popup>
+                    <ToggleButton x:Name="tbAutoRefreshView" Style="{StaticResource ToggleButtonSwitch}" Content="自动刷新" IsChecked="{Binding Config.AutoRefreshView}"/>
                 </ToolBar>
             </ToolBarTray>
             <ListView Height="250" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1" x:Name="listView1"  BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >

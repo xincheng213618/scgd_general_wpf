@@ -51,9 +51,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             CameraPhyID.ItemsSource = PhyCameras;
 
-            CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraID);
+            CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraCode);
             CameraPhyID.DisplayMemberPath = "Code";
-            CameraPhyID.SelectedValuePath = "Name";
 
             var type = DeviceCamera.Config.CameraType;
 

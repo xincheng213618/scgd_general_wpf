@@ -21,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVis
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{55F5939D-C4F5-498D-97B0-8117E84F0FB1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCVHelper", "OpenCVHelper\OpenCVHelper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3rdparty", "3rdparty", "{8C2994F6-EF3C-40D2-A3C2-187B234805A0}"
 EndProject

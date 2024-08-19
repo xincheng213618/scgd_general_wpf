@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.POIFilters;
@@ -52,20 +54,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam filter, PoiReviseParam revise, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam filter, PoiReviseParam revise, PoiOutputParam output,string sn)
         {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
+            sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
+
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             if (filter.Id !=-1)
                 Params.Add("FilterTemplate", new CVTemplateParam() { ID = filter.Id, Name = filter.Name });
             if (revise.Id != -1)
-            {
                 Params.Add("ReviseTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
-
-            }
+            if (output.Id != -1)
+                Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
 
             MsgSend msg = new()
             {
@@ -247,6 +248,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             return PublishAsyncClient(msg, 60000);
         }
+
+
+
+        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, Templates.LedCheck2.LedCheck2Param ledCheck2Param, PoiParam poiParam, CVOLEDCOLOR cOLOR)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = ledCheck2Param.Id, Name = ledCheck2Param.Name });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+            Params.Add("Color", cOLOR);
+
+            MsgSend msg = new()
+            {
+                EventName = "FindDotsArray",
+                SerialNumber = sn,
+                Params = Params
+            };
+
+            return PublishAsyncClient(msg, 60000);
+        }
+
+
 
         public MsgRecord LEDStripDetection(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {

@@ -92,15 +92,15 @@
                     <Button  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
                 </DockPanel>
                 <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Visibility="Collapsed" Click="Close_Click" />
-                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
+                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
-                        <DockPanel Margin="0,2" >
+                        <DockPanel Margin="0,0,0,3" >
                             <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
                         </DockPanel>
-                        
-                        <DockPanel Margin="0,2" >
+
+                        <DockPanel Margin="0,0,0,3" >
                             <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.Gain}" Minimum="0" Maximum="5000"/>
@@ -110,32 +110,32 @@
                     <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}"  >
                             <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel Margin="0,2">
+                                <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50"  />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
                                 </DockPanel>
                             </StackPanel>
                             <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
+                                <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="60" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeRLog}" Minimum="0" Maximum="11.002"/>
                                 </DockPanel>
-                                <DockPanel Margin="0,2">
+                                <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="60" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeGLog}" Minimum="0" Maximum="11.002"/>
                                 </DockPanel>
-                                <DockPanel Margin="0,2">
+                                <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="60" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.001" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeBLog}" Minimum="0" Maximum="11.002"/>
                                 </DockPanel>
                             </StackPanel>
                         </StackPanel>
-                       
-                        <StackPanel>
+
+                        <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}" Margin="0,0,0,3">
                             <DockPanel >
                                 <Button Content="{x:Static properties:Resources.AutoExposure}"  DockPanel.Dock="Right"  Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
                                 <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
@@ -147,22 +147,22 @@
                         </StackPanel>
 
 
-                        <StackPanel Margin="0,2" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <StackPanel Margin="0,0,0,2" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition  Width="*"/>
                                     <ColumnDefinition  Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel Margin="0,0,0,3">
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime1"/>
                                         </Grid>
                                         <TextBlock Text="曝光"  Margin="0,0,5,0"/>
                                         <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" />
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
+                                    <DockPanel Margin="0,0">
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
@@ -198,7 +198,7 @@
                     </GroupBox>
 
                 </StackPanel>
-                <DockPanel Margin="0,2,0,0" >
+                <DockPanel Margin="0,0,0,0" >
                     <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                 </DockPanel>

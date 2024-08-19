@@ -61,11 +61,7 @@ namespace ColorVision.Engine.Services.Types
             int pkId = sysResource.Id;
             if (pkId > 0 && resourceDao.GetById(pkId) is SysResourceModel model)
             {
-                TerminalService terminalService = TypeService.ServiceTypes switch
-                {
-                    ServiceTypes.Camera => new TerminalCamera(model),
-                    _ => new TerminalService(model),
-                };
+                TerminalService terminalService = new TerminalService(model);
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
 
@@ -75,7 +71,7 @@ namespace ColorVision.Engine.Services.Types
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建失败，数据库插入失败，请联系开发人员", "ColorVision");
             }
 
         }

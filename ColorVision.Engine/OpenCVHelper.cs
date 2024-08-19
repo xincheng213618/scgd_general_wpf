@@ -197,49 +197,9 @@ namespace ColorVision
         COLORMAP_DEEPGREEN = 21  //!< ![deepgreen](pics/colormaps/colorscale_deepgreen.jpg)
     };
     
-    public class ConfigDLLlInitializer:IInitializer
-    {
-        private readonly IMessageUpdater _messageUpdater;
-        public ConfigDLLlInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
-
-        public int Order => 0;
-
-        private string _OpenCVHelperLibPath;
-        public async Task InitializeAsync()
-        {
-            _messageUpdater.UpdateMessage("正在设置环境变量");
-            await Task.Delay(10);
-            ConfigDLL.Instance.SetEnvironmentVariable();
-        }
-    }
-
-    public class ConfigDLL : ViewModelBase ,IConfig
-    {
-        public static ConfigDLL Instance => ConfigHandler.GetInstance().GetRequiredService <ConfigDLL>();
-
-
-        public void SetEnvironmentVariable()
-        {    
-
-        }
-
-        public string OpenCVHelperLibPath { get => _OpenCVHelperLibPath; set { _OpenCVHelperLibPath = value;NotifyPropertyChanged(); } }
-        private string _OpenCVHelperLibPath  = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "lib");
-
-
-
-
-
-
-    }
-
-
     public static class OpenCVMediaHelper
     {
-        private const string LibPath = "libs\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\opencv_helper.dll";
 
 
         /// <summary>
@@ -302,7 +262,7 @@ namespace ColorVision
 
     public static class OpenCVHelper
     {
-        private const string LibPath = "libs\\OpenCVHelper.dll";
+        private const string LibPath = "libs\\opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);

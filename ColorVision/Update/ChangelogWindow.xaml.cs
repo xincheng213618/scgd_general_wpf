@@ -12,12 +12,58 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
-    public class ExportMenuChangeLog : MenuItemBase
+    public class MenuUpdate : MenuItemBase
     {
         public override string OwnerGuid => "Help";
+        public override string GuidId => "Update";
+        public override string Header => Resources.Update;
+        public override int Order => 10001;
+    }
+
+    public class MenuForceUpdate : MenuItemBase
+    {
+        public override string OwnerGuid => "Update";
+        public override string GuidId => "ForceUpdate";
+        public override string Header => Resources.ForceUpdate;
+        public override int Order => 100;
+
+        public override void Execute()
+        {
+            Task.Run(() => AutoUpdater.GetInstance().ForceUpdate());
+        }
+    }
+
+    public class MenuUpdateBaidu : MenuItemBase
+    {
+        public override string OwnerGuid => "Update";
+        public override string GuidId => "UpdateBaidu";
+        public override string Header => "百度云下载";
+        public override int Order => 10;
+
+        public override void Execute()
+        {
+            PlatformHelper.Open("https://pan.baidu.com/s/1cB4IP4F2NppYmRl8fQantw?pwd=tz67");
+        }
+    }
+    public class MenuUpdatelocal : MenuItemBase
+    {
+        public override string OwnerGuid => "Update";
+        public override string GuidId => "Updatelocal";
+        public override string Header => "本地下载";
+        public override int Order => 10;
+
+        public override void Execute()
+        {
+            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision");
+        }
+    }
+
+    public class ExportMenuChangeLog : MenuItemBase
+    {
+        public override string OwnerGuid => "Update";
         public override string GuidId => "ChangeLog";
         public override string Header => Resources.ChangeLog;
-        public override int Order => 10001;
+        public override int Order => 1;
 
         [RequiresPermissionAttribute(PermissionMode.Administrator)]
         public override void Execute()

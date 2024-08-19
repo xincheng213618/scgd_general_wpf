@@ -156,10 +156,16 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\LedCheck2\EditLedCheck2.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\POIGenCali\EditPoiGenCali.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
@@ -210,19 +216,19 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\packages\opencv\x64\opencv_core480.dll" Link="libs\opencv_core480.dll">
+    <None Include="..\packages\opencv\x64\opencv_core4100.dll" Link="libs\opencv_core4100.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\packages\opencv\x64\opencv_highgui480.dll" Link="libs\opencv_highgui480.dll">
+    <None Include="..\packages\opencv\x64\opencv_highgui4100.dll" Link="libs\opencv_highgui4100.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\packages\opencv\x64\opencv_imgcodecs480.dll" Link="libs\opencv_imgcodecs480.dll">
+    <None Include="..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="libs\opencv_imgcodecs4100.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\packages\opencv\x64\opencv_imgproc480.dll" Link="libs\opencv_imgproc480.dll">
+    <None Include="..\packages\opencv\x64\opencv_imgproc4100.dll" Link="libs\opencv_imgproc4100.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\packages\opencv\x64\opencv_videoio480.dll" Link="libs\opencv_videoio480.dll">
+    <None Include="..\packages\opencv\x64\opencv_videoio4100.dll" Link="libs\opencv_videoio4100.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

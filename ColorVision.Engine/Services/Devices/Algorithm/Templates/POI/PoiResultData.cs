@@ -4,12 +4,47 @@ using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System;
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text;
+using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
     public class PoiResultCIEYData : PoiResultData, IViewResult
     {
+        public static void SaveCsv(ObservableCollection<PoiResultCIEYData> poiResultCIExyuvDatas, string FileName)
+        {
+            var csvBuilder = new StringBuilder();
+            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "Y" };
+
+            // 写入列头
+            csvBuilder.AppendLine(string.Join(",", properties));
+
+            // 写入数据行
+            foreach (var item in poiResultCIExyuvDatas)
+            {
+                List<string> values = new()
+                {
+                    item.POIPoint.Id?.ToString(CultureInfo.InvariantCulture),
+                    item.Name,
+                    $"{item.Point.PixelX}|{item.Point.PixelY}" ,
+                    $"{item.Point.Width}|{item.Point.Height}",
+                    item.Shapes,
+                    item.Y.ToString(CultureInfo.InvariantCulture),
+                };
+
+                csvBuilder.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+
+
+
         public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
         private double _Y;
 

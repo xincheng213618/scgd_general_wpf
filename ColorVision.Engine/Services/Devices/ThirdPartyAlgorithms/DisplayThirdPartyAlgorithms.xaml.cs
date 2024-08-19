@@ -1,11 +1,13 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -163,6 +165,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             CTCombineSpacingDataImp.ItemsSource = TemplateThirdParty.Params.GetValue("combineSpacingDataImp");
             CTCombineSpacingDataImp.SelectedIndex = 0;
+
+            ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
+            ComboxLedCheck2Template.SelectedIndex = 0;
+
+            ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
+            ComboxPoiTemplate3.SelectedIndex = 0;
+
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
 
 
@@ -459,6 +471,25 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         }
 
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
 
+        }
+
+        private void LedCheck2_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxLedCheck2Template.SelectedValue is not ModThirdPartyParam param) return;
+            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+
+            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
+            if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
+
+            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
+
+            string type = deviceService.ServiceTypes.ToString();
+            string code = deviceService.Code;
+
+            DService.CallFunction(param, sn, imgFileName, fileExtType, code, type,   poiParam,color);
+        }
     }
 }

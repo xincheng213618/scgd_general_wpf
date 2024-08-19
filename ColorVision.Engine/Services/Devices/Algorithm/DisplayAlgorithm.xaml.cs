@@ -7,8 +7,10 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -21,17 +23,22 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
+using LiveChartsCore.Measure;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using OpenCvSharp;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Printing;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -159,6 +166,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
+
+
+
             ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
 
@@ -191,6 +201,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiCal.SelectedIndex = 0;
 
+            ComboxLedCheck2Template.ItemsSource = TemplateLedCheck2Param.Params;
+            ComboxLedCheck2Template.SelectedIndex = 0;
+
+            ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
+            ComboxPoiTemplate3.SelectedIndex = 0;
+
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
+
+            ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
+            ComboxPoiOutput.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -263,6 +285,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
             if (ComboxPoiCal.SelectedValue is not PoiReviseParam pOICalParam) return;
+            if (ComboxPoiOutput.SelectedValue is not PoiOutputParam poiOutputParam) return;
+
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
@@ -273,7 +297,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, sn);
+            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {
@@ -589,6 +613,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     case "LedCheckParam":
                         new WindowTemplate(new TemplateLedCheckParam(), ComboxLedCheckTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
+                    case "LedCheck2Param":
+                        new WindowTemplate(new TemplateLedCheck2Param(), ComboxLedCheck2Template.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
                     case "FocusPointsParam":
                         new WindowTemplate(new TemplateFocusPointsParam(),ComboxFocusPointsTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
@@ -602,10 +629,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "POIFilter":
-                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxPoiFilter.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "PoiRevise":
-                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxPoiCal.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
+                    case "PoiOutput":
+                        new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
@@ -661,6 +691,32 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
+
+        private void LedCheck2_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsTemplateSelected(ComboxLedCheck2Template, "请先选择灯珠检测模板")) return;
+            if (!IsTemplateSelected(ComboxPoiTemplate3, "请先选择关注点模板")) return;
+
+            if (ComboxLedCheck2Template.SelectedValue is not LedCheck2Param ledCheck2Param) return;
+            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
+            if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
+
+
+
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
+            {
+                string type = string.Empty;
+                string code = string.Empty;
+                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+                {
+                    type = deviceService.ServiceTypes.ToString();
+                    code = deviceService.Code;
+                    MsgRecord ss = Service.LedCheck2(code, type, imgFileName, fileExtType, sn, ledCheck2Param, poiParam, color);
+                    ServicesHelper.SendCommand(ss, "正在计算灯珠检测2");
+                }
+            }
+        }
+
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             string type = string.Empty;
@@ -693,7 +749,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
+                var lEDStripDetectionParam  = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
 
                 string type = string.Empty;
                 string code = string.Empty;
@@ -702,9 +758,29 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, lEDStripDetectionParam.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯带检测");
+                //int h = 0;
+                //int w = 0;
+                //int nbpp = 0;
+                //int nChannels = 3; // Assuming 3 channels as per the function check
+                //int method = 0;
+                //int pointNumber = 10; // Example value
+                //int pointDistance = 0;
+                //int startPosition = 0;
+                //int binaryPercentage = 0;
+
+                //Mat img = Cv2.ImRead(imgFileName);
+                //byte[] inputim = img.ToBytes();
+
+                //int pointname = lEDStripDetectionParam.PointNumber;
+
+                //int i = Algorithms.forPoint(inputim, out int[] xPos,out int[] yPos, img.Rows,img.Cols,img.Depth(),img.Channels(), lEDStripDetectionParam.Method,ref pointname, lEDStripDetectionParam.PointDistance,lEDStripDetectionParam.StartPosition,lEDStripDetectionParam.BinaryPercentage);
+                //MessageBox.Show("1");
+
+
             }
         }
+
     }
 }

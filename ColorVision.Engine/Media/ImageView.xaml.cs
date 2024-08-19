@@ -206,13 +206,17 @@ namespace ColorVision.Engine.Media
             }
         }
 
+        bool IsLayoutUpdated = false;
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            foreach (var item in DrawingVisualLists)
+            if (IsLayoutUpdated)
             {
-                item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                item.Render();
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    item.Render();
+                }
             }
         }
 
@@ -578,7 +582,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        public void OpenImage(string? filePath)
+        public async void OpenImage(string? filePath)
         {
             log.Info($"OpenImageFile :{filePath}");
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
@@ -600,6 +604,7 @@ namespace ColorVision.Engine.Media
                         if (Config.IsShowLoadImage && isLargeFile)
                         {  
                             WaitControl.Visibility = Visibility.Visible;
+                            await Task.Delay(100);
                             Task.Run(() =>
                             {
                                 CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);

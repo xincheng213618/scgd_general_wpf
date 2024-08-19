@@ -8,6 +8,7 @@ namespace ColorVision.Engine.Services.Devices
 {
     public class BaseConfig: ViewModelBase, IServiceConfig, IHeartbeat
     {
+
         public string SubscribeTopic { get => _SubscribeTopic; set { _SubscribeTopic = value; NotifyPropertyChanged(); } }
         private string _SubscribeTopic;
 

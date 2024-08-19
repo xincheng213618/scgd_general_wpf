@@ -34,6 +34,10 @@
                                 <TextBlock Text="心跳时间"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
+                            <DockPanel Margin="0,0,0,5" >
+                                <TextBlock Text="打开图像超时" Width="120"/>
+                                <TextBox Text="{Binding ViewImageReadDelay}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
                             <DockPanel Margin="0,0,0,0" >
                                 <TextBlock Text="设备自动连接" Width="120"/>
                                 <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
@@ -47,7 +51,7 @@
                             <DockPanel Margin="0,2">
                                 <Button Content="应用参数" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
                                 <TextBlock Text="物理相机Code" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectedValue="{Binding CameraID}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
+                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
