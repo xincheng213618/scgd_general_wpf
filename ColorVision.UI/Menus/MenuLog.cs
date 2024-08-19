@@ -42,8 +42,6 @@ namespace ColorVision.UI.Menus
         }
     }
 
-
-
     public class MenuOpenLogFolder : MenuItemBase
     {
         public override string OwnerGuid => "Log";
