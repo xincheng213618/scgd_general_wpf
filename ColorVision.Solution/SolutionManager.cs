@@ -41,12 +41,19 @@ namespace ColorVision.Solution
 
         public async Task InitializeAsync()
         {
-            await Task.Delay(30);
-            _= Task.Run(() =>
+            Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
+
+            string directoryPath = "D:\\CVTest";
+            string fileExtension = "*.cvsln";
+
+            if (Directory.Exists(directoryPath))
             {
-                Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
-            });
-            await Task.Delay(30);
+                var files = Directory.GetFiles(directoryPath, fileExtension);
+                if (files.Length == 0)
+                {
+                    Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance().CreateSolution(directoryPath));
+                }
+            }
         }
     }
 
@@ -97,6 +104,7 @@ namespace ColorVision.Solution
             {
                 su = OpenSolution(solutionpath);
             }
+
             else if (SolutionHistory.RecentFiles.Count > 0)
             {
                 su =OpenSolution(SolutionHistory.RecentFiles[0]);
