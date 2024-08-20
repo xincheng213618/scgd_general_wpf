@@ -45,6 +45,7 @@ namespace ColorVision.Solution
                     {
                         log.UpdateMessage("检测到服务默认路径下，不存在工程，正在创建默认项目");
                         Application.Current.Dispatcher.Invoke(() => solutionManager.CreateSolution(directoryPath));
+                        su = true;
                     }
                     else
                     {
