@@ -3,61 +3,14 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
-using ColorVision.UI;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution
 {
-
-    public interface ISolutionProcess
-    {
-        string Name { get; set; }
-        public string GuidId { get; }
-
-        Control UserControl { get; }
-
-        ImageSource IconSource { get; }
-
-        void Open();
-        void Close();
-    }
-
-    public class SolutionManagerInitializer : IInitializer
-    {
-        private readonly IMessageUpdater _messageUpdater;
-
-        public SolutionManagerInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
-
-        public int Order => 1;
-
-        public async Task InitializeAsync()
-        {
-            Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
-
-            string directoryPath = "D:\\CVTest";
-            string fileExtension = "*.cvsln";
-
-            if (Directory.Exists(directoryPath))
-            {
-                var files = Directory.GetFiles(directoryPath, fileExtension);
-                if (files.Length == 0)
-                {
-                    Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance().CreateSolution(directoryPath));
-                }
-            }
-        }
-    }
-
-
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -70,6 +23,7 @@ namespace ColorVision.Solution
         public static SolutionManager GetInstance() { lock (_locker) { _instance ??= new SolutionManager(); return _instance; } }
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
+
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         /// <summary>
