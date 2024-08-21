@@ -11,7 +11,7 @@ namespace ColorVision.Engine.API
     public partial class WindowAPI : Window
     {
         public WindowAPI()
-        {
+        {   
             InitializeComponent();
         }
 

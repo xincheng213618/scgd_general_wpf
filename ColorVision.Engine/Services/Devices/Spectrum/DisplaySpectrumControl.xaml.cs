@@ -189,6 +189,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             SpectrumService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
         }
+
         private void Button_Click_GetParam(object sender, RoutedEventArgs e)
         {
             SpectrumService.GetParam();

@@ -15,6 +15,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using static ScottPlot.Plottable.PopulationPlot;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -109,11 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 EventName = "SetParam",
                 ServiceName = Config.Code,
-                Params = new AutoIntTimeParam()
-                {
-                    iLimitTime = iLimitTime,
-                    fTimeB = fTimeB
-                }
+                Params = new Dictionary<string, object>() { { "IntegralTime", iLimitTime }, { "NumberOfAverage", fTimeB } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -173,23 +170,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return true;
         }
 
-        internal bool InitDark(float IntTime, int AveNum)
+        public bool InitDark(float IntTime, int AveNum)
         {
             MsgSend msg = new()
             {
                 EventName = "InitDark",
                 ServiceName = Config.Code,
-                Params = new InitDarkParamMQTT()
-                {
-                    IntTime = IntTime,
-                    AveNum = AveNum,
-                }
+                Params = new Dictionary<string, object>() { { "IntegralTime", IntTime }, { "NumberOfAverage", AveNum } }
+
             };
             PublishAsyncClient(msg);
             return true;
         }
 
-        internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
+        public void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             MsgSend msg = new()
             {
@@ -208,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             cmdMap.Add(msg.MsgID.ToString(), msg);
         }
 
-        internal void GetDataAutoStop()
+        public void GetDataAutoStop()
         {
             MsgSend msg = new()
             {
