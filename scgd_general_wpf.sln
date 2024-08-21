@@ -69,6 +69,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{17024679-C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper_test", "Test\opencv_helper_test\opencv_helper_test.vcxproj", "{D19D50AD-3762-4AA4-8883-9660EC833B9B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LocalApi", "LocalApi\LocalApi.csproj", "{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -417,6 +419,22 @@ Global
 		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x64.Build.0 = Release|x64
 		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x86.ActiveCfg = Release|Win32
 		{D19D50AD-3762-4AA4-8883-9660EC833B9B}.Release|x86.Build.0 = Release|Win32
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|Any CPU.Build.0 = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|ARM64.Build.0 = Debug|ARM64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|x64.ActiveCfg = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|x64.Build.0 = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|x86.ActiveCfg = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Debug|x86.Build.0 = Debug|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|Any CPU.ActiveCfg = Release|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|Any CPU.Build.0 = Release|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|ARM64.ActiveCfg = Release|ARM64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|ARM64.Build.0 = Release|ARM64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|x64.ActiveCfg = Release|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|x64.Build.0 = Release|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|x86.ActiveCfg = Release|x64
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -443,14 +461,15 @@ Global
 		{C2909378-C660-4852-8A29-E2C5E7FBC48C} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{48CDE2AC-1B7F-43EC-A043-7768521830ED} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{D19D50AD-3762-4AA4-8883-9660EC833B9B} = {17024679-C50D-4948-A0F7-4A67B6EFBEA8}
+		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal
