@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-            DisplayLazy = new Lazy<DisplaySpectrumControl>(() => new DisplaySpectrumControl(this));
+            DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
             ResourceManagerCommand = new RelayCommand(a =>
             {
@@ -100,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
-        readonly Lazy<DisplaySpectrumControl> DisplayLazy;
+        readonly Lazy<DisplaySpectrum> DisplayLazy;
         public override UserControl GetDisplayControl() => DisplayLazy.Value;
         public override MQTTServiceBase? GetMQTTService()
         {

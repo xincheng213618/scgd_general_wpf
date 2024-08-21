@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     {
         public ObservableCollection<ViewResultSMU> ViewResultSMUs { get; set; } = new ObservableCollection<ViewResultSMU>();
         public View View { get; set; }
+
         public ViewSMU()
         {
             InitializeComponent();

@@ -14,9 +14,9 @@ using static cvColorVision.GCSDLL;
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
-    /// DisplaySpectrumControl.xaml 的交互逻辑
+    /// DisplaySpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySpectrumControl : UserControl, IDisPlayControl
+    public partial class DisplaySpectrum : UserControl, IDisPlayControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DService; }
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public string DisPlayName => DeviceSpectrum.Config.Name;
 
-        public DisplaySpectrumControl(DeviceSpectrum DeviceSpectrum)
+        public DisplaySpectrum(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;
             InitializeComponent();
