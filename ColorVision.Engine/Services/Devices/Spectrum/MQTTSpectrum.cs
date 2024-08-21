@@ -1,5 +1,8 @@
-﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
@@ -11,11 +14,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using static ScottPlot.Plottable.PopulationPlot;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
