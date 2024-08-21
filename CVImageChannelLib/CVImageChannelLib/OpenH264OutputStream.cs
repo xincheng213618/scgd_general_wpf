@@ -1,3 +1,4 @@
+#pragma warning disable CA2201
 using System;
 using System.IO;
 using System.Net;
@@ -22,7 +23,7 @@ public class OpenH264OutputStream : MemoryStream
 
 	private static int pidx = 1;
 
-	private static int gpidx = 0;
+	private static int gpidx;
 
 	private const int udpMaxPacket = 65200;
 

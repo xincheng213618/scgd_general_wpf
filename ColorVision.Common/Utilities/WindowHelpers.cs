@@ -4,7 +4,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Common.Utilities
 {
-    internal class WindowStatus
+    public sealed class WindowStatus
     {
         public object Root { get; set; }
         public Panel Parent { get; set; }
@@ -15,6 +15,7 @@ namespace ColorVision.Common.Utilities
 
         public ResizeMode ResizeMode { get; set; }
     }
+
 
     public interface IFullScreenState : INotifyPropertyChanged
     {

@@ -1,3 +1,4 @@
+#pragma warning disable CS8625
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -11,7 +12,7 @@ public class UDPClientRecv
 
 	public UdpClient udpClient { get; set; }
 
-	public event UDPReceivedEventHandler UDPMessageReceived;
+	public event UDPReceivedEvent UDPMessageReceived;
 
 	public UDPClientRecv(string locateIP, int locatePort)
 	{

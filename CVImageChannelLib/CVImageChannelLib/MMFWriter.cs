@@ -1,3 +1,5 @@
+#pragma warning disable CA1816,CS8604
+
 using System;
 using System.Collections.Generic;
 using System.IO;

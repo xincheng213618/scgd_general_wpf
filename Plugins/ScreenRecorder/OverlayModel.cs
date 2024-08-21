@@ -1,43 +1,21 @@
 ﻿using ScreenRecorderLib;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ScreenRecorder
 {
     public class OverlayModel : INotifyPropertyChanged
     {
-        private bool _isEnabled;
-        public bool IsEnabled
-        {
-            get { return _isEnabled; }
-            set
-            {
-                if (_isEnabled != value)
-                {
-                    _isEnabled = value;
-                    RaisePropertyChanged("IsEnabled");
-                }
-            }
-        }
-
-        private RecordingOverlayBase _overlay;
-        public RecordingOverlayBase Overlay
-        {
-            get { return _overlay; }
-            set
-            {
-                if (_overlay != value)
-                {
-                    _overlay = value;
-                    RaisePropertyChanged("Overlay");
-                }
-            }
-        }
-
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
-        }
         public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// 消息通知事件
+        /// </summary>
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        public bool IsEnabled { get => _IsEnabled; set { if (_IsEnabled == value) return; _IsEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsEnabled;
+
+        public RecordingOverlayBase Overlay { get => _Overlay; set { if (_Overlay == value) return; _Overlay = value; NotifyPropertyChanged(); } }
+        private RecordingOverlayBase _Overlay;
     }
 }

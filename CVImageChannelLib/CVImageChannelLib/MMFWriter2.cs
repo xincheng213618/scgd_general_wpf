@@ -1,3 +1,5 @@
+#pragma warning disable CA1816,CS8604
+
 using System;
 using System.Collections.Generic;
 using System.IO.MemoryMappedFiles;
@@ -5,15 +7,15 @@ using log4net;
 
 namespace CVImageChannelLib;
 
-public class MMFWriterEx : CVImageWriterProxy
+public class MMFWriter2 : CVImageWriterProxy
 {
-	private static readonly ILog logger = LogManager.GetLogger(typeof(MMFWriterEx));
+	private static readonly ILog logger = LogManager.GetLogger(typeof(MMFWriter2));
 
 	private MMFEndpointProxy<CVImagePacket> publisher;
 
 	public string Name { get; set; }
 
-	public MMFWriterEx()
+	public MMFWriter2()
 	{
 	}
 

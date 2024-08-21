@@ -1,3 +1,5 @@
+#pragma warning disable CS8625,CS8603
+
 using System;
 using System.IO.MemoryMappedFiles;
 using System.Windows;
@@ -35,7 +37,7 @@ public class MMFReader : CVImageReaderProxy
 		return null;
 	}
 
-    private WriteableBitmap writeableBitmap = null;
+    private WriteableBitmap writeableBitmap;
 
     public override WriteableBitmap Subscribe()
 	{
@@ -69,10 +71,7 @@ public class MMFReader : CVImageReaderProxy
 
 	public override void Dispose()
 	{
-		if (subscriber != null)
-		{
-			subscriber.Dispose();
-		}
+		GC.SuppressFinalize(this);
 		base.Dispose();
 	}
 }

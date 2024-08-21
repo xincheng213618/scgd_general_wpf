@@ -1,3 +1,4 @@
+#pragma warning disable CS8603
 using System;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
@@ -86,5 +87,6 @@ public class VideoReader : CVImageReaderProxy
 		base.Dispose();
 		h264Reader?.Dispose();
 		reader?.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }
