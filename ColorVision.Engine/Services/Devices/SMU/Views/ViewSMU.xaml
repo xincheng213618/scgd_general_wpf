@@ -32,21 +32,21 @@
 
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="38"/>
+                    <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ToolBarTray Grid.Row="0" Panel.ZIndex="9">
-                    <ToolBar  ToolBarTray.IsLocked="True">
-                        <ToggleButton Click="Button1_Click" Margin="2,0,0,0" >
+                    <ToolBar Padding="3,2" ToolBarTray.IsLocked="True">
+                        <ToggleButton Click="Button1_Click" Margin="0,0,2,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
-                        <Button Click="Button_Click" Margin="2,0,0,0" >
+                        <Button Click="Button_Click" Margin="0,0,2,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                         </Button>
-                        <Button Click="Button2_Click" Margin="2,0,0,0"  >
+                        <Button Click="Button2_Click" Margin="0,0,2,0"  >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                         </Button>
-                        <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="2,0,0,0" >
+                        <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="0,0,2,0"  >
                             <ToggleButton.Style>
                                 <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
                                     <Setter Property="Content">
@@ -66,10 +66,10 @@
                                 </Style>
                             </ToggleButton.Style>
                         </ToggleButton>
-                        <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
+                        <Button  Content="交换" Click="Exchange_Click" Margin="0,0,2,0" />
 
-                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="0,0,2,0" />
+                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click"  />
                         <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                             <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
                                 <StackPanel Margin="5">
@@ -96,8 +96,11 @@
                     </ToolBar>
                 </ToolBarTray>
 
-               
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+                
+                <ListView  Height="200" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
@@ -159,9 +162,9 @@
                     </ListView.View>
                 </ListView>
             </Grid>
-            <GridSplitter  Grid.Row="1" Panel.ZIndex="999" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter  Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1"  Style="{StaticResource ListView.Small}" Background="Transparent" Margin="-5" BorderThickness="0" SelectionChanged="listView2_SelectionChanged" >
+        <ListView x:Name="listView2"  Grid.Column="1"  Style="{StaticResource ListView.Small}" Background="Transparent"  BorderThickness="0" SelectionChanged="listView2_SelectionChanged" >
             <ListView.Resources>
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>

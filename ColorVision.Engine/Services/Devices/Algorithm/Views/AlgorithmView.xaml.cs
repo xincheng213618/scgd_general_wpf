@@ -1,5 +1,4 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Draw;
 using ColorVision.Engine.Media;
@@ -14,7 +13,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -38,27 +36,6 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-
-    public class ViewAlgorithmConfig : ViewModelBase, IConfig
-    {
-        public static ViewAlgorithmConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewAlgorithmConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-        public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowSideListView = true;
-
-
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-
-    }
-
-
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -623,10 +600,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            if (ListRow2.ActualHeight > 38)
+            if (ListRow2.ActualHeight > 32)
             {
                 var listView = !IsExchange ? listView1 : listViewSide;
-                listView.Height = ListRow2.ActualHeight - 38;
+                listView.Height = ListRow2.ActualHeight - 32;
                 ListRow2.Height = GridLength.Auto;
                 ListRow1.Height = new GridLength(1, GridUnitType.Star);
 

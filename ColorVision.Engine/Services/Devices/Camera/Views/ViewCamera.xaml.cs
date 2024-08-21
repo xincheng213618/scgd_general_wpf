@@ -42,7 +42,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private bool _AutoRefreshView;
     }
 
-
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
@@ -52,6 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
@@ -528,6 +528,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
                 }
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            listView1.Height = MainGridRow2.ActualHeight - 32;
+            MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
+            MainGridRow2.Height = GridLength.Auto;
         }
     }
 }

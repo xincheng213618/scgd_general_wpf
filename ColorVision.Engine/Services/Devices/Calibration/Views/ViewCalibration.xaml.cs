@@ -70,11 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             this.DataContext = this;
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
-
             listView1.ItemsSource = ViewResults;
-
-            ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
-            ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
             {
@@ -426,90 +422,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
         }
 
-        private void POI_Click(object sender, RoutedEventArgs e)
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
-            {
-                if (poiParams.Id == -1)
-                {
-                    ImageView.ImageShow.Clear();
-                    return;
-                }
-                ImageView.ImageShow.Clear();
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    switch (item.PointType)
-                    {
-                        case RiPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                            Circle.Attribute.Radius = item.PixWidth;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.Id = item.Id;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Render();
-                            ImageView.ImageShow.AddVisual(Circle);
-                            break;
-                        case RiPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Name = item.Name;
-                            Rectangle.Render();
-                            ImageView.ImageShow.AddVisual(Rectangle);
-                            break;
-                        case RiPointTypes.Mask:
-                            break;
-                    }
-               }
-            }
-        }
-
-        private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
-            {
-                if (poiParams.Id == -1)
-                {
-                    ImageView.ImageShow.Clear();
-                    return;
-                }
-                ImageView.ImageShow.Clear();
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    switch (item.PointType)
-                    {
-                        case RiPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                            Circle.Attribute.Radius = item.PixHeight / 2;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.Id = item.Id;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Render();
-                            ImageView.ImageShow.AddVisual(Circle);
-                            break;
-                        case RiPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Name = item.Name;
-                            Rectangle.Render();
-                            ImageView.ImageShow.AddVisual(Rectangle);
-                            break;
-                        case RiPointTypes.Mask:
-                            break;
-                    }
-                }
-            }
+            listView1.Height = MainGridRow2.ActualHeight - 32;
+            MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
+            MainGridRow2.Height = GridLength.Auto;
         }
     }
 }

@@ -10,7 +10,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewCamera}"
-             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}"  Initialized="UserControl_Initialized">
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -21,8 +21,8 @@
     </UserControl.Resources>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition x:Name="MainGridRow1"  Height="*"/>
+            <RowDefinition x:Name="MainGridRow2" Height="Auto"/>
         </Grid.RowDefinitions>
         <cv:ImageView Grid.Row="0" x:Name="ImageView"></cv:ImageView>
         <Grid x:Name="Grid1" Grid.Row="1">
@@ -30,17 +30,17 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <ToolBarTray  Grid.Row="0" Panel.ZIndex="9"  IsLocked="True" Margin="0,1,0,1" Background="Transparent">
+            <ToolBarTray  Grid.Row="0" Panel.ZIndex="9"  IsLocked="True"  Background="Transparent">
                 <ToolBar Band="0" BandIndex="0" Padding="3,2" >
-                    <ToggleButton  Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                    <Button Click="Button_Click_Export" Margin="2,0,0,0" >
+                    <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" Margin="0,0,2,0" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                    <Button Click="Button_Click_Export" Margin="0,0,2,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
-                    <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
+                    <Button Click="Button_Click_Clear" Margin="0,0,2,0"  >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                     </Button>
-                    <Button Content="{x:Static properties:Resources.Search}" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                    <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click" Margin="2,0,0,0"/>
+                    <Button Content="{x:Static properties:Resources.Search}" Click="SearchAdvanced_Click" Margin="0,0,2,0"/>
+                    <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click" Margin="0,0,2,0"/>
                     <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                         <Border Margin="5" Style="{StaticResource BorderModuleArea}"  Width="227">
                             <StackPanel Margin="5">
@@ -75,7 +75,11 @@
                     <ToggleButton x:Name="tbAutoRefreshView" Style="{StaticResource ToggleButtonSwitch}" Content="自动刷新" IsChecked="{Binding Config.AutoRefreshView}"/>
                 </ToolBar>
             </ToolBarTray>
-            <ListView Height="250" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1" x:Name="listView1"  BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+            <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+            </Button>
+
+            <ListView  x:Name="listView1" Height="200" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1"   BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
@@ -161,6 +165,6 @@
 
             </ListView>
         </Grid>
-
+        <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
     </Grid>
 </UserControl>

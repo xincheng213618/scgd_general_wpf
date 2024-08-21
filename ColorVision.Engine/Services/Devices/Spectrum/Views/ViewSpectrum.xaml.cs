@@ -433,7 +433,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             var listView = !IsExchange ? listView1 : listView2;
 
-            listView1.Height = ListRow2.ActualHeight - 38;
+            listView1.Height = ListRow2.ActualHeight - 32;
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }

@@ -32,11 +32,11 @@
             <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="38"/>
+                    <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ToolBarTray Grid.Row="0" Panel.ZIndex="9">
-                    <ToolBar>
+                    <ToolBar Padding="3,2">
                         <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
                         </ToggleButton>
@@ -90,7 +90,10 @@
                         </Popup>
                     </ToolBar>
                 </ToolBarTray>
-                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0"     x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+                <ListView  Height="200" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
@@ -236,7 +239,7 @@
             </Grid>
             <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+        <ListView x:Name="listView2"  Grid.Column="1"  Padding="5,5,0,0"  BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
             <ListView.Resources>
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
                 </ContextMenu>
@@ -275,7 +278,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <GridSplitter  Grid.Column="1"  Background="LightGray" Panel.ZIndex="999" Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+        <GridSplitter  Grid.Column="1"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>
 </UserControl>
