@@ -4,7 +4,6 @@
 
 ColrVision Inc 开发的一款 Windows WPF 应用程序，旨在提供先进的色彩管理和光电技术解决方案。
 
-
 ## 🖥️ 支持
 
 **运行环境** NET 6.0 , VS2022 , Win11 
