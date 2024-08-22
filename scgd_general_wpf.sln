@@ -8,13 +8,15 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决方案项", "{61C6DABF-289A-41CD-B85D-F0AA9D8C6947}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
 		CHANGELOG.md = CHANGELOG.md
 		clear-bin.ps1 = clear-bin.ps1
 		ColorVision.snk = ColorVision.snk
 		copydll.bat = copydll.bat
 		Directory.Build.props = Directory.Build.props
 		README.md = README.md
-		docs\软件许可协议.md = docs\软件许可协议.md
+		docs\Software License Agreement.md = docs\Software License Agreement.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
@@ -464,12 +466,12 @@ Global
 		{D36F0968-361C-42CE-8E6E-0BEFA60E1AD0} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
-		RESX_EnableXlifSync = True
-		RESX_AutoCreateNewLanguageFiles = True
 		RESX_ConfirmAddLanguageFile = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_EnableXlifSync = True
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal
