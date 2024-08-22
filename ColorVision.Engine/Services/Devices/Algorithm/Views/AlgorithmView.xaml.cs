@@ -199,6 +199,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 {
                     ImageView.OpenImage(result.FilePath);
                 }
+
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI_XYZ_File:

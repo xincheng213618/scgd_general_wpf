@@ -187,7 +187,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <GridSplitter  Grid.Column="1"  Panel.ZIndex="999" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+        <GridSplitter  Grid.Column="1"  Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>
 </UserControl>

@@ -243,7 +243,7 @@
             </ToolBarTray>
 
 
-            <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
@@ -295,10 +295,14 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="0" Grid.RowSpan="2" VerticalAlignment="Top" Margin="0,60,20,0" HorizontalAlignment="Right"  Height="50" Width="150" CornerRadius="10" >
-                <StackPanel Margin="5">
-                    <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />
-                    <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Height}" Foreground="White"  HorizontalAlignment="Center" />
+            <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Top" Margin="2,176,0,0" HorizontalAlignment="Left"  Height="360" Width="286" CornerRadius="10" >
+                <StackPanel Margin="10">
+                    <TextBlock Text="统计信息"  FontSize="25"  Foreground="White" HorizontalAlignment="Center"/>
+                    <DockPanel HorizontalAlignment="Left">
+                        <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White"  HorizontalAlignment="Center" />
+                        <TextBlock Text=" x " Foreground="White"/>
+                        <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Height}" Foreground="White"  HorizontalAlignment="Center" />
+                    </DockPanel>
                 </StackPanel>
             </Border>
         </Grid>
