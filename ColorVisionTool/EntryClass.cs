@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
-namespace ColorVision
+namespace ColorVisionTool
 {
     /// <summary>
     /// Main函数的解析，在程序之中，为了不影响APP，独立出来了一个类
