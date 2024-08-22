@@ -75,7 +75,7 @@
                             <GridViewColumn  Header="Data"  Width="600">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBox Text="{Binding OutputValue,Mode=OneWay}" Height="100" TextWrapping="WrapWithOverflow" />
+                                        <TextBox IsReadOnly="True" BorderThickness="0" Text="{Binding OutputValue,Mode=OneWay}" Height="100" TextWrapping="WrapWithOverflow" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

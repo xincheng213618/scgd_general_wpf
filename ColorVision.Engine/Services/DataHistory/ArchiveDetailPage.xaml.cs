@@ -3,8 +3,10 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -19,7 +21,7 @@ namespace ColorVision.Engine.Services.DataHistory.Dao
 
         public ViewArchiveDetailResult(ArchivedDetailModel  model)
         {
-            ExportCommand = new RelayCommand(a => { MessageBox.Show("!"); }, a => true);
+            ExportCommand = new RelayCommand(a => Export());
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
             ArchivedDetailModel = model;
@@ -29,6 +31,94 @@ namespace ColorVision.Engine.Services.DataHistory.Dao
 
 
         public string OutputValue => JsonConvert.SerializeObject(ArchivedDetailModel.OutputValue, Formatting.Indented);
+
+        public void Export()
+        {
+            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+
+
+            switch (ArchivedDetailModel.DetailType)
+            {
+                case "Camera_Img":
+                    // 解析 JSON
+                    JObject json = JObject.Parse(ArchivedDetailModel.OutputValue);
+
+                    // 获取文件名
+                    string fileName = json["FileName"].ToString();
+                    string filepath = json["FilePath"].ToString();
+
+                    string fullName = Path.Combine(configArchivedModel.Path +"\\" + filepath, fileName );
+                    if (!File.Exists(fullName))
+                    {
+                        MessageBox.Show("找不到文件");
+                            return;
+                    }
+
+                    // 使用 SaveFileDialog 让用户选择导出路径
+                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+                    {
+                        saveFileDialog.FileName = fileName;
+                        saveFileDialog.Filter = "All files (*.tif)|*.*";
+                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.FileName = fileName;
+                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            string exportPath = saveFileDialog.FileName;
+                            File.Copy(fullName, exportPath);
+                        }
+                    }
+                    break;
+                case "Algorithm_Calibration":
+                    // 解析 JSON
+                    json = JObject.Parse(ArchivedDetailModel.OutputValue);
+
+                    // 获取文件名
+                    fileName = json["FileName"].ToString();
+                    filepath = json["FilePath"].ToString();
+
+                    fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
+                    if (!File.Exists(fullName))
+                    {
+                        MessageBox.Show("找不到文件");
+                        return;
+                    }
+
+                    // 使用 SaveFileDialog 让用户选择导出路径
+                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+                    {
+                        saveFileDialog.FileName = fileName;
+                        saveFileDialog.Filter = "All files (*.tif)|*.*";
+                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.FileName = fileName;
+                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            string exportPath = saveFileDialog.FileName;
+                            File.Copy(fullName, exportPath);
+                        }
+                    }
+                    break;
+                case "Algorithm_POI_XYZ":
+                    // 使用 SaveFileDialog 让用户选择导出路径
+                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+                    {
+                        saveFileDialog.Filter = "All files (*.json)|*.*";
+                        saveFileDialog.Title = "选择导出文件位置";
+                        saveFileDialog.FileName = ArchivedDetailModel.Guid + ".json";
+                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            string exportPath = saveFileDialog.FileName;
+                            File.WriteAllText(exportPath, ArchivedDetailModel.OutputValue);
+                        }
+                    }
+                    break;
+                default:
+                    MessageBox.Show(ArchivedDetailModel.DetailType);
+                    break;
+            }
+
+
+
+        }
 
 
     }
