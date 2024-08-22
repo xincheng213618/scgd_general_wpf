@@ -810,4 +810,10 @@
   <data name="DataLoading" xml:space="preserve">
     <value>로드 중</value>
   </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>오픈파일</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>오픈폴더</value>
+  </data>
 </root>

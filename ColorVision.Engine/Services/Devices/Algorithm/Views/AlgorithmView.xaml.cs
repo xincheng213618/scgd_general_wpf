@@ -1,6 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
@@ -13,6 +12,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
+using ColorVision.UI.Draw;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -25,14 +25,13 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -202,6 +201,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 }
                 switch (result.ResultType)
                 {
+                    case AlgorithmResultType.POI_XYZ_File:
+                    case AlgorithmResultType.POI_Y_File:
+                        if (result.ViewResults == null)
+                        {
+                            result.ViewResults = new ObservableCollection<IViewResult>(AlgResultPoiCieFileDao.Instance.GetAllByPid(result.Id));
+                        }
+                        header = new List<string> { "file_name", "FileUrl" , "FileType" };
+                        bdHeader = new List<string> { "FileName", "FileUrl" , "FileType", };
+                        break;
                     case AlgorithmResultType.POI:
                         if (result.ViewResults == null)
                         {

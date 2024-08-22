@@ -623,6 +623,14 @@
           <source>打开</source>
           <target state="new">열려 있는</target>
         </trans-unit>
+        <trans-unit id="OpenFile" translate="yes" xml:space="preserve">
+          <source>打开文件</source>
+          <target state="new">오픈파일</target>
+        </trans-unit>
+        <trans-unit id="OpenFolder" translate="yes" xml:space="preserve">
+          <source>打开文件夹</source>
+          <target state="new">오픈폴더</target>
+        </trans-unit>
         <trans-unit id="OpenItem" translate="yes" xml:space="preserve">
           <source>打开项目</source>
           <target state="new">프로젝트 열기</target>

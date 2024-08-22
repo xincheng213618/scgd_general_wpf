@@ -96,6 +96,7 @@
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                            <Setter Property="ContextMenu"  Value="{Binding ContextMenu}"/>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View >
@@ -168,6 +169,11 @@
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                    <Setter Property="ContextMenu"  Value="{Binding ContextMenu}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.View >
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

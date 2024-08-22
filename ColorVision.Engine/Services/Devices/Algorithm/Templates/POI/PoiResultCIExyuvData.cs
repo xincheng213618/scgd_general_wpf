@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-
         public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
         private double _CCT;
 

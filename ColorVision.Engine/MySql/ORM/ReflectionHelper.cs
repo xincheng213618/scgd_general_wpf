@@ -9,12 +9,15 @@ namespace ColorVision.Engine.MySql.ORM
     [AttributeUsage(AttributeTargets.Property)]
     public class ColumnAttribute : Attribute
     {
-        public string Name { get; }
+        public string Name { get; set; }
+
+        public string Comment { get; set; }
 
         public ColumnAttribute(string name)
         {
             Name = name;
         }
+
     }
     [AttributeUsage(AttributeTargets.Property)]
     public class ColumnIgnoreAttribute : Attribute
@@ -24,7 +27,8 @@ namespace ColorVision.Engine.MySql.ORM
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class TableAttribute : Attribute
     {
-        public string TableName { get; }
+        public string TableName { get; set; }
+        public string PrimaryKey { get; set; }
 
         public TableAttribute(string tableName)
         {

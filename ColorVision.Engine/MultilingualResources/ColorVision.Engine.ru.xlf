@@ -623,6 +623,14 @@
           <source>打开</source>
           <target state="new">Открыть</target>
         </trans-unit>
+        <trans-unit id="OpenFile" translate="yes" xml:space="preserve">
+          <source>打开文件</source>
+          <target state="new">ОткрытьФайл</target>
+        </trans-unit>
+        <trans-unit id="OpenFolder" translate="yes" xml:space="preserve">
+          <source>打开文件夹</source>
+          <target state="new">ОткрытьПапку</target>
+        </trans-unit>
         <trans-unit id="OpenItem" translate="yes" xml:space="preserve">
           <source>打开项目</source>
           <target state="new">Открыть проект</target>
