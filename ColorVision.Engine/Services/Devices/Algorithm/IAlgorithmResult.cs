@@ -36,5 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
     public interface IViewResult
     {
+
     }
+
 }

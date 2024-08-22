@@ -1,7 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Windows.Controls;
 
@@ -16,6 +20,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public RelayCommand OpenFileCommand { get; set; }
         public RelayCommand OpenFolderCommand { get; set; }
 
+        public static void ExportCSV(IEnumerable<AlgResultPoiCieFileModel> algResultPoiCieFileModels)
+        {
+            MessageBox1.Show("该功能开发中");
+        }
+
         public AlgResultPoiCieFileModel()
         {
             OpenFileCommand = new RelayCommand(a => OpenFile());
@@ -23,7 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.OpenFile, Command = OpenFileCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.OpenFolder, Command = OpenFileCommand });
-
         }
 
         public void OpenFolder()

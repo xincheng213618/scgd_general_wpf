@@ -100,10 +100,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0)
-            {
-                return;
-            }
+            if (listView1.SelectedIndex < 0) return;
+
+  
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
             {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
@@ -128,6 +127,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         break;
 
                 }
+
                 using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
                 if (listView1.View is GridView gridView1)
                 {
