@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using CsharpDEMO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,6 +20,12 @@ namespace ColorVisionTool
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            DemoType fun = new DemoType();
+            fun.testMotor();
         }
     }
 }

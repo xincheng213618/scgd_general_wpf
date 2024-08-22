@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,9 +20,9 @@
 	</Page>
 	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Update="log4net.config">
