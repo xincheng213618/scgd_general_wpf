@@ -89,7 +89,7 @@
 
             </TabItem>
             <TabItem Header="CVCIE">
-                <StackPanel Margin="0,5,0,0">
+                <StackPanel Margin="5">
                     <DockPanel Margin="0,0,0,5">
                         <TextBlock Text="MaxZoom" Width="100"/>
                         <TextBox  Text="{Binding MaxZoom}"/>
@@ -105,7 +105,7 @@
                 </StackPanel>
             </TabItem>
             <TabItem x:Name="PhysicalUnitTableItem" Header="比例尺">
-                <StackPanel Margin="0,5,0,0">
+                <StackPanel Margin="5">
                     <DockPanel Margin="0,0,0,5">
                         <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
                         <TextBlock Text="测量是否启用实际单位"/>
