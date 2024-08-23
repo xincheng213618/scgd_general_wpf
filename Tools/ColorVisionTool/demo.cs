@@ -514,6 +514,11 @@ namespace CsharpDEMO
 
         }
 
+
+
+
+
+
         public void testMotor()
         {
             logDebug.logCreatEx();
@@ -585,7 +590,7 @@ namespace CsharpDEMO
             //释放dll资源，这个函数在最后调且只能调一次！！
             cvCameraCSLib.ReleaseResource();
             logDebug.logRelease();
-
+            return;
             int pos = 3000;
 
 
@@ -836,7 +841,6 @@ namespace CsharpDEMO
 			//第一步进行粗定焦
 
 
-
 			for (int i = cfgObj.focus_Min; i < cfgObj.focus_Max; i += cfgObj.focus_Step)
 			{
 				res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
@@ -910,9 +914,6 @@ namespace CsharpDEMO
 			//在第一步筛选出的电机范围找出精确的定焦范围
 			for (int i = highPrecisionMin; i < highPrecisionMax; i += indexMin)
 			{
-
-
-
 				res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
 				if (res != 1)
 				{

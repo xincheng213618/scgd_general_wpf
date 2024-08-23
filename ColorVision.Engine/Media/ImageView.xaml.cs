@@ -570,6 +570,7 @@ namespace ColorVision.Engine.Media
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
                 int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile meta);
+                if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
                     Config.IsCVCIE = true;
