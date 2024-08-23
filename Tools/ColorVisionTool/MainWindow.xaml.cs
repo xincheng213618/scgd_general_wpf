@@ -1,6 +1,9 @@
 ﻿using CsharpDEMO;
 using cvColorVision;
 using StructTestN;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Channels;
@@ -16,8 +19,6 @@ using System.Windows.Shapes;
 
 namespace ColorVisionTool
 {
-
-
     public interface IMove
     {
         public void Move(int step);
@@ -192,7 +193,8 @@ namespace ColorVisionTool
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
+            DemoType demoType = new DemoType();
+            demoType.testMotor();
         }
     }
 }

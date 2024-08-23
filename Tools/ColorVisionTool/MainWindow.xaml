@@ -7,8 +7,14 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="720" Width="1280">
     <Grid>
-        <StackPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Width="300">
             <Button Content="测试电机" Click="Button_Click"/>
         </StackPanel>
+        <Image Grid.Column="1" x:Name="Image"/>
+        <GridSplitter Grid.Column="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"  DragCompleted="GridSplitter_DragCompleted"  />
     </Grid>
 </Window>

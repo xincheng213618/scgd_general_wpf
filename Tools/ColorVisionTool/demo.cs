@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -514,11 +515,6 @@ namespace CsharpDEMO
 
         }
 
-
-
-
-
-
         public void testMotor()
         {
             logDebug.logCreatEx();
@@ -540,10 +536,8 @@ namespace CsharpDEMO
 
             IntPtr pp = new IntPtr(11);
 
-            //初始化dll，这个函数在最先必须调且只能调一次！！
-          cvCameraCSLib.InitResource(deviceMonitor, pp);
-
-
+            //初始化dll，这个函数在最先必须调且只能调一次！
+            cvCameraCSLib.InitResource(deviceMonitor, pp);
           
             //建立相机句柄
             IntPtr camHandle = cvCameraCSLib.CM_CreatCameraManagerSimple(atuoCfg.dcf);
@@ -576,9 +570,10 @@ namespace CsharpDEMO
                 Console.WriteLine("设置对焦环失败！");
             }
 
+            ///爬山法
+            MountainClimbing(camHandle, motorHandle, ref atuoCfg);
 
-
-			autoFocus_EdgeFocus(camHandle, motorHandle, ref atuoCfg);
+            //autoFocus_EdgeFocus(camHandle, motorHandle, ref atuoCfg);
 
 
             cvCameraCSLib.ShutDown(motorHandle);
@@ -808,7 +803,177 @@ namespace CsharpDEMO
             cvCameraCSLib.CM_ExportToTIFF($"TIFF\\best-{finalyPosition}.tif", w, h, srcbpp, channels, src);
         }
 
-		public void autoFocus_EdgeFocus(IntPtr camHandle, IntPtr motorHandle, ref autoFocusCfg cfgObj)
+
+        public void MountainClimbing(IntPtr camHandle, IntPtr motorHandle, ref autoFocusCfg cfgObj)
+        {
+            int ret;
+            int startPotion = cfgObj.focus_Min;
+            List<positionInfor> list_averageLevel = new List<positionInfor>();     //用于存储电机位区间和评价值  
+            IRECT[] foucsRects = new IRECT[4];
+            int res = 0;
+            uint w = 0, h = 0, srcbpp = 0, bpp = 0, channels = 0;
+            res = cvCameraCSLib.CM_OpenSimple(camHandle);
+            if (res != 1)
+            {
+                Console.WriteLine("fail to CM_OpenSimple");
+                return;
+            }
+            ret = cvCameraCSLib.CM_SetExpTimeSimple(camHandle, 20);  //设置曝光
+           cvCameraCSLib.CM_GetSrcFrameInfo(camHandle, ref w, ref h, ref srcbpp, ref channels);
+
+
+            byte[] src = new byte[srcbpp / 8 * w * h * channels];           //灰度数据每个像素点占两字节
+            byte[] imgdata = new byte[w * h * channels * 4];       //通道值数
+
+            double averageLevel = 0;
+
+            //获取清晰度
+            double GetArticulation(ref autoFocusCfg cfgObj)
+            {
+                res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
+                if (res != 1)
+                {
+                    Console.WriteLine("fail to take img");
+                    return -1;
+                }
+                HImage tHimage = new HImage();
+                tHimage.nHeight = h;
+                tHimage.nWidth = w;
+                tHimage.nChannels = channels;
+                tHimage.nBpp = srcbpp;
+                unsafe
+                {
+                    fixed (byte* tp = src)
+                    {
+                        tHimage.pData = new IntPtr(tp);
+                    }
+                }
+                return cvCameraCSLib.cvCalArticulation(EvaFunc.fun5, tHimage, cfgObj.EdgeFocus.offy, cfgObj.EdgeFocus.d, cfgObj.EdgeFocus.w, 0.01, cfgObj.EdgeFocus.h, cfgObj.EdgeFocus.nStep, cfgObj.EdgeFocus.nMaxCount);
+            }
+
+            //第一步进行粗定焦
+
+
+            for (int i = cfgObj.focus_Min; i < cfgObj.focus_Max; i += cfgObj.focus_Step)
+            {
+                res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
+                if (res != 1)
+                {
+                    Console.WriteLine($"move{i} Fail");
+                    return;
+                }
+                averageLevel =GetArticulation(ref cfgObj);
+                string sLog = $"电机位:{i},评价值：,{averageLevel}";
+                Console.WriteLine(sLog);
+                logDebug.logRecord(sLog);
+
+                positionInfor pi = new positionInfor(i - cfgObj.focus_Step / 2, i + cfgObj.focus_Step / 2, (float)averageLevel);
+                //将此时电机所处范围及清晰度记录下来
+                list_averageLevel.Add(pi);
+
+            }
+
+
+            res = cvCameraCSLib.GoHome(motorHandle);
+            float bestLevel = 0;
+            int highPrecisionMin = 0, highPrecisionMax = 10;
+            //寻找最优电机区间
+            foreach (var obj in list_averageLevel)
+            {
+                if (obj.averageLevel > bestLevel)
+                {
+                    bestLevel = obj.averageLevel;
+                    if (obj.sectionMin < 0)
+                    {
+                        obj.sectionMin = 0;
+                    }
+                    highPrecisionMin = obj.sectionMin;
+                    highPrecisionMax = obj.sectionMax;
+                }
+            }
+
+            list_averageLevel.Clear();
+            Console.WriteLine($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
+
+            int indexMin = 20;
+
+            //在第一步筛选出的电机范围找出精确的定焦范围
+            for (int i = highPrecisionMin; i < highPrecisionMax; i += indexMin)
+            {
+                res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
+                if (res != 1)
+                {
+                    Console.WriteLine("{move $Fail\n}", i);
+                    return;
+                }
+                int temp = 0;
+                cvCameraCSLib.GetPosition(motorHandle, ref temp);
+                if (temp != i)
+                {
+                    Console.WriteLine($"positon error:{i}!={temp}");
+                }
+                averageLevel = GetArticulation(ref cfgObj);
+                positionInfor pi = new positionInfor(i - indexMin / 2, i + indexMin / 2, (float)averageLevel);
+                list_averageLevel.Add(pi);
+            }
+
+            //爬山法
+            int step = 1000;
+            int stepover = 10;
+            int npos = 0;
+
+            Dictionary<double, double> records = new Dictionary<double, double>();
+
+            cvCameraCSLib.GetPosition(motorHandle, ref npos);
+            bool first = true;
+            double preValue = averageLevel;
+            while (Math.Abs(step) > stepover)
+            {
+                npos = npos + step;
+                res = cvCameraCSLib.MoveAbsPostion(motorHandle, npos);
+                cvCameraCSLib.GetPosition(motorHandle, ref npos);
+
+                double Artculation = GetArticulation(ref cfgObj);
+
+                if (records.TryAdd(npos, Artculation))
+                    records[npos] = Artculation;
+
+                if (Artculation < records.Aggregate((l, r) => l.Value > r.Value ? l : r).Value)
+                {
+                    Console.WriteLine($"the focus position is:{npos}");
+                    break;
+                }
+                if (Artculation > preValue)
+                {
+
+                }
+                else
+                {
+                    //如果是第一次则反向运动到原位置
+                    if (first)
+                    {
+                        first = false;
+                        step = -step;
+                        continue;
+                    }
+                    step = -step / 2;
+                }
+                first = false;
+                preValue = Artculation;
+            }
+
+            res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
+            if (res != 1)
+            {
+                Console.WriteLine("fail to take img");
+                return;
+            }
+            MessageBox.Show("爬山法聚焦成功");
+        }
+
+
+
+        public void autoFocus_EdgeFocus(IntPtr camHandle, IntPtr motorHandle, ref autoFocusCfg cfgObj)
 		{
 
             //int scopeMin = 0, scopeMax = 4800,/*电机最大值*/ stepMax = 350;
