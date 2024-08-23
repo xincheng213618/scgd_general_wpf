@@ -1,4 +1,5 @@
-﻿using CsharpDEMO;
+﻿using ColorVision.Common.MVVM;
+using CsharpDEMO;
 using cvColorVision;
 using StructTestN;
 using System;
@@ -7,6 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -179,7 +181,14 @@ namespace ColorVisionTool
 
     }
 
+    public class MotorInfo:ViewModelBase
+    {
+        public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
+        private int _Position;
 
+        public double Accuracy { get => _Accuracy; set { _Accuracy = value; NotifyPropertyChanged(); } }
+        private double _Accuracy;
+    }
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -190,15 +199,45 @@ namespace ColorVisionTool
         {
             InitializeComponent();
         }
+        DemoType demoType = new DemoType();
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            DemoType demoType = new DemoType();
-            demoType.testMotor();
+            Task.Run(() =>
+            {
+                demoType.testMotor();
+            });
         }
+
+        public MotorInfo MotorInfo { get; set; } = new MotorInfo();
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
+
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            demoType.Image1 = Image1;
+            demoType.Zoombox1 = Zoombox1;
+            demoType.MotorInfo = MotorInfo;
+
+            StackPanelInfo.DataContext = MotorInfo;
+        }
+
+        private void MoveTo_click(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(TextBoxPostion.Text,out int pos))
+            {
+                demoType.MoveTo(pos);
+            }
+
+        }
+
+        private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        {
+            demoType.TakePhoto();
 
         }
     }

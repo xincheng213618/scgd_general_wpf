@@ -1,12 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Documents;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using ColorVisionTool;
 using cvColorVision;
+using Gu.Wpf.Geometry;
 using Newtonsoft.Json.Linq;
 using StructTestN;
 
@@ -514,33 +521,104 @@ namespace CsharpDEMO
             Console.ReadKey();
 
         }
+        IntPtr motorHandle = IntPtr.Zero;
 
-        public void testMotor()
+
+        public bool IsOpen = false;
+
+        public void TakePhoto()
+        {
+            int res = 0;
+            if (!IsOpen)
+            {
+                res = cvCameraCSLib.CM_OpenSimple(camHandle);
+                if (res != 1)
+                {
+                    Console.WriteLine("fail to CM_OpenSimple");
+                    return;
+                }
+            }
+            IsOpen = true;
+            uint w = 0, h = 0, srcbpp = 0, bpp = 0, channels = 0;
+            int ret = cvCameraCSLib.CM_SetExpTimeSimple(camHandle, 20);  //设置曝光
+            cvCameraCSLib.CM_GetSrcFrameInfo(camHandle, ref w, ref h, ref srcbpp, ref channels);
+
+
+            byte[] src = new byte[srcbpp / 8 * w * h * channels];           //灰度数据每个像素点占两字节
+            byte[] imgdata = new byte[w * h * channels * 4];       //通道值数
+
+
+            res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (Image1.Source is WriteableBitmap bitmap)
+                {
+                    Int32Rect rect = new Int32Rect(0, 0, (int)w, (int)h);
+                    bitmap.WritePixels(rect, src, bitmap.PixelWidth * ((int)srcbpp / 8), 0);
+                }
+                else
+                {
+
+                    WriteableBitmap writeableBitmap = new WriteableBitmap((int)w, (int)h, 96.0, 96.0, PixelFormats.Gray16, null);
+                    writeableBitmap.Lock();
+                    writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                    writeableBitmap.Unlock();
+
+                    Int32Rect rect = new Int32Rect(0, 0, (int)w, (int)h);
+                    writeableBitmap.WritePixels(rect, src, writeableBitmap.PixelWidth * 1 * (16 / 8), 0);
+                    Image1.Source = writeableBitmap;
+                    Zoombox1.ZoomUniform();
+                }
+            });
+
+            cvCameraCSLib.CM_ExportToTIFF($"TIFF\\demo.tif", w, h, srcbpp, channels, src);
+
+        }
+
+        public int MoveTo(int Pos)
+        {
+            if (motorHandle != IntPtr.Zero)
+            {
+                int res = cvCameraCSLib.MoveAbsPostion(motorHandle, Pos);
+                return res;
+            }
+            else
+            {
+                InitHandle();
+                int res = cvCameraCSLib.MoveAbsPostion(motorHandle, Pos);
+                return res;
+            }
+        }
+
+
+        IntPtr camHandle = IntPtr.Zero;
+        public void InitHandle()
         {
             logDebug.logCreatEx();
-			autoFocusCfg atuoCfg = new autoFocusCfg();
+            autoFocusCfg atuoCfg = new autoFocusCfg();
 
-			string cfgFn = "cfg\\autoFocusParameters.cfg";
-			FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
-			if (!fs.CanRead)
-			{
+            string cfgFn = "cfg\\autoFocusParameters.cfg";
+            FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
+            if (!fs.CanRead)
+            {
                 Console.WriteLine($"读取{cfgFn}失败！");
-				return ;
-			}
-			BinaryReader binaryReader = new BinaryReader(fs);
-            byte[]fsData= binaryReader.ReadBytes((int)fs.Length);
-			string jsonString= Encoding.UTF8.GetString(fsData);
-			atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
-			cvCameraCSLib.DeviceOnline_CallBack deviceMonitor = new cvCameraCSLib.DeviceOnline_CallBack(CallBackDeviceOnLine);
+                return;
+            }
+            BinaryReader binaryReader = new BinaryReader(fs);
+            byte[] fsData = binaryReader.ReadBytes((int)fs.Length);
+            string jsonString = Encoding.UTF8.GetString(fsData);
+            atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
+            cvCameraCSLib.DeviceOnline_CallBack deviceMonitor = new cvCameraCSLib.DeviceOnline_CallBack(CallBackDeviceOnLine);
 
 
             IntPtr pp = new IntPtr(11);
 
             //初始化dll，这个函数在最先必须调且只能调一次！
             cvCameraCSLib.InitResource(deviceMonitor, pp);
-          
+
             //建立相机句柄
-            IntPtr camHandle = cvCameraCSLib.CM_CreatCameraManagerSimple(atuoCfg.dcf);
+            camHandle = cvCameraCSLib.CM_CreatCameraManagerSimple(atuoCfg.dcf);
 
             if (camHandle == IntPtr.Zero)
             {
@@ -550,20 +628,41 @@ namespace CsharpDEMO
 
             //设置镜头COM口,查看设备管理器来设置
             int success = cvCameraCSLib.CM_SetComSimple(camHandle, 1, atuoCfg.focusCOM);
-            if (success != 1) {
+            if (success != 1)
+            {
 
-				Console.WriteLine("CM_SetComSimple失败！请查看log");
-                return ;
-			}
-
-            IntPtr motorHandle = IntPtr.Zero;
+                Console.WriteLine("CM_SetComSimple失败！请查看log");
+                return;
+            }
             success = cvCameraCSLib.CM_CreatChildHandle(camHandle, ref motorHandle, (byte)atuoCfg.motorNum);
+
+        }
+
+        public void testMotor()
+        {
+            InitHandle();
+
+
+            autoFocusCfg atuoCfg = new autoFocusCfg();
+
+            string cfgFn = "cfg\\autoFocusParameters.cfg";
+            FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
+            if (!fs.CanRead)
+            {
+                Console.WriteLine($"读取{cfgFn}失败！");
+                return;
+            }
+            BinaryReader binaryReader = new BinaryReader(fs);
+            byte[] fsData = binaryReader.ReadBytes((int)fs.Length);
+            string jsonString = Encoding.UTF8.GetString(fsData);
+            atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
+
 
             //首先回到初始位置
             //success = cvCameraCSLib.GoHome(motorHandle);
 
 
-            success = cvCameraCSLib.MoveDiaphragm(motorHandle, 5.6f);
+            int success = cvCameraCSLib.MoveDiaphragm(motorHandle, 5.6f);
 
             if (success != 1)
             {
@@ -804,6 +903,12 @@ namespace CsharpDEMO
         }
 
 
+        public System.Windows.Controls.Image Image1 { get; set; }
+
+        public Zoombox Zoombox1 { get; set; }
+
+        public MotorInfo MotorInfo { get; set; }
+
         public void MountainClimbing(IntPtr camHandle, IntPtr motorHandle, ref autoFocusCfg cfgObj)
         {
             int ret;
@@ -848,6 +953,28 @@ namespace CsharpDEMO
                         tHimage.pData = new IntPtr(tp);
                     }
                 }
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (Image1.Source is WriteableBitmap bitmap)
+                    {
+                        Int32Rect rect = new Int32Rect(0, 0, (int)w, (int)h);
+                        bitmap.WritePixels(rect, src, bitmap.PixelWidth *((int)srcbpp/8), 0);
+                    }
+                    else
+                    {
+
+                        WriteableBitmap writeableBitmap = new WriteableBitmap((int)w, (int)h, 96.0, 96.0, PixelFormats.Gray16, null);
+                        writeableBitmap.Lock();
+                        writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+                        writeableBitmap.Unlock();
+
+                        Int32Rect rect = new Int32Rect(0, 0, (int)w, (int)h);
+                        writeableBitmap.WritePixels(rect, src, writeableBitmap.PixelWidth * 1 * (16/8), 0);
+                        Image1.Source = writeableBitmap;
+                        Zoombox1.ZoomUniform();
+                    }
+
+                });
                 return cvCameraCSLib.cvCalArticulation(EvaFunc.fun5, tHimage, cfgObj.EdgeFocus.offy, cfgObj.EdgeFocus.d, cfgObj.EdgeFocus.w, 0.01, cfgObj.EdgeFocus.h, cfgObj.EdgeFocus.nStep, cfgObj.EdgeFocus.nMaxCount);
             }
 
@@ -863,6 +990,9 @@ namespace CsharpDEMO
                     return;
                 }
                 averageLevel =GetArticulation(ref cfgObj);
+
+                MotorInfo.Accuracy = averageLevel;
+                MotorInfo.Position = i;
                 string sLog = $"电机位:{i},评价值：,{averageLevel}";
                 Console.WriteLine(sLog);
                 logDebug.logRecord(sLog);
@@ -894,29 +1024,8 @@ namespace CsharpDEMO
 
             list_averageLevel.Clear();
             Console.WriteLine($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
-
-            int indexMin = 20;
-
-            //在第一步筛选出的电机范围找出精确的定焦范围
-            for (int i = highPrecisionMin; i < highPrecisionMax; i += indexMin)
-            {
-                res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
-                if (res != 1)
-                {
-                    Console.WriteLine("{move $Fail\n}", i);
-                    return;
-                }
-                int temp = 0;
-                cvCameraCSLib.GetPosition(motorHandle, ref temp);
-                if (temp != i)
-                {
-                    Console.WriteLine($"positon error:{i}!={temp}");
-                }
-                averageLevel = GetArticulation(ref cfgObj);
-                positionInfor pi = new positionInfor(i - indexMin / 2, i + indexMin / 2, (float)averageLevel);
-                list_averageLevel.Add(pi);
-            }
-
+            res = cvCameraCSLib.MoveAbsPostion(motorHandle, highPrecisionMin);
+            MotorInfo.Position = highPrecisionMin;
             //爬山法
             int step = 1000;
             int stepover = 10;
@@ -934,6 +1043,9 @@ namespace CsharpDEMO
                 cvCameraCSLib.GetPosition(motorHandle, ref npos);
 
                 double Artculation = GetArticulation(ref cfgObj);
+
+                MotorInfo.Accuracy = Artculation;
+                MotorInfo.Position = npos;
 
                 if (records.TryAdd(npos, Artculation))
                     records[npos] = Artculation;
@@ -963,6 +1075,7 @@ namespace CsharpDEMO
             }
 
             res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
+            cvCameraCSLib.CM_ExportToTIFF($"TIFF\\best-{MotorInfo.Position}.tif", w, h, srcbpp, channels, src);
             if (res != 1)
             {
                 Console.WriteLine("fail to take img");

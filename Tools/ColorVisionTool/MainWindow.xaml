@@ -5,16 +5,37 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVisionTool"
         mc:Ignorable="d"
-        Title="MainWindow" Height="720" Width="1280">
+        xmlns:effects="http://gu.se/Geometry"
+        xmlns:draw ="clr-namespace:ColorVision.UI.Draw;assembly=ColorVision.UI"
+        Title="MainWindow" Height="720" Width="1280" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <StackPanel Width="300">
-            <Button Content="测试电机" Click="Button_Click"/>
+        <StackPanel x:Name="StackPanelInfo" d:DataContext="{d:DesignInstance local:MotorInfo}" Margin="5" Width="300">
+            <Button Content="测试电机" Click="Button_Click" Margin="0,5,0,5"/>
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock Text="位置"/>
+                <TextBlock Text="{Binding Position}"/>
+            </DockPanel>
+            <DockPanel Margin="0,0,0,5">
+                <TextBlock Text="准确度"/>
+                <TextBlock Text="{Binding Accuracy}"/>
+            </DockPanel>
+
+            <DockPanel Margin="5">
+                <Button DockPanel.Dock="Right" Content="移动到" Click="MoveTo_click" Margin="0,5,0,5"/>
+                <TextBox x:Name="TextBoxPostion" Text="0" Style="{StaticResource TextBox.Small}"/>
+            </DockPanel>
+            <Button Content="拍图" Click="TakePhoto_Click"/>
+
         </StackPanel>
-        <Image Grid.Column="1" x:Name="Image"/>
-        <GridSplitter Grid.Column="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"  DragCompleted="GridSplitter_DragCompleted"  />
+        <Border Grid.Column="1" Background="#c3c3c3">
+            <effects:Zoombox x:Name="Zoombox1">
+                <draw:DrawCanvas x:Name="Image1" RenderOptions.BitmapScalingMode="Fant"/>
+            </effects:Zoombox>
+        </Border>
+        <GridSplitter Grid.Column="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"  DragCompleted="GridSplitter_DragCompleted"  />
     </Grid>
 </Window>
