@@ -134,7 +134,8 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
-            <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.RowSpan="2">
+
+            <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
@@ -191,7 +192,7 @@
                     <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
-                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
                     <Button   Command="{Binding OpenProperty}" Margin="1,0">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                     </Button>

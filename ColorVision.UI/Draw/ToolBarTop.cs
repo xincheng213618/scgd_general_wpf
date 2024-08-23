@@ -109,7 +109,6 @@ namespace ColorVision.UI.Draw
 
             FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image.Source != null);
             FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image.Source != null);
-            OpenProperty = new RelayCommand(a => new DrawProperties() {Owner = Window.GetWindow(Parent),WindowStartupLocation =WindowStartupLocation.CenterOwner }.Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zoombox.Cursor = Cursors.Hand;
 

@@ -33,9 +33,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
-
-
-
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -75,9 +72,11 @@ namespace ColorVision.Engine.Media
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             Config = imageViewConfig;
+            this.DataContext = this;
             ToolBarLeft.DataContext = Config;
             ToolBarLayers.DataContext = Config;
             ToolBarAl.DataContext = Config;
+            ToolBarTop.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -878,7 +877,7 @@ namespace ColorVision.Engine.Media
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, Config.CVCIENum, Config.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
@@ -903,7 +902,7 @@ namespace ColorVision.Engine.Media
                         float dYVal = 0;
                         float dZVal = 0;
                         float dx = 0, dy = 0, du = 0, dv = 0;
-                        int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+                        int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, Config.CVCIENum, Config.CVCIENum);
                         log.Debug($"CM_GetXYZxyuvRect :{result},res");
                         windowCIE.ChangeSelect(dx, dy);
                     }

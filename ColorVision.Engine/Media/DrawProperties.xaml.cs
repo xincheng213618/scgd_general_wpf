@@ -1,24 +1,33 @@
 ﻿#pragma warning disable CS8604, CS8605
+using ColorVision.UI.Draw;
+using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Media
 {
     /// <summary>
     /// DrawProperties.xaml 的交互逻辑
     /// </summary>
     public partial class DrawProperties : Window
     {
-        public DrawProperties()
+        public ImageViewConfig ImageViewConfig { get; set; }
+        public DrawProperties(ImageViewConfig imageViewConfig)
         {
+            ImageViewConfig = imageViewConfig;
             InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = ImageViewConfig;
+            DrawScrollViewer.DataContext = DefalutTextAttribute.Defalut;
+            PhysicalUnitTableItem.DataContext = DefalutTextAttribute.Defalut;
             ComboBoxBrush.ItemsSource = from Brushes in typeof(Brushes).GetProperties()
                                         select new KeyValuePair<Brush, string>((Brush)Brushes.GetValue(null), Brushes.Name);
             ComboBoxBrush.SelectedValuePath = "Key";
@@ -45,11 +54,6 @@ namespace ColorVision.UI.Draw
                                                select new KeyValuePair<FontStretch, string>((FontStretch)FontStretch.GetValue(null), FontStretch.Name);
             ComboBoxFontStretch.SelectedValuePath = "Key";
 
-
-
-            DataContext = DefalutTextAttribute.Defalut;
-
-            Resources = null;
         }
 
         private void ComboBoxBrush_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -86,6 +90,11 @@ namespace ColorVision.UI.Draw
         private void ColorPicker_SelectedColorChanged(object sender, HandyControl.Data.FunctionEventArgs<Color> e)
         {
             DefalutTextAttribute.Defalut.Brush = ColorPicker1.SelectedBrush;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }
