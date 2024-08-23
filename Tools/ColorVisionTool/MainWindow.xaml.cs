@@ -196,5 +196,10 @@ namespace ColorVisionTool
             DemoType demoType = new DemoType();
             demoType.testMotor();
         }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+
+        }
     }
 }
