@@ -33,26 +33,6 @@ namespace ColorVision.Solution
                 {
                     su = solutionManager.OpenSolution(solutionpath);
                 }
-                // 检查 cvtest 目录
-                string directoryPath = "D:\\CVTest";
-                string fileExtension = "*.cvsln";
-
-                if (!su && Directory.Exists(directoryPath))
-                {
-                    log.UpdateMessage("检测到存在服务模式目录");
-                    var files = Directory.GetFiles(directoryPath, fileExtension);
-                    if (files.Length == 0)
-                    {
-                        log.UpdateMessage("检测到服务默认路径下，不存在工程，正在创建默认项目");
-                        Application.Current.Dispatcher.Invoke(() => solutionManager.CreateSolution(directoryPath));
-                        su = true;
-                    }
-                    else
-                    {
-                        su = false;
-                    }
-                }
-
 
                 // 检查默认解决方案目录
                 if (!su)

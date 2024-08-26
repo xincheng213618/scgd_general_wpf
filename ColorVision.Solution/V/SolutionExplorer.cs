@@ -130,21 +130,31 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
 
-
             Task.Run(async () =>
             {
                 await Task.Delay(30);
                 if(DirectoryInfo!=null && DirectoryInfo.Exists)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    long directorySize = GetDirectorySize(DirectoryInfo);
+
+                    // Convert bytes to gigabytes
+                    double directorySizeInGB = directorySize / (1024.0 * 1024 * 1024);
+
+                    if (directorySizeInGB <= 10)
                     {
-                        GeneralChild(this, DirectoryInfo);
-                    });
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            GeneralChild(this, DirectoryInfo);
+                        });
+                    }
                 }
             });
-
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
             SaveCommand = new RelayCommand(a => SaveConfig());
+        }
+        private long GetDirectorySize(DirectoryInfo directoryInfo)
+        {
+            return directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
         }
 
         public void SaveConfig()
