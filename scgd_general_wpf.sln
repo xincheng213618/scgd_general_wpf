@@ -57,7 +57,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "ColorVision.Solution\ColorVision.Solution.csproj", "{7736CE9C-0059-420C-A841-5B71293C1A88}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ColorVision", "ColorVision", "{E24919A5-7981-44FF-82A9-E7259C5492CE}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "core", "core", "{E24919A5-7981-44FF-82A9-E7259C5492CE}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_cuda", "opencv_cuda\opencv_cuda.vcxproj", "{7568CD41-78C1-415F-9F3B-73283392B60D}"
 EndProject
@@ -487,12 +487,12 @@ Global
 		{D02AD0A5-CCEF-4C25-B56E-5A46C612F4DE} = {4ECBD19E-35CB-47A4-83B6-29E12F759F6E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal
