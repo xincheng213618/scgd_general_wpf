@@ -17,6 +17,7 @@ namespace SerialPlugin
         private string _CalibToolsPath = string.Empty;
     }
 
+
     public class CalibrationCorrection : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
