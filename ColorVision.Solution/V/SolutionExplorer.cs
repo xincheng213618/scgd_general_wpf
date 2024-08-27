@@ -132,21 +132,13 @@ namespace ColorVision.Solution.V
 
             Task.Run(async () =>
             {
-                await Task.Delay(30);
-                if(DirectoryInfo!=null && DirectoryInfo.Exists)
+                await Task.Delay(300);
+                if(DirectoryInfo!=null)
                 {
-                    long directorySize = GetDirectorySize(DirectoryInfo);
-
-                    // Convert bytes to gigabytes
-                    double directorySizeInGB = directorySize / (1024.0 * 1024 * 1024);
-
-                    if (directorySizeInGB <= 10)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            GeneralChild(this, DirectoryInfo);
-                        });
-                    }
+                        GeneralChild(this, DirectoryInfo);
+                    });
                 }
             });
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
@@ -284,7 +276,7 @@ namespace ColorVision.Solution.V
         }
 
         int i;
-        public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+        public async Task GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
@@ -295,8 +287,7 @@ namespace ColorVision.Solution.V
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
-                await Task.Delay(100);
-                GeneralChild(vFolder, item);
+                await GeneralChild(vFolder, item);
             }
 
             foreach (var item in directoryInfo.GetFiles())
@@ -304,14 +295,11 @@ namespace ColorVision.Solution.V
                 i++;
                 if (i == 5)
                 {
-                    await Task.Delay(200);
+                    await Task.Delay(100);
                     i = 0;
                 }
                 CreateFile(vObject, item);
             }
         }
-
-
-
     }
 }
