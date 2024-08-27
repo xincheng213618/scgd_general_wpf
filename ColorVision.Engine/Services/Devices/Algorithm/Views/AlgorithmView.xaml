@@ -36,7 +36,7 @@
                     <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBarTray  Grid.Row="0" Panel.ZIndex="9" IsLocked="True">
+                <ToolBarTray  Grid.Row="0" IsLocked="True">
                     <ToolBar Padding="3,2">
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
                         <ToggleButton  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding Config.IsShowSideListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
@@ -85,8 +85,8 @@
                         <ToggleButton x:Name="tbAutoRefreshView" Style="{StaticResource ToggleButtonSwitch}" Content="自动刷新" IsChecked="{Binding Config.AutoRefreshView}"/>
                     </ToolBar>
                 </ToolBarTray>
-                
-                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+
+                <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding Config.EditCommand}" >
                     <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
 

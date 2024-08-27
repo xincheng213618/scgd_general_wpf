@@ -1,12 +1,10 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -27,20 +25,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
-    public class ViewCameraConfig : ViewModelBase, IConfig
-    {
-        public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-    }
 
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
