@@ -80,10 +80,27 @@
                         </StackPanel>
                     </GroupBox>
 
+                    <GroupBox Header="ZBDebayer">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="启用" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding ZBDebayer.IsEnabled}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5" Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="Method" Width="120"/>
+                                <TextBox Text="{Binding ZBDebayer.Method}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="Channeltype" Width="120"/>
+                                <TextBox Text="{Binding ZBDebayer.Channeltype}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
                     <GroupBox Header="默认参数" Margin="0,5">
                         <StackPanel Margin="5">
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel  >
+                            <StackPanel Margin="0,2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
+                                <DockPanel>
                                     <TextBlock  Text="默认曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
                                     <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Maximum="60000">

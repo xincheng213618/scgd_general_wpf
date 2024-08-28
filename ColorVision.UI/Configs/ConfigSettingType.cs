@@ -7,5 +7,4 @@
         UserControl,
         TabItem,
     }
-
 }

@@ -1,10 +1,12 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -16,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public ViewAlgorithmConfig()
         {
-            EditCommand = new RelayCommand(a => new EditConfig().ShowDialog());
+            EditCommand = new RelayCommand(a => new EditViewAlgorithmConfig(this) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
