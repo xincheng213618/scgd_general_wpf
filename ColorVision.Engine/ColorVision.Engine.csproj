@@ -212,6 +212,10 @@
 
   <ItemGroup>
     <Folder Include="libs\" />
+    <Folder Include="Rbac\Users\" />
+    <Folder Include="Rbac\Roles\" />
+    <Folder Include="Rbac\Tenants\" />
+    <Folder Include="Rbac\Account\" />
   </ItemGroup>
 
   <ItemGroup>

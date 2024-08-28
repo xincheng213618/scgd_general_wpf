@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.Themes.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
@@ -11,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Themes
+namespace ColorVision
 {
 
     public class ThemeConfigSetingProvider : IConfigSettingProvider

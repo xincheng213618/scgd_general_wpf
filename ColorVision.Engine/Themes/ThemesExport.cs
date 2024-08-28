@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -9,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Themes
+namespace ColorVision.Engine
 {
     public class ThemesExport : IHotKey,IMenuItemMeta
     {
@@ -55,7 +56,7 @@ namespace ColorVision.Themes
                 return MenuTheme;
             } }
 
-        public HotKeys HotKeys => new(Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {
