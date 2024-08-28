@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision
+namespace ColorVision.Engine
 {
 
     public class ThemeConfigSetingProvider : IConfigSettingProvider
