@@ -73,7 +73,7 @@
                                 <TextBlock Text="默认通道数" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Channel}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,2">
+                            <DockPanel >
                                 <TextBlock Text="默认图像位数" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding ImageBpp}"/>
                             </DockPanel>

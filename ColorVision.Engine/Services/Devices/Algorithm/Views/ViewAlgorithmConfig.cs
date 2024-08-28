@@ -32,7 +32,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
+        private bool _AutoRefreshView = true;
+
+        public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; NotifyPropertyChanged(); } }
+        private bool _InsertAtBeginning = true;
+
 
     }
 }

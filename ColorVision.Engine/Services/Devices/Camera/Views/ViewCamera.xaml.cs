@@ -340,11 +340,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void ShowResult(MeasureImgResultModel model)
         {
             ViewResultCamera result = new(model);
-            ViewResultCameras.AddUnique(result);
+
+            ViewResultCameras.AddUnique(result, Config.InsertAtBeginning);
 
             if (Config.AutoRefreshView)
             {
-                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }

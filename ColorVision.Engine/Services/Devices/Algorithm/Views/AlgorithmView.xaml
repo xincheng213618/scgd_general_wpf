@@ -82,7 +82,6 @@
                         </Popup>
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
                         <Button x:Name="ButtonChart" Content="{x:Static properties:Resources.Chart}" Click="ButtonChart_Click"/>
-                        <ToggleButton x:Name="tbAutoRefreshView" Style="{StaticResource ToggleButtonSwitch}" Content="自动刷新" IsChecked="{Binding Config.AutoRefreshView}"/>
                     </ToolBar>
                 </ToolBarTray>
 
