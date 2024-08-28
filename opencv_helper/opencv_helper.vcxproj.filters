@@ -85,7 +85,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OpenCVHelper.rc">
+    <ResourceCompile Include="opencv_helper.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
