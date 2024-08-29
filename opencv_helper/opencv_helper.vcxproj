@@ -61,7 +61,6 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
-    <Import Project="..\packages\CUDA.props" />
     <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -69,7 +68,6 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
-    <Import Project="..\packages\CUDA.props" />
     <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -79,7 +77,6 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
-    <Import Project="..\packages\CUDA.props" />
     <Import Project="..\include\include.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -89,7 +86,6 @@
     <Import Project="..\packages\nlohmann.props" />
     <Import Project="..\packages\spdlog.props" />
     <Import Project="..\packages\zlib.props" />
-    <Import Project="..\packages\CUDA.props" />
     <Import Project="..\include\include.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
