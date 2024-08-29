@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Themes;
+using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,15 +38,20 @@ namespace ColorVision.Engine.Templates
             SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid);
             BorderEdit.DataContext = CreateConfig;
 
-            if (SysDictionaryModDetaiModels.Count > 0)
+            if (SysDictionaryModDetaiModels.Count == 0)
             {
-                var values = SysDictionaryModDetaiModels
+                int nid = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
+                SysDictionaryModDetaiModel sysDictionaryModDetaiModel = new SysDictionaryModDetaiModel() { Id = nid, AddressCode = nid, PId = Param.Id, Symbol = "default", Name = "default", DefaultValue = "", ValueType = SValueType.String };
+                SysDictionaryModDetailDao.Instance.Save(sysDictionaryModDetaiModel);
+                SysDictionaryModDetaiModels.Add(sysDictionaryModDetaiModel);
+            }
+
+            var values = SysDictionaryModDetaiModels
                 .Select(item => new KeyValuePair<int, string>((int)item.AddressCode, item.Name ?? item.Symbol ?? item.AddressCode.ToString()))
                 .ToList();
-                CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
-                CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
-                ComboBoxSymbol.ItemsSource = values;
-            }
+            CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
+            CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
+            ComboBoxSymbol.ItemsSource = values;
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
