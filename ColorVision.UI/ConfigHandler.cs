@@ -168,7 +168,15 @@ namespace ColorVision.UI
             if (File.Exists(fileName))
             {
                 string json = File.ReadAllText(fileName);
-                jObject = JObject.Parse(json);
+
+                try
+                {
+                    jObject = JObject.Parse(json);
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show("配置文件异常,已经重置");
+                }
             }
             foreach (var configPair in Configs)
             {
