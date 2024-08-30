@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -10,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine
+namespace ColorVision.Themes
 {
     public class ThemesExport : IHotKey,IMenuItemMeta
     {
@@ -34,7 +33,7 @@ namespace ColorVision.Engine
                 foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
                 {
                     MenuItem ThemeItem = new();
-                    ThemeItem.Header = Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                    ThemeItem.Header = Themes.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                     ThemeItem.Click += (s, e) =>
                     {
                         ThemeConfig.Instance.Theme = item;
