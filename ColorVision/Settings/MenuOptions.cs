@@ -9,7 +9,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Settings
 {
-    public class ExportMenuOptions : MenuItemBase, IHotKey
+    public class MenuOptions : MenuItemBase, IHotKey
     {
         public override string OwnerGuid => "Tool";
         public override string GuidId => "MenuOptions";
