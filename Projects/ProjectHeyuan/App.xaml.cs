@@ -31,7 +31,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             ConfigHandler.GetInstance();
 
-            this.ApplyTheme(ThemeConfig.Instance.Theme);
+            this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
             MySqlControl.GetInstance().Connect();
