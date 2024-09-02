@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1720
 namespace ColorVision.Engine.Services.SysDictionary
 {
-    public enum ValueType
+    public enum SValueType
     {
         Integer = 0,  // 整数
         Float = 1,    // 浮点

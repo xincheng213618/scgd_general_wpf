@@ -32,8 +32,8 @@ namespace ColorVision.Engine.Services.SysDictionary
             CreateConfig.IsEnable = true;
             BorderEdit.DataContext  = CreateConfig;
 
-            ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues(typeof(ValueType)).Cast<ValueType>()
-                                            select new KeyValuePair<ValueType, string>(e1, e1.ToString());
+            ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues(typeof(SValueType)).Cast<SValueType>()
+                                            select new KeyValuePair<SValueType, string>(e1, e1.ToString());
 
             
         }

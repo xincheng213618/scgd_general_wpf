@@ -33,7 +33,7 @@ namespace ColorVision.Themes
                 foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
                 {
                     MenuItem ThemeItem = new();
-                    ThemeItem.Header = Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                    ThemeItem.Header = Themes.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                     ThemeItem.Click += (s, e) =>
                     {
                         ThemeConfig.Instance.Theme = item;
@@ -55,7 +55,7 @@ namespace ColorVision.Themes
                 return MenuTheme;
             } }
 
-        public HotKeys HotKeys => new(Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {

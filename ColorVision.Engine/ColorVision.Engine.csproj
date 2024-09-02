@@ -21,7 +21,6 @@
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.2.5" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
@@ -167,6 +166,9 @@
     <Compile Update="Services\Devices\Algorithm\Templates\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -212,6 +214,10 @@
 
   <ItemGroup>
     <Folder Include="libs\" />
+    <Folder Include="Rbac\Users\" />
+    <Folder Include="Rbac\Roles\" />
+    <Folder Include="Rbac\Tenants\" />
+    <Folder Include="Rbac\Account\" />
   </ItemGroup>
 
   <ItemGroup>

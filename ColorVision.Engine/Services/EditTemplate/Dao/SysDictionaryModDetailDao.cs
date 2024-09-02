@@ -23,11 +23,11 @@ namespace ColorVision.Engine.Services.SysDictionary
         public string? DefaultValue { get => _DefaultValue; set { _DefaultValue = value; NotifyPropertyChanged(); } }
         private string? _DefaultValue;
         [Column("val_type")]
-        public ValueType ValueType { get => _ValueType; set { _ValueType = value; NotifyPropertyChanged(); } }
-        private ValueType _ValueType;
+        public SValueType ValueType { get => _ValueType; set { _ValueType = value; NotifyPropertyChanged(); } }
+        private SValueType _ValueType;
         [Column("is_enable")]
         public bool IsEnable { get => _IsEnable; set { _IsEnable = value; NotifyPropertyChanged(); } }
-        private bool _IsEnable;
+        private bool _IsEnable = true;
         [Column("is_delete")]
         public bool IsDelete { get => _IsDelete; set { _IsDelete = value; NotifyPropertyChanged(); } }
         private bool _IsDelete;

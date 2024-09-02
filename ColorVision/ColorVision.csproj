@@ -105,14 +105,6 @@
   <ItemGroup>
     <Resource Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\CHANGELOG.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Directory.Build.props" Link="Directory.Build.props" />
-  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="Assets\Image\ColorVision.png" />

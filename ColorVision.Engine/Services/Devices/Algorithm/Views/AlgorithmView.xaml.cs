@@ -64,7 +64,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             listView1.ItemsSource = AlgResults;
-            Config.AutoRefreshView = true;
             var keyValuePairs =
             TextBoxType.ItemsSource = Enum.GetValues(typeof(AlgorithmResultType))
                 .Cast<AlgorithmResultType>()
@@ -163,7 +162,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (result != null)
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
-                AlgResults.AddUnique(algorithmResult);
+                AlgResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
             }
@@ -171,7 +170,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void RefreshResultListView()
         {
-            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+            if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning? 0: listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
 

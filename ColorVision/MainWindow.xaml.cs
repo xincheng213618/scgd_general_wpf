@@ -134,7 +134,7 @@ namespace ColorVision
         {
             await Task.Delay(100);
 
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
