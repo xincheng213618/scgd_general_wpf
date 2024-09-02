@@ -16,6 +16,7 @@ using cvColorVision;
 using Gu.Wpf.Geometry;
 using log4net;
 using Microsoft.VisualBasic.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using StructTestN;
 
@@ -596,24 +597,19 @@ namespace CsharpDEMO
             }
         }
 
+        public string cfgFn = "cfg\\autoFocusParameters.cfg";
 
         IntPtr camHandle = IntPtr.Zero;
         public void InitHandle()
         {
-            logDebug.logCreatEx();
-            autoFocusCfg atuoCfg = new autoFocusCfg();
-            
-            string cfgFn = "cfg\\autoFocusParameters.cfg";
-            FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
-            if (!fs.CanRead)
+            if (!File.Exists(cfgFn))
             {
                 log.Info($"读取{cfgFn}失败！");
                 return;
             }
-            BinaryReader binaryReader = new BinaryReader(fs);
-            byte[] fsData = binaryReader.ReadBytes((int)fs.Length);
-            string jsonString = Encoding.UTF8.GetString(fsData);
-            atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
+            string jsonString = File.ReadAllText(cfgFn);
+            autoFocusCfg atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
+
             cvCameraCSLib.DeviceOnline_CallBack deviceMonitor = new cvCameraCSLib.DeviceOnline_CallBack(CallBackDeviceOnLine);
 
 
@@ -654,23 +650,18 @@ namespace CsharpDEMO
             log.Info("正在进行自动聚焦测试");
 
 
-            autoFocusCfg atuoCfg = new autoFocusCfg();
-
-            string cfgFn = "cfg\\autoFocusParameters.cfg";
-            FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
-            if (!fs.CanRead)
+            if (!File.Exists(cfgFn))
             {
                 log.Info($"读取{cfgFn}失败！");
                 return;
             }
-            BinaryReader binaryReader = new BinaryReader(fs);
-            byte[] fsData = binaryReader.ReadBytes((int)fs.Length);
-            string jsonString = Encoding.UTF8.GetString(fsData);
+            string jsonString = File.ReadAllText(cfgFn);
 
             log.Info("配置文件：" + jsonString);
 
-            atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
+            autoFocusCfg atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
 
+            File.WriteAllText(cfgFn , JsonConvert.SerializeObject(atuoCfg));
 
             //首先回到初始位置
             //success = cvCameraCSLib.GoHome(motorHandle);
@@ -700,7 +691,6 @@ namespace CsharpDEMO
 
             //释放dll资源，这个函数在最后调且只能调一次！！
             cvCameraCSLib.ReleaseResource();
-            logDebug.logRelease();
         }
 
         //camHandle相机句柄；motorHandle电机句柄
@@ -890,14 +880,18 @@ namespace CsharpDEMO
             IRECT[] foucsRects = new IRECT[4];
             int res = 0;
             uint w = 0, h = 0, srcbpp = 0, bpp = 0, channels = 0;
+            log.Info("正在打开相机");
+
             res = cvCameraCSLib.CM_OpenSimple(camHandle);
             if (res != 1)
             {
                 log.Info("fail to CM_OpenSimple");
                 return;
             }
+            log.Info("正在打开设置相机曝光：20");
             ret = cvCameraCSLib.CM_SetExpTimeSimple(camHandle, 20);  //设置曝光
            cvCameraCSLib.CM_GetSrcFrameInfo(camHandle, ref w, ref h, ref srcbpp, ref channels);
+            log.Info($"设置相机FrameInfo w{w},h{h},srcbpp{srcbpp},channels{channels}");
 
 
             byte[] src = new byte[srcbpp / 8 * w * h * channels];           //灰度数据每个像素点占两字节
@@ -967,11 +961,9 @@ namespace CsharpDEMO
 
                 MotorInfo.Accuracy = averageLevel;
                 MotorInfo.Position = i;
-                string sLog = $"电机位:{i},评价值：,{averageLevel}";
+                string sLog = $"坐标:{i} 评价值：{averageLevel}";
                 records.Add(i,averageLevel);
                 log.Info(sLog);
-                logDebug.logRecord(sLog);
-
             }
 
             var leyP = records.Aggregate((l, r) => l.Value > r.Value ? l : r);
@@ -988,7 +980,7 @@ namespace CsharpDEMO
 
             int minindex = 0;
             bool first = true;
-            double preValue = averageLevel;
+            double preValue = leyP.Value;
             while (Math.Abs(step) > stepover)
             {
                 npos = npos + step;
@@ -1024,9 +1016,14 @@ namespace CsharpDEMO
                     {
                         first = false;
                         step = -step;
+                        npos = npos + step;
+                        res = cvCameraCSLib.MoveAbsPostion(motorHandle, npos);
+                        cvCameraCSLib.GetPosition(motorHandle, ref npos);
+                        MotorInfo.Position = npos;
                         continue;
                     }
                     step = -step / 2;
+                    log.Info($"步长：{step}");
                 }
             }
 
@@ -1109,8 +1106,6 @@ namespace CsharpDEMO
 				averageLevel = cvCameraCSLib.cvCalArticulation(EvaFunc.fun5, tHimage, cfgObj.EdgeFocus.offy, cfgObj.EdgeFocus.d, cfgObj.EdgeFocus.w,0.01, cfgObj.EdgeFocus.h, cfgObj.EdgeFocus.nStep, cfgObj.EdgeFocus.nMaxCount);
                 string sLog = $"电机位:{i},评价值：,{averageLevel}";
 				log.Info(sLog);
-				logDebug.logRecord(sLog);
-
 				positionInfor pi = new positionInfor(i - cfgObj.focus_Step / 2, i + cfgObj.focus_Step / 2, (float)averageLevel);
 				//将此时电机所处范围及清晰度记录下来
 				list_averageLevel.Add(pi);
