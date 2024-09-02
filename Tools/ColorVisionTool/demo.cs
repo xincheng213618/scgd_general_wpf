@@ -14,6 +14,8 @@ using System.Windows.Media.Imaging;
 using ColorVisionTool;
 using cvColorVision;
 using Gu.Wpf.Geometry;
+using log4net;
+using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json.Linq;
 using StructTestN;
 
@@ -23,6 +25,9 @@ namespace CsharpDEMO
 
     class DemoType
     {
+
+        private static readonly ILog log = LogManager.GetLogger(typeof(DemoType));
+
         public void DoTestDEMO()
         {
 			
@@ -43,7 +48,7 @@ namespace CsharpDEMO
 
             if (camHandle == IntPtr.Zero)
             {
-                Console.WriteLine("创建句柄失败！请查看log");
+                log.Info("创建句柄失败！请查看log");
                 return;
             }
             cvCameraCSLib.CM_SetCaliFilePath(camHandle, "..\\cfg\\");
@@ -75,7 +80,7 @@ namespace CsharpDEMO
                     caliGroupTitles[i] = Marshal.PtrToStringAnsi(pStr[i]);
 
                     //打印每组矫正title，示例而已
-                    Console.WriteLine(caliGroupTitles[i]);
+                    log.Info(caliGroupTitles[i]);
 
                     Marshal.FreeHGlobal(pStr[i]);
                 }
@@ -101,7 +106,7 @@ namespace CsharpDEMO
                 StringBuilder builder = new StringBuilder(256);
                 cvCameraCSLib.CM_GetErrorMessage(success, builder, ref strLength);
                 string errMessge = builder.ToString();
-                Console.WriteLine(errMessge);
+                log.Info(errMessge);
 
                 return;
             }
@@ -274,7 +279,7 @@ namespace CsharpDEMO
 
             if (camHandle == IntPtr.Zero)
             {
-                Console.WriteLine("创建句柄失败！请查看log");
+                log.Info("创建句柄失败！请查看log");
                 return;
             }
 
@@ -282,7 +287,7 @@ namespace CsharpDEMO
             success = cvCameraCSLib.CM_OpenLiveSimple(camHandle);
             if (success != 1)
             {
-                Console.WriteLine("打开视频模式失败！！");
+                log.Info("打开视频模式失败！！");
                 return;
             }
 
@@ -348,7 +353,7 @@ namespace CsharpDEMO
 
             if (camHandle == IntPtr.Zero)
             {
-                Console.WriteLine("创建句柄失败！请查看log");
+                log.Info("创建句柄失败！请查看log");
                 Console.ReadKey();
                 return;
             }
@@ -380,7 +385,7 @@ namespace CsharpDEMO
                     caliGroupTitles[i] = Marshal.PtrToStringAnsi(pStr[i]);
 
                     //打印每组矫正title，示例而已
-                    Console.WriteLine(caliGroupTitles[i]);
+                    log.Info(caliGroupTitles[i]);
 
                     Marshal.FreeHGlobal(pStr[i]);
                 }
@@ -404,7 +409,7 @@ namespace CsharpDEMO
                 StringBuilder builder = new StringBuilder(256);
                 cvCameraCSLib.CM_GetErrorMessage(success, builder, ref strLength);
                 string errMessge = builder.ToString();
-                Console.WriteLine(errMessge);
+                log.Info(errMessge);
                 Console.ReadKey();
                 return;
             }
@@ -439,63 +444,63 @@ namespace CsharpDEMO
             float lum = 0;
 
             //拍摄红色,根据需要设置曝光
-            Console.WriteLine("\n请输入设置的曝光时间ms:\n");
+            log.Info("\n请输入设置的曝光时间ms:\n");
             string get = Console.ReadLine();
             float exp = float.Parse(get);
             cvCameraCSLib.CM_SetExpTimeSimple(camHandle, exp, exp, exp);
             success = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
-            Console.WriteLine("\n请输入色坐标x:\n");
+            log.Info("\n请输入色坐标x:\n");
             get = Console.ReadLine();
             cie_x = float.Parse(get);      //这里的色坐标需要观察外部色度计来获取，以实际测量情况获取的数据填入！
-            Console.WriteLine("\n请输入色坐标y:\n");
+            log.Info("\n请输入色坐标y:\n");
             get = Console.ReadLine();
             cie_y = float.Parse(get);
             success = cvCameraCSLib.CM_SetColorCaliData(camHandle, caliType, rect, 0, cie_x, cie_y, lum);
 
             //拍摄绿色,根据需要设置曝光
-            Console.WriteLine("\n请输入设置的曝光时间ms:\n");
+            log.Info("\n请输入设置的曝光时间ms:\n");
             get = Console.ReadLine();
             exp = float.Parse(get);
             cvCameraCSLib.CM_SetExpTimeSimple(camHandle, exp, exp, exp);
             success = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
-            Console.WriteLine("\n请输入色坐标x:\n");
+            log.Info("\n请输入色坐标x:\n");
             get = Console.ReadLine();
             cie_x = float.Parse(get);      //这里的色坐标需要观察外部色度计来获取，以实际测量情况获取的数据填入！
-            Console.WriteLine("\n请输入色坐标y:\n");
+            log.Info("\n请输入色坐标y:\n");
             get = Console.ReadLine();
             cie_y = float.Parse(get);
 
             success = cvCameraCSLib.CM_SetColorCaliData(camHandle, caliType, rect, 1, cie_x, cie_y, lum);
 
             //拍摄蓝色,根据需要设置曝光
-            Console.WriteLine("\n请输入设置的曝光时间ms:\n");
+            log.Info("\n请输入设置的曝光时间ms:\n");
             get = Console.ReadLine();
             exp = float.Parse(get);
             cvCameraCSLib.CM_SetExpTimeSimple(camHandle, exp, exp, exp);
             success = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
-            Console.WriteLine("\n请输入色坐标x:\n");
+            log.Info("\n请输入色坐标x:\n");
             get = Console.ReadLine();
             cie_x = float.Parse(get);      //这里的色坐标需要观察外部色度计来获取，以实际测量情况获取的数据填入！
-            Console.WriteLine("\n请输入色坐标y:\n");
+            log.Info("\n请输入色坐标y:\n");
             get = Console.ReadLine();
             cie_y = float.Parse(get);
 
             success = cvCameraCSLib.CM_SetColorCaliData(camHandle, caliType, rect, 2, cie_x, cie_y, lum);
 
             //拍摄白色,根据需要设置曝光，白色的part必须是3，其它颜色无所谓
-            Console.WriteLine("\n请输入设置的曝光时间ms:\n");
+            log.Info("\n请输入设置的曝光时间ms:\n");
             get = Console.ReadLine();
             exp = float.Parse(get);
             cvCameraCSLib.CM_SetExpTimeSimple(camHandle, exp, exp, exp);
             success = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
-            Console.WriteLine("\n请输入色坐标x:\n");
+            log.Info("\n请输入色坐标x:\n");
             get = Console.ReadLine();
             cie_x = float.Parse(get);      //这里的色坐标需要观察外部色度计来获取，以实际测量情况获取的数据填入！
-            Console.WriteLine("\n请输入色坐标y:\n");
+            log.Info("\n请输入色坐标y:\n");
             get = Console.ReadLine();
             cie_y = float.Parse(get);
 
-            Console.WriteLine("\n请输入亮度值:\n");
+            log.Info("\n请输入亮度值:\n");
             get = Console.ReadLine();
             lum = float.Parse(get);          //切记，只有白色必须要填入色度计测量的亮度数据
 
@@ -517,7 +522,7 @@ namespace CsharpDEMO
 
             //释放dll资源，这个函数在最后调且只能调一次！！
             cvCameraCSLib.ReleaseResource();
-            Console.WriteLine("完成！按任意键退出");
+            log.Info("完成！按任意键退出");
             Console.ReadKey();
 
         }
@@ -534,7 +539,7 @@ namespace CsharpDEMO
                 res = cvCameraCSLib.CM_OpenSimple(camHandle);
                 if (res != 1)
                 {
-                    Console.WriteLine("fail to CM_OpenSimple");
+                    log.Info("fail to CM_OpenSimple");
                     return;
                 }
             }
@@ -597,12 +602,12 @@ namespace CsharpDEMO
         {
             logDebug.logCreatEx();
             autoFocusCfg atuoCfg = new autoFocusCfg();
-
+            
             string cfgFn = "cfg\\autoFocusParameters.cfg";
             FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
             if (!fs.CanRead)
             {
-                Console.WriteLine($"读取{cfgFn}失败！");
+                log.Info($"读取{cfgFn}失败！");
                 return;
             }
             BinaryReader binaryReader = new BinaryReader(fs);
@@ -619,10 +624,11 @@ namespace CsharpDEMO
 
             //建立相机句柄
             camHandle = cvCameraCSLib.CM_CreatCameraManagerSimple(atuoCfg.dcf);
+            log.Info("建立相机句柄:" + camHandle);
 
             if (camHandle == IntPtr.Zero)
             {
-                Console.WriteLine("创建句柄失败！请查看log");
+                log.Info("创建句柄失败！请查看log");
                 //return;
             }
 
@@ -631,16 +637,21 @@ namespace CsharpDEMO
             if (success != 1)
             {
 
-                Console.WriteLine("CM_SetComSimple失败！请查看log");
+                log.Info("CM_SetComSimple失败!请查看log");
                 return;
             }
+            log.Info("设置镜头COM口,查看设备管理器来设置:" + success);
+
             success = cvCameraCSLib.CM_CreatChildHandle(camHandle, ref motorHandle, (byte)atuoCfg.motorNum);
 
         }
 
         public void testMotor()
         {
+            log.Info("正在进行初始化Handle");
+
             InitHandle();
+            log.Info("正在进行自动聚焦测试");
 
 
             autoFocusCfg atuoCfg = new autoFocusCfg();
@@ -649,12 +660,15 @@ namespace CsharpDEMO
             FileStream fs = new FileStream(cfgFn, FileMode.Open, FileAccess.Read);
             if (!fs.CanRead)
             {
-                Console.WriteLine($"读取{cfgFn}失败！");
+                log.Info($"读取{cfgFn}失败！");
                 return;
             }
             BinaryReader binaryReader = new BinaryReader(fs);
             byte[] fsData = binaryReader.ReadBytes((int)fs.Length);
             string jsonString = Encoding.UTF8.GetString(fsData);
+
+            log.Info("配置文件：" + jsonString);
+
             atuoCfg = Newtonsoft.Json.JsonConvert.DeserializeObject<autoFocusCfg>(jsonString);
 
 
@@ -666,16 +680,19 @@ namespace CsharpDEMO
 
             if (success != 1)
             {
-                Console.WriteLine("设置对焦环失败！");
+                log.Info("设置对焦环失败！");
             }
+
+            log.Info("正在进行自动聚焦");
 
             ///爬山法
             MountainClimbing(camHandle, motorHandle, ref atuoCfg);
 
             //autoFocus_EdgeFocus(camHandle, motorHandle, ref atuoCfg);
 
-
+            log.Info("正在关闭电机");
             cvCameraCSLib.ShutDown(motorHandle);
+            log.Info("正在关闭相机");
 
             cvCameraCSLib.CM_Close(camHandle);
             //释放相机句柄
@@ -684,49 +701,6 @@ namespace CsharpDEMO
             //释放dll资源，这个函数在最后调且只能调一次！！
             cvCameraCSLib.ReleaseResource();
             logDebug.logRelease();
-            return;
-            int pos = 3000;
-
-
-
-            success = cvCameraCSLib.GetPosition(motorHandle, ref pos, 5000);
-
-            pos = 3500;
-
-
-            for (int i = 0; i < 7700; i += 500)
-            {
-                success = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
-
-                if (success != 1)
-                {
-                    MessageBox.Show("MoveAbsPostion Fail!");
-                }
-
-                success = cvCameraCSLib.GetPosition(motorHandle, ref pos, 5000);
-                if (success != 1 || pos != i)
-                {
-                    MessageBox.Show("GetPosition Fail!");
-                }
-
-            }
-
-
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, pos);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 1000);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 2000);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 3000);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 4000);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 5000);
-            success = cvCameraCSLib.MoveAbsPostion(motorHandle, 7000);
-            success = cvCameraCSLib.GetPosition(motorHandle, ref pos, 5000);
-
-            cvCameraCSLib.ShutDown(motorHandle);
-            //释放相机句柄
-            cvCameraCSLib.CM_ReleaseCameraManagerSimple(camHandle);
-
-            //释放dll资源，这个函数在最后调且只能调一次！！
-            cvCameraCSLib.ReleaseResource();
         }
 
         //camHandle相机句柄；motorHandle电机句柄
@@ -785,20 +759,20 @@ namespace CsharpDEMO
                 res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
                 if (res != 1)
                 {
-                    Console.WriteLine($"move{i} Fail");
+                    log.Info($"move{i} Fail");
                     return;
                 }
                 res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
                 if (res != 1)
                 {
-                    Console.WriteLine("fail to take img");
+                    log.Info("fail to take img");
                     return;
                 }
                // cvCameraCSLib.CM_ExportToTIFF($"TIFF\\Tfirst电机位{i}.tif", w, h, srcbpp, channels, src);
 
                // res = cvCameraCSLib.CalFocusLevelByEdgeSimple(camHandle, foucsRects, focusResult, 4, 11);
 
-                //Console.WriteLine($"level[0],{focusResult[0]},[1],{focusResult[1]},[2],{focusResult[2]},[3],{focusResult[3]}, at position:{i}");
+                //log.Info($"level[0],{focusResult[0]},[1],{focusResult[1]},[2],{focusResult[2]},[3],{focusResult[3]}, at position:{i}");
                 //cvCameraCSLib.writeCSV_flo("result\\level.csv", head, focusResult, 4);
                 // 计算矩形的平均清晰度
                 averageLevel = (focusResult[0] + focusResult[1] + focusResult[2] + focusResult[3]) / 4;
@@ -809,7 +783,7 @@ namespace CsharpDEMO
 
             }
             //    list_averageLevel.Clear();
-            //    Console.WriteLine("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
+            //    log.Info("\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
             //}
            res = cvCameraCSLib.GoHome(motorHandle);
             float bestLevel = 100;
@@ -830,7 +804,7 @@ namespace CsharpDEMO
             }
 
             list_averageLevel.Clear();
-            Console.WriteLine($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
+            log.Info($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
 
 
 
@@ -847,25 +821,25 @@ namespace CsharpDEMO
                 res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
                 if (res != 1)
                 {
-                    Console.WriteLine("{move $Fail\n}", i);
+                    log.Info($"move $Fail{i}");
                     return;
                 }
                 int temp = 0;
                 cvCameraCSLib.GetPosition(motorHandle, ref temp);
                 if (temp != i)
                 {
-                    Console.WriteLine($"positon error:{i}!={temp}");
+                    log.Info($"positon error:{i}!={temp}");
                 }
                 res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
                 if (res != 1)
                 {
-                    Console.WriteLine("fail to take img");
+                    log.Info("fail to take img");
                     return;
                 }
                // cvCameraCSLib.CM_ExportToTIFF($"TIFF\\电机位{i}.tif", w, h, srcbpp, channels, src);
 
                 res = cvCameraCSLib.CalFocusLevelByEdgeSimple(camHandle, foucsRects, focusResult, 4, 11);
-                Console.WriteLine($"level[0],{focusResult[0]},[1],{focusResult[1]},[2],{focusResult[2]},[3],{focusResult[3]}, at position:{i}");
+                log.Info($"level[0],{focusResult[0]},[1],{focusResult[1]},[2],{focusResult[2]},[3],{focusResult[3]}, at position:{i}");
                 //cvCameraCSLib.writeCSV_flo("result\\level.csv", head, focusResult, 4);
                 // 计算矩形的平均清晰度
                 averageLevel = (focusResult[0] + focusResult[1] + focusResult[2] + focusResult[3]) / 4;
@@ -889,14 +863,14 @@ namespace CsharpDEMO
             }
             list_averageLevel.Clear();
 
-            Console.WriteLine($"the focus position is:{finalyPosition}");
+            log.Info($"the focus position is:{finalyPosition}");
           res = cvCameraCSLib.GoHome(motorHandle);
             //调到最佳电机位并取图存图
             res = cvCameraCSLib.MoveAbsPostion(motorHandle, finalyPosition);
             res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
             if (res != 1)
             {
-                Console.WriteLine("fail to take img");
+                log.Info("fail to take img");
                 return;
             }
             cvCameraCSLib.CM_ExportToTIFF($"TIFF\\best-{finalyPosition}.tif", w, h, srcbpp, channels, src);
@@ -913,14 +887,13 @@ namespace CsharpDEMO
         {
             int ret;
             int startPotion = cfgObj.focus_Min;
-            List<positionInfor> list_averageLevel = new List<positionInfor>();     //用于存储电机位区间和评价值  
             IRECT[] foucsRects = new IRECT[4];
             int res = 0;
             uint w = 0, h = 0, srcbpp = 0, bpp = 0, channels = 0;
             res = cvCameraCSLib.CM_OpenSimple(camHandle);
             if (res != 1)
             {
-                Console.WriteLine("fail to CM_OpenSimple");
+                log.Info("fail to CM_OpenSimple");
                 return;
             }
             ret = cvCameraCSLib.CM_SetExpTimeSimple(camHandle, 20);  //设置曝光
@@ -938,7 +911,7 @@ namespace CsharpDEMO
                 res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
                 if (res != 1)
                 {
-                    Console.WriteLine("fail to take img");
+                    log.Info("fail to take img");
                     return -1;
                 }
                 HImage tHimage = new HImage();
@@ -979,6 +952,7 @@ namespace CsharpDEMO
             }
 
             //第一步进行粗定焦
+            Dictionary<int, double> records = new Dictionary<int, double>();
 
 
             for (int i = cfgObj.focus_Min; i < cfgObj.focus_Max; i += cfgObj.focus_Step)
@@ -986,7 +960,7 @@ namespace CsharpDEMO
                 res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
                 if (res != 1)
                 {
-                    Console.WriteLine($"move{i} Fail");
+                    log.Info($"move{i} Fail");
                     return;
                 }
                 averageLevel =GetArticulation(ref cfgObj);
@@ -994,46 +968,25 @@ namespace CsharpDEMO
                 MotorInfo.Accuracy = averageLevel;
                 MotorInfo.Position = i;
                 string sLog = $"电机位:{i},评价值：,{averageLevel}";
-                Console.WriteLine(sLog);
+                records.Add(i,averageLevel);
+                log.Info(sLog);
                 logDebug.logRecord(sLog);
 
-                positionInfor pi = new positionInfor(i - cfgObj.focus_Step / 2, i + cfgObj.focus_Step / 2, (float)averageLevel);
-                //将此时电机所处范围及清晰度记录下来
-                list_averageLevel.Add(pi);
-
             }
 
+            var leyP = records.Aggregate((l, r) => l.Value > r.Value ? l : r);
+            log.Info($"电机在{leyP.Key}:评价值：{leyP.Value},正在移动到该位置，做第二次聚焦");
 
-            res = cvCameraCSLib.GoHome(motorHandle);
-            float bestLevel = 0;
-            int highPrecisionMin = 0, highPrecisionMax = 10;
-            //寻找最优电机区间
-            foreach (var obj in list_averageLevel)
-            {
-                if (obj.averageLevel > bestLevel)
-                {
-                    bestLevel = obj.averageLevel;
-                    if (obj.sectionMin < 0)
-                    {
-                        obj.sectionMin = 0;
-                    }
-                    highPrecisionMin = obj.sectionMin;
-                    highPrecisionMax = obj.sectionMax;
-                }
-            }
+            res = cvCameraCSLib.MoveAbsPostion(motorHandle, leyP.Key);
 
-            list_averageLevel.Clear();
-            Console.WriteLine($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
-            res = cvCameraCSLib.MoveAbsPostion(motorHandle, highPrecisionMin);
-            MotorInfo.Position = highPrecisionMin;
             //爬山法
-            int step = 1000;
-            int stepover = 10;
+            int step = cfgObj.StartStep;
+            int stepover = cfgObj.EndStep;
             int npos = 0;
 
-            Dictionary<double, double> records = new Dictionary<double, double>();
-
             cvCameraCSLib.GetPosition(motorHandle, ref npos);
+
+            int minindex = 0;
             bool first = true;
             double preValue = averageLevel;
             while (Math.Abs(step) > stepover)
@@ -1044,6 +997,8 @@ namespace CsharpDEMO
 
                 double Artculation = GetArticulation(ref cfgObj);
 
+                log.Info($"position is:{npos},Artculation:{Artculation}");
+
                 MotorInfo.Accuracy = Artculation;
                 MotorInfo.Position = npos;
 
@@ -1051,16 +1006,19 @@ namespace CsharpDEMO
                     records[npos] = Artculation;
 
                 if (Artculation < records.Aggregate((l, r) => l.Value > r.Value ? l : r).Value)
-                {
-                    Console.WriteLine($"the focus position is:{npos}");
+                    minindex++;
+
+                if (minindex > 3)
                     break;
-                }
+
                 if (Artculation > preValue)
                 {
-
+                    minindex = 0;
+                    preValue = Artculation;
                 }
                 else
                 {
+                    preValue = Artculation;
                     //如果是第一次则反向运动到原位置
                     if (first)
                     {
@@ -1070,15 +1028,13 @@ namespace CsharpDEMO
                     }
                     step = -step / 2;
                 }
-                first = false;
-                preValue = Artculation;
             }
 
             res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
             cvCameraCSLib.CM_ExportToTIFF($"TIFF\\best-{MotorInfo.Position}.tif", w, h, srcbpp, channels, src);
             if (res != 1)
             {
-                Console.WriteLine("fail to take img");
+                log.Info("fail to take img");
                 return;
             }
             MessageBox.Show("爬山法聚焦成功");
@@ -1104,7 +1060,7 @@ namespace CsharpDEMO
 			res = cvCameraCSLib.CM_OpenSimple(camHandle);
             if(res != 1)
             {
-				Console.WriteLine("fail to CM_OpenSimple");
+				log.Info("fail to CM_OpenSimple");
                 return;
 			}
 			cvCameraCSLib.CM_SetExpTimeSimple(camHandle, 20);  //设置曝光
@@ -1124,13 +1080,13 @@ namespace CsharpDEMO
 				res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
 				if (res != 1)
 				{
-					Console.WriteLine($"move{i} Fail");
+					log.Info($"move{i} Fail");
 					return;
 				}
 				res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
 				if (res != 1)
 				{
-					Console.WriteLine("fail to take img");
+					log.Info("fail to take img");
 					return;
 				}
 				HImage tHimage=new HImage();
@@ -1152,7 +1108,7 @@ namespace CsharpDEMO
 
 				averageLevel = cvCameraCSLib.cvCalArticulation(EvaFunc.fun5, tHimage, cfgObj.EdgeFocus.offy, cfgObj.EdgeFocus.d, cfgObj.EdgeFocus.w,0.01, cfgObj.EdgeFocus.h, cfgObj.EdgeFocus.nStep, cfgObj.EdgeFocus.nMaxCount);
                 string sLog = $"电机位:{i},评价值：,{averageLevel}";
-				Console.WriteLine(sLog);
+				log.Info(sLog);
 				logDebug.logRecord(sLog);
 
 				positionInfor pi = new positionInfor(i - cfgObj.focus_Step / 2, i + cfgObj.focus_Step / 2, (float)averageLevel);
@@ -1181,7 +1137,7 @@ namespace CsharpDEMO
 			}
 
 			list_averageLevel.Clear();
-			Console.WriteLine($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
+			log.Info($"the advance scope is:{highPrecisionMin}-{highPrecisionMax}");
 
 
 
@@ -1195,19 +1151,19 @@ namespace CsharpDEMO
 				res = cvCameraCSLib.MoveAbsPostion(motorHandle, i);
 				if (res != 1)
 				{
-					Console.WriteLine("{move $Fail\n}", i);
+                    log.Info($"move $Fail{i}");
 					return;
 				}
 				int temp = 0;
 				cvCameraCSLib.GetPosition(motorHandle, ref temp);
 				if (temp != i)
 				{
-					Console.WriteLine($"positon error:{i}!={temp}");
+					log.Info($"positon error:{i}!={temp}");
 				}
 				res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
 				if (res != 1)
 				{
-					Console.WriteLine("fail to take img");
+					log.Info("fail to take img");
 					return;
 				}
                 if (cfgObj.saveImage)
@@ -1250,14 +1206,14 @@ namespace CsharpDEMO
 			}
 			list_averageLevel.Clear();
 
-			Console.WriteLine($"the focus position is:{finalyPosition}");
+			log.Info($"the focus position is:{finalyPosition}");
 			res = cvCameraCSLib.GoHome(motorHandle);
 			//调到最佳电机位并取图存图
 			res = cvCameraCSLib.MoveAbsPostion(motorHandle, finalyPosition);
 			res = cvCameraCSLib.CM_GetFrameSimple(camHandle, ref w, ref h, ref srcbpp, ref bpp, ref channels, src, imgdata);
 			if (res != 1)
 			{
-				Console.WriteLine("fail to take img");
+				log.Info("fail to take img");
 				return;
 			}
 			cvCameraCSLib.CM_ExportToTIFF($"TIFF\\best-{finalyPosition}.tif", w, h, srcbpp, channels, src);
@@ -1287,12 +1243,12 @@ namespace CsharpDEMO
             string ss = pData.ToString();
             if (OnLine)
             {
-                Console.WriteLine("相机与电脑连接了id:", id);
+                log.Info($"相机与电脑连接了{id}");
                 return 1;
             }
             else
             {
-                Console.WriteLine("相机与电脑断开了id:", id);
+                log.Info($"相机与电脑连接了{id}");
                 return 1;
             }
         }

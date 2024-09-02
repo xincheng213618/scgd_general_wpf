@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using ColorVision.Common.MVVM;
+using System.Runtime.InteropServices;
 
 namespace StructTestN
 {
@@ -12,7 +13,7 @@ namespace StructTestN
 		public int nStep;
 		public int nMaxCount;
 	}
-	public class autoFocusCfg
+	public class autoFocusCfg:ViewModelBase
 	{
 		public string dcf;
 		public string focusCOM;
@@ -24,7 +25,12 @@ namespace StructTestN
 		public bool saveImage;
 
 		public foucusEdge EdgeFocus;
+
+		public int StartStep { get; set; } = 500;
+
+		public int EndStep { get; set; } = 30;
 	}
+
 	public class logDebug
 	{
 		private const string LIBRARY_TOOL_LIB = "1TOOL_LIB.dll";
