@@ -7,10 +7,10 @@
         mc:Ignorable="d"
         xmlns:effects="http://gu.se/Geometry"
         xmlns:draw ="clr-namespace:ColorVision.UI.Draw;assembly=ColorVision.UI"
-        Title="MainWindow" Height="720" Width="1280" Initialized="Window_Initialized">
+        Title="自动聚焦工具" Height="720" Width="1500" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="400"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Row="0">
@@ -18,8 +18,10 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <StackPanel x:Name="StackPanelInfo" d:DataContext="{d:DesignInstance local:MotorInfo}" Margin="5" Width="300">
-                <Button Content="自动聚焦" Click="Button_Click" Margin="0,5,0,5"/>
+            <StackPanel x:Name="StackPanelInfo" d:DataContext="{d:DesignInstance local:MotorInfo}" Margin="5">
+                <Button Content="打开输出文件夹" Click="OpenOutputFile_Click" Margin="0,0,0,5"/>
+
+                <Button Content="自动聚焦" Click="Button_Click" Margin="0,0,0,5"/>
                 <DockPanel Margin="0,0,0,5">
                     <TextBlock Text="位置"/>
                     <TextBlock Text="{Binding Position}"/>

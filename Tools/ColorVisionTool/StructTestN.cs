@@ -28,36 +28,7 @@ namespace StructTestN
 
 		public int StartStep { get; set; } = 500;
 
-		public int EndStep { get; set; } = 30;
-	}
-
-	public class logDebug
-	{
-		private const string LIBRARY_TOOL_LIB = "1TOOL_LIB.dll";
-
-		[DllImport(LIBRARY_TOOL_LIB, EntryPoint = "logCreatEx",
-		CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-		public unsafe static extern void logCreatEx();
-
-
-		[DllImport(LIBRARY_TOOL_LIB, EntryPoint = "logRelease",
-			CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-		public unsafe static extern void logRelease();
-
-
-		[DllImport(LIBRARY_TOOL_LIB, EntryPoint = "logRecord",
-		   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-		public unsafe static extern void logRecord(string eventName);
-
-
-		[DllImport(LIBRARY_TOOL_LIB, EntryPoint = "logFreshTime",
-			CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-		public unsafe static extern void logFreshTime();
-
-
-		[DllImport(LIBRARY_TOOL_LIB, EntryPoint = "logGetTimeCost",
-			CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-		public unsafe static extern void logGetTimeCost(string eventName);
+		public int EndStep { get; set; } = 20;
 	}
 	
 }
