@@ -144,11 +144,6 @@
   <ItemGroup>
     <ClCompile Include="opencv_helper_test.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\OpenCVHelper\OpenCVHelper.vcxproj">
-      <Project>{aa343239-476e-43e3-bee3-d3313c883341}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
