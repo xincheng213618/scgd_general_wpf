@@ -206,11 +206,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                         break;
                 }
             }
-#if (DEBUG == false)
             UpdateUI(Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += UpdateUI;
-#endif
         }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;

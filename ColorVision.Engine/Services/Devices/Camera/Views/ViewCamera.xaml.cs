@@ -275,7 +275,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 });
                             }
                         }
-                        catch(Exception ex)
+                        catch
                         {
                             log.Warn("文件还在写入");
                             await Task.Delay(Device.Config.ViewImageReadDelay);

@@ -14,7 +14,6 @@ namespace ColorVision.Engine.Media
         HelixViewport3D viewport;
         ModelVisual3D modelVisual;
         byte[] grayPixels;
-        int scaleFactor;
         int newWidth;
         int newHeight;
         double heightScale = 100.0; // 初始化 heightScale
@@ -66,7 +65,7 @@ namespace ColorVision.Engine.Media
             viewport.CameraController.AddRotateForce(0,4.5);
         }
 
-        int FindClosestFactor(int value, int[] factors)
+        static int FindClosestFactor(int value, int[] factors)
         {
             int closest = factors[0];
             foreach (int factor in factors)
@@ -237,26 +236,12 @@ namespace ColorVision.Engine.Media
             }
         }
 
-
-
-
-
-        private Color GetColorForHeight(double height)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
-            // 根据高度值返回颜色
-            if (height < 0.3) return Colors.Blue;
-            if (height < 0.6) return Colors.Green;
-            if (height < 0.9) return Colors.Yellow;
-            return Colors.Red;
-        }
-
-        private async void Button_Click(object sender, RoutedEventArgs e)
-        {
-            // 更改 heightScale 的值
             heightScale *= 1.1; // 例如，每次点击增加 10.0
             GenOpenGLAsync(heightScale); // 异步调用
         }
-        private async void Button_Click_1(object sender, RoutedEventArgs e)
+        private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             // 更改 heightScale 的值
             heightScale *= 0.9; // 例如，每次点击增加 10.0

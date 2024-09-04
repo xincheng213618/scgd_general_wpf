@@ -1100,38 +1100,6 @@ namespace ColorVision.Engine.Media
                     }
                     ImageShow.Source = PseudoImage;
                 }
-
-                //string directoryPath = @"C:\Users\17917\Desktop\Serial 7";
-                //// 获取目录下的所有文件路径
-                //string[] files = Directory.GetFiles(directoryPath);
-
-                //string lists = JsonConvert.SerializeObject(files);
-                //if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.IsEnabled)
-                //{
-                //    int ret = OpenCVCuda.CM_Fusion(lists, out HImage hImage);
-                //    // 获取并输出经过的时间
-
-
-                //}
-                //else
-                //{
-                //    int ret = OpenCVHelper.CM_Fusion(lists, out HImage hImage);
-                //    if (ret == 0)
-                //    {
-                //        var image = hImage.ToWriteableBitmap();
-                //        OpenCVHelper.FreeHImageData(hImage.pData);
-                //        hImage.pData = IntPtr.Zero;
-
-                //        PseudoImage = image;
-                //        if (toggleButton.IsChecked == true)
-                //        {
-                //            ImageShow.Source = PseudoImage;
-                //        }
-                //    }
-                //}
-
-
-
             };
         }
 
