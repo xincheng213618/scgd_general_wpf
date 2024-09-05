@@ -23,7 +23,7 @@ namespace ColorVision.Settings
                 FileName = defaultFileName // Set the default file name
             };
 
-            // Show the dialog and get the selected file path
+            // Show the dialog and get the selected file CurrentInstallFile
             bool? result = saveFileDialog.ShowDialog();
 
             if (result == true)

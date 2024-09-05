@@ -92,6 +92,14 @@ namespace ColorVision.Update
 
             foreach (string updateFile in updateFiles)
             {
+                if (updateFile.Contains($"ColorVision-{CurrentVersion}.exe"))
+                {
+                    string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+
+                    File.Move(updateFile, Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{CurrentVersion}.exe"));
+                    continue;
+                }
+
                 try
                 {
                     File.Delete(updateFile);
@@ -373,7 +381,7 @@ namespace ColorVision.Update
         }
 
 
-        private static void RestartApplication(string downloadPath)
+        public static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
             ConfigHandler.GetInstance().SaveConfigs();
