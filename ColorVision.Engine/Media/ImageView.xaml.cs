@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Templates;
@@ -16,6 +17,7 @@ using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
+using Quartz.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -597,6 +599,13 @@ namespace ColorVision.Engine.Media
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
+                    RelayCommand ExportImageCommand = new RelayCommand(a =>
+                    {
+                        ExportCVCIE exportCVCIE = new(filePath);
+                        exportCVCIE.Show();
+                    });
+                    Zoombox1.ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportImageCommand });
+
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     CVCIESetBuffer(filePath);
                     try

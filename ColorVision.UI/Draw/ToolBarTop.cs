@@ -50,6 +50,8 @@ namespace ColorVision.UI.Draw
 
 
         public RelayCommand SaveImageCommand { get; set; }
+        public RelayCommand ExportImageCommand { get; set; }
+
         public RelayCommand ClearImageCommand { get; set; }
 
         public event EventHandler ClearImageEventHandler;
@@ -113,6 +115,7 @@ namespace ColorVision.UI.Draw
             zoombox.Cursor = Cursors.Hand;
 
             SaveImageCommand = new RelayCommand(a => Save(),a=>Image.Source!=null);
+
             PrintImageCommand = new RelayCommand(a => Print(), a => Image.Source != null);
 
             ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image.Source != null);
