@@ -34,7 +34,7 @@
                 <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                     <DockPanel  Margin="10,5">  
                         <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" Command="{Binding UploadLincenseCommand}" IsChecked="{Binding IsLincensed,Mode=OneWay}"/>
-                        <TextBlock Text="{Binding Code}" FontWeight="Bold" FontSize="20"/>
+                        <TextBox Text="{Binding Code,Mode=OneWay}" IsReadOnly="True" Padding="0" BorderThickness="0" FontWeight="Bold" FontSize="20"/>
                     </DockPanel>
                 </Border>
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
