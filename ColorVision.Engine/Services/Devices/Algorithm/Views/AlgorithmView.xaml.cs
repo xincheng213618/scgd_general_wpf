@@ -458,7 +458,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             AddPoint(points1);
                         }
                         break;
-                    case AlgorithmResultType.FindDotsArrayMem:
+                    case AlgorithmResultType.OLED_FindDotsArrayMem:
                     case AlgorithmResultType.LedCheck:
                         if (result.ViewResults == null)
                         {
