@@ -7,6 +7,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
+using ProjectShiyuan;
 using System.Windows;
 
 namespace ColorVision.Projects.ProjectHeyuan
@@ -44,8 +45,8 @@ namespace ColorVision.Projects.ProjectHeyuan
             ServiceManager.GetInstance().GenDeviceDisplayControl();
             TemplateControl.GetInstance();
 
-            ProjectHeyuanWindow projectHeyuanWindow = new ProjectHeyuanWindow();
-            projectHeyuanWindow.Show();
+            ShiyuanProjectWindow window = new ShiyuanProjectWindow();
+            window.Show();
         }
     }
 
