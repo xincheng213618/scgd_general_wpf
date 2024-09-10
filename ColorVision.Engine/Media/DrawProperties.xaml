@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        xmlns:draw="clr-namespace:ColorVision.Engine.Draw;assembly=ColorVision.UI"
+        xmlns:draw="clr-namespace:ColorVision.Engine.Draw"
         d:DataContext="{d:DesignInstance local:ImageViewConfig}"
         Title="DrawProperties" Background="{DynamicResource GlobalBackground}" Height="600" Width="400" Initialized="Window_Initialized">
     <Grid>

@@ -938,12 +938,10 @@ namespace ColorVision.Engine.Media
         {
             if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
-            var bmp= ImageUtils.RenderHistogram(bitmapSource);
-            Image image = new Image() { Margin = new Thickness(5) };
-            image.Source = bmp;
-            Window window = new Window() { Width = 256, Height = 170 };
-            window.Content = image;
-            window.Show();
+            var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
+            HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram, greenHistogram, blueHistogram);
+            histogramChartWindow.Show();
+
         }
 
 

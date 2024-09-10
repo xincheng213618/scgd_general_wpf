@@ -27,7 +27,7 @@ namespace ColorVision.Common.Utilities
             }
         }
 
-        public static ImageSource RenderHistogram(BitmapSource bitmapSource)
+        public static (int[] R, int[] G, int[] B ) RenderHistogram(BitmapSource bitmapSource)
         {
             int width = bitmapSource.PixelWidth;
             int height = bitmapSource.PixelHeight;
@@ -49,23 +49,7 @@ namespace ColorVision.Common.Utilities
                 greenHistogram[green]++;
                 blueHistogram[blue]++;
             }
-
-            DrawingVisual drawingVisual = new DrawingVisual();
-            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
-            {
-                double width1 = 256; // Width of the histogram
-                double height1 = 100; // Height of the histogram
-
-                // Draw each color channel histogram
-                DrawHistogram(redHistogram, Colors.Red, drawingContext, width1, height1);
-                DrawHistogram(greenHistogram, Colors.Green, drawingContext, width1, height1);
-                DrawHistogram(blueHistogram, Colors.Blue, drawingContext, width1, height1);
-            }
-
-            RenderTargetBitmap bmp = new RenderTargetBitmap(256, 100, 96, 96, PixelFormats.Pbgra32);
-            bmp.Render(drawingVisual);
-
-            return bmp;
+            return (redHistogram, greenHistogram, blueHistogram);    
         }
 
 
