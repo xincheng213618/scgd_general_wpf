@@ -1045,7 +1045,7 @@ namespace ColorVision.Engine.Media
         private void UpdateZoomAndScale()
         {
             Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
                     ToolBarTop.ToolBarScaleRuler.Render();
