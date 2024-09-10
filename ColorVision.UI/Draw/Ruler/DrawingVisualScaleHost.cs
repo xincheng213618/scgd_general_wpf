@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 
-namespace ColorVision.UI.Draw.Ruler
+namespace ColorVision.Engine.Draw.Ruler
 {
     public enum ScaleLocation
     {

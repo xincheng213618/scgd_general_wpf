@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public class BaseMode: INotifyPropertyChanged
     {

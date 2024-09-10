@@ -4,7 +4,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Globalization;
 
-namespace ColorVision.UI.Draw.Special
+namespace ColorVision.Engine.Draw.Special
 {
     public class Gridline
     {

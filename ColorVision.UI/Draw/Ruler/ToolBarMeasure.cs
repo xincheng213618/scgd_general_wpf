@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.UI.Draw.Ruler
+namespace ColorVision.Engine.Draw.Ruler
 {
     public class ToolBarMeasure
     {

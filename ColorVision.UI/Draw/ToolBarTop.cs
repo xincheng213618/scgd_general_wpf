@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Draw.Ruler;
-using ColorVision.UI.Draw.Special;
+using ColorVision.Engine.Draw.Ruler;
+using ColorVision.Engine.Draw.Special;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System.IO;
@@ -11,7 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
 
     public class EditModeChangedEventArgs : EventArgs

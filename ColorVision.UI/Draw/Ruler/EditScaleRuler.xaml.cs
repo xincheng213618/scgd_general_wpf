@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.UI.Draw.Ruler
+namespace ColorVision.Engine.Draw.Ruler
 {
     /// <summary>
     /// EditScaleRuler.xaml 的交互逻辑

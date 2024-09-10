@@ -3,7 +3,7 @@ using System.Windows.Input;
 using System.Windows;
 using System.ComponentModel;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public class ZoomboxSub : Zoombox, INotifyPropertyChanged
     {

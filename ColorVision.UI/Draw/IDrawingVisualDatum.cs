@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public interface IDrawingVisualDatum
     {

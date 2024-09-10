@@ -12,7 +12,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
-using ColorVision.UI.Draw;
+using ColorVision.Engine.Draw;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;

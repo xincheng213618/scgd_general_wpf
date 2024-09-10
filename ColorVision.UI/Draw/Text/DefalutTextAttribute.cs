@@ -1,9 +1,10 @@
 ﻿#pragma warning disable CA1711,CA2211
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public class DefalutTextAttribute : BaseMode,IConfig 
     {

@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public interface IRectangle
     {

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
     public class RectangleTextProperties : RectangleProperties
     {

@@ -5,7 +5,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
 
     ///可以在编辑的图像控件

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
 
     public class BaseProperties : BaseMode

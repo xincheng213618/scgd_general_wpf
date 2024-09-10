@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Draw
+namespace ColorVision.Engine.Draw
 {
 
     public class DrawCanvas : Image
