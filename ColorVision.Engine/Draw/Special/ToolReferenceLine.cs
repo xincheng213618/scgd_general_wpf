@@ -3,6 +3,8 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Globalization;
 using ColorVision.Engine.Draw;
+using System;
+using System.Collections.Generic;
 
 namespace ColorVision.Util.Draw.Special
 {

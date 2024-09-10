@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
-        xmlns:draw ="clr-namespace:ColorVision.Engine.Draw;assembly=ColorVision.UI"
+        xmlns:draw ="clr-namespace:ColorVision.Engine.Draw"
         d:DataContext="{d:DesignInstance Type=draw:ToolBarTop}"
         mc:Ignorable="d"
         Title="WindowCIE" Height="450" Width="400" Icon="/ColorVision.Engine;component/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">

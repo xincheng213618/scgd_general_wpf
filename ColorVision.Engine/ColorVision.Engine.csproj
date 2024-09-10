@@ -19,6 +19,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
+		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />

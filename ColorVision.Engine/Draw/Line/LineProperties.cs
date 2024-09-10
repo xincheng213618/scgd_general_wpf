@@ -1,10 +1,11 @@
-﻿using System.ComponentModel;
+﻿using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Draw
 {
-    public class PolygonProperties : BaseProperties
+    public class LineProperties : BaseProperties
     {
         [Browsable(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
@@ -16,7 +17,6 @@ namespace ColorVision.Engine.Draw
         private Brush _Brush;
 
         public List<Point> Points { get; set; }
-
     }
 
 
