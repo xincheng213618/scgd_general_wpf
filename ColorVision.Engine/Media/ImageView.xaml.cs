@@ -17,7 +17,6 @@ using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
-using Quartz.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,6 +31,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Media
 {
