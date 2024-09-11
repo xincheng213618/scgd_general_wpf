@@ -21,7 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\ColorVision.UI\ColorVision.UI.csproj" />
+	  <ProjectReference Include="..\..\ColorVision.Engine\ColorVision.Engine.csproj" />
 	</ItemGroup>
 
   <ItemGroup>

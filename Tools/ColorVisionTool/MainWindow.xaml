@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVisionTool"
         mc:Ignorable="d"
         xmlns:effects="http://gu.se/Geometry"
-        xmlns:draw ="clr-namespace:ColorVision.Engine.Draw;assembly=ColorVision.UI"
+        xmlns:draw ="clr-namespace:ColorVision.Engine.Draw;assembly=ColorVision.Engine"
         Title="自动聚焦工具" Height="720" Width="1500" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
