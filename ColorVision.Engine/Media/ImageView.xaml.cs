@@ -88,6 +88,7 @@ namespace ColorVision.Engine.Media
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBarRight.DataContext = ToolBarTop;
+            ToolBarBottom.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -187,7 +188,7 @@ namespace ColorVision.Engine.Media
                     DrawingVisualPolygonCache.Render();
                 }
             }
-            else if (e.Key == Key.R)
+            else if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             }
