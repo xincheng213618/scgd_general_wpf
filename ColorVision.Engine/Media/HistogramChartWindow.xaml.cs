@@ -18,9 +18,19 @@ using LiveChartsCore.SkiaSharpView.WPF;
 using SkiaSharp;
 using System.Text.RegularExpressions;
 using NPOI.SS.Formula.Functions;
+using ColorVision.Themes;
+using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using LiveChartsCore.Measure;
 
 namespace ColorVision.Engine.Media
 {
+
+    public class HistogramChartConfig:ViewModelBase ,IConfig
+    {
+        public static HistogramChartConfig Instance => ConfigHandler.GetInstance().GetRequiredService<HistogramChartConfig>();
+
+    }
     /// <summary>
     /// HistogramChartWindow.xaml 的交互逻辑
     /// </summary>
@@ -29,27 +39,83 @@ namespace ColorVision.Engine.Media
         int[] RedHistogram;
         int[] GreenHistogram;
         int[] BlueHistogram;
+        int[] GrayHistogram; // 灰度直方图
 
-        double MaxY = 0;
+        double? MaxY;
+
+        private LineSeries<int> redSeries;
+        private LineSeries<int> greenSeries;
+        private LineSeries<int> blueSeries;
+        private LineSeries<int> graySeries; // 灰度直方图
+        public ISeries[] SeriesCollection { get; set; }
         public HistogramChartWindow(int[] redHistogram, int[] greenHistogram ,int[] blueHistogram)
         {
             //对数缩放
-            RedHistogram = LogScale(redHistogram);
-            GreenHistogram = LogScale(greenHistogram);
-            BlueHistogram = LogScale(blueHistogram);
+            RedHistogram = redHistogram;
+            GreenHistogram = greenHistogram;
+            BlueHistogram = blueHistogram;
 
             MaxY = (RedHistogram.Sum() + GreenHistogram.Sum() + BlueHistogram.Sum()) / 100;
 
             InitializeComponent();
+            this.ApplyCaption();
+            DrawHistograms(HistogramChart, RedHistogram, GreenHistogram, BlueHistogram);
+
         }
-        // 对数缩放函数
-        int[] LogScale(int[] data)
+
+        public HistogramChartWindow(int[] graySeries)
         {
-            return data.Select(v => (int)v).ToArray();   
+            GrayHistogram = graySeries;
+
+            InitializeComponent();
+            this.ApplyCaption();
+            DrawHistograms(HistogramChart, GrayHistogram);
+
         }
+
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DrawHistograms(HistogramChart, RedHistogram, GreenHistogram, BlueHistogram);
+            HistogramChart.XAxes = new Axis[]
+            {
+                new Axis
+                {
+                    MaxLimit = 255,
+                    MinLimit =0,
+                    Labels = Enumerable.Range(0, 256).Select(x => x.ToString()).ToArray() // 确保显示0到255的每个标签
+                }
+            };
+            HistogramChart.YAxes = new Axis[]
+            {
+                new Axis(){
+                    IsVisible =true ,
+                    MaxLimit = MaxY ,
+                    MinLimit =0,
+                    Labeler = value => Regex.Replace(value.ToString("E1"), @"E\+?0*(\d+)", "x10^$1"),
+                }
+            };
+
+            HistogramChart.ZoomMode = ZoomAndPanMode.ZoomY | ZoomAndPanMode.PanY | ZoomAndPanMode.PanX; ;
+
+        }
+        private void DrawHistograms(CartesianChart chart, int[] grayHistogram)
+        {
+            var grayValues = new List<int>(grayHistogram);
+
+            graySeries = new LineSeries<int>
+            {
+                Values = grayValues,
+                Name = "Gray",
+                Fill = new SolidColorPaint(new SKColor(128, 128, 128, 100)), // 半透明灰色阴影
+                Stroke = new SolidColorPaint(new SKColor(128, 128, 128)),
+                LineSmoothness = 10,
+                GeometrySize = 0
+            };
+
+            SeriesCollection = new ISeries[] { graySeries };
+            chart.Series = SeriesCollection;
+
+            // 复选框控制逻辑
+            AddCheckBoxForChannel("Gray", graySeries); // 添加灰度通道的复选框
         }
 
         private void DrawHistograms(CartesianChart chart, int[] redHistogram, int[] greenHistogram, int[] blueHistogram)
@@ -58,7 +124,7 @@ namespace ColorVision.Engine.Media
             var greenValues = new List<int>(greenHistogram);
             var blueValues = new List<int>(blueHistogram);
 
-            var redSeries = new LineSeries<int>
+            redSeries = new LineSeries<int>
             {
                 Values = redValues,
                 Name = "Red",
@@ -68,7 +134,7 @@ namespace ColorVision.Engine.Media
                 GeometrySize = 0,
             };
 
-            var greenSeries = new LineSeries<int>
+             greenSeries = new LineSeries<int>
             {
                 Values = greenValues,
                 Name = "Green",
@@ -78,7 +144,7 @@ namespace ColorVision.Engine.Media
                 GeometrySize = 0,
             };
 
-            var blueSeries = new LineSeries<int>
+            blueSeries = new LineSeries<int>
             {
                 Values = blueValues,
                 Name = "Blue",
@@ -87,31 +153,29 @@ namespace ColorVision.Engine.Media
                 LineSmoothness = 10,
                 GeometrySize = 0,
             };
+            SeriesCollection = new ISeries[] { redSeries, greenSeries, blueSeries };
+            chart.Series = SeriesCollection;
 
-            chart.Series = new ISeries[] { redSeries, greenSeries, blueSeries };
-            chart.XAxes = new Axis[]
-            {
-                new Axis
-                {
-                    CrosshairLabelsBackground = SKColors.DarkOrange.AsLvcColor(),
-                    CrosshairLabelsPaint = new SolidColorPaint(SKColors.DarkRed, 1),
-                    CrosshairPaint = new SolidColorPaint(SKColors.DarkOrange, 1),
-                    MaxLimit =255,
-                    MinLimit =0
-                   
-                }
-            };
-            chart.YAxes = new Axis[]
-            {
-                new Axis(){
-                    IsVisible =true ,
-                    MaxLimit = MaxY ,
-                    MinLimit =0,
-                    Labeler = value => Regex.Replace(value.ToString("E1"), @"E\+?0*(\d+)", " x10^$1"),
-                }
-            };
-
+            // 复选框控制逻辑
+            AddCheckBoxForChannel("Red", redSeries);
+            AddCheckBoxForChannel("Green", greenSeries);
+            AddCheckBoxForChannel("Blue", blueSeries);
         }
 
+        // 添加复选框并设置切换逻辑
+        private void AddCheckBoxForChannel(string channelName, LineSeries<int> series)
+        {
+            CheckBox checkBox = new CheckBox
+            {
+                IsChecked = true,
+                Content = channelName.Substring(0, 1),
+                Margin = new Thickness(0, 0, 5, 0)
+            };
+
+            checkBox.Checked += (s, e) => series.IsVisible = true;
+            checkBox.Unchecked += (s, e) => series.IsVisible = false;
+
+            ToolStackPanel.Children.Add(checkBox);
+        }
     }
 }

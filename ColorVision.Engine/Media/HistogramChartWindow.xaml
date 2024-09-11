@@ -6,8 +6,17 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Media"     
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
-        Title="HistogramChartWindow" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="直方图" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
-        <lvc:CartesianChart  Name="HistogramChart" Margin="10" ZoomMode ="Both"  ZoomingSpeed="0.5"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" x:Name="ToolStackPanel" Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
+            
+        </StackPanel>
+        
+        <lvc:CartesianChart Grid.Row="1" Name="HistogramChart" Foreground="{StaticResource GlobalTextBrush}" ZoomMode ="Y"  ZoomingSpeed="0.5"/>
+
     </Grid>
 </Window>
