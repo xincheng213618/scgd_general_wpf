@@ -267,6 +267,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
                             log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
                             if (fileInfo.Length > 0)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
