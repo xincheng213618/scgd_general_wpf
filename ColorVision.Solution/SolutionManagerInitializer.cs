@@ -18,17 +18,16 @@ namespace ColorVision.Solution
 
         public async Task InitializeAsync()
         {
+            // 解析命令行参数
+            bool su = false;
+            var parser = ArgumentParser.GetInstance();
+            parser.AddArgument("solutionpath", false, "s");
+            parser.Parse();
+            var solutionpath = parser.GetValue("solutionpath");
+            await Task.Delay(0);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 var solutionManager = SolutionManager.GetInstance();
-
-                // 解析命令行参数
-                bool su = false;
-                var parser = ArgumentParser.GetInstance();
-                parser.AddArgument("solutionpath", false, "s");
-                parser.Parse();
-                var solutionpath = parser.GetValue("solutionpath");
-
                 if (solutionpath != null)
                 {
                     su = solutionManager.OpenSolution(solutionpath);

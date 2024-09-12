@@ -208,7 +208,7 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        bool IsLayoutUpdated = false;
+        bool IsLayoutUpdated;
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
