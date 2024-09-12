@@ -28,6 +28,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
 
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        private int _ViewImageReadDelay = 1000;
+
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
         private bool _AutoRefreshView = true;
 

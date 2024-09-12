@@ -34,10 +34,6 @@
                                 <TextBlock Text="心跳时间"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="打开图像超时" Width="120"/>
-                                <TextBox Text="{Binding ViewImageReadDelay}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
                             <DockPanel Margin="0,0,0,0" >
                                 <TextBlock Text="设备自动连接" Width="120"/>
                                 <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>

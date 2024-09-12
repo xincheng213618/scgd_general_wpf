@@ -278,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         catch
                         {
                             log.Warn("文件还在写入");
-                            await Task.Delay(Device.Config.ViewImageReadDelay);
+                            await Task.Delay(Config.ViewImageReadDelay);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 ImageView.OpenImage(data.FileUrl);
