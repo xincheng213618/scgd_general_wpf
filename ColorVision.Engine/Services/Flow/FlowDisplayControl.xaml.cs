@@ -14,6 +14,8 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Flow
 {
+
+
     public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
         private static FlowDisplayControl _instance;
@@ -23,6 +25,8 @@ namespace ColorVision.Engine.Services.Flow
         public CVFlowView1 View { get; set; }
         public string DisPlayName => "Flow";
 
+        public static FlowConfig Config => FlowConfig.Instance;
+
         public FlowDisplayControl()
         {
             InitializeComponent();
@@ -31,6 +35,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = Config;
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
@@ -45,7 +50,6 @@ namespace ColorVision.Engine.Services.Flow
             ComboBoxFlow.ItemsSource = FlowParam.Params;
             ComboBoxFlow.SelectionChanged +=(s,e)=> FlowUpdate();
             ComboBoxFlow.SelectedIndex = 0;
-            DataContext = flowControl;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -112,11 +116,12 @@ namespace ColorVision.Engine.Services.Flow
 
         private static void CheckDiskSpace(string driveLetter = "C")
         {
+            if (!Config.ShowWarning) return;
             DriveInfo drive = new DriveInfo(driveLetter);
             if (drive.IsReady)
             {
                 long availableSpace = drive.AvailableFreeSpace;
-                long threshold = 10L * 1024 * 1024 * 1024; //10 GB in bytes
+                long threshold = Config.Capacity; //10 GB in bytes
 
                 if (availableSpace < threshold)
                 {

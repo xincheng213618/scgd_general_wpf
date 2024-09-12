@@ -22,7 +22,10 @@
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         <Setter Property="Background" Value="Transparent"/>
     </Style>
-
+    <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
+        <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+    </Style>
+    
     <Style x:Key="TextBlock1" TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>

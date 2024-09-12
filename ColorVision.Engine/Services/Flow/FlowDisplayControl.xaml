@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Flow"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             d:DataContext="{d:DesignInstance local:FlowConfig}"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized" >
     <UserControl.Resources>
@@ -15,11 +16,15 @@
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
     </UserControl.Resources>
-    <StackPanel Margin="0,5" >
-        <Grid>
+    <StackPanel Margin="0,0,0,5" >
+        <Grid  Margin="5,0">
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"   Content="{x:Static properties:Resources.Flow}"  FontSize="15"  IsChecked="True" />
             <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="2,0,0,0">
                 <Image Source="{DynamicResource DrawingImageFlow}"/>
+            </Grid>
+            <Grid Width="20" Margin="0,0"  HorizontalAlignment="Right">
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Command="{Binding EditCommand}"/>
             </Grid>
         </Grid>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
