@@ -28,7 +28,6 @@ namespace ColorVision.Engine.Services.Flow
             InitializeComponent();
         }
 
-        MenuItem menuItem { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -43,47 +42,41 @@ namespace ColorVision.Engine.Services.Flow
             this.AddViewConfig(View, ComboxView);
             View.View.ViewIndex = 0;
 
-            FlowTemplate.ItemsSource = FlowParam.Params;
-            FlowTemplate.SelectionChanged += (s, e) =>
+            ComboBoxFlow.ItemsSource = FlowParam.Params;
+            ComboBoxFlow.SelectionChanged +=(s,e)=> FlowUpdate();
+            ComboBoxFlow.SelectedIndex = 0;
+            DataContext = flowControl;
+            this.ApplyChangedSelectedColor(DisPlayBorder);
+        }
+
+        private void FlowUpdate()
+        {
+            if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
             {
-                if (FlowTemplate.SelectedValue is FlowParam flowParam)
+                if (View != null)
                 {
-                    if (View != null)
+                    try
                     {
-                        try
+                        if (string.IsNullOrEmpty(flowParam.DataBase64))
                         {
-                            if (string.IsNullOrEmpty(flowParam.DataBase64))
-                            {
-                                MessageBox.Show("再选择之前请先创建对映的模板");
-                            }
-                            else
-                            {
-                                var tokens = ServiceManager.GetInstance().ServiceTokens;
-                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, tokens);
-                            }
+                            MessageBox.Show("再选择之前请先创建对映的模板");
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            MessageBox.Show(ex.Message);
+                            var tokens = ServiceManager.GetInstance().ServiceTokens;
+                            View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tokens);
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
                 }
-                else
-                {
-                    View.FlowEngineControl.LoadFromBase64(string.Empty);
-                }
-            };
-            FlowTemplate.SelectedIndex = 0;
-            DataContext = flowControl;
-            menuItem = new MenuItem() { Header = Properties.Resources.MenuFlow };
-            MenuItem menuItem1 = new() { Header = Properties.Resources.ExecutionProcess };
-            menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
-            menuItem.Items.Add(menuItem1);
-
-            MenuItem menuItem2 = new() { Header = Properties.Resources.StopProcess };
-            menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
-            menuItem.Items.Add(menuItem2);
-            this.ApplyChangedSelectedColor(DisPlayBorder);
+            }
+            else
+            {
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+            }
         }
 
         public event RoutedEventHandler Selected;
@@ -123,7 +116,7 @@ namespace ColorVision.Engine.Services.Flow
             if (drive.IsReady)
             {
                 long availableSpace = drive.AvailableFreeSpace;
-                long threshold = 10L * 1024 * 1024 * 1024; // 10 GB in bytes
+                long threshold = 10L * 1024 * 1024 * 1024; //10 GB in bytes
 
                 if (availableSpace < threshold)
                 {
@@ -218,14 +211,19 @@ namespace ColorVision.Engine.Services.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            FlowTemplate.SelectedIndex = -1;
-            FlowTemplate.ItemsSource = FlowParam.Params;
-            FlowTemplate.SelectedIndex = 0;
+            FlowUpdate();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateFlow(), FlowTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            FlowUpdate();
+        }
+
+        private void ButtonEdit_Click(object sender, RoutedEventArgs e)
+        {
+            new FlowEngineToolWindow(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            FlowUpdate();
         }
     }
 }
