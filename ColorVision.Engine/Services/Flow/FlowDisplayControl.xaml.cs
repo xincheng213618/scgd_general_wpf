@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Services.Flow
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
-        private void CheckDiskSpace(string driveLetter = "C")
+        private static void CheckDiskSpace(string driveLetter = "C")
         {
             DriveInfo drive = new DriveInfo(driveLetter);
             if (drive.IsReady)
@@ -134,6 +134,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
+
             CheckDiskSpace("C");
             CheckDiskSpace("D");
             string startNode = View.FlowEngineControl.GetStartNodeName();

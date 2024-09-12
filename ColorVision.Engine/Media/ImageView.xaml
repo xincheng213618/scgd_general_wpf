@@ -295,7 +295,7 @@
             </ToolBarTray>
 
 
-            <Border x:Name="BorderPropertieslayers" Background="#22000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Center"  HorizontalAlignment="Center"  Height="360" Width="286" CornerRadius="10" >
+            <Border x:Name="BorderPropertieslayers" Background="#55000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Center"  HorizontalAlignment="Center"  Height="360" Width="286" CornerRadius="10" >
                 <StackPanel Margin="10">
                     <DockPanel HorizontalAlignment="Left">
                         <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White"  HorizontalAlignment="Center" />

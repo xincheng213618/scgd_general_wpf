@@ -615,7 +615,7 @@ namespace ColorVision.Engine.Media
                         {  
                             WaitControl.Visibility = Visibility.Visible;
                             await Task.Delay(100);
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
                                 Application.Current.Dispatcher.Invoke(() =>
@@ -646,7 +646,7 @@ namespace ColorVision.Engine.Media
                         {
                             WaitControl.Visibility = Visibility.Visible;
                             Config.FilePath = filePath;
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 byte[] imageData = File.ReadAllBytes(filePath);
                                 BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
