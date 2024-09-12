@@ -26,10 +26,10 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
     cv::Mat redChannel = channels[channel];
 
     // 创建单通道图像 (灰度图像)
-    cv::Mat grayImage;
-    std::vector<cv::Mat> grayChannels = { redChannel, redChannel, redChannel };
-    cv::merge(grayChannels, grayImage);
-	dst = grayImage;
+    //cv::Mat grayImage;
+    //std::vector<cv::Mat> grayChannels = { redChannel, redChannel, redChannel };
+    //cv::merge(grayChannels, grayImage);
+	dst = redChannel;
     return 0;
 }
 

@@ -8,8 +8,8 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Draw;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.Engine.Draw;
+using ColorVision.Engine.Draw.Ruler;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
@@ -17,7 +17,6 @@ using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
-using Quartz.Util;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,6 +31,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Media
 {
@@ -88,6 +88,7 @@ namespace ColorVision.Engine.Media
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBarRight.DataContext = ToolBarTop;
+            ToolBarBottom.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -187,7 +188,7 @@ namespace ColorVision.Engine.Media
                     DrawingVisualPolygonCache.Render();
                 }
             }
-            else if (e.Key == Key.R)
+            else if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             }
@@ -938,12 +939,17 @@ namespace ColorVision.Engine.Media
         {
             if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
-            var bmp= ImageUtils.RenderHistogram(bitmapSource);
-            Image image = new Image() { Margin = new Thickness(5) };
-            image.Source = bmp;
-            Window window = new Window() { Width = 256, Height = 170 };
-            window.Content = image;
-            window.Show();
+            var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
+            if (bitmapSource.Format == PixelFormats.Gray8)
+            {
+                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
+                histogramChartWindow.Show();
+            }
+            else
+            {
+                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram, greenHistogram, blueHistogram);
+                histogramChartWindow.Show();
+            }
         }
 
 
@@ -1047,7 +1053,7 @@ namespace ColorVision.Engine.Media
         private void UpdateZoomAndScale()
         {
             Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
                     ToolBarTop.ToolBarScaleRuler.Render();

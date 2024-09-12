@@ -442,11 +442,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
+                    if(e == MsgRecordState.Timeout)
+                    {
+                        MessageBox.Show("关闭相机超时,请查看日志并排查问题");
+                        return;
+                    }
+
                     DService.IsVideoOpen = false;
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;

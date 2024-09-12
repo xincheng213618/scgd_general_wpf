@@ -7,6 +7,7 @@ using ColorVision.UI;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -116,9 +117,25 @@ namespace ColorVision.Engine.Services.Flow
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
+        private void CheckDiskSpace(string driveLetter = "C")
+        {
+            DriveInfo drive = new DriveInfo(driveLetter);
+            if (drive.IsReady)
+            {
+                long availableSpace = drive.AvailableFreeSpace;
+                long threshold = 10L * 1024 * 1024 * 1024; // 10 GB in bytes
+
+                if (availableSpace < threshold)
+                {
+                    MessageBox.Show($"警告: {driveLetter}盘空间不足。剩余空间为 {availableSpace / (1024 * 1024 * 1024)} GB", "空间不足", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+        }
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
+            CheckDiskSpace("C");
+            CheckDiskSpace("D");
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (!string.IsNullOrWhiteSpace(startNode))
             {
