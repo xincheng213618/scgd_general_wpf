@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
+using WindowsServicePlugin.Properties;
 
-namespace ColorVision.Engine.Impl
+namespace WindowsServicePlugin
 {
     public class ExportServiceLog : MenuItemBase
     {
@@ -11,15 +11,6 @@ namespace ColorVision.Engine.Impl
         public override string Header => Resources.ServiceLog;
     }
 
-    public abstract class ExportLogBase : MenuItemBase
-    {
-        public abstract string Url { get; }
-
-        public override void Execute()
-        {
-            PlatformHelper.OpenFolder(Url);
-        }
-    }
 
     public class ExportRCServiceLog : ExportLogBase
     {
@@ -30,7 +21,6 @@ namespace ColorVision.Engine.Impl
 
         public override string Url => "http://localhost:8080/system/log";
     }
-
     public class ExportSpectrometerLog : ExportLogBase
     {
         public override string OwnerGuid => "ServiceLog";

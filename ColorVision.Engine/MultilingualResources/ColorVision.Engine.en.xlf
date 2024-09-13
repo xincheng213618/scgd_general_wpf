@@ -75,10 +75,6 @@
           <source>校正</source>
           <target state="new">Calibration</target>
         </trans-unit>
-        <trans-unit id="CameraLog" translate="yes" xml:space="preserve">
-          <source>相机日志</source>
-          <target state="new">Camera log</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">Cancel</target>
@@ -671,10 +667,6 @@
           <source>快速预览</source>
           <target state="new">Quick Preview</target>
         </trans-unit>
-        <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
-          <source>RC服务日志</source>
-          <target state="new">RC service log</target>
-        </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
           <target state="new">Receive Channel</target>
@@ -763,10 +755,6 @@
           <source>服务标识</source>
           <target state="new">Service ID</target>
         </trans-unit>
-        <trans-unit id="ServiceLog" translate="yes" xml:space="preserve">
-          <source>服务日志</source>
-          <target state="new">Service Log</target>
-        </trans-unit>
         <trans-unit id="ServiceName" translate="yes" xml:space="preserve">
           <source>服务名称</source>
           <target state="new">Service Name</target>
@@ -798,10 +786,6 @@
         <trans-unit id="Size" translate="yes" xml:space="preserve">
           <source>大小</source>
           <target state="new">size</target>
-        </trans-unit>
-        <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
-          <source>光谱仪日志</source>
-          <target state="new">Spectrometer log</target>
         </trans-unit>
         <trans-unit id="StartTime" translate="yes" xml:space="preserve">
           <source>开始时间</source>
@@ -926,14 +910,6 @@
         <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
           <source>流程引擎(_F)</source>
           <target state="new">Process Engine(F)</target>
-        </trans-unit>
-        <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
-          <source>x64服务日志</source>
-          <target state="new">x64 service log</target>
-        </trans-unit>
-        <trans-unit id="x86ServiceLog" translate="yes" xml:space="preserve">
-          <source>x86服务日志</source>
-          <target state="new">x86 service log</target>
         </trans-unit>
       </group>
     </body>

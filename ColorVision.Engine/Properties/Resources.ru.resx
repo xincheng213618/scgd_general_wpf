@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>журнал обслуживания x64</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>журнал обслуживания x86</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Окно отладки механизма обработки</value>
   </data>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>Запуск службы</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>Журнал спектрометра</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>размер</value>
   </data>
@@ -239,9 +230,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>наименование услуги</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>Журнал обслуживания</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>Идентификатор услуги</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>канал приема</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>Журнал обслуживания RC</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>быстрый предварительный просмотр</value>
@@ -710,9 +695,6 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Отмена</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>Журнал камеры</value>
   </data>
   <data name="Calibration" xml:space="preserve">
     <value>Калибровка</value>

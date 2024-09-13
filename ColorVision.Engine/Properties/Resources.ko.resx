@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 서비스 로그</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 서비스 로그</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>프로세스 엔진 디버그 창</value>
   </data>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>서비스 시작</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>분광계 로그</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>크기</value>
   </data>
@@ -239,9 +230,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>서비스 이름</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>서비스 로그</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>서비스 ID</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>수신 채널</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC 서비스 로그</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>빠른 미리보기</value>
@@ -710,9 +695,6 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>카메라 로그</value>
   </data>
   <data name="Calibration" xml:space="preserve">
     <value>구경 측정</value>

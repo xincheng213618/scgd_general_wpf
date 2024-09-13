@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 service log</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 service log</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Process engine debug window</value>
   </data>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>Starting service</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>Spectrometer log</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>size</value>
   </data>
@@ -239,9 +230,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>Service Name</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>Service Log</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>Service ID</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>Receive Channel</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC service log</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>Quick Preview</value>
@@ -710,9 +695,6 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>Camera log</value>
   </data>
   <data name="Calibration" xml:space="preserve">
     <value>Calibration</value>

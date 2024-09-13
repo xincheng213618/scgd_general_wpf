@@ -97,12 +97,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64服务日志</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86服务日志</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>流程引擎调试窗口</value>
   </data>
@@ -196,9 +190,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>正在启动服务</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>光谱仪日志</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>大小</value>
   </data>
@@ -219,9 +210,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>服务名称</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>服务日志</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>服务标识</value>
@@ -279,9 +267,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>接收信道</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服务日志</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>快速预览</value>
@@ -690,9 +675,6 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>相机日志</value>
   </data>
   <data name="Calibration" xml:space="preserve">
     <value>校正</value>

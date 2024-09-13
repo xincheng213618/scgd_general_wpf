@@ -75,10 +75,6 @@
           <source>校正</source>
           <target state="new">Калибровка</target>
         </trans-unit>
-        <trans-unit id="CameraLog" translate="yes" xml:space="preserve">
-          <source>相机日志</source>
-          <target state="new">Журнал камеры</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">Отмена</target>
@@ -671,10 +667,6 @@
           <source>快速预览</source>
           <target state="new">быстрый предварительный просмотр</target>
         </trans-unit>
-        <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
-          <source>RC服务日志</source>
-          <target state="new">Журнал обслуживания RC</target>
-        </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
           <target state="new">канал приема</target>
@@ -763,10 +755,6 @@
           <source>服务标识</source>
           <target state="new">Идентификатор услуги</target>
         </trans-unit>
-        <trans-unit id="ServiceLog" translate="yes" xml:space="preserve">
-          <source>服务日志</source>
-          <target state="new">Журнал обслуживания</target>
-        </trans-unit>
         <trans-unit id="ServiceName" translate="yes" xml:space="preserve">
           <source>服务名称</source>
           <target state="new">наименование услуги</target>
@@ -798,10 +786,6 @@
         <trans-unit id="Size" translate="yes" xml:space="preserve">
           <source>大小</source>
           <target state="new">размер</target>
-        </trans-unit>
-        <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
-          <source>光谱仪日志</source>
-          <target state="new">Журнал спектрометра</target>
         </trans-unit>
         <trans-unit id="StartTime" translate="yes" xml:space="preserve">
           <source>开始时间</source>
@@ -926,14 +910,6 @@
         <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
           <source>流程引擎(_F)</source>
           <target state="new">Механизм процесса(F)</target>
-        </trans-unit>
-        <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
-          <source>x64服务日志</source>
-          <target state="new">журнал обслуживания x64</target>
-        </trans-unit>
-        <trans-unit id="x86ServiceLog" translate="yes" xml:space="preserve">
-          <source>x86服务日志</source>
-          <target state="new">журнал обслуживания x86</target>
         </trans-unit>
       </group>
     </body>

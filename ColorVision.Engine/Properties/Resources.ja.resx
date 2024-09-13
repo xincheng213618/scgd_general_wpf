@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64サービスログ</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86サービスログ</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>プロセスエンジンのデバッグウィンドウ</value>
   </data>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>サービス開始</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>分光計のログ</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>サイズ</value>
   </data>
@@ -239,9 +230,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>サービス名</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>サービスログ</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>サービス識別子</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>受信チャンネル</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RCサービスログ</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>クイックプレビュー</value>
@@ -710,9 +695,6 @@
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>カメラログ</value>
   </data>
   <data name="Calibration" xml:space="preserve">
     <value>較正</value>

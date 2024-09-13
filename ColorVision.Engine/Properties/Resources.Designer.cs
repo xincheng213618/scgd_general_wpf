@@ -223,15 +223,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 相机日志 的本地化字符串。
-        /// </summary>
-        public static string CameraLog {
-            get {
-                return ResourceManager.GetString("CameraLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
@@ -1564,15 +1555,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 RC服务日志 的本地化字符串。
-        /// </summary>
-        public static string RCServiceLog {
-            get {
-                return ResourceManager.GetString("RCServiceLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 接收信道 的本地化字符串。
         /// </summary>
         public static string ReceiveChannel {
@@ -1771,15 +1753,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 服务日志 的本地化字符串。
-        /// </summary>
-        public static string ServiceLog {
-            get {
-                return ResourceManager.GetString("ServiceLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 服务名称 的本地化字符串。
         /// </summary>
         public static string ServiceName {
@@ -1848,15 +1821,6 @@ namespace ColorVision.Engine.Properties {
         public static string Size {
             get {
                 return ResourceManager.GetString("Size", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 光谱仪日志 的本地化字符串。
-        /// </summary>
-        public static string SpectrometerLog {
-            get {
-                return ResourceManager.GetString("SpectrometerLog", resourceCulture);
             }
         }
         
@@ -2136,24 +2100,6 @@ namespace ColorVision.Engine.Properties {
         public static string WorkflowEngineDebugWindow {
             get {
                 return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 x64服务日志 的本地化字符串。
-        /// </summary>
-        public static string x64ServiceLog {
-            get {
-                return ResourceManager.GetString("x64ServiceLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 x86服务日志 的本地化字符串。
-        /// </summary>
-        public static string x86ServiceLog {
-            get {
-                return ResourceManager.GetString("x86ServiceLog", resourceCulture);
             }
         }
     }
