@@ -135,4 +135,13 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>RC service log</value>
   </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>Time Left:</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>An error occurred</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Current Speed:</value>
+  </data>
 </root>
