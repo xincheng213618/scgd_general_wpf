@@ -496,7 +496,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (DService.IsVideoOpen)
             {
-                Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, () => DService.SetGain());
+                Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, () => DService.SetExp());
             }
         }
     }
