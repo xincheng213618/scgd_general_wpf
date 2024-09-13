@@ -494,7 +494,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void PreviewSlider_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, ()=> DService.SetGain());
+            if (DService.IsVideoOpen)
+            {
+                Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, () => DService.SetGain());
+            }
         }
     }
 }
