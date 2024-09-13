@@ -466,6 +466,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DService.SetExp();
         }
 
+
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (DService.CurrentTakeImageMode == TakeImageMode.Live)
@@ -489,6 +490,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
             Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
+        }
+
+        private void PreviewSlider_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, ()=> DService.SetGain());
         }
     }
 }

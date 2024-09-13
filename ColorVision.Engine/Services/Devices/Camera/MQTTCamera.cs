@@ -206,6 +206,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
+
+        public MsgRecord SetGain()
+        {
+            var Params = new Dictionary<string, object>() { };
+
+            MsgSend msg = new()
+            {
+                EventName = "CM_SetGain",
+                Params = Params
+            };
+            Params.Add("Gain", Config.Gain);
+            return PublishAsyncClient(msg);
+        }
+
         public MsgRecord SetExp()
         {
             var Params = new Dictionary<string, object>() { };
@@ -247,7 +261,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
-                FunParams.Add("Gain", Config.Gain);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 var Func = new List<ParamFunction>();
                 Func.Add(Fun);

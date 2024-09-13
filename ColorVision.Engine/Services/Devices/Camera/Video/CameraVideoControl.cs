@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void Reader_OnFrameRecv(WriteableBitmap bmp)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 CameraVideoFrameReceived?.Invoke(bmp);
             });

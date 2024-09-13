@@ -42,6 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                log.Info(Msg);
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
@@ -57,13 +58,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (json.EventName == "GetData")
                         {
-                            int MasterId = json.Data.MasterId;
-                            var sss = SpectumResultDao.Instance.GetById(MasterId);
-                            ViewResultSpectrum viewResultSpectrum = new(sss);
-                            Application.Current.Dispatcher.Invoke(() =>
+                            try
                             {
-                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
-                            });
+                                int MasterId = json.Data.MasterId;
+                                var sss = SpectumResultDao.Instance.GetById(MasterId);
+                                ViewResultSpectrum viewResultSpectrum = new(sss);
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                                });
+                            }
+                            catch
+                            {
+                                ///旧版本兼容
+
+                                JObject data = json.Data;
+                                SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                            }
+
+
                         }
                         else if (json.EventName == "GetDataAuto")
                         {
