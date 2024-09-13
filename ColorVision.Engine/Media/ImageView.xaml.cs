@@ -809,7 +809,14 @@ namespace ColorVision.Engine.Media
 
         public bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
         {
-            if (PseudoImage is WriteableBitmap writeableBitmap && writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            if (PseudoImage is not WriteableBitmap writeableBitmap) return false;
+            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
+
+            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
             {
                 writeableBitmap.Lock();
                 unsafe
@@ -1010,7 +1017,6 @@ namespace ColorVision.Engine.Media
                         CM_ExtractChannel(0);
 
                 }
-
             }
         }
 
