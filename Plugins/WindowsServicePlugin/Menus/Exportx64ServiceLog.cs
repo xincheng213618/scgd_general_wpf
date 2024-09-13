@@ -1,6 +1,6 @@
 ﻿using WindowsServicePlugin.Properties;
 
-namespace WindowsServicePlugin
+namespace WindowsServicePlugin.Menus
 {
 
     public class Exportx64ServiceLog : ExportLogBase

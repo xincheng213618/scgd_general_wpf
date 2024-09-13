@@ -1,7 +1,6 @@
-﻿
-using WindowsServicePlugin.Properties;
+﻿using WindowsServicePlugin.Properties;
 
-namespace WindowsServicePlugin
+namespace WindowsServicePlugin.Menus
 {
     public class Exportx86ServiceLog : ExportLogBase
     {
