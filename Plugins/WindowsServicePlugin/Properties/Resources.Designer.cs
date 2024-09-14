@@ -70,6 +70,24 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前速度： 的本地化字符串。
+        /// </summary>
+        internal static string CurrentSpeed {
+            get {
+                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发生错误 的本地化字符串。
+        /// </summary>
+        internal static string ErrorOccurred {
+            get {
+                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 RC服务日志 的本地化字符串。
         /// </summary>
         internal static string RCServiceLog {
@@ -93,6 +111,15 @@ namespace WindowsServicePlugin.Properties {
         internal static string SpectrometerLog {
             get {
                 return ResourceManager.GetString("SpectrometerLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剩余时间： 的本地化字符串。
+        /// </summary>
+        internal static string TimeLeft {
+            get {
+                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         

@@ -11,7 +11,7 @@ using System.IO;
 using System.Windows;
 using ColorVision.Common.Utilities;
 
-namespace WindowsServicePlugin
+namespace WindowsServicePlugin.Menus
 {
     public class CVWinSMSConfig : IConfig
     {

@@ -62,9 +62,9 @@ namespace ColorVision.Update
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
-
+        
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
+        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "";
 
         public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
         private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
@@ -292,7 +292,6 @@ namespace ColorVision.Update
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        public string DownloadPath { get; set; }
 
         private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
         {

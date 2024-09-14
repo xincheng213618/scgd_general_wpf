@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
@@ -25,7 +24,7 @@ namespace ColorVision
 {
     public class WindowLogExport : MenuItemBase, IHotKey
     {
-        public override string OwnerGuid => "Log";
+        public override string OwnerGuid => "Help";
         public override string GuidId => "WindowLog";
         public override int Order => 10005;
         public override string Header => Properties.Resources.Log;
@@ -45,7 +44,6 @@ namespace ColorVision
         SinceStartup,
         None
     }
-
 
     /// <summary>
     /// WindowLog.xaml 的交互逻辑

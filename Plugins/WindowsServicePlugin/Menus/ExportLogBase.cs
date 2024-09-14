@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 
-namespace WindowsServicePlugin
+namespace WindowsServicePlugin.Menus
 {
     public abstract class ExportLogBase : MenuItemBase
     {
