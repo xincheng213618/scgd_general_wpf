@@ -64,7 +64,7 @@ namespace ColorVision.Update
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
         
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "";
+        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
         public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
         private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
