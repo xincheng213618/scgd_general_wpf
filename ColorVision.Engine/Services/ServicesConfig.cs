@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services
         public int ShowType { get; set; }
 
         public bool IsDefaultOpenService { get => _IsDefaultOpenService; set { _IsDefaultOpenService = value; NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService;
+        private bool _IsDefaultOpenService = true;
 
         public bool IsRetorePlayControls { get => _IsRetorePlayControls; set { _IsRetorePlayControls = value; NotifyPropertyChanged(); } }
         private bool _IsRetorePlayControls = true;

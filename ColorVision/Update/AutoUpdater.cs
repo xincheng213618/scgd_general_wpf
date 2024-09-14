@@ -52,7 +52,7 @@ namespace ColorVision.Update
         /// 是否自动更新
         /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoUpdate = true;
+        private bool _IsAutoUpdate = false;
     }
 
 
