@@ -327,6 +327,10 @@
           <source>升级</source>
           <target state="new">обновление</target>
         </trans-unit>
+        <trans-unit id="UploadFile" translate="yes" xml:space="preserve">
+          <source>上传文件</source>
+          <target state="new">Загрузить файлы</target>
+        </trans-unit>
         <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
           <source>隐藏</source>
           <target state="new">скрывать</target>

@@ -366,4 +366,7 @@
   <data name="ForceUpdate" xml:space="preserve">
     <value>Mise à jour forcée</value>
   </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>Télécharger des fichiers</value>
+  </data>
 </root>

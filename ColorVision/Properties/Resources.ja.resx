@@ -366,4 +366,7 @@
   <data name="ForceUpdate" xml:space="preserve">
     <value>強制アップデート</value>
   </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>ファイルをアップロードする</value>
+  </data>
 </root>

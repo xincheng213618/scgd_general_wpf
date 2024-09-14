@@ -366,4 +366,7 @@
   <data name="ForceUpdate" xml:space="preserve">
     <value>ForceUpdate</value>
   </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>Загрузить файлы</value>
+  </data>
 </root>

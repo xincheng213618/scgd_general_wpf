@@ -9,7 +9,7 @@ namespace ColorVision.Update.Export
         public override string OwnerGuid => "Help";
         public override string GuidId => "Upload";
         public override int Order => 1000;
-        public override string Header => "上传文件";
+        public override string Header => ColorVision.Properties.Resources.UploadFile;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

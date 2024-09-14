@@ -790,6 +790,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 上传文件 的本地化字符串。
+        /// </summary>
+        public static string UploadFile {
+            get {
+                return ResourceManager.GetString("UploadFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 隐藏 的本地化字符串。
         /// </summary>
         public static string WindowHidden {
