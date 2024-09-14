@@ -139,6 +139,7 @@ namespace ColorVision.Engine.Services.RC
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
+                            log.Info("设置Event_QueryServices：" + Msg);
                             MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                             if (respQurey != null)
                             {
