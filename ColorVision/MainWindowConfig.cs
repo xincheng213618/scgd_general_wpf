@@ -87,7 +87,7 @@ namespace ColorVision
             return new List<Level> { Level.All, Level.Trace, Level.Debug, Level.Info, Level.Warn, Level.Error, Level.Critical, Level.Alert, Level.Fatal, Level.Off };
         }
 
-        private Level _LogLevel = Level.All;
+        private Level _LogLevel = Level.Info;
         public Level LogLevel
         {
             get => _LogLevel; set
