@@ -798,4 +798,7 @@
   <data name="OpenFolder" xml:space="preserve">
     <value>フォルダを開く</value>
   </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>製品パンフレット</value>
+  </data>
 </root>

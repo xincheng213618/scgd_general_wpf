@@ -798,4 +798,7 @@
   <data name="OpenFolder" xml:space="preserve">
     <value>ОткрытьПапку</value>
   </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>Брошюра о продукте</value>
+  </data>
 </root>

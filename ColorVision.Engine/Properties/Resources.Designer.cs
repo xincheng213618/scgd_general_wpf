@@ -1537,6 +1537,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 产品宣传手册 的本地化字符串。
+        /// </summary>
+        public static string ProductBrochure {
+            get {
+                return ResourceManager.GetString("ProductBrochure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 属性 的本地化字符串。
         /// </summary>
         public static string Property {

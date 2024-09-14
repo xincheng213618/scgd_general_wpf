@@ -798,4 +798,7 @@
   <data name="OpenFolder" xml:space="preserve">
     <value>打開資料夾</value>
   </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>產品宣傳手冊</value>
+  </data>
 </root>

@@ -659,6 +659,10 @@
           <source>位置</source>
           <target state="new">位置</target>
         </trans-unit>
+        <trans-unit id="ProductBrochure" translate="yes" xml:space="preserve">
+          <source>产品宣传手册</source>
+          <target state="new">產品宣傳手冊</target>
+        </trans-unit>
         <trans-unit id="Property" translate="yes" xml:space="preserve">
           <source>属性</source>
           <target state="new">屬性</target>
