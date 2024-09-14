@@ -8,6 +8,7 @@
         xmlns:System="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:ScreenRecorder"
         xmlns:sources="clr-namespace:ScreenRecorder.Sources"
+        xmlns:properties="clr-namespace:ScreenRecorder.Properties"
         mc:Ignorable="d"
         Title="录制视频"
         Height="800"
@@ -1239,7 +1240,7 @@
                     <Button Height="50"
                             Width="150"
                             x:Name="RecordButton"
-                            Content="Record"
+                            Content="{x:Static properties:Resources.Record}"
                             FontSize="28"
                             Click="RecordButton_Click" />
                     <Button x:Name="PauseButton"

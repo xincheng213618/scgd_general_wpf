@@ -22,7 +22,7 @@ namespace WindowsServicePlugin.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace WindowsServicePlugin.Properties {
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WindowsServicePlugin.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace WindowsServicePlugin.Properties {
         ///   使用此强类型资源类的所有资源查找执行重写。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 相机日志 的本地化字符串。
         /// </summary>
-        internal static string CameraLog {
+        public static string CameraLog {
             get {
                 return ResourceManager.GetString("CameraLog", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 当前速度： 的本地化字符串。
         /// </summary>
-        internal static string CurrentSpeed {
+        public static string CurrentSpeed {
             get {
                 return ResourceManager.GetString("CurrentSpeed", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 发生错误 的本地化字符串。
         /// </summary>
-        internal static string ErrorOccurred {
+        public static string ErrorOccurred {
             get {
                 return ResourceManager.GetString("ErrorOccurred", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 RC服务日志 的本地化字符串。
         /// </summary>
-        internal static string RCServiceLog {
+        public static string RCServiceLog {
             get {
                 return ResourceManager.GetString("RCServiceLog", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 服务日志 的本地化字符串。
         /// </summary>
-        internal static string ServiceLog {
+        public static string ServiceLog {
             get {
                 return ResourceManager.GetString("ServiceLog", resourceCulture);
             }
@@ -108,7 +108,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 光谱仪日志 的本地化字符串。
         /// </summary>
-        internal static string SpectrometerLog {
+        public static string SpectrometerLog {
             get {
                 return ResourceManager.GetString("SpectrometerLog", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 剩余时间： 的本地化字符串。
         /// </summary>
-        internal static string TimeLeft {
+        public static string TimeLeft {
             get {
                 return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 x64服务日志 的本地化字符串。
         /// </summary>
-        internal static string x64ServiceLog {
+        public static string x64ServiceLog {
             get {
                 return ResourceManager.GetString("x64ServiceLog", resourceCulture);
             }
@@ -135,7 +135,7 @@ namespace WindowsServicePlugin.Properties {
         /// <summary>
         ///   查找类似 x86服务日志 的本地化字符串。
         /// </summary>
-        internal static string x86ServiceLog {
+        public static string x86ServiceLog {
             get {
                 return ResourceManager.GetString("x86ServiceLog", resourceCulture);
             }
