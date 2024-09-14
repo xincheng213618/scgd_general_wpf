@@ -116,60 +116,61 @@ namespace ColorVision.Engine.Services.PhyCameras
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
         }
         private string productBrochure;
+
         private bool HaveProductBrochure()
         {
             if (CameraLicenseModel == null) return false;
             if (CameraLicenseModel.Model == null) return false;
             var model = CameraLicenseModel.Model;
-            if (model.Contains("BV"))
+            if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
             {
-                if (model.Contains("2000"))
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-BV-2000.pdf";
                     return true;
                 }
-                if (model.Contains("2600"))
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-BV-2600.pdf";
                     return true;
                 }
-                if (model.Contains("6100"))
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-BV-6100.pdf";
                     return true;
                 }
             }
-            if (model.Contains("LV"))
+            if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
             {
-                if (model.Contains("2000"))
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-LV-2000.pdf";
                     return true;
                 }
-                if (model.Contains("2600"))
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-LV-2600.pdf";
                     return true;
                 }
-                if (model.Contains("6100"))
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-LV-6100.pdf";
                     return true;
                 }
             }
-            if (model.Contains("CV"))
+            if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
             {
-                if (model.Contains("2000"))
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-CV-2000.pdf";
                     return true;
                 }
-                if (model.Contains("2600"))
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
                 {
-                    productBrochure = @"Assets\Catalog\Catalog-CV-2600";
+                    productBrochure = @"Assets\Catalog\Catalog-CV-2600.pdf";
                     return true;
                 }
-                if (model.Contains("6100"))
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
                 {
                     productBrochure = @"Assets\Catalog\Catalog-CV-6100.pdf";
                     return true;
@@ -177,6 +178,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             return false;
         }
+
+
         private void OpenProductBrochure()
         {
             PlatformHelper.Open(productBrochure);
