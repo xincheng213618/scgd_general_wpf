@@ -68,6 +68,7 @@
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
                                 <Button Content="配置逻辑相机" Margin="5" Height="100" Width="180" Command="{Binding EditCameraCommand}"/>
                                 <Button Content="配置逻辑校正" Margin="5" Height="100" Width="180" Command="{Binding EditCalibrationCommand}"/>
+                                <Button Content="手册" Margin="5" Height="100" Width="180" Command="{Binding ProductBrochureCommand}"/>
                                 <Button Content="{x:Static properties:Resources.Reset}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </Grid>

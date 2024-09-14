@@ -112,6 +112,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private MeasureImgResultDao measureImgResultDao = new();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
+            if (arg.DeviceCode != Device.Config.Code) return;
+            
             if (arg.Code == 0)
             {
                 switch (arg.EventName)
