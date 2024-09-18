@@ -49,6 +49,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             ThirdPartyAlgorithmsManagerCommand = new RelayCommand(a => ThirdPartyAlgorithmsManager(), a => AccessControl.Check(PermissionMode.Administrator));
         }
 
+        public SysResourceTpaDLLModel? DLLModel => SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
+
         public  void ThirdPartyAlgorithmsManager()
         {
             var model = SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });

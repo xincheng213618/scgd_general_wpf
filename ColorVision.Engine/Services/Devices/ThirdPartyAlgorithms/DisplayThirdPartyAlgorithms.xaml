@@ -55,29 +55,16 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
+                        <TextBlock Text="第三方算法" Margin="0,0,5,0" MinWidth="50"/>
+                        <ComboBox x:Name="CB_ThirdPartyAlgorithms"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="CB_ThirdPartyAlgorithms"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
+                        <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
                     </DockPanel>
 
+
                     <StackPanel>
-                        <TabControl>
-                            <TabItem Header="像素定位" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindDotsArray_Click"/>
-                                        <ComboBox  x:Name="ComboxTemplateFindDotsArray"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findDotsArrayImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                        </TabControl>
                         <DockPanel Margin="0,2">
                             <RadioButton Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
@@ -112,6 +99,14 @@
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                     </StackPanel>
+                    <DockPanel Margin="0,2">
+                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Templates_Click"/>
+                        <ComboBox  x:Name="CB_Templates"  Width="200" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="TemplateSetting_Click"  />
+                        </Grid>
+                    </DockPanel>
                 </StackPanel>
                 <DockPanel Margin="0,2" >
                     <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>

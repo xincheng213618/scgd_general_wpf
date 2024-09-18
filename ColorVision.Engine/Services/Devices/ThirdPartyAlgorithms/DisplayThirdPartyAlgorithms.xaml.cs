@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
@@ -138,12 +139,26 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             DataContext = Device;
 
-            ComboxTemplateFindDotsArray.ItemsSource = TemplateThirdParty.Params.GetValue("findDotsArrayImp");
-            ComboxTemplateFindDotsArray.SelectedIndex = 0;
+            void ConfigChanged()
+            {
+                CB_ThirdPartyAlgorithms.ItemsSource = ThirdPartyAlgorithmsDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", Device.DLLModel.Id } });
+                CB_ThirdPartyAlgorithms.SelectedIndex = 0;
+            }
+            Device.ConfigChanged += (s, e) => ConfigChanged();
+            ConfigChanged();
+
+            void ThirdPartyAlgorithmsChanged()
+            {
+                if (CB_ThirdPartyAlgorithms.SelectedValue is not ThirdPartyAlgorithmsModel model) return;
+
+                CB_Templates.ItemsSource = TemplateThirdParty.Params.GetValue(model.Code);
+                CB_Templates.SelectedIndex = 0;
+            }
+            CB_ThirdPartyAlgorithms.SelectionChanged += (s, e) => ThirdPartyAlgorithmsChanged();
+            ThirdPartyAlgorithmsChanged();
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
 
             void UpdateCB_SourceImageFiles()
             {
@@ -257,15 +272,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         private void TemplateSetting_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && !string.IsNullOrEmpty(button.Tag.ToString()))
-            {
-                new WindowTemplate(new TemplateThirdParty(button.Tag.ToString())) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            }
-        }
+            if (CB_ThirdPartyAlgorithms.SelectedValue is not ThirdPartyAlgorithmsModel model) return;
 
-        private void FindDotsArray_Click(object sender, RoutedEventArgs e)
+            new WindowTemplate(new TemplateThirdParty(model.Code)){ Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void Templates_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxTemplateFindDotsArray.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
+            if (CB_ThirdPartyAlgorithms.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
@@ -273,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             string type = deviceService.ServiceTypes.ToString();
             string code = deviceService.Code;
 
-            DService.CallFunction(findDotsArrayParam, sn, imgFileName, fileExtType,code, type );
+            DService.CallFunction(findDotsArrayParam, sn, imgFileName, fileExtType, code, type);
         }
 
 
@@ -334,5 +347,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
 
         }
+
+
     }
 }
