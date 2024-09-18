@@ -9,11 +9,11 @@ namespace ColorVision.Engine.MQTT
     {
         public int Order => 2;
 
-        public string Title => "Mqtt配置";
+        public string Header => "Mqtt配置";
 
         public string Description => "Mqtt配置";
 
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public RelayCommand? Command => new RelayCommand(a =>
         {
             MQTTConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow()};
             mySqlConnect.ShowDialog();

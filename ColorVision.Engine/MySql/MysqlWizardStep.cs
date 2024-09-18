@@ -9,11 +9,9 @@ namespace ColorVision.Engine.MySql
     {
         public int Order => 1;
 
-        public string Title => "Mysql配置";
+        public string Header => "Mysql配置";
 
-        public string Description => "Mysql配置";
-
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public RelayCommand Command => new RelayCommand(a =>
         {
             MySqlConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow()};
             mySqlConnect.ShowDialog();

@@ -1,5 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using System;
+using System.Diagnostics;
+using System.Security.Principal;
+using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -14,16 +18,80 @@ namespace ColorVision.Engine.MQTT
             _messageUpdater = messageUpdater;
         }
 
+        static void RestartAsAdmin()
+        {
+            ProcessStartInfo proc = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                WorkingDirectory = Environment.CurrentDirectory,
+                FileName = System.Windows.Forms.Application.ExecutablePath,
+                Verb = "runas" // 申请管理员权限
+            };
+            try
+            {
+                Process.Start(proc);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("无法以管理员权限重新启动程序：" + ex.Message);
+            }
+            Environment.Exit(0);
+        }
+        static bool IsRunningAsAdmin()
+        {
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
         public int Order => 2;
         public async Task InitializeAsync()
         {
-            if (MQTTSetting.Instance.IsUseMQTT)
+            if (!MQTTSetting.Instance.IsUseMQTT)
             {
-                _messageUpdater.UpdateMessage("正在检测MQTT服务器连接情况");
+                _messageUpdater.UpdateMessage("已经跳过MQTT服务器连接");
+                await Task.Delay(10);
+                return;
+            }
+            _messageUpdater.UpdateMessage("正在检测MQTT服务器连接情况");
 
-                bool isConnect = await MQTTControl.GetInstance().Connect();
-                _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
-                if (!isConnect)
+
+            bool isConnect = await MQTTControl.GetInstance().Connect();
+            _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
+            if (!isConnect)
+
+                if (MQTTControl.Config.Host == "127.0.0.1")
+                {
+                    _messageUpdater.UpdateMessage("检测到配置本机服务，正在尝试查找本机服务mosquitto");
+                    try
+                    {
+                        ServiceController ServiceController = new ServiceController("Mosquitto Broker");
+                        if (ServiceController != null)
+                        {
+                            _messageUpdater.UpdateMessage($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
+
+                            if (!IsRunningAsAdmin())
+                            {
+                                RestartAsAdmin();
+                            }
+
+                            ServiceController.Start();
+                            await WaitForServiceToStartAsync(ServiceController);
+
+                            isConnect = await MQTTControl.GetInstance().Connect();
+                            if (isConnect) return;
+                        }
+                    }
+                    catch 
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
+                            mQTTConnect.ShowDialog();
+                        });
+                    }
+                }
+                else
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -31,13 +99,22 @@ namespace ColorVision.Engine.MQTT
                         mQTTConnect.ShowDialog();
                     });
                 }
+
+
+
+
             }
-            else
+        private async Task WaitForServiceToStartAsync(ServiceController serviceController)
+        {
+            int i = 0;
+            while (serviceController.Status == ServiceControllerStatus.StartPending)
             {
-                _messageUpdater.UpdateMessage("已经跳过MQTT服务器连接");
-                await Task.Delay(10);
+                i++;
+                await Task.Delay(1000);
+                serviceController.Refresh();
+                if (i > 5)
+                    break;
             }
         }
     }
-
-}
+    }
