@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -11,6 +12,7 @@ using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -53,7 +55,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             };
-            
+
+            void UpdateCB_SourceImageFiles()
+            {
+                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
+                CB_SourceImageFiles.SelectedIndex = 0;
+            }
+            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
+            UpdateCB_SourceImageFiles();
+
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -209,8 +219,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            DeviceService.GetRawFiles();
+            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+
+            DeviceService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
+
+
+
         public TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)

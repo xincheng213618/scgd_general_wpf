@@ -227,6 +227,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
 
             UpdateCB_SourceImageFiles();
+
             Service.MsgReturnReceived += Service_OnAlgorithmEvent;
 
 
@@ -720,14 +721,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            string type = string.Empty;
-            string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-            {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
-            }
-            Service.GetRawFiles(code, type);
+            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+
+            Service.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
 
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
