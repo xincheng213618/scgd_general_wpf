@@ -81,6 +81,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 data.Files.Reverse();
+                                CB_RawImageFiles.ItemsSource = data.Files;
+                                CB_RawImageFiles.SelectedIndex = 0;
                             });
                             break;
                         case FileExtType.Src:
@@ -89,6 +91,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 data.Files.Reverse();
+                                CB_RawImageFiles.ItemsSource = data.Files;
+                                CB_RawImageFiles.SelectedIndex = 0;
                             });
                             break;
                         case FileExtType.Calibration:
@@ -195,8 +199,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                         break;
                 }
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            //UpdateUI(Device.DService.DeviceStatus);
+            //Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
         public event RoutedEventHandler Selected;
