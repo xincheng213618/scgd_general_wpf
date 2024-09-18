@@ -302,7 +302,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Timeout)
+                        {
+                            MessageBox1.Show("自动曝光超时，请检查服务日志", "ColorVision");
+                        };
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.ToString()}" , "ColorVision");
+                        };
+                    };
                     ServicesHelper.SendCommand(button, msgRecord);
+
                 }
             }
         }
