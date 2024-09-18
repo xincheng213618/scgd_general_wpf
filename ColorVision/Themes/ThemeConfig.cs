@@ -53,7 +53,7 @@ namespace ColorVision.Themes
 
     public class ThemeConfig: ViewModelBase,IConfig
     {
-        public static ThemeConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ThemeConfig>();
+        public static ThemeConfig Instance => ConfigService.Instance.GetRequiredService<ThemeConfig>();
 
         /// <summary>
         /// 主题

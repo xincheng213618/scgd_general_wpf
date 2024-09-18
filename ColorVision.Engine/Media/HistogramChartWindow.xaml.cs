@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Media
 
     public class HistogramChartConfig:ViewModelBase ,IConfig
     {
-        public static HistogramChartConfig Instance => ConfigHandler.GetInstance().GetRequiredService<HistogramChartConfig>();
+        public static HistogramChartConfig Instance => ConfigService.Instance.GetRequiredService<HistogramChartConfig>();
 
     }
     /// <summary>

@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
     public class EditDictionaryModeConfig : IConfig
     {
-        public static EditDictionaryModeConfig Instance => ConfigHandler.GetInstance().GetRequiredService<EditDictionaryModeConfig>();
+        public static EditDictionaryModeConfig Instance => ConfigService.Instance.GetRequiredService<EditDictionaryModeConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 

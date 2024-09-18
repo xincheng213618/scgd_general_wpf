@@ -67,7 +67,7 @@ namespace ColorVision
 
             PluginLoader.LoadPluginsAssembly("Plugins");
             ConfigHandler.GetInstance();
-            Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
+            Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
 
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);

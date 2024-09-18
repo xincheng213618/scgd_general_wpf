@@ -124,4 +124,7 @@
   <data name="CurrentSpeed" xml:space="preserve">
     <value>当前速度：</value>
   </data>
+  <data name="ManagementService" xml:space="preserve">
+    <value>管理服务</value>
+  </data>
 </root>

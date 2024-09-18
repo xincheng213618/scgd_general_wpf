@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 
     public class EditTemplateThirdConfig :IConfig
     {
-        public static EditTemplateThirdConfig Instance => ConfigHandler.GetInstance().GetRequiredService<EditTemplateThirdConfig>();
+        public static EditTemplateThirdConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateThirdConfig>();
 
         public double Width { get; set; } = double.NaN;
 

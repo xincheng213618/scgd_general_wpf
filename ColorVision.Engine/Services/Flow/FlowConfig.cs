@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Flow
 {
     public class FlowConfig:ViewModelBase,IConfig
     {
-        public static FlowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<FlowConfig>();
+        public static FlowConfig Instance => ConfigService.Instance.GetRequiredService<FlowConfig>();
 
         public RelayCommand EditCommand { get; set; }
         public FlowConfig()

@@ -22,7 +22,7 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));
 
-        public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
+        public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
         public bool IsRestoreWindow { get; set; } = true;
 

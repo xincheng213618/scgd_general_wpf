@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.RC
 
     public class RCSetting : ViewModelBase, IConfigSecure
     {
-        public static RCSetting Instance => ConfigHandler.GetInstance().GetRequiredService<RCSetting>();
+        public static RCSetting Instance => ConfigService.Instance.GetRequiredService<RCSetting>();
 
         public static MQTTRCService MQTTRCService => MQTTRCService.GetInstance();
 

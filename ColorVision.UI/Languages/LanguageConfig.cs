@@ -8,7 +8,7 @@ namespace ColorVision.UI.Languages
 {
     public class LanguageConfig:IConfig, IConfigSettingProvider
     {
-        public static LanguageConfig Instance => ConfigHandler.GetInstance().GetRequiredService<LanguageConfig>();
+        public static LanguageConfig Instance => ConfigService.Instance.GetRequiredService<LanguageConfig>();
 
         /// <summary>
         /// 语言

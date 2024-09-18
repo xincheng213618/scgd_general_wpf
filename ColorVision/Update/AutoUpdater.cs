@@ -41,7 +41,7 @@ namespace ColorVision.Update
 
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigHandler.GetInstance().GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
         public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";

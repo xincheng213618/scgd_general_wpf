@@ -88,6 +88,15 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 管理服务 的本地化字符串。
+        /// </summary>
+        public static string ManagementService {
+            get {
+                return ResourceManager.GetString("ManagementService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 RC服务日志 的本地化字符串。
         /// </summary>
         public static string RCServiceLog {

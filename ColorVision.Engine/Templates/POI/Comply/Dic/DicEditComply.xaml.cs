@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
 {
     public class DicEditComplyConfig : IConfig
     {
-        public static DicEditComplyConfig Instance => ConfigHandler.GetInstance().GetRequiredService<DicEditComplyConfig>();
+        public static DicEditComplyConfig Instance => ConfigService.Instance.GetRequiredService<DicEditComplyConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 

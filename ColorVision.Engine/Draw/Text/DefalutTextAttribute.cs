@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Draw
 {
     public class DefalutTextAttribute : BaseMode,IConfig 
     {
-        public static DefalutTextAttribute Defalut => ConfigHandler.GetInstance().GetRequiredService<DefalutTextAttribute>();
+        public static DefalutTextAttribute Defalut => ConfigService.Instance.GetRequiredService<DefalutTextAttribute>();
 
         public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
         private double _ActualLength = 1;

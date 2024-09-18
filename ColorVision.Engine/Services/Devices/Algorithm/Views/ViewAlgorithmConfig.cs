@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class ViewAlgorithmConfig : ViewModelBase, IConfig
     {
-        public static ViewAlgorithmConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewAlgorithmConfig>();
+        public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
 
         public RelayCommand EditCommand { get; set; }
 

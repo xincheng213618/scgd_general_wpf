@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     public class ViewCameraConfig : ViewModelBase, IConfig
     {
-        public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
+        public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();
 
 
         public RelayCommand EditCommand { get; set; }

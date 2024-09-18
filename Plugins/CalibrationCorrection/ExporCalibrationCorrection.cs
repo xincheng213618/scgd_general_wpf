@@ -11,7 +11,7 @@ namespace CalibrationCorrection
 {
     public class CalibrationConfig : IConfig
     {
-        public static CalibrationConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CalibrationConfig>();
+        public static CalibrationConfig Instance => ConfigService.Instance.GetRequiredService<CalibrationConfig>();
 
         public string CalibToolsPath { get => _CalibToolsPath; set => _CalibToolsPath = value; }
         private string _CalibToolsPath = string.Empty;

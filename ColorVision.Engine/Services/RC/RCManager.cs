@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.RC
 
     public class RCManagerConfig : ViewModelBase, IConfig
     {
-        public static RCManagerConfig Instance => ConfigHandler.GetInstance().GetRequiredService<RCManagerConfig>();
+        public static RCManagerConfig Instance => ConfigService.Instance.GetRequiredService<RCManagerConfig>();
 
         public bool IsOpenCVWinSMS { get => _IsOpenCVWinSMS; set{ _IsOpenCVWinSMS = value;  NotifyPropertyChanged(); } }
         private bool _IsOpenCVWinSMS = true;

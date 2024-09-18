@@ -8,7 +8,7 @@ namespace ColorVision.UI.CUDA
 {
     public class SystemHelper : ViewModelBase, IConfig, IConfigSettingProvider
     {
-        public static SystemHelper Instance => ConfigHandler.GetInstance().GetRequiredService<SystemHelper>();
+        public static SystemHelper Instance => ConfigService.Instance.GetRequiredService<SystemHelper>();
 
         // 获取是否处于调试模式
         public static bool IsDebugMode()

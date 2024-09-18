@@ -1,21 +1,16 @@
-﻿using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System;
-using System.Collections.Generic;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.IO;
 using System.Windows;
-using ColorVision.Common.Utilities;
 
 namespace WindowsServicePlugin.Menus
 {
     public class CVWinSMSConfig : IConfig
     {
-        public static CVWinSMSConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CVWinSMSConfig>();
+        public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
 
         public string CVWinSMSPath { get => _CVWinSMSPath; set => _CVWinSMSPath = value; }
@@ -41,7 +36,7 @@ namespace WindowsServicePlugin.Menus
 
         public override int Order => 99;
 
-        public override string Header => "管理服务";
+        public override string Header => WindowsServicePlugin.Properties.Resources.ManagementService;
 
         [RequiresPermission(PermissionMode.User)]
         public override void Execute()

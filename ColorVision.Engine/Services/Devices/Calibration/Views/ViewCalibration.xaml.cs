@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
     public class ViewCalibrationConfig : ViewModelBase, IConfig
     {
-        public static ViewCalibrationConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCalibrationConfig>();
+        public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

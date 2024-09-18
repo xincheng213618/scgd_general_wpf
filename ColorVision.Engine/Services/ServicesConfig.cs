@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services
 
     public class ServicesConfig : ViewModelBase, IConfig
     {
-        public static ServicesConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ServicesConfig>();
+        public static ServicesConfig Instance => ConfigService.Instance.GetRequiredService<ServicesConfig>();
 
         public int ShowType { get; set; }
 

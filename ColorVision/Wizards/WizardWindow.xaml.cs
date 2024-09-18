@@ -12,7 +12,7 @@ namespace ColorVision.Wizards
 {
     public class WizardConfig : ViewModelBase ,IConfig
     {
-        public static WizardConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<WizardConfig>();
+        public static WizardConfig Instance =>ConfigService.Instance.GetRequiredService<WizardConfig>();
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
         private bool _WizardCompletionKey;
     }

@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
     public class ViewSpectrumConfig :IConfig
     {
-        public static ViewSpectrumConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewSpectrumConfig>();
+        public static ViewSpectrumConfig Instance => ConfigService.Instance.GetRequiredService<ViewSpectrumConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
