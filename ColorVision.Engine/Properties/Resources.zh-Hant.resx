@@ -120,8 +120,8 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>流程引擎調試視窗</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>流程引擎(F)</value>
+  <data name="WorkflowEngine" xml:space="preserve">
+    <value>流程引擎(_F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>獨立視窗</value>

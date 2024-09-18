@@ -120,7 +120,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>プロセスエンジンのデバッグウィンドウ</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
+  <data name="WorkflowEngine" xml:space="preserve">
     <value>プロセスエンジン(F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">

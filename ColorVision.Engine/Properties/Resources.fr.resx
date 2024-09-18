@@ -120,7 +120,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Fenêtre de débogage du moteur de processus</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
+  <data name="WorkflowEngine" xml:space="preserve">
     <value>Moteur de processus (F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">

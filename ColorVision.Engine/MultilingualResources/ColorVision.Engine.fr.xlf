@@ -907,13 +907,13 @@
           <source>独立窗口</source>
           <target state="new">fenêtre indépendante</target>
         </trans-unit>
+        <trans-unit id="WorkflowEngine" translate="yes" xml:space="preserve">
+          <source>流程引擎(_F)</source>
+          <target state="new">Moteur de processus (F)</target>
+        </trans-unit>
         <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
           <source>流程引擎调试窗口</source>
           <target state="new">Fenêtre de débogage du moteur de processus</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
-          <source>流程引擎(_F)</source>
-          <target state="new">Moteur de processus (F)</target>
         </trans-unit>
       </group>
     </body>

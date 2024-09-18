@@ -907,13 +907,13 @@
           <source>独立窗口</source>
           <target state="new">независимое окно</target>
         </trans-unit>
+        <trans-unit id="WorkflowEngine" translate="yes" xml:space="preserve">
+          <source>流程引擎(_F)</source>
+          <target state="new">Механизм процесса(F)</target>
+        </trans-unit>
         <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
           <source>流程引擎调试窗口</source>
           <target state="new">Окно отладки механизма обработки</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
-          <source>流程引擎(_F)</source>
-          <target state="new">Механизм процесса(F)</target>
         </trans-unit>
       </group>
     </body>

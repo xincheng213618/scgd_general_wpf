@@ -120,8 +120,8 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Process engine debug window</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>Process Engine(F)</value>
+  <data name="WorkflowEngine" xml:space="preserve">
+    <value>_Process Engine</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>Independent</value>

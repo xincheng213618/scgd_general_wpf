@@ -7,7 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
-namespace SerialPlugin
+namespace CalibrationCorrection
 {
     public class CalibrationConfig : IConfig
     {
@@ -18,7 +18,7 @@ namespace SerialPlugin
     }
 
 
-    public class CalibrationCorrection : MenuItemBase
+    public class ExporCalibrationCorrection : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
 
@@ -26,17 +26,17 @@ namespace SerialPlugin
 
         public override int Order => 6;
 
-        public override string Header => "CalibrationCorrection";
+        public override string Header => CalibrationCorrection.Properties.Resources.CalibrationCorrection;
 
         [RequiresPermission(PermissionMode.User)]
         public override void Execute()
         {
             if (!File.Exists(CalibrationConfig.Instance.CalibToolsPath))
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CalibTools (CalibTools.exe). Would you like to help me find it?", "Open in CalibTools", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), CalibrationCorrection.Properties.Resources.CannotFindCalibToolsExe_HelpMeFindIt, CalibrationCorrection.Properties.Resources.OpenInCalibTools, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
                 using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
                 {
-                    openFileDialog.Title = "Select CalibTools.exe";
+                    openFileDialog.Title = CalibrationCorrection.Properties.Resources.SelectCalibToolsExe;
                     openFileDialog.Filter = "CalibTools.exe|CalibTools.exe";
                     openFileDialog.RestoreDirectory = true;
 

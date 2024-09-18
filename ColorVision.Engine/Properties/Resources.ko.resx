@@ -120,7 +120,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>프로세스 엔진 디버그 창</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
+  <data name="WorkflowEngine" xml:space="preserve">
     <value>프로세스 엔진(F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">

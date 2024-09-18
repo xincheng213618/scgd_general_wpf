@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Flow
     {
         public override string OwnerGuid => "Tool";
         public override string GuidId => "FlowEngine";
-        public override string Header => Resources.WorkflowEngine_F;
+        public override string Header => Resources.WorkflowEngine;
         public override int Order => 3;
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -216,6 +216,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private bool AutoSave()
         {
+            if (FlowParam == null) return false;
             if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return false; } }
             var data = STNodeEditorMain.GetCanvasData();
 

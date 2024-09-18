@@ -907,13 +907,13 @@
           <source>独立窗口</source>
           <target state="new">독립 창</target>
         </trans-unit>
+        <trans-unit id="WorkflowEngine" translate="yes" xml:space="preserve">
+          <source>流程引擎(_F)</source>
+          <target state="new">프로세스 엔진(F)</target>
+        </trans-unit>
         <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
           <source>流程引擎调试窗口</source>
           <target state="new">프로세스 엔진 디버그 창</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
-          <source>流程引擎(_F)</source>
-          <target state="new">프로세스 엔진(F)</target>
         </trans-unit>
       </group>
     </body>

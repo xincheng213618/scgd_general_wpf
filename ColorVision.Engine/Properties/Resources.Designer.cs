@@ -2097,9 +2097,9 @@ namespace ColorVision.Engine.Properties {
         /// <summary>
         ///   查找类似 流程引擎(_F) 的本地化字符串。
         /// </summary>
-        public static string WorkflowEngine_F {
+        public static string WorkflowEngine {
             get {
-                return ResourceManager.GetString("WorkflowEngine_F", resourceCulture);
+                return ResourceManager.GetString("WorkflowEngine", resourceCulture);
             }
         }
         

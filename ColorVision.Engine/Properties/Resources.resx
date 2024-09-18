@@ -100,7 +100,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>流程引擎调试窗口</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
+  <data name="WorkflowEngine" xml:space="preserve">
     <value>流程引擎(_F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
