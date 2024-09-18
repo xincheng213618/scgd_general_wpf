@@ -1,0 +1,1050 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DOCUMENT Type="Advanced Installer" CreateVersion="19.7.1" version="19.7.1" Modules="architect" RootPath="." Language="zh" Id="{66972B77-3DF0-4477-BDCB-547B81BAD802}">
+  <COMPONENT cid="caphyon.advinst.msicomp.ProjectOptionsComponent">
+    <ROW Name="HiddenItems" Value="AppXProductDetailsComponent;AppXDependenciesComponent;AppXAppDetailsComponent;AppXVisualAssetsComponent;AppXCapabilitiesComponent;AppXAppDeclarationsComponent;AppXUriRulesComponent;MsiDriverPackagesComponent;UserAccountsComponent;ScheduledTasksComponent;SqlConnectionComponent;AutorunComponent;FirewallExceptionComponent;GameUxComponent;MsiDirectEditorComponent;SharePointSlnComponent;SilverlightSlnComponent;MultipleInstancesComponent;SccmComponent;ActSyncAppComponent;CPLAppletComponent;FixupComponent;MsiXDiffComponent;MsixManifestEditorComponent"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
+    <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
+    <ROW Property="AI_CF_FrameBottomLeft" Value="frame_bottom_left.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameBottomLeftInactive" Value="frame_bottom_left_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameBottomMid" Value="frame_bottom_mid.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameBottomMidInactive" Value="frame_bottom_mid_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameBottomRight" Value="frame_bottom_right.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameBottomRightInactive" Value="frame_bottom_right_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameCaption" Value="frame_caption.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameCaptionInactive" Value="frame_caption_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameLeft" Value="frame_left.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameLeftInactive" Value="frame_left_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameRight" Value="frame_right.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameRightInactive" Value="frame_right_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopLeft" Value="frame_top_left.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopLeftInactive" Value="frame_top_left_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopMid" Value="frame_top_mid.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopMidInactive" Value="frame_top_mid_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopRight" Value="frame_top_right.bmp" Type="1"/>
+    <ROW Property="AI_CF_FrameTopRightInactive" Value="frame_top_right_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysCloseDown" Value="sys_close_down.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysCloseHot" Value="sys_close_hot.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysCloseInactive" Value="sys_close_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysCloseNormal" Value="sys_close_normal.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysMinDown" Value="sys_min_down.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysMinHot" Value="sys_min_hot.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysMinInactive" Value="sys_min_inactive.bmp" Type="1"/>
+    <ROW Property="AI_CF_SysMinNormal" Value="sys_min_normal.bmp" Type="1"/>
+    <ROW Property="AI_CF_TYPE" Value="0" MultiBuildValue="DefaultBuild:1" Type="4"/>
+    <ROW Property="AI_CURRENT_YEAR" Value="2024" ValueLocId="-"/>
+    <ROW Property="AI_FINDEXE_TITLE" Value="选择 [|ProductName] 安装包" ValueLocId="AI.Property.FindExeTitle"/>
+    <ROW Property="AI_PACKAGING_TOOL" Value="Advanced Installer 19.7.1 build e09f3004" ValueLocId="-"/>
+    <ROW Property="AI_PREDEF_LCONDS_PROPS" Value="AI_DETECTED_DOTNET_VERSION"/>
+    <ROW Property="AI_REQUIRED_DOTNET_DISPLAY" MultiBuildValue="DefaultBuild:4.7.2" ValueLocId="-"/>
+    <ROW Property="AI_REQUIRED_DOTNET_VERSION" MultiBuildValue="DefaultBuild:4.7.2" ValueLocId="-"/>
+    <ROW Property="ALLUSERS" Value="1" MultiBuildValue="DefaultBuild:2"/>
+    <ROW Property="ARPCOMMENTS" Value="此安装程序数据库包含了安装 [|ProductName] 所需的逻辑和数据。" ValueLocId="*"/>
+    <ROW Property="ARPNOREPAIR" MultiBuildValue="DefaultBuild:1"/>
+    <ROW Property="BannerBitmap" Value="banner.jpg" MultiBuildValue="DefaultBuild:banner.png_1" Type="1" MsiKey="BannerBitmap"/>
+    <ROW Property="CTRLS" Value="3"/>
+    <ROW Property="DialogBitmap" Value="dialog.jpg" MultiBuildValue="DefaultBuild:dialog.png_1" Type="1" MsiKey="DialogBitmap"/>
+    <ROW Property="IAgree" Value="No" Type="4"/>
+    <ROW Property="Manufacturer" Value="ColorVision Inc."/>
+    <ROW Property="ProductCode" Value="1028:{23C424CA-FDA3-453D-BA19-99CEE321364B} 1033:{23C424CA-FDA3-453D-BA19-99CEE321364B} 2052:{23C424CA-FDA3-453D-BA19-99CEE321364B} " Type="16"/>
+    <ROW Property="ProductLanguage" Value="1033"/>
+    <ROW Property="ProductName" Value="ColorVision"/>
+    <ROW Property="ProductVersion" Value="1.1.3.26" Options="16"/>
+    <ROW Property="RUNAPPLICATION" Value="1" Type="4"/>
+    <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND;AI_SETUPEXEPATH;SETUPEXEDIR"/>
+    <ROW Property="UpgradeCode" Value="{4E769953-DBDD-4D9B-9087-DC10F816D311}"/>
+    <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
+    <ROW Property="WindowsType9XDisplay" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT" MultiBuildValue="DefaultBuild:Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT40" MultiBuildValue="DefaultBuild:Windows NT 4.0" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT40Display" MultiBuildValue="DefaultBuild:Windows NT 4.0" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT50" MultiBuildValue="DefaultBuild:Windows 2000" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT50Display" MultiBuildValue="DefaultBuild:Windows 2000" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT5X" MultiBuildValue="DefaultBuild:Windows XP/2003" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNT5XDisplay" MultiBuildValue="DefaultBuild:Windows XP/2003" ValueLocId="-"/>
+    <ROW Property="WindowsTypeNTDisplay" MultiBuildValue="DefaultBuild:32-bit Windows versions" ValueLocId="-"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
+    <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
+    <ROW Directory="Assets_Dir" Directory_Parent="APPDIR" DefaultDir="Assets"/>
+    <ROW Directory="Catalog_Dir" Directory_Parent="Assets_Dir" DefaultDir="Catalog"/>
+    <ROW Directory="DesktopFolder" Directory_Parent="TARGETDIR" DefaultDir="DESKTO~1|DesktopFolder" IsPseudoRoot="1"/>
+    <ROW Directory="Plugins_Dir" Directory_Parent="APPDIR" DefaultDir="Plugins"/>
+    <ROW Directory="Projects_Dir" Directory_Parent="APPDIR" DefaultDir="Projects"/>
+    <ROW Directory="SHORTCUTDIR" Directory_Parent="TARGETDIR" DefaultDir="SHORTC~1|SHORTCUTDIR" IsPseudoRoot="1"/>
+    <ROW Directory="TARGETDIR" DefaultDir="SourceDir"/>
+    <ROW Directory="Tests_Dir" Directory_Parent="APPDIR" DefaultDir="Tests"/>
+    <ROW Directory="doc_Dir" Directory_Parent="APPDIR" DefaultDir="docs"/>
+    <ROW Directory="en_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="en"/>
+    <ROW Directory="en_Dir" Directory_Parent="APPDIR" DefaultDir="en"/>
+    <ROW Directory="fr_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="fr"/>
+    <ROW Directory="fr_Dir" Directory_Parent="APPDIR" DefaultDir="fr"/>
+    <ROW Directory="include_Dir" Directory_Parent="libs_Dir" DefaultDir="include"/>
+    <ROW Directory="ja_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="ja"/>
+    <ROW Directory="ja_Dir" Directory_Parent="APPDIR" DefaultDir="ja"/>
+    <ROW Directory="ko_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="ko"/>
+    <ROW Directory="ko_Dir" Directory_Parent="APPDIR" DefaultDir="ko"/>
+    <ROW Directory="lib_2_Dir" Directory_Parent="win_Dir" DefaultDir="lib"/>
+    <ROW Directory="lib_Dir" Directory_Parent="libs_Dir" DefaultDir="lib"/>
+    <ROW Directory="libs_Dir" Directory_Parent="APPDIR" DefaultDir="libs"/>
+    <ROW Directory="native_7_Dir" Directory_Parent="winx64_Dir" DefaultDir="native"/>
+    <ROW Directory="net8.0_Dir" Directory_Parent="lib_2_Dir" DefaultDir="net8.0"/>
+    <ROW Directory="net8.0windows_Dir" Directory_Parent="Plugins_Dir" DefaultDir="WINDOW~1|WindowsServicePlugin"/>
+    <ROW Directory="ru_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="ru"/>
+    <ROW Directory="ru_Dir" Directory_Parent="APPDIR" DefaultDir="ru"/>
+    <ROW Directory="runtimes_Dir" Directory_Parent="APPDIR" DefaultDir="runtimes"/>
+    <ROW Directory="sql_Dir" Directory_Parent="APPDIR" DefaultDir="sql"/>
+    <ROW Directory="win_Dir" Directory_Parent="runtimes_Dir" DefaultDir="win"/>
+    <ROW Directory="winx64_Dir" Directory_Parent="runtimes_Dir" DefaultDir="win-x64"/>
+    <ROW Directory="zhHans_Dir" Directory_Parent="APPDIR" DefaultDir="zh-Hans"/>
+    <ROW Directory="zhHant_1_Dir" Directory_Parent="net8.0windows_Dir" DefaultDir="zh-Hant"/>
+    <ROW Directory="zhHant_Dir" Directory_Parent="APPDIR" DefaultDir="zh-Hant"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCompsComponent">
+    <ROW Component="AI_ExePath" ComponentId="{A77FDE1B-5290-45F6-832F-B1D90C9E7E2E}" Directory_="APPDIR" Attributes="260" KeyPath="AI_ExePath"/>
+    <ROW Component="APPDIR" ComponentId="{EACDE170-1ED6-4517-99FA-0CE2AD629602}" Directory_="APPDIR" Attributes="0"/>
+    <ROW Component="AsyncIO.dll" ComponentId="{9200EE42-7958-4231-A782-73137C7ECD87}" Directory_="APPDIR" Attributes="0" KeyPath="AsyncIO.dll"/>
+    <ROW Component="BouncyCastle.Cryptography.dll" ComponentId="{3FAF5D60-9074-4EE8-80FD-BF0F62144800}" Directory_="APPDIR" Attributes="0" KeyPath="BouncyCastle.Cryptography.dll"/>
+    <ROW Component="CVCommCore.dll" ComponentId="{1636D7D1-C987-4EFF-B1D1-651EB1352DFC}" Directory_="APPDIR" Attributes="0" KeyPath="CVCommCore.dll"/>
+    <ROW Component="CVImageChannelLib.dll" ComponentId="{5058BA13-4AD8-452F-BE3E-A0EC949307D9}" Directory_="APPDIR" Attributes="256" KeyPath="CVImageChannelLib.dll"/>
+    <ROW Component="CalibrationCorrection.dll" ComponentId="{07DCE022-EB7B-434D-ADCD-46493AA643C3}" Directory_="Plugins_Dir" Attributes="256" KeyPath="CalibrationCorrection.dll"/>
+    <ROW Component="CameraAttribute.db" ComponentId="{D2AFED3C-2B39-45DB-8378-C75C65495499}" Directory_="APPDIR" Attributes="0" KeyPath="ColorVision.deps.json" Type="0"/>
+    <ROW Component="Catalogallproduct.pdf" ComponentId="{640749D8-BB79-4B53-8407-BCE98D957B51}" Directory_="Catalog_Dir" Attributes="0" KeyPath="CatalogEN.pdf" Type="0"/>
+    <ROW Component="ColorVision.Common.dll" ComponentId="{FAB21B49-8B38-4C9C-9896-E5A2ACA8C4F3}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.Common.dll"/>
+    <ROW Component="ColorVision.Engine.dll" ComponentId="{78F61EC7-9CEA-4013-8971-18526AE08E29}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.Engine.dll"/>
+    <ROW Component="ColorVision.Engine.resources.dll" ComponentId="{6D3325E8-EE2E-453C-B552-3315EAB858EC}" Directory_="en_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll"/>
+    <ROW Component="ColorVision.Engine.resources.dll_1" ComponentId="{9309861A-B318-466A-80F7-4B12C47AC83D}" Directory_="fr_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll_1"/>
+    <ROW Component="ColorVision.Engine.resources.dll_2" ComponentId="{53B7D3E7-3731-4C45-8D85-2BF7C8A635C3}" Directory_="ja_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll_2"/>
+    <ROW Component="ColorVision.Engine.resources.dll_3" ComponentId="{3945AA83-F867-4728-B2EF-CB2C4B35C94F}" Directory_="ko_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll_3"/>
+    <ROW Component="ColorVision.Engine.resources.dll_4" ComponentId="{BA461A4E-8AF6-411E-AFFA-A8699AE58498}" Directory_="ru_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll_4"/>
+    <ROW Component="ColorVision.Engine.resources.dll_5" ComponentId="{BB955845-8986-4036-B9DC-695D66B8CB64}" Directory_="zhHant_Dir" Attributes="256" KeyPath="ColorVision.Engine.resources.dll_5"/>
+    <ROW Component="ColorVision.Net.dll" ComponentId="{AE611C6B-21F3-4FD7-8B7F-586E844BEF33}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.Net.dll"/>
+    <ROW Component="ColorVision.Scheduler.dll" ComponentId="{A1130F5A-848B-4609-9017-A70AFBD6749F}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.Scheduler.dll"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll" ComponentId="{7D25CEDD-3419-419B-8733-E971A5F5746F}" Directory_="en_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll_1" ComponentId="{939E4AA2-A353-4E94-84D0-8F1A494A3BB9}" Directory_="fr_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll_1"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll_2" ComponentId="{46576913-C517-4F08-B2AE-FA55C1A4E722}" Directory_="ja_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll_2"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll_3" ComponentId="{9E9C5A35-D0E3-4E70-82BB-F14866F6A9C7}" Directory_="ko_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll_3"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll_4" ComponentId="{1C53D7C9-2E52-4428-9FDF-22649ECCE95A}" Directory_="ru_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll_4"/>
+    <ROW Component="ColorVision.Scheduler.resources.dll_5" ComponentId="{F8ECDE75-2F84-48CB-9EEB-355AEAC6616C}" Directory_="zhHant_Dir" Attributes="256" KeyPath="ColorVision.Scheduler.resources.dll_5"/>
+    <ROW Component="ColorVision.Solution.dll" ComponentId="{456FDB7C-7EA8-4A95-8708-D5C2BB8C6A95}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.Solution.dll"/>
+    <ROW Component="ColorVision.Solution.resources.dll" ComponentId="{561D9511-D9A5-47D0-A8AD-0FB21CE94FB1}" Directory_="en_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll"/>
+    <ROW Component="ColorVision.Solution.resources.dll_1" ComponentId="{4D993807-8C1E-422B-90B5-3D6258546D9A}" Directory_="fr_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll_1"/>
+    <ROW Component="ColorVision.Solution.resources.dll_2" ComponentId="{52E0650D-5AF4-48AC-BBF7-28D9AC843366}" Directory_="ja_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll_2"/>
+    <ROW Component="ColorVision.Solution.resources.dll_3" ComponentId="{1F18D717-D87F-45EA-8DC9-E1B310A0F7BF}" Directory_="ko_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll_3"/>
+    <ROW Component="ColorVision.Solution.resources.dll_4" ComponentId="{D7F2A2A0-2F00-4B33-A1AF-630BEA38520C}" Directory_="ru_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll_4"/>
+    <ROW Component="ColorVision.Solution.resources.dll_5" ComponentId="{9154EC14-CF88-4762-A755-C69619181503}" Directory_="zhHant_Dir" Attributes="256" KeyPath="ColorVision.Solution.resources.dll_5"/>
+    <ROW Component="ColorVision.Themes.dll" ComponentId="{54E5B301-6575-45B1-BEA7-4EDE16CF5454}" Directory_="APPDIR" Attributes="0" KeyPath="ColorVision.Themes.dll"/>
+    <ROW Component="ColorVision.Themes.resources.dll" ComponentId="{26BCB085-A2B0-4E6C-AC62-EFE981B86DBF}" Directory_="en_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll"/>
+    <ROW Component="ColorVision.Themes.resources.dll_1" ComponentId="{181E04B8-962D-43E6-8D1A-E9B5C7C79DD0}" Directory_="fr_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll_1"/>
+    <ROW Component="ColorVision.Themes.resources.dll_10" ComponentId="{6AB95A91-399F-45A3-A03C-E53D50FC5FAF}" Directory_="ru_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_10"/>
+    <ROW Component="ColorVision.Themes.resources.dll_11" ComponentId="{42129C1E-D18C-42F7-8E07-F570E5FD7FE5}" Directory_="zhHant_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_11"/>
+    <ROW Component="ColorVision.Themes.resources.dll_2" ComponentId="{D2B8B806-90B2-45DA-B1A2-1FC2C8CCE1D3}" Directory_="ja_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll_2"/>
+    <ROW Component="ColorVision.Themes.resources.dll_3" ComponentId="{247024D5-5290-42E0-BC14-EE5D7690CF5D}" Directory_="ko_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll_3"/>
+    <ROW Component="ColorVision.Themes.resources.dll_4" ComponentId="{316F05C1-10FB-4C79-BB1C-F9DD1FF1F463}" Directory_="ru_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll_4"/>
+    <ROW Component="ColorVision.Themes.resources.dll_5" ComponentId="{41E345EB-2CD7-4657-A4A8-52E1748F84DD}" Directory_="zhHant_Dir" Attributes="0" KeyPath="ColorVision.Themes.resources.dll_5"/>
+    <ROW Component="ColorVision.Themes.resources.dll_6" ComponentId="{C74BBBF0-7808-4732-B6D9-4226F338454D}" Directory_="en_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_6"/>
+    <ROW Component="ColorVision.Themes.resources.dll_7" ComponentId="{D83141EB-497A-49BA-9B64-B664299F74AE}" Directory_="fr_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_7"/>
+    <ROW Component="ColorVision.Themes.resources.dll_8" ComponentId="{3D1848BE-B94C-41DB-9315-9FC5D354DD48}" Directory_="ja_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_8"/>
+    <ROW Component="ColorVision.Themes.resources.dll_9" ComponentId="{BB1D3A01-7AAE-4CFF-9882-D2D8905F1D57}" Directory_="ko_1_Dir" Attributes="256" KeyPath="ColorVision.Themes.resources.dll_9"/>
+    <ROW Component="ColorVision.UI.dll" ComponentId="{A2359185-E524-4704-8FFF-355C2BC1640E}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.UI.dll"/>
+    <ROW Component="ColorVision.UI.resources.dll" ComponentId="{401AE932-1768-4BBA-88BF-1E0FB0CDE483}" Directory_="en_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll"/>
+    <ROW Component="ColorVision.UI.resources.dll_1" ComponentId="{889FFC7F-B885-4580-82A9-CE042195EE9D}" Directory_="fr_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll_1"/>
+    <ROW Component="ColorVision.UI.resources.dll_10" ComponentId="{6EF0A224-C092-4EE4-9F19-60C8D40A8C44}" Directory_="ru_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_10"/>
+    <ROW Component="ColorVision.UI.resources.dll_11" ComponentId="{A70DE8F1-E55F-4A0E-8EFA-F9CE6B479527}" Directory_="zhHant_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_11"/>
+    <ROW Component="ColorVision.UI.resources.dll_2" ComponentId="{289D8C1A-E94D-4B00-80B0-B2993E49EECB}" Directory_="ja_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll_2"/>
+    <ROW Component="ColorVision.UI.resources.dll_3" ComponentId="{CAA03A09-C9D7-4C00-8126-8C880E065B31}" Directory_="ko_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll_3"/>
+    <ROW Component="ColorVision.UI.resources.dll_4" ComponentId="{B76B8703-4E3E-4C9A-A3A5-E0E1F0304F9E}" Directory_="ru_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll_4"/>
+    <ROW Component="ColorVision.UI.resources.dll_5" ComponentId="{B8596AB0-48A7-4A11-AB65-02D2EAD2B041}" Directory_="zhHant_Dir" Attributes="0" KeyPath="ColorVision.UI.resources.dll_5"/>
+    <ROW Component="ColorVision.UI.resources.dll_6" ComponentId="{58871979-27FF-468E-9D2A-E345C5946155}" Directory_="en_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_6"/>
+    <ROW Component="ColorVision.UI.resources.dll_7" ComponentId="{3F3A7A7B-8F8B-4201-9AED-BB981DF2524F}" Directory_="fr_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_7"/>
+    <ROW Component="ColorVision.UI.resources.dll_8" ComponentId="{AEEDCF23-2129-410D-A823-1F14B1320EE9}" Directory_="ja_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_8"/>
+    <ROW Component="ColorVision.UI.resources.dll_9" ComponentId="{D912027D-A916-4A3D-9AAC-2C9830F789F8}" Directory_="ko_1_Dir" Attributes="256" KeyPath="ColorVision.UI.resources.dll_9"/>
+    <ROW Component="ColorVision.VisualElementsManifest.xml" ComponentId="{29D5BB28-CED7-427C-97E4-D22DBAD1E22D}" Directory_="APPDIR" Attributes="0" KeyPath="ColorVision.VisualElementsManifest.xml"/>
+    <ROW Component="ColorVision.dll" ComponentId="{6173FEFC-6864-4335-9E03-08774676D6A5}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.dll"/>
+    <ROW Component="ColorVision.exe" ComponentId="{12CD4546-32A3-496A-AD74-23C59EAF1156}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVision.exe"/>
+    <ROW Component="ColorVision.resources.dll" ComponentId="{315C1A6C-793F-4140-AAB9-F631CCDF18EA}" Directory_="zhHant_Dir" Attributes="256" KeyPath="ColorVision.resources.dll"/>
+    <ROW Component="ColorVision.resources.dll_1" ComponentId="{19DDC9A2-71AC-47BB-B1A7-4B037AE211DA}" Directory_="ru_Dir" Attributes="256" KeyPath="ColorVision.resources.dll_1"/>
+    <ROW Component="ColorVision.resources.dll_2" ComponentId="{920A666F-A57D-4889-9015-001912C97AC9}" Directory_="en_Dir" Attributes="256" KeyPath="ColorVision.resources.dll_2"/>
+    <ROW Component="ColorVision.resources.dll_3" ComponentId="{7DBE8FDF-8FBC-4A55-BADC-C0E2EAE54FF2}" Directory_="ja_Dir" Attributes="256" KeyPath="ColorVision.resources.dll_3"/>
+    <ROW Component="ColorVision.resources.dll_4" ComponentId="{9D6AC565-6FE3-4BEE-950D-DC7C8A94A399}" Directory_="ko_Dir" Attributes="256" KeyPath="ColorVision.resources.dll_4"/>
+    <ROW Component="ColorVision.resources.dll_5" ComponentId="{0D5409FB-C244-46EC-A74A-1C75705E6815}" Directory_="fr_Dir" Attributes="0" KeyPath="ColorVision.resources.dll_5"/>
+    <ROW Component="ColorVisionIcons64.dll" ComponentId="{D99D3403-DEA0-476C-8A8F-E7172CEEA610}" Directory_="APPDIR" Attributes="256" KeyPath="ColorVisionIcons64.dll"/>
+    <ROW Component="ColorVisionSetup.exe" ComponentId="{8A18DC98-A088-4791-A5AA-E22DFFC56AB7}" Directory_="APPDIR" Attributes="0" KeyPath="ColorVisionSetup.exe"/>
+    <ROW Component="CommLibrary.dll_1" ComponentId="{7E39AEFD-237A-45E9-BDED-2F394D5F03C2}" Directory_="libs_Dir" Attributes="256" KeyPath="CommLibrary.dll_1"/>
+    <ROW Component="EventVWR.dll" ComponentId="{FC902610-493D-4C69-A98D-47CE377C7F74}" Directory_="Plugins_Dir" Attributes="256" KeyPath="EventVWR.dll"/>
+    <ROW Component="FlowEngineLib.dll" ComponentId="{51FA914E-C4EF-447F-8BE1-B5397FF785B3}" Directory_="APPDIR" Attributes="0" KeyPath="FlowEngineLib.dll"/>
+    <ROW Component="Google.Protobuf.dll" ComponentId="{696192F3-E05D-4A97-A23A-744F36513C7F}" Directory_="APPDIR" Attributes="0" KeyPath="Google.Protobuf.dll"/>
+    <ROW Component="Gu.Wpf.Geometry.dll" ComponentId="{BDAEEDC5-A4AC-4BBC-9040-C31E63D84AC6}" Directory_="APPDIR" Attributes="0" KeyPath="Gu.Wpf.Geometry.dll"/>
+    <ROW Component="HandyControl.dll" ComponentId="{7F475BB3-87EF-493B-A916-6BB096BFC6F9}" Directory_="APPDIR" Attributes="0" KeyPath="HandyControl.dll"/>
+    <ROW Component="HarfBuzzSharp.dll" ComponentId="{01AAE7CB-C697-4C8C-B648-15780AEDCDEC}" Directory_="APPDIR" Attributes="0" KeyPath="HarfBuzzSharp.dll"/>
+    <ROW Component="HelixToolkit.Core.Wpf.dll" ComponentId="{8D246908-E5EC-4235-AAEB-E097A485BC06}" Directory_="APPDIR" Attributes="0" KeyPath="HelixToolkit.Core.Wpf.dll"/>
+    <ROW Component="ICSharpCode.SharpZipLib.dll" ComponentId="{7044C218-D942-4F2B-BA04-83D83C95FA7C}" Directory_="APPDIR" Attributes="0" KeyPath="ICSharpCode.SharpZipLib.dll"/>
+    <ROW Component="K4os.Compression.LZ4.Streams.dll" ComponentId="{DA4797E4-FF55-4905-A043-53581FB8457A}" Directory_="APPDIR" Attributes="0" KeyPath="K4os.Compression.LZ4.Streams.dll"/>
+    <ROW Component="K4os.Compression.LZ4.dll" ComponentId="{03C86379-8DE3-43B0-B03D-8665FE886318}" Directory_="APPDIR" Attributes="0" KeyPath="K4os.Compression.LZ4.dll"/>
+    <ROW Component="K4os.Hash.xxHash.dll" ComponentId="{43599F9E-DF98-4D68-B02A-9477A1D4EA6C}" Directory_="APPDIR" Attributes="0" KeyPath="K4os.Hash.xxHash.dll"/>
+    <ROW Component="LiveChartsCore.SkiaSharpView.WPF.dll" ComponentId="{5EA1DCF0-93D5-4F72-9BD2-999CE47F4121}" Directory_="APPDIR" Attributes="0" KeyPath="LiveChartsCore.SkiaSharpView.WPF.dll"/>
+    <ROW Component="LiveChartsCore.SkiaSharpView.dll" ComponentId="{642E4D84-7F55-4744-BF2A-CE5EA13D9DF9}" Directory_="APPDIR" Attributes="0" KeyPath="LiveChartsCore.SkiaSharpView.dll"/>
+    <ROW Component="LiveChartsCore.dll" ComponentId="{E4E59478-0262-47E9-B0AD-93DC31516DB4}" Directory_="APPDIR" Attributes="0" KeyPath="LiveChartsCore.dll"/>
+    <ROW Component="MQTTMessageLib.dll" ComponentId="{AF869F84-01CF-40FC-B028-BE720A161C0C}" Directory_="APPDIR" Attributes="0" KeyPath="MQTTMessageLib.dll"/>
+    <ROW Component="MQTTnet.dll" ComponentId="{858CBF8A-742F-4FE8-898D-F4DD9E8A6B6C}" Directory_="APPDIR" Attributes="0" KeyPath="MQTTnet.dll"/>
+    <ROW Component="Microsoft.Bcl.AsyncInterfaces.dll" ComponentId="{2497FBED-3CBE-42D6-8DD4-F29F89BFE881}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Bcl.AsyncInterfaces.dll"/>
+    <ROW Component="Microsoft.Extensions.Logging.Abstractions.dll" ComponentId="{307E1341-CBC5-40B0-A061-7212E2E9D49C}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Extensions.Logging.Abstractions.dll"/>
+    <ROW Component="Microsoft.Extensions.ObjectPool.dll" ComponentId="{321F429C-0572-4462-A4A8-1F1D0E23D380}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Extensions.ObjectPool.dll"/>
+    <ROW Component="Microsoft.Xaml.Behaviors.dll" ComponentId="{CC9C78BB-AC10-48F0-BDF5-660354187F5D}" Directory_="APPDIR" Attributes="0" KeyPath="Microsoft.Xaml.Behaviors.dll"/>
+    <ROW Component="MySql.Data.dll" ComponentId="{0767BB5B-E526-4B47-8751-8A24B14D1F9C}" Directory_="APPDIR" Attributes="0" KeyPath="MySql.Data.dll"/>
+    <ROW Component="MySqlConnector.dll" ComponentId="{DF5A2584-9E41-4521-9BDF-E1D150EB73C2}" Directory_="APPDIR" Attributes="0" KeyPath="MySqlConnector.dll"/>
+    <ROW Component="NPOI.OOXML.dll" ComponentId="{54EA7448-29A1-4768-A83C-3E6583DF8AB4}" Directory_="APPDIR" Attributes="0" KeyPath="NPOI.OOXML.dll"/>
+    <ROW Component="NPOI.OpenXml4Net.dll" ComponentId="{DF10D0B2-6644-4DD0-9F16-159C3AAAFEF9}" Directory_="APPDIR" Attributes="0" KeyPath="NPOI.OpenXml4Net.dll"/>
+    <ROW Component="NPOI.OpenXmlFormats.dll" ComponentId="{DD4E9B7B-682D-498D-870D-B53A5F583E96}" Directory_="APPDIR" Attributes="0" KeyPath="NPOI.OpenXmlFormats.dll"/>
+    <ROW Component="NPOI.dll" ComponentId="{BD7AF0E1-5927-4960-AEB9-37C4E248CD69}" Directory_="APPDIR" Attributes="0" KeyPath="NPOI.dll"/>
+    <ROW Component="NaCl.dll" ComponentId="{07B2A4E8-006C-47A3-B607-A5865442818D}" Directory_="APPDIR" Attributes="0" KeyPath="NaCl.dll"/>
+    <ROW Component="NetMQ.dll" ComponentId="{2D24000E-84C9-4141-98EA-4032D3AA662E}" Directory_="APPDIR" Attributes="0" KeyPath="NetMQ.dll"/>
+    <ROW Component="Newtonsoft.Json.dll" ComponentId="{AAC3AF41-0B65-4001-A5C5-2CB3CBD2B705}" Directory_="APPDIR" Attributes="0" KeyPath="Newtonsoft.Json.dll"/>
+    <ROW Component="OpenCvSharp.Extensions.dll" ComponentId="{33B639C8-A715-4FFF-B8C2-92C26F83FA82}" Directory_="APPDIR" Attributes="0" KeyPath="OpenCvSharp.Extensions.dll"/>
+    <ROW Component="OpenCvSharp.WpfExtensions.dll" ComponentId="{93096261-986B-48DE-9CA7-D3E4A4B0FE4D}" Directory_="APPDIR" Attributes="0" KeyPath="OpenCvSharp.WpfExtensions.dll"/>
+    <ROW Component="OpenCvSharp.dll" ComponentId="{34E32BE3-B379-41E7-9713-8B8F4943952B}" Directory_="APPDIR" Attributes="0" KeyPath="OpenCvSharp.dll"/>
+    <ROW Component="OpenCvSharpExtern.dll" ComponentId="{53360B7A-8D32-4463-89FB-8E0ED40E775E}" Directory_="native_7_Dir" Attributes="256" KeyPath="OpenCvSharpExtern.dll"/>
+    <ROW Component="OpenH264Lib.dll" ComponentId="{C61DE987-CDF9-4F7E-BD86-D71A8FC74C3C}" Directory_="APPDIR" Attributes="256" KeyPath="OpenH264Lib.dll"/>
+    <ROW Component="Panuon.WPF.UI.dll" ComponentId="{DA656A5D-2D8C-4214-8A8E-1AB62B7E8E35}" Directory_="APPDIR" Attributes="0" KeyPath="Panuon.WPF.UI.dll"/>
+    <ROW Component="Panuon.WPF.dll" ComponentId="{0AFAA5E1-6836-47B5-94FA-B385FAFDBB86}" Directory_="APPDIR" Attributes="0" KeyPath="Panuon.WPF.dll"/>
+    <ROW Component="ProductInformation" ComponentId="{AB168C28-643C-4F08-9EA5-6E16ED3C8AD9}" Directory_="APPDIR" Attributes="260" KeyPath="Version"/>
+    <ROW Component="ProjectHeyuan.deps.json" ComponentId="{D6A52459-A58D-4847-9002-7D2A9B4CB699}" Directory_="Projects_Dir" Attributes="0" KeyPath="ProjectHeyuan.deps.json" Type="0"/>
+    <ROW Component="ProjectHeyuan.dll" ComponentId="{CAC09A19-0A33-427D-924C-504CBB86B50C}" Directory_="Projects_Dir" Attributes="256" KeyPath="ProjectHeyuan.dll"/>
+    <ROW Component="ProjectHeyuan.exe" ComponentId="{CE883CBE-39C9-46FE-8D27-B93A5756FDED}" Directory_="Projects_Dir" Attributes="256" KeyPath="ProjectHeyuan.exe"/>
+    <ROW Component="QRCoder.Xaml.dll" ComponentId="{369047D5-BE94-49C9-B19F-7A7FF19CC4E6}" Directory_="APPDIR" Attributes="0" KeyPath="QRCoder.Xaml.dll"/>
+    <ROW Component="QRCoder.dll" ComponentId="{FE8F4A94-775C-40A5-89B8-14B268AAD0F0}" Directory_="APPDIR" Attributes="0" KeyPath="QRCoder.dll"/>
+    <ROW Component="Quartz.dll" ComponentId="{3E320D82-7DF3-4755-A72E-EBED7EA2D679}" Directory_="APPDIR" Attributes="0" KeyPath="Quartz.dll"/>
+    <ROW Component="SCBase.dll_1" ComponentId="{6B2C4DFD-1E82-41D1-ADE2-1F15B4C7F76D}" Directory_="libs_Dir" Attributes="256" KeyPath="SCBase.dll_1"/>
+    <ROW Component="SCGDCamLayer.dll_1" ComponentId="{EE9ED73B-2AD7-43D6-A9F0-030C9B7E8F3B}" Directory_="libs_Dir" Attributes="256" KeyPath="SCGDCamLayer.dll_1"/>
+    <ROW Component="SCGDDataProcess.dll_1" ComponentId="{C90135E1-F0AC-4DA1-9EC3-005E1EDB449B}" Directory_="libs_Dir" Attributes="256" KeyPath="SCGDDataProcess.dll_1"/>
+    <ROW Component="SCGDMilCam.dll_1" ComponentId="{454E10C2-8C26-4F31-90FF-0749C6E3320D}" Directory_="libs_Dir" Attributes="256" KeyPath="SCGDMilCam.dll_1"/>
+    <ROW Component="SHORTCUTDIR" ComponentId="{E5340602-E778-4500-959D-348FBB5BE983}" Directory_="SHORTCUTDIR" Attributes="0"/>
+    <ROW Component="ST.Library.UI.dll" ComponentId="{29852A90-B3A1-4BC1-AF80-1594DF8C9E46}" Directory_="APPDIR" Attributes="0" KeyPath="ST.Library.UI.dll"/>
+    <ROW Component="ScottPlot.WPF.dll" ComponentId="{D4F8F810-A1B3-42BD-81F7-079DF09C6CEF}" Directory_="APPDIR" Attributes="0" KeyPath="ScottPlot.WPF.dll"/>
+    <ROW Component="ScottPlot.dll" ComponentId="{21129086-6399-4EBF-A831-470F47F4A57E}" Directory_="APPDIR" Attributes="0" KeyPath="ScottPlot.dll"/>
+    <ROW Component="SkiaSharp.HarfBuzz.dll" ComponentId="{8C12A46C-14E0-4D6C-9CFC-A77F4972B796}" Directory_="APPDIR" Attributes="0" KeyPath="SkiaSharp.HarfBuzz.dll"/>
+    <ROW Component="SkiaSharp.Views.Desktop.Common.dll" ComponentId="{E9F5705F-843B-4B68-9DB1-4E8BB953E930}" Directory_="APPDIR" Attributes="0" KeyPath="SkiaSharp.Views.Desktop.Common.dll"/>
+    <ROW Component="SkiaSharp.Views.WPF.dll" ComponentId="{0751FA52-4699-48BC-BDB0-90073C07C688}" Directory_="APPDIR" Attributes="0" KeyPath="SkiaSharp.Views.WPF.dll"/>
+    <ROW Component="SkiaSharp.dll" ComponentId="{C2947AC0-4C85-4270-9F5D-B900AEAE4903}" Directory_="APPDIR" Attributes="0" KeyPath="SkiaSharp.dll"/>
+    <ROW Component="System.IO.Pipelines.dll" ComponentId="{99426898-1ECB-4FFA-813A-F5BF38317F1E}" Directory_="APPDIR" Attributes="0" KeyPath="System.IO.Pipelines.dll"/>
+    <ROW Component="System.IO.Ports.dll" ComponentId="{8B27D743-1867-4B6A-91A9-6CB7B9DBA056}" Directory_="APPDIR" Attributes="0" KeyPath="System.IO.Ports.dll"/>
+    <ROW Component="System.IO.Ports.dll_1" ComponentId="{F0C45236-517C-4041-90A3-66FA19AAF140}" Directory_="net8.0_Dir" Attributes="0" KeyPath="System.IO.Ports.dll_1"/>
+    <ROW Component="System.Private.ServiceModel.dll" ComponentId="{5E150C5F-E434-45EC-951C-CA94A2C6A71B}" Directory_="APPDIR" Attributes="0" KeyPath="System.Private.ServiceModel.dll"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll" ComponentId="{3E4683C0-4F5A-4B87-989A-E60A5E50C0D3}" Directory_="zhHans_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll_1" ComponentId="{90666DA2-613F-4122-B044-17794E0E6D8B}" Directory_="zhHant_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll_1"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll_2" ComponentId="{78202D0C-FCCC-432D-BFFD-60FCB63C8594}" Directory_="ru_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll_2"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll_4" ComponentId="{2A656775-37BA-45D7-BF54-3A6205D52EBA}" Directory_="ja_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll_4"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll_5" ComponentId="{01B92601-7C91-4ECC-ABD6-D5EC5C26D2FB}" Directory_="ko_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll_5"/>
+    <ROW Component="System.Private.ServiceModel.resources.dll_6" ComponentId="{9A8BBB0D-6623-4DCA-8C78-A2E64FD308C8}" Directory_="fr_Dir" Attributes="0" KeyPath="System.Private.ServiceModel.resources.dll_6"/>
+    <ROW Component="System.ServiceModel.Primitives.dll" ComponentId="{B73595E6-4B31-457C-A33F-9B8FA567A3B1}" Directory_="APPDIR" Attributes="0" KeyPath="System.ServiceModel.Primitives.dll"/>
+    <ROW Component="System.ServiceModel.dll" ComponentId="{1999B83F-666E-4FC0-982F-2514F103B680}" Directory_="APPDIR" Attributes="0" KeyPath="System.ServiceModel.dll"/>
+    <ROW Component="System.ServiceProcess.ServiceController.dll" ComponentId="{A8954B0D-E01E-44F9-9D17-2CFD37234207}" Directory_="APPDIR" Attributes="0" KeyPath="System.ServiceProcess.ServiceController.dll"/>
+    <ROW Component="System.ServiceProcess.ServiceController.dll_1" ComponentId="{68283CD7-637D-4336-ABF7-5B910CE2A246}" Directory_="net8.0_Dir" Attributes="0" KeyPath="System.ServiceProcess.ServiceController.dll_1"/>
+    <ROW Component="Tests" ComponentId="{DEC426C4-3736-4CEA-92F4-4B89CCB1D2DE}" Directory_="Tests_Dir" Attributes="0"/>
+    <ROW Component="WindowsServicePlugin.dll" ComponentId="{62D86C78-3F8E-47CA-92AD-4B0E753721ED}" Directory_="net8.0windows_Dir" Attributes="256" KeyPath="WindowsServicePlugin.dll"/>
+    <ROW Component="WindowsServicePlugin.resources.dll" ComponentId="{2E5DAAFC-9F50-4400-B379-DB02328AE4A7}" Directory_="en_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll"/>
+    <ROW Component="WindowsServicePlugin.resources.dll_1" ComponentId="{3C486C86-F68F-4CC0-A4FD-16C93B1C3EEC}" Directory_="fr_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll_1"/>
+    <ROW Component="WindowsServicePlugin.resources.dll_2" ComponentId="{221D6CED-F9E1-4C88-A08E-BCCFEE7A31DB}" Directory_="ja_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll_2"/>
+    <ROW Component="WindowsServicePlugin.resources.dll_3" ComponentId="{6ECDB003-6EF1-407B-B425-F8988362644F}" Directory_="ko_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll_3"/>
+    <ROW Component="WindowsServicePlugin.resources.dll_4" ComponentId="{88635AE7-6D9A-4259-927B-E07593E6E596}" Directory_="ru_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll_4"/>
+    <ROW Component="WindowsServicePlugin.resources.dll_5" ComponentId="{85A6FF2E-4CFA-4CF7-B180-9A75060140F8}" Directory_="zhHant_1_Dir" Attributes="256" KeyPath="WindowsServicePlugin.resources.dll_5"/>
+    <ROW Component="Wpf.Ui.dll" ComponentId="{6CE6F7B0-1AD9-46BE-A7DC-B72C1E97C911}" Directory_="APPDIR" Attributes="0" KeyPath="Wpf.Ui.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.Themes.Aero.dll" ComponentId="{7213EAF6-4506-4287-8840-692E3B61415D}" Directory_="APPDIR" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.Themes.Aero.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.Themes.Metro.dll" ComponentId="{DB57BE72-B049-413F-AE6C-F4DE6E9D761E}" Directory_="APPDIR" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.Themes.Metro.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.Themes.VS2010.dll" ComponentId="{BC6ADD72-3C20-4D2B-81B6-1C6E7DA55F3D}" Directory_="APPDIR" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.Themes.VS2010.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.dll" ComponentId="{D4D4EA73-BA74-4F3B-996A-82B139571CFD}" Directory_="APPDIR" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.resources.dll" ComponentId="{A25DE1EE-E25D-4C62-8A90-1DA74B2C71D3}" Directory_="fr_Dir" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.resources.dll"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.resources.dll_1" ComponentId="{A4CE9F49-7D71-48C6-BFDD-B1A44F321F86}" Directory_="zhHans_Dir" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.resources.dll_1"/>
+    <ROW Component="Xceed.Wpf.AvalonDock.resources.dll_2" ComponentId="{571885BA-1E54-4223-9BA7-BDE8AAC8FE76}" Directory_="ru_Dir" Attributes="0" KeyPath="Xceed.Wpf.AvalonDock.resources.dll_2"/>
+    <ROW Component="Xceed.Wpf.Toolkit.dll" ComponentId="{B7538CFD-B14E-40A0-88BA-0F1AB1457ED1}" Directory_="APPDIR" Attributes="0" KeyPath="Xceed.Wpf.Toolkit.dll"/>
+    <ROW Component="YamlDotNet.dll" ComponentId="{8F942DC8-4BB4-4032-B940-9FA6B1AFC2A1}" Directory_="APPDIR" Attributes="0" KeyPath="YamlDotNet.dll"/>
+    <ROW Component="ZstdSharp.dll" ComponentId="{472AB911-6D13-4D06-AB02-A1563FD60575}" Directory_="APPDIR" Attributes="0" KeyPath="ZstdSharp.dll"/>
+    <ROW Component="_" ComponentId="{329B00FD-DEC8-4452-A1D6-3F3F8424A261}" Directory_="APPDIR" Attributes="260" KeyPath="__1"/>
+    <ROW Component="__1" ComponentId="{488D0C1D-F180-4BFF-9D42-0DA5870553F8}" Directory_="APPDIR" Attributes="4" KeyPath="__2"/>
+    <ROW Component="__10" ComponentId="{F47541DF-817B-45A8-98FC-04B9180296EF}" Directory_="APPDIR" Attributes="260" KeyPath="__11"/>
+    <ROW Component="__11" ComponentId="{DECBDD62-2F41-4F7D-A368-9EC25EA27885}" Directory_="APPDIR" Attributes="260" KeyPath="__12"/>
+    <ROW Component="__12" ComponentId="{EC1172D1-253D-4FD3-BD89-869398D452A9}" Directory_="APPDIR" Attributes="260" KeyPath="__13"/>
+    <ROW Component="__13" ComponentId="{4C590690-0A7D-435C-AA7C-76133D69DDAE}" Directory_="APPDIR" Attributes="260" KeyPath="__14"/>
+    <ROW Component="__2" ComponentId="{20422031-696F-480B-AA7A-50D4676595B2}" Directory_="APPDIR" Attributes="4" KeyPath="__3"/>
+    <ROW Component="__4" ComponentId="{6708AF5B-B1D2-490B-BBB2-7264A1738771}" Directory_="APPDIR" Attributes="260" KeyPath="__5"/>
+    <ROW Component="__5" ComponentId="{3EAD3AAB-6664-418C-87F8-A5D1FE39BC90}" Directory_="APPDIR" Attributes="260" KeyPath="__6"/>
+    <ROW Component="__7" ComponentId="{837677AB-4AF6-472C-9B2D-500568F7711B}" Directory_="APPDIR" Attributes="260" KeyPath="__8"/>
+    <ROW Component="__8" ComponentId="{44F1F959-CDD6-4543-B8E8-CD445FFBE606}" Directory_="APPDIR" Attributes="260" KeyPath="__9"/>
+    <ROW Component="__9" ComponentId="{D9D9AE3F-1CF7-4460-A650-B9D7C38B1819}" Directory_="APPDIR" Attributes="260" KeyPath="__10"/>
+    <ROW Component="algorithm.h" ComponentId="{1CE8A7B9-3709-4C48-8A6E-6886413CCA73}" Directory_="include_Dir" Attributes="0" KeyPath="algorithm.h" Type="0"/>
+    <ROW Component="color_vision_all.sql" ComponentId="{52D28016-7A30-4CA1-8FA5-D0173B4C5D59}" Directory_="sql_Dir" Attributes="0" KeyPath="color_vision_all.sql" Type="0"/>
+    <ROW Component="comerr64.dll" ComponentId="{87660DE5-D63E-4E28-A952-F1AD1674BBBA}" Directory_="native_7_Dir" Attributes="256" KeyPath="comerr64.dll"/>
+    <ROW Component="cvCalibration.dll" ComponentId="{44A11083-6E9D-4BC9-B47C-5D6BB42B1787}" Directory_="libs_Dir" Attributes="256" KeyPath="cvCalibration.dll"/>
+    <ROW Component="cvCamera.dll_1" ComponentId="{A20CE9B7-AA54-45BE-BA95-544EE72B76A2}" Directory_="libs_Dir" Attributes="256" KeyPath="cvCamera.dll_1"/>
+    <ROW Component="cvColorVision.dll" ComponentId="{E9105064-F783-4B03-BF2C-07D6651D8E37}" Directory_="APPDIR" Attributes="256" KeyPath="cvColorVision.dll"/>
+    <ROW Component="cvTableList.dll" ComponentId="{1AD68574-DA1E-4525-A4C3-BAD7031AE65D}" Directory_="libs_Dir" Attributes="256" KeyPath="cvTableList.dll"/>
+    <ROW Component="gssapi64.dll" ComponentId="{71D09A0A-98DA-4D9C-8023-EAE3930B7DD6}" Directory_="native_7_Dir" Attributes="256" KeyPath="gssapi64.dll"/>
+    <ROW Component="k5sprt64.dll" ComponentId="{B2C10406-82B6-4023-8173-F552F739C484}" Directory_="native_7_Dir" Attributes="256" KeyPath="k5sprt64.dll"/>
+    <ROW Component="krb5_64.dll" ComponentId="{4F11772C-3F1F-4481-94BE-E6E2A1196E10}" Directory_="native_7_Dir" Attributes="256" KeyPath="krb5_64.dll"/>
+    <ROW Component="krbcc64.dll" ComponentId="{060167BB-3A3E-41D9-A945-167D41999FC7}" Directory_="native_7_Dir" Attributes="256" KeyPath="krbcc64.dll"/>
+    <ROW Component="libHarfBuzzSharp.dll_1" ComponentId="{41329EF2-78AC-48B0-A610-729B949D0BCD}" Directory_="native_7_Dir" Attributes="256" KeyPath="libHarfBuzzSharp.dll_1"/>
+    <ROW Component="libSkiaSharp.dll_1" ComponentId="{EA760414-B5AF-4020-8623-D31DAC0258F0}" Directory_="native_7_Dir" Attributes="256" KeyPath="libSkiaSharp.dll_1"/>
+    <ROW Component="license.md" ComponentId="{C19351D0-06F3-410E-9F1B-2A4D87E77557}" Directory_="doc_Dir" Attributes="0" KeyPath="license.md" Type="0"/>
+    <ROW Component="log4net.dll" ComponentId="{5682B334-5619-49A2-8C9A-197BC0CEE66F}" Directory_="APPDIR" Attributes="0" KeyPath="log4net.dll"/>
+    <ROW Component="msvcr100.dll" ComponentId="{110F8565-AD1B-40F3-A938-9219FB168DD1}" Directory_="libs_Dir" Attributes="256" KeyPath="msvcr100.dll"/>
+    <ROW Component="opencv_core4100.dll" ComponentId="{8C7803E3-6D3F-4937-AFD8-98242A9851A0}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_core4100.dll"/>
+    <ROW Component="opencv_cuda.dll" ComponentId="{CECF2961-ABC8-4DB8-9B76-288539F200DE}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_cuda.dll"/>
+    <ROW Component="opencv_cuda.lib" ComponentId="{86C831D2-79C1-4775-A78A-D8FF94F5C74E}" Directory_="lib_Dir" Attributes="0" KeyPath="opencv_cuda.lib" Type="0"/>
+    <ROW Component="opencv_helper.dll" ComponentId="{73D98CC0-E418-4E9A-933D-6835F9156DF5}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_helper.dll"/>
+    <ROW Component="opencv_highgui4100.dll" ComponentId="{50D2E2D5-2510-45AB-A74C-DC904696E7B1}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_highgui4100.dll"/>
+    <ROW Component="opencv_imgcodecs4100.dll" ComponentId="{95E039DE-644C-455B-8E74-E60F17BD2AB5}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_imgcodecs4100.dll"/>
+    <ROW Component="opencv_imgproc4100.dll" ComponentId="{54AF04F6-2560-4B9C-ACA2-811818FF8703}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_imgproc4100.dll"/>
+    <ROW Component="opencv_videoio4100.dll" ComponentId="{47FDA4F3-B01D-42E7-9635-F7C1C2D991F4}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_videoio4100.dll"/>
+    <ROW Component="opencv_videoio_ffmpeg4100_64.dll" ComponentId="{6F7CBF54-DC27-4C08-BB30-B5A2D3EBB832}" Directory_="native_7_Dir" Attributes="256" KeyPath="opencv_videoio_ffmpeg4100_64.dll"/>
+    <ROW Component="opencv_world401.dll_1" ComponentId="{374D19D7-8746-429F-A9D6-1810F31AF8FC}" Directory_="libs_Dir" Attributes="256" KeyPath="opencv_world401.dll_1"/>
+    <ROW Component="openh2642.3.1win64.dll" ComponentId="{48B9573D-FEB8-4DF4-85CB-88085FCD9D8C}" Directory_="APPDIR" Attributes="256" KeyPath="openh2642.3.1win64.dll"/>
+    <ROW Component="pthreadVC2.dll_1" ComponentId="{B1138A23-3BDB-4244-8F45-35CBE958A943}" Directory_="libs_Dir" Attributes="256" KeyPath="pthreadVC2.dll_1"/>
+    <ROW Component="qhyccd.dll" ComponentId="{812BA37E-C443-43D0-A987-F5683E40B972}" Directory_="libs_Dir" Attributes="256" KeyPath="qhyccd.dll"/>
+    <ROW Component="sqlite3.dll_1" ComponentId="{FD78E11D-F073-4D31-8424-CF3B588699F1}" Directory_="libs_Dir" Attributes="256" KeyPath="sqlite3.dll_1"/>
+    <ROW Component="toupcam.dll" ComponentId="{1E863DB9-AB95-4F6A-A8EB-7B76953FD98F}" Directory_="libs_Dir" Attributes="256" KeyPath="toupcam.dll"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatsComponent">
+    <ROW Feature="MainFeature" Title="MainFeature" Description="Description" Display="3" Level="1" Directory_="APPDIR" Attributes="0"/>
+    <ROW Feature="TileAssets_DefaultBuild" Title="TileAssets_DefaultBuild" Description="描述" Display="3" Level="1" Directory_="APPDIR" Attributes="0" Options="271" Builds="DefaultBuild"/>
+    <ROW Feature="_" Title="功能" Description="描述" Display="5" Level="1" Directory_="APPDIR" Attributes="0"/>
+    <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
+    <ROW File="AsyncIO.dll" Component_="AsyncIO.dll" FileName="AsyncIO.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\AsyncIO.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Common.dll" Component_="ColorVision.Common.dll" FileName="COLORV~1.DLL|ColorVision.Common.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Common.dll" SelfReg="false"/>
+    <ROW File="ColorVision.deps.json" Component_="CameraAttribute.db" FileName="COLORV~1.JSO|ColorVision.deps.json" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.deps.json" SelfReg="false"/>
+    <ROW File="ColorVision.dll" Component_="ColorVision.dll" FileName="COLORV~2.DLL|ColorVision.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.dll" SelfReg="false"/>
+    <ROW File="ColorVision.dll.config" Component_="CameraAttribute.db" FileName="COLORV~1.CON|ColorVision.dll.config" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.dll.config" SelfReg="false"/>
+    <ROW File="ColorVision.exe" Component_="ColorVision.exe" FileName="COLORV~1.EXE|ColorVision.exe" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="ColorVision.Net.dll" Component_="ColorVision.Net.dll" FileName="COLORV~3.DLL|ColorVision.Net.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Net.dll" SelfReg="false"/>
+    <ROW File="ColorVision.runtimeconfig.json" Component_="CameraAttribute.db" FileName="COLORV~2.JSO|ColorVision.runtimeconfig.json" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.runtimeconfig.json" SelfReg="false"/>
+    <ROW File="cvColorVision.dll" Component_="cvColorVision.dll" FileName="CVCOLO~1.DLL|cvColorVision.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\cvColorVision.dll" SelfReg="false"/>
+    <ROW File="duokai.bat" Component_="CameraAttribute.db" FileName="duokai.bat" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Scripts\duokai.bat" SelfReg="false"/>
+    <ROW File="FlowEngineLib.dll" Component_="FlowEngineLib.dll" FileName="FLOWEN~1.DLL|FlowEngineLib.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\FlowEngineLib.dll" SelfReg="false"/>
+    <ROW File="Google.Protobuf.dll" Component_="Google.Protobuf.dll" FileName="GOOGLE~1.DLL|Google.Protobuf.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Google.Protobuf.dll" SelfReg="false"/>
+    <ROW File="Gu.Wpf.Geometry.dll" Component_="Gu.Wpf.Geometry.dll" FileName="GUWPFG~1.DLL|Gu.Wpf.Geometry.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Gu.Wpf.Geometry.dll" SelfReg="false"/>
+    <ROW File="HandyControl.dll" Component_="HandyControl.dll" FileName="HANDYC~1.DLL|HandyControl.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\HandyControl.dll" SelfReg="false"/>
+    <ROW File="HarfBuzzSharp.dll" Component_="HarfBuzzSharp.dll" FileName="HARFBU~1.DLL|HarfBuzzSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\HarfBuzzSharp.dll" SelfReg="false"/>
+    <ROW File="ICSharpCode.SharpZipLib.dll" Component_="ICSharpCode.SharpZipLib.dll" FileName="ICSHAR~1.DLL|ICSharpCode.SharpZipLib.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ICSharpCode.SharpZipLib.dll" SelfReg="false"/>
+    <ROW File="K4os.Compression.LZ4.dll" Component_="K4os.Compression.LZ4.dll" FileName="K4OSCO~1.DLL|K4os.Compression.LZ4.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\K4os.Compression.LZ4.dll" SelfReg="false"/>
+    <ROW File="K4os.Compression.LZ4.Streams.dll" Component_="K4os.Compression.LZ4.Streams.dll" FileName="K4OSCO~2.DLL|K4os.Compression.LZ4.Streams.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\K4os.Compression.LZ4.Streams.dll" SelfReg="false"/>
+    <ROW File="K4os.Hash.xxHash.dll" Component_="K4os.Hash.xxHash.dll" FileName="K4OSHA~1.DLL|K4os.Hash.xxHash.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\K4os.Hash.xxHash.dll" SelfReg="false"/>
+    <ROW File="LiveChartsCore.dll" Component_="LiveChartsCore.dll" FileName="LIVECH~1.DLL|LiveChartsCore.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\LiveChartsCore.dll" SelfReg="false"/>
+    <ROW File="LiveChartsCore.SkiaSharpView.dll" Component_="LiveChartsCore.SkiaSharpView.dll" FileName="LIVECH~2.DLL|LiveChartsCore.SkiaSharpView.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\LiveChartsCore.SkiaSharpView.dll" SelfReg="false"/>
+    <ROW File="LiveChartsCore.SkiaSharpView.WPF.dll" Component_="LiveChartsCore.SkiaSharpView.WPF.dll" FileName="LIVECH~3.DLL|LiveChartsCore.SkiaSharpView.WPF.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\LiveChartsCore.SkiaSharpView.WPF.dll" SelfReg="false"/>
+    <ROW File="log4net.config" Component_="CameraAttribute.db" FileName="LOG4NE~1.CON|log4net.config" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\log4net.config" SelfReg="false"/>
+    <ROW File="log4net.dll" Component_="log4net.dll" FileName="log4net.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\log4net.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Bcl.AsyncInterfaces.dll" Component_="Microsoft.Bcl.AsyncInterfaces.dll" FileName="MICROS~1.DLL|Microsoft.Bcl.AsyncInterfaces.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Microsoft.Bcl.AsyncInterfaces.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Extensions.ObjectPool.dll" Component_="Microsoft.Extensions.ObjectPool.dll" FileName="MICROS~2.DLL|Microsoft.Extensions.ObjectPool.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Microsoft.Extensions.ObjectPool.dll" SelfReg="false"/>
+    <ROW File="MQTTMessageLib.dll" Component_="MQTTMessageLib.dll" FileName="MQTTME~1.DLL|MQTTMessageLib.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\MQTTMessageLib.dll" SelfReg="false"/>
+    <ROW File="MQTTnet.dll" Component_="MQTTnet.dll" FileName="MQTTnet.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\MQTTnet.dll" SelfReg="false"/>
+    <ROW File="MySql.Data.dll" Component_="MySql.Data.dll" FileName="MYSQLD~1.DLL|MySql.Data.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\MySql.Data.dll" SelfReg="false"/>
+    <ROW File="MySqlConnector.dll" Component_="MySqlConnector.dll" FileName="MYSQLC~1.DLL|MySqlConnector.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\MySqlConnector.dll" SelfReg="false"/>
+    <ROW File="NaCl.dll" Component_="NaCl.dll" FileName="NaCl.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NaCl.dll" SelfReg="false"/>
+    <ROW File="NetMQ.dll" Component_="NetMQ.dll" FileName="NetMQ.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NetMQ.dll" SelfReg="false"/>
+    <ROW File="Newtonsoft.Json.dll" Component_="Newtonsoft.Json.dll" FileName="NEWTON~1.DLL|Newtonsoft.Json.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Newtonsoft.Json.dll" SelfReg="false"/>
+    <ROW File="NOTICE.TXT" Component_="CameraAttribute.db" FileName="NOTICE.TXT" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NOTICE.TXT" SelfReg="false"/>
+    <ROW File="NPOI.dll" Component_="NPOI.dll" FileName="NPOI.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NPOI.dll" SelfReg="false"/>
+    <ROW File="NPOI.OOXML.dll" Component_="NPOI.OOXML.dll" FileName="NPOIOO~1.DLL|NPOI.OOXML.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NPOI.OOXML.dll" SelfReg="false"/>
+    <ROW File="NPOI.OpenXml4Net.dll" Component_="NPOI.OpenXml4Net.dll" FileName="NPOIOP~1.DLL|NPOI.OpenXml4Net.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NPOI.OpenXml4Net.dll" SelfReg="false"/>
+    <ROW File="NPOI.OpenXmlFormats.dll" Component_="NPOI.OpenXmlFormats.dll" FileName="NPOIOP~2.DLL|NPOI.OpenXmlFormats.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\NPOI.OpenXmlFormats.dll" SelfReg="false"/>
+    <ROW File="OpenCvSharp.dll" Component_="OpenCvSharp.dll" FileName="OPENCV~8.DLL|OpenCvSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\OpenCvSharp.dll" SelfReg="false"/>
+    <ROW File="OpenCvSharp.Extensions.dll" Component_="OpenCvSharp.Extensions.dll" FileName="OPENCV~9.DLL|OpenCvSharp.Extensions.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\OpenCvSharp.Extensions.dll" SelfReg="false"/>
+    <ROW File="OpenCvSharp.WpfExtensions.dll" Component_="OpenCvSharp.WpfExtensions.dll" FileName="OPENC~10.DLL|OpenCvSharp.WpfExtensions.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\OpenCvSharp.WpfExtensions.dll" SelfReg="false"/>
+    <ROW File="openh2642.3.1win64.dll" Component_="openh2642.3.1win64.dll" FileName="OPENH2~1.DLL|openh264-2.3.1-win64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\openh264-2.3.1-win64.dll" SelfReg="false"/>
+    <ROW File="OpenH264Lib.dll" Component_="OpenH264Lib.dll" FileName="OPENH2~2.DLL|OpenH264Lib.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\OpenH264Lib.dll" SelfReg="false"/>
+    <ROW File="Panuon.WPF.dll" Component_="Panuon.WPF.dll" FileName="PANUON~1.DLL|Panuon.WPF.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Panuon.WPF.dll" SelfReg="false"/>
+    <ROW File="Panuon.WPF.UI.dll" Component_="Panuon.WPF.UI.dll" FileName="PANUON~2.DLL|Panuon.WPF.UI.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Panuon.WPF.UI.dll" SelfReg="false"/>
+    <ROW File="ScottPlot.dll" Component_="ScottPlot.dll" FileName="SCOTTP~1.DLL|ScottPlot.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ScottPlot.dll" SelfReg="false"/>
+    <ROW File="ScottPlot.WPF.dll" Component_="ScottPlot.WPF.dll" FileName="SCOTTP~2.DLL|ScottPlot.WPF.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ScottPlot.WPF.dll" SelfReg="false"/>
+    <ROW File="SkiaSharp.dll" Component_="SkiaSharp.dll" FileName="SKIASH~1.DLL|SkiaSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\SkiaSharp.dll" SelfReg="false"/>
+    <ROW File="SkiaSharp.HarfBuzz.dll" Component_="SkiaSharp.HarfBuzz.dll" FileName="SKIASH~2.DLL|SkiaSharp.HarfBuzz.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\SkiaSharp.HarfBuzz.dll" SelfReg="false"/>
+    <ROW File="SkiaSharp.Views.Desktop.Common.dll" Component_="SkiaSharp.Views.Desktop.Common.dll" FileName="SKIASH~3.DLL|SkiaSharp.Views.Desktop.Common.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\SkiaSharp.Views.Desktop.Common.dll" SelfReg="false"/>
+    <ROW File="SkiaSharp.Views.WPF.dll" Component_="SkiaSharp.Views.WPF.dll" FileName="SKIASH~4.DLL|SkiaSharp.Views.WPF.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\SkiaSharp.Views.WPF.dll" SelfReg="false"/>
+    <ROW File="ST.Library.UI.dll" Component_="ST.Library.UI.dll" FileName="STLIBR~1.DLL|ST.Library.UI.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ST.Library.UI.dll" SelfReg="false"/>
+    <ROW File="System.IO.Pipelines.dll" Component_="System.IO.Pipelines.dll" FileName="SYSTEM~3.DLL|System.IO.Pipelines.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.IO.Pipelines.dll" SelfReg="false"/>
+    <ROW File="System.IO.Ports.dll" Component_="System.IO.Ports.dll" FileName="SYSTEM~4.DLL|System.IO.Ports.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.IO.Ports.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.dll" Component_="System.Private.ServiceModel.dll" FileName="SYSTEM~5.DLL|System.Private.ServiceModel.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.Private.ServiceModel.dll" SelfReg="false"/>
+    <ROW File="System.ServiceModel.dll" Component_="System.ServiceModel.dll" FileName="SYSTEM~6.DLL|System.ServiceModel.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.ServiceModel.dll" SelfReg="false"/>
+    <ROW File="System.ServiceModel.Primitives.dll" Component_="System.ServiceModel.Primitives.dll" FileName="SYSTEM~7.DLL|System.ServiceModel.Primitives.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.ServiceModel.Primitives.dll" SelfReg="false"/>
+    <ROW File="Wpf.Ui.dll" Component_="Wpf.Ui.dll" FileName="WPFUI~1.DLL|Wpf.Ui.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Wpf.Ui.dll" SelfReg="false"/>
+    <ROW File="YamlDotNet.dll" Component_="YamlDotNet.dll" FileName="YAMLDO~1.DLL|YamlDotNet.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\YamlDotNet.dll" SelfReg="false"/>
+    <ROW File="ZstdSharp.dll" Component_="ZstdSharp.dll" FileName="ZSTDSH~1.DLL|ZstdSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ZstdSharp.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll" Component_="System.Private.ServiceModel.resources.dll" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hans\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll" Component_="ColorVision.resources.dll" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll_1" Component_="System.Private.ServiceModel.resources.dll_1" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll_1" Component_="ColorVision.resources.dll_1" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll_2" Component_="System.Private.ServiceModel.resources.dll_2" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="comerr64.dll" Component_="comerr64.dll" FileName="comerr64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\comerr64.dll" SelfReg="false"/>
+    <ROW File="gssapi64.dll" Component_="gssapi64.dll" FileName="gssapi64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\gssapi64.dll" SelfReg="false"/>
+    <ROW File="k5sprt64.dll" Component_="k5sprt64.dll" FileName="k5sprt64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\k5sprt64.dll" SelfReg="false"/>
+    <ROW File="krb5_64.dll" Component_="krb5_64.dll" FileName="krb5_64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\krb5_64.dll" SelfReg="false"/>
+    <ROW File="krbcc64.dll" Component_="krbcc64.dll" FileName="krbcc64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\krbcc64.dll" SelfReg="false"/>
+    <ROW File="libHarfBuzzSharp.dll_1" Component_="libHarfBuzzSharp.dll_1" FileName="LIBHAR~1.DLL|libHarfBuzzSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\libHarfBuzzSharp.dll" SelfReg="false"/>
+    <ROW File="libSkiaSharp.dll_1" Component_="libSkiaSharp.dll_1" FileName="LIBSKI~1.DLL|libSkiaSharp.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\libSkiaSharp.dll" SelfReg="false"/>
+    <ROW File="OpenCvSharpExtern.dll" Component_="OpenCvSharpExtern.dll" FileName="OPENCV~1.DLL|OpenCvSharpExtern.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\OpenCvSharpExtern.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll_4" Component_="ColorVision.resources.dll_4" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll_5" Component_="System.Private.ServiceModel.resources.dll_5" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll_2" Component_="ColorVision.resources.dll_2" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll_3" Component_="ColorVision.resources.dll_3" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll_4" Component_="System.Private.ServiceModel.resources.dll_4" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="CHANGELOG.md" Component_="CameraAttribute.db" FileName="CHANGE~1.MD|CHANGELOG.md" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\CHANGELOG.md" SelfReg="false"/>
+    <ROW File="QRCoder.dll" Component_="QRCoder.dll" FileName="QRCoder.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\QRCoder.dll" SelfReg="false"/>
+    <ROW File="QRCoder.Xaml.dll" Component_="QRCoder.Xaml.dll" FileName="QRCODE~1.DLL|QRCoder.Xaml.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\QRCoder.Xaml.dll" SelfReg="false"/>
+    <ROW File="CVImageChannelLib.dll" Component_="CVImageChannelLib.dll" FileName="CVIMAG~1.DLL|CVImageChannelLib.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\CVImageChannelLib.dll" SelfReg="false"/>
+    <ROW File="System.ServiceProcess.ServiceController.dll" Component_="System.ServiceProcess.ServiceController.dll" FileName="SYSTE~11.DLL|System.ServiceProcess.ServiceController.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\System.ServiceProcess.ServiceController.dll" SelfReg="false"/>
+    <ROW File="ColorVision.VisualElementsManifest.xml" Component_="ColorVision.VisualElementsManifest.xml" FileName="COLORV~1.XML|ColorVision.VisualElementsManifest.xml" Attributes="0" SourcePath="&lt;AI_RES&gt;app.VisualElementsManifest.xml" SelfReg="false"/>
+    <ROW File="BouncyCastle.Cryptography.dll" Component_="BouncyCastle.Cryptography.dll" FileName="BOUNCY~1.DLL|BouncyCastle.Cryptography.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\BouncyCastle.Cryptography.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Xaml.Behaviors.dll" Component_="Microsoft.Xaml.Behaviors.dll" FileName="MICROS~4.DLL|Microsoft.Xaml.Behaviors.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Microsoft.Xaml.Behaviors.dll" SelfReg="false"/>
+    <ROW File="Microsoft.Extensions.Logging.Abstractions.dll" Component_="Microsoft.Extensions.Logging.Abstractions.dll" FileName="MICROS~6.DLL|Microsoft.Extensions.Logging.Abstractions.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Microsoft.Extensions.Logging.Abstractions.dll" SelfReg="false"/>
+    <ROW File="ColorVision.resources.dll_5" Component_="ColorVision.resources.dll_5" FileName="COLORV~1.DLL|ColorVision.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.resources.dll" SelfReg="false"/>
+    <ROW File="System.Private.ServiceModel.resources.dll_6" Component_="System.Private.ServiceModel.resources.dll_6" FileName="SYSTEM~1.DLL|System.Private.ServiceModel.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\System.Private.ServiceModel.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVisionSetup.exe" Component_="ColorVisionSetup.exe" FileName="COLORV~2.EXE|ColorVisionSetup.exe" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVisionSetup\bin\x64\Release\ColorVisionSetup.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="ColorVisionIcons64.dll" Component_="ColorVisionIcons64.dll" FileName="COLORV~5.DLL|ColorVisionIcons64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVisionIcons64.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.dll" Component_="ColorVision.UI.dll" FileName="COLORV~6.DLL|ColorVision.UI.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.UI.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll" Component_="ColorVision.UI.resources.dll" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_1" Component_="ColorVision.UI.resources.dll_1" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_2" Component_="ColorVision.UI.resources.dll_2" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_3" Component_="ColorVision.UI.resources.dll_3" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_4" Component_="ColorVision.UI.resources.dll_4" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_5" Component_="ColorVision.UI.resources.dll_5" FileName="COLORV~3.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="CVCommCore.dll" Component_="CVCommCore.dll" FileName="CVCOMM~2.DLL|CVCommCore.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\CVCommCore.dll" SelfReg="false"/>
+    <ROW File="System.IO.Ports.dll_1" Component_="System.IO.Ports.dll_1" FileName="SYSTEM~2.DLL|System.IO.Ports.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win\lib\net8.0\System.IO.Ports.dll" SelfReg="false"/>
+    <ROW File="System.ServiceProcess.ServiceController.dll_1" Component_="System.ServiceProcess.ServiceController.dll_1" FileName="SYSTEM~3.DLL|System.ServiceProcess.ServiceController.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win\lib\net8.0\System.ServiceProcess.ServiceController.dll" SelfReg="false"/>
+    <ROW File="Quartz.dll" Component_="Quartz.dll" FileName="Quartz.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Quartz.dll" SelfReg="false"/>
+    <ROW File="CalibrationCorrection.dll" Component_="CalibrationCorrection.dll" FileName="CALIBR~1.DLL|CalibrationCorrection.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\CalibrationCorrection\bin\x64\Release\net8.0-windows\CalibrationCorrection.dll" SelfReg="false"/>
+    <ROW File="EventVWR.dll" Component_="EventVWR.dll" FileName="EventVWR.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\EventVWR\bin\x64\Release\net8.0-windows\EventVWR.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll" Component_="ColorVision.Engine.resources.dll" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll_1" Component_="ColorVision.Engine.resources.dll_1" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll_2" Component_="ColorVision.Engine.resources.dll_2" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll_3" Component_="ColorVision.Engine.resources.dll_3" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll_4" Component_="ColorVision.Engine.resources.dll_4" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.resources.dll_5" Component_="ColorVision.Engine.resources.dll_5" FileName="COLORV~4.DLL|ColorVision.Engine.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.Engine.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Engine.dll" Component_="ColorVision.Engine.dll" FileName="COLORV~7.DLL|ColorVision.Engine.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Engine.dll" SelfReg="false"/>
+    <ROW File="Modify.bat" Component_="CameraAttribute.db" FileName="Modify.bat" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Scripts\Modify.bat" SelfReg="false"/>
+    <ROW File="Modify.ps1" Component_="CameraAttribute.db" FileName="Modify.ps1" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Scripts\Modify.ps1" SelfReg="false"/>
+    <ROW File="Uninstall.ps1" Component_="CameraAttribute.db" FileName="UNINST~1.PS1|Uninstall.ps1" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Scripts\Uninstall.ps1" SelfReg="false"/>
+    <ROW File="opencv_videoio_ffmpeg4100_64.dll" Component_="opencv_videoio_ffmpeg4100_64.dll" FileName="OPENCV~3.DLL|opencv_videoio_ffmpeg4100_64.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native\opencv_videoio_ffmpeg4100_64.dll" SelfReg="false"/>
+    <ROW File="SoftwareLicenseAgreement.md" Component_="CameraAttribute.db" FileName="SOFTWA~1.MD|Software License Agreement.md" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\docs\Software License Agreement.md" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.dll" Component_="ColorVision.Themes.dll" FileName="COLORV~8.DLL|ColorVision.Themes.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Themes.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll" Component_="ColorVision.Themes.resources.dll" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_1" Component_="ColorVision.Themes.resources.dll_1" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_2" Component_="ColorVision.Themes.resources.dll_2" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_3" Component_="ColorVision.Themes.resources.dll_3" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_4" Component_="ColorVision.Themes.resources.dll_4" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_5" Component_="ColorVision.Themes.resources.dll_5" FileName="COLORV~5.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="CommLibrary.dll_1" Component_="CommLibrary.dll_1" FileName="COMMLI~1.DLL|CommLibrary.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\CommLibrary.dll" SelfReg="false"/>
+    <ROW File="cvCamera.dll_1" Component_="cvCamera.dll_1" FileName="cvCamera.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\cvCamera.dll" SelfReg="false"/>
+    <ROW File="opencv_world401.dll_1" Component_="opencv_world401.dll_1" FileName="OPENCV~1.DLL|opencv_world401.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\opencv_world401.dll" SelfReg="false"/>
+    <ROW File="pthreadVC2.dll_1" Component_="pthreadVC2.dll_1" FileName="PTHREA~1.DLL|pthreadVC2.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\pthreadVC2.dll" SelfReg="false"/>
+    <ROW File="qhyccd.dll" Component_="qhyccd.dll" FileName="qhyccd.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\qhyccd.dll" SelfReg="false"/>
+    <ROW File="SCBase.dll_1" Component_="SCBase.dll_1" FileName="SCBase.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\SCBase.dll" SelfReg="false"/>
+    <ROW File="SCGDCamLayer.dll_1" Component_="SCGDCamLayer.dll_1" FileName="SCGDCA~1.DLL|SCGDCamLayer.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\SCGDCamLayer.dll" SelfReg="false"/>
+    <ROW File="SCGDDataProcess.dll_1" Component_="SCGDDataProcess.dll_1" FileName="SCGDDA~1.DLL|SCGDDataProcess.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\SCGDDataProcess.dll" SelfReg="false"/>
+    <ROW File="SCGDMilCam.dll_1" Component_="SCGDMilCam.dll_1" FileName="SCGDMI~1.DLL|SCGDMilCam.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\SCGDMilCam.dll" SelfReg="false"/>
+    <ROW File="sqlite3.dll_1" Component_="sqlite3.dll_1" FileName="sqlite3.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\sqlite3.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.dll" Component_="ColorVision.Scheduler.dll" FileName="COLORV~4.DLL|ColorVision.Scheduler.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Scheduler.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.dll" Component_="ColorVision.Solution.dll" FileName="COLORV~9.DLL|ColorVision.Solution.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.Solution.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll" Component_="ColorVision.Scheduler.resources.dll" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll" Component_="ColorVision.Solution.resources.dll" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\en\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll_1" Component_="ColorVision.Scheduler.resources.dll_1" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll_1" Component_="ColorVision.Solution.resources.dll_1" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll_2" Component_="ColorVision.Scheduler.resources.dll_2" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll_2" Component_="ColorVision.Solution.resources.dll_2" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ja\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll_3" Component_="ColorVision.Scheduler.resources.dll_3" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll_3" Component_="ColorVision.Solution.resources.dll_3" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ko\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll_4" Component_="ColorVision.Scheduler.resources.dll_4" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll_4" Component_="ColorVision.Solution.resources.dll_4" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Scheduler.resources.dll_5" Component_="ColorVision.Scheduler.resources.dll_5" FileName="COLORV~6.DLL|ColorVision.Scheduler.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.Scheduler.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Solution.resources.dll_5" Component_="ColorVision.Solution.resources.dll_5" FileName="COLORV~7.DLL|ColorVision.Solution.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.Solution.resources.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.resources.dll" Component_="Xceed.Wpf.AvalonDock.resources.dll" FileName="XCEEDW~2.DLL|Xceed.Wpf.AvalonDock.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\fr\Xceed.Wpf.AvalonDock.resources.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.resources.dll_1" Component_="Xceed.Wpf.AvalonDock.resources.dll_1" FileName="XCEEDW~2.DLL|Xceed.Wpf.AvalonDock.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\zh-Hans\Xceed.Wpf.AvalonDock.resources.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.dll" Component_="Xceed.Wpf.AvalonDock.dll" FileName="XCEEDW~1.DLL|Xceed.Wpf.AvalonDock.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Xceed.Wpf.AvalonDock.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.Themes.Aero.dll" Component_="Xceed.Wpf.AvalonDock.Themes.Aero.dll" FileName="XCEEDW~2.DLL|Xceed.Wpf.AvalonDock.Themes.Aero.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Xceed.Wpf.AvalonDock.Themes.Aero.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.Themes.Metro.dll" Component_="Xceed.Wpf.AvalonDock.Themes.Metro.dll" FileName="XCEEDW~3.DLL|Xceed.Wpf.AvalonDock.Themes.Metro.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Xceed.Wpf.AvalonDock.Themes.Metro.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.Themes.VS2010.dll" Component_="Xceed.Wpf.AvalonDock.Themes.VS2010.dll" FileName="XCEEDW~4.DLL|Xceed.Wpf.AvalonDock.Themes.VS2010.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Xceed.Wpf.AvalonDock.Themes.VS2010.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.Toolkit.dll" Component_="Xceed.Wpf.Toolkit.dll" FileName="XCEEDW~5.DLL|Xceed.Wpf.Toolkit.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Xceed.Wpf.Toolkit.dll" SelfReg="false"/>
+    <ROW File="Xceed.Wpf.AvalonDock.resources.dll_2" Component_="Xceed.Wpf.AvalonDock.resources.dll_2" FileName="XCEEDW~2.DLL|Xceed.Wpf.AvalonDock.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ru\Xceed.Wpf.AvalonDock.resources.dll" SelfReg="false"/>
+    <ROW File="HelixToolkit.Core.Wpf.dll" Component_="HelixToolkit.Core.Wpf.dll" FileName="HELIXT~1.DLL|HelixToolkit.Core.Wpf.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\HelixToolkit.Core.Wpf.dll" SelfReg="false"/>
+    <ROW File="color_vision_all.sql" Component_="color_vision_all.sql" FileName="COLOR_~1.SQL|color_vision_all.sql" Attributes="0" SourcePath="D:\CVService\SQL\color_vision_all.sql" SelfReg="false"/>
+    <ROW File="msvcr100.dll" Component_="msvcr100.dll" FileName="msvcr100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\msvcr100.dll" SelfReg="false"/>
+    <ROW File="opencv_core4100.dll" Component_="opencv_core4100.dll" FileName="OPENCV~8.DLL|opencv_core4100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\packages\opencv\x64\opencv_core4100.dll" SelfReg="false"/>
+    <ROW File="opencv_highgui4100.dll" Component_="opencv_highgui4100.dll" FileName="OPENCV~9.DLL|opencv_highgui4100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\packages\opencv\x64\opencv_highgui4100.dll" SelfReg="false"/>
+    <ROW File="opencv_imgcodecs4100.dll" Component_="opencv_imgcodecs4100.dll" FileName="OPENC~10.DLL|opencv_imgcodecs4100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\packages\opencv\x64\opencv_imgcodecs4100.dll" SelfReg="false"/>
+    <ROW File="opencv_imgproc4100.dll" Component_="opencv_imgproc4100.dll" FileName="OPENC~11.DLL|opencv_imgproc4100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\packages\opencv\x64\opencv_imgproc4100.dll" SelfReg="false"/>
+    <ROW File="opencv_videoio4100.dll" Component_="opencv_videoio4100.dll" FileName="OPENC~12.DLL|opencv_videoio4100.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\packages\opencv\x64\opencv_videoio4100.dll" SelfReg="false"/>
+    <ROW File="opencv_cuda.dll" Component_="opencv_cuda.dll" FileName="OPENCV~3.DLL|opencv_cuda.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\x64\Release\opencv_cuda.dll" SelfReg="false"/>
+    <ROW File="cvCalibration.dll" Component_="cvCalibration.dll" FileName="CVCALI~1.DLL|cvCalibration.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\cvCalibration.dll" SelfReg="false"/>
+    <ROW File="cvTableList.dll" Component_="cvTableList.dll" FileName="CVTABL~1.DLL|cvTableList.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\cvTableList.dll" SelfReg="false"/>
+    <ROW File="toupcam.dll" Component_="toupcam.dll" FileName="toupcam.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\DLL\scgd_internal_dll\toupcam.dll" SelfReg="false"/>
+    <ROW File="license.md" Component_="license.md" FileName="license.md" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\docs\license.md" SelfReg="false"/>
+    <ROW File="SoftwareLicenseAgreement.md_1" Component_="license.md" FileName="SOFTWA~1.MD|Software License Agreement.md" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\docs\Software License Agreement.md" SelfReg="false"/>
+    <ROW File="Solution.md" Component_="license.md" FileName="Solution.md" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\docs\Solution.md" SelfReg="false"/>
+    <ROW File="rtf" Component_="license.md" FileName="软件许可协议.rtf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\docs\软件许可协议.rtf" SelfReg="false"/>
+    <ROW File="ProjectHeyuan.deps.json" Component_="ProjectHeyuan.deps.json" FileName="PROJEC~1.JSO|ProjectHeyuan.deps.json" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Projects\ProjectHeyuan\bin\x64\Release\net8.0-windows\ProjectHeyuan.deps.json" SelfReg="false"/>
+    <ROW File="ProjectHeyuan.dll" Component_="ProjectHeyuan.dll" FileName="PROJEC~1.DLL|ProjectHeyuan.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Projects\ProjectHeyuan\bin\x64\Release\net8.0-windows\ProjectHeyuan.dll" SelfReg="false"/>
+    <ROW File="ProjectHeyuan.exe" Component_="ProjectHeyuan.exe" FileName="PROJEC~1.EXE|ProjectHeyuan.exe" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Projects\ProjectHeyuan\bin\x64\Release\net8.0-windows\ProjectHeyuan.exe" SelfReg="false" DigSign="true"/>
+    <ROW File="opencv_helper.dll" Component_="opencv_helper.dll" FileName="OPENCV~4.DLL|opencv_helper.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\x64\Release\opencv_helper.dll" SelfReg="false"/>
+    <ROW File="algorithm.h" Component_="algorithm.h" FileName="ALGORI~1.H|algorithm.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\algorithm.h" SelfReg="false"/>
+    <ROW File="common.h" Component_="algorithm.h" FileName="common.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\common.h" SelfReg="false"/>
+    <ROW File="cuda_export.h" Component_="algorithm.h" FileName="CUDA_E~1.H|cuda_export.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\cuda_export.h" SelfReg="false"/>
+    <ROW File="custom_file.h" Component_="algorithm.h" FileName="CUSTOM~1.H|custom_file.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\custom_file.h" SelfReg="false"/>
+    <ROW File="custom_structs.h" Component_="algorithm.h" FileName="CUSTOM~2.H|custom_structs.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\custom_structs.h" SelfReg="false"/>
+    <ROW File="opencv_export.h" Component_="algorithm.h" FileName="OPENCV~1.H|opencv_export.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\opencv_export.h" SelfReg="false"/>
+    <ROW File="opencv_media_export.h" Component_="algorithm.h" FileName="OPENCV~2.H|opencv_media_export.h" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\include\opencv_media_export.h" SelfReg="false"/>
+    <ROW File="opencv_cuda.lib" Component_="opencv_cuda.lib" FileName="OPENCV~1.LIB|opencv_cuda.lib" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\x64\Release\opencv_cuda.lib" SelfReg="false"/>
+    <ROW File="opencv_helper.lib" Component_="opencv_cuda.lib" FileName="OPENCV~2.LIB|opencv_helper.lib" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\x64\Release\opencv_helper.lib" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_6" Component_="ColorVision.Themes.resources.dll_6" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\en\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_6" Component_="ColorVision.UI.resources.dll_6" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\en\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll" Component_="WindowsServicePlugin.resources.dll" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\en\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_7" Component_="ColorVision.Themes.resources.dll_7" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\fr\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_7" Component_="ColorVision.UI.resources.dll_7" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\fr\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll_1" Component_="WindowsServicePlugin.resources.dll_1" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\fr\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_8" Component_="ColorVision.Themes.resources.dll_8" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ja\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_8" Component_="ColorVision.UI.resources.dll_8" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ja\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll_2" Component_="WindowsServicePlugin.resources.dll_2" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ja\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_9" Component_="ColorVision.Themes.resources.dll_9" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ko\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_9" Component_="ColorVision.UI.resources.dll_9" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ko\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll_3" Component_="WindowsServicePlugin.resources.dll_3" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ko\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_10" Component_="ColorVision.Themes.resources.dll_10" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ru\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_10" Component_="ColorVision.UI.resources.dll_10" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ru\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll_4" Component_="WindowsServicePlugin.resources.dll_4" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\ru\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.dll" Component_="WindowsServicePlugin.dll" FileName="WINDOW~1.DLL|WindowsServicePlugin.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\WindowsServicePlugin.dll" SelfReg="false"/>
+    <ROW File="ColorVision.Themes.resources.dll_11" Component_="ColorVision.Themes.resources.dll_11" FileName="COLORV~1.DLL|ColorVision.Themes.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.Themes.resources.dll" SelfReg="false"/>
+    <ROW File="ColorVision.UI.resources.dll_11" Component_="ColorVision.UI.resources.dll_11" FileName="COLORV~2.DLL|ColorVision.UI.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\zh-Hant\ColorVision.UI.resources.dll" SelfReg="false"/>
+    <ROW File="WindowsServicePlugin.resources.dll_5" Component_="WindowsServicePlugin.resources.dll_5" FileName="WINDOW~1.DLL|WindowsServicePlugin.resources.dll" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Plugins\WindowsServicePlugin\bin\x64\Release\net8.0-windows\zh-Hant\WindowsServicePlugin.resources.dll" SelfReg="false"/>
+    <ROW File="CatalogEN.pdf" Component_="Catalogallproduct.pdf" FileName="CATAL~32.PDF|Catalog-宣传册EN.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-宣传册EN.pdf" SelfReg="false"/>
+    <ROW File="Catalog.pdf" Component_="Catalogallproduct.pdf" FileName="CATAL~34.PDF|Catalog宣传册.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog宣传册.pdf" SelfReg="false"/>
+    <ROW File="CatalogBV2000.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~1.PDF|Catalog-BV-2000.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-BV-2000.pdf" SelfReg="false"/>
+    <ROW File="CatalogBV2000_EN.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~2.PDF|Catalog-BV-2000_EN.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-BV-2000_EN.pdf" SelfReg="false"/>
+    <ROW File="CatalogBV2600.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~3.PDF|Catalog-BV-2600.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-BV-2600.pdf" SelfReg="false"/>
+    <ROW File="CatalogBV6100.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~4.PDF|Catalog-BV-6100.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-BV-6100.pdf" SelfReg="false"/>
+    <ROW File="CatalogCV2000.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~5.PDF|Catalog-CV-2000.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-CV-2000.pdf" SelfReg="false"/>
+    <ROW File="CatalogCV2000_EN.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~6.PDF|Catalog-CV-2000_EN.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-CV-2000_EN.pdf" SelfReg="false"/>
+    <ROW File="CatalogCV2600.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~7.PDF|Catalog-CV-2600.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-CV-2600.pdf" SelfReg="false"/>
+    <ROW File="CatalogCV6100.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~8.PDF|Catalog-CV-6100.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-CV-6100.pdf" SelfReg="false"/>
+    <ROW File="CatalogLV2000.pdf" Component_="Catalogallproduct.pdf" FileName="CATALO~9.PDF|Catalog-LV-2000.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-LV-2000.pdf" SelfReg="false"/>
+    <ROW File="CatalogLV2000_EN.pdf" Component_="Catalogallproduct.pdf" FileName="CATAL~10.PDF|Catalog-LV-2000_EN.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-LV-2000_EN.pdf" SelfReg="false"/>
+    <ROW File="CatalogLV2600.pdf" Component_="Catalogallproduct.pdf" FileName="CATAL~11.PDF|Catalog-LV-2600.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-LV-2600.pdf" SelfReg="false"/>
+    <ROW File="CatalogLV6100.pdf" Component_="Catalogallproduct.pdf" FileName="CATAL~12.PDF|Catalog-LV-6100.pdf" Attributes="0" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\Assets\Catalog\Catalog-LV-6100.pdf" SelfReg="false"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.BootstrOptComponent">
+    <ROW BootstrOptKey="GlobalOptions" DownloadFolder="[AppDataFolder][|Manufacturer]\[|ProductName]\prerequisites" Options="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.BootstrapperUISequenceComponent">
+    <ROW Action="AI_DetectSoftware" Sequence="151"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
+    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="0" PackageFolder="Setup Files" PackageFileName="[|ProductName]-[|ProductVersion]" Languages="zh;en;zh_TW" LangOpt="1" InstallationType="4" CabsLocation="1" PackageType="1" FilesInsideExe="true" ExeIconPath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\Assets\Image\ColorVision1.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" Options="6" UseLargeSchema="true" ExeName="[|ProductName]-[|ProductVersion]" MsiPackageType="x64" UACExecutionLevel="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.DictionaryComponent">
+    <ROW Path="&lt;AI_DICTS&gt;ui_zh.ail"/>
+    <ROW Path="&lt;AI_DICTS&gt;ui_en.ail"/>
+    <ROW Path="&lt;AI_DICTS&gt;ui_zh_TW.ail"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.DigCertStoreComponent">
+    <ROW TimeStampUrl="http://timestamp.digicert.com" SignerDescription="[|ProductName]" SignOptions="7" SignTool="0" UseSha256="1" Subject="CN=ColorVision LLC"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.DynamicPropertyComponent">
+    <ROW Property="ProductVersion" Type="2" SourcePath="ColorVision.exe"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.FragmentComponent">
+    <ROW Fragment="CommonUI.aip" Path="&lt;AI_FRAGS&gt;CommonUI.aip"/>
+    <ROW Fragment="InstallDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\InstallDlg.aip"/>
+    <ROW Fragment="LicenseAgreementDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\LicenseAgreementDlg.aip"/>
+    <ROW Fragment="MaintenanceTypeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\MaintenanceTypeDlg.aip"/>
+    <ROW Fragment="MaintenanceWelcomeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\MaintenanceWelcomeDlg.aip"/>
+    <ROW Fragment="PreparePrereqDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\PreparePrereqDlg.aip"/>
+    <ROW Fragment="PrerequisitesDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\PrerequisitesDlg.aip"/>
+    <ROW Fragment="ProgressPrereqDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\ProgressPrereqDlg.aip"/>
+    <ROW Fragment="SequenceDialogs.aip" Path="&lt;AI_THEMES&gt;classic\fragments\SequenceDialogs.aip"/>
+    <ROW Fragment="Sequences.aip" Path="&lt;AI_FRAGS&gt;Sequences.aip"/>
+    <ROW Fragment="StaticUIStrings.aip" Path="&lt;AI_FRAGS&gt;StaticUIStrings.aip"/>
+    <ROW Fragment="Themes.aip" Path="&lt;AI_FRAGS&gt;Themes.aip"/>
+    <ROW Fragment="UI.aip" Path="&lt;AI_THEMES&gt;classic\fragments\UI.aip"/>
+    <ROW Fragment="Validation.aip" Path="&lt;AI_FRAGS&gt;Validation.aip"/>
+    <ROW Fragment="VerifyRemoveDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\VerifyRemoveDlg.aip"/>
+    <ROW Fragment="VerifyRepairDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\VerifyRepairDlg.aip"/>
+    <ROW Fragment="WelcomeDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\WelcomeDlg.aip"/>
+    <ROW Fragment="WelcomePrereqDlg.aip" Path="&lt;AI_THEMES&gt;classic\fragments\WelcomePrereqDlg.aip"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlAttributeComponent">
+    <ROW XmlAttribute="BackgroundColor" XmlElement="VisualElements" Name="BackgroundColor" Flags="0" Order="0" Value="System default"/>
+    <ROW XmlAttribute="Executable" XmlElement="VisualElements" Name="Executable" Flags="0" Order="0" FileId="ColorVision.exe"/>
+    <ROW XmlAttribute="ForegroundText" XmlElement="VisualElements" Name="ForegroundText" Flags="0" Order="0" Value="light"/>
+    <ROW XmlAttribute="ShowNameOnSquare150x150Logo" XmlElement="VisualElements" Name="ShowNameOnSquare150x150Logo" Flags="0" Order="0" Value="on"/>
+    <ROW XmlAttribute="xmlnsxsi" XmlElement="Application" Name="xmlns:xsi" Flags="0" Order="0" Value="http://www.w3.org/2001/XMLSchema-instance"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlElementComponent">
+    <ROW XmlElement="Application" Name="Application" Order="0" Flags="0" Type="53"/>
+    <ROW XmlElement="VisualElements" ParentElement="Application" Name="VisualElements" Order="0" Flags="0" Type="0"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.GenericXmlFileComponent">
+    <ROW XmlFile="ColorVision.VisualElementsManifest." FileName="ColorVision.VisualElementsManifest.xml" RootElement="Application" Flags="89" Version="1.0" Encoding="UTF-8" IndentUnits="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiActionTextComponent">
+    <ROW Action="AI_DeleteLzma" Description="正在删除从档案中提取的文件" DescriptionLocId="ActionText.Description.AI_DeleteLzma" TemplateLocId="-"/>
+    <ROW Action="AI_DeleteRLzma" Description="正在删除从档案中提取的文件" DescriptionLocId="ActionText.Description.AI_DeleteLzma" TemplateLocId="-"/>
+    <ROW Action="AI_ExtractFiles" Description="正在从存档中提取文件" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
+    <ROW Action="AI_ExtractLzma" Description="正在从存档中提取文件" DescriptionLocId="ActionText.Description.AI_ExtractLzma" TemplateLocId="-"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
+    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_LM" Builds="DefaultBuild"/>
+    <ROW Property="AI_SETUPEXEPATH" Signature_="AI_EXE_PATH_CU" Builds="DefaultBuild"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
+    <ROW Name="Prereq.dll" SourcePath="&lt;AI_CUSTACTS&gt;Prereq.dll"/>
+    <ROW Name="SoftwareDetector.dll" SourcePath="&lt;AI_CUSTACTS&gt;SoftwareDetector.dll"/>
+    <ROW Name="aicustact.dll" SourcePath="&lt;AI_CUSTACTS&gt;aicustact.dll"/>
+    <ROW Name="banner.png_1" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Advanced\banner.png"/>
+    <ROW Name="dialog.png_1" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\Advanced\dialog.png"/>
+    <ROW Name="frame_bottom_left.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_left.bmp"/>
+    <ROW Name="frame_bottom_left_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_left_inactive.bmp"/>
+    <ROW Name="frame_bottom_mid.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_mid.bmp"/>
+    <ROW Name="frame_bottom_mid_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_mid_inactive.bmp"/>
+    <ROW Name="frame_bottom_right.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_right.bmp"/>
+    <ROW Name="frame_bottom_right_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_bottom_right_inactive.bmp"/>
+    <ROW Name="frame_caption.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_caption.bmp"/>
+    <ROW Name="frame_caption_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_caption_inactive.bmp"/>
+    <ROW Name="frame_left.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_left.bmp"/>
+    <ROW Name="frame_left_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_left_inactive.bmp"/>
+    <ROW Name="frame_right.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_right.bmp"/>
+    <ROW Name="frame_right_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_right_inactive.bmp"/>
+    <ROW Name="frame_top_left.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_left.bmp"/>
+    <ROW Name="frame_top_left_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_left_inactive.bmp"/>
+    <ROW Name="frame_top_mid.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_mid.bmp"/>
+    <ROW Name="frame_top_mid_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_mid_inactive.bmp"/>
+    <ROW Name="frame_top_right.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_right.bmp"/>
+    <ROW Name="frame_top_right_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;frame_top_right_inactive.bmp"/>
+    <ROW Name="lzmaextractor.dll" SourcePath="&lt;AI_CUSTACTS&gt;lzmaextractor.dll"/>
+    <ROW Name="sys_close_down.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_down.bmp"/>
+    <ROW Name="sys_close_hot.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_hot.bmp"/>
+    <ROW Name="sys_close_inactive.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_inactive.bmp"/>
+    <ROW Name="sys_close_normal.bmp" SourcePath="&lt;AI_FRAME_BTNS&gt;sys_close_normal.bmp"/>
+    <ROW Name="sys_min_down.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_down.bmp"/>
+    <ROW Name="sys_min_hot.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_hot.bmp"/>
+    <ROW Name="sys_min_inactive.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_inactive.bmp"/>
+    <ROW Name="sys_min_normal.bmp" SourcePath="&lt;AI_FRAME_COLOR&gt;sys_min_normal.bmp"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiConditionComponent">
+    <ROW Feature_="TileAssets_DefaultBuild" Level="4" Condition="VersionNT &lt; 603"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiControlComponent">
+    <ROW Dialog_="LicenseAgreementDlg" Control="AgreementText" Type="ScrollableText" X="20" Y="60" Width="330" Height="120" Attributes="7" Text="..\..\..\..\Desktop\scgd_general_wpf\docs\软件许可协议.rtf" Order="400" TextLocId="Control.Text.LicenseAgreementDlg#AgreementText" MsiKey="LicenseAgreementDlg#AgreementText"/>
+    <ROW Dialog_="NewDialog" Control="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Next]" Order="100" Options="1"/>
+    <ROW Dialog_="NewDialog" Control="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Cancel]" Order="200" Options="1"/>
+    <ROW Dialog_="NewDialog" Control="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Back]" Order="300" Options="1"/>
+    <ROW Dialog_="NewDialog" Control="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" Attributes="1048577" Text="[BannerBitmap]" Order="400"/>
+    <ROW Dialog_="NewDialog" Control="BannerLine" Type="Line" X="0" Y="44" Width="372" Height="0" Attributes="1" Order="500"/>
+    <ROW Dialog_="NewDialog" Control="BottomLine" Type="Line" X="5" Y="234" Width="368" Height="0" Attributes="1" Order="600"/>
+    <ROW Dialog_="NewDialog" Control="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Attributes="196611" Text="新建对话框描述..." Order="700"/>
+    <ROW Dialog_="NewDialog" Control="Logo" Type="Text" X="4" Y="228" Width="70" Height="12" Attributes="1" Text="Advanced Installer" Order="800"/>
+    <ROW Dialog_="NewDialog" Control="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Attributes="196611" Text="新建对话框" TextStyle="[DlgTitleFont]" Order="900"/>
+    <ROW Dialog_="NewDialog_1" Control="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Next]" Order="100" Options="1"/>
+    <ROW Dialog_="NewDialog_1" Control="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Cancel]" Order="200" Options="1"/>
+    <ROW Dialog_="NewDialog_1" Control="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Back]" Order="300" Options="1"/>
+    <ROW Dialog_="NewDialog_1" Control="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" Attributes="1048577" Text="[BannerBitmap]" Order="400"/>
+    <ROW Dialog_="NewDialog_1" Control="BannerLine" Type="Line" X="0" Y="44" Width="372" Height="0" Attributes="1" Order="500"/>
+    <ROW Dialog_="NewDialog_1" Control="BottomLine" Type="Line" X="5" Y="234" Width="368" Height="0" Attributes="1" Order="600"/>
+    <ROW Dialog_="NewDialog_1" Control="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Attributes="196611" Text="新建对话框描述..." Order="700"/>
+    <ROW Dialog_="NewDialog_1" Control="Logo" Type="Text" X="4" Y="228" Width="70" Height="12" Attributes="1" Text="Advanced Installer" Order="800"/>
+    <ROW Dialog_="NewDialog_1" Control="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Attributes="196611" Text="新建对话框" TextStyle="[DlgTitleFont]" Order="900"/>
+    <ROW Dialog_="NewSeqDialog" Control="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Next]" Order="100" Options="1"/>
+    <ROW Dialog_="NewSeqDialog" Control="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Attributes="3" Text="[ButtonText_Cancel]" Order="200" Options="1"/>
+    <ROW Dialog_="NewSeqDialog" Control="Bitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="234" Attributes="1048577" Text="[DialogBitmap]" Order="300"/>
+    <ROW Dialog_="NewSeqDialog" Control="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Attributes="1" Text="[ButtonText_Back]" Order="400" Options="1"/>
+    <ROW Dialog_="NewSeqDialog" Control="Title" Type="Text" X="135" Y="20" Width="220" Height="60" Attributes="196611" Text="新建对话框" TextStyle="VerdanaBold13" Order="500"/>
+    <ROW Dialog_="NewSeqDialog" Control="Description" Type="Text" X="135" Y="86" Width="220" Height="60" Attributes="196611" Text="新建对话框的说明..." Order="600"/>
+    <ROW Dialog_="NewSeqDialog" Control="BottomLine" Type="Line" X="0" Y="234" Width="372" Height="0" Attributes="1" Order="700"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiControlEventComponent">
+    <ROW Dialog_="WelcomeDlg" Control_="Next" Event="NewDialog" Argument="InstallDlg" Condition="AI_INSTALL" Ordering="1"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_INSTALL" Ordering="197"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="InstallDlg" Condition="AI_INSTALL" Ordering="201"/>
+    <ROW Dialog_="MaintenanceWelcomeDlg" Control_="Next" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT" Ordering="99"/>
+    <ROW Dialog_="CustomizeDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_MAINT" Ordering="101"/>
+    <ROW Dialog_="CustomizeDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT" Ordering="1"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_MAINT" Ordering="198"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="CustomizeDlg" Condition="AI_MAINT" Ordering="205"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="ChangeButton" Event="NewDialog" Argument="CustomizeDlg" Condition="AI_MAINT" Ordering="501"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceWelcomeDlg" Condition="AI_MAINT" Ordering="1"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="RemoveButton" Event="NewDialog" Argument="VerifyRemoveDlg" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="601"/>
+    <ROW Dialog_="VerifyRemoveDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="1"/>
+    <ROW Dialog_="MaintenanceTypeDlg" Control_="RepairButton" Event="NewDialog" Argument="VerifyRepairDlg" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="601"/>
+    <ROW Dialog_="VerifyRepairDlg" Control_="Back" Event="NewDialog" Argument="MaintenanceTypeDlg" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="1"/>
+    <ROW Dialog_="VerifyRepairDlg" Control_="Repair" Event="EndDialog" Argument="Return" Condition="AI_MAINT AND InstallMode=&quot;Repair&quot;" Ordering="399" Options="1"/>
+    <ROW Dialog_="VerifyRemoveDlg" Control_="Remove" Event="EndDialog" Argument="Return" Condition="AI_MAINT AND InstallMode=&quot;Remove&quot;" Ordering="299" Options="1"/>
+    <ROW Dialog_="PatchWelcomeDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_PATCH" Ordering="201"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_PATCH" Ordering="199"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="PatchWelcomeDlg" Condition="AI_PATCH" Ordering="206"/>
+    <ROW Dialog_="ResumeDlg" Control_="Install" Event="EndDialog" Argument="Return" Condition="AI_RESUME" Ordering="299"/>
+    <ROW Dialog_="WelcomePrereqDlg" Control_="Next" Event="NewDialog" Argument="PrerequisitesDlg" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
+    <ROW Dialog_="PrerequisitesDlg" Control_="Next" Event="EndDialog" Argument="Return" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
+    <ROW Dialog_="PrerequisitesDlg" Control_="Back" Event="NewDialog" Argument="WelcomePrereqDlg" Condition="AI_BOOTSTRAPPER" Ordering="1"/>
+    <ROW Dialog_="NewDialog" Control_="Cancel" Event="SpawnDialog" Argument="CancelDlg" Condition="1" Ordering="100"/>
+    <ROW Dialog_="NewSeqDialog" Control_="Cancel" Event="SpawnDialog" Argument="CancelDlg" Condition="1" Ordering="100"/>
+    <ROW Dialog_="NewDialog_1" Control_="Cancel" Event="SpawnDialog" Argument="CancelDlg" Condition="1" Ordering="100"/>
+    <ROW Dialog_="InstallDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_INSTALL" Ordering="201"/>
+    <ROW Dialog_="InstallDlg" Control_="Back" Event="NewDialog" Argument="WelcomeDlg" Condition="AI_INSTALL" Ordering="1"/>
+    <ROW Dialog_="InstallDlg" Control_="Hyperlink" Event="NewDialog" Argument="LicenseAgreementDlg" Condition="AI_INSTALL AND ReadLicense" Ordering="201"/>
+    <ROW Dialog_="LicenseAgreementDlg" Control_="Back" Event="NewDialog" Argument="InstallDlg" Condition="AI_INSTALL AND ReadLicense" Ordering="1"/>
+    <ROW Dialog_="LicenseAgreementDlg" Control_="Next" Event="NewDialog" Argument="VerifyReadyDlg" Condition="AI_INSTALL AND ReadLicense" Ordering="1"/>
+    <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="LicenseAgreementDlg" Condition="AI_INSTALL AND ReadLicense" Ordering="202"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCreateFolderComponent">
+    <ROW Directory_="APPDIR" Component_="APPDIR" ManualDelete="true"/>
+    <ROW Directory_="SHORTCUTDIR" Component_="SHORTCUTDIR" ManualDelete="false"/>
+    <ROW Directory_="Tests_Dir" Component_="Tests" ManualDelete="false"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiCustActComponent">
+    <ROW Action="AI_AppSearchEx" Type="1" Source="Prereq.dll" Target="DoAppSearchEx"/>
+    <ROW Action="AI_AuthorSinglePackage" Type="1" Source="aicustact.dll" Target="AI_AuthorSinglePackage" WithoutSeq="true"/>
+    <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Type="51" Source="AI_SETUPEXEPATH_ORIGINAL" Target="[AI_SETUPEXEPATH]"/>
+    <ROW Action="AI_DATA_SETTER" Type="51" Source="CustomActionData" Target="[AI_SETUPEXEPATH]"/>
+    <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
+    <ROW Action="AI_DeleteCadLzma" Type="51" Source="AI_DeleteLzma" Target="[AI_SETUPEXEPATH]"/>
+    <ROW Action="AI_DeleteLzma" Type="1025" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
+    <ROW Action="AI_DeleteRCadLzma" Type="51" Source="AI_DeleteRLzma" Target="[AI_SETUPEXEPATH]"/>
+    <ROW Action="AI_DeleteRLzma" Type="1281" Source="lzmaextractor.dll" Target="DeleteLZMAFiles"/>
+    <ROW Action="AI_DetectSoftware" Type="257" Source="SoftwareDetector.dll" Target="OnDetectSoftware"/>
+    <ROW Action="AI_DpiContentScale" Type="1" Source="aicustact.dll" Target="DpiContentScale"/>
+    <ROW Action="AI_EnableDebugLog" Type="321" Source="aicustact.dll" Target="EnableDebugLog"/>
+    <ROW Action="AI_ExtractCadLzma" Type="51" Source="AI_ExtractLzma" Target="[AI_SETUPEXEPATH]"/>
+    <ROW Action="AI_ExtractFiles" Type="1" Source="Prereq.dll" Target="ExtractSourceFiles" AdditionalSeq="AI_DATA_SETTER"/>
+    <ROW Action="AI_ExtractLzma" Type="1025" Source="lzmaextractor.dll" Target="ExtractLZMAFiles"/>
+    <ROW Action="AI_FindExeLzma" Type="1" Source="lzmaextractor.dll" Target="FindEXE"/>
+    <ROW Action="AI_InstallModeCheck" Type="1" Source="aicustact.dll" Target="UpdateInstallMode" WithoutSeq="true"/>
+    <ROW Action="AI_LaunchApp" Type="1" Source="aicustact.dll" Target="[#ColorVision.exe]"/>
+    <ROW Action="AI_PREPARE_UPGRADE" Type="65" Source="aicustact.dll" Target="PrepareUpgrade"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Type="51" Source="AI_SETUPEXEPATH" Target="[AI_SETUPEXEPATH_ORIGINAL]"/>
+    <ROW Action="AI_RESTORE_LOCATION" Type="65" Source="aicustact.dll" Target="RestoreLocation"/>
+    <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
+    <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
+    <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
+    <ROW Action="AI_ViewReadme" Type="1" Source="aicustact.dll" Target="[#CHANGELOG.md]"/>
+    <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFiles64Folder][Manufacturer]\[ProductName]"/>
+    <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
+    <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiDialogComponent">
+    <ROW Dialog="NewDialog" HCentering="50" VCentering="50" Width="370" Height="270" Attributes="3" Title="[ProductName] [Setup]" Control_Default="Next" Control_Cancel="Cancel"/>
+    <ROW Dialog="NewDialog_1" HCentering="50" VCentering="50" Width="370" Height="270" Attributes="3" Title="[ProductName] [Setup]" Control_Default="Next" Control_Cancel="Cancel"/>
+    <ROW Dialog="NewSeqDialog" HCentering="50" VCentering="50" Width="370" Height="270" Attributes="3" Title="[ProductName] [Setup]" Control_Default="Next" Control_Cancel="Cancel"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiFeatCompsComponent">
+    <ROW Feature_="MainFeature" Component_="APPDIR"/>
+    <ROW Feature_="MainFeature" Component_="ProductInformation"/>
+    <ROW Feature_="MainFeature" Component_="AsyncIO.dll"/>
+    <ROW Feature_="MainFeature" Component_="CameraAttribute.db"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Common.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.exe"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Net.dll"/>
+    <ROW Feature_="MainFeature" Component_="cvColorVision.dll"/>
+    <ROW Feature_="MainFeature" Component_="FlowEngineLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="Google.Protobuf.dll"/>
+    <ROW Feature_="MainFeature" Component_="Gu.Wpf.Geometry.dll"/>
+    <ROW Feature_="MainFeature" Component_="HandyControl.dll"/>
+    <ROW Feature_="MainFeature" Component_="HarfBuzzSharp.dll"/>
+    <ROW Feature_="MainFeature" Component_="ICSharpCode.SharpZipLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="K4os.Compression.LZ4.dll"/>
+    <ROW Feature_="MainFeature" Component_="K4os.Compression.LZ4.Streams.dll"/>
+    <ROW Feature_="MainFeature" Component_="K4os.Hash.xxHash.dll"/>
+    <ROW Feature_="MainFeature" Component_="LiveChartsCore.dll"/>
+    <ROW Feature_="MainFeature" Component_="LiveChartsCore.SkiaSharpView.dll"/>
+    <ROW Feature_="MainFeature" Component_="LiveChartsCore.SkiaSharpView.WPF.dll"/>
+    <ROW Feature_="MainFeature" Component_="log4net.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Bcl.AsyncInterfaces.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Extensions.ObjectPool.dll"/>
+    <ROW Feature_="MainFeature" Component_="MQTTMessageLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="MQTTnet.dll"/>
+    <ROW Feature_="MainFeature" Component_="MySql.Data.dll"/>
+    <ROW Feature_="MainFeature" Component_="MySqlConnector.dll"/>
+    <ROW Feature_="MainFeature" Component_="NaCl.dll"/>
+    <ROW Feature_="MainFeature" Component_="NetMQ.dll"/>
+    <ROW Feature_="MainFeature" Component_="Newtonsoft.Json.dll"/>
+    <ROW Feature_="MainFeature" Component_="NPOI.dll"/>
+    <ROW Feature_="MainFeature" Component_="NPOI.OOXML.dll"/>
+    <ROW Feature_="MainFeature" Component_="NPOI.OpenXml4Net.dll"/>
+    <ROW Feature_="MainFeature" Component_="NPOI.OpenXmlFormats.dll"/>
+    <ROW Feature_="MainFeature" Component_="OpenCvSharp.dll"/>
+    <ROW Feature_="MainFeature" Component_="OpenCvSharp.Extensions.dll"/>
+    <ROW Feature_="MainFeature" Component_="OpenCvSharp.WpfExtensions.dll"/>
+    <ROW Feature_="MainFeature" Component_="openh2642.3.1win64.dll"/>
+    <ROW Feature_="MainFeature" Component_="OpenH264Lib.dll"/>
+    <ROW Feature_="MainFeature" Component_="Panuon.WPF.dll"/>
+    <ROW Feature_="MainFeature" Component_="Panuon.WPF.UI.dll"/>
+    <ROW Feature_="MainFeature" Component_="ScottPlot.dll"/>
+    <ROW Feature_="MainFeature" Component_="ScottPlot.WPF.dll"/>
+    <ROW Feature_="MainFeature" Component_="SkiaSharp.dll"/>
+    <ROW Feature_="MainFeature" Component_="SkiaSharp.HarfBuzz.dll"/>
+    <ROW Feature_="MainFeature" Component_="SkiaSharp.Views.Desktop.Common.dll"/>
+    <ROW Feature_="MainFeature" Component_="SkiaSharp.Views.WPF.dll"/>
+    <ROW Feature_="MainFeature" Component_="ST.Library.UI.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.IO.Pipelines.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.IO.Ports.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.ServiceModel.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.ServiceModel.Primitives.dll"/>
+    <ROW Feature_="MainFeature" Component_="Wpf.Ui.dll"/>
+    <ROW Feature_="MainFeature" Component_="YamlDotNet.dll"/>
+    <ROW Feature_="MainFeature" Component_="ZstdSharp.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="comerr64.dll"/>
+    <ROW Feature_="MainFeature" Component_="gssapi64.dll"/>
+    <ROW Feature_="MainFeature" Component_="k5sprt64.dll"/>
+    <ROW Feature_="MainFeature" Component_="krb5_64.dll"/>
+    <ROW Feature_="MainFeature" Component_="krbcc64.dll"/>
+    <ROW Feature_="MainFeature" Component_="libHarfBuzzSharp.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="libSkiaSharp.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="OpenCvSharpExtern.dll"/>
+    <ROW Feature_="MainFeature" Component_="SHORTCUTDIR"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="AI_ExePath"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="QRCoder.dll"/>
+    <ROW Feature_="MainFeature" Component_="QRCoder.Xaml.dll"/>
+    <ROW Feature_="MainFeature" Component_="CVImageChannelLib.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.ServiceProcess.ServiceController.dll"/>
+    <ROW Feature_="MainFeature" Component_="BouncyCastle.Cryptography.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Xaml.Behaviors.dll"/>
+    <ROW Feature_="MainFeature" Component_="Microsoft.Extensions.Logging.Abstractions.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="System.Private.ServiceModel.resources.dll_6"/>
+    <ROW Feature_="MainFeature" Component_="ColorVisionSetup.exe"/>
+    <ROW Feature_="MainFeature" Component_="ColorVisionIcons64.dll"/>
+    <ROW Feature_="MainFeature" Component_="_"/>
+    <ROW Feature_="MainFeature" Component_="__1"/>
+    <ROW Feature_="MainFeature" Component_="__2"/>
+    <ROW Feature_="MainFeature" Component_="__4"/>
+    <ROW Feature_="MainFeature" Component_="__5"/>
+    <ROW Feature_="MainFeature" Component_="__7"/>
+    <ROW Feature_="MainFeature" Component_="__8"/>
+    <ROW Feature_="MainFeature" Component_="__9"/>
+    <ROW Feature_="MainFeature" Component_="__10"/>
+    <ROW Feature_="MainFeature" Component_="__11"/>
+    <ROW Feature_="MainFeature" Component_="__13"/>
+    <ROW Feature_="MainFeature" Component_="__12"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="CVCommCore.dll"/>
+    <ROW Feature_="MainFeature" Component_="System.IO.Ports.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="System.ServiceProcess.ServiceController.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="Quartz.dll"/>
+    <ROW Feature_="MainFeature" Component_="CalibrationCorrection.dll"/>
+    <ROW Feature_="MainFeature" Component_="EventVWR.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Engine.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_videoio_ffmpeg4100_64.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="CommLibrary.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="cvCamera.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="opencv_world401.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="pthreadVC2.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="qhyccd.dll"/>
+    <ROW Feature_="MainFeature" Component_="SCBase.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="SCGDCamLayer.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="SCGDDataProcess.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="SCGDMilCam.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="sqlite3.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Scheduler.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Solution.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.Themes.Aero.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.Themes.Metro.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.Themes.VS2010.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.Toolkit.dll"/>
+    <ROW Feature_="MainFeature" Component_="Xceed.Wpf.AvalonDock.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="HelixToolkit.Core.Wpf.dll"/>
+    <ROW Feature_="MainFeature" Component_="color_vision_all.sql"/>
+    <ROW Feature_="MainFeature" Component_="msvcr100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_core4100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_highgui4100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_imgcodecs4100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_imgproc4100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_videoio4100.dll"/>
+    <ROW Feature_="MainFeature" Component_="opencv_cuda.dll"/>
+    <ROW Feature_="MainFeature" Component_="cvCalibration.dll"/>
+    <ROW Feature_="MainFeature" Component_="cvTableList.dll"/>
+    <ROW Feature_="MainFeature" Component_="toupcam.dll"/>
+    <ROW Feature_="MainFeature" Component_="Tests"/>
+    <ROW Feature_="MainFeature" Component_="license.md"/>
+    <ROW Feature_="MainFeature" Component_="ProjectHeyuan.deps.json"/>
+    <ROW Feature_="MainFeature" Component_="ProjectHeyuan.dll"/>
+    <ROW Feature_="MainFeature" Component_="ProjectHeyuan.exe"/>
+    <ROW Feature_="MainFeature" Component_="opencv_helper.dll"/>
+    <ROW Feature_="MainFeature" Component_="algorithm.h"/>
+    <ROW Feature_="MainFeature" Component_="opencv_cuda.lib"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_6"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_6"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_7"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_7"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll_1"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_8"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_8"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll_2"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_9"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_9"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll_3"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_10"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_10"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll_4"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.dll"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.Themes.resources.dll_11"/>
+    <ROW Feature_="MainFeature" Component_="ColorVision.UI.resources.dll_11"/>
+    <ROW Feature_="MainFeature" Component_="WindowsServicePlugin.resources.dll_5"/>
+    <ROW Feature_="MainFeature" Component_="Catalogallproduct.pdf"/>
+    <ROW Feature_="TileAssets_DefaultBuild" Component_="ColorVision.VisualElementsManifest.xml"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
+    <ROW Name="ColorVision_1.exe" SourcePath="..\..\..\..\Desktop\scgd_general_wpf\ColorVision\Assets\Image\ColorVision1.ico" Index="0"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
+    <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="210"/>
+    <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="747"/>
+    <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1501"/>
+    <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1397"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="52"/>
+    <ROW Action="AI_EnableDebugLog" Sequence="51"/>
+    <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99" Builds="DefaultBuild"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="103" Builds="DefaultBuild"/>
+    <ROW Action="AI_DeleteCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="199" Builds="DefaultBuild"/>
+    <ROW Action="AI_DeleteRCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="198" Builds="DefaultBuild"/>
+    <ROW Action="AI_ExtractCadLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="197" Builds="DefaultBuild"/>
+    <ROW Action="AI_FindExeLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="196" Builds="DefaultBuild"/>
+    <ROW Action="AI_ExtractLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1549" Builds="DefaultBuild"/>
+    <ROW Action="AI_DeleteRLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="1548" Builds="DefaultBuild"/>
+    <ROW Action="AI_DeleteLzma" Condition="SETUPEXEDIR=&quot;&quot; AND Installed AND (REMOVE&lt;&gt;&quot;ALL&quot;) AND (AI_INSTALL_MODE&lt;&gt;&quot;Remove&quot;) AND (NOT PATCH)" Sequence="6597" Builds="DefaultBuild"/>
+    <ROW Action="AI_ExtractFiles" Sequence="1399" Builds="DefaultBuild"/>
+    <ROW Action="AI_DATA_SETTER" Sequence="1398"/>
+    <ROW Action="AI_AppSearchEx" Sequence="102"/>
+    <ROW Action="AI_DetectSoftware" Sequence="101"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
+    <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="747"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
+    <ROW Action="AI_DpiContentScale" Sequence="52"/>
+    <ROW Action="AI_EnableDebugLog" Sequence="51"/>
+    <ROW Action="AI_BACKUP_AI_SETUPEXEPATH" Sequence="99"/>
+    <ROW Action="AI_RESTORE_AI_SETUPEXEPATH" Condition="AI_SETUPEXEPATH_ORIGINAL" Sequence="103"/>
+    <ROW Action="AI_AppSearchEx" Sequence="102"/>
+    <ROW Action="AI_DetectSoftware" Sequence="101"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiLaunchConditionsComponent">
+    <ROW Condition="( Version9X OR VersionNT64 )" Description="[ProductName] 无法安装在 [WindowsTypeNTDisplay] ." DescriptionLocId="AI.LaunchCondition.NoNT" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="((VersionNT &lt;&gt; 501) AND (VersionNT &lt;&gt; 502))" Description="[ProductName] 无法安装在 [WindowsTypeNT5XDisplay] ." DescriptionLocId="AI.LaunchCondition.NoNT5X" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="(VersionNT &lt;&gt; 400)" Description="[ProductName] 无法安装在 [WindowsTypeNT40Display] ." DescriptionLocId="AI.LaunchCondition.NoNT40" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="(VersionNT &lt;&gt; 500)" Description="[ProductName] 无法安装在 [WindowsTypeNT50Display] ." DescriptionLocId="AI.LaunchCondition.NoNT50" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="AI_DETECTED_DOTNET_VERSION &gt;= AI_REQUIRED_DOTNET_VERSION" Description="[ProductName] 无法安装在 .NET Framework 版本低于 [AI_REQUIRED_DOTNET_DISPLAY] 的系统上。" DescriptionLocId="AI.LaunchCondition.DotNET" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="SETUPEXEDIR OR (REMOVE=&quot;ALL&quot;)" Description="此包只能从引导器运行。" DescriptionLocId="AI.LaunchCondition.RequireBootstrapper" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="VersionNT" Description="[ProductName] 无法安装在 [WindowsType9XDisplay] ." DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="DefaultBuild"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiRegLocatorComponent">
+    <ROW Signature_="AI_EXE_PATH_CU" Root="1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Type="2"/>
+    <ROW Signature_="AI_EXE_PATH_LM" Root="2" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Type="2"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
+    <ROW Registry="AI_ExePath" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="AI_ExePath" Value="[AI_SETUPEXEPATH]" Component_="AI_ExePath"/>
+    <ROW Registry="AdvancedInstaller" Root="-1" Key="Software\Caphyon\Advanced Installer" Name="\"/>
+    <ROW Registry="Caphyon" Root="-1" Key="Software\Caphyon" Name="\"/>
+    <ROW Registry="ColorVisiono.Launcher.cvraw" Root="0" Key="ColorVisiono.Launcher.cvraw" Name="\"/>
+    <ROW Registry="ColorVisiono.Launcher.cvraw_1" Root="0" Key="ColorVisiono.Launcher.cvcie" Name="\"/>
+    <ROW Registry="DefaultIcon" Root="0" Key="ColorVision.Launcher.cvsln\DefaultIcon" Name="\"/>
+    <ROW Registry="DefaultIcon_1" Root="0" Key="ColorVisiono.Launcher.cvraw\DefaultIcon" Name="\"/>
+    <ROW Registry="DefaultIcon_2" Root="0" Key="ColorVisiono.Launcher.cvcie\DefaultIcon" Name="\"/>
+    <ROW Registry="Grid.Launcher.gprj" Root="0" Key="ColorVision.Launcher.cvsln" Name="\"/>
+    <ROW Registry="LZMA" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA" Name="\"/>
+    <ROW Registry="Manufacturer" Root="-1" Key="Software\[Manufacturer]" Name="\"/>
+    <ROW Registry="Path" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Path" Value="[APPDIR]" Component_="ProductInformation"/>
+    <ROW Registry="ProductCode" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]" Name="\"/>
+    <ROW Registry="ProductName" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="\"/>
+    <ROW Registry="ProductVersion" Root="-1" Key="Software\Caphyon\Advanced Installer\LZMA\[ProductCode]\[ProductVersion]" Name="\"/>
+    <ROW Registry="Software" Root="-1" Key="Software" Name="\"/>
+    <ROW Registry="Version" Root="-1" Key="Software\[Manufacturer]\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
+    <ROW Registry="_" Root="0" Key=".cvsln" Name="\"/>
+    <ROW Registry="__1" Root="0" Key=".cvsln" Value="ColorVision.Launcher.cvsln" Component_="_"/>
+    <ROW Registry="__10" Root="0" Key=".cvcie" Value="ColorVisiono.Launcher.cvcie" Component_="__9"/>
+    <ROW Registry="__11" Root="0" Key="ColorVisiono.Launcher.cvcie\DefaultIcon" Value="[APPDIR]ColorVisionIcons64.dll ,2" Component_="__10"/>
+    <ROW Registry="__12" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\open\command" Value="[APPDIR]ColorVision.exe -i &quot;%1&quot;" Component_="__11"/>
+    <ROW Registry="__13" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\preview\command" Value="[APPDIR]ColorVision.exe -i &quot;%1&quot;" Component_="__12"/>
+    <ROW Registry="__14" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\preview\command" Value="[APPDIR]ColorVision.exe -i &quot;%1&quot;" Component_="__13"/>
+    <ROW Registry="__2" Root="0" Key="ColorVision.Launcher.cvsln\DefaultIcon" Value="[APPDIR]ColorVisionIcons64.dll ,0" Component_="__1"/>
+    <ROW Registry="__3" Root="0" Key="ColorVision.Launcher.cvsln\shell\open\command" Value="[APPDIR]ColorVision.exe -i &quot;%1&quot;" Component_="__2"/>
+    <ROW Registry="__5" Root="0" Key="ColorVision.Launcher.cvsln" Component_="__4"/>
+    <ROW Registry="__6" Root="0" Key=".cvraw" Value="ColorVisiono.Launcher.cvraw" Component_="__5"/>
+    <ROW Registry="__8" Root="0" Key="ColorVisiono.Launcher.cvraw\DefaultIcon" Value="[APPDIR]ColorVisionIcons64.dll ,1" Component_="__7"/>
+    <ROW Registry="__9" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\open\command" Value="[APPDIR]ColorVision.exe -i &quot;%1&quot;" Component_="__8"/>
+    <ROW Registry="command" Root="0" Key="ColorVision.Launcher.cvsln\shell\open\command" Name="\"/>
+    <ROW Registry="command_1" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\open\command" Name="\"/>
+    <ROW Registry="command_2" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\open\command" Name="\"/>
+    <ROW Registry="command_3" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\preview\command" Name="\"/>
+    <ROW Registry="command_4" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\preview\command" Name="\"/>
+    <ROW Registry="cv" Root="0" Key=".cvcie" Name="\"/>
+    <ROW Registry="cvraw" Root="0" Key=".cvraw" Name="\"/>
+    <ROW Registry="open" Root="0" Key="ColorVision.Launcher.cvsln\shell\open" Name="\"/>
+    <ROW Registry="open_1" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\open" Name="\"/>
+    <ROW Registry="open_2" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\open" Name="\"/>
+    <ROW Registry="preview" Root="0" Key="ColorVisiono.Launcher.cvraw\shell\preview" Name="\"/>
+    <ROW Registry="print" Root="0" Key="ColorVisiono.Launcher.cvcie\shell\preview" Name="\"/>
+    <ROW Registry="shell" Root="0" Key="ColorVision.Launcher.cvsln\shell" Name="\"/>
+    <ROW Registry="shell_1" Root="0" Key="ColorVisiono.Launcher.cvraw\shell" Name="\"/>
+    <ROW Registry="shell_2" Root="0" Key="ColorVisiono.Launcher.cvcie\shell" Name="\"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
+    <ROW Shortcut="ColorVision" Directory_="SHORTCUTDIR" Name="COLORV~1|ColorVision" Component_="ColorVision.exe" Target="[#ColorVision.exe]" Hotkey="0" Icon_="ColorVision_1.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="ColorVision_1" Directory_="DesktopFolder" Name="COLORV~1|ColorVision" Component_="ColorVision.exe" Target="[#ColorVision.exe]" Hotkey="0" Icon_="ColorVision_1.exe" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
+    <ATTRIBUTE name="UsedTheme" value="classic"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiUpgradeComponent">
+    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="0.0.1" VersionMax="[|ProductVersion]" Attributes="769" ActionProperty="OLDPRODUCTS"/>
+    <ROW UpgradeCode="[|UpgradeCode]" VersionMin="[|ProductVersion]" Attributes="2" ActionProperty="AI_NEWERPRODUCTFOUND"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.PreReqComponent">
+    <ROW PrereqKey="E25D6A62194038942640BDE651049C" DisplayName="ASP.NET Core  8.0.5 x64" VersionMin="8.0" SetupFileUrl="Prerequisites\.NET Core 8\windowsdesktop-runtime-8.0.6-win-x64.exe" Location="0" ExactSize="0" WinNTVersions="Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86/Windows 10 x86" WinNT64Versions="Windows Vista x64, Windows Server 2008 x64, Windows 7 RTM x64, Windows Server 2008 R2 x64, Windows 8 x64, Windows Server 2012 x64, Windows 10 version 1507 x64, Windows 10 version 1511 x64" Operator="1" NoUiComLine="/q /norestart" Options="xy" TargetName="ASP.NET Core 8.0\windowsdesktop-runtime-8.0.6-win-x64.exe"/>
+    <ATTRIBUTE name="PrereqsOrder" value="E25D6A62194038942640BDE651049C"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.PreReqSearchComponent">
+    <ROW SearchKey="E25D6A62194038942640BDE651049C6.0.2" Prereq="E25D6A62194038942640BDE651049C" SearchType="14" SearchString="C:\Program Files\dotnet\shared\Microsoft.WindowsDesktop.App\" VerMin="8.0.1" VerMax="8.0.100" Order="2" Property="PreReqSearch"/>
+    <ROW SearchKey="E25D6A62194038942640BDE651049CASP.N" Prereq="E25D6A62194038942640BDE651049C" SearchType="1" SearchString="HKLM\SOFTWARE\Microsoft\ASP.NET Core\Shared Framework\v8.0" VerMin="8.0.0" Order="1" Property="PreReqSearch_E25D6A62194038942640BD"/>
+  </COMPONENT>
+</DOCUMENT>
