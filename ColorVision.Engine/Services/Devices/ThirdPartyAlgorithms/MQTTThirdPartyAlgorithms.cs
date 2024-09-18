@@ -110,7 +110,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             return PublishAsyncClient(msg);
         }
 
-
         public void UploadCIEFile(string fileName)
         {
             MsgSend msg = new()

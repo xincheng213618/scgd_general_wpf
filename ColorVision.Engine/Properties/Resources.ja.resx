@@ -801,4 +801,7 @@
   <data name="ProductBrochure" xml:space="preserve">
     <value>製品パンフレット</value>
   </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>不明な状態</value>
+  </data>
 </root>

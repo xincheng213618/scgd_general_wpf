@@ -801,4 +801,7 @@
   <data name="ProductBrochure" xml:space="preserve">
     <value>Brochure produit</value>
   </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>Statut Inconnu</value>
+  </data>
 </root>

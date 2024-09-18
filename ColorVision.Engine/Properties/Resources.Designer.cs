@@ -2005,6 +2005,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 未知状态 的本地化字符串。
+        /// </summary>
+        public static string UnknownStatus {
+            get {
+                return ResourceManager.GetString("UnknownStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 退订 的本地化字符串。
         /// </summary>
         public static string Unsubscribe {

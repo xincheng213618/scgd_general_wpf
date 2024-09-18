@@ -51,13 +51,18 @@
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="算法未注册" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
                         <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
                         <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
                     </DockPanel>
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="CB_ThirdPartyAlgorithms"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />
+                    </DockPanel>
+
                     <StackPanel>
                         <TabControl>
                             <TabItem Header="像素定位" IsSelected="True">
@@ -72,104 +77,7 @@
                                     </DockPanel>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="重组像素">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RebuildPixelsImp_Click"/>
-                                        <ComboBox  x:Name="CTRebuildPixelsImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="rebuildPixelsImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="查找像素缺陷" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindPixelDefectsForRebuildPicImp_Click"/>
-                                        <ComboBox  x:Name="CTFindPixelDefectsForRebuildPicImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findPixelDefectsForRebuildPicImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="查找像素缺陷2" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindPixelDefectsForRebuildPicGradingImp_Click"/>
-                                        <ComboBox  x:Name="CTFindPixelDefectsForRebuildPicGradingImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findPixelDefectsForRebuildPicGradingImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="检测灰尘" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindParticlesForRebuildPicImp_Click"/>
-                                        <ComboBox  x:Name="CTFindParticlesForRebuildPicImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findParticlesForRebuildPicImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="修补灰尘" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FillParticlesImp_Click"/>
-                                        <ComboBox  x:Name="CTFillParticlesImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="fillParticlesImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="检测mura接口" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindMuraImp_Click"/>
-                                        <ComboBox  x:Name="CTFindMuraImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findMuraImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="检测线接口" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FindLineImp_Click"/>
-                                        <ComboBox  x:Name="CTFindLineImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="findLineImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
-                            <TabItem Header="图像组合" IsSelected="True">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="CombineSpacingDataImp_Click"/>
-                                        <ComboBox  x:Name="CTCombineSpacingDataImp"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="combineSpacingDataImp" Click="TemplateSetting_Click"  />
-                                        </Grid>
-                                    </DockPanel>
-                                </StackPanel>
-                            </TabItem>
                         </TabControl>
-
                         <DockPanel Margin="0,2">
                             <RadioButton Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />

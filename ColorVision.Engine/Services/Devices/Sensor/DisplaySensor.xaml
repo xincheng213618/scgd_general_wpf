@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Sensor"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSensor}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -44,7 +45,7 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5">
-                <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
+                <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="传感器未注册" Command="{Binding EditCommand}"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">

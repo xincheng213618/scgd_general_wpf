@@ -801,4 +801,7 @@
   <data name="ProductBrochure" xml:space="preserve">
     <value>제품 브로셔</value>
   </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>알 수 없는 상태</value>
+  </data>
 </root>

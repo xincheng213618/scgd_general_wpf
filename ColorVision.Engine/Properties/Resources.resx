@@ -781,4 +781,7 @@
   <data name="ProductBrochure" xml:space="preserve">
     <value>产品宣传手册</value>
   </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>未知状态</value>
+  </data>
 </root>
