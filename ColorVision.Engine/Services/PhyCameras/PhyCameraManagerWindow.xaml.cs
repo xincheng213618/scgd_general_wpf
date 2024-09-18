@@ -15,11 +15,8 @@ namespace ColorVision.Engine.Services.PhyCameras
     {
         public int Order => 9;
 
-        public string Title => Properties.Resources.AddPhysicalCamera;
-
-        public string Description => "对设备的物理相机进行配置";
-
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public string Header => Properties.Resources.AddPhysicalCamera;
+        public RelayCommand Command => new RelayCommand(a =>
         {
             new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
         });

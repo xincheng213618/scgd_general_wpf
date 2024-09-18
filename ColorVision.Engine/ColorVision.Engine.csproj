@@ -23,7 +23,7 @@
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="MySql.Data" Version="9.0.0" />
 		<PackageReference Include="MySqlConnector" Version="2.3.7" />
@@ -33,7 +33,7 @@
 		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
 		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
-		<PackageReference Include="YamlDotNet" Version="16.0.0" />
+		<PackageReference Include="YamlDotNet" Version="16.1.2" />
 	</ItemGroup>
 
 	<ItemGroup>

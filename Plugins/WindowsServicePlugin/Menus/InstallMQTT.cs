@@ -7,17 +7,20 @@ using System.Net.Http.Headers;
 using System.Net.Http;
 using System.Text;
 using System.Windows;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
 
 namespace WindowsServicePlugin
 {
-    public class InstallMQTT : MenuItemBase
+
+
+    public class InstallMQTT : MenuItemBase, IWizardStep
     {
         public override string OwnerGuid => "ServiceLog";
 
         public override string GuidId => "InstallMQTT";
 
         public override int Order => 99;
-
         public override string Header => "安装MQTT";
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";

@@ -45,7 +45,7 @@ namespace ColorVision.Wizards
 
             foreach (var step in IWizardSteps)
             {
-                Button button = new Button() { Content = step.Title, Command = step.RelayCommand };
+                Button button = new Button() { Content = step.Header, Command = step.Command };
                 WizardStackPanel.Children.Add(button);
             }
         }

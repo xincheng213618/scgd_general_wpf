@@ -16,11 +16,9 @@ namespace ColorVision.Engine.Services.RC
     {
         public int Order => 3;
 
-        public string Title => "RC配置";
+        public string Header => "RC配置";
 
-        public string Description => "RC配置";
-
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public RelayCommand Command => new RelayCommand(a =>
         {
             new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         });
