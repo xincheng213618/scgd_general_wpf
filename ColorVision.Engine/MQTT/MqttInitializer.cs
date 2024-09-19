@@ -1,8 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System;
-using System.Diagnostics;
-using System.Security.Principal;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;

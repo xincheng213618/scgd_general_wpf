@@ -5,18 +5,16 @@ using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MQTTWizardStep : IWizardStep
+    public class MQTTWizardStep : WizardStepBase
     {
-        public int Order => 2;
+        public override int Order => 999;
 
-        public string Header => "Mqtt配置";
+        public override string Header => "Mqtt配置";
 
-        public string Description => "Mqtt配置";
-
-        public RelayCommand? Command => new RelayCommand(a =>
+        public override void Execute()
         {
-            MQTTConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow()};
+            MQTTConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow() };
             mySqlConnect.ShowDialog();
-        });
+        }
     }
 }

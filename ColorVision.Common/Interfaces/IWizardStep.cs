@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.UI
 {
@@ -7,5 +9,17 @@ namespace ColorVision.UI
         public int Order { get; }
         public string Header { get; }
         public RelayCommand Command { get; }
+    }
+
+    public abstract class WizardStepBase : ViewModelBase, IWizardStep
+    {
+        public abstract string Header { get; }
+        public abstract int Order { get; }
+
+        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual void Execute()
+        {
+
+        }
     }
 }
