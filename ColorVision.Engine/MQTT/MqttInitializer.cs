@@ -43,6 +43,11 @@ namespace ColorVision.Engine.MQTT
                         if (ServiceController != null)
                         {
                             _messageUpdater.UpdateMessage($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
+                            Tool.ExecuteCommandAsAdmin("net start mosquitto");
+                            //if (!IsRunningAsAdmin())
+                            //{
+                            //    RestartAsAdmin();
+                            //}
 
                             if (!Common.Utilities.Tool.IsAdministrator())
                             {
