@@ -96,12 +96,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             };
             return PublishAsyncClient(msg);
         }
-        public void GetRawFiles()
+        public void GetRawFiles(string deviceCode, string deviceType)
         {
             MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw } }
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
             };
             PublishAsyncClient(msg);
         }

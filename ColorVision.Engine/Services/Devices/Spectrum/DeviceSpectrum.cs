@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public MQTTSpectrum DService { get; set; }
 
         public ViewSpectrum View { get; set; }
+        public RelayCommand ResourceManagerCommand { get; set; }
         public RelayCommand UploadSpectrumCommand { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
 

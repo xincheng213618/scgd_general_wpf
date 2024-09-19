@@ -95,11 +95,19 @@
 
                     <GroupBox Header="默认参数" Margin="0,5">
                         <StackPanel Margin="5">
+                            <DockPanel>
+                                <TextBlock Text="最大曝光时间" Width="120"/>
+                                <TextBox Text="{Binding ExpTimeMax}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="最小曝光时间" Width="120"/>
+                                <TextBox Text="{Binding ExpTimeMin}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
                             <StackPanel Margin="0,2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                 <DockPanel>
                                     <TextBlock  Text="默认曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
-                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Maximum="60000">
+                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Minimum="{Binding ExpTimeMin}"  Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -110,7 +118,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认R通道曝光(ms)" Width="120"/>
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeR}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -119,7 +127,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认G通道曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeG}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -128,7 +136,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认B通道曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeB}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -143,7 +151,7 @@
                         <StackPanel  Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="评价函数类型:" Width="120"/>
-                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"   Margin="0,0,10,0"/>
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="超时时间:" Width="120"/>

@@ -74,6 +74,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = (int)Math.Pow(Math.E, value); } }
 
+        public double ExpTimeMax { get => _ExpTimeMax; set { _ExpTimeMax = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMaxLog)); } }
+        private double _ExpTimeMax = 60000;
+
+        public double ExpTimeMaxLog { get => Math.Log(ExpTimeMax); set { ExpTimeMax = (int)Math.Pow(Math.E, value); } }
+
+        public double ExpTimeMin { get => _ExpTimeMin; set { _ExpTimeMin = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMinLog)); } }
+        private double _ExpTimeMin = 1;
+
+        public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = (int)Math.Pow(Math.E, value); } }
+
+
+
         public float ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
         private float _ExpTimeR = 10;
 

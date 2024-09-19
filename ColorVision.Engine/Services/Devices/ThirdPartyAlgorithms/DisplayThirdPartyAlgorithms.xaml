@@ -67,7 +67,7 @@
                     <StackPanel>
                         <DockPanel Margin="0,2">
                             <RadioButton Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
-                            <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                            <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Click="Open_File" />
                             <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
