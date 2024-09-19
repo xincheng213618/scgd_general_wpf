@@ -61,7 +61,7 @@
                     <TabControl BorderThickness="0" Background="Transparent">
                         <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                             <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                                <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
                                 <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                                 <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                             </StackPanel>
@@ -69,7 +69,7 @@
                         <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">
                             <StackPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0" Width="40"/>
+                                    <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="10,0,0,0" Width="40"/>
                                     <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" HorizontalAlignment="Left" SelectedValuePath="Code"  DisplayMemberPath="Name" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
@@ -98,6 +98,7 @@
                         <TabItem  Background="Transparent" Header="批次号" x:Name="AlgBatchSelect" >
                             <StackPanel>
                                 <DockPanel Margin="0,2">
+                                    <TextBlock Text="批次号" Margin="10,0,0,0" Width="40"/>
                                     <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
                                 </DockPanel>
                             </StackPanel>
@@ -108,7 +109,7 @@
 
 
                     <DockPanel Margin="0,2">
-                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Templates_Click"/>
+                        <Button  Content="{x:Static properties:Resources.Calculate}" Margin="0,-25,0,0" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Templates_Click"/>
                         <ComboBox  x:Name="CB_Templates"  Width="200" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>

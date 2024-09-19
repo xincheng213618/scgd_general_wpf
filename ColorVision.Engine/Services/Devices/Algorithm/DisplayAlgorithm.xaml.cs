@@ -458,8 +458,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
             else
             {
-                bool? isSN = AlgBatchSelect.IsChecked;
-                bool? isRaw = AlgRawSelect.IsChecked;
+                bool? isSN = AlgBatchSelect.IsSelected;
+                bool? isRaw = AlgRawSelect.IsSelected;
 
                 if (isSN == true)
                 {

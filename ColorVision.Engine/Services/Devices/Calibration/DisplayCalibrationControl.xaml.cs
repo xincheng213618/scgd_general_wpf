@@ -262,8 +262,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
         {
-            bool? isSN = AlgBatchSelect.IsChecked;
-            bool? isRaw = AlgRawSelect.IsChecked;
+            bool? isSN = AlgBatchSelect.IsSelected;
+            bool? isRaw = AlgRawSelect.IsSelected;
             if (isSN.HasValue && isSN.Value)
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
