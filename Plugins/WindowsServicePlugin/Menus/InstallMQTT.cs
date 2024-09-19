@@ -165,13 +165,14 @@ namespace WindowsServicePlugin
                 try
                 {
                     Process p = Process.Start(startInfo);
+                    p.WaitForExit();
+                    Tool.ExecuteCommandAsAdmin("net start mosquitto");
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.ToString());
                     File.Delete(downloadPath);
                 }
-                Tool.ExecuteCommandAsAdmin("net start mosquitto");
             });
 
 
