@@ -173,7 +173,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
 
-            ComboxGhostTemplate.ItemsSource = GhostParam.GhostParams;
+            ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
             ComboxGhostTemplate.SelectedIndex = 0;
 
             ComboxFOVTemplate.ItemsSource = FOVParam.FOVParams;
@@ -403,7 +403,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxGhostTemplate, "请先选择Ghost模板"))  return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = GhostParam.GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
+                var pm = TemplateGhostParam.Params[ComboxGhostTemplate.SelectedIndex].Value;
 
                 string type = string.Empty;
                 string code = string.Empty;

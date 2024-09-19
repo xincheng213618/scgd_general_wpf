@@ -103,6 +103,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\CHANGELOG.md" Link="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>
 
