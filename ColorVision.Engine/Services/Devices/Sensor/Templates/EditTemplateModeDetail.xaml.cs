@@ -1,10 +1,11 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Engine.Templates;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
 
     public class EditTemplateModeDetailConfig : IConfig
