@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static readonly object Locker = new();
         public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
         public RelayCommand CreateCommand { get; set; }
+
         public RelayCommand ImportCommand { get; set; }
 
         public PhyCameraManager()

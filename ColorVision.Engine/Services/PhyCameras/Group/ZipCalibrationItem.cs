@@ -37,6 +37,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     public class ZipCalibrationItem : ViewModelBase
     {
         public CalibrationType CalibrationType { get; set; }
+
         public string FileName { get; set; }
         public string Title { get; set; }
 
