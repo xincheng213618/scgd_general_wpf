@@ -9,6 +9,7 @@ using System.Text;
 using System.Windows;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 
 namespace WindowsServicePlugin
 {
@@ -170,6 +171,7 @@ namespace WindowsServicePlugin
                     MessageBox.Show(ex.ToString());
                     File.Delete(downloadPath);
                 }
+                Tool.ExecuteCommandAsAdmin("net start mosquitto");
             });
 
 
