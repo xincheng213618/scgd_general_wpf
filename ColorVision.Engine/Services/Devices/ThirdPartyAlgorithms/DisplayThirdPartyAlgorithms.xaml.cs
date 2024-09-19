@@ -199,8 +199,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                         break;
                 }
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            //UpdateUI(Device.DService.DeviceStatus);
+            //Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
         public event RoutedEventHandler Selected;
@@ -300,8 +300,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             fileExtType = FileExtType.Tif;
             imgFileName = string.Empty;
 
-            bool? isSN = AlgBatchSelect.IsChecked;
-            bool? isRaw = AlgRawSelect.IsChecked;
+            bool? isSN = AlgBatchSelect.IsSelected;
+            bool? isRaw = AlgRawSelect.IsSelected;
 
             if (isSN == true)
             {
