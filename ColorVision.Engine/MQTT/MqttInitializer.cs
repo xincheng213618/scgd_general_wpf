@@ -18,32 +18,6 @@ namespace ColorVision.Engine.MQTT
             _messageUpdater = messageUpdater;
         }
 
-        static void RestartAsAdmin()
-        {
-            ProcessStartInfo proc = new ProcessStartInfo
-            {
-                UseShellExecute = true,
-                WorkingDirectory = Environment.CurrentDirectory,
-                FileName = System.Windows.Forms.Application.ExecutablePath,
-                Verb = "runas" // 申请管理员权限
-            };
-            try
-            {
-                Process.Start(proc);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("无法以管理员权限重新启动程序：" + ex.Message);
-            }
-            Environment.Exit(0);
-        }
-        static bool IsRunningAsAdmin()
-        {
-            WindowsIdentity identity = WindowsIdentity.GetCurrent();
-            WindowsPrincipal principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
-        }
-
         public int Order => 2;
         public async Task InitializeAsync()
         {
@@ -70,9 +44,9 @@ namespace ColorVision.Engine.MQTT
                         {
                             _messageUpdater.UpdateMessage($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
 
-                            if (!IsRunningAsAdmin())
+                            if (!Common.Utilities.Tool.IsAdministrator())
                             {
-                                RestartAsAdmin();
+                                Tool.RestartAsAdmin();
                             }
 
                             ServiceController.Start();

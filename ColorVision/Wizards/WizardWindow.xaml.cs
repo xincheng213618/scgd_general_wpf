@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
@@ -54,9 +55,12 @@ namespace ColorVision.Wizards
         {
             WizardConfig.Instance.WizardCompletionKey = true;
             ConfigHandler.GetInstance().SaveConfigs();
+
             //这里使用件的启动路径，启动主程序
-            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
-            Application.Current.Shutdown();
+            //Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
+            //Application.Current.Shutdown();
+
+            Tool.RestartAsAdmin(); 
         }
     }
 }
