@@ -74,7 +74,7 @@
                             <UniformGrid  Columns="3" Margin="5">
                                 <DockPanel  Margin="5">
                                     <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ExpTime}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ExpTime}"  Width="80" HorizontalAlignment="Left"/>
                                 </DockPanel>
                                 <DockPanel Margin="5" >
                                     <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
