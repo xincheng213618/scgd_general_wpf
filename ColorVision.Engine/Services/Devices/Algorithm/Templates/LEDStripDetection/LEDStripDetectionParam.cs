@@ -12,7 +12,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
     public class LEDStripDetectionParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<LEDStripDetectionParam>> Params { get; set; } = new ObservableCollection<TemplateModel<LEDStripDetectionParam>>();
 
         public LEDStripDetectionParam()
         {

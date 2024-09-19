@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
-            ComboxMTFTemplate.ItemsSource = MTFParam.MTFParams;
+            ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
             ComboxMTFTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
@@ -194,7 +194,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
-            ComboxLEDStripDetectionTemplate.ItemsSource = LEDStripDetectionParam.Params;
+            ComboxLEDStripDetectionTemplate.ItemsSource = TemplateLEDStripDetectionParam.Params;
             ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
             ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
             ComboxPoiFilter.SelectedIndex = 0;
@@ -320,7 +320,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                var pm = MTFParam.MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
+                var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 var ss = Service.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
                 ServicesHelper.SendCommand(ss, "MTF");
@@ -746,7 +746,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var lEDStripDetectionParam  = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
+                var lEDStripDetectionParam  = TemplateLEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
 
                 string type = string.Empty;
                 string code = string.Empty;

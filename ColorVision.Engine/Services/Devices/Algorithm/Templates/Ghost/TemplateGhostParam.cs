@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
         public TemplateGhostParam()
         {
             Title = "GhostParam算法设置";
-            Code = ModMasterType.Ghost;
+            Code = "ghost";
             TemplateParams = Params;
         }
     }

@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
         public TemplateDistortionParam()
         {
             Title = "畸变算法设置";
-            Code = ModMasterType.Distortion;
+            Code = "distortion";
             TemplateParams = DistortionParam.DistortionParams;
         }
     }

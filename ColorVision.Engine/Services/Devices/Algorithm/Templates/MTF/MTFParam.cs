@@ -8,11 +8,8 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-
     public class MTFParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<MTFParam>> MTFParams { get; set; } = new ObservableCollection<TemplateModel<MTFParam>>();
-
         public MTFParam() { }
         public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {

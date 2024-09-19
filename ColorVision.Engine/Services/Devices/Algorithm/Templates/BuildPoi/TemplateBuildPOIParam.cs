@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         public TemplateBuildPOIParam()
         {
             Title = "BuildPOI算法设置";
-            Code = ModMasterType.BuildPOI;
+            Code = "BuildPOI";
             TemplateParams = BuildPOIParam.BuildPOIParams;
         }
     }

@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
-            CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
+            CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
             ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
 

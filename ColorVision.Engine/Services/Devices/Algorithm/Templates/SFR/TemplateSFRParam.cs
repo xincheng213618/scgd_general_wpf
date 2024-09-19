@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         public TemplateSFRParam()
         {
             Title = "SFRParam算法设置";
-            Code = ModMasterType.SFR;
+            Code = "SFR";
             TemplateParams = SFRParam.SFRParams;
         }
     }

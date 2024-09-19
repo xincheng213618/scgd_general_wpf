@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             this.SetIconResource("DISpectrumIcon", View.View);
 
             UploadSpectrumCommand = new RelayCommand(UploadResource);
-            SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id, ModMasterType.SpectrumResource);
+            SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
             EditCommand = new RelayCommand(a =>
             {

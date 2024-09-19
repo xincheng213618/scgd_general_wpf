@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public TemplateSMUParam()
         {
             Title = "SMUParam设置";
-            Code = ModMasterType.SMU;
+            Code = "SMU";
             TemplateParams = SMUParam.Params;
         }
     }

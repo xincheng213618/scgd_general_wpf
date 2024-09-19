@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
         public TemplateFocusPointsParam()
         {
             Title = "FocusPoints算法设置";
-            Code = ModMasterType.FocusPoints;
+            Code = "focusPoints";
             TemplateParams = FocusPointsParam.FocusPointsParams;
         }
     }

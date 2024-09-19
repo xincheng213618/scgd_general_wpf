@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
         public TemplateLedCheckParam()
         {
             Title = "LedCheckParam算法设置";
-            Code = ModMasterType.LedCheck;
+            Code = "ledcheck";
             TemplateParams = LedCheckParam.LedCheckParams;
         }
     }

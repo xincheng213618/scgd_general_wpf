@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             IsSideHide = true;
             Title = "关注点设置";
-            Code = ModMasterType.POI;
+            Code = "POI";
             TemplateParams = PoiParam.Params;
         }
         public override void PreviewMouseDoubleClick(int index)

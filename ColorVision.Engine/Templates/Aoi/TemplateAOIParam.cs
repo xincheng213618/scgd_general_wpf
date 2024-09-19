@@ -5,7 +5,7 @@
         public TemplateAOIParam()
         {
             Title = "AOIParam设置";
-            Code = ModMasterType.Aoi;
+            Code = "AOI";
             TemplateParams = AOIParam.Params;
         }
     }
