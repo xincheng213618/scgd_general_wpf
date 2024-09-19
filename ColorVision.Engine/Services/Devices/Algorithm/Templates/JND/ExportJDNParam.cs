@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
     {
         public override string OwnerGuid => "TemplateAlgorithm";
         public override string GuidId => "JDNParam";
-        public override string Header => Properties.Resources.MenuGhost;
+        public override string Header => "JDN";
         public override int Order => 3;
         public override ITemplate Template => new TemplateJNDParam();
     }

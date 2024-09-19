@@ -124,7 +124,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         return;
                     default:
                         break;
-
                 }
 
                 using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
