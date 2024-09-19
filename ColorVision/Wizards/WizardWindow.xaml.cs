@@ -28,6 +28,7 @@ namespace ColorVision.Wizards
             InitializeComponent();
             this.ApplyCaption();
         }
+
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             var IWizardSteps = new List<IWizardStep>();
@@ -41,8 +42,8 @@ namespace ColorVision.Wizards
                     }
                 }
             }
-            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
 
+            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
 
             foreach (var step in IWizardSteps)
             {
@@ -51,7 +52,7 @@ namespace ColorVision.Wizards
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
         {
             WizardConfig.Instance.WizardCompletionKey = true;
             ConfigHandler.GetInstance().SaveConfigs();
@@ -60,7 +61,7 @@ namespace ColorVision.Wizards
             //Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
             //Application.Current.Shutdown();
 
-            Tool.RestartAsAdmin(); 
+            Tool.RestartAsAdmin();
         }
     }
 }
