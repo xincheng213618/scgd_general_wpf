@@ -18,6 +18,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public double GetImgMode { get; set; }
     }
 
+
+
     public class CalibrationResource : BaseFileResource, ISortID, ISortFilePath
     {
         public static List<CalibrationResource> CalibrationResources { get; set; } = new List<CalibrationResource>();
