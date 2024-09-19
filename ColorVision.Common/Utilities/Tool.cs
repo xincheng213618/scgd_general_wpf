@@ -242,7 +242,7 @@ namespace ColorVision.Common.Utilities
             }
         }
 
-        public static void ExecuteCommandAsAdmin(string command)
+        public static bool ExecuteCommandAsAdmin(string command)
         {
             ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true;
@@ -256,11 +256,13 @@ namespace ColorVision.Common.Utilities
             try
             {
                 Process process = Process.Start(startInfo);
-                process?.WaitForExit(); 
+                process?.WaitForExit();
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(ex.Message);
+                return false;
             }
         }
 

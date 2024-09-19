@@ -32,57 +32,39 @@ namespace ColorVision.Engine.MQTT
 
             bool isConnect = await MQTTControl.GetInstance().Connect();
             _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
-            if (!isConnect)
+            if (isConnect) return;
 
-                if (MQTTControl.Config.Host == "127.0.0.1")
+            if (MQTTControl.Config.Host == "127.0.0.1")
+            {
+                _messageUpdater.UpdateMessage("检测到配置本机服务，正在尝试查找本机服务mosquitto");
+                try
                 {
-                    _messageUpdater.UpdateMessage("检测到配置本机服务，正在尝试查找本机服务mosquitto");
-                    try
+                    ServiceController ServiceController = new ServiceController("Mosquitto Broker");
+                    if (ServiceController != null)
                     {
-                        ServiceController ServiceController = new ServiceController("Mosquitto Broker");
-                        if (ServiceController != null)
+                        _messageUpdater.UpdateMessage($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
+                        if (Tool.ExecuteCommandAsAdmin("net start mosquitto"))
                         {
-                            _messageUpdater.UpdateMessage($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
-                            Tool.ExecuteCommandAsAdmin("net start mosquitto");
-                            //if (!IsRunningAsAdmin())
-                            //{
-                            //    RestartAsAdmin();
-                            //}
-
-                            if (!Common.Utilities.Tool.IsAdministrator())
-                            {
-                                Tool.RestartAsAdmin();
-                            }
-
-                            ServiceController.Start();
-                            await WaitForServiceToStartAsync(ServiceController);
-
                             isConnect = await MQTTControl.GetInstance().Connect();
                             if (isConnect) return;
                         }
-                    }
-                    catch 
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
-                            mQTTConnect.ShowDialog();
-                        });
+                        //if (!Common.Utilities.Tool.IsAdministrator())
+                        //    Tool.RestartAsAdmin();
+                        //ServiceController.Start();
+                        //await WaitForServiceToStartAsync(ServiceController);
                     }
                 }
-                else
+                catch
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
-                        mQTTConnect.ShowDialog();
-                    });
+
                 }
-
-
-
-
             }
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
+                mQTTConnect.ShowDialog();
+            });
+        }
         private async Task WaitForServiceToStartAsync(ServiceController serviceController)
         {
             int i = 0;
