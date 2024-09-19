@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             void ConfigChanged()
             {
-                CB_ThirdPartyAlgorithms.ItemsSource = ThirdPartyAlgorithmsDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", Device.DLLModel.Id } });
+                CB_ThirdPartyAlgorithms.ItemsSource = ThirdPartyAlgorithmsDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", Device.DLLModel?.Id } });
                 CB_ThirdPartyAlgorithms.SelectedIndex = 0;
             }
             Device.ConfigChanged += (s, e) => ConfigChanged();
