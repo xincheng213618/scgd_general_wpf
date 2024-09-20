@@ -13,8 +13,6 @@ using ColorVision.Common.Utilities;
 
 namespace WindowsServicePlugin
 {
-
-
     public class InstallMQTT : MenuItemBase, IWizardStep
     {
         public override string OwnerGuid => "ServiceLog";

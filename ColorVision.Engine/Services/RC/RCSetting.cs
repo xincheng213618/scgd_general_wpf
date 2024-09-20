@@ -24,15 +24,6 @@ namespace ColorVision.Engine.Services.RC
                     BindingName = nameof(RCSetting.IsUseRCService),
                     Source = RCSetting.Instance
                 },
-                new ConfigSettingMetadata
-                {
-                    Name = "打开CVWinSMS",
-                    Description = "在软件启动时，如果未打开RC,则打开RC",
-                    Type = ConfigSettingType.Bool,
-                    BindingName = nameof(RCManagerConfig.IsOpenCVWinSMS),
-                    Order =11,
-                    Source = RCManagerConfig.Instance
-                }
             };
         }
 

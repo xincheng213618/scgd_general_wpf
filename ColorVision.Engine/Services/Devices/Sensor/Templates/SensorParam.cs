@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
             IsUserControl = true;
         }
-        public override string Title { get => Code + "编辑"; set { } }
+        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public EditTemplateModeDetail EditTemplateModeDetail { get; set; } = new EditTemplateModeDetail();
 
@@ -48,3 +48,4 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         }
     }
 }
+  

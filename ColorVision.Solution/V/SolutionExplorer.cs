@@ -137,16 +137,12 @@ namespace ColorVision.Solution.V
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        GeneralChild(this, DirectoryInfo);
+                         GeneralChild(this, DirectoryInfo);
                     });
                 }
             });
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
             SaveCommand = new RelayCommand(a => SaveConfig());
-        }
-        private long GetDirectorySize(DirectoryInfo directoryInfo)
-        {
-            return directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
         }
 
         public void SaveConfig()

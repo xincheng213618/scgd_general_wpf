@@ -8,9 +8,9 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
 
-    public class EditTemplateModeDetailConfig : IConfig
+    public class EditTemplateSensorConfig : IConfig
     {
-        public static EditTemplateModeDetailConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateModeDetailConfig>();
+        public static EditTemplateSensorConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateSensorConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             InitializeComponent();
         }
 
-        public static EditTemplateModeDetailConfig Config => EditTemplateModeDetailConfig.Instance;
+        public static EditTemplateSensorConfig Config => EditTemplateSensorConfig.Instance;
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void UserControl_Initialized(object sender, System.EventArgs e)

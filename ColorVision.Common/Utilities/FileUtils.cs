@@ -1,4 +1,7 @@
-﻿namespace ColorVision.Common.Utilities
+﻿using System.IO;
+using System.Linq;
+
+namespace ColorVision.Common.Utilities
 {
     public static class FileUtils
     {
@@ -10,6 +13,11 @@
                 file.Delete();
             foreach (System.IO.DirectoryInfo subDirectory in directory.GetDirectories()) 
                 subDirectory.Delete(true);
+        }
+
+        public static long GetDirectorySize(this DirectoryInfo directoryInfo)
+        {
+            return directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
         }
     }
 }
