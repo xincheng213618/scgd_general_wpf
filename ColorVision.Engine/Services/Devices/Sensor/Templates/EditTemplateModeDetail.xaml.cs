@@ -1,6 +1,8 @@
 ﻿using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using MQTTMessageLib.Sensor;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,9 +19,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     /// <summary>
     /// EditDictionaryMode.xaml 的交互逻辑
     /// </summary>
-    public partial class EditTemplateModeDetail : UserControl
+    public partial class EditTemplateSensor : UserControl
     {
-        public EditTemplateModeDetail()
+        public EditTemplateSensor()
         {
             InitializeComponent();
         }
@@ -29,18 +31,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            if (ListView1.View is GridView gridView)
-            {
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-            }
+
         }
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 
 
@@ -50,17 +44,15 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             Param = param;
             this.DataContext = Param;
-            if (ListView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
         }
 
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is ModDetailModel modDetailModel)
+            if (sender is MenuItem menuItem && menuItem.Tag is SensorCommand sensorCommand)
             {
-                ModDetailDao.Instance.DeleteById(modDetailModel.Id, false);
-                Param.ModDetailModels.Remove(modDetailModel);  
+                ModDetailDao.Instance.DeleteById(sensorCommand.Model.Id, false);
+                Param.ModDetailModels.Remove(sensorCommand.Model);  
             }
         }
 
@@ -68,6 +60,15 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void ComboBoxType_Initialized(object sender, System.EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
+
+            }
         }
     }
 }

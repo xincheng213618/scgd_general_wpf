@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Engine.Templates;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -56,7 +57,11 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-
+            if (sender is MenuItem menuItem && menuItem.Tag is SysDictionaryModDetaiModel SysDictionaryModDetaiModel)
+            {
+                SysDictionaryModDetailDao.Instance.DeleteById(SysDictionaryModDetaiModel.Id, false);
+                Param.ModDetaiModels.Remove(SysDictionaryModDetaiModel);
+            }
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
