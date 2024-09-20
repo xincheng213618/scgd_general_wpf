@@ -5,7 +5,7 @@ namespace WindowsServicePlugin
 {
     public interface IUpdate
     {
-
+        public string DownloadTile { get; set; }
     }
 
     /// <summary>

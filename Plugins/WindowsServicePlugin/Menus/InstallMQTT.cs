@@ -22,6 +22,8 @@ namespace WindowsServicePlugin
         public override int Order => 99;
         public override string Header => "安装MQTT";
 
+        public string DownloadTile { get; set; } = "下载MQTT";
+
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";
         private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" +  @"ColorVision\\mosquitto-2.0.18-install-windows-x64.exe";
 

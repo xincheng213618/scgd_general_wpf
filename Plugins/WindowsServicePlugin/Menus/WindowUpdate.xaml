@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:WindowsServicePlugin"
         xmlns:properties ="clr-namespace:WindowsServicePlugin.Properties"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:InstallMQTT}"
-        Title="下载MQTT" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
+        d:DataContext="{d:DesignInstance local:IUpdate}"
+        Title="{Binding DownloadTile}" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
