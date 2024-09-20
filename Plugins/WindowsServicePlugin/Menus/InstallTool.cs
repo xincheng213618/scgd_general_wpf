@@ -10,21 +10,30 @@ using System.Windows;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using System.IO.Compression;
 
 namespace WindowsServicePlugin
 {
-    public class InstallMQTT : MenuItemBase, IWizardStep, IUpdate
+    public class CVWinSMSConfig : IConfig
+    {
+        public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
+
+        public string CVWinSMSPath { get => _CVWinSMSPath; set => _CVWinSMSPath = value; }
+        private string _CVWinSMSPath = string.Empty;
+    }
+
+    public class InstallTool : MenuItemBase, IWizardStep, IUpdate
     {
         public override string OwnerGuid => "ServiceLog";
 
-        public override string GuidId => "InstallMQTT";
+        public override string GuidId => "InstallTool";
 
         public override int Order => 99;
-        public override string Header => "安装MQTT";
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" +  @"ColorVision\\mosquitto-2.0.18-install-windows-x64.exe";
+        public override string Header => Properties.Resources.ManagementService;
 
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[2.0.0.24092].zip";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\InstallTool[2.0.0.24092].zip";
 
         public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
         private int _ProgressValue;
@@ -51,7 +60,6 @@ namespace WindowsServicePlugin
                 IsPassWorld = true;
             }
         }
-
 
         private async Task Download(string downloadUrl, string DownloadPath, CancellationToken cancellationToken)
         {
@@ -125,8 +133,7 @@ namespace WindowsServicePlugin
             }
         }
 
-
-        public override void Execute()
+        public void Download()
         {
             WindowUpdate windowUpdate = new WindowUpdate(this);
             if (!File.Exists(downloadPath))
@@ -150,11 +157,26 @@ namespace WindowsServicePlugin
                 {
                     windowUpdate.Close();
                 });
+
+                using (System.Windows.Forms.FolderBrowserDialog folderBrowser = new System.Windows.Forms.FolderBrowserDialog())
+                {
+                    folderBrowser.Description = "请选择解压缩目录";
+                    folderBrowser.ShowNewFolderButton = true;
+                    if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                    ZipFile.ExtractToDirectory(downloadPath, folderBrowser.SelectedPath, true);
+
+                    CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser.SelectedPath + "\\CVWinSMS.exe";
+
+                }
+
+
+
                 // 启动新的实例
                 ProcessStartInfo startInfo = new();
                 startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
                 startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                startInfo.FileName = downloadPath;
+                startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
                 startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
                                           // 如果需要静默安装，添加静默安装参数
                                           //quiet 没法自启，桌面图标也是空                       
@@ -164,7 +186,6 @@ namespace WindowsServicePlugin
                 {
                     Process p = Process.Start(startInfo);
                     p?.WaitForExit();
-                    Tool.ExecuteCommandAsAdmin("net start mosquitto");
                 }
                 catch (Exception ex)
                 {
@@ -172,8 +193,38 @@ namespace WindowsServicePlugin
                     File.Delete(downloadPath);
                 }
             });
+        }
+
+        public override void Execute()
+        {
+            if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+            {
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到管理工具，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    Download();
+                    return;
+                }
 
 
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?", "Open in CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes) return;
+                using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
+                {
+                    openFileDialog.Title = "Select CVWinSMS.exe";
+                    openFileDialog.Filter = "CVWinSMS.exe|CVWinSMS.exe";
+                    openFileDialog.RestoreDirectory = true;
+
+                    if (openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                    CVWinSMSConfig.Instance.CVWinSMSPath = openFileDialog.FileName;
+                }
+            }
+            try
+            {
+                Process.Start(CVWinSMSConfig.Instance.CVWinSMSPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+            }
         }
 
     }

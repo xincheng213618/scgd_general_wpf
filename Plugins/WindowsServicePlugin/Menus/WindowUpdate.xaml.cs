@@ -3,22 +3,27 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
+    public interface IUpdate
+    {
+
+    }
+
     /// <summary>
     /// WindowUpdate.xaml 的交互逻辑
     /// </summary>
     public partial class WindowUpdate : Window
     {
-        InstallMQTT InstallMQTT;
-        public WindowUpdate(InstallMQTT installMQTT)
+        IUpdate Update { get; set; }
+        public WindowUpdate(IUpdate update)
         {
-            InstallMQTT = installMQTT;
+            Update = update;
             InitializeComponent();
             this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = InstallMQTT;
+            DataContext = Update;
         }
     }
 }
