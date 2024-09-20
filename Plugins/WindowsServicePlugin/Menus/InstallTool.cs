@@ -166,6 +166,7 @@ namespace WindowsServicePlugin
                     {
                         folderBrowser.Description = "请选择解压缩目录";
                         folderBrowser.ShowNewFolderButton = true;
+                        folderBrowser.RootFolder = Environment.SpecialFolder.Desktop;
                         if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
                         ZipFile.ExtractToDirectory(downloadPath, folderBrowser.SelectedPath, true);
