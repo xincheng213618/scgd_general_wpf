@@ -163,7 +163,7 @@ namespace WindowsServicePlugin
                 try
                 {
                     Process p = Process.Start(startInfo);
-                    p.WaitForExit();
+                    p?.WaitForExit();
                     Tool.ExecuteCommandAsAdmin("net start mosquitto");
                 }
                 catch (Exception ex)

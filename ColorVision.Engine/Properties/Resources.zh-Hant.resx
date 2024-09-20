@@ -241,7 +241,7 @@
     <value>序號</value>
   </data>
   <data name="SerialNumber" xml:space="preserve">
-    <value>序號</value>
+    <value>序列号</value>
   </data>
   <data name="Sended" xml:space="preserve">
     <value>已經發送</value>

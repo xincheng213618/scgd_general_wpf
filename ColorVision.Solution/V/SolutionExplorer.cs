@@ -137,7 +137,7 @@ namespace ColorVision.Solution.V
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                         GeneralChild(this, DirectoryInfo);
+                         _= GeneralChild(this, DirectoryInfo);
                     });
                 }
             });

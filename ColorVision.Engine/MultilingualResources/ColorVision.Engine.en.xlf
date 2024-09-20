@@ -749,7 +749,7 @@
         </trans-unit>
         <trans-unit id="SerialNumber1" translate="yes" xml:space="preserve">
           <source>序号</source>
-          <target state="new">Serial Number</target>
+          <target state="new">No</target>
         </trans-unit>
         <trans-unit id="ServiceConfiguration" translate="yes" xml:space="preserve">
           <source>服务配置</source>
@@ -866,6 +866,10 @@
         <trans-unit id="UnderDevelopment" translate="yes" xml:space="preserve">
           <source>开发中</source>
           <target state="new">In development</target>
+        </trans-unit>
+        <trans-unit id="UnknownStatus" translate="yes" xml:space="preserve">
+          <source>未知状态</source>
+          <target state="new">Unknown Status</target>
         </trans-unit>
         <trans-unit id="Unsubscribe" translate="yes" xml:space="preserve">
           <source>退订</source>

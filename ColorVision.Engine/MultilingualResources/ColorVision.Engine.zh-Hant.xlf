@@ -745,7 +745,7 @@
         </trans-unit>
         <trans-unit id="SerialNumber" translate="yes" xml:space="preserve">
           <source>序列号</source>
-          <target state="new">序號</target>
+          <target state="new">序列号</target>
         </trans-unit>
         <trans-unit id="SerialNumber1" translate="yes" xml:space="preserve">
           <source>序号</source>
@@ -866,6 +866,10 @@
         <trans-unit id="UnderDevelopment" translate="yes" xml:space="preserve">
           <source>开发中</source>
           <target state="new">開發中</target>
+        </trans-unit>
+        <trans-unit id="UnknownStatus" translate="yes" xml:space="preserve">
+          <source>未知状态</source>
+          <target state="new">未知狀態</target>
         </trans-unit>
         <trans-unit id="Unsubscribe" translate="yes" xml:space="preserve">
           <source>退订</source>

@@ -48,7 +48,6 @@ namespace ColorVision.Engine.MQTT
                         //if (!Common.Utilities.Tool.IsAdministrator())
                         //    Tool.RestartAsAdmin();
                         //ServiceController.Start();
-                        //await WaitForServiceToStartAsync(ServiceController);
                     }
                 }
                 catch
@@ -61,18 +60,6 @@ namespace ColorVision.Engine.MQTT
                 MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
                 mQTTConnect.ShowDialog();
             });
-        }
-        private async Task WaitForServiceToStartAsync(ServiceController serviceController)
-        {
-            int i = 0;
-            while (serviceController.Status == ServiceControllerStatus.StartPending)
-            {
-                i++;
-                await Task.Delay(1000);
-                serviceController.Refresh();
-                if (i > 5)
-                    break;
-            }
         }
     }
     }
