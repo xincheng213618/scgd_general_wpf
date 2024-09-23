@@ -62,7 +62,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.ItemsSource = ViewResultSpectrums;
 
 
-
             wpfplot1.Plot.Title("相对光谱曲线");
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
@@ -105,6 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView2.View is GridView gridView)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
+
 
 
         private void Button_Click(object sender, RoutedEventArgs e)

@@ -35,6 +35,13 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+    public interface IAlgorithmView
+    {
+
+    }
+
+
+
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -186,6 +193,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
+
             if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ImageShow.Clear();

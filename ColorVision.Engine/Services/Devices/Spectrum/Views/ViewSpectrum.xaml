@@ -236,6 +236,7 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+            
             </Grid>
             <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>

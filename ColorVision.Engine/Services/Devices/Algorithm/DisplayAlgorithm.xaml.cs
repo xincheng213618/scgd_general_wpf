@@ -51,9 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public AlgorithmView View { get => Device.View; }
         public string DisPlayName => Device.Config.Name;
-
         private IPendingHandler? handler { get; set; }
-
         private NetFileUtil netFileUtil;
 
         public DisplayAlgorithm(DeviceAlgorithm device)
@@ -78,10 +76,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             handler?.Close();
         }
 
-
         private void Service_OnAlgorithmEvent(MsgReturn arg)
         {
-
             switch (arg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
@@ -162,9 +158,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
-
-
-
             ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
 
@@ -225,8 +218,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             Service.MsgReturnReceived += Service_OnAlgorithmEvent;
 
-
-
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
@@ -258,7 +249,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
 
         }
-       public event RoutedEventHandler Selected;
+        
+        public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
         private bool _IsSelected;
