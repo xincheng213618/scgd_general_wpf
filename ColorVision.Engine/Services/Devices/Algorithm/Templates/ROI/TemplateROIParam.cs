@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         public TemplateROIParam()
         {
-            Title = "JNDParam算法设置";
+            Title = "发光区检测2";
             Code = "OLED.GetROI";
             TemplateParams = Params;
         }

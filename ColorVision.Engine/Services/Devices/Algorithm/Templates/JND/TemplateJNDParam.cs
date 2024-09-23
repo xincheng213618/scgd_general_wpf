@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 
         public TemplateJNDParam()
         {
-            Title = "JNDParam算法设置";
+            Title = "JDN";
             Code = "OLED.JND.CalVas";
             TemplateParams = Params;
         }
