@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-    public class MTFAlgorithmImp : ViewModelBase, IAlgorithm
+    public class AlgorithmMTF : ViewModelBase, IAlgorithm
     {
         public string Name { get; set; } = "MTF";
 
@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
 
-        public MTFAlgorithmImp(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmMTF(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new MTFUserControl(this);
+            UserControl ??= new DisplayMTF(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }

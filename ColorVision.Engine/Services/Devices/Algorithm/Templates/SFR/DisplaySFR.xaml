@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:SFRAlgorithmImp}"
+             d:DataContext="{d:DesignInstance local:AlgorithmSFR}"
              d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>

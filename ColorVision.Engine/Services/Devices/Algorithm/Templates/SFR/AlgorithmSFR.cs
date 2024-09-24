@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
-    public class SFRAlgorithmImp : ViewModelBase, IAlgorithm
+    public class AlgorithmSFR : ViewModelBase, IAlgorithm
     {
         public string Name { get; set; } = "SFR";
 
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
         public RelayCommand OpenTeplateCommand { get; set; }
 
-        public SFRAlgorithmImp(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTeplateCommand = new RelayCommand(a => OpenTeplate());

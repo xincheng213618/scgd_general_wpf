@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
-    public class FOVAlgorithmImp : ViewModelBase, IAlgorithm
+    public class AlgorithmFOV : ViewModelBase, IAlgorithm
     {
         public string Name { get; set; } = "FOV";
 
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         public RelayCommand OpenTeplateCommand { get; set; }
 
-        public FOVAlgorithmImp(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmFOV(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTeplateCommand = new RelayCommand(a => OpenTeplate());
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new FOVUserControl(this);
+            UserControl ??= new DisplayFOV(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }

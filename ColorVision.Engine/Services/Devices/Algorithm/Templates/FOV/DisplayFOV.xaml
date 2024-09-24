@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV.FOVUserControl"
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV.DisplayFOV"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:FOVAlgorithmImp}"
+             d:DataContext="{d:DesignInstance local:AlgorithmFOV}"
              d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>

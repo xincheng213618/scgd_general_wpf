@@ -1,19 +1,20 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
+
     /// <summary>
-    /// SFRUserControl.xaml 的交互逻辑
+    /// DisplayMTF.xaml 的交互逻辑
     /// </summary>
-    public partial class SFRUserControl : UserControl
+    public partial class DisplayMTF : UserControl
     {
-        public SFRAlgorithmImp IAlgorithm { get; set; }
-        public SFRUserControl(SFRAlgorithmImp fOVAlgorithm)
+        public AlgorithmMTF IAlgorithm { get; set; }
+        public DisplayMTF(AlgorithmMTF fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
@@ -22,8 +23,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxSFRTemplate.ItemsSource = TemplateSFRParam.Params;
-            ComboxSFRTemplate.SelectedIndex = 0;
+            ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
+            ComboxMTFTemplate.SelectedIndex = 0;
+
+            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -34,24 +38,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
             UpdateCB_SourceImageFiles();
         }
 
-        private void RunTemplate_Click(object sender, RoutedEventArgs e)
-        {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxSFRTemplate, "请先选择FOV模板")) return;
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = TemplateSFRParam.Params[ComboxSFRTemplate.SelectedIndex].Value;
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = IAlgorithm.SendCommand(type, code, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "FOV");
-            }
-        }
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
@@ -110,6 +96,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         {
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+        }
+
+        private void RunTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
+            {
+                string type = string.Empty;
+                string code = string.Empty;
+                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+                {
+                    type = deviceService.ServiceTypes.ToString();
+                    code = deviceService.Code;
+                }
+                var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
+                var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
+                var ss = IAlgorithm.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                ServicesHelper.SendCommand(ss, "MTF");
+            }
         }
     }
 }

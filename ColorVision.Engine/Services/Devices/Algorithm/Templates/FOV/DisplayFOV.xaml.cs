@@ -10,10 +10,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
     /// <summary>
     /// SFRUserControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FOVUserControl : UserControl
+    public partial class DisplayFOV : UserControl
     {
-        public FOVAlgorithmImp IAlgorithm { get; set; }
-        public FOVUserControl(FOVAlgorithmImp fOVAlgorithm)
+        public AlgorithmFOV IAlgorithm { get; set; }
+        public DisplayFOV(AlgorithmFOV fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
