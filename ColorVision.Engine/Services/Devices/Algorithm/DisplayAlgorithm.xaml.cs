@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
@@ -90,10 +89,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
             CB_Algorithms.SelectedIndex = 0;
-
-
-            ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
-            ComboxGhostTemplate.SelectedIndex = 0;
 
             ComboxDistortionTemplate.ItemsSource = DistortionParam.DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
@@ -232,24 +227,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
-        private void Ghost_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxGhostTemplate, "请先选择Ghost模板"))  return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = TemplateGhostParam.Params[ComboxGhostTemplate.SelectedIndex].Value;
-
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = Service.Ghost(code, type, imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "Ghost");
-            }
-        }
 
         private void Distortion_Click(object sender, RoutedEventArgs e)
         {
@@ -365,9 +342,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "GhostParam":
-                        new WindowTemplate(new TemplateGhostParam(), ComboxGhostTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     case "DistortionParam":
                         new WindowTemplate(new TemplateDistortionParam(),ComboxDistortionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;

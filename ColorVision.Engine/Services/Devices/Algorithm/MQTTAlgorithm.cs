@@ -140,28 +140,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam filter, PoiReviseParam revise, PoiOutputParam output,string sn)
-        {
-            sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
-            if (filter.Id !=-1)
-                Params.Add("FilterTemplate", new CVTemplateParam() { ID = filter.Id, Name = filter.Name });
-            if (revise.Id != -1)
-                Params.Add("ReviseTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
-            if (output.Id != -1)
-                Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_POI_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-            return PublishAsyncClient(msg);
-        }
         public MsgRecord BuildPoi(POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
@@ -186,24 +165,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
 
-        public MsgRecord Ghost(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg);
-        }
 
         public MsgRecord Distortion(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
