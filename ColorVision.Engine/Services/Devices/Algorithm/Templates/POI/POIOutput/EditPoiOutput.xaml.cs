@@ -1,11 +1,7 @@
-﻿using ColorVision.Common.Utilities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 {
     /// <summary>
     /// EditLEDStripDetection.xaml 的交互逻辑

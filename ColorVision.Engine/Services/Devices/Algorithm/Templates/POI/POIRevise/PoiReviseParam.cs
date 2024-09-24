@@ -1,9 +1,9 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 {
 
     public class PoiReviseParam : ParamBase

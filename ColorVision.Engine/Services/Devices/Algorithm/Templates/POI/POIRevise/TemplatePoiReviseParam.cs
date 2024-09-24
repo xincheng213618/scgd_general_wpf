@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 {
     public class TemplatePoiReviseParam : ITemplate<PoiReviseParam>, IITemplateLoad
     {

@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
     public class TemplatePoiGenCalParam : ITemplate<PoiGenCaliParam>, IITemplateLoad
     {

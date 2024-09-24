@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 {
     public class ExportPoiReviseParam : ExportTemplateBase
     {

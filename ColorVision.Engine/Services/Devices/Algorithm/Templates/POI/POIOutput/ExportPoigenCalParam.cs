@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 {
     public class ExportPoiGenCalParam : ExportTemplateBase
     {

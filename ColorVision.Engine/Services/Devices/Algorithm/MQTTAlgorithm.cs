@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;

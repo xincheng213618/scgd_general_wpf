@@ -8,8 +8,8 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -468,13 +468,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "POIFilter":
-                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxPoiFilter.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxPoiFilter.SelectedIndex-1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "PoiRevise":
-                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxPoiCal.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxPoiCal.SelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "PoiOutput":
-                        new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         break;

@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali.EditPoiGenCali"
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali.EditPoiGenCali"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PoiGenCaliParam}"
              d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
     /// <summary>
     /// EditLEDStripDetection.xaml 的交互逻辑

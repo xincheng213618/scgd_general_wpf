@@ -164,10 +164,10 @@
     <Compile Update="Services\Devices\Algorithm\Templates\MTF\DisplayMTF.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POIGenCali\EditPoiGenCali.xaml.cs">
+    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POIOutput\EditPoiOutput.xaml.cs">
+    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\SFR\DisplaySFR.xaml.cs">

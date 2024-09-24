@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput.EditPoiOutput"
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput.EditPoiOutput"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PoiOutputParam}"
              d:DesignHeight="450" d:DesignWidth="500" Width="500" Initialized="UserControl_Initialized">

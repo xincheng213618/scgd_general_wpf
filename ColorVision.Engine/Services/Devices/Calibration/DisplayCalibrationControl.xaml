@@ -54,7 +54,7 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <TabControl BorderThickness="0" Background="Transparent">
-                        <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
+                        <TabItem x:Name="RadioLocal" Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                             <StackPanel Orientation="Horizontal" Margin="0,2">
                                 <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
                                 <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
@@ -100,7 +100,7 @@
                         </TabItem>
 
                     </TabControl>
-                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
                         <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Minimum="1" Maximum="6000">
@@ -109,7 +109,7 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
                         <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Minimum="1" Maximum="6000">
@@ -118,7 +118,7 @@
                             </hc:PreviewSlider.PreviewContent>
                         </hc:PreviewSlider>
                     </DockPanel>
-                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                         <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
                         <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Minimum="1" Maximum="6000">

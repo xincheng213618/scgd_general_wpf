@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Windows.Forms;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 {
     public class PoiOutputParam : ParamBase
     {

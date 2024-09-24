@@ -2,7 +2,7 @@
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POIGenCali
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
     public class PoiGenCaliParam : ParamBase
     {

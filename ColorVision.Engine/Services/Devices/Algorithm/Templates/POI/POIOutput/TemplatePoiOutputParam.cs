@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 {
     public class TemplatePoiOutputParam : ITemplate<PoiOutputParam>, IITemplateLoad
     {
