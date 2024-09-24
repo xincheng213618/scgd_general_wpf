@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POIRevise;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
@@ -103,12 +102,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             DataContext = Device;
             ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
-
-            ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
-            ComboxMTFTemplate.SelectedIndex = 0;
-
-            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
-            ComboxPoiTemplate2.SelectedIndex = 0;
 
             ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
@@ -234,12 +227,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 handler?.Close();
             };
-        }
-
-        private void MTF_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
-            if (!IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
         }
 
         private void SFR_Clik(object sender, RoutedEventArgs e)
@@ -482,9 +469,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "MTFParam":
-                        new WindowTemplate(new TemplateMTFParam(), ComboxMTFTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     case "SFRParam":
                         new WindowTemplate(new TemplateSFRParam(), ComboxSFRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
