@@ -1,12 +1,7 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Services.Msg;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -32,26 +27,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
             void UpdateCB_SourceImageFiles()
             {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
+                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
                 CB_SourceImageFiles.SelectedIndex = 0;
             }
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
             UpdateCB_SourceImageFiles();
         }
 
-        private bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
-        {
-            if (comboBox.SelectedIndex == -1)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
-                return false;
-            }
-            return true;
-        }
-
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

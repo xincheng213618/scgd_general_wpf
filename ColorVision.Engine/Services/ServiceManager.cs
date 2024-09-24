@@ -44,6 +44,8 @@ namespace ColorVision.Engine.Services
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
 
+        public IEnumerable<DeviceService> GetImageSourceServices() => DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
+
         public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 

@@ -12,13 +12,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         public double Degrees { get; set; }
 
-        public ViewResultFOV(FovPattern pattern, FovType type, double degrees)
-        {
-            Pattern = pattern;
-            Type = type;
-            Degrees = degrees;
-        }
-
         public ViewResultFOV(AlgResultFOVModel algResultFOVModel)
         {
             Pattern = (FovPattern)algResultFOVModel.Pattern;

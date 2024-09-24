@@ -36,6 +36,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
+
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
