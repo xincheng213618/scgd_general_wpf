@@ -8,12 +8,12 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
     /// <summary>
-    /// SFRUserControl.xaml 的交互逻辑
+    /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class SFRUserControl : UserControl
+    public partial class DisplaySFR : UserControl
     {
         public AlgorithmSFR IAlgorithm { get; set; }
-        public SFRUserControl(AlgorithmSFR fOVAlgorithm)
+        public DisplaySFR(AlgorithmSFR fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();

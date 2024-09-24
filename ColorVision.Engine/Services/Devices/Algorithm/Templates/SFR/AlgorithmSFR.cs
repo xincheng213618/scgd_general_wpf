@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new SFRUserControl(this);
+            UserControl ??= new DisplaySFR(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }

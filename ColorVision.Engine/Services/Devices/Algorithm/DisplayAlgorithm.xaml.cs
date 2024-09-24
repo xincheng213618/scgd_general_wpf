@@ -127,8 +127,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
             ComboxPoiFilter.SelectedIndex = 0;
 
+            ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
+            ComboxPoiOutput.SelectedIndex = 0;
+
             ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiCal.SelectedIndex = 0;
+
 
             ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxLedCheck2Template.SelectedIndex = 0;
@@ -140,8 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
-            ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
-            ComboxPoiOutput.SelectedIndex = 0;
+
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);

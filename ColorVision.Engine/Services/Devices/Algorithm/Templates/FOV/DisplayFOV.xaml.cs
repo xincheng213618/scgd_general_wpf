@@ -8,7 +8,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
     /// <summary>
-    /// SFRUserControl.xaml 的交互逻辑
+    /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayFOV : UserControl
     {
