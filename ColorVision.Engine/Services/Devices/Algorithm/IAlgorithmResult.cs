@@ -3,6 +3,10 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
+    public interface IViewResult
+    {
+
+    }
 
     public static class CollectionExtensions
     {
@@ -34,9 +38,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
     }
 
-    public interface IViewResult
-    {
 
-    }
 
 }
