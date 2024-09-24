@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
@@ -8,17 +7,11 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -43,11 +36,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public partial class DisplayAlgorithm : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithm));
-
         public DeviceAlgorithm Device { get; set; }
-
         public MQTTAlgorithm Service { get => Device.DService; }
-
         public AlgorithmView View { get => Device.View; }
         public string DisPlayName => Device.Config.Name;
         private IPendingHandler? handler { get; set; }
@@ -74,11 +64,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             handler?.Close();
         }
-
         
         public ObservableCollection<IAlgorithm> Algorithms { get; set; } = new ObservableCollection<IAlgorithm>();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            DataContext = Device;
+
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
@@ -98,8 +89,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
                 }
             };
+            CB_Algorithms.SelectedIndex = 0;
 
-            DataContext = Device;
 
             ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
             ComboxGhostTemplate.SelectedIndex = 0;
@@ -140,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             void UpdateCB_SourceImageFiles()
             {
-                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
+                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
                 CB_SourceImageFiles.SelectedIndex = 0;
             }
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();

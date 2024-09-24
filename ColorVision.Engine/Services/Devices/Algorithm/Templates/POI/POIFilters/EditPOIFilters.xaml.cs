@@ -1,10 +1,11 @@
-﻿using System;
+﻿using ColorVision.Engine.Templates.POI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Templates.POI.POIFilters
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
     /// <summary>
     /// EditLEDStripDetection.xaml 的交互逻辑

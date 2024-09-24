@@ -1,6 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.Engine.Templates;
+using System.Collections.Generic;
 
-namespace ColorVision.Engine.Templates.POI.POIFilters
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
     public class POIFilterParam : ParamBase
     {

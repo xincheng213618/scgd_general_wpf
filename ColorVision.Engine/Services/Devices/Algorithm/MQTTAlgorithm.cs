@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.POIFilters;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
 using ColorVision.Net;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;

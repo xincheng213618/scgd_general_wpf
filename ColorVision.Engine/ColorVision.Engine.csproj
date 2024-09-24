@@ -182,7 +182,7 @@
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
+    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

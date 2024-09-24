@@ -1,7 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Engine.Templates;
+using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.POI.POIFilters
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
     public class TemplatePOIFilterParam : ITemplate<POIFilterParam>, IITemplateLoad
     {

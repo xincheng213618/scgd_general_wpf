@@ -1,12 +1,10 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.POIFilters;
-using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
-using Panuon.WPF.UI;
 using System;
 using System.Windows;
 using System.Windows.Controls;
