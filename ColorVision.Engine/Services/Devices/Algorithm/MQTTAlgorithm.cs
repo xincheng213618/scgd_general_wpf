@@ -186,40 +186,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
 
-        public MsgRecord SetLicense(string md5, string FileData)
-        {
-            MsgSend msg = new()
-            {
-                EventName = "SaveLicense",
-                Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 } }
-            };
-            return PublishAsyncClient(msg);
-        }
-
-
-
-
-
-        public MsgRecord SFR(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_SFR_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg);
-        }
-
-
         public MsgRecord Ghost(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;

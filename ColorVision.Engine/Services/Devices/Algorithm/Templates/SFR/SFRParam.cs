@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
     public class SFRParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
         public SFRParam()
         {
 

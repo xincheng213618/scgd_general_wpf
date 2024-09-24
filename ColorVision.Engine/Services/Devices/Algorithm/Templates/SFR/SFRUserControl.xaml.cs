@@ -5,15 +5,15 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
     /// <summary>
     /// SFRUserControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FOVUserControl : UserControl
+    public partial class SFRUserControl : UserControl
     {
-        public FOVAlgorithmImp IAlgorithm { get; set; }
-        public FOVUserControl(FOVAlgorithmImp fOVAlgorithm)
+        public SFRAlgorithmImp IAlgorithm { get; set; }
+        public SFRUserControl(SFRAlgorithmImp fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
@@ -22,8 +22,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxFOVTemplate.ItemsSource = TemplateFOVParam.Params;
-            ComboxFOVTemplate.SelectedIndex = 0;
+            ComboxSFRTemplate.ItemsSource = TemplateSFRParam.Params;
+            ComboxSFRTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -36,11 +36,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxSFRTemplate, "请先选择FOV模板")) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = TemplateFOVParam.Params[ComboxFOVTemplate.SelectedIndex].Value;
+                var pm = TemplateSFRParam.Params[ComboxSFRTemplate.SelectedIndex].Value;
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.FOV(type, code, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(type, code, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FOV");
             }
         }

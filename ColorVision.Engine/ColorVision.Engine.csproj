@@ -170,6 +170,9 @@
     <Compile Update="Services\Devices\Algorithm\Templates\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\SFR\SFRUserControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

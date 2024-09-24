@@ -104,9 +104,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
-            ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
-            ComboxSFRTemplate.SelectedIndex = 0;
-
             ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
             ComboxGhostTemplate.SelectedIndex = 0;
 
@@ -228,25 +225,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 handler?.Close();
             };
-        }
-
-        private void SFR_Clik(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxSFRTemplate, "请先选择SFR模板")) return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-
-                var pm = SFRParam.SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
-                MsgRecord msg  =Service.SFR(code, type, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "SFR");
-            }
         }
 
         private void BuildPoi_Click(object sender, RoutedEventArgs e)
@@ -463,16 +441,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (sender is Control button)
             {
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                    return;
-                }
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "SFRParam":
-                        new WindowTemplate(new TemplateSFRParam(), ComboxSFRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     case "GhostParam":
                         new WindowTemplate(new TemplateGhostParam(), ComboxGhostTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
@@ -507,7 +477,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
-                        HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
