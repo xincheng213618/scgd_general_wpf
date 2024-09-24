@@ -8,7 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
     public class FOVParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; } = new ObservableCollection<TemplateModel<FOVParam>>();
 
         public FOVParam() { }
 

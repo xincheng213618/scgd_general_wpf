@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = fOVAlgorithm;
-            ComboxFOVTemplate.ItemsSource = FOVParam.FOVParams;
+            ComboxFOVTemplate.ItemsSource = TemplateFOVParam.Params;
             ComboxFOVTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = FOVParam.FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
+                var pm = TemplateFOVParam.Params[ComboxFOVTemplate.SelectedIndex].Value;
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
