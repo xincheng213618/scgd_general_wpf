@@ -1,14 +1,14 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Windows.Controls;
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates;
 using System.Windows;
-using ColorVision.Common.Utilities;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
@@ -36,7 +36,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl() => UserControl ?? new FOVUserControl(this);
+        public UserControl GetUserControl()
+        {
+            UserControl ??= new FOVUserControl(this);
+            return UserControl;
+        }
         public UserControl UserControl { get; set; }
 
 

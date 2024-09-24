@@ -4,7 +4,6 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
@@ -24,13 +23,10 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
-using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
@@ -244,20 +240,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (!IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
-                var ss = Service.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
-                ServicesHelper.SendCommand(ss, "MTF");
-            }
         }
 
         private void SFR_Clik(object sender, RoutedEventArgs e)

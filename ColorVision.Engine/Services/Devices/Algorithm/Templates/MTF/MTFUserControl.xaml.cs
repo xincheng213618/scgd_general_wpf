@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -10,25 +9,28 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
     /// <summary>
-    /// FOVUserControl.xaml 的交互逻辑
+    /// MTFUserControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FOVUserControl : UserControl
+    public partial class MTFUserControl : UserControl
     {
-        public FOVAlgorithmImp fOVAlgorithm { get; set; }
-        public FOVUserControl(FOVAlgorithmImp fOVAlgorithm)
+        public MTFAlgorithmImp IAlgorithm { get; set; }
+        public MTFUserControl(MTFAlgorithmImp fOVAlgorithm)
         {
-            this.fOVAlgorithm = fOVAlgorithm;
+            this.IAlgorithm = fOVAlgorithm;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = fOVAlgorithm;
-            ComboxFOVTemplate.ItemsSource = TemplateFOVParam.Params;
-            ComboxFOVTemplate.SelectedIndex = 0;
+            this.DataContext = IAlgorithm;
+            ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
+            ComboxMTFTemplate.SelectedIndex = 0;
+
+            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -49,24 +51,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
             return true;
         }
 
-        private void RunTemplate_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = TemplateFOVParam.Params[ComboxFOVTemplate.SelectedIndex].Value;
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = fOVAlgorithm.FOV(type, code, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "FOV");
-            }
-        }
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
@@ -118,13 +102,33 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            fOVAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
+            IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                fOVAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+                IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+        }
+
+        private void RunTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
+            if (!IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
+            {
+                string type = string.Empty;
+                string code = string.Empty;
+                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+                {
+                    type = deviceService.ServiceTypes.ToString();
+                    code = deviceService.Code;
+                }
+                var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
+                var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
+                var ss = IAlgorithm.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                ServicesHelper.SendCommand(ss, "MTF");
+            }
         }
     }
 }

@@ -185,24 +185,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FOV(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_FOV_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg);
-        }
 
         public MsgRecord SetLicense(string md5, string FileData)
         {
@@ -215,25 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
 
-        public MsgRecord MTF(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_MTF_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg);
-        }
 
 
         public MsgRecord SFR(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
