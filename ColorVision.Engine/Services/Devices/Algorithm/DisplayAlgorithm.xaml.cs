@@ -99,10 +99,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
 
-
             DataContext = Device;
-            ComboxPoiTemplate.ItemsSource = PoiParam.Params;
-            ComboxPoiTemplate.SelectedIndex = 0;
 
             ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
             ComboxGhostTemplate.SelectedIndex = 0;
@@ -124,15 +121,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             ComboxLEDStripDetectionTemplate.ItemsSource = TemplateLEDStripDetectionParam.Params;
             ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
-            ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
-            ComboxPoiFilter.SelectedIndex = 0;
-
-            ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
-            ComboxPoiOutput.SelectedIndex = 0;
-
-            ComboxPoiCal.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
-            ComboxPoiCal.SelectedIndex = 0;
-
 
             ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxLedCheck2Template.SelectedIndex = 0;
@@ -200,34 +188,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 return false;
             }
             return true;
-        }
-
-        private void PoiClick(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
-            if (!IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
-
-            if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
-            if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
-            if (ComboxPoiCal.SelectedValue is not PoiReviseParam pOICalParam) return;
-            if (ComboxPoiOutput.SelectedValue is not PoiOutputParam poiOutputParam) return;
-
-
-            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
-
-            string type = string.Empty;
-            string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-            {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
-            }
-            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, pOICalParam, poiOutputParam, sn);
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
         }
 
         private void BuildPoi_Click(object sender, RoutedEventArgs e)
@@ -325,50 +285,33 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             fileExtType = FileExtType.Tif;
             imgFileName = string.Empty;
 
-            if (POITabItem.IsSelected)
+            bool? isSN = AlgBatchSelect.IsSelected;
+            bool? isRaw = AlgRawSelect.IsSelected;
+
+            if (isSN == true)
             {
-                if (BatchSelect.IsChecked ==true)
+                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                 {
-                    sn = BatchCode.Text;
-                    return true;
+                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    return false;
                 }
-                else
-                {
-                    imgFileName = CB_CIEImageFiles.Text;
-                    fileExtType = FileExtType.CIE;
-                    return true;
-                }
+                sn = AlgBatchCode.Text;
+            }
+            else if (isRaw == true)
+            {
+                imgFileName = CB_RawImageFiles.Text;
+                fileExtType = FileExtType.Raw;
             }
             else
             {
-                bool? isSN = AlgBatchSelect.IsSelected;
-                bool? isRaw = AlgRawSelect.IsSelected;
-
-                if (isSN == true)
-                {
-                    if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
-                    {
-                        MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
-                        return false;
-                    }
-                    sn = AlgBatchCode.Text;
-                }
-                else if (isRaw == true)
-                {
-                    imgFileName = CB_RawImageFiles.Text;
-                    fileExtType = FileExtType.Raw;
-                }
-                else
-                {
-                    imgFileName = ImageFile.Text;
-                }
-                if (string.IsNullOrWhiteSpace(imgFileName))
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
-                    return false;
-                }
-                return true;
+                imgFileName = ImageFile.Text;
             }
+            if (string.IsNullOrWhiteSpace(imgFileName))
+            {
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                return false;
+            }
+            return true;
         }
 
         private void Open_File(object sender, RoutedEventArgs e)
@@ -410,21 +353,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     handler?.Close();
                 };
             }
-        }
-
-        private void Button_Click_Open(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(CB_CIEImageFiles.Text))
-            {
-                MessageBox1.Show("请先选中图片");
-                return;
-            }
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
-            doOpen(CB_CIEImageFiles.Text, FileExtType.CIE);
         }
 
         private void doOpen(string fileName, FileExtType extType)
@@ -469,15 +397,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         break;
                     case "LEDStripDetection":
                         new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    case "POIFilter":
-                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxPoiFilter.SelectedIndex-1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    case "PoiRevise":
-                        new WindowTemplate(new TemplatePoiReviseParam(), ComboxPoiCal.SelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    case "PoiOutput":
-                        new WindowTemplate(new TemplatePoiOutputParam(), ComboxPoiOutput.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         break;
