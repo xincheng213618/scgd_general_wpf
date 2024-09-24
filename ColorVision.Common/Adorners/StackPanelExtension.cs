@@ -110,6 +110,11 @@ namespace ColorVision.Adorners
                 {
                     FrameworkElement dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
 
+                    while (dropTargetItem != null && panel.Children.IndexOf(dropTargetItem) == -1)
+                    {
+                        dropTargetItem = VisualTreeHelper.GetParent(dropTargetItem) as FrameworkElement;
+                    }
+
                     if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex != null)
                     {
                         _draggedItem.Opacity = 1;

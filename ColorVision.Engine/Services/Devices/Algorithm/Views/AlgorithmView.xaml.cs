@@ -208,6 +208,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 switch (result.ResultType)
                 {
+                    case AlgorithmResultType.LightArea:
+                        break;
                     case AlgorithmResultType.POI_XYZ_File:
                     case AlgorithmResultType.POI_Y_File:
                         if (result.ViewResults == null)

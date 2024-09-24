@@ -24,6 +24,8 @@ using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
+using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -32,6 +34,7 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -76,78 +79,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             handler?.Close();
         }
 
-        private void Service_OnAlgorithmEvent(MsgReturn arg)
-        {
-            switch (arg.EventName)
-            {
-                case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
-                    switch (data.FileExtType)
-                    {
-                        case FileExtType.Raw:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CB_RawImageFiles.ItemsSource = data.Files;
-                                CB_RawImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Src:
-                            break;
-                        case FileExtType.CIE:
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                data.Files.Reverse();
-                                CB_CIEImageFiles.ItemsSource = data.Files;
-                                CB_CIEImageFiles.SelectedIndex = 0;
-                            });
-                            break;
-                        case FileExtType.Calibration:
-                            break;
-                        case FileExtType.Tif:
-                            break;
-                        default:
-                            break;
-                    }
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Upload:
-                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    if (pm_dl != null)
-                    {
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
-                    }
-                    break;
-                default:
-                    List<AlgResultMasterModel> resultMaster = null;
-                    if (arg.Data.MasterId > 0)
-                    {
-                        resultMaster = new List<AlgResultMasterModel>();
-                        int MasterId = arg.Data.MasterId;
-                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
-                        resultMaster.Add(model);
-                    }
-                    else
-                    {
-                        resultMaster = AlgResultMasterDao.Instance.GetAllByBatchCode(arg.SerialNumber);
-                    }
-                    foreach (AlgResultMasterModel result in resultMaster)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            Device.View.AlgResultMasterModelDataDraw(result);
-                        });
-                    }
-                    handler?.Close();
-                    break;
-            }
-        }
-
+        
+        public ObservableCollection<IAlgorithm> Algorithms { get; set; } = new ObservableCollection<IAlgorithm>();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type, Device) is IAlgorithm  algorithm)
+                    {
+                        Algorithms.Add(algorithm);
+                    }
+                }
+            }
+            CB_Algorithms.ItemsSource = Algorithms;
+            CB_Algorithms.SelectionChanged += (s, e) =>
+            {
+                if (CB_Algorithms.SelectedItem is IAlgorithm algorithm)
+                {
+                    CB_StackPanel.Children.Clear();
+                    CB_StackPanel.Children.Add(algorithm.GetUserControl());
+                }
+            };
+
+
             DataContext = Device;
             ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
@@ -163,9 +119,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             ComboxGhostTemplate.ItemsSource = TemplateGhostParam.Params;
             ComboxGhostTemplate.SelectedIndex = 0;
-
-            ComboxFOVTemplate.ItemsSource = FOVParam.FOVParams;
-            ComboxFOVTemplate.SelectedIndex = 0;
 
             ComboxDistortionTemplate.ItemsSource = DistortionParam.DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
@@ -213,11 +166,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 CB_SourceImageFiles.SelectedIndex = 0;
             }
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
-
             UpdateCB_SourceImageFiles();
-
-            Service.MsgReturnReceived += Service_OnAlgorithmEvent;
-
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
@@ -245,9 +194,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
             UpdateUI(Device.DService.DeviceStatus);
             Device.DService.DeviceStatusChanged += UpdateUI;
-
-
-
         }
         
         public event RoutedEventHandler Selected;
@@ -332,7 +278,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 ServicesHelper.SendCommand(msg, "SFR");
             }
         }
-
 
         private void BuildPoi_Click(object sender, RoutedEventArgs e)
         {
@@ -475,27 +420,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
-        private void FOV_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板"))  return;
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = FOVParam.FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = Service.FOV(type, code, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "FOV");
-            }
-        }
-
-
-
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -554,22 +478,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void doOpen(string fileName, FileExtType extType)
         {
-            string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (!System.IO.File.Exists(localName))
+            string type = string.Empty;
+            string code = string.Empty;
+            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
             {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                Service.Open(code, type, fileName, extType);
+                type = deviceService.ServiceTypes.ToString();
+                code = deviceService.Code;
             }
-            else
-            {
-                netFileUtil.OpenLocalFile(localName, extType);
-            }
+            Service.Open(code, type, fileName, extType);
         }
 
 
@@ -589,9 +505,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         break;
                     case "SFRParam":
                         new WindowTemplate(new TemplateSFRParam(), ComboxSFRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    case "FOVParam":
-                        new WindowTemplate(new TemplateFOVParam(), ComboxFOVTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "GhostParam":
                         new WindowTemplate(new TemplateGhostParam(), ComboxGhostTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

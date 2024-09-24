@@ -93,19 +93,6 @@
                                     </DockPanel>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="FOV">
-                                <GroupBox  Header="FOV" ToolTip="Field of view">
-                                    <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
-                                        <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="视场角的大小决定了光学仪器的视野范围"/>
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FOVParam" Click="MenuItem_Template"/>
-                                        </Grid>
-                                    </DockPanel>
-                                </GroupBox>
-                            </TabItem>
                             <TabItem Header="MTF">
                                 <StackPanel Margin="0,5">
                                     <DockPanel Margin="0,2">
@@ -334,13 +321,11 @@
                                                 </TextBlock.RenderTransform>
                                             </TextBlock>
                                         </Button>
-
                                     </StackPanel>
 
-                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Upload}" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
                                     <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
 
-                                    <ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  Width="130"/>
+                                    <ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding DService.CIEImageFiles}" Width="130"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="CIESrc" Width="70"/>
@@ -381,7 +366,7 @@
                                                 </TextBlock>
                                             </Button>
 
-                                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
+                                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" ItemsSource="{Binding DService.RawImageFiles}" Width="150" HorizontalAlignment="Left" />
                                         </DockPanel>
                                     </StackPanel>
 
@@ -396,7 +381,16 @@
                                 </TabItem>
                             </TabControl>
                         </StackPanel>
-
+                        <StackPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="算法" Margin="0,0,5,0" MinWidth="62"/>
+                                <ComboBox x:Name="CB_Algorithms"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Name" />
+                            </DockPanel>
+                            <StackPanel x:Name="CB_StackPanel">
+                                
+                            </StackPanel>
+                            
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
                 <DockPanel Margin="0,2" >

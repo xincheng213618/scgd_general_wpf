@@ -14,8 +14,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         public FOVParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
-        }
 
+        }
 
         [Category("FOV"), Description("计算FOV时中心区亮度的百分比多少认为是暗区")]
         public double Radio { get => GetValue(_Radio); set { SetProperty(ref _Radio, value); } }
