@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
+                EventName = MQTTAlgorithmEventEnum.Event_OLED_JND_CalVas_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

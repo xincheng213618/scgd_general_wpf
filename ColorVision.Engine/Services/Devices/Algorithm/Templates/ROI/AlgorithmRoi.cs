@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
+                EventName = MQTTAlgorithmEventEnum.Event_LightArea2_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
