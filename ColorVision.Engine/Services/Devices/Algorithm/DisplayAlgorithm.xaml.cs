@@ -2,18 +2,15 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -83,9 +80,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
             CB_Algorithms.SelectedIndex = 0;
 
-            ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
-            ComboxBuildPoiTemplate.SelectedIndex = 0;
-
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -141,60 +135,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
             return true;
         }
-
-        private void BuildPoi_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxBuildPoiTemplate, "请先选择BuildPoi模板")) return;
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = BuildPOIParam.BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
-                var Params = new Dictionary<string, object>();
-                POIPointTypes POILayoutReq;
-                if ((bool)CircleChecked.IsChecked)
-                {
-                    Params.Add("LayoutCenterX", centerX.Text);
-                    Params.Add("LayoutCenterY", centerY.Text);
-                    Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
-                    Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
-                    POILayoutReq = POIPointTypes.Circle;
-                }
-                else if ((bool)RectChecked.IsChecked)
-                {
-                    Params.Add("LayoutCenterX", rect_centerX.Text);
-                    Params.Add("LayoutCenterY", rect_centerY.Text);
-                    Params.Add("LayoutWidth", width.Text);
-                    Params.Add("LayoutHeight", height.Text);
-                    POILayoutReq = POIPointTypes.Rect;
-                }
-                else//四边形
-                {
-                    Params.Add("LayoutPolygonX1", Mask_X1.Text);
-                    Params.Add("LayoutPolygonY1", Mask_Y1.Text);
-                    Params.Add("LayoutPolygonX2", Mask_X2.Text);
-                    Params.Add("LayoutPolygonY2", Mask_Y2.Text);
-                    Params.Add("LayoutPolygonX3", Mask_X3.Text);
-                    Params.Add("LayoutPolygonY3", Mask_Y3.Text);
-                    Params.Add("LayoutPolygonX4", Mask_X4.Text);
-                    Params.Add("LayoutPolygonY4", Mask_Y4.Text);
-                    POILayoutReq = POIPointTypes.Mask;
-                }
-
-
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = Service.BuildPoi(POILayoutReq, Params, code, type, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "BuildPoi");
-            }
-        }
-
-
-
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
             sn = string.Empty;
@@ -281,22 +221,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 code = deviceService.Code;
             }
             Service.Open(code, type, fileName, extType);
-        }
-
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-            if (sender is Control button)
-            {
-                switch (button.Tag?.ToString() ?? string.Empty)
-                {
-                    case "BuildPOIParmam":
-                        new WindowTemplate(new TemplateBuildPOIParam(),ComboxBuildPoiTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    default:
-                        break;
-                }
-            }
         }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

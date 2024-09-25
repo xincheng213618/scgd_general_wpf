@@ -8,7 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 {
     public class BuildPOIParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<BuildPOIParam>> BuildPOIParams { get; set; } = new ObservableCollection<TemplateModel<BuildPOIParam>>();
 
         public BuildPOIParam() { }
 
