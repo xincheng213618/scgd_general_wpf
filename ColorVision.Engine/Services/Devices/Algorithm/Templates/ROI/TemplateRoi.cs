@@ -3,11 +3,11 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
-    public class TemplateROIParam : ITemplate<ROIParam>, IITemplateLoad
+    public class TemplateRoi : ITemplate<ROIParam>, IITemplateLoad
     {    
         public static ObservableCollection<TemplateModel<ROIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<ROIParam>>();
 
-        public TemplateROIParam()
+        public TemplateRoi()
         {
             Title = "发光区检测2";
             Code = "OLED.GetROI";

@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
@@ -32,6 +32,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
