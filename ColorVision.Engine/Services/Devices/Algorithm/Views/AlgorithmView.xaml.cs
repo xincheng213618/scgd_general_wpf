@@ -815,7 +815,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 // Handle POI_Y result saving logic here
                                 break;
                             case AlgorithmResultType.FOV:
-                                // Handle FOV result saving logic here
+                                // Handle SendCommand result saving logic here
                                 break;
                             case AlgorithmResultType.SFR:
                                 // Handle SFR result saving logic here
