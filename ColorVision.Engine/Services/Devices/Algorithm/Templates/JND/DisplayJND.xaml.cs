@@ -10,15 +10,15 @@ using System.Windows;
 using System.Windows.Controls;
 using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayRoi : UserControl
+    public partial class DisplayJND : UserControl
     {
-        public AlgorithmRoi IAlgorithm { get; set; }
-        public DisplayRoi(AlgorithmRoi iAlgorithm)
+        public AlgorithmJND IAlgorithm { get; set; }
+        public DisplayJND(AlgorithmJND iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateRoi.Params;
+            ComboxTemplate.ItemsSource = TemplateJNDParam.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -41,9 +41,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测2模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择JND模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not ROIParam param) return;
+            if (ComboxTemplate.SelectedValue is not JNDParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
