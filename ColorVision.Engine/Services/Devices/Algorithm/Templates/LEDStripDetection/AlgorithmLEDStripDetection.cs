@@ -44,18 +44,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord SendCommand(LEDStripDetectionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_FOV_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_LED_StripDetection,
                 SerialNumber = sn,
                 Params = Params
             };

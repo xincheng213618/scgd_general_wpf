@@ -105,9 +105,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
-            ComboxLEDStripDetectionTemplate.ItemsSource = TemplateLEDStripDetectionParam.Params;
-            ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
-
             ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxLedCheck2Template.SelectedIndex = 0;
 
@@ -360,9 +357,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     case "BuildPOIParmam":
                         new WindowTemplate(new TemplateBuildPOIParam(),ComboxBuildPoiTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
-                    case "LEDStripDetection":
-                        new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     default:
                         break;
                 }
@@ -462,25 +456,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 handler?.Close();
             };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
-        }
-
-        private void LEDStripDetection_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var lEDStripDetectionParam  = TemplateLEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
-
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, lEDStripDetectionParam.Id, ComboxLedCheckTemplate.Text, sn);
-                ServicesHelper.SendCommand(ss, "正在计算灯带检测");
-            }
         }
 
     }
