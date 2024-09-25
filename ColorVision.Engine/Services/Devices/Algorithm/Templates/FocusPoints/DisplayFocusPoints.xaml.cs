@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateFocusPointsParam.Params;
+            ComboxTemplate.ItemsSource = TemplateFocusPoints.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()

@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
         public override string GuidId => "JDNParam";
         public override string Header => "JDN";
         public override int Order => 3;
-        public override ITemplate Template => new TemplateJNDParam();
+        public override ITemplate Template => new TemplateJND();
     }
 }

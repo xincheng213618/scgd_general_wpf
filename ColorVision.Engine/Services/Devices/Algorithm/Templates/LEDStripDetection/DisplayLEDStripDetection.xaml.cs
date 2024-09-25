@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateLEDStripDetectionParam.Params;
+            ComboxTemplate.ItemsSource = TemplateLEDStripDetection.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()

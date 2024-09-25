@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateJNDParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateJND(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()

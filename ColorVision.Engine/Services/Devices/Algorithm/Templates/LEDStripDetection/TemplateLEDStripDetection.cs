@@ -4,11 +4,11 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
 {
-    public class TemplateLEDStripDetectionParam : ITemplate<LEDStripDetectionParam>, IITemplateLoad
+    public class TemplateLEDStripDetection : ITemplate<LEDStripDetectionParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<LEDStripDetectionParam>> Params { get; set; } = new ObservableCollection<TemplateModel<LEDStripDetectionParam>>();
 
-        public TemplateLEDStripDetectionParam()
+        public TemplateLEDStripDetection()
         {
             Title = "灯条检测算法设置";
             Code = "LEDStripDetection";

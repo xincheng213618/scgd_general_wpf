@@ -3,11 +3,11 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
-    public class TemplateSFRParam : ITemplate<SFRParam>, IITemplateLoad
+    public class TemplateSFR : ITemplate<SFRParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<SFRParam>> Params { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
 
-        public TemplateSFRParam()
+        public TemplateSFR()
         {
             Title = "SFRParam算法设置";
             Code = "SFR";

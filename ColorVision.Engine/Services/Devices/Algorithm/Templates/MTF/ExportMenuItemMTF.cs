@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
         public override string GuidId => "MTFParam";
         public override string Header => Properties.Resources.MenuMTF;
         public override int Order => 2;
-        public override ITemplate Template => new TemplateMTFParam();
+        public override ITemplate Template => new TemplateMTF();
     }
 }

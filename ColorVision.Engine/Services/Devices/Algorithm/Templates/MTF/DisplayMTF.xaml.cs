@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
+            ComboxMTFTemplate.ItemsSource = TemplateMTF.Params;
             ComboxMTFTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
+                var pm = TemplateMTF.Params[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplatePoi.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 var ss = IAlgorithm.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
                 ServicesHelper.SendCommand(ss, "MTF");

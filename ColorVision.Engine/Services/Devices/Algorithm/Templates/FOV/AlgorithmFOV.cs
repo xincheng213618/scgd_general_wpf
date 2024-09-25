@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateFOVParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateFOV(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

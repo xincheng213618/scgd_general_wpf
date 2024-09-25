@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateJNDParam.Params;
+            ComboxTemplate.ItemsSource = TemplateJND.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()

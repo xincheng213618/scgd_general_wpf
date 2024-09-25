@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateGhostParam.Params;
+            ComboxTemplate.ItemsSource = TemplateGhost.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()

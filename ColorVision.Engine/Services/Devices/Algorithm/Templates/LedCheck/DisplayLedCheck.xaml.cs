@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateLedCheckParam.Params;
+            ComboxTemplate.ItemsSource = TemplateLedCheck.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();

@@ -3,11 +3,11 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
-    public class TemplateJNDParam : ITemplate<JNDParam>, IITemplateLoad
+    public class TemplateJND : ITemplate<JNDParam>, IITemplateLoad
     {    
         public static ObservableCollection<TemplateModel<JNDParam>> Params { get; set; } = new ObservableCollection<TemplateModel<JNDParam>>();
 
-        public TemplateJNDParam()
+        public TemplateJND()
         {
             Title = "JDN";
             Code = "OLED.JND.CalVas";

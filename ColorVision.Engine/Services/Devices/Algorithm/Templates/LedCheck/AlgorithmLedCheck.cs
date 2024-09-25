@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateLedCheckParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateLedCheck(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;

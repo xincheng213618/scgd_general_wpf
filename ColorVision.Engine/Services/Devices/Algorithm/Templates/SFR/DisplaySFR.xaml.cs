@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxSFRTemplate.ItemsSource = TemplateSFRParam.Params;
+            ComboxSFRTemplate.ItemsSource = TemplateSFR.Params;
             ComboxSFRTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = TemplateSFRParam.Params[ComboxSFRTemplate.SelectedIndex].Value;
+                var pm = TemplateSFR.Params[ComboxSFRTemplate.SelectedIndex].Value;
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)

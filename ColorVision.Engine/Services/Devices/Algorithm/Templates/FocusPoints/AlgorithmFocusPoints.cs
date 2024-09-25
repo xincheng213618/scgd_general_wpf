@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateFocusPointsParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateFocusPoints(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
