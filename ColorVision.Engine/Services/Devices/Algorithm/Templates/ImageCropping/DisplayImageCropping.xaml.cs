@@ -1,20 +1,21 @@
-﻿using ColorVision.Engine.Templates.POI;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
 {
 
     /// <summary>
     /// DisplayImageCropping.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayMTF : UserControl
+    public partial class DisplayImageCropping : UserControl
     {
-        public AlgorithmMTF IAlgorithm { get; set; }
-        public DisplayMTF(AlgorithmMTF fOVAlgorithm)
+        public AlgorithmImageCropping IAlgorithm { get; set; }
+        public DisplayImageCropping(AlgorithmImageCropping fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
@@ -23,11 +24,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxMTFTemplate.ItemsSource = TemplateMTF.Params;
-            ComboxMTFTemplate.SelectedIndex = 0;
-
-            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
-            ComboxPoiTemplate2.SelectedIndex = 0;
+            ComboxTemplate.ItemsSource = TemplateImageCropping.Params;
+            ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -100,8 +98,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区裁剪模板")) return;
+            if (ComboxTemplate.SelectedValue is not ImageCroppingParam param) return;
+
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;
@@ -111,10 +110,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                var pm = TemplateMTF.Params[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = TemplatePoi.Params[ComboxPoiTemplate2.SelectedIndex].Value;
-                var ss = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
-                ServicesHelper.SendCommand(ss, "MTF");
+
+                var ss = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(ss, "发光区裁剪");
             }
         }
     }

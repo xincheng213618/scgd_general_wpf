@@ -830,7 +830,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 // Handle SFR result saving logic here
                                 break;
                             case AlgorithmResultType.MTF:
-                                // Handle MTF result saving logic here
+                                // Handle SendCommand result saving logic here
                                 break;
                             case AlgorithmResultType.Ghost:
                                 // Handle Ghost result saving logic here

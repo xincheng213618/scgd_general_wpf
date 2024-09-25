@@ -1,0 +1,17 @@
+﻿using ColorVision.Engine.Templates;
+using System.Collections.ObjectModel;
+
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+{
+    public class TemplateImageCropping : ITemplate<ImageCroppingParam>, IITemplateLoad
+    {
+        public static ObservableCollection<TemplateModel<ImageCroppingParam>> Params { get; set; } = new ObservableCollection<TemplateModel<ImageCroppingParam>>();
+
+        public TemplateImageCropping()
+        {
+            Title = "发光区裁剪模板";
+            Code = "ImageCropping";
+            TemplateParams = Params;
+        }
+    }
+}
