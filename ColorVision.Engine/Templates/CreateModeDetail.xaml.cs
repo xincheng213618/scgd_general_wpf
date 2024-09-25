@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Themes;
-using ScottPlot.Styles;
 using System;
 using System.Collections.Generic;
 using System.Linq;

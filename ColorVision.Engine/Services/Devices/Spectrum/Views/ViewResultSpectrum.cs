@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
-using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;
+using ScottPlot.Plottables;
+using ScottPlot.DataSources;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public ObservableCollection<SpectralData> SpectralDatas { get; set; } = new ObservableCollection<SpectralData>();
 
-        public ScatterPlot ScatterPlot { get; set; }
+        public Scatter ScatterPlot { get; set; }
 
         public void Gen()
         {
@@ -47,22 +47,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 SpectralDatas.Add(SpectralData);
             }
 
-            double[] x = new double[fPL.Length];
-            double[] y = new double[fPL.Length];
+            double[] xs = new double[fPL.Length];
+            double[] ys = new double[fPL.Length];
             for (int i = 0; i < fPL.Length; i++)
             {
-                x[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
-                y[i] = fPL[i];
+                xs[i] = ((double)fSpect1 + Math.Round(fInterval, 1) * i);
+                ys[i] = fPL[i];
             }
 
-            ScatterPlot = new ScatterPlot(x, y)
+            ScatterSourceDoubleArray source = new(xs, ys);
+            ScatterPlot = new Scatter(source)
             {
-                Color = Color.DarkGoldenrod,
+                Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
                 LineWidth = 1,
                 MarkerSize = 1,
-                Label = null,
-                MarkerShape = MarkerShape.none,
-                LineStyle = LineStyle.Solid
+                LegendText = string.Empty,
+                MarkerShape = MarkerShape.None,
             };
         }
 

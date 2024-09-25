@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
@@ -8,11 +9,10 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using ScottPlot;
-using ScottPlot.Plottable;
+using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.IO;
 using System.Text;
 using System.Windows;
@@ -66,10 +66,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(380, 780);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(370, 1000);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.Bottom.MinimumSize = 370;
+            wpfplot1.Plot.Axes.Bottom.MaximumSize = 1000;
+            wpfplot1.Plot.Axes.Left.MinimumSize = 0;
+            wpfplot1.Plot.Axes.Left.MaximumSize = 1;
 
             if (listView1.View is GridView gridView)
             {
@@ -218,15 +220,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
 
         bool MulComparison;
-        ScatterPlot? LastMulSelectComparsion;
+        Scatter? LastMulSelectComparsion;
 
         private void DrawPlot()
         {
             if (listView1.SelectedIndex < 0) return;
-            wpfplot1.Plot.SetAxisLimitsX(380, 780);
-            wpfplot1.Plot.SetAxisLimitsY(0, 1);
-            wpfplot1.Plot.XAxis.SetBoundary(ViewResultSpectrums[listView1.SelectedIndex].fSpect1, ViewResultSpectrums[listView1.SelectedIndex].fSpect2);
-            wpfplot1.Plot.YAxis.SetBoundary(0, 1);
+            wpfplot1.Plot.Axes.SetLimitsX(380, 780);
+            wpfplot1.Plot.Axes.SetLimitsY(0, 1);
+            wpfplot1.Plot.Axes.Bottom.MinimumSize = ViewResultSpectrums[listView1.SelectedIndex].fSpect1;
+            wpfplot1.Plot.Axes.Bottom.MaximumSize = ViewResultSpectrums[listView1.SelectedIndex].fSpect2;
+            wpfplot1.Plot.Axes.Left.MinimumSize = 0;
+            wpfplot1.Plot.Axes.Left.MaximumSize = 1;
 
             if (ScatterPlots.Count > 0)
             {
@@ -234,7 +238,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 {
                     if (LastMulSelectComparsion != null)
                     {
-                        LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                        LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                         LastMulSelectComparsion.LineWidth = 1;
                         LastMulSelectComparsion.MarkerSize = 1;
                     }
@@ -242,18 +246,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     LastMulSelectComparsion = ScatterPlots[listView1.SelectedIndex];
                     LastMulSelectComparsion.LineWidth = 3;
                     LastMulSelectComparsion.MarkerSize = 3;
-                    LastMulSelectComparsion.Color = Color.Red;
-                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
+                    wpfplot1.Plot.PlottableList.Add(LastMulSelectComparsion);
 
                 }
                 else
                 {
                     var temp = ScatterPlots[listView1.SelectedIndex];
-                    temp.Color = Color.DarkGoldenrod;
+                    temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     temp.LineWidth = 1;
                     temp.MarkerSize = 1;
 
-                    wpfplot1.Plot.Add(temp);
+                    wpfplot1.Plot.PlottableList.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
                     LastMulSelectComparsion = temp;
 
@@ -286,7 +290,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
         }
 
-        private List<ScatterPlot> ScatterPlots { get; set; } = new List<ScatterPlot>();
+        private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
 
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -318,11 +322,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     if (i == listView1.SelectedIndex)
                         continue;
                     var plot = ScatterPlots[i];
-                    plot.Color = Color.DarkGoldenrod;
+                    plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     plot.LineWidth = 1;
                     plot.MarkerSize = 1;
 
-                    wpfplot1.Plot.Add(plot);
+                    wpfplot1.Plot.PlottableList.Add(plot);
                 }
             }
             DrawPlot();
@@ -407,23 +411,22 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         }
 
-        MarkerPlot markerPlot1;
+        Marker markerPlot1;
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             wpfplot1.Plot.Remove(markerPlot1);
             if (listView2.SelectedIndex > -1)
             {
-                markerPlot1 = new MarkerPlot
+                markerPlot1 = new Marker
                 {
                     X = listView2.SelectedIndex + 380,
                     Y = ViewResultSpectrums[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
-                    MarkerShape = MarkerShape.filledCircle,
+                    MarkerShape = MarkerShape.FilledCircle,
                     MarkerSize = 10f,
-                    Color = Color.Orange,
-                    Label = null
+                    Color = Color.FromColor(System.Drawing.Color.Orange),
                 };
-                wpfplot1.Plot.Add(markerPlot1);
+                wpfplot1.Plot.PlottableList.Add(markerPlot1);
             }
             wpfplot1.Refresh();
 
