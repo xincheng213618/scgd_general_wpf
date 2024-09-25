@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-    public class AlgorithmMTF : ViewModelBase, IAlgorithm
+    public class AlgorithmMTF : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "MTF";
 

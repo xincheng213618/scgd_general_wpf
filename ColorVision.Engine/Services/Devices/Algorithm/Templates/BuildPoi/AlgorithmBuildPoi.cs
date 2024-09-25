@@ -14,7 +14,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 {
-    public class AlgorithmBuildPoi : ViewModelBase, IAlgorithm
+    public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "BuildPoi";
 

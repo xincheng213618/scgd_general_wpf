@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
-    public class AlgorithmSFR : ViewModelBase, IAlgorithm
+    public class AlgorithmSFR : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "SFR";
 

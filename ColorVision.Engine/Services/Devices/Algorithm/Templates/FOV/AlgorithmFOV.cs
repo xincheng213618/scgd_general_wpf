@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
-    public class AlgorithmFOV : ViewModelBase, IAlgorithm
+    public class AlgorithmFOV : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "FOV";
 

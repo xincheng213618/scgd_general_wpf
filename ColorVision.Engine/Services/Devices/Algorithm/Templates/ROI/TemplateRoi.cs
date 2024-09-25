@@ -3,9 +3,9 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
-    public class TemplateRoi : ITemplate<ROIParam>, IITemplateLoad
+    public class TemplateRoi : ITemplate<RoiParam>, IITemplateLoad
     {    
-        public static ObservableCollection<TemplateModel<ROIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<ROIParam>>();
+        public static ObservableCollection<TemplateModel<RoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<RoiParam>>();
 
         public TemplateRoi()
         {

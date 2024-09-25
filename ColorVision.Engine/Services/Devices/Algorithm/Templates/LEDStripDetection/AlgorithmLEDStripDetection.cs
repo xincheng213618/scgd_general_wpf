@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
 {
-    public class AlgorithmLEDStripDetection : ViewModelBase, IAlgorithm
+    public class AlgorithmLEDStripDetection : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "灯带检测";
 

@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
-    public interface IAlgorithm
+    public interface IDisplayAlgorithm
     {
         public string Name { get; set; }
         public UserControl GetUserControl();

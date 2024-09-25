@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
-    public class AlgorithmJND : ViewModelBase, IAlgorithm
+    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "JND";
 

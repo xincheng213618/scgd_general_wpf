@@ -27,16 +27,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
         
-        public ObservableCollection<IAlgorithm> Algorithms { get; set; } = new ObservableCollection<IAlgorithm>();
+        public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } = new ObservableCollection<IDisplayAlgorithm>();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type, Device) is IAlgorithm  algorithm)
+                    if (Activator.CreateInstance(type, Device) is IDisplayAlgorithm  algorithm)
                     {
                         Algorithms.Add(algorithm);
                     }
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             CB_Algorithms.ItemsSource = Algorithms;
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
-                if (CB_Algorithms.SelectedItem is IAlgorithm algorithm)
+                if (CB_Algorithms.SelectedItem is IDisplayAlgorithm algorithm)
                 {
                     CB_StackPanel.Children.Clear();
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());

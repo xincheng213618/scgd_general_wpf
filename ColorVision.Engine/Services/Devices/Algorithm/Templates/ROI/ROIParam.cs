@@ -1,22 +1,17 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
-using ColorVision.Engine.Templates;
-using System;
+﻿using ColorVision.Engine.Templates;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
 
-    public class ROIParam : ParamBase
+    public class RoiParam : ParamBase
     {
-        public ROIParam() { }
-        public ROIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public RoiParam() { }
+        public RoiParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
+
         [Category("ROI"), Description("阈值")]
         public int Threshold { get => GetValue(_Threshold); set { SetProperty(ref _Threshold, value); } }
         private int _Threshold = 1;

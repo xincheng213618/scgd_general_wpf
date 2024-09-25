@@ -1,14 +1,9 @@
 ﻿using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
@@ -43,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
         {
             if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测2模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not ROIParam param) return;
+            if (ComboxTemplate.SelectedValue is not RoiParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

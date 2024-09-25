@@ -15,7 +15,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
-    public class AlgorithmPoi : ViewModelBase, IAlgorithm
+    public class AlgorithmPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "POI";
 

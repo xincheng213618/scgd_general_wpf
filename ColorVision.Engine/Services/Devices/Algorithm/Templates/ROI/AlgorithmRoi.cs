@@ -2,8 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -14,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
-    public class AlgorithmRoi : ViewModelBase, IAlgorithm
+    public class AlgorithmRoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "发光区检测2";
 
@@ -44,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(ROIParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(RoiParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

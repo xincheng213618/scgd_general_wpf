@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 {
-    public class AlgorithmDistortion : ViewModelBase, IAlgorithm
+    public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "畸变";
 
