@@ -96,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreateEmpty();
+            ComboxPoiTemplate1.ItemsSource = TemplatePOI.Params.CreateEmpty();
             ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = FocusPointsParam.FocusPointsParams;
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxLedCheck2Template.SelectedIndex = 0;
 
-            ComboxPoiTemplate3.ItemsSource = PoiParam.Params.CreateEmpty(); ;
+            ComboxPoiTemplate3.ItemsSource = TemplatePOI.Params.CreateEmpty(); ;
             ComboxPoiTemplate3.SelectedIndex = 0;
 
             ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()

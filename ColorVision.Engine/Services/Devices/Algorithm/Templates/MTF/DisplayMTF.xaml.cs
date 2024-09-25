@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
             ComboxMTFTemplate.ItemsSource = TemplateMTFParam.Params;
             ComboxMTFTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
+            ComboxPoiTemplate2.ItemsSource = TemplatePOI.Params;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -112,7 +112,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
                     code = deviceService.Code;
                 }
                 var pm = TemplateMTFParam.Params[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
+                var poi_pm = TemplatePOI.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 var ss = IAlgorithm.MTF(code, type, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
                 ServicesHelper.SendCommand(ss, "MTF");
             }

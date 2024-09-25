@@ -15,7 +15,6 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     public class PoiParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
         public static void Save2DB(PoiParam poiParam)
         {
