@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

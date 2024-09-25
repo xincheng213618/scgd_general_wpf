@@ -161,27 +161,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck2(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber, ModThirdPartyParam ledCheck2Param, PoiParam poiParam, CVOLEDCOLOR cOLOR)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = ledCheck2Param.Id, Name = ledCheck2Param.Name });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
-            Params.Add("Color", cOLOR);
-
-            MsgSend msg = new()
-            {
-                EventName = "FindDotsArray",
-                SerialNumber = sn,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg, 60000);
-        }
-
         internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
         {
             MsgSend msg = new()

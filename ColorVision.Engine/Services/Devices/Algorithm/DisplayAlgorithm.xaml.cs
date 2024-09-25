@@ -1,12 +1,9 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -88,18 +85,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
-
-            ComboxLedCheck2Template.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
-            ComboxLedCheck2Template.SelectedIndex = 0;
-
-            ComboxPoiTemplate3.ItemsSource = TemplatePOI.Params.CreateEmpty(); ;
-            ComboxPoiTemplate3.SelectedIndex = 0;
-
-            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
-                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
-            ComboxCVOLEDCOLOR.SelectedIndex = 0;
-
-
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -305,12 +290,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "LedCheck2Param":
-                        new WindowTemplate(new TemplateThirdParty("LedCheck2"), ComboxLedCheck2Template.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
-                    case "FocusParm":
-                        new WindowTemplate(new TemplatePOI()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-                        break;
                     case "BuildPOIParmam":
                         new WindowTemplate(new TemplateBuildPOIParam(),ComboxBuildPoiTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
@@ -325,52 +304,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
 
-        private void LedCheck2_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxLedCheck2Template, "请先选择灯珠检测模板")) return;
-            if (!IsTemplateSelected(ComboxPoiTemplate3, "请先选择关注点模板")) return;
-
-            if (ComboxLedCheck2Template.SelectedValue is not ModThirdPartyParam ledCheck2Param) return;
-            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
-            if (ComboxPoiTemplate3.SelectedValue is not PoiParam poiParam) return;
-
-
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                    MsgRecord ss = Service.LedCheck2(code, type, imgFileName, fileExtType, sn, ledCheck2Param, poiParam, color);
-                    ServicesHelper.SendCommand(ss, "正在计算灯珠检测2");
-                }
-            }
-        }
-
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             Service.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
-
-        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
-            {
-                MessageBox1.Show("请先选中图片");
-                return;
-            }
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
-            doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
-        }
-
     }
 }
