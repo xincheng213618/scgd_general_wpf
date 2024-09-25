@@ -10,15 +10,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
     /// <summary>
     /// EditLEDStripDetection.xaml 的交互逻辑
     /// </summary>
-    public partial class EditPOIFilters : UserControl
+    public partial class EditPoiFilters : UserControl
     {
-        public EditPOIFilters()
+        public EditPoiFilters()
         {
             InitializeComponent();
         }
-        public POIFilterParam Param { get; set; }
+        public PoiFilterParam Param { get; set; }
 
-        public void SetParam(POIFilterParam param)
+        public void SetParam(PoiFilterParam param)
         {
             Param = param;
             this.DataContext = Param;

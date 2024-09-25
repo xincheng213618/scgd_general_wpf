@@ -15,7 +15,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
-    public class AlgorithmPOI : ViewModelBase, IAlgorithm
+    public class AlgorithmPoi : ViewModelBase, IAlgorithm
     {
         public string Name { get; set; } = "POI";
 
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public RelayCommand OpenTeplatePoiOutputCommand { get; set; }
 
 
-        public AlgorithmPOI(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTeplateCommand = new RelayCommand(a => OpenTeplate());
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public void OpenTeplatePOIFilter()
         {
-            new WindowTemplate(new TemplatePOIFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -78,12 +78,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayPOI(this);
+            UserControl ??= new DisplayPoi(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, POIFilterParam filter, PoiReviseParam revise, PoiOutputParam output, string sn)
+        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, PoiParam poiParam, PoiFilterParam filter, PoiReviseParam revise, PoiOutputParam output, string sn)
         {
             sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
 

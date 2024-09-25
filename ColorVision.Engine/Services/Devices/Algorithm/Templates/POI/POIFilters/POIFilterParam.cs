@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
-    public class POIFilterParam : ParamBase
+    public class PoiFilterParam : ParamBase
     {
-        public POIFilterParam()
+        public PoiFilterParam()
         {
 
         }
 
-        public POIFilterParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
+        public PoiFilterParam(ModMasterModel modMaster, List<ModDetailModel> aoiDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, aoiDetail)
         {
 
         }

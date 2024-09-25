@@ -2,12 +2,12 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
-    public class ExportPOIFliterParam : ExportTemplateBase
+    public class ExportPoiFliterParam : ExportTemplateBase
     {
         public override string OwnerGuid => "TemplatePOI";
         public override string GuidId => "POIFliterParam";
-        public override string Header => "POIFliterParam";
+        public override string Header => "POI过滤";
         public override int Order => 9;
-        public override ITemplate Template => new TemplatePOIFilterParam();
+        public override ITemplate Template => new TemplatePoiFilterParam();
     }
 }

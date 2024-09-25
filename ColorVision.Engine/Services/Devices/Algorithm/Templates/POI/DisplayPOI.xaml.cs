@@ -14,10 +14,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayPOI : UserControl
+    public partial class DisplayPoi : UserControl
     {
-        public AlgorithmPOI IAlgorithm { get; set; }
-        public DisplayPOI(AlgorithmPOI fOVAlgorithm)
+        public AlgorithmPoi IAlgorithm { get; set; }
+        public DisplayPoi(AlgorithmPoi fOVAlgorithm)
         {
             IAlgorithm = fOVAlgorithm;
             InitializeComponent();
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             ComboxPoiTemplate.ItemsSource = TemplatePOI.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
-            ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
+            ComboxPoiFilter.ItemsSource = TemplatePoiFilterParam.Params.CreateEmpty();
             ComboxPoiFilter.SelectedIndex = 0;
 
             ComboxPoiOutput.ItemsSource = TemplatePoiOutputParam.Params.CreateEmpty();
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
 
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
-            if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
+            if (ComboxPoiFilter.SelectedValue is not PoiFilterParam pOIFilterParam) return;
             if (ComboxPoiRevise.SelectedValue is not PoiReviseParam pOICalParam) return;
             if (ComboxPoiOutput.SelectedValue is not PoiOutputParam poiOutputParam) return;
 

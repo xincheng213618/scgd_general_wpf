@@ -4,11 +4,11 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
-    public class TemplatePOIFilterParam : ITemplate<POIFilterParam>, IITemplateLoad
+    public class TemplatePoiFilterParam : ITemplate<PoiFilterParam>, IITemplateLoad
     {
-        public static ObservableCollection<TemplateModel<POIFilterParam>> Params { get; set; } = new ObservableCollection<TemplateModel<POIFilterParam>>();
+        public static ObservableCollection<TemplateModel<PoiFilterParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiFilterParam>>();
 
-        public TemplatePOIFilterParam()
+        public TemplatePoiFilterParam()
         {
             Title = "POIFilter模板设置";
             Code = "POIFilter";
@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
         {
             EditPOIFilters.SetParam(TemplateParams[index].Value);
         }
-        public EditPOIFilters EditPOIFilters { get; set; } = new EditPOIFilters();
+        public EditPoiFilters EditPOIFilters { get; set; } = new EditPoiFilters();
 
         public override UserControl GetUserControl()
         {
