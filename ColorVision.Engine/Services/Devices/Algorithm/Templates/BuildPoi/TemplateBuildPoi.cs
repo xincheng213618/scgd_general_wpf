@@ -3,12 +3,12 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 {
-    public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>, IITemplateLoad
+    public class TemplateBuildPoi : ITemplate<ParamBuildPoi>, IITemplateLoad
     {
-        public static ObservableCollection<TemplateModel<BuildPOIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<BuildPOIParam>>();
+        public static ObservableCollection<TemplateModel<ParamBuildPoi>> Params { get; set; } = new ObservableCollection<TemplateModel<ParamBuildPoi>>();
 
 
-        public TemplateBuildPOIParam()
+        public TemplateBuildPoi()
         {
             Title = "BuildPOI算法设置";
             Code = "BuildPOI";

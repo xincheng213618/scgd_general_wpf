@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             ComboxTemplate.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck2");
             ComboxTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate.ItemsSource = TemplatePOI.Params.CreateEmpty();
+            ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
             ComboxPoiTemplate.SelectedIndex = 0;
 
 

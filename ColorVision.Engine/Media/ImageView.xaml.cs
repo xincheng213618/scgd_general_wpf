@@ -100,16 +100,16 @@ namespace ColorVision.Engine.Media
             this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
 
-            if (TemplatePOI.Params.Count == 0)
+            if (TemplatePoi.Params.Count == 0)
             {
                 MySqlControl.GetInstance().Connect();
-                new TemplatePOI().Load();
+                new TemplatePoi().Load();
 
             }
 
             if (MySqlControl.GetInstance().IsConnect)
             {
-                ComboxPOITemplate.ItemsSource = TemplatePOI.Params.CreateEmpty();
+                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 ComboxPOITemplate.SelectedIndex = 0;
                 ToolBarAl.Visibility = Visibility.Visible;
             }
@@ -126,8 +126,8 @@ namespace ColorVision.Engine.Media
             await MySqlControl.GetInstance().Connect();
             if (MySqlControl.GetInstance().IsConnect)
             {
-                new TemplatePOI().Load();
-                ComboxPOITemplate.ItemsSource = TemplatePOI.Params.CreateEmpty();
+                new TemplatePoi().Load();
+                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 ComboxPOITemplate.SelectedIndex = 0;
                 ToolBarAl.Visibility = Visibility.Visible;
             }

@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Templates.POI
         private void Window_Initialized(object sender, System.EventArgs e)
         {
 
-            ListView1.ItemsSource = TemplatePOI.Params;
+            ListView1.ItemsSource = TemplatePoi.Params;
         }
     }
 }

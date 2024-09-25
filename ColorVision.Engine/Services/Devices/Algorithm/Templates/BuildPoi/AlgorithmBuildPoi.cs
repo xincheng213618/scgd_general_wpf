@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateBuildPOIParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateBuildPoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(BuildPOIParam buildPOIParam, POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

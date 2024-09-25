@@ -6,13 +6,13 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 {
-    public class BuildPOIParam : ParamBase
+    public class ParamBuildPoi : ParamBase
     {
 
-        public BuildPOIParam() { }
+        public ParamBuildPoi() { }
 
 
-        public BuildPOIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public ParamBuildPoi(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

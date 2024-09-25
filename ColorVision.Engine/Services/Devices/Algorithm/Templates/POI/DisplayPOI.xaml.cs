@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             DataContext = IAlgorithm;
 
-            ComboxPoiTemplate.ItemsSource = TemplatePOI.Params;
+            ComboxPoiTemplate.ItemsSource = TemplatePoi.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
             ComboxPoiFilter.ItemsSource = TemplatePoiFilterParam.Params.CreateEmpty();

@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
             ComboxTemplate.ItemsSource = TemplateLedCheckParam.Params;
             ComboxTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate.ItemsSource = TemplatePOI.Params.CreateEmpty();
+            ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
             ComboxPoiTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()

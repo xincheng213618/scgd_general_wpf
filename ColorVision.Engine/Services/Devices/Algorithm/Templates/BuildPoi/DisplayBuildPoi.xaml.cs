@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateBuildPOIParam.Params;
+            ComboxTemplate.ItemsSource = TemplateBuildPoi.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         {
             if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择BuildPoi模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not BuildPOIParam param) return;
+            if (ComboxTemplate.SelectedValue is not ParamBuildPoi param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

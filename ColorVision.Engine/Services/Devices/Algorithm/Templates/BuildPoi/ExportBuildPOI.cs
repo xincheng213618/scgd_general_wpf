@@ -9,6 +9,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         public override string Header => Properties.Resources.MenuBuildPOI;
         public override int Order => 0;
 
-        public override ITemplate Template => new TemplateBuildPOIParam();
+        public override ITemplate Template => new TemplateBuildPoi();
     }
 }

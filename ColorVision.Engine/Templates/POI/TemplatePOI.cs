@@ -13,11 +13,11 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class TemplatePOI : ITemplate<PoiParam>, IITemplateLoad
+    public class TemplatePoi : ITemplate<PoiParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
-        public TemplatePOI()
+        public TemplatePoi()
         {
             IsSideHide = true;
             Title = "关注点设置";
