@@ -90,8 +90,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
             CB_Algorithms.SelectedIndex = 0;
 
-            ComboxDistortionTemplate.ItemsSource = DistortionParam.DistortionParams;
-            ComboxDistortionTemplate.SelectedIndex = 0;
 
             ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
@@ -225,24 +223,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
 
-        private void Distortion_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxDistortionTemplate, "请先选择Distortion模板")) return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                var pm = DistortionParam.DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                MsgRecord msg = Service.Distortion(code, type, imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "Distortion");
-            }
-        }
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
@@ -339,9 +319,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "DistortionParam":
-                        new WindowTemplate(new TemplateDistortionParam(),ComboxDistortionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     case "LedCheckParam":
                         new WindowTemplate(new TemplateLedCheckParam(), ComboxLedCheckTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
