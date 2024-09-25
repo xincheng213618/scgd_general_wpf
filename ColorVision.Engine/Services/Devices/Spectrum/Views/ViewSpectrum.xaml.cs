@@ -61,17 +61,21 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             listView1.ItemsSource = ViewResultSpectrums;
 
-
-            wpfplot1.Plot.Title("相对光谱曲线");
+            string title = "相对光谱曲线";
             wpfplot1.Plot.XLabel("波长[nm]");
             wpfplot1.Plot.YLabel("相对光谱");
-            wpfplot1.Plot.Clear();
+            wpfplot1.Plot.Axes.Title.Label.Text = title;
+            wpfplot1.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
+            wpfplot1.Plot.Axes.Title.Label.Text = title;
+            wpfplot1.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
+            wpfplot1.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
+
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(0, 1);
-            wpfplot1.Plot.Axes.Bottom.MinimumSize = 370;
-            wpfplot1.Plot.Axes.Bottom.MaximumSize = 1000;
-            wpfplot1.Plot.Axes.Left.MinimumSize = 0;
-            wpfplot1.Plot.Axes.Left.MaximumSize = 1;
+            wpfplot1.Plot.Axes.Bottom.Min = 370;
+            wpfplot1.Plot.Axes.Bottom.Max = 1000;
+            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Max = 1;
 
             if (listView1.View is GridView gridView)
             {
@@ -227,10 +231,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (listView1.SelectedIndex < 0) return;
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(0, 1);
-            wpfplot1.Plot.Axes.Bottom.MinimumSize = ViewResultSpectrums[listView1.SelectedIndex].fSpect1;
-            wpfplot1.Plot.Axes.Bottom.MaximumSize = ViewResultSpectrums[listView1.SelectedIndex].fSpect2;
-            wpfplot1.Plot.Axes.Left.MinimumSize = 0;
-            wpfplot1.Plot.Axes.Left.MaximumSize = 1;
+            wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[listView1.SelectedIndex].fSpect1;
+            wpfplot1.Plot.Axes.Bottom.Max = ViewResultSpectrums[listView1.SelectedIndex].fSpect2;
+            wpfplot1.Plot.Axes.Left.Min = 0;
+            wpfplot1.Plot.Axes.Left.Max = 1;
 
             if (ScatterPlots.Count > 0)
             {
