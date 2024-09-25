@@ -9,7 +9,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
-
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
@@ -25,8 +24,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device = device;
             InitializeComponent();
         }
-
-        
         public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } = new ObservableCollection<IDisplayAlgorithm>();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -89,9 +86,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
-        private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
+        private bool _IsSelected;
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {

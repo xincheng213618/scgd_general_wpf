@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
@@ -41,6 +40,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
     }
 
+
+    public class ViewShowPoiY
+    {
+        public AlgorithmView AlgorithmView { get; set; }
+        public ViewShowPoiY(AlgorithmView algorithmView)
+        {
+            this.AlgorithmView = algorithmView;
+        }
+
+
+
+    }
 
 
     /// <summary>
