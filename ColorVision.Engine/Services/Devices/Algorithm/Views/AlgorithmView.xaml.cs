@@ -5,7 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
