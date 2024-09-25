@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
@@ -7,15 +8,15 @@ using System.Windows;
 using System.Windows.Controls;
 using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayFocusPoints : UserControl
+    public partial class DisplayLedCheck : UserControl
     {
-        public AlgorithmFocusPoints IAlgorithm { get; set; }
-        public DisplayFocusPoints(AlgorithmFocusPoints iAlgorithm)
+        public AlgorithmLedCheck IAlgorithm { get; set; }
+        public DisplayLedCheck(AlgorithmLedCheck iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -24,8 +25,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateFocusPointsParam.Params;
+            ComboxTemplate.ItemsSource = TemplateLedCheckParam.Params;
             ComboxTemplate.SelectedIndex = 0;
+
+            ComboxPoiTemplate.ItemsSource = TemplatePOI.Params.CreateEmpty();
+            ComboxPoiTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -38,9 +42,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择FocusPoints模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择灯珠检测模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not FocusPointsParam param) return;
+            if (ComboxTemplate.SelectedValue is not LedCheckParam param) return;
+            if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
@@ -51,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,type, code, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "LEDStripDetection");
             }
         }

@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择Distortion模板")) return;
 
             if (ComboxTemplate.SelectedValue is not DistortionParam param) return;
 

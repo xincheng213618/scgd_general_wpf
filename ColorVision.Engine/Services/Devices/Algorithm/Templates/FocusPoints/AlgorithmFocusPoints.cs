@@ -19,15 +19,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTeplateCommand { get; set; }
+        public RelayCommand OpenTemplateCommand { get; set; }
 
         public AlgorithmFocusPoints(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
-            OpenTeplateCommand = new RelayCommand(a => OpenTeplate());
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTeplate()
+        public void OpenTemplate()
         {
             new WindowTemplate(new TemplateFocusPointsParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

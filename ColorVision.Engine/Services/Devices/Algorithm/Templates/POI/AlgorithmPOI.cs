@@ -22,28 +22,28 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTeplateCommand { get; set; }
+        public RelayCommand OpenTemplateCommand { get; set; }
 
-        public RelayCommand OpenTeplatePOIFilterCommand { get; set; }
+        public RelayCommand OpenTemplatePOIFilterCommand { get; set; }
 
-        public RelayCommand OpenTeplatePoiReviseCommand { get; set; }
+        public RelayCommand OpenTemplatePoiReviseCommand { get; set; }
 
-        public RelayCommand OpenTeplatePoiOutputCommand { get; set; }
+        public RelayCommand OpenTemplatePoiOutputCommand { get; set; }
 
 
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
-            OpenTeplateCommand = new RelayCommand(a => OpenTeplate());
-            OpenTeplatePOIFilterCommand = new RelayCommand(a => OpenTeplatePOIFilter());
-            OpenTeplatePoiReviseCommand = new RelayCommand(a => OpenTeplatePoiRevise());
-            OpenTeplatePoiOutputCommand = new RelayCommand(a => OpenTeplatePoiOutput());
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());
+            OpenTemplatePoiReviseCommand = new RelayCommand(a => OpenTemplatePoiRevise());
+            OpenTemplatePoiOutputCommand = new RelayCommand(a => OpenTemplatePoiOutput());
 
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
-        public void OpenTeplate()
+        public void OpenTemplate()
         {
             new WindowTemplate(new TemplatePOI(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public int TemplatePOIFilterSelectedIndex { get => _TemplatePOIFilterSelectedIndex; set { _TemplatePOIFilterSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePOIFilterSelectedIndex;
 
-        public void OpenTeplatePOIFilter()
+        public void OpenTemplatePOIFilter()
         {
             new WindowTemplate(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiReviseSelectedIndex;
 
-        public void OpenTeplatePoiRevise()
+        public void OpenTemplatePoiRevise()
         {
             new WindowTemplate(new TemplatePoiReviseParam(), TemplatePoiReviseSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public int TemplatePoiOutputSelectedIndex { get => _TemplatePoiOutputSelectedIndex; set { _TemplatePoiOutputSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiOutputSelectedIndex;
 
-        public void OpenTeplatePoiOutput()
+        public void OpenTemplatePoiOutput()
         {
             new WindowTemplate(new TemplatePoiReviseParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

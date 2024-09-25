@@ -19,15 +19,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTeplateCommand { get; set; }
+        public RelayCommand OpenTemplateCommand { get; set; }
 
         public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
-            OpenTeplateCommand = new RelayCommand(a => OpenTeplate());
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
-        public void OpenTeplate()
+        public void OpenTemplate()
         {
             new WindowTemplate(new TemplateSFRParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }

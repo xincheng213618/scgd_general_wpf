@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
@@ -87,13 +85,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
             CB_Algorithms.SelectedIndex = 0;
-
-
-            ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
-            ComboxLedCheckTemplate.SelectedIndex = 0;
-
-            ComboxPoiTemplate1.ItemsSource = TemplatePOI.Params.CreateEmpty();
-            ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
@@ -314,9 +305,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
-                    case "LedCheckParam":
-                        new WindowTemplate(new TemplateLedCheckParam(), ComboxLedCheckTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        break;
                     case "LedCheck2Param":
                         new WindowTemplate(new TemplateThirdParty("LedCheck2"), ComboxLedCheck2Template.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
@@ -336,29 +324,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
-
-        private void LedCheck_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsTemplateSelected(ComboxLedCheckTemplate, "请先选择灯珠检测模板")) return;
-            if (!IsTemplateSelected(ComboxPoiTemplate1, "请先选择关注点模板")) return;
-
-            if (ComboxPoiTemplate1.SelectedValue is not PoiParam poiParam) return;
-            if (ComboxLedCheckTemplate.SelectedValue is not LedCheckParam ledCheckParam) return;
-
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
-            {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                    MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, sn, ledCheckParam, poiParam);
-                    ServicesHelper.SendCommand(ss, "正在计算灯珠");
-                }
-            }
-        }
-
 
         private void LedCheck2_Click(object sender, RoutedEventArgs e)
         {

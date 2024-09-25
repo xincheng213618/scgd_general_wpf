@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 
     public class LedCheckParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; } = new ObservableCollection<TemplateModel<LedCheckParam>>();
 
         public LedCheckParam() { }
         public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
