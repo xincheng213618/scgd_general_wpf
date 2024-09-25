@@ -523,9 +523,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                         });
 
-
-
-
                         break;
                     case AlgorithmResultType.BuildPOI:
                         if (result.ViewResults == null)  

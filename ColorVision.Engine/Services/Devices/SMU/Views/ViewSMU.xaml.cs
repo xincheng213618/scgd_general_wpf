@@ -4,11 +4,10 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
-using ScottPlot.Plottable;
+using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -97,7 +96,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
 
         bool MulComparison;
-        ScatterPlot? LastMulSelectComparsion;
+        Scatter LastMulSelectComparsion;
 
         private void DrawPlot()
         {
@@ -107,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             {
                 if (LastMulSelectComparsion != null)
                 {
-                    LastMulSelectComparsion.Color = Color.DarkGoldenrod;
+                    LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     LastMulSelectComparsion.LineWidth = 1;
                     LastMulSelectComparsion.MarkerSize = 1;
                 }
@@ -116,17 +115,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 LastMulSelectComparsion = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
                 LastMulSelectComparsion.LineWidth = 3;
                 LastMulSelectComparsion.MarkerSize = 3;
-                LastMulSelectComparsion.Color = Color.Red;
+                LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
 
                 if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
                 {
-                    wpfplot2.Plot.Add(LastMulSelectComparsion);
+                    wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
                     wpfplot2.Refresh();
 
                 }
                 else
                 {
-                    wpfplot1.Plot.Add(LastMulSelectComparsion);
+                    wpfplot1.Plot.PlottableList.Add(LastMulSelectComparsion);
                     wpfplot1.Refresh();
                 }
             }
@@ -134,7 +133,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             {
                
                 var temp = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
-                temp.Color = Color.DarkGoldenrod;
+                temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                 temp.LineWidth = 1;
                 temp.MarkerSize = 1;
 
@@ -143,7 +142,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
                 if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
                 {
-                    wpfplot2.Plot.Add(temp);
+                    wpfplot2.Plot.PlottableList.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
                     wpfplot2.Plot.Remove(LastMulSelectComparsion);
                     wpfplot2.Refresh();
@@ -151,7 +150,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
                 else
                 {
-                    wpfplot1.Plot.Add(temp);
+                    wpfplot1.Plot.PlottableList.Add(temp);
                     wpfplot1.Plot.Remove(LastMulSelectComparsion);
                     wpfplot2.Plot.Remove(LastMulSelectComparsion);
                     wpfplot1.Refresh();
@@ -174,19 +173,23 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             if (viewResultSMU.MeasurementType == MeasurementType.Voltage)
             {
                 ToggleButtonChoice.IsChecked = true;
+                wpfplot2.Plot.Axes.Bottom.Min = viewResultSMU.xMin;
+                wpfplot2.Plot.Axes.Bottom.Max = viewResultSMU.xMax;
+                wpfplot2.Plot.Axes.Left.Min = viewResultSMU.yMin;
+                wpfplot2.Plot.Axes.Left.Max = viewResultSMU.yMax;
 
-                wpfplot2.Plot.SetAxisLimitsX(viewResultSMU.xMin, viewResultSMU.xMax);
-                wpfplot2.Plot.SetAxisLimitsY(viewResultSMU.yMin, viewResultSMU.yMax);
-                wpfplot2.Plot.Add(viewResultSMU.ScatterPlot);
+                wpfplot2.Plot.PlottableList.Add(viewResultSMU.ScatterPlot);
                 wpfplot2.Refresh();
             }
             else
             {
                 ToggleButtonChoice.IsChecked = false;
 
-                wpfplot1.Plot.SetAxisLimitsY(viewResultSMU.xMin, viewResultSMU.xMax);
-                wpfplot1.Plot.SetAxisLimitsX(viewResultSMU.yMin, viewResultSMU.yMax);
-                wpfplot1.Plot.Add(viewResultSMU.ScatterPlot);
+                wpfplot1.Plot.Axes.Bottom.Min = viewResultSMU.xMin;
+                wpfplot1.Plot.Axes.Bottom.Max = viewResultSMU.xMax;
+                wpfplot1.Plot.Axes.Left.Min = viewResultSMU.yMin;
+                wpfplot1.Plot.Axes.Left.Max = viewResultSMU.yMax;
+                wpfplot1.Plot.PlottableList.Add(viewResultSMU.ScatterPlot);
                 wpfplot1.Refresh();
             }
 
@@ -220,17 +223,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                     if (i == listView1.SelectedIndex)
                         continue;
                     var plot = ViewResultSMUs[i].ScatterPlot;
-                    plot.Color = Color.DarkGoldenrod;
+                    plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     plot.LineWidth = 1;
                     plot.MarkerSize = 1;
 
                     if (ViewResultSMUs[i].IsSourceV)
                     {
-                        wpfplot1.Plot.Add(plot);
+                        wpfplot1.Plot.PlottableList.Add(plot);
                     }
                     else
                     {
-                        wpfplot2.Plot.Add(plot);
+                        wpfplot2.Plot.PlottableList.Add(plot);
                     }
 
                 }
@@ -315,7 +318,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         }
 
-        MarkerPlot markerPlot1;
+        Marker markerPlot1;
 
         private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -327,16 +330,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
                     if (listView2.SelectedIndex > -1)
                     {
-                        markerPlot1 = new MarkerPlot
+                        markerPlot1 = new Marker
                         {
                             X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
                             Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
-                            MarkerShape = MarkerShape.filledCircle,
+                            MarkerShape = MarkerShape.FilledCircle,
                             MarkerSize = 10f,
-                            Color = Color.Orange,
-                            Label = null
+                            Color = Color.FromColor(System.Drawing.Color.Orange),
                         };
-                        wpfplot2.Plot.Add(markerPlot1);
+                        wpfplot2.Plot.PlottableList.Add(markerPlot1);
                     }
                     wpfplot2.Refresh();
                 }
@@ -346,16 +348,15 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
                     if (listView2.SelectedIndex > -1)
                     {
-                        markerPlot1 = new MarkerPlot
+                        markerPlot1 = new Marker
                         {
                             X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
                             Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
-                            MarkerShape = MarkerShape.filledCircle,
+                            MarkerShape = MarkerShape.FilledCircle,
                             MarkerSize = 10f,
-                            Color = Color.Orange,
-                            Label = null
+                            Color = Color.FromColor(System.Drawing.Color.Orange),
                         };
-                        wpfplot1.Plot.Add(markerPlot1);
+                        wpfplot1.Plot.PlottableList.Add(markerPlot1);
                     }
                     wpfplot1.Refresh();
                 }
