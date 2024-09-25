@@ -7,15 +7,15 @@ using System.Windows;
 using System.Windows.Controls;
 using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayLEDStripDetection : UserControl
+    public partial class DisplayFocusPoints : UserControl
     {
-        public AlgorithmLEDStripDetection IAlgorithm { get; set; }
-        public DisplayLEDStripDetection(AlgorithmLEDStripDetection iAlgorithm)
+        public AlgorithmFocusPoints IAlgorithm { get; set; }
+        public DisplayFocusPoints(AlgorithmFocusPoints iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateLEDStripDetectionParam.Params;
+            ComboxTemplate.ItemsSource = TemplateFocusPointsParam.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         {
             if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择LEDStripDetection模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not LEDStripDetectionParam param) return;
+            if (ComboxTemplate.SelectedValue is not FocusPointsParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
