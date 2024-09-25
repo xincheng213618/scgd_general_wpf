@@ -1,18 +1,18 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
-using ColorVision.Engine.Draw;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
