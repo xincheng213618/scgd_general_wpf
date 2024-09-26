@@ -89,13 +89,13 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
 
-    public partial class WindowFocusPoint : Window
+    public partial class EditPoiParam : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
+        private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
         private string TagName { get; set; } = "P_";
 
         public PoiParam PoiParam { get; set; }
-        public WindowFocusPoint(PoiParam poiParam) 
+        public EditPoiParam(PoiParam poiParam) 
         {
             PoiParam = poiParam;
             InitializeComponent();
@@ -1452,7 +1452,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
-            WindowFocusPointAdd windowFocusPointAd = new WindowFocusPointAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowFocusPointAd.ShowDialog();
         }
 

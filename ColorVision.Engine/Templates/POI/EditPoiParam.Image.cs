@@ -10,7 +10,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
-    public partial class WindowFocusPoint : Window
+    public partial class EditPoiParam : Window
     {
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
