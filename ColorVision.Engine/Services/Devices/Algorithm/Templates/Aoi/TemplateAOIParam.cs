@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Aoi
+﻿using ColorVision.Engine.Templates;
+
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Aoi
 {
     public class TemplateAOIParam : ITemplate<AOIParam>, IITemplateLoad
     {

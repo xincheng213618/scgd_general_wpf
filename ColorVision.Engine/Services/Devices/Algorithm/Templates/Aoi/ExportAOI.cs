@@ -1,6 +1,7 @@
 ﻿using System.Windows;
+using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Templates.Aoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Aoi
 {
     public class ExportAOI : ExportTemplateBase
     {
