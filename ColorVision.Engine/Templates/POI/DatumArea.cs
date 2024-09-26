@@ -25,6 +25,8 @@ namespace ColorVision.Engine.Templates.POI
 
     public enum BorderType
     {
+        [Description("无")]
+        None = -1,
         [Description("绝对值")]
         Absolute,
         [Description("相对值")]
