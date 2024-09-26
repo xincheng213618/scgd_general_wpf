@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -12,7 +13,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
     public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
     {

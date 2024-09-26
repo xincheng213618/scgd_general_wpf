@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;

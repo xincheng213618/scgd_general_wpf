@@ -4,6 +4,12 @@ using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
+    public interface IMysqlCommand
+    {
+        public string GetMysqlCommandName();
+        public string GetRecover();
+    }
+
     public class MySqlInitializer : IInitializer
     {
         private readonly IMessageUpdater _messageUpdater;

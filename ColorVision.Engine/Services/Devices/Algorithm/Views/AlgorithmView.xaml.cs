@@ -31,7 +31,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
