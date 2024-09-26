@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
 using ColorVision.UI.Sorts;
@@ -31,7 +32,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
