@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.CADMapping;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -39,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayBuildPoi(this);
+            UserControl ??= new DisplayCADMapping(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
