@@ -1,11 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.CADMapping;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
