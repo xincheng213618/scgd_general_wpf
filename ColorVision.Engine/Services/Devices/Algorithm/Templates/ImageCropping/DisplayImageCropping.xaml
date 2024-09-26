@@ -18,9 +18,41 @@
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
-            <DockPanel>
-                 
-            </DockPanel>
+            <UniformGrid Columns="4" Margin="0,2">
+                <DockPanel Margin="0,0,5,2" >
+                    <TextBlock Text="x1" Width="20"/>
+                    <TextBox Text="{Binding Point1.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="y1" Width="20"/>
+                    <TextBox Text="{Binding Point1.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x2" Width="20"/>
+                    <TextBox Text="{Binding Point2.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,0,2">
+                    <TextBlock Text="y2" Width="20"/>
+                    <TextBox Text="{Binding Point2.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x3" Width="20"/>
+                    <TextBox Text="{Binding Point3.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="y3" Width="20"/>
+                    <TextBox Text="{Binding Point3.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x4" Width="20"/>
+                    <TextBox Text="{Binding Point4.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,0,2">
+                    <TextBlock Text="y4" Width="20"/>
+                    <TextBox Text="{Binding Point4.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+            </UniformGrid>
+
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">

@@ -43,16 +43,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
             return UserControl;
         }
         public UserControl UserControl { get; set; }
-
-        public Point Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
-        private Point _Point1;
-        public Point Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
-        private Point _Point2;
-        public Point Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
-        private Point _Point3;
-        public Point Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
-        private Point _Point4;
-         
+        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point1 = new PointFloat();
+        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point2 = new PointFloat();
+        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point3 = new PointFloat();
+        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point4 = new PointFloat();
 
 
         public MsgRecord SendCommand(ImageCroppingParam param,string deviceCode, string deviceType, string fileName, FileExtType fileExtType ,string serialNumber)
@@ -63,7 +61,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-
+            PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            Params.Add("ROI", ROI);
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Image_Cropping,

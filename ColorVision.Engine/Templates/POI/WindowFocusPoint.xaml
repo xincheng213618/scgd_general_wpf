@@ -553,7 +553,7 @@
                 <WindowsFormsHost Grid.Column="0" Width="400" Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
                     <winf:PropertyGrid   x:Name="PropertyGrid2" />
                 </WindowsFormsHost>
-                <ListView  x:Name="ListView1" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                <ListView  x:Name="ListView1" VirtualizingPanel.IsVirtualizing="True"  VirtualizingPanel.VirtualizationMode="Recycling" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ContextMenuItem">
                             <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
