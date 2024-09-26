@@ -58,6 +58,10 @@
                                         <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
                                     </DockPanel>
                                     <DockPanel Margin="2">
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding DatumArea.IsShowText}"/>
+                                        <TextBlock   HorizontalAlignment="Left" Text="不显示文字"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="2">
                                         <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
                                         <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
                                     </DockPanel>

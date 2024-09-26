@@ -44,6 +44,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
         }
         public UserControl UserControl { get; set; }
 
+        public Point Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private Point _Point1;
+        public Point Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private Point _Point2;
+        public Point Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private Point _Point3;
+        public Point Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private Point _Point4;
+         
+
+
         public MsgRecord SendCommand(ImageCroppingParam param,string deviceCode, string deviceType, string fileName, FileExtType fileExtType ,string serialNumber)
         {
             string sn = null;
