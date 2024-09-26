@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
@@ -12,6 +13,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
             Title = "发光区裁剪模板";
             Code = "ImageCropping";
             TemplateParams = Params;
+        }
+
+        public override IMysqlCommand? GetMysqlCommand()
+        {
+            return new MysqlImageCropping();
         }
     }
 }
