@@ -22,7 +22,7 @@
             <StackPanel Orientation="Horizontal" Margin="0,2">
                 <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
                 <TextBox x:Name="CADImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
-                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open1_File" />
             </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
