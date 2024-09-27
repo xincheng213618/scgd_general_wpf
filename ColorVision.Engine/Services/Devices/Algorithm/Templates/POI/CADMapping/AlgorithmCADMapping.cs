@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.CADMapping;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using MQTTMessageLib;

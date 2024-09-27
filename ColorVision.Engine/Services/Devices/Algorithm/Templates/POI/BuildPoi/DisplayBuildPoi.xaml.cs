@@ -11,7 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
