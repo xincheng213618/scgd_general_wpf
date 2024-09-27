@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
     {
         public override string OwnerGuid => "TemplatePOI";
         public override string GuidId => "BuildPOI";
-        public override string Header => Properties.Resources.MenuBuildPOI;
+        public override string Header => "关注点布点";
         public override int Order => 0;
 
         public override ITemplate Template => new TemplateBuildPoi();

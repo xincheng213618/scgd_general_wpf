@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 
     public class AlgorithmCADMapping : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "CADMapping";
+        public string Name { get; set; } = "CAD布点";
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
