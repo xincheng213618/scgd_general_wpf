@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
