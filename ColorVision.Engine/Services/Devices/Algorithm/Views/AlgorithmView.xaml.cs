@@ -35,26 +35,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-    public interface IAlgorithmView
-    {
-
-    }
-
-
-    public class ViewShowPoiY
-    {
-        public AlgorithmView AlgorithmView { get; set; }
-        public ViewShowPoiY(AlgorithmView algorithmView)
-        {
-            this.AlgorithmView = algorithmView;
-        }
-
-
-
-    }
-
-
-    /// <summary>
+   /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class AlgorithmView : UserControl,IView

@@ -10,18 +10,18 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
-    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmJDN : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "JND";
+        public string Name { get; set; } = "JDN";
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmJND(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmJDN(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -31,18 +31,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateJND(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateJDN(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayJND(this);
+            UserControl ??= new DisplayJDN(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(JNDParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(JDNParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_OLED_JND_CalVas_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_OLED_JDN_CalVas_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
     public class ExportJDNParam : ExportTemplateBase
     {
@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
         public override string GuidId => "JDNParam";
         public override string Header => "JDN";
         public override int Order => 3;
-        public override ITemplate Template => new TemplateJND();
+        public override ITemplate Template => new TemplateJDN();
     }
 }

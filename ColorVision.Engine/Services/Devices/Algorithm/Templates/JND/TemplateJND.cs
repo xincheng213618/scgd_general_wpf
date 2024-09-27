@@ -1,23 +1,22 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
-    public class TemplateJND : ITemplate<JNDParam>, IITemplateLoad
+    public class TemplateJDN : ITemplate<JDNParam>, IITemplateLoad
     {    
-        public static ObservableCollection<TemplateModel<JNDParam>> Params { get; set; } = new ObservableCollection<TemplateModel<JNDParam>>();
+        public static ObservableCollection<TemplateModel<JDNParam>> Params { get; set; } = new ObservableCollection<TemplateModel<JDNParam>>();
 
-        public TemplateJND()
+        public TemplateJDN()
         {
             Title = "JDN";
-            Code = "OLED.JND.CalVas";
+            Code = "OLED.JDN.CalVas";
             TemplateParams = Params;
         }
         public override IMysqlCommand? GetMysqlCommand()
         {
-            return new MysqlJND();
+            return new MysqlJDN();
         }
     }
 }
