@@ -146,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             if (pOIPointResultModel.Value != null)
             {
-                POIDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIDataCIExyuv>(pOIPointResultModel.Value);
+                POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;
 
