@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Collections;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
@@ -31,20 +32,20 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
-    public partial class WindowFocusPoint : Window
+    public partial class EditPoiParam : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
+        private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
         private string TagName { get; set; } = "P_";
 
         public PoiParam PoiParam { get; set; }
-        public WindowFocusPoint(PoiParam poiParam) 
+        public EditPoiParam(PoiParam poiParam) 
         {
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
         }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+        public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         private async void Window_Initialized(object sender, EventArgs e)
@@ -78,46 +79,64 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ImageShow.VisualsAdd += (s, e) =>
             {
-                if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
+                if (!PoiParam.DatumArea.IsShowText)
                 {
-                    DrawingVisualLists.Add(visual);
-                    visual.BaseAttribute.PropertyChanged += (s1, e1) =>
+                    if (s is IDrawingVisual visual)
                     {
-                        if (e1.PropertyName == "IsShow")
-                        {
-                            ListView1.ScrollIntoView(visual);
-                            ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                            if (visual.BaseAttribute.IsShow == true)
-                            {
-                                if (!ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.AddVisual(visual1);
-                                }
-                            }
-                            else
-                            {
-                                if (ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.RemoveVisual(visual1);
-                                }
-                            }
-                        }
-                    };
-                }
-            };
-            DrawingVisualLists.CollectionChanged += (s, e) =>
-            {
-                if (DrawingVisualLists.Count == 0)
-                {
-                    FocusPointGrid.Visibility = Visibility.Collapsed;
-                    PropertyGrid21.Visibility = Visibility.Collapsed;
+                        DrawingVisualLists.Add(visual);
+                    }
                 }
                 else
                 {
-                    FocusPointGrid.Visibility = Visibility.Visible;
-                    PropertyGrid21.Visibility = Visibility.Visible;
+                    if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
+                    {
+                        DrawingVisualLists.Add(visual);
+                        visual.BaseAttribute.PropertyChanged += (s1, e1) =>
+                        {
+                            if (e1.PropertyName == "IsShow")
+                            {
+                                ListView1.ScrollIntoView(visual);
+                                ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
+                                if (visual.BaseAttribute.IsShow == true)
+                                {
+                                    if (!ImageShow.ContainsVisual(visual1))
+                                    {
+                                        ImageShow.AddVisual(visual1);
+                                    }
+                                }
+                                else
+                                {
+                                    if (ImageShow.ContainsVisual(visual1))
+                                    {
+                                        ImageShow.RemoveVisual(visual1);
+                                    }
+                                }
+                            }
+                        };
+
+                    }
+
                 }
+
+
             };
+            if (PoiParam.DatumArea.IsShowText)
+            {
+                DrawingVisualLists.CollectionChanged += (s, e) =>
+                {
+                    if (DrawingVisualLists.Count == 0)
+                    {
+                        FocusPointGrid.Visibility = Visibility.Collapsed;
+                        PropertyGrid21.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        FocusPointGrid.Visibility = Visibility.Visible;
+                        PropertyGrid21.Visibility = Visibility.Visible;
+                    }
+                };
+            }
+
 
             //如果是不显示
             ImageShow.VisualsRemove += (s, e) =>
@@ -417,18 +436,23 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             try
             {
+                DrawingVisualLists.SuspendUpdate();
+                int WaitNum = 50;
+                if (!PoiParam.DatumArea.IsShowText)
+                    WaitNum = 1000;
                 foreach (var item in poiParam.PoiPoints)
                 {
                     No++;
-                    if (No % 50 == 0)
+                    if (No % WaitNum == 0)
                     {
                         WaitControlProgressBar.Value = 20 + No * 79 / poiParam.PoiPoints.Count;
-                        await Task.Delay(1);
+                        await Task.Delay(10);
                     }
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
                             DVCircleText Circle = new();
+                            Circle.IsShowText = PoiParam.DatumArea.IsShowText;
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -444,6 +468,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             break;
                         case RiPointTypes.Rect:
                             DVRectangleText Rectangle = new();
+                            Rectangle.IsShowText = PoiParam.DatumArea.IsShowText;
                             Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -461,6 +486,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                     }
                 }
                 WaitControlProgressBar.Value = 99;
+                if (DrawingVisualLists.Count <= 1000000)
+                {
+                    DrawingVisualLists.ResumeUpdate();
+                }
 
                 if (Init)
                 {
@@ -580,7 +609,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Num++;
                             if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
                             {
-                                WaitControlProgressBar.Value = Num * 100 / PoiParam.DatumArea.AreaCircleNum;
+                                WaitControlProgressBar.Value = Num * 1000 / PoiParam.DatumArea.AreaCircleNum;
                                 await Task.Delay(1);
                             }
 
@@ -744,6 +773,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         int all = rows * cols;
                         if (all > 1000)
                         {
+                            DrawingVisualLists.SuspendUpdate();
                             WaitControl.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Value = 0;
@@ -755,9 +785,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                             for (int j = 0; j < cols; j++)
                             {
                                 Num++;
-                                if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
+                                if (Num % 10000 == 0 && WaitControl.Visibility == Visibility.Visible)
                                 {
-                                    WaitControlProgressBar.Value = Num * 100 / all;
+                                    WaitControlProgressBar.Value = Num * 10000 / all;
                                     await Task.Delay(1);
                                 }
 
@@ -769,6 +799,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     case RiPointTypes.Circle:
 
                                         DVCircleText Circle = new();
+                                        Circle.IsShowText = PoiParam.DatumArea.IsShowText;
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -780,8 +811,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-
                                         DVRectangleText Rectangle = new();
+                                        Rectangle.IsShowText = PoiParam.DatumArea.IsShowText;
                                         Rectangle.Attribute.Rect = new Rect(x1 - (double)PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -797,6 +828,11 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         break;
                                 }
                             }
+                        }
+
+                        if (all <= 1000000)
+                        {
+                            DrawingVisualLists.ResumeUpdate();
                         }
                         break;
                     case RiPointTypes.Mask:
@@ -952,15 +988,19 @@ namespace ColorVision.Engine.Services.Templates.POI
                     default:
                         break;
                 }
+                if (PoiParam.DatumArea.IsShowText)
+                {
+                    UpdateVisualLayout(true);
+                    ScrollViewer1.ScrollToEnd();
+                }
                 //这里我不推荐添加
-                UpdateVisualLayout(true);
                 if (WaitControl.Visibility == Visibility.Visible)
                 {
                     WaitControl.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Value = 0;
                 }
-                ScrollViewer1.ScrollToEnd();
+
             }
         }
 
@@ -1355,7 +1395,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
-            WindowFocusPointAdd windowFocusPointAd = new WindowFocusPointAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowFocusPointAd.ShowDialog();
         }
 

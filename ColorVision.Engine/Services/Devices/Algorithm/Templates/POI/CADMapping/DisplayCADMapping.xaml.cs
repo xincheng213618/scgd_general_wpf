@@ -1,24 +1,20 @@
 ﻿using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayBuildPoi : UserControl
+    public partial class DisplayCADMapping : UserControl
     {
-        public AlgorithmBuildPoi IAlgorithm { get; set; }
-        public DisplayBuildPoi(AlgorithmBuildPoi iAlgorithm)
+        public AlgorithmCADMapping IAlgorithm { get; set; }
+        public DisplayCADMapping(AlgorithmCADMapping iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -27,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateBuildPoi.Params;
+            ComboxTemplate.ItemsSource = TemplateCADMapping.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -41,9 +37,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择BuildPoi模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择CADMapping模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not ParamBuildPoi param) return;
+            if (ComboxTemplate.SelectedValue is not CADMappingParam param) return;
+            if (!File.Exists(CADImageFile.Text))
+            {
+                MessageBox1.Show("找不到CAD文件");
+                return;
+            }
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
@@ -55,39 +56,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
                     code = deviceService.Code;
                 }
 
-                var Params = new Dictionary<string, object>();
-                POIPointTypes POILayoutReq;
-                if ((bool)CircleChecked.IsChecked)
-                {
-                    Params.Add("LayoutCenterX", centerX.Text);
-                    Params.Add("LayoutCenterY", centerY.Text);
-                    Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
-                    Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
-                    POILayoutReq = POIPointTypes.Circle;
-                }
-                else if ((bool)RectChecked.IsChecked)
-                {
-                    Params.Add("LayoutCenterX", rect_centerX.Text);
-                    Params.Add("LayoutCenterY", rect_centerY.Text);
-                    Params.Add("LayoutWidth", width.Text);
-                    Params.Add("LayoutHeight", height.Text);
-                    POILayoutReq = POIPointTypes.Rect;
-                }
-                else//四边形
-                {
-                    Params.Add("LayoutPolygonX1", Mask_X1.Text);
-                    Params.Add("LayoutPolygonY1", Mask_Y1.Text);
-                    Params.Add("LayoutPolygonX2", Mask_X2.Text);
-                    Params.Add("LayoutPolygonY2", Mask_Y2.Text);
-                    Params.Add("LayoutPolygonX3", Mask_X3.Text);
-                    Params.Add("LayoutPolygonY3", Mask_Y3.Text);
-                    Params.Add("LayoutPolygonX4", Mask_X4.Text);
-                    Params.Add("LayoutPolygonY4", Mask_Y4.Text);
-                    POILayoutReq = POIPointTypes.Mask;
-                }
-
-                MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, CADImageFile.Text, type, code, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "CADMapping");
             }
         }
 

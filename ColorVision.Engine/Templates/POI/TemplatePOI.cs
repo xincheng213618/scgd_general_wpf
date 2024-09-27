@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.POI
         }
         public override void PreviewMouseDoubleClick(int index)
         {
-            var WindowFocusPoint = new WindowFocusPoint(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            var WindowFocusPoint = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
             WindowFocusPoint.ShowDialog();
         }
 

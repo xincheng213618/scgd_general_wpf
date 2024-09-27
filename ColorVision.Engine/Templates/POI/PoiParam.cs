@@ -15,7 +15,6 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     public class PoiParam : ParamBase
     {
-
         public static void Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new(poiParam);

@@ -19,8 +19,6 @@ using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {
-
-
     public class ITemplate
     {
         public virtual IEnumerable ItemsSource { get; }
@@ -33,6 +31,11 @@ namespace ColorVision.Engine.Templates
         public virtual string GetTemplateName(int index)
         {
             throw new NotImplementedException();
+        }
+
+        public virtual IMysqlCommand? GetMysqlCommand()
+        {
+            return null;
         }
 
         public List<int> SaveIndex { get; set; } = new List<int>();
@@ -455,6 +458,13 @@ namespace ColorVision.Engine.Templates
             else
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+                if (GetMysqlCommand() is IMysqlCommand  mysqlCommand)
+                {
+                    if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                    }
+                }
             }
         }
     }

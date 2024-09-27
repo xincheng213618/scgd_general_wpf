@@ -1,58 +1,29 @@
-﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping.DisplayImageCropping"
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping.DisplayCADMapping"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmImageCropping}"
-             d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DataContext="{d:DesignInstance local:AlgorithmCADMapping}"
+             d:DesignHeight="400" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
-                <ComboBox  x:Name="ComboxTemplate" SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
+                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip=""/>
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
-            <UniformGrid Columns="4" Margin="0,2">
-                <DockPanel Margin="0,0,5,2" >
-                    <TextBlock Text="x1" Width="20"/>
-                    <TextBox Text="{Binding Point1.X}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,5,2">
-                    <TextBlock Text="y1" Width="20"/>
-                    <TextBox Text="{Binding Point1.Y}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,5,2">
-                    <TextBlock Text="x2" Width="20"/>
-                    <TextBox Text="{Binding Point2.X}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,0,2">
-                    <TextBlock Text="y2" Width="20"/>
-                    <TextBox Text="{Binding Point2.Y}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,5,2">
-                    <TextBlock Text="x3" Width="20"/>
-                    <TextBox Text="{Binding Point3.X}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,5,2">
-                    <TextBlock Text="y3" Width="20"/>
-                    <TextBox Text="{Binding Point3.Y}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,5,2">
-                    <TextBlock Text="x4" Width="20"/>
-                    <TextBox Text="{Binding Point4.X}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-                <DockPanel Margin="0,0,0,2">
-                    <TextBlock Text="y4" Width="20"/>
-                    <TextBox Text="{Binding Point4.Y}" Style="{StaticResource TextBox.Small}"/>
-                </DockPanel>
-            </UniformGrid>
-
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                <TextBox x:Name="CADImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+            </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">

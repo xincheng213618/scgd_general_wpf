@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIOutput;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -26,5 +28,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
         {
             return EditControl;
         }
+        public override IMysqlCommand? GetMysqlCommand() => new MysqlPoiOutput();
     }
 }

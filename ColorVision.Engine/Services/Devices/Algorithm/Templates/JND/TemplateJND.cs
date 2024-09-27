@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
@@ -12,6 +14,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
             Title = "JDN";
             Code = "OLED.JND.CalVas";
             TemplateParams = Params;
+        }
+        public override IMysqlCommand? GetMysqlCommand()
+        {
+            return new MysqlJND();
         }
     }
 }

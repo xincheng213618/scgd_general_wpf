@@ -6,7 +6,7 @@
         xmlns:Base="clr-namespace:ColorVision.Themes.Controls"
         xmlns:properties ="clr-namespace:ColorVision.Themes.Properties"
         mc:Ignorable="d"
-        WindowStartupLocation="CenterScreen" SizeToContent="WidthAndHeight"  MinWidth="200" MinHeight="100" Background="{DynamicResource GlobalBackground}" ResizeMode="NoResize" >
+        WindowStartupLocation="CenterOwner" SizeToContent="WidthAndHeight"  MinWidth="200" MinHeight="100" Background="{DynamicResource GlobalBackground}" ResizeMode="NoResize" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

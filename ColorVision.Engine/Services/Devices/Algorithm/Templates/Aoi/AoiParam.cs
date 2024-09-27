@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Templates.Aoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Aoi
 {
     public class AOIParam : ParamBase
     {

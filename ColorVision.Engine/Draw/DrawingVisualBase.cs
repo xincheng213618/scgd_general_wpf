@@ -20,6 +20,9 @@ namespace ColorVision.Engine.Draw
     {
         public override int ID { get => Attribute.Id; set => Attribute.Id = value; }
 
+        public bool IsShowText { get; set; } = true;
+
+
         public object Tag { get; set; }
 
         public object ToolTip { get; set; }

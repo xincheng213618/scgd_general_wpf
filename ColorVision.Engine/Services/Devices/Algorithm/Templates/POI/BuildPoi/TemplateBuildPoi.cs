@@ -1,7 +1,8 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
     public class TemplateBuildPoi : ITemplate<ParamBuildPoi>, IITemplateLoad
     {
@@ -14,5 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
             Code = "BuildPOI";
             TemplateParams = Params;
         }
+
+        public override IMysqlCommand? GetMysqlCommand() => new MysqlBuildPoi();
     }
 }

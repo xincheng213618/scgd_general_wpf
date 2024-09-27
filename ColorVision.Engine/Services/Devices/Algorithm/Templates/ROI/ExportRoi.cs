@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
-    public class ExportRoiParam : ExportTemplateBase
+    public class ExportRoi : ExportTemplateBase
     {
         public override string OwnerGuid => "TemplateAlgorithm";
         public override string GuidId => "RoiParam";

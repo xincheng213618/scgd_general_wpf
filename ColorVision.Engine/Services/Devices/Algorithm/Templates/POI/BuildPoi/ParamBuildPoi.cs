@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
     public class ParamBuildPoi : ParamBase
     {

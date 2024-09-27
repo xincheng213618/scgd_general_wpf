@@ -6,13 +6,13 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Templates.POI
 {
     /// <summary>
-    /// WindowFocusPointAdd.xaml 的交互逻辑
+    /// EditPoiParamAdd.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowFocusPointAdd : Window
+    public partial class EditPoiParamAdd : Window
     {
         PoiParam PoiParam { get; set; }
 
-        public WindowFocusPointAdd(PoiParam poiParam)
+        public EditPoiParamAdd(PoiParam poiParam)
         {
             PoiParam = poiParam;
             InitializeComponent();

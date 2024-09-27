@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
@@ -12,6 +13,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
             Title = "Poi修正算法设置";
             Code = "PoiRevise";
             TemplateParams = Params;
+        }
+
+
+        public override IMysqlCommand? GetMysqlCommand()
+        {
+            return new MysqlPoiRevise();
         }
     }
 }

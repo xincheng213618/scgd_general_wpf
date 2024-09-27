@@ -4,6 +4,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
+
     public class MySqlInitializer : IInitializer
     {
         private readonly IMessageUpdater _messageUpdater;

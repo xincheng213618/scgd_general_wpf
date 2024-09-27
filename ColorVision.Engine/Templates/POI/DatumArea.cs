@@ -25,6 +25,8 @@ namespace ColorVision.Engine.Templates.POI
 
     public enum BorderType
     {
+        [Description("无")]
+        None = -1,
         [Description("绝对值")]
         Absolute,
         [Description("相对值")]
@@ -71,6 +73,9 @@ namespace ColorVision.Engine.Templates.POI
 
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
         private bool _IsShowDatum;
+
+        public bool IsShowText { get => _IsShowText; set { _IsShowText = value; NotifyPropertyChanged(); } }
+        private bool _IsShowText = true;
 
         public bool IsShowDatumArea { get => _IsShowDatumArea; set { _IsShowDatumArea = value; NotifyPropertyChanged(); } }
         private bool _IsShowDatumArea;
