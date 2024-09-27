@@ -2,7 +2,7 @@
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
     public class TemplateJDN : ITemplate<JDNParam>, IITemplateLoad
     {    

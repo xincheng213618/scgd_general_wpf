@@ -5,7 +5,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑

@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.JND"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmJND}"
+             d:DataContext="{d:DesignInstance local:AlgorithmJDN}"
              d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
