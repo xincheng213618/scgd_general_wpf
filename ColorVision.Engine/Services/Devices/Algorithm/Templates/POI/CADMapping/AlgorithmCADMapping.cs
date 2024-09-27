@@ -12,6 +12,14 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 {
+    public class PointFloat : ViewModelBase
+    {
+        public float X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        private float _X;
+        public float Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private float _Y;
+    }
+
     public class AlgorithmCADMapping : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "CADMapping";
@@ -41,6 +49,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
         }
         public UserControl UserControl { get; set; }
 
+        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point1 = new PointFloat();
+        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point2 = new PointFloat();
+        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point3 = new PointFloat();
+        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point4 = new PointFloat();
+
+
         public MsgRecord SendCommand(CADMappingParam param,string CADfilePath, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
@@ -49,7 +67,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("CADfilePath", CADfilePath);
+            Params.Add("CAD_PosFileName", CADfilePath);
+            PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            Params.Add("ROI", ROI);
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_POI_CADMapping,
