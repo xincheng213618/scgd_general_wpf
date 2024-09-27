@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 {
-    public class AlgorithmJDN : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "JDN";
 
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmJDN(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmJND(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayJDN(this);
+            UserControl ??= new DisplayJND(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
@@ -54,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_OLED_JDN_CalVas_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_OLED_JND_CalVas_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

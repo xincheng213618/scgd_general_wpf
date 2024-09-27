@@ -10,10 +10,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayJDN : UserControl
+    public partial class DisplayJND : UserControl
     {
         public AlgorithmJND IAlgorithm { get; set; }
-        public DisplayJDN(AlgorithmJND iAlgorithm)
+        public DisplayJND(AlgorithmJND iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
