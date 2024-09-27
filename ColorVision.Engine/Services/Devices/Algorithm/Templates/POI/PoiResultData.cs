@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             if (pOIPointResultModel.Value != null)
             {
-                POIDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIDataCIEY>(pOIPointResultModel.Value);
+                POIResultDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIResultDataCIEY>(pOIPointResultModel.Value);
                 Y = pOIDataCIEY.Y >= 0 ? pOIDataCIEY.Y : 0.001;
             }
         }
