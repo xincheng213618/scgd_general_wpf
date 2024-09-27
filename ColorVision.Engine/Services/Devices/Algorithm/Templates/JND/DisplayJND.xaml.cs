@@ -1,11 +1,12 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
@@ -22,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxTemplate.ItemsSource = TemplateJDN.Params;
+            ComboxTemplate.ItemsSource = TemplateJND.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -36,9 +37,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择JDN模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择JND模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not JDNParam param) return;
+            if (ComboxTemplate.SelectedValue is not JNDParam param) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {

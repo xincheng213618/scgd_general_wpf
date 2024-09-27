@@ -2,17 +2,17 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
 
-    public class JDNParam : ParamBase
+    public class JNDParam : ParamBase
     {
-        public JDNParam() { }
-        public JDNParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public JNDParam() { }
+        public JNDParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 
-        [Category("JDN"), Description("轮廓裁剪系数")]
+        [Category("JND"), Description("轮廓裁剪系数")]
         public double CutOff { get => GetValue(_CutOff); set { SetProperty(ref _CutOff, value); } }
         private double _CutOff = 0.3;
 

@@ -10,11 +10,11 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
     public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "JDN";
+        public string Name { get; set; } = "JND";
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateJDN(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new TemplateJND(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()
@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(JDNParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(JNDParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

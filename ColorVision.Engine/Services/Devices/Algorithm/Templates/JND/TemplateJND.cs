@@ -2,21 +2,21 @@
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
-    public class TemplateJDN : ITemplate<JDNParam>, IITemplateLoad
+    public class TemplateJND : ITemplate<JNDParam>, IITemplateLoad
     {    
-        public static ObservableCollection<TemplateModel<JDNParam>> Params { get; set; } = new ObservableCollection<TemplateModel<JDNParam>>();
+        public static ObservableCollection<TemplateModel<JNDParam>> Params { get; set; } = new ObservableCollection<TemplateModel<JNDParam>>();
 
-        public TemplateJDN()
+        public TemplateJND()
         {
-            Title = "JDN";
-            Code = "OLED.JDN.CalVas";
+            Title = "JND";
+            Code = "OLED.JND.CalVas";
             TemplateParams = Params;
         }
         public override IMysqlCommand? GetMysqlCommand()
         {
-            return new MysqlJDN();
+            return new MysqlJND();
         }
     }
 }
