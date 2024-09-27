@@ -10,22 +10,23 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
-    public class AlgorithmJDN : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "JDN";
+        public string Name { get; set; } = "JND";
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmJDN(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmJND(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
+
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
@@ -53,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_OLED_JDN_CalVas_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_OLED_JND_CalVas_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

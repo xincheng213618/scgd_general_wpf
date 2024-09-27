@@ -1,24 +1,19 @@
 ﻿using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayJDN : UserControl
     {
-        public AlgorithmJDN IAlgorithm { get; set; }
-        public DisplayJDN(AlgorithmJDN iAlgorithm)
+        public AlgorithmJND IAlgorithm { get; set; }
+        public DisplayJDN(AlgorithmJND iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -98,7 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JDN
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
