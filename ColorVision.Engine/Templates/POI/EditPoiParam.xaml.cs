@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Collections;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
@@ -17,7 +18,6 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -32,63 +32,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
-    public class CgObservableCollection<T> : ObservableCollection<T>, ISuspendUpdate
-    {
-        private bool updatesEnabled = true;
-        private bool collectionChanged = false;
-
-        public void ResumeUpdate()
-        {
-            updatesEnabled = true;
-            if (collectionChanged)
-            {
-                collectionChanged = false;
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
-            }
-        }
-
-        public void SuspendUpdate()
-        {
-            updatesEnabled = false;
-        }
-
-        protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
-        {
-            if (updatesEnabled)
-            {
-                base.OnCollectionChanged(e);
-            }
-            else
-            {
-                collectionChanged = true;
-            }
-        }
-    }
-
-    public interface ISuspendUpdate
-    {
-        void SuspendUpdate();
-
-        void ResumeUpdate();
-    }
-
-    public class SuspendUpdateScope : IDisposable
-    {
-        private ISuspendUpdate _parent;
-
-        public SuspendUpdateScope(ISuspendUpdate parent)
-        {
-            _parent = parent; parent.SuspendUpdate();
-        }
-
-        public void Dispose()
-        {
-            _parent.ResumeUpdate();
-        }
-    }
-
-
-
     public partial class EditPoiParam : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
@@ -102,7 +45,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             this.ApplyCaption();
         }
 
-        public CgObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new CgObservableCollection<IDrawingVisual>();
+        public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         private async void Window_Initialized(object sender, EventArgs e)
