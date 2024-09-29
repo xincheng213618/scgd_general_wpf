@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
@@ -71,9 +72,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     }
                     if (File.Exists(result.FilePath))
                     {
-                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
-                        HImage hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
+                        HImage hImage;
+                        if (CVFileUtil.IsCIEFile(result.FilePath))
+                        {
+                            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
+                            hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
 
+                        }
+                        else
+                        {
+                            BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
+                            hImage = bitmapImage.ToHImage();
+                        }
                         int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length);
                         Application.Current.Dispatcher.Invoke(() =>
                         {
