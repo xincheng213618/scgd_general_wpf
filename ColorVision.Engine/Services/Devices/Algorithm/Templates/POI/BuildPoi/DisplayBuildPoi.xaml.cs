@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Services.Msg;
 using ColorVision.Themes.Controls;
 using CVCommCore.CVAlgorithm;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
@@ -38,6 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateBuildPoi.Params;
             ComboxTemplate.SelectedIndex = 0;
+
             CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
 
             void UpdateCB_SourceImageFiles()

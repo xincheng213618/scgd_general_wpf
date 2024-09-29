@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
+using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -18,8 +19,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 
 
         [Category("BuildPOI"), Description("POI布点范围类型")]
-        public POILayoutTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
-        private POILayoutTypes _POILayout = POILayoutTypes.Rect;
+        public POIPointTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
+        private POIPointTypes _POILayout = POIPointTypes.Rect;
 
 
         [Category("BuildPOI"), Description("POI极坐标布点数量")]

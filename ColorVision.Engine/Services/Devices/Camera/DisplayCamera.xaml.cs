@@ -16,6 +16,7 @@ using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using Quartz;
+using ScottPlot.Colormaps;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -364,10 +365,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-
+        CroppedBitmap croppedBitmap1;
+        Image smallWindowImage;
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
+            if (croppedBitmap1 == null)
+            {
+                croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
+                smallWindowImage = new Image
+                {
+                    Source = croppedBitmap1,
+                    Width = 500,
+                    Height = 500
+                };
+                Window window = new Window() { Content = smallWindowImage };
+                window.Show();
+            }
+            croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
+            smallWindowImage.Source = croppedBitmap1;
         }
 
 

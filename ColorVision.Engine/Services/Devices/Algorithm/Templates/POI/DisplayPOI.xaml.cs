@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;

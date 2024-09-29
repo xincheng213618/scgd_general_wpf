@@ -61,8 +61,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiReviseSelectedIndex;
 
-        public POIStorageModel POIStorageType { get => _POIStorageType; set { _POIStorageType = value; NotifyPropertyChanged(); } }
-        private POIStorageModel _POIStorageType = POIStorageModel.Db;
+        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); } }
+        private POIStorageModel _POIStorageModel = POIStorageModel.Db;
 
 
         public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public void OpenTemplatePoiOutput()
         {
-            new WindowTemplate(new TemplatePoiReviseParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new WindowTemplate(new  TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         
@@ -118,9 +118,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             if (output.Id != -1)
                 Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
 
-            if (POIStorageType == POIStorageModel.File)
+            if (POIStorageModel == POIStorageModel.File)
             {
-                Params.Add("POIStorageType", POIStorageType);
+                Params.Add("POIStorageType", POIStorageModel);
                 Params.Add("POIPointFileName", POIPointFileName);
             }
 
