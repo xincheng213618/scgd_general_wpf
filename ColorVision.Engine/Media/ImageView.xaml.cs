@@ -1280,8 +1280,6 @@ namespace ColorVision.Engine.Media
                 case POIPointTypes.Rect:
                      _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
                     break;
-                case POIPointTypes.Mask:
-                    break;
                 default:
                     break;
             }

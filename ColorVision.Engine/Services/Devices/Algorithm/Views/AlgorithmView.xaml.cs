@@ -732,8 +732,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
-                    case POIPointTypes.Mask:
-                        break;
                     case POIPointTypes.SolidPoint:
                         DVCircle Circle1 = new();
                         Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
