@@ -2,10 +2,13 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
+using CsvHelper;
+using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -19,45 +22,36 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
     public class BuildPoiFileHandle : IResultHandle
     {
         public AlgorithmResultType ResultType => AlgorithmResultType.BuildPOI_File;
-
+        private static POIPointInfo ReadPOIPointFromCSV(string fileName)
+        {
+            POIPointInfo poiInfo = null;
+            using (var reader = new StreamReader(fileName))
+            {
+                using (var csvReader = new CsvReader(reader, CultureInfo.InvariantCulture))
+                {
+                    POIHeaderInfo info = null;
+                    if (csvReader.Read())
+                    {
+                        info = csvReader.GetRecord<POIHeaderInfo>();
+                        if (csvReader.Read() && csvReader.ReadHeader())
+                        {
+                            var pois = csvReader.GetRecords<POIPointPosition>().ToList();
+                            if (pois != null && pois.Count > 0)
+                            {
+                                poiInfo = new POIPointInfo() { HeaderInfo = info, Positions = pois };
+                            }
+                        }
+                    }
+                }
+            }
+            return poiInfo;
+        }
         public void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             List<string> header = new();
             List<string> bdHeader = new();
 
-            string filepath = "C:\\Users\\17917\\Desktop\\20240927T171615.9133690_1000ND.cvraw";
-            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filepath);
-            HImage hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
-
-            int[] ints = new int[50];
-            for (int i = 0; i < 50; i++)
-            {
-                ints[i] = 50 * i;
-            }
-            int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, 30, ints, 50);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (ret == 0)
-                {
-                    var image = hImageProcessed.ToWriteableBitmap();
-
-                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                    hImageProcessed.pData = IntPtr.Zero;
-                    view.ImageView.PseudoImage = image;
-                    view.ImageView.ImageShow.Source = view.ImageView.PseudoImage;
-                }
-            });
-
-            if (File.Exists(result.FilePath))
-            {
-                view.ImageView.OpenImage(result.FilePath);
-
-
-
-
-
-            }
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -66,6 +60,41 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 {
                     result.ViewResults.Add(item);
                 }
+                if (models.Count > 0)
+                {
+                    POIPointInfo pointinfo = ReadPOIPointFromCSV(models[0].FileUrl);
+                    int[] ints = new int[pointinfo.Positions.Count*2];
+                    for (int i = 0; i < pointinfo.Positions.Count; i++)
+                    {
+                        ints[2*i] = pointinfo.Positions[i].PixelX;
+                        ints[2*i+1] = pointinfo.Positions[i].PixelY;
+                    }
+                    result.FilePath = filepath;
+                    if (File.Exists(result.FilePath))
+                    {
+                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
+                        HImage hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
+
+                        int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (ret == 0)
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                view.ImageView.PseudoImage = image;
+                                view.ImageView.ImageShow.Source = view.ImageView.PseudoImage;
+                            }
+                        });
+
+                    }
+
+
+                }
+
+
                 header = new List<string> { "id", "file_name", "file_url", "fileType" };
                 bdHeader = new List<string> { "Id", "FileName", "FileUrl", "file_type" };
             }
