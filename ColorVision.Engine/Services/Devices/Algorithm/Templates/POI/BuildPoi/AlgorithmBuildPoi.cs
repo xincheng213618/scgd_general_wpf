@@ -13,6 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
+
     public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "关注点布点";
@@ -43,6 +44,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
         public UserControl UserControl { get; set; }
 
 
+        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); } }
+        private POIStorageModel _POIStorageModel = POIStorageModel.Db;
+
         public MsgRecord SendCommand(ParamBuildPoi buildPOIParam, POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
@@ -56,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 Params.Add(param.Key, param.Value);
             }
-
+            Params.Add("POIStorageModel", POIStorageModel);
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,

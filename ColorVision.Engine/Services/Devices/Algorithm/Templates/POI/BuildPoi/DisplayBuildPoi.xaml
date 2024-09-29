@@ -19,61 +19,102 @@
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
-            <StackPanel Margin="0,2">
-                <DockPanel Margin="0,2">
+            <StackPanel Margin="0,0">
+                <DockPanel >
                     <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="中心X"/>
-                    <TextBox x:Name="centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
-                    <TextBlock Text="中心Y"/>
-                    <TextBox x:Name="centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                    <TextBlock Text="半径"/>
-                    <TextBox x:Name="radius" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                </DockPanel>
+                <UniformGrid Columns="3">
+                    <DockPanel>
+                        <TextBlock Text="中心X"/>
+                        <TextBox x:Name="centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="中心Y"/>
+                        <TextBox x:Name="centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                    <DockPanel>
+
+                        <TextBlock Text="半径"/>
+                        <TextBox x:Name="radius" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                </UniformGrid>
             </StackPanel>
             <StackPanel Margin="0,2">
-                <DockPanel Margin="0,2">
+                <DockPanel>
                     <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
+                <UniformGrid Columns="4">
+                    <DockPanel>
+                        <TextBlock Text="中心X"/>
+                        <TextBox x:Name="rect_centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="35" Text="500" />
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="中心Y"/>
+                        <TextBox x:Name="rect_centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="35" Text="500"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="宽度"/>
+                        <TextBox x:Name="width" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="高度"/>
+                        <TextBox x:Name="height" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                    </DockPanel>
+                </UniformGrid>
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="中心X"/>
-                    <TextBox x:Name="rect_centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500" />
-                    <TextBlock Text="中心Y"/>
-                    <TextBox x:Name="rect_centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500"/>
-                    <TextBlock Text="宽度"/>
-                    <TextBox x:Name="width" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
-                    <TextBlock Text="高度"/>
-                    <TextBox x:Name="height" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+
+
+
+
                 </DockPanel>
             </StackPanel>
 
             <StackPanel Margin="0,2">
-                <DockPanel Margin="0,2">
+                <DockPanel>
                     <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="X1"/>
-                    <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0" />
-                    <TextBlock Text="Y1"/>
-                    <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                    <TextBlock Text="X2"/>
-                    <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                    <TextBlock Text="Y2"/>
-                    <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                </DockPanel>
+                <UniformGrid Columns="4">
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="X1"/>
+                        <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0" />
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="Y1"/>
+                        <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="X2"/>
+                        <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="Y2"/>
+                        <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="X3"/>
+                        <TextBox x:Name="Mask_X3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="Y3"/>
+                        <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="X4"/>
+                        <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                    </DockPanel>
 
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="X3"/>
-                    <TextBox x:Name="Mask_X3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                    <TextBlock Text="Y3"/>
-                    <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                    <TextBlock Text="X4"/>
-                    <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                    <TextBlock Text="Y4"/>
-                    <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                </DockPanel>
+                    <DockPanel Margin="0,0,0,1">
+                        <TextBlock Text="Y4"/>
+                        <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                    </DockPanel>
+                </UniformGrid>
             </StackPanel>
+
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="输出类型" Width="70"/>
+                <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
+            </StackPanel>
+            
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">

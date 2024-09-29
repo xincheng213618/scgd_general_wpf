@@ -1,18 +1,26 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
-using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+﻿using ColorVision.Engine.Services.Msg;
 using ColorVision.Themes.Controls;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
+
+    public static class EnumExtensions
+    {
+        public static IEnumerable<KeyValuePair<TEnum, string>> ToKeyValuePairs<TEnum>() where TEnum : Enum
+        {
+            return Enum.GetValues(typeof(TEnum)) .Cast<TEnum>().Select(e => new KeyValuePair<TEnum, string>(e, e.ToString()));
+        }
+    }
+
+
+
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
@@ -30,6 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateBuildPoi.Params;
             ComboxTemplate.SelectedIndex = 0;
+            CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
 
             void UpdateCB_SourceImageFiles()
             {
