@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     //Params.Add("LayoutPolygonY3", Mask_Y3.Text);
                     //Params.Add("LayoutPolygonX4", Mask_X4.Text);
                     //Params.Add("LayoutPolygonY4", Mask_Y4.Text);
-                    POILayoutReq = POIPointTypes.PolygonFour;
+                    POILayoutReq = POIPointTypes.Mask;
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);

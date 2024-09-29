@@ -46,11 +46,11 @@
                 </DockPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2">
                     <TextBlock Text="输出类型" Width="70"/>
-                    <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
+                    <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageType}" Width="100"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2">
                     <TextBlock Text="关注点文件" Margin="0,0,10,0" Width="60"/>
-                    <TextBox x:Name="CADImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                    <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding POIPointFileName}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                     <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenPoiFileCommand}" />
                 </StackPanel>
             </StackPanel>
