@@ -11,7 +11,7 @@
     <Grid>
         <StackPanel>
             <StackPanel Margin="0,5" >
-                <DockPanel Margin="0,2">
+                <DockPanel Margin="0,2" Visibility="{Binding IsUSeFile,Converter={StaticResource bool2VisibilityConverter1}}">
                     <TextBlock Text="POI" Width="50"/>
                     <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                     <ComboBox  x:Name="ComboxPoiTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -45,10 +45,10 @@
                     </Grid>
                 </DockPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <TextBlock Text="输出类型" Width="70"/>
+                    <TextBlock Text="输入类型" Width="70"/>
                     <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,2">
+                <StackPanel Orientation="Horizontal" Margin="0,2" Visibility="{Binding IsUSeFile,Converter={StaticResource bool2VisibilityConverter}}">
                     <TextBlock Text="关注点文件" Margin="0,0,10,0" Width="60"/>
                     <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding POIPointFileName}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                     <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenPoiFileCommand}" />

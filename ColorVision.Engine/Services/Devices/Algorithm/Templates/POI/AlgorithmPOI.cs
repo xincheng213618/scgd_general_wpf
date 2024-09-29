@@ -61,8 +61,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiReviseSelectedIndex;
 
-        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); } }
+        public POIStorageModel POIStorageModel { get => _POIStorageModel; set { _POIStorageModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsUSeFile)); } }
         private POIStorageModel _POIStorageModel = POIStorageModel.Db;
+
+        public bool IsUSeFile => POIStorageModel == POIStorageModel.File;
 
 
         public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
@@ -93,9 +95,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             new WindowTemplate(new  TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
-        
-
 
         public UserControl GetUserControl()
         {
