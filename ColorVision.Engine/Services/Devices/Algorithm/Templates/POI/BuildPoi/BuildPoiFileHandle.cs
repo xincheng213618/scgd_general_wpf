@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                         if (CVFileUtil.IsCIEFile(result.FilePath))
                         {
                             CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
-                            hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
+                            hImage = cVCIEFile.ToWriteabl  eBitmap().ToHImage();
 
                         }
                         else
