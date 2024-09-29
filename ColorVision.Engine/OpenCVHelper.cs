@@ -2,9 +2,11 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -244,7 +246,9 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_ExtractChannel(HImage image, out HImage hImage, int channel);
-
+       
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radio, int[] points, int pointCount);
 
         [DllImport(LibPath)]
         public static extern int CM_Fusion(string fusionjson, out HImage hImage);
@@ -256,6 +260,9 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_SetHImageData(IntPtr data);
+
+
+
 
     }
 

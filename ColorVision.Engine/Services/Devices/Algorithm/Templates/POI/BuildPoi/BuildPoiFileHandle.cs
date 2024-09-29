@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Net;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -23,9 +25,38 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             view.ImageView.ImageShow.Clear();
             List<string> header = new();
             List<string> bdHeader = new();
+
+            string filepath = "C:\\Users\\17917\\Desktop\\20240927T171615.9133690_1000ND.cvraw";
+            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filepath);
+            HImage hImage = cVCIEFile.ToWriteableBitmap().ToHImage();
+
+            int[] ints = new int[50];
+            for (int i = 0; i < 50; i++)
+            {
+                ints[i] = 50 * i;
+            }
+            int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, 30, ints, 50);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (ret == 0)
+                {
+                    var image = hImageProcessed.ToWriteableBitmap();
+
+                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                    hImageProcessed.pData = IntPtr.Zero;
+                    view.ImageView.PseudoImage = image;
+                    view.ImageView.ImageShow.Source = view.ImageView.PseudoImage;
+                }
+            });
+
             if (File.Exists(result.FilePath))
             {
                 view.ImageView.OpenImage(result.FilePath);
+
+
+
+
+
             }
             if (result.ViewResults == null)
             {
