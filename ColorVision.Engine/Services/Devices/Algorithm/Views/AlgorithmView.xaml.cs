@@ -193,12 +193,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 List<POIPoint> DrawPoiPoint = new();
                 List<string> header = new();
                 List<string> bdHeader = new();
-
                 if (File.Exists(result.FilePath))
                 {
                     ImageView.OpenImage(result.FilePath);
                 }
-
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.LightArea:
@@ -524,6 +522,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         AddPOIPoint(DrawPoiPoint);
                         Config.IsShowSideListView = false;
                         break;
+                    case AlgorithmResultType.BuildPOI_File:
+                        if (result.ViewResults == null)
+                        {
+                            result.ViewResults = new ObservableCollection<IViewResult>();
+                            List<PoiCieFileModel> models = PoiCieFileDao.Instance.GetAllByPid(result.Id);
+                            foreach (var item in models)
+                            {
+                                result.ViewResults.Add(item);
+                            }
+                            header = new List<string> { "id", "file_name" , "file_url" , "fileType" };
+                            bdHeader = new List<string> { "Id", "FileName", "FileUrl" , "file_type" };
+                        }
+                        break;
                     case AlgorithmResultType.Compliance_Contrast:
                     case AlgorithmResultType.Compliance_Math:
                     case AlgorithmResultType.Compliance_Contrast_CIE_Y:
@@ -545,6 +556,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         header = new() { "名称", "x", "y", "z", "xxx", "yyy", "zzz", "cct", "wave", "Validate" };
                         bdHeader = new() { "Name", "DataValuex", "DataValuey", "DataValuez", "DataValuexxx", "DataValueyyy", "DataValuezzz", "DataValueCCT", "DataValueWave", "ValidateResult" };
                         break;
+
                     default:
                         break;
                 }
