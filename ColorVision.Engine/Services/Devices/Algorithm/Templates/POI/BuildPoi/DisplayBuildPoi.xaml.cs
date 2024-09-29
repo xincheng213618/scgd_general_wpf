@@ -60,36 +60,63 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 POIPointTypes POILayoutReq;
                 if ((bool)CircleChecked.IsChecked)
                 {
-                    Params.Add("LayoutCenterX", centerX.Text);
-                    Params.Add("LayoutCenterY", centerY.Text);
+                    PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
+                    Params.Add("LayoutCenter", center);
+                    //Params.Add("LayoutCenterX", centerX.Text);
+                    //Params.Add("LayoutCenterY", centerY.Text);
                     Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
                     POILayoutReq = POIPointTypes.Circle;
                 }
                 else if ((bool)RectChecked.IsChecked)
                 {
-                    Params.Add("LayoutCenterX", rect_centerX.Text);
-                    Params.Add("LayoutCenterY", rect_centerY.Text);
+                    PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
+                    Params.Add("LayoutCenter", center);
+                    //Params.Add("LayoutCenterX", rect_centerX.Text);
+                    //Params.Add("LayoutCenterY", rect_centerY.Text);
                     Params.Add("LayoutWidth", width.Text);
                     Params.Add("LayoutHeight", height.Text);
                     POILayoutReq = POIPointTypes.Rect;
                 }
                 else//四边形
                 {
-                    Params.Add("LayoutPolygonX1", Mask_X1.Text);
-                    Params.Add("LayoutPolygonY1", Mask_Y1.Text);
-                    Params.Add("LayoutPolygonX2", Mask_X2.Text);
-                    Params.Add("LayoutPolygonY2", Mask_Y2.Text);
-                    Params.Add("LayoutPolygonX3", Mask_X3.Text);
-                    Params.Add("LayoutPolygonY3", Mask_Y3.Text);
-                    Params.Add("LayoutPolygonX4", Mask_X4.Text);
-                    Params.Add("LayoutPolygonY4", Mask_Y4.Text);
+                    Params.Add("LayoutPolygon", BuildLayoutPolygon());
+                    //Params.Add("LayoutPolygonX1", Mask_X1.Text);
+                    //Params.Add("LayoutPolygonY1", Mask_Y1.Text);
+                    //Params.Add("LayoutPolygonX2", Mask_X2.Text);
+                    //Params.Add("LayoutPolygonY2", Mask_Y2.Text);
+                    //Params.Add("LayoutPolygonX3", Mask_X3.Text);
+                    //Params.Add("LayoutPolygonY3", Mask_Y3.Text);
+                    //Params.Add("LayoutPolygonX4", Mask_X4.Text);
+                    //Params.Add("LayoutPolygonY4", Mask_Y4.Text);
                     POILayoutReq = POIPointTypes.Mask;
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "LEDStripDetection");
             }
+        }
+
+        private List<PointInt> BuildLayoutPolygon()
+        {
+            List<PointInt> points = new List<PointInt>();
+            PointInt point = new PointInt();
+            point.X = Convert.ToInt32(Mask_X1.Text);
+            point.Y = Convert.ToInt32(Mask_Y1.Text);
+            points.Add(point);
+            point = new PointInt();
+            point.X = Convert.ToInt32(Mask_X2.Text);
+            point.Y = Convert.ToInt32(Mask_Y2.Text);
+            points.Add(point);
+            point = new PointInt();
+            point.X = Convert.ToInt32(Mask_X3.Text);
+            point.Y = Convert.ToInt32(Mask_Y3.Text);
+            points.Add(point);
+            point = new PointInt();
+            point.X = Convert.ToInt32(Mask_X4.Text);
+            point.Y = Convert.ToInt32(Mask_Y4.Text);
+            points.Add(point);
+            return points;
         }
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
@@ -149,6 +176,18 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
         {
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+        }
+    }
+
+    public struct PointInt
+    {
+        public int X;
+        public int Y;
+
+        public PointInt(int x, int y)
+        {
+            X = x;
+            Y = y;
         }
     }
 }
