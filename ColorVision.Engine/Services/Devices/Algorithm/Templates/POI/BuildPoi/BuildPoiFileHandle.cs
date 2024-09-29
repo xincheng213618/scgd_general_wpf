@@ -70,7 +70,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                         ints[2*i] = pointinfo.Positions[i].PixelX;
                         ints[2*i+1] = pointinfo.Positions[i].PixelY;
                     }
-                    result.FilePath = "C:\\Users\\17917\\Desktop\\20240927T171615.9133690_1000ND.cvraw";
                     if (File.Exists(result.FilePath))
                     {
                         HImage hImage;
