@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(msg, "关注点布点");
             }
         }
 
