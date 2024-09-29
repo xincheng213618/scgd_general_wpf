@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 Params.Add(param.Key, param.Value);
             }
-            Params.Add("POIStorageModel", POIStorageModel);
+            Params.Add("POIStorageType", POIStorageModel);
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
