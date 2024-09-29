@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     POILayoutReq = POILayoutTypes.PolygonFour;
                 }
 
-                MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params, code, type, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "关注点布点");
             }
         }
