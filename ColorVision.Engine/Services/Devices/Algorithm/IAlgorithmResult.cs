@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using MQTTMessageLib.Algorithm;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -7,6 +9,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     {
 
     }
+
+
+
+
 
     public static class CollectionExtensions
     {

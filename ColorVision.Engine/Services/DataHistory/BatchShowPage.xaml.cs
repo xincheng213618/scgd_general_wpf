@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Services.DataHistory.Dao
                     window.Show();
                 }
 
-                AlgorithmView.AlgResults.Add(AlgorithmResults[listView.SelectedIndex]);
+                AlgorithmView.ViewResults.Add(AlgorithmResults[listView.SelectedIndex]);
                 AlgorithmView.RefreshResultListView();
             }
         }

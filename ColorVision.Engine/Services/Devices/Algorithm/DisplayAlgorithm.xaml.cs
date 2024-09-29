@@ -39,6 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     }
                 }
             }
+
             CB_Algorithms.ItemsSource = Algorithms;
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
