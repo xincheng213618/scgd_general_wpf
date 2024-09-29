@@ -16,7 +16,7 @@ int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointC
 {
     // 创建输入图像的cv::Mat
     // 处理图像，绘制圆形
-    for (int i = 0; i < pointCount; ++i)
+    for (int i = 0; i < pointCount/2; ++i)
     {
         int x = points[i * 2];
         int y = points[i * 2 + 1];
