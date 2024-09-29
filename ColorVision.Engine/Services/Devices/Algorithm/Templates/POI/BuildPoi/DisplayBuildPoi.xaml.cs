@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 }
                 else if ((bool)RectChecked.IsChecked)
                 {
-                    PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
+                    PointInt center = new PointInt(Convert.ToInt32(rect_centerX.Text), Convert.ToInt32(rect_centerY.Text));
                     Params.Add("LayoutCenter", center);
                     //Params.Add("LayoutCenterX", rect_centerX.Text);
                     //Params.Add("LayoutCenterY", rect_centerY.Text);
