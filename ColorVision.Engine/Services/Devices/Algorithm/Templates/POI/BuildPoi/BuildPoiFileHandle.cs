@@ -69,7 +69,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                         ints[2*i] = pointinfo.Positions[i].PixelX;
                         ints[2*i+1] = pointinfo.Positions[i].PixelY;
                     }
-                    result.FilePath = filepath;
                     if (File.Exists(result.FilePath))
                     {
                         CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(result.FilePath);
