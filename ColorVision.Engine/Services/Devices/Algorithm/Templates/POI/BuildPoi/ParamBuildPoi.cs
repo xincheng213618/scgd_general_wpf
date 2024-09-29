@@ -18,8 +18,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 
 
         [Category("BuildPOI"), Description("POI布点范围类型")]
-        public RiPointTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
-        private RiPointTypes _POILayout = RiPointTypes.Rect;
+        public POILayoutTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
+        private POILayoutTypes _POILayout = POILayoutTypes.Rect;
 
 
         [Category("BuildPOI"), Description("POI极坐标布点数量")]
