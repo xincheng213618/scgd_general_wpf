@@ -139,13 +139,24 @@ namespace ColorVision.Engine.Services.RC
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
-                            MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                            if (respQurey != null)
+                            log.Debug("Event_QueryServices：" + Msg);
+                            try
                             {
-                                Application.Current.Dispatcher.Invoke((Action)delegate {
-                                    UpdateServices(respQurey.Data);
-                                });
+                                MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
+                                if (respQurey != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke((Action)delegate {
+                                        UpdateServices(respQurey.Data);
+                                    });
+                                }
+
                             }
+                            catch(Exception ex)
+                            {
+                                log.Error(ex);
+                                MessageBox.Show("Event_QueryServices:" + ex.Message);
+                            }
+
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServiceStatus:
                             MQTTRCServiceStatusQueryResponse respStatus = JsonConvert.DeserializeObject<MQTTRCServiceStatusQueryResponse>(Msg);

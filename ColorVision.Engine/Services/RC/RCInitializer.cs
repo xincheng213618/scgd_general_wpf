@@ -24,14 +24,6 @@ namespace ColorVision.Engine.Services.RC
                 if (!isConnect)
                 {
                     _messageUpdater.UpdateMessage("检测是否本地服务");
-                    if (!RCManager.GetInstance().IsLocalServiceRunning())
-                    {
-                        if (RCManagerConfig.Instance.IsOpenCVWinSMS)
-                        {
-                            _messageUpdater.UpdateMessage("打开本地服务管理");
-                            RCManager.GetInstance().OpenCVWinSMS();
-                        }
-                    }
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         RCServiceConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };

@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Services.Types
         Motor = 10,
         Flow = 12,
         ThirdPartyAlgorithms = 13,
+        ThirdPartyAlgorithms32 = 15,
         FlowTemp = 21,
         [Description("暗噪声")]
         DarkNoise = 31,

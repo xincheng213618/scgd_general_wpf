@@ -50,6 +50,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
+        public RelayCommand ProductBrochureCommand { get; set; }
 
         public RelayCommand EditCameraCommand { get; set; }
         public RelayCommand EditCalibrationCommand { get; set; }
@@ -91,7 +92,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
-            CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
+            CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
             ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
 
@@ -111,6 +112,77 @@ namespace ColorVision.Engine.Services.PhyCameras
             Name = Code ?? string.Empty;
 
             CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
+
+            ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
+        }
+        private string productBrochure;
+
+        private bool HaveProductBrochure()
+        {
+            if (CameraLicenseModel == null) return false;
+            if (CameraLicenseModel.Model == null) return false;
+            var model = CameraLicenseModel.Model;
+            if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
+            {
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-BV-2000.pdf";
+                    return true;
+                }
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-BV-2600.pdf";
+                    return true;
+                }
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-BV-6100.pdf";
+                    return true;
+                }
+            }
+            if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
+            {
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-LV-2000.pdf";
+                    return true;
+                }
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-LV-2600.pdf";
+                    return true;
+                }
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-LV-6100.pdf";
+                    return true;
+                }
+            }
+            if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
+            {
+                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-CV-2000.pdf";
+                    return true;
+                }
+                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-CV-2600.pdf";
+                    return true;
+                }
+                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
+                {
+                    productBrochure = @"Assets\Catalog\Catalog-CV-6100.pdf";
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private void OpenProductBrochure()
+        {
+            PlatformHelper.Open(productBrochure);
         }
 
         private void CalibrationTemplateOpen(object sender)

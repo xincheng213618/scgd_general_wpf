@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Configs;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -12,9 +13,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
-        private int _ViewImageReadDelay = 1000;
-
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
         private string? _CameraCode;
 
@@ -75,6 +73,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private float _ExpTime = 10;
 
         public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = (int)Math.Pow(Math.E, value); } }
+
+        public double ExpTimeMax { get => _ExpTimeMax; set { _ExpTimeMax = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMaxLog)); } }
+        private double _ExpTimeMax = 60000;
+
+        public double ExpTimeMaxLog { get => Math.Log(ExpTimeMax); set { ExpTimeMax = (int)Math.Pow(Math.E, value); } }
+
+        public double ExpTimeMin { get => _ExpTimeMin; set { _ExpTimeMin = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMinLog)); } }
+        private double _ExpTimeMin = 1;
+
+        public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = (int)Math.Pow(Math.E, value); } }
+
+
 
         public float ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
         private float _ExpTimeR = 10;
@@ -216,6 +226,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
             }
             return false;
         }
+
+        public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; NotifyPropertyChanged(); } }
+        private ZBDebayer _ZBDebayer = new ZBDebayer();
+
+    }
+
+    /// <summary>
+    /// 追加的class
+    /// </summary>
+    public class ZBDebayer:ViewModelBase
+    {
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsEnabled;
+
+        public int Method { get => _Method; set { _Method = value; NotifyPropertyChanged(); } }
+        private int _Method = 1;
+
+        public int Channeltype { get => _Channeltype; set { _Channeltype = value; NotifyPropertyChanged(); } }
+        private int _Channeltype = 3;
 
     }
 }

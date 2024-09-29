@@ -9,9 +9,9 @@ namespace ColorVision.UI.Menus
     {
         public abstract string OwnerGuid { get; }
         public abstract string GuidId { get; }
-        public abstract string Header { get; }
-
         public virtual int Order => 1;
+
+        public abstract string Header { get; }
         public virtual Visibility Visibility => Visibility.Visible;
         public virtual string? InputGestureText { get; }
         public virtual object? Icon { get; }

@@ -8,7 +8,7 @@ namespace ColorVision.UI.Shell
 {
     public class TrayIconConfig : ViewModelBase, IConfig, IConfigSettingProvider
     {
-        public static TrayIconConfig Instance => ConfigHandler.GetInstance().GetRequiredService<TrayIconConfig>();
+        public static TrayIconConfig Instance => ConfigService.Instance.GetRequiredService<TrayIconConfig>();
 
         public bool IsShowTrayIcon { get => _IsShowTrayIcon; set { _IsShowTrayIcon = value; NotifyPropertyChanged(); } }
         private bool _IsShowTrayIcon;

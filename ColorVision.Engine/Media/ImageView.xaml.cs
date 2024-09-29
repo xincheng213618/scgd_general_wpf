@@ -1,14 +1,15 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Draw;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.Engine.Draw;
+using ColorVision.Engine.Draw.Ruler;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
@@ -30,12 +31,10 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Media
 {
-
-
-
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -75,9 +74,11 @@ namespace ColorVision.Engine.Media
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             Config = imageViewConfig;
+            this.DataContext = this;
             ToolBarLeft.DataContext = Config;
             ToolBarLayers.DataContext = Config;
             ToolBarAl.DataContext = Config;
+            ToolBarTop.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -87,6 +88,7 @@ namespace ColorVision.Engine.Media
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBarRight.DataContext = ToolBarTop;
+            ToolBarBottom.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -98,16 +100,16 @@ namespace ColorVision.Engine.Media
             this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
 
-            if (PoiParam.Params.Count == 0)
+            if (TemplatePoi.Params.Count == 0)
             {
                 MySqlControl.GetInstance().Connect();
-                new TemplatePOI().Load();
+                new TemplatePoi().Load();
 
             }
 
             if (MySqlControl.GetInstance().IsConnect)
             {
-                ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
+                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 ComboxPOITemplate.SelectedIndex = 0;
                 ToolBarAl.Visibility = Visibility.Visible;
             }
@@ -124,8 +126,8 @@ namespace ColorVision.Engine.Media
             await MySqlControl.GetInstance().Connect();
             if (MySqlControl.GetInstance().IsConnect)
             {
-                new TemplatePOI().Load();
-                ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
+                new TemplatePoi().Load();
+                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 ComboxPOITemplate.SelectedIndex = 0;
                 ToolBarAl.Visibility = Visibility.Visible;
             }
@@ -186,7 +188,7 @@ namespace ColorVision.Engine.Media
                     DrawingVisualPolygonCache.Render();
                 }
             }
-            else if (e.Key == Key.R)
+            else if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             }
@@ -206,11 +208,9 @@ namespace ColorVision.Engine.Media
             }
         }
 
-        bool IsLayoutUpdated = false;
-
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
-            if (IsLayoutUpdated)
+            if (Config.IsLayoutUpdated)
             {
                 foreach (var item in DrawingVisualLists)
                 {
@@ -570,6 +570,7 @@ namespace ColorVision.Engine.Media
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
                 int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile meta);
+                if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
                     Config.IsCVCIE = true;
@@ -597,6 +598,13 @@ namespace ColorVision.Engine.Media
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
+                    RelayCommand ExportImageCommand = new RelayCommand(a =>
+                    {
+                        ExportCVCIE exportCVCIE = new(filePath);
+                        exportCVCIE.Show();
+                    });
+                    Zoombox1.ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportImageCommand });
+
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     CVCIESetBuffer(filePath);
                     try
@@ -605,7 +613,7 @@ namespace ColorVision.Engine.Media
                         {  
                             WaitControl.Visibility = Visibility.Visible;
                             await Task.Delay(100);
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
                                 Application.Current.Dispatcher.Invoke(() =>
@@ -636,7 +644,7 @@ namespace ColorVision.Engine.Media
                         {
                             WaitControl.Visibility = Visibility.Visible;
                             Config.FilePath = filePath;
-                            Task.Run(() =>
+                            await Task.Run(() =>
                             {
                                 byte[] imageData = File.ReadAllBytes(filePath);
                                 BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
@@ -799,7 +807,14 @@ namespace ColorVision.Engine.Media
 
         public bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
         {
-            if (PseudoImage is WriteableBitmap writeableBitmap && writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            if (PseudoImage is not WriteableBitmap writeableBitmap) return false;
+            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
+
+            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
             {
                 writeableBitmap.Lock();
                 unsafe
@@ -877,7 +892,7 @@ namespace ColorVision.Engine.Media
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, Config.CVCIENum, Config.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
@@ -902,7 +917,7 @@ namespace ColorVision.Engine.Media
                         float dYVal = 0;
                         float dZVal = 0;
                         float dx = 0, dy = 0, du = 0, dv = 0;
-                        int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+                        int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, Config.CVCIENum, Config.CVCIENum);
                         log.Debug($"CM_GetXYZxyuvRect :{result},res");
                         windowCIE.ChangeSelect(dx, dy);
                     }
@@ -929,12 +944,17 @@ namespace ColorVision.Engine.Media
         {
             if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
-            var bmp= ImageUtils.RenderHistogram(bitmapSource);
-            Image image = new Image() { Margin = new Thickness(5) };
-            image.Source = bmp;
-            Window window = new Window() { Width = 256, Height = 170 };
-            window.Content = image;
-            window.Show();
+            var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
+            if (bitmapSource.Format == PixelFormats.Gray8)
+            {
+                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
+                histogramChartWindow.Show();
+            }
+            else
+            {
+                HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram, greenHistogram, blueHistogram);
+                histogramChartWindow.Show();
+            }
         }
 
 
@@ -995,7 +1015,6 @@ namespace ColorVision.Engine.Media
                         CM_ExtractChannel(0);
 
                 }
-
             }
         }
 
@@ -1038,7 +1057,7 @@ namespace ColorVision.Engine.Media
         private void UpdateZoomAndScale()
         {
             Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current?.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
                     ToolBarTop.ToolBarScaleRuler.Render();
@@ -1100,38 +1119,6 @@ namespace ColorVision.Engine.Media
                     }
                     ImageShow.Source = PseudoImage;
                 }
-
-                //string directoryPath = @"C:\Users\17917\Desktop\Serial 7";
-                //// 获取目录下的所有文件路径
-                //string[] files = Directory.GetFiles(directoryPath);
-
-                //string lists = JsonConvert.SerializeObject(files);
-                //if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.IsEnabled)
-                //{
-                //    int ret = OpenCVCuda.CM_Fusion(lists, out HImage hImage);
-                //    // 获取并输出经过的时间
-
-
-                //}
-                //else
-                //{
-                //    int ret = OpenCVHelper.CM_Fusion(lists, out HImage hImage);
-                //    if (ret == 0)
-                //    {
-                //        var image = hImage.ToWriteableBitmap();
-                //        OpenCVHelper.FreeHImageData(hImage.pData);
-                //        hImage.pData = IntPtr.Zero;
-
-                //        PseudoImage = image;
-                //        if (toggleButton.IsChecked == true)
-                //        {
-                //            ImageShow.Source = PseudoImage;
-                //        }
-                //    }
-                //}
-
-
-
             };
         }
 
@@ -1292,8 +1279,6 @@ namespace ColorVision.Engine.Media
                     break;
                 case POIPointTypes.Rect:
                      _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
-                    break;
-                case POIPointTypes.Mask:
                     break;
                 default:
                     break;

@@ -130,19 +130,17 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
 
-
             Task.Run(async () =>
             {
-                await Task.Delay(30);
-                if(DirectoryInfo!=null && DirectoryInfo.Exists)
+                await Task.Delay(300);
+                if(DirectoryInfo!=null)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        GeneralChild(this, DirectoryInfo);
+                         _= GeneralChild(this, DirectoryInfo);
                     });
                 }
             });
-
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
             SaveCommand = new RelayCommand(a => SaveConfig());
         }
@@ -274,7 +272,7 @@ namespace ColorVision.Solution.V
         }
 
         int i;
-        public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+        public async Task GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
@@ -285,8 +283,7 @@ namespace ColorVision.Solution.V
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
-                await Task.Delay(100);
-                GeneralChild(vFolder, item);
+                await GeneralChild(vFolder, item);
             }
 
             foreach (var item in directoryInfo.GetFiles())
@@ -294,14 +291,11 @@ namespace ColorVision.Solution.V
                 i++;
                 if (i == 5)
                 {
-                    await Task.Delay(200);
+                    await Task.Delay(100);
                     i = 0;
                 }
                 CreateFile(vObject, item);
             }
         }
-
-
-
     }
 }

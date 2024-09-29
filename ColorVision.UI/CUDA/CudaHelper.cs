@@ -6,7 +6,7 @@ namespace ColorVision.UI.CUDA
 
     public class ConfigCuda:ViewModelBase,IConfig, IConfigSettingProvider
     {
-        public static ConfigCuda Instance => ConfigHandler.GetInstance().GetRequiredService<ConfigCuda>();
+        public static ConfigCuda Instance => ConfigService.Instance.GetRequiredService<ConfigCuda>();
 
         public bool IsEnabled { get => _IsEnabled; set { if (!IsCudaSupported) return;  _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled = true;

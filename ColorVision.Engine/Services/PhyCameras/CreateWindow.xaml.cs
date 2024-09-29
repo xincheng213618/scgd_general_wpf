@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -42,8 +43,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
             };
-
-
             var list = SysResourceDao.Instance.GetAllEmptyCameraId();
 
             if (list != null)
@@ -51,18 +50,40 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CameraCode.ItemsSource = list;
                 CameraCode.DisplayMemberPath = "Code";
                 CameraCode.SelectedValuePath = "Name";
-                CameraCode.SelectedIndex = 0;
-                CreateConfig.Code = list[0].Code ??string.Empty;
+                CreateConfig.Code = list[0].Code ?? string.Empty;
                 CameraCode.SelectionChanged += (s, e) =>
                 {
                     if (CameraCode.SelectedIndex >= 0)
-                        DeviceName.Text = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code??string.Empty)?.Model;
+                    {
+                        var model = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
+                        DeviceName.Text = model;
+                        if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
+                        {
+                            CreateConfig.CameraType = CameraType.BV_Q;
+                            CreateConfig.Channel = ImageChannel.Three;
+                        }
+                        if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
+                        {
+                            CreateConfig.CameraType = CameraType.LV_Q;
+                            CreateConfig.Channel = ImageChannel.One;
+                        }
+                        if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
+                        {
+                            CreateConfig.CameraType = CameraType.CV_Q;
+                            CreateConfig.Channel = ImageChannel.Three;
+                        }
+                    }
                 };
+                CameraCode.SelectedIndex = 0;
+
+
             }
             else
-            {
-                MessageBox.Show("找不到可以添加的相机");
-            }
+                {
+                    MessageBox.Show("找不到可以添加的相机");
+                }
+
+
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());

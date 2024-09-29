@@ -366,4 +366,7 @@
   <data name="ForceUpdate" xml:space="preserve">
     <value>強制更新</value>
   </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>上傳文件</value>
+  </data>
 </root>

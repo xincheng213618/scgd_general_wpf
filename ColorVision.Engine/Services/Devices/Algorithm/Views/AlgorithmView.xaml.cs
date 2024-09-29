@@ -1,10 +1,8 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Draw;
+using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
@@ -12,9 +10,9 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -27,37 +25,16 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-
-    public class ViewAlgorithmConfig : ViewModelBase, IConfig
-    {
-        public static ViewAlgorithmConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewAlgorithmConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-        public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowSideListView = true;
-
-
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-
-    }
-
 
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
@@ -75,8 +52,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private NetFileUtil netFileUtil;
 
         public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
+        public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
+
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IResultHandle  algorithmResultRender)
+                    {
+                        ResultHandles.Add(algorithmResultRender);
+                    }
+                }
+            }
+
             this.DataContext = this;
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
@@ -87,8 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-            listView1.ItemsSource = AlgResults;
-            Config.AutoRefreshView = true;
+            listView1.ItemsSource = ViewResults;
             var keyValuePairs =
             TextBoxType.ItemsSource = Enum.GetValues(typeof(AlgorithmResultType))
                 .Cast<AlgorithmResultType>()
@@ -120,14 +110,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> AlgResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.SelectedIndex < 0)
-            {
-                return;
-            }
+            if (listView1.SelectedIndex < 0) return;
+
+  
             if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
             {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
@@ -150,8 +139,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         return;
                     default:
                         break;
-
                 }
+
                 using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
                 if (listView1.View is GridView gridView1)
                 {
@@ -163,7 +152,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     file.WriteLine(headers);
                 }
                 string value = "";
-                foreach (var item in AlgResults)
+                foreach (var item in ViewResults)
                 {
                     value += item.Id + ","
                         + item.Batch + ","
@@ -187,7 +176,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (result != null)
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
-                AlgResults.AddUnique(algorithmResult);
+                ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
             }
@@ -195,7 +184,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void RefreshResultListView()
         {
-            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+            if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning? 0: listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
 
@@ -212,19 +201,37 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
-            if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.ResultType == ViewResults[listView1.SelectedIndex].ResultType);
+            if (ResultHandle != null)
+            {
+                ResultHandle.Handle(this,ViewResults[listView1.SelectedIndex]);
+                return;
+            }
+
+            if (ViewResults[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ImageShow.Clear();
                 List<POIPoint> DrawPoiPoint = new();
                 List<string> header = new();
                 List<string> bdHeader = new();
-
                 if (File.Exists(result.FilePath))
                 {
                     ImageView.OpenImage(result.FilePath);
                 }
                 switch (result.ResultType)
                 {
+                    case AlgorithmResultType.LightArea:
+                        break;
+                    case AlgorithmResultType.POI_XYZ_File:
+                    case AlgorithmResultType.POI_Y_File:
+                        if (result.ViewResults == null)
+                        {
+                            result.ViewResults = new ObservableCollection<IViewResult>(AlgResultPoiCieFileDao.Instance.GetAllByPid(result.Id));
+                        }
+                        header = new List<string> { "file_name", "FileUrl" , "FileType" };
+                        bdHeader = new List<string> { "FileName", "FileUrl" , "FileType", };
+                        break;
                     case AlgorithmResultType.POI:
                         if (result.ViewResults == null)
                         {
@@ -473,7 +480,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             AddPoint(points1);
                         }
                         break;
-                    case AlgorithmResultType.FindDotsArrayMem:
+                    case AlgorithmResultType.OLED_FindDotsArrayMem:
                     case AlgorithmResultType.LedCheck:
                         if (result.ViewResults == null)
                         {
@@ -516,9 +523,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 ImageView.ImageShow.OnlyAddVisual(Circle);
                             }
                         });
-
-
-
 
                         break;
                     case AlgorithmResultType.BuildPOI:
@@ -608,7 +612,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                AlgResults.RemoveAt(temp);
+                ViewResults.RemoveAt(temp);
             }
         }
 
@@ -623,10 +627,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            if (ListRow2.ActualHeight > 38)
+            if (ListRow2.ActualHeight > 32)
             {
                 var listView = !IsExchange ? listView1 : listViewSide;
-                listView.Height = ListRow2.ActualHeight - 38;
+                listView.Height = ListRow2.ActualHeight - 32;
                 ListRow2.Height = GridLength.Auto;
                 ListRow1.Height = new GridLength(1, GridUnitType.Star);
 
@@ -641,17 +645,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
-            AlgResults.Clear();
+            ViewResults.Clear();
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            AlgResults.Clear();
+            ViewResults.Clear();
             List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
             foreach (var item in algResults)
             {
                 AlgorithmResult algorithmResult = new(item);
-                AlgResults.AddUnique(algorithmResult);
+                ViewResults.AddUnique(algorithmResult);
             }
         }
         private void Search_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
@@ -667,12 +671,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
-                AlgResults.Clear();
+                ViewResults.Clear();
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new(item);
-                    AlgResults.AddUnique(algorithmResult);
+                    ViewResults.AddUnique(algorithmResult);
                 }
                 SerchPopup.IsOpen = false;
                 return;
@@ -683,12 +687,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
 
-                AlgResults.Clear();
+                ViewResults.Clear();
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new(item);
-                    AlgResults.AddUnique(algorithmResult);
+                    ViewResults.AddUnique(algorithmResult);
                 }
             }
             SerchPopup.IsOpen = false;
@@ -726,8 +730,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Rectangle.Attribute.Id = item.Id ?? -1;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.Mask:
                         break;
                     case POIPointTypes.SolidPoint:
                         DVCircle Circle1 = new();
@@ -821,13 +823,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 // Handle POI_Y result saving logic here
                                 break;
                             case AlgorithmResultType.FOV:
-                                // Handle FOV result saving logic here
+                                // Handle SendCommand result saving logic here
                                 break;
                             case AlgorithmResultType.SFR:
                                 // Handle SFR result saving logic here
                                 break;
                             case AlgorithmResultType.MTF:
-                                // Handle MTF result saving logic here
+                                // Handle SendCommand result saving logic here
                                 break;
                             case AlgorithmResultType.Ghost:
                                 // Handle Ghost result saving logic here

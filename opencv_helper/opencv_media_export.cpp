@@ -134,6 +134,20 @@ COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
 	return 0;
 }
 
+COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, int* point , int pointCount)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	if (mat.channels() != 3) {
+		return -1;
+	}
+	cv::Mat out = mat.clone();
+	drawPoiImage(out, out, radius, point, pointCount);
+	MatToHImage(out, outImage);
+	return 0;
+}
+
 COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

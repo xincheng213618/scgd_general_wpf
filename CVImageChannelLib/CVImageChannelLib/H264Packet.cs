@@ -1,3 +1,5 @@
+#pragma warning disable CS8625
+
 using System;
 using System.IO;
 

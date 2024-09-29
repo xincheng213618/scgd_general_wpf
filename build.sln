@@ -54,6 +54,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScreenRecorder", "Plugins\S
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{106E1C5D-57C2-49F9-854D-A50BFFA88802}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj", "{289B350A-0052-47D2-B93E-1FDAA526B507}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -354,6 +356,22 @@ Global
 		{50B5542B-A4EF-489E-9938-25E8CB10B253}.Release|x64.Build.0 = Release|x64
 		{50B5542B-A4EF-489E-9938-25E8CB10B253}.Release|x86.ActiveCfg = Release|x64
 		{50B5542B-A4EF-489E-9938-25E8CB10B253}.Release|x86.Build.0 = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|Any CPU.Build.0 = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|ARM64.Build.0 = Debug|ARM64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|x64.ActiveCfg = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|x64.Build.0 = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|x86.ActiveCfg = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Debug|x86.Build.0 = Debug|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|Any CPU.ActiveCfg = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|Any CPU.Build.0 = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|ARM64.ActiveCfg = Release|ARM64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|ARM64.Build.0 = Release|ARM64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|x64.ActiveCfg = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|x64.Build.0 = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|x86.ActiveCfg = Release|x64
+		{289B350A-0052-47D2-B93E-1FDAA526B507}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -366,10 +384,11 @@ Global
 		{791EB626-A2AD-4784-98D4-4F0DD83CB753} = {C5742CDA-D2FF-4E83-AA33-696A76B00961}
 		{AA343239-476E-43E3-BEE3-D3313C883341} = {106E1C5D-57C2-49F9-854D-A50BFFA88802}
 		{50B5542B-A4EF-489E-9938-25E8CB10B253} = {44BA4462-A1C2-4384-810F-A39D12EA216C}
+		{289B350A-0052-47D2-B93E-1FDAA526B507} = {44BA4462-A1C2-4384-810F-A39D12EA216C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
 	EndGlobalSection
 EndGlobal

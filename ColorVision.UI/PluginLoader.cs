@@ -3,6 +3,7 @@ using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.UI
 {
@@ -74,7 +75,24 @@ namespace ColorVision.UI
                 }
                 catch(Exception ex)
                 {
+                    MessageBox.Show("加载插件错误：" + ex.Message, "ColorVision");
                     log.Error(ex);
+                }
+            }
+
+            foreach (var item in Directory.GetDirectories(path))
+            {
+                foreach (var file in Directory.GetFiles(item, "*.dll"))
+                {
+                    try
+                    {
+                        Assembly assembly = Assembly.LoadFrom(file); ;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("加载插件错误：" + ex.Message, "ColorVision");
+                        log.Error(ex);
+                    }
                 }
             }
         }

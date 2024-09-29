@@ -241,16 +241,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
                     Func.Add(Fun);
                 }
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
                 Params.Add("Func", Func);
             }
             else
             {
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
-                FunParams.Add("Gain", Config.Gain);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 var Func = new List<ParamFunction>();
                 Func.Add(Fun);
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
                 Params.Add("Func", Func);
             }
 

@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:EventVWR"
         mc:Ignorable="d"
         xmlns:event="clr-namespace:System.Diagnostics;assembly=System.Diagnostics.EventLog"
-        Title="EventWindow" Height="450" Width="800" Background="{DynamicResource GlobalBackground}"   Initialized="Window_Initialized">
-    <Grid>
+        Title="EventWindow" Height="450" Width="800"  Initialized="Window_Initialized">
+    <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="350"/>
             <ColumnDefinition Width="*"/>

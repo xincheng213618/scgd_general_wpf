@@ -6,30 +6,33 @@ using ColorVision.Engine.Services.Templates.POI;
 using ColorVision.Engine.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class TemplatePOI : ITemplate<PoiParam>, IITemplateLoad
+    public class TemplatePoi : ITemplate<PoiParam>, IITemplateLoad
     {
-        public TemplatePOI()
+        public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
+
+        public TemplatePoi()
         {
             IsSideHide = true;
             Title = "关注点设置";
-            Code = ModMasterType.POI;
-            TemplateParams = PoiParam.Params;
+            Code = "POI";
+            TemplateParams = Params;
         }
         public override void PreviewMouseDoubleClick(int index)
         {
-            var WindowFocusPoint = new WindowFocusPoint(PoiParam.Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            var WindowFocusPoint = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
             WindowFocusPoint.ShowDialog();
         }
 
         public override void Load()
         {
-            var backup = PoiParam.Params.ToDictionary(tp => tp.Id, tp => tp);
+            var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "is_delete", 0 } });
@@ -43,7 +46,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
                     else
                     {
-                        PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", poiparam));
+                        Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", poiparam));
                     }
                 }
             }

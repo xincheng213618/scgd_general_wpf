@@ -59,16 +59,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             };
             PublishAsyncClient(msg);
         }
-
-        public void ExecCmd(string command)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTSensorEventEnum.Event_ExecCmd,
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } ,{ "cmd",command} }
-            };
-            PublishAsyncClient(msg);
-        }
         public void Close()
         {
             MsgSend msg = new()

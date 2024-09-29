@@ -8,7 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 {
     public class DistortionParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; } = new ObservableCollection<TemplateModel<DistortionParam>>();
 
         public DistortionParam() { }
         public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

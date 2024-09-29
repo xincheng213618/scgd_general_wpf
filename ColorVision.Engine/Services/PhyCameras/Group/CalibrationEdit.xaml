@@ -70,32 +70,39 @@
             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="5">
                     <Border Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="0,0,0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />
-                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ExpTime}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
-                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock DockPanel.Dock="Left" Text="ND"  Width="80" />
-                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ND}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock DockPanel.Dock="Left" Text="ImgBpp"  Width="80" />
-                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ImgBpp}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock DockPanel.Dock="Left" Text="ShotType"  Width="80" />
-                                <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ShotType}"/>
-                            </DockPanel>
+                        <StackPanel>
+                            <UniformGrid  Columns="3" Margin="5">
+                                <DockPanel  Margin="5">
+                                    <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ExpTime}"  Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                                <DockPanel Margin="5" >
+                                    <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                                <DockPanel  Margin="5">
+                                    <TextBlock DockPanel.Dock="Left" Text="ND Filter"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.NDShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                                <DockPanel  Margin="5">
+                                    <TextBlock DockPanel.Dock="Left" Text="光圈"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ApertureShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                                <DockPanel Margin="5" >
+                                    <TextBlock DockPanel.Dock="Left" Text="焦距"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocalLengthShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                                <DockPanel Margin="5">
+                                    <TextBlock DockPanel.Dock="Left" Text="对焦距离"  Width="80" />
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.FocusDistanceShow}" IsReadOnly="True" Width="80" HorizontalAlignment="Left"/>
+                                </DockPanel>
+                            </UniformGrid>
+                            <TextBlock Text="*资源组参数绑定均匀场" Margin="0,0,10,5" HorizontalAlignment="Right" Foreground="Red"/>
                         </StackPanel>
                     </Border>
 
                     <Border Style="{StaticResource BorderModuleArea}"  CornerRadius="5"  Margin="0,0,0,5">
-                        <StackPanel Margin="5">
+                        <StackPanel Margin="10,5">
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <hc:ComboBox x:Name="ComboBoxDarkNoise" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />

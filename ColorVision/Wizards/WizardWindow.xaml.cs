@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
@@ -12,7 +13,7 @@ namespace ColorVision.Wizards
 {
     public class WizardConfig : ViewModelBase ,IConfig
     {
-        public static WizardConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<WizardConfig>();
+        public static WizardConfig Instance =>ConfigService.Instance.GetRequiredService<WizardConfig>();
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
         private bool _WizardCompletionKey;
     }
@@ -27,6 +28,7 @@ namespace ColorVision.Wizards
             InitializeComponent();
             this.ApplyCaption();
         }
+
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             var IWizardSteps = new List<IWizardStep>();
@@ -40,23 +42,26 @@ namespace ColorVision.Wizards
                     }
                 }
             }
-            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
 
+            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
 
             foreach (var step in IWizardSteps)
             {
-                Button button = new Button() { Content = step.Title, Command = step.RelayCommand };
+                Button button = new Button() { Content = step.Header, Command = step.Command };
                 WizardStackPanel.Children.Add(button);
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
         {
             WizardConfig.Instance.WizardCompletionKey = true;
             ConfigHandler.GetInstance().SaveConfigs();
+
             //这里使用件的启动路径，启动主程序
-            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
-            Application.Current.Shutdown();
+            //Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
+            //Application.Current.Shutdown();
+
+            Tool.RestartAsAdmin();
         }
     }
 }

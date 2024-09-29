@@ -80,7 +80,6 @@ namespace ColorVision.Themes.Controls
             }
             MessageBoxResult = defaultResult;
             this.DataContext = this;
-            Common.NativeMethods.Clipboard.SetText(messageBoxText);
         }
 
 

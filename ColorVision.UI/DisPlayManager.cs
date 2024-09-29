@@ -5,7 +5,7 @@ namespace ColorVision.UI
 
     public class DisPlayManagerConfig : IConfig
     {
-        public static DisPlayManagerConfig Instance => ConfigHandler.GetInstance().GetRequiredService<DisPlayManagerConfig>();
+        public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
         public Dictionary<string, int> PlayControls { get; set; } = new Dictionary<string, int>();
     }
 

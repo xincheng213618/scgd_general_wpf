@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
         public override string GuidId => "FOV";
         public override string Header => Properties.Resources.MenuFOV;
         public override int Order => 5;
-        public override ITemplate Template => new TemplateFOVParam();
+        public override ITemplate Template => new TemplateFOV();
     }
 }

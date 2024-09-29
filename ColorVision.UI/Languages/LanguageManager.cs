@@ -20,13 +20,19 @@ namespace ColorVision.UI.Languages
         public static Dictionary<string, string> keyValuePairs { get; set; }
 
 
-        public static List<string> GetDefaultLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
+        public static List<string> GetDefaultLanguages(string? defaultProcessDllName = null)
         {
+            if (defaultProcessDllName == null)
+            {
+                string exeName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                defaultProcessDllName = $"{exeName}.resources.dll";
+            }
+
             List<string> list = new() { };
             string exeFolderPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath ?? string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, defaultProcessDllName, SearchOption.AllDirectories);
 
                 if (files.Length > 0 && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
@@ -39,8 +45,14 @@ namespace ColorVision.UI.Languages
         }
 
 
-        public static List<string> GetLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
+        public static List<string> GetLanguages(string? defaultProcessDllName = null)
         {
+            if (defaultProcessDllName == null)
+            {
+                string exeName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                defaultProcessDllName = $"{exeName}.resources.dll";
+            }
+
             keyValuePairs ??= new Dictionary<string, string>();
             keyValuePairs.Clear();
 
@@ -61,7 +73,7 @@ namespace ColorVision.UI.Languages
 
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, defaultProcessDllName, SearchOption.AllDirectories);
 
                 if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {

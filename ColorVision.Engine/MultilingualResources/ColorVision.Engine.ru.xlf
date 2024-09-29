@@ -75,10 +75,6 @@
           <source>校正</source>
           <target state="new">Калибровка</target>
         </trans-unit>
-        <trans-unit id="CameraLog" translate="yes" xml:space="preserve">
-          <source>相机日志</source>
-          <target state="new">Журнал камеры</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">Отмена</target>
@@ -471,10 +467,6 @@
           <source>鬼影模板设置(_G)</source>
           <target state="new">Настройки шаблона призрака (G)</target>
         </trans-unit>
-        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
-          <source>灯珠检测模板设置(_L)</source>
-          <target state="new">ия шариков лампы (L)</target>
-        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">Вход в аккаунт(_L)</target>
@@ -627,6 +619,14 @@
           <source>打开</source>
           <target state="new">Открыть</target>
         </trans-unit>
+        <trans-unit id="OpenFile" translate="yes" xml:space="preserve">
+          <source>打开文件</source>
+          <target state="new">ОткрытьФайл</target>
+        </trans-unit>
+        <trans-unit id="OpenFolder" translate="yes" xml:space="preserve">
+          <source>打开文件夹</source>
+          <target state="new">ОткрытьПапку</target>
+        </trans-unit>
         <trans-unit id="OpenItem" translate="yes" xml:space="preserve">
           <source>打开项目</source>
           <target state="new">Открыть проект</target>
@@ -659,6 +659,10 @@
           <source>位置</source>
           <target state="new">Расположение</target>
         </trans-unit>
+        <trans-unit id="ProductBrochure" translate="yes" xml:space="preserve">
+          <source>产品宣传手册</source>
+          <target state="new">Брошюра о продукте</target>
+        </trans-unit>
         <trans-unit id="Property" translate="yes" xml:space="preserve">
           <source>属性</source>
           <target state="new">Атрибуты</target>
@@ -666,10 +670,6 @@
         <trans-unit id="QuickPreview" translate="yes" xml:space="preserve">
           <source>快速预览</source>
           <target state="new">быстрый предварительный просмотр</target>
-        </trans-unit>
-        <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
-          <source>RC服务日志</source>
-          <target state="new">Журнал обслуживания RC</target>
         </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
@@ -759,10 +759,6 @@
           <source>服务标识</source>
           <target state="new">Идентификатор услуги</target>
         </trans-unit>
-        <trans-unit id="ServiceLog" translate="yes" xml:space="preserve">
-          <source>服务日志</source>
-          <target state="new">Журнал обслуживания</target>
-        </trans-unit>
         <trans-unit id="ServiceName" translate="yes" xml:space="preserve">
           <source>服务名称</source>
           <target state="new">наименование услуги</target>
@@ -794,10 +790,6 @@
         <trans-unit id="Size" translate="yes" xml:space="preserve">
           <source>大小</source>
           <target state="new">размер</target>
-        </trans-unit>
-        <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
-          <source>光谱仪日志</source>
-          <target state="new">Журнал спектрометра</target>
         </trans-unit>
         <trans-unit id="StartTime" translate="yes" xml:space="preserve">
           <source>开始时间</source>
@@ -915,21 +907,13 @@
           <source>独立窗口</source>
           <target state="new">независимое окно</target>
         </trans-unit>
-        <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
-          <source>流程引擎调试窗口</source>
-          <target state="new">Окно отладки механизма обработки</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
+        <trans-unit id="WorkflowEngine" translate="yes" xml:space="preserve">
           <source>流程引擎(_F)</source>
           <target state="new">Механизм процесса(F)</target>
         </trans-unit>
-        <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
-          <source>x64服务日志</source>
-          <target state="new">журнал обслуживания x64</target>
-        </trans-unit>
-        <trans-unit id="x86ServiceLog" translate="yes" xml:space="preserve">
-          <source>x86服务日志</source>
-          <target state="new">журнал обслуживания x86</target>
+        <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
+          <source>流程引擎调试窗口</source>
+          <target state="new">Окно отладки механизма обработки</target>
         </trans-unit>
       </group>
     </body>

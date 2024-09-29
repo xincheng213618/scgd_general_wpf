@@ -16,6 +16,7 @@ using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using Quartz;
+using ScottPlot.Colormaps;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -302,7 +303,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
                 {
                     var msgRecord = DService.GetAutoExpTime(param);
+                    msgRecord.MsgRecordStateChanged += (e) =>
+                    {
+                        if (e == MsgRecordState.Timeout)
+                        {
+                            MessageBox1.Show("自动曝光超时，请检查服务日志", "ColorVision");
+                        };
+                        if (e == MsgRecordState.Fail)
+                        {
+                            MessageBox1.Show($"自动曝光失败，请检查服务日志{Environment.NewLine}{msgRecord.MsgReturn.ToString()}" , "ColorVision");
+                        };
+                    };
                     ServicesHelper.SendCommand(button, msgRecord);
+
                 }
             }
         }
@@ -352,10 +365,25 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-
+        CroppedBitmap croppedBitmap1;
+        Image smallWindowImage;
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
+            if (croppedBitmap1 == null)
+            {
+                croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
+                smallWindowImage = new Image
+                {
+                    Source = croppedBitmap1,
+                    Width = 500,
+                    Height = 500
+                };
+                Window window = new Window() { Content = smallWindowImage };
+                window.Show();
+            }
+            croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
+            smallWindowImage.Source = croppedBitmap1;
         }
 
 
@@ -442,11 +470,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
+                    if(e == MsgRecordState.Timeout)
+                    {
+                        MessageBox.Show("关闭相机超时,请查看日志并排查问题");
+                        return;
+                    }
+
                     DService.IsVideoOpen = false;
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
-
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
@@ -460,6 +493,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer.Stop();
             DService.SetExp();
         }
+
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -484,6 +518,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
             Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
+        }
+
+        private void PreviewSlider_ValueChanged1(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (DService.IsVideoOpen)
+            {
+                Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, () => DService.SetExp());
+            }
         }
     }
 }

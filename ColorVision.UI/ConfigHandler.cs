@@ -7,124 +7,21 @@ using System.Windows;
 namespace ColorVision.UI
 {
 
-    public class ConfigBase<T> where T : IConfig
-    {
-        internal readonly JsonSerializerSettings JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };
-
-        public Dictionary<Type, T> Configs { get; set; }
-
-        public T1 GetRequiredService<T1>() where T1:T
-        { 
-            var type = typeof(T1);
-            if (Configs.TryGetValue(type, out var service))
-            {
-                return (T1)service;
-            }
-            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
-        }
-
-        public void LoadDefaultConfigs()
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                try
-                {
-                    foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
-                    {
-                        if (Activator.CreateInstance(type) is T config)
-                        {
-                            Configs[type] = config;
-                        }
-                    }
-                }
-                catch
-                {
-
-                }
-
-            }
-        }
-
-        public virtual void SaveConfigs(string fileName)
-        {
-            var jObject = new JObject();
-
-            foreach (var configPair in Configs)
-            {
-                var valueToken = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
-                jObject[configPair.Key.Name] = valueToken;
-            }
-
-            File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
-        }
-
-
-        public virtual void LoadConfigs(string fileName)
-        {
-            Configs = new Dictionary<Type, T>();
-            if (File.Exists(fileName))
-            {
-                try
-                {
-                    string json = File.ReadAllText(fileName);
-                    var jsonObject = JObject.Parse(json);
-                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        foreach (var type in assembly.GetTypes())
-                        {
-                            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
-                            {
-                                var configName = type.Name;
-                                try
-                                {
-                                    if (jsonObject.TryGetValue(configName, out JToken configToken))
-                                    {
-                                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                                        if (config is T typedConfig)
-                                        {
-                                            Configs[type] = typedConfig;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (Activator.CreateInstance(type) is T defaultConfig)
-                                        {
-                                            Configs[type] = defaultConfig;
-                                        }
-                                    }
-                                }
-                                catch
-                                {
-                                    if (Activator.CreateInstance(type) is T config)
-                                    {
-                                        Configs[type] = config;
-                                    }
-                                }
-
-                            }
-                        }
-                    }
-                }
-                catch
-                {
-                    LoadDefaultConfigs();
-                }
-            }
-            else
-            {
-                LoadDefaultConfigs();
-            }
-        }
-    }
-
-
-    public class ConfigHandler:ConfigBase<IConfig>
+    public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
-
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
-        public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
+        public static ConfigHandler GetInstance() 
+        {
+            lock (_locker) 
+            {
+                _instance ??= new ConfigHandler();
+                ConfigService.SetInstance(_instance);
+                return _instance; 
+            }
+        }
+
         public string ConfigFilePath { get; set; }
         public ConfigHandler()
         {
@@ -161,14 +58,35 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
+        internal readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { Formatting = Formatting.Indented };
 
-        public override void SaveConfigs(string fileName)
+        public Dictionary<Type, IConfig> Configs { get; set; }
+
+        public T1 GetRequiredService<T1>() where T1 : IConfig
+        {
+            var type = typeof(T1);
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T1)service;
+            }
+            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
+        }
+
+        public void SaveConfigs(string fileName)
         {
             var jObject = new JObject();
             if (File.Exists(fileName))
             {
                 string json = File.ReadAllText(fileName);
-                jObject = JObject.Parse(json);
+
+                try
+                {
+                    jObject = JObject.Parse(json);
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show("配置文件异常,已经重置");
+                }
             }
             foreach (var configPair in Configs)
             {
@@ -187,7 +105,31 @@ namespace ColorVision.UI
             File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
         }
 
-        public override void LoadConfigs(string fileName)
+        public void LoadDefaultConfigs()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        if (Activator.CreateInstance(type) is IConfig config)
+                        {
+                            Configs[type] = config;
+                        }
+                    }
+                }
+                catch
+                {
+
+                }
+
+            }
+        }
+
+        public void LoadConfigs() => LoadConfigs(ConfigFilePath);
+
+        public void LoadConfigs(string fileName)
         {
             Configs = new Dictionary<Type, IConfig>();
             if (File.Exists(fileName))

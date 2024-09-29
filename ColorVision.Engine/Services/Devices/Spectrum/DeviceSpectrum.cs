@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public MQTTSpectrum DService { get; set; }
 
         public ViewSpectrum View { get; set; }
+        public RelayCommand ResourceManagerCommand { get; set; }
         public RelayCommand UploadSpectrumCommand { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
 
@@ -34,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             this.SetIconResource("DISpectrumIcon", View.View);
 
             UploadSpectrumCommand = new RelayCommand(UploadResource);
-            SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id, ModMasterType.SpectrumResource);
+            SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
             EditCommand = new RelayCommand(a =>
             {
@@ -44,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-            DisplayLazy = new Lazy<DisplaySpectrumControl>(() => new DisplaySpectrumControl(this));
+            DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
             ResourceManagerCommand = new RelayCommand(a =>
             {
@@ -100,7 +101,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
-        readonly Lazy<DisplaySpectrumControl> DisplayLazy;
+        readonly Lazy<DisplaySpectrum> DisplayLazy;
         public override UserControl GetDisplayControl() => DisplayLazy.Value;
         public override MQTTServiceBase? GetMQTTService()
         {

@@ -1,13 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.Engine.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
@@ -27,21 +25,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
-    public class ViewCameraConfig : ViewModelBase, IConfig
-    {
-        public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-    }
-
 
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
@@ -52,6 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
@@ -128,6 +112,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private MeasureImgResultDao measureImgResultDao = new();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
+            if (arg.DeviceCode != Device.Config.Code) return;
+            
             if (arg.Code == 0)
             {
                 switch (arg.EventName)
@@ -283,6 +269,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
                             log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
                             if (fileInfo.Length > 0)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
@@ -291,10 +281,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 });
                             }
                         }
-                        catch(Exception ex)
+                        catch
                         {
                             log.Warn("文件还在写入");
-                            await Task.Delay(Device.Config.ViewImageReadDelay);
+                            await Task.Delay(Config.ViewImageReadDelay);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 ImageView.OpenImage(data.FileUrl);
@@ -356,11 +346,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void ShowResult(MeasureImgResultModel model)
         {
             ViewResultCamera result = new(model);
-            ViewResultCameras.AddUnique(result);
+
+            ViewResultCameras.AddUnique(result, Config.InsertAtBeginning);
 
             if (Config.AutoRefreshView)
             {
-                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }
@@ -528,6 +519,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
                 }
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            listView1.Height = MainGridRow2.ActualHeight - 32;
+            MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
+            MainGridRow2.Height = GridLength.Auto;
         }
     }
 }

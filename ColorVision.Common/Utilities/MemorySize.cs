@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ColorVision.Common.Utilities
@@ -84,8 +85,45 @@ namespace ColorVision.Common.Utilities
             }
             return len;
         }
+        public static bool TryParseMemorySize(string input, out long memorySize)
+        {
+            input = input.Trim().ToUpperInvariant();
+            memorySize = 0;
 
-  
+            if (string.IsNullOrEmpty(input))
+            {
+                return false;
+            }
+
+            var units = new Dictionary<string, long>
+            {
+            { "PB", 1024L * 1024 * 1024 * 1024 * 1024 },
+            { "P", 1024L * 1024 * 1024 * 1024 * 1024 },
+            { "TB", 1024L * 1024 * 1024 * 1024 },
+            { "T", 1024L * 1024* 1024  * 1024},
+            { "GB", 1024L * 1024 * 1024 },
+            { "G", 1024L * 1024* 1024 },
+            { "MB", 1024L * 1024 },
+            { "M", 1024L * 1024 }, // Adding "M" for MB
+            { "KB", 1024L },
+            { "K", 1024L * 1024 },
+            { "B", 1L }
+            };
+
+            foreach (var unit in units)
+            {
+                if (input.EndsWith(unit.Key, StringComparison.CurrentCulture))
+                {
+                    if (double.TryParse(input.AsSpan(0, input.Length - unit.Key.Length), out double value))
+                    {
+                        memorySize = (long)(value * unit.Value);
+                        return true;
+                    }
+                }
+            }
+            return long.TryParse(input, out memorySize); // Try to parse as bytes if no unit is found
+        }
+
         public static string MemorySizeText(long memorySize)
         {
             // Define unit sizes for better readability and maintainability

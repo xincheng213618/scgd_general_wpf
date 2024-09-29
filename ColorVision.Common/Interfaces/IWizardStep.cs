@@ -1,12 +1,25 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.UI
 {
     public interface IWizardStep
     {
         public int Order { get; }
-        public string Title { get; }
-        public string Description { get; }
-        public RelayCommand? RelayCommand { get; }
+        public string Header { get; }
+        public RelayCommand Command { get; }
+    }
+
+    public abstract class WizardStepBase : ViewModelBase, IWizardStep
+    {
+        public abstract string Header { get; }
+        public abstract int Order { get; }
+
+        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual void Execute()
+        {
+
+        }
     }
 }

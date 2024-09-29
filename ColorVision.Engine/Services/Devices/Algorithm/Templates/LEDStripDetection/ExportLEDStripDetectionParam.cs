@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public override string GuidId => "LEDStripDetection";
         public override string Header => "灯带检测";
         public override int Order => 2;
-        public override ITemplate Template => new TemplateLEDStripDetectionParam();
+        public override ITemplate Template => new TemplateLEDStripDetection();
     }
 }

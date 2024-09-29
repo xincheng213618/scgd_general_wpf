@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
         public TemplatePGParam()
         {
             Title = "PGParam设置";
-            Code = ModMasterType.PG;
+            Code = "pg";
             TemplateParams = PGParam.Params;
         }
     }

@@ -41,12 +41,10 @@ namespace ColorVision.Update
 
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigHandler.GetInstance().GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
         public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
-
-        public static AutoUpdater AutoUpdater => AutoUpdater.GetInstance();
 
         /// <summary>
         /// 是否自动更新
@@ -62,7 +60,7 @@ namespace ColorVision.Update
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
-
+        
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
         private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
@@ -92,6 +90,14 @@ namespace ColorVision.Update
 
             foreach (string updateFile in updateFiles)
             {
+                if (updateFile.Contains($"ColorVision-{CurrentVersion}.exe"))
+                {
+                    string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+
+                    File.Move(updateFile, Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{CurrentVersion}.exe"));
+                    continue;
+                }
+
                 try
                 {
                     File.Delete(updateFile);
@@ -284,7 +290,6 @@ namespace ColorVision.Update
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        public string DownloadPath { get; set; }
 
         private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
         {
@@ -373,7 +378,7 @@ namespace ColorVision.Update
         }
 
 
-        private static void RestartApplication(string downloadPath)
+        public static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
             ConfigHandler.GetInstance().SaveConfigs();

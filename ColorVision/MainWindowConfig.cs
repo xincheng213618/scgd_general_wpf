@@ -22,9 +22,9 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));
 
-        public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
+        public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
-        public bool IsRestoreWindow { get; set; }
+        public bool IsRestoreWindow { get; set; } = true;
 
         public double Width { get; set; }
         public double Height { get; set; }
@@ -87,7 +87,7 @@ namespace ColorVision
             return new List<Level> { Level.All, Level.Trace, Level.Debug, Level.Info, Level.Warn, Level.Error, Level.Critical, Level.Alert, Level.Fatal, Level.Off };
         }
 
-        private Level _LogLevel = Level.All;
+        private Level _LogLevel = Level.Info;
         public Level LogLevel
         {
             get => _LogLevel; set

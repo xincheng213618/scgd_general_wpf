@@ -9,7 +9,6 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 {
-
     public class TemplateSensorDicModParam : TemplateModParam
     {
         public new static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();

@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             IsSideHide = true;
             Title = "流程引擎";
-            Code = ModMasterType.Flow;
+            Code = "flow";
             TemplateParams = FlowParam.Params;
         }
 
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Flow
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+        private static ModMasterDao masterFlowDao = new ModMasterDao("flow");
         public override void Load()
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
@@ -197,11 +197,11 @@ namespace ColorVision.Engine.Services.Flow
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
-        private static ModMasterDao masterFlowDao = new(ModMasterType.Flow);
+        private static ModMasterDao masterFlowDao = new("flow");
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new(ModMasterType.Flow, text, UserConfig.Instance.TenantId);
+            ModMasterModel flowMaster = new("flow", text, UserConfig.Instance.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;

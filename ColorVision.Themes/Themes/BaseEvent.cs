@@ -14,6 +14,7 @@ namespace ColorVision.Themes
                 e.Handled = true;
             }
         }
+
         public void NumberValidationTextBox(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter || e.Key == Key.Back || e.Key == Key.Left || e.Key == Key.Right)

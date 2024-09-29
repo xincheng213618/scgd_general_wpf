@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Templates
 {
     public class WindowTemplateConfig : ViewModelBase, IConfig
     {
-        public static WindowTemplateConfig Instance => ConfigHandler.GetInstance().GetRequiredService<WindowTemplateConfig>();
+        public static WindowTemplateConfig Instance => ConfigService.Instance.GetRequiredService<WindowTemplateConfig>();
 
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;

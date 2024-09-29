@@ -2,6 +2,11 @@
 
 namespace ColorVision.UI
 {
+    public interface IContextMenu
+    {
+        public ContextMenu ContextMenu { get; set; }
+    }
+
     public interface ITreeViewItem
     {
         public bool IsExpanded { get; set; }

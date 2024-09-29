@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates
 
     public class EditTemplateModeDetailConfig : IConfig
     {
-        public static EditTemplateModeDetailConfig Instance => ConfigHandler.GetInstance().GetRequiredService<EditTemplateModeDetailConfig>();
+        public static EditTemplateModeDetailConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateModeDetailConfig>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 
@@ -68,12 +68,5 @@ namespace ColorVision.Engine.Templates
         {
 
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
     }
 }

@@ -44,11 +44,10 @@ namespace ColorVision
                 var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
                 if (fileAppender != null)
                 {
-                    fileAppender.File = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Log";
+                    fileAppender.File = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Log\\";
                     fileAppender.ActivateOptions();
                 }
             }
-
             mutex = new Mutex(true, "ColorVision", out bool ret);
             if (!ret && !Debugger.IsAttached)
             {
@@ -68,12 +67,44 @@ namespace ColorVision
                 ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
                 //Environment.Exit(0);
             }
-
+            //杀死僵尸进程
+            KillZombieProcesses();
             log.Info("程序打开");
             App app;
             app = new App();
             app.InitializeComponent();
             app.Run();
+        }
+
+        private static void KillZombieProcesses()
+        {
+            // 获取当前进程的名称和ID
+            Process currentProcess = Process.GetCurrentProcess();
+            string processName = currentProcess.ProcessName;
+            int currentProcessId = currentProcess.Id;
+
+            // 获取所有同名进程
+            Process[] processes = Process.GetProcessesByName(processName);
+            foreach (Process process in processes)
+            {
+                // 跳过当前进程
+                if (process.Id == currentProcessId)
+                    continue;
+                
+                try
+                {
+                    log.Info("终止未响应的进程");
+                    // 终止未响应的进程
+                    process.Kill();
+                    process.WaitForExit();
+                    log.Info($"已终止未响应的进程：PID {process.Id}");
+                }
+                catch (Exception ex)
+                {
+                    // 处理可能的异常，例如权限不足
+                    log.Info($"无法终止进程：PID {process.Id}，错误：{ex.Message}");
+                }
+            }
         }
     }
 }

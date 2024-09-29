@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-
         public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
         private double _CCT;
 
@@ -147,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             if (pOIPointResultModel.Value != null)
             {
-                POIDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIDataCIExyuv>(pOIPointResultModel.Value);
+                POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;
 

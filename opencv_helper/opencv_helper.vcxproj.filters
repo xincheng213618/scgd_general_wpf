@@ -30,9 +30,6 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="algorithm.h">
-      <Filter>算法</Filter>
-    </ClInclude>
     <ClInclude Include="Utilcom.h">
       <Filter>Util</Filter>
     </ClInclude>
@@ -53,6 +50,9 @@
     </ClInclude>
     <ClInclude Include="..\include\custom_file.h">
       <Filter>自定义文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\algorithm.h">
+      <Filter>算法</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -85,7 +85,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="OpenCVHelper.rc">
+    <ResourceCompile Include="opencv_helper.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>

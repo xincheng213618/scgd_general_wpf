@@ -1,3 +1,4 @@
+#pragma warning disable CS87603,CA2201,CS8603
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -16,7 +17,7 @@ public class OpenH264InputStream : MemoryStream
 
 	private object objLock;
 
-	public event H264ReceivedEventHandler H264Received;
+	public event H264ReceivedEvent H264Received;
 
 	public OpenH264InputStream(string localIp, int localPort)
 		: this(new UDPClientRecv(localIp, localPort))
@@ -40,9 +41,9 @@ public class OpenH264InputStream : MemoryStream
 			byte[] array = AddPacket(args.buffer);
 			if (array != null)
 			{
-				this.H264Received?.Invoke(new H264StateEventArgs
+				this.H264Received?.Invoke(new H264StateEvent
 				{
-					packet = array
+					Packet = array
 				});
 			}
 		}

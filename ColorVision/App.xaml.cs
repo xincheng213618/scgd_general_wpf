@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine;
+using ColorVision.Engine.MySql;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -31,6 +32,9 @@ namespace ColorVision
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             #endif
+
+
+
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
@@ -66,7 +70,7 @@ namespace ColorVision
 
             PluginLoader.LoadPluginsAssembly("Plugins");
             ConfigHandler.GetInstance();
-            Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
+            Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
 
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);

@@ -54,7 +54,7 @@ namespace ColorVision.UI.Configs
 
         public SystemMonitor()
         {
-            Config = ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
+            Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
             Task.Run(() =>
             {
                 try

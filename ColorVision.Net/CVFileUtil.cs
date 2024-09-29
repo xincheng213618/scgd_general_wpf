@@ -4,9 +4,12 @@ using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
+using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Windows;
 
 
 namespace ColorVision.Net
@@ -16,7 +19,6 @@ namespace ColorVision.Net
         const string MagicHeader = "CVCIE";
         const int HeaderSize = 5;
         const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
-        const int ExpectedVersion = 1;
 
         public static bool IsCIEFile(string? filePath)
         {
@@ -52,7 +54,11 @@ namespace ColorVision.Net
             cvcie.FileExtType = filePath.Contains(".cvraw") ? FileExtType.Raw : filePath.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
             uint ver = br.ReadUInt32();
-            if (ver != ExpectedVersion) return -1;
+            cvcie.version = ver;
+            if (ver !=1 && ver != 2)
+            {
+                return -1;
+            }
 
             int fileNameLen = br.ReadInt32();
             if (fileNameLen > 0 && (fs.Position + fileNameLen) <= fs.Length)
@@ -89,7 +95,13 @@ namespace ColorVision.Net
 
             int startIndex = HeaderSize;
             uint version = BitConverter.ToUInt32(fileData, startIndex);
-            if (version != ExpectedVersion) return -1; // Replace with the expected version number.
+
+            cvcie.version = version;
+            if (version != 1 && version != 2)
+            {
+                return -1;
+            }
+
             startIndex += sizeof(uint);
 
             // Read and validate the file name length.
@@ -130,12 +142,40 @@ namespace ColorVision.Net
             }
 
             fs.Position = dataStartIndex; // Set the stream position to the start of the data
-            // Read the data length and data
-            int dataLen = br.ReadInt32();
+                                          // Read the data length and data
+                                          // Determine the data length based on the version
+            long dataLen = fileInfo.version switch
+            {
+                2 => br.ReadInt64(),
+                _ => br.ReadInt32()
+            };
+
+            // Ensure dataLen is within the file length
             if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
             {
-                fileInfo.data = br.ReadBytes(dataLen);
-                return true;
+                // Initialize a buffer to hold the data
+                fileInfo.data = new byte[dataLen];
+                const int bufferSize = 81920; // 80 KB buffer size
+                int bytesRead;
+                long totalBytesRead = 0;
+
+                // Read the data in chunks
+                while (totalBytesRead < dataLen)
+                {
+                    int bytesToRead = (int)Math.Min(bufferSize, dataLen - totalBytesRead);
+                    bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                    if (bytesRead == 0)
+                    {
+                        break; // End of file reached
+                    }
+                    totalBytesRead += bytesRead;
+                }
+
+                // Check if we have read the expected amount of data
+                if (totalBytesRead == dataLen)
+                {
+                    return true;
+                }
             }
 
             return false;
@@ -171,15 +211,40 @@ namespace ColorVision.Net
                 return false; // Not enough data to read the data length
             }
 
-            // Read the data length
-            int dataLen = br.ReadInt32();
-            if (dataLen <= 0 || ms.Position + dataLen > ms.Length)
+            long dataLen = fileInfo.version switch
             {
-                return false; // Invalid data length or not enough data
+                2 => br.ReadInt64(),
+                _ => br.ReadInt32()
+            };
+
+            // Ensure dataLen is within the file length
+            if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
+            {
+                // Initialize a buffer to hold the data
+                fileInfo.data = new byte[dataLen];
+                const int bufferSize = 81920; // 80 KB buffer size
+                int bytesRead;
+                long totalBytesRead = 0;
+
+                // Read the data in chunks
+                while (totalBytesRead < dataLen)
+                {
+                    int bytesToRead = (int)Math.Min(bufferSize, dataLen - totalBytesRead);
+                    bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                    if (bytesRead == 0)
+                    {
+                        break; // End of file reached
+                    }
+                    totalBytesRead += bytesRead;
+                }
+
+                // Check if we have read the expected amount of data
+                if (totalBytesRead == dataLen)
+                {
+                    return true;
+                }
             }
 
-            // Read the data
-            fileInfo.data = br.ReadBytes(dataLen);
             return true;
         }
 

@@ -24,7 +24,7 @@ namespace ColorVision.UI.HotKey
 
     public class HotKeyConfig :IConfig
     {
-        public static HotKeyConfig Instance => ConfigHandler.GetInstance().GetRequiredService<HotKeyConfig>();
+        public static HotKeyConfig Instance => ConfigService.Instance.GetRequiredService<HotKeyConfig>();
 
         public ObservableCollection<HotKeys> Hotkeys { get; set; } = new ObservableCollection<HotKeys>();
     }

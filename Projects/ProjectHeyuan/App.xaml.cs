@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using System.Windows;
 
@@ -29,8 +30,9 @@ namespace ColorVision.Projects.ProjectHeyuan
         private void Application_Startup(object s, StartupEventArgs e)
         {
             ConfigHandler.GetInstance();
+            Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
 
-            this.ApplyTheme(ThemeConfig.Instance.Theme);
+            this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
             MySqlControl.GetInstance().Connect();

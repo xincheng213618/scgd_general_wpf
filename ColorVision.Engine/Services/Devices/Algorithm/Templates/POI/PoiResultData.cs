@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             if (pOIPointResultModel.Value != null)
             {
-                POIDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIDataCIEY>(pOIPointResultModel.Value);
+                POIResultDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIResultDataCIEY>(pOIPointResultModel.Value);
                 Y = pOIDataCIEY.Y >= 0 ? pOIDataCIEY.Y : 0.001;
             }
         }
@@ -92,7 +92,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             POIPointTypes.None => "None",
             POIPointTypes.SolidPoint => "点",
             POIPointTypes.Rect => "矩形",
-            POIPointTypes.Mask => "多边形",
+            POIPointTypes.Polygon => "多边形",
+            POIPointTypes.PolygonFour => "四边形",
             POIPointTypes.Circle or _ => "圆形 ",
         };
 
