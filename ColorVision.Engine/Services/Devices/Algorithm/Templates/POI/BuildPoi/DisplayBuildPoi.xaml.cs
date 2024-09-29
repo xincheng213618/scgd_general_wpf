@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 }
 
                 var Params = new Dictionary<string, object>();
-                POIPointTypes POILayoutReq;
+                POILayoutTypes POILayoutReq;
                 if ((bool)CircleChecked.IsChecked)
                 {
                     PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
@@ -77,7 +77,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     //Params.Add("LayoutCenterY", centerY.Text);
                     Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
-                    POILayoutReq = POIPointTypes.Circle;
+                    POILayoutReq = POILayoutTypes.Circle;
                 }
                 else if ((bool)RectChecked.IsChecked)
                 {
@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     //Params.Add("LayoutCenterY", rect_centerY.Text);
                     Params.Add("LayoutWidth", width.Text);
                     Params.Add("LayoutHeight", height.Text);
-                    POILayoutReq = POIPointTypes.Rect;
+                    POILayoutReq = POILayoutTypes.Rect;
                 }
                 else//四边形
                 {
@@ -100,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                     //Params.Add("LayoutPolygonY3", Mask_Y3.Text);
                     //Params.Add("LayoutPolygonX4", Mask_X4.Text);
                     //Params.Add("LayoutPolygonY4", Mask_Y4.Text);
-                    POILayoutReq = POIPointTypes.Mask;
+                    POILayoutReq = POILayoutTypes.PolygonFour;
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);

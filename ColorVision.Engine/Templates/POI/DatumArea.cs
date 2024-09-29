@@ -22,12 +22,6 @@ namespace ColorVision.Engine.Templates.POI
         Mask = 2,
         Polygon =3
     }
-    public enum POILayoutTypes
-    {
-        Circle = 0,
-        Rect = 1,
-        PolygonFour = 2,
-    }
 
     public enum BorderType
     {
