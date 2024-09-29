@@ -37,7 +37,7 @@
                     </Grid>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="output" Width="50"/>
+                    <TextBlock Text="文件输出" Width="50"/>
                     <ComboBox  x:Name="ComboxPoiOutput"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>

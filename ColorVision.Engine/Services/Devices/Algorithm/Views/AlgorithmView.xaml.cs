@@ -15,7 +15,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
