@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateBuildPoi.Params;
             ComboxTemplate.SelectedIndex = 0;
-            CBPOIStorageModelg.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
+            CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
 
             void UpdateCB_SourceImageFiles()
             {

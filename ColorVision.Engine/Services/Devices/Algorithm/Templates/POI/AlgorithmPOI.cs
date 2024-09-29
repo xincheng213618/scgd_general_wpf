@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public RelayCommand OpenTemplatePoiReviseCommand { get; set; }
 
         public RelayCommand OpenTemplatePoiOutputCommand { get; set; }
+        public RelayCommand OpenPoiFileCommand { get; set; }
 
 
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
@@ -38,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());
             OpenTemplatePoiReviseCommand = new RelayCommand(a => OpenTemplatePoiRevise());
             OpenTemplatePoiOutputCommand = new RelayCommand(a => OpenTemplatePoiOutput());
-
+            OpenPoiFileCommand = new RelayCommand(a => OpenPoiFile());
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -59,6 +60,26 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiReviseSelectedIndex;
+
+        public POIStorageModel POIStorageType { get => _POIStorageType; set { _POIStorageType = value; NotifyPropertyChanged(); } }
+        private POIStorageModel _POIStorageType = POIStorageModel.Db;
+
+
+        public string POIPointFileName { get => _POIPointFileName; set { _POIPointFileName = value; NotifyPropertyChanged(); } }
+        private string _POIPointFileName;
+
+        public void OpenPoiFile()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                POIPointFileName = openFileDialog.FileName;
+            }
+        }
+
 
         public void OpenTemplatePoiRevise()
         {
@@ -96,6 +117,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
                 Params.Add("ReviseTemplate", new CVTemplateParam() { ID = revise.Id, Name = revise.Name });
             if (output.Id != -1)
                 Params.Add("OutputTemplate", new CVTemplateParam() { ID = output.Id, Name = output.Name });
+
+            if (POIStorageType == POIStorageModel.File)
+            {
+                Params.Add("POIStorageType", POIStorageType);
+                Params.Add("POIPointFileName", POIPointFileName);
+            }
 
             MsgSend msg = new()
             {

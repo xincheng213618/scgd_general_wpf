@@ -112,7 +112,7 @@
 
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="输出类型" Width="70"/>
-                <ComboBox x:Name="CBPOIStorageModelg" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
+                <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
             </StackPanel>
             
             <TabControl BorderThickness="0" Background="Transparent">

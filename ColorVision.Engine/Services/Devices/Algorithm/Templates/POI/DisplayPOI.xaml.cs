@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Services.Msg;
@@ -39,6 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             ComboxPoiRevise.ItemsSource = TemplatePoiReviseParam.Params.CreateEmpty();
             ComboxPoiRevise.SelectedIndex = 0;
 
+            CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
 
             void UpdateCB_SourceImageFiles()
             {
@@ -106,6 +108,5 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_CIEImageFiles.Text, FileExtType.CIE);
         }
-
     }
 }
