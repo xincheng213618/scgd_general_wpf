@@ -572,6 +572,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(mTFResultData);
                             }
                         }
+                        header = new() { "Name", "位置", "大小", "形状" };
+                        bdHeader = new() { "Name", "PixelPos", "PixelSize" };
                         foreach (var item in result.ViewResults)
                         {
                             if (item is PoiResultData poiResultData)
