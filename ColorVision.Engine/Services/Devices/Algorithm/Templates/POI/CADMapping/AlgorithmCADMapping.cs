@@ -12,13 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.CADMapping
 {
-    public class PointFloat : ViewModelBase
-    {
-        public float X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
-        private float _X;
-        public float Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
-        private float _Y;
-    }
+
 
     public class AlgorithmCADMapping : ViewModelBase, IDisplayAlgorithm
     {

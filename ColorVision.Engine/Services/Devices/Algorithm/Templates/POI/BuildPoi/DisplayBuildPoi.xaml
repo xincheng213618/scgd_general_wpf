@@ -19,7 +19,11 @@
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
-            <StackPanel Margin="0,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="POIBuildType" Width="100"/>
+                <ComboBox x:Name="CBPOIBuildType" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIBuildType}" Width="100"/>
+            </StackPanel>
+            <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel >
                     <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
@@ -39,7 +43,7 @@
                     </DockPanel>
                 </UniformGrid>
             </StackPanel>
-            <StackPanel Margin="0,2">
+            <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel>
                     <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
@@ -69,7 +73,7 @@
                 </DockPanel>
             </StackPanel>
 
-            <StackPanel Margin="0,2">
+            <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter}}">
                 <DockPanel>
                     <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
                 </DockPanel>
@@ -110,10 +114,50 @@
                 </UniformGrid>
             </StackPanel>
 
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="输出类型" Width="70"/>
-                <ComboBox x:Name="CBPOIStorageModel" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" SelectedValue="{Binding POIStorageModel}" Width="100"/>
+            <StackPanel Margin="0,2" Visibility="{Binding IsPOIBuildCommon,Converter={StaticResource bool2VisibilityConverter1}}">
+
+                <UniformGrid Columns="4" Margin="0,2">
+                    <DockPanel Margin="0,0,5,2" >
+                        <TextBlock Text="x1" Width="20"/>
+                        <TextBox Text="{Binding Point1.X}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,5,2">
+                        <TextBlock Text="y1" Width="20"/>
+                        <TextBox Text="{Binding Point1.Y}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,5,2">
+                        <TextBlock Text="x2" Width="20"/>
+                        <TextBox Text="{Binding Point2.X}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,2">
+                        <TextBlock Text="y2" Width="20"/>
+                        <TextBox Text="{Binding Point2.Y}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,5,2">
+                        <TextBlock Text="x3" Width="20"/>
+                        <TextBox Text="{Binding Point3.X}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,5,2">
+                        <TextBlock Text="y3" Width="20"/>
+                        <TextBox Text="{Binding Point3.Y}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,5,2">
+                        <TextBlock Text="x4" Width="20"/>
+                        <TextBox Text="{Binding Point4.X}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,2">
+                        <TextBlock Text="y4" Width="20"/>
+                        <TextBox Text="{Binding Point4.Y}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                </UniformGrid>
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <TextBlock Text="CAD文件" Margin="0,0,10,0" Width="60"/>
+                    <TextBox x:Name="CADImageFile" Style="{StaticResource TextBox.Small}" Text="{Binding CADPosFileName}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                    <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenCADFileCommand}" />
+                </StackPanel>
             </StackPanel>
+
+
             
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
