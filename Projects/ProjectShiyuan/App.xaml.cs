@@ -7,10 +7,9 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
-using ProjectShiyuan;
 using System.Windows;
 
-namespace ColorVision.Projects.ProjectHeyuan
+namespace ColorVision.Projects.ProjectShiYuan
 {
     /// <summary>
     /// Interaction logic for App.xaml
