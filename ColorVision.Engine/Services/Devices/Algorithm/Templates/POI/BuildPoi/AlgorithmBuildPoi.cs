@@ -97,9 +97,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = buildPOIParam.Id, Name = buildPOIParam.Name });
             Params.Add("POILayoutReq", POILayoutReq.ToString());
-
-            Params.Add("BuildType", POIBuildType);
-
+            Params.Add("POILayoutReq", POILayoutReq.ToString());
+            Params.Add("POIStorageType", POIStorageModel);
             if (POIBuildType == POIBuildType.CADMapping)
             {
                 PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
