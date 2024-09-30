@@ -352,6 +352,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
 
                         break;
+                    case AlgorithmResultType.OLED_JND_CalVas:
                     case AlgorithmResultType.MTF:
                         if (result.ViewResults == null)
                         {
@@ -374,7 +375,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                         }
                         AddPOIPoint(DrawPoiPoint);
-
                         break;
                     case AlgorithmResultType.Ghost:
                         if (result.ViewResults == null)

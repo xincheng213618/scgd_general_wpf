@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
@@ -370,6 +371,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
+
+            foreach (var item in Device.Config.ROIParams)
+            {
+                CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Height, item.Width));
+
+
+            }
+
             if (croppedBitmap1 == null)
             {
                 croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));

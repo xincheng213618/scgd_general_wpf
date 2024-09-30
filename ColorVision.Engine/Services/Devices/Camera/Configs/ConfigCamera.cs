@@ -4,7 +4,10 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Configs;
-using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -83,8 +86,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private double _ExpTimeMin = 1;
 
         public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = (int)Math.Pow(Math.E, value); } }
-
-
 
         public float ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
         private float _ExpTimeR = 10;
@@ -230,21 +231,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; NotifyPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
-    }
-
-    /// <summary>
-    /// 追加的class
-    /// </summary>
-    public class ZBDebayer:ViewModelBase
-    {
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
-        private bool _IsEnabled;
-
-        public int Method { get => _Method; set { _Method = value; NotifyPropertyChanged(); } }
-        private int _Method = 1;
-
-        public int Channeltype { get => _Channeltype; set { _Channeltype = value; NotifyPropertyChanged(); } }
-        private int _Channeltype = 3;
+        public ObservableCollection<Int32Rect> ROIParams { get; set; } = new ObservableCollection<Int32Rect>();
 
     }
 }
