@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public float PosY { get; set; }
 
     }
-    public class AlgResultLightAreaDao : BaseTableDao<AlgResultPoiCieFileModel>
+    public class AlgResultLightAreaDao : BaseTableDao<AlgResultLightAreaModel>
     {
         public static AlgResultLightAreaDao Instance { get; set; } = new AlgResultLightAreaDao();
 
