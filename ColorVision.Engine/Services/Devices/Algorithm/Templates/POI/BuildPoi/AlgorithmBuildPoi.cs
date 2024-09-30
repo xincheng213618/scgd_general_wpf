@@ -101,6 +101,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             Params.Add("BuildType", POIBuildType);
             if (POIBuildType == POIBuildType.CADMapping)
             {
+                List<PointInt> pointInts = new List<PointInt>();
+                pointInts.Add(new PointInt() { X = (int)Point1.X, Y = (int)Point1.Y });
+                pointInts.Add(new PointInt() { X = (int)Point2.X, Y = (int)Point2.Y });
+                pointInts.Add(new PointInt() { X = (int)Point3.X, Y = (int)Point3.Y });
+                pointInts.Add(new PointInt() { X = (int)Point4.X, Y = (int)Point4.Y });
+
+                Params.Add("LayoutPolygon", pointInts); 
+
                 PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
                 Params.Add("CADMappingParam", new Dictionary<string, Object>() { { "CAD_MasterId", -1 },{ "ROI" , ROI },{ "CAD_PosFileName" , CADPosFileName } });
             }
