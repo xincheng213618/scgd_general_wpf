@@ -367,8 +367,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
                                 result.ViewResults.Add(new ViewRsultJND(item));
                         }
-                        header = new() { "位置", "大小", "形状", "h_jnd", "v_jnd" };
-                        bdHeader = new() { "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
+                        header = new() { "Name","位置", "大小", "形状", "h_jnd", "v_jnd" };
+                        bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
                         foreach (var item in result.ViewResults)
                         {
                             if (item is PoiResultData poiResultData)
@@ -391,8 +391,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(mTFResultData);
                             }
                         }
-                        header = new() { "位置", "大小", "形状", "MTF", "Value" };
-                        bdHeader = new() { "PixelPos", "PixelSize", "Shapes", "Articulation", "AlgResultMTFModel.ValidateResult" };
+                        header = new() { "Name","位置", "大小", "形状", "MTF", "Value" };
+                        bdHeader = new() {"Name", "PixelPos", "PixelSize", "Shapes", "Articulation", "AlgResultMTFModel.ValidateResult" };
 
                         foreach (var item in result.ViewResults)
                         {

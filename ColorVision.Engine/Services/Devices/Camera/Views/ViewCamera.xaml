@@ -84,7 +84,6 @@
                         <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
                         <MenuItem Header="{x:Static properties:Resources.Export}"  Click="MenuItem_Export_Click" Tag="{Binding .}"  />
                         <MenuItem Header="另存为"  Click="MenuItem_ExportFile_Click" Tag="{Binding .}"  />
-
                     </ContextMenu>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
@@ -163,6 +162,7 @@
                 </ListView.View>
 
             </ListView>
+        
         </Grid>
         <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
     </Grid>

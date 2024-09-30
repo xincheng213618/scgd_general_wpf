@@ -8,6 +8,7 @@ using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -16,6 +17,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
+        public ConfigCamera()
+        {
+            AddROIParamsCommand = new RelayCommand(a => AddROIParams());
+            DeleteROIParamsCommand = new RelayCommand(a => DeleteROIParams(a));
+        }
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
         private string? _CameraCode;
 
@@ -231,7 +237,43 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; NotifyPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
-        public ObservableCollection<Int32Rect> ROIParams { get; set; } = new ObservableCollection<Int32Rect>() { new Int32Rect(200,200,1000,1000)  ,new Int32Rect(2000, 2000, 1000, 1000) };
 
+        public RelayCommand AddROIParamsCommand { get; set; }
+        public RelayCommand DeleteROIParamsCommand { get; set; }
+
+        public void AddROIParams()
+        {
+            ROIParams.Add(new Int32RectViewModel(0, 0, 100, 100));
+        }
+        public void DeleteROIParams(Object obj)
+        {
+            if (obj is Int32RectViewModel  viewModel)
+            ROIParams.Remove(viewModel);
+        }
+
+        public ObservableCollection<Int32RectViewModel> ROIParams { get; set; } = new ObservableCollection<Int32RectViewModel>();
     }
+
+    public class Int32RectViewModel : ViewModelBase
+    {
+        public Int32RectViewModel(int x, int y, int width, int height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
+
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width;
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height;
+        public int X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        private int _X;
+        public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private int _Y;
+
+        public Int32Rect ToInt32Rect()=> new Int32Rect(X, Y, Width, Height);
+    }
+
 }

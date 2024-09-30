@@ -392,7 +392,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 for (int i = 0; i < CroppedBitmaps.Count; i++)
                 {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i]);
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
                     smallWindowImages[i].ImageShow.Source = croppedBitmap;
                 }
             }

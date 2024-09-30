@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
@@ -161,6 +162,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)
         {
             UpdateConfig();
+        }
+
+        private void RoiDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is Int32RectViewModel int32RectViewModel)
+            {
+                EditConfig.ROIParams.Remove(int32RectViewModel);
+            }
         }
     }
 }
