@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(msg, "JND");
             }
         }
 

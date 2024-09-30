@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(msg, "LedCheck");
             }
         }
 
