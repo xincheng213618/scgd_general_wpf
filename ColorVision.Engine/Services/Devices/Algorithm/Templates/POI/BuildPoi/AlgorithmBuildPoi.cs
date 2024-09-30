@@ -98,6 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             Params.Add("TemplateParam", new CVTemplateParam() { ID = buildPOIParam.Id, Name = buildPOIParam.Name });
             Params.Add("POILayoutReq", POILayoutReq.ToString());
             Params.Add("POIStorageType", POIStorageModel);
+            Params.Add("BuildType", POIBuildType);
             if (POIBuildType == POIBuildType.CADMapping)
             {
                 PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
@@ -108,7 +109,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 Params.Add(param.Key, param.Value);
             }
-            Params.Add("POIStorageType", POIStorageModel);
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
