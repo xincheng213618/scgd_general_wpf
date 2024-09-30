@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 using Quartz;
 using ScottPlot.Colormaps;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -366,35 +367,36 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-        CroppedBitmap croppedBitmap1;
-        Image smallWindowImage;
+
+        List<CroppedBitmap> CroppedBitmaps = new List<CroppedBitmap>();
+        List<ImageView> smallWindowImages = new List<ImageView>();
+
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
 
-            foreach (var item in Device.Config.ROIParams)
+            if (CroppedBitmaps.Count == 0)
             {
-                CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Height, item.Width));
-                ImageView smallWindowImage = new ImageView() { };
-                smallWindowImage.ImageShow.Source = croppedBitmap;
-
-                Window window = new Window() { Content = smallWindowImage };
-                window.Show();
-            }
-
-            if (croppedBitmap1 == null)
-            {
-                croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
-                smallWindowImage = new Image
+                foreach (var item in Device.Config.ROIParams)
                 {
-                    Source = croppedBitmap1,
-                    Width = 500,
-                    Height = 500
-                };
-
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
+                    ImageView smallWindowImage = new ImageView() { };
+                    smallWindowImage.ImageShow.Source = croppedBitmap;
+                    CroppedBitmaps.Add(croppedBitmap);
+                    smallWindowImages.Add(smallWindowImage);
+                    Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
+                    window.Show();
+                }
             }
-            croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
-            smallWindowImage.Source = croppedBitmap1;
+            else
+            {
+                for (int i = 0; i < CroppedBitmaps.Count; i++)
+                {
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i]);
+                    smallWindowImages[i].ImageShow.Source = croppedBitmap;
+                }
+            }
+
         }
 
 

@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
@@ -360,6 +361,25 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         break;
                     case AlgorithmResultType.OLED_JND_CalVas:
+                        if (result.ViewResults == null)
+                        {
+                            result.ViewResults = new ObservableCollection<IViewResult>();
+                            foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
+                                result.ViewResults.Add(new ViewRsultJND(item));
+                        }
+                        header = new() { "位置", "大小", "形状", "h_jnd", "v_jnd" };
+                        bdHeader = new() { "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
+                        foreach (var item in result.ViewResults)
+                        {
+                            if (item is PoiResultData poiResultData)
+                            {
+                                DrawPoiPoint.Add(poiResultData.Point);
+                            }
+                        }
+                        AddPOIPoint(DrawPoiPoint);
+
+                        break;
+
                     case AlgorithmResultType.MTF:
                         if (result.ViewResults == null)
                         {
@@ -726,6 +746,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle.Attribute.Id = item.Id ?? -1;
+                        Circle.Attribute.Name = item.Name;
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
@@ -735,6 +756,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Rectangle.Attribute.Id = item.Id ?? -1;
+                        Rectangle.Attribute.Name = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;

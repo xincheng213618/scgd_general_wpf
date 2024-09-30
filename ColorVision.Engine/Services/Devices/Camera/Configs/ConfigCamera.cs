@@ -231,7 +231,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; NotifyPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
-        public ObservableCollection<Int32Rect> ROIParams { get; set; } = new ObservableCollection<Int32Rect>();
+        public ObservableCollection<Int32Rect> ROIParams { get; set; } = new ObservableCollection<Int32Rect>() { new Int32Rect(200,200,1000,1000)  ,new Int32Rect(2000, 2000, 1000, 1000) };
 
     }
 }
