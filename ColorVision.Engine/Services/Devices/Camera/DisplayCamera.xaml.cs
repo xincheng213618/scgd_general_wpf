@@ -146,6 +146,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
+                        CroppedBitmaps.Clear();
+                        smallWindowImages.Clear();
                         break;
                     case DeviceStatusType.LiveOpened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
