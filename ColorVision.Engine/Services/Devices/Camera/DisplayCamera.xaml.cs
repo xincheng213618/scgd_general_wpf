@@ -375,8 +375,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             foreach (var item in Device.Config.ROIParams)
             {
                 CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Height, item.Width));
+                ImageView smallWindowImage = new ImageView() { };
+                smallWindowImage.ImageShow.Source = croppedBitmap;
 
-
+                Window window = new Window() { Content = smallWindowImage };
+                window.Show();
             }
 
             if (croppedBitmap1 == null)
@@ -388,8 +391,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Width = 500,
                     Height = 500
                 };
-                Window window = new Window() { Content = smallWindowImage };
-                window.Show();
+
             }
             croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
             smallWindowImage.Source = croppedBitmap1;

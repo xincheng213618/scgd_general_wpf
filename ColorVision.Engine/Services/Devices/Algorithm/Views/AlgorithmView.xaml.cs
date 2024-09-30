@@ -222,13 +222,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.LightArea:
+                        result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+                        DVPolygon polygon = new DVPolygon();
+                        foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
+                        {
+                            polygon.Attribute.Points.Add(new Point(item.PosX,item.PosY));
+                        }
+                        polygon.Attribute.Brush = Brushes.Transparent;
+                        polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                        polygon.Attribute.Id =  -1;
+                        polygon.Render();
+                        ImageView.AddVisual(polygon);
                         break;
                     case AlgorithmResultType.POI_XYZ_File:
                     case AlgorithmResultType.POI_Y_File:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>(AlgResultPoiCieFileDao.Instance.GetAllByPid(result.Id));
-                        }
                         header = new List<string> { "file_name", "FileUrl" , "FileType" };
                         bdHeader = new List<string> { "FileName", "FileUrl" , "FileType", };
                         break;
