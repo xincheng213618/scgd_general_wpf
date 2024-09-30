@@ -740,23 +740,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircle Circle = new();
+                        DVCircleText Circle = new();
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle.Attribute.Id = item.Id ?? -1;
-                        Circle.Attribute.Name = item.Name;
+                        Circle.Attribute.Text = item.Name;
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangle Rectangle = new();
+                        DVRectangleText Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Attribute.Text = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
