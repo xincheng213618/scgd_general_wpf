@@ -232,8 +232,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         polygon.Attribute.Brush = Brushes.Transparent;
                         polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
                         polygon.Attribute.Id =  -1;
+                        polygon.IsComple = true;
                         polygon.Render();
                         ImageView.AddVisual(polygon);
+                        header = new List<string> { "PosX", "PosY"};
+                        bdHeader = new List<string> { "PosX", "PosY"};
                         break;
                     case AlgorithmResultType.POI_XYZ_File:
                     case AlgorithmResultType.POI_Y_File:
