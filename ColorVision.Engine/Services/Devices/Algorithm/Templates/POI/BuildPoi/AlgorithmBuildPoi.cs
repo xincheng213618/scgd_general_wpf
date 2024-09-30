@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             Params.Add("TemplateParam", new CVTemplateParam() { ID = buildPOIParam.Id, Name = buildPOIParam.Name });
             Params.Add("POILayoutReq", POILayoutReq.ToString());
 
-            Params.Add("POIBuildType", POIBuildType);
+            Params.Add("BuildType", POIBuildType);
 
             if (POIBuildType == POIBuildType.CADMapping)
             {
