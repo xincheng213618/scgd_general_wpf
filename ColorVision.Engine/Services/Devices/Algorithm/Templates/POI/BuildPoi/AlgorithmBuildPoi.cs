@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             if (POIBuildType == POIBuildType.CADMapping)
             {
                 PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
-                Params.Add("BuildCADMappingParam", new Dictionary<string, Object>() { { "CAD_MasterId", -1 },{ "ROI" , ROI },{ "CAD_PosFileName" , CADPosFileName } });
+                Params.Add("CADMappingParam", new Dictionary<string, Object>() { { "CAD_MasterId", -1 },{ "ROI" , ROI },{ "CAD_PosFileName" , CADPosFileName } });
             }
 
             foreach (var param in @params)
