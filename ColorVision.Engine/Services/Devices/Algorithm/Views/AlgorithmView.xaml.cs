@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
@@ -225,9 +226,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.LightArea:
                         result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
                         DVPolygon polygon = new DVPolygon();
+                        List<System.Drawing.Point> points = new List<System.Drawing.Point>();
                         foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
                         {
-                            polygon.Attribute.Points.Add(new Point(item.PosX,item.PosY));
+                            points.Add(new System.Drawing.Point((int)item.PosX, (int)item.PosY));
+                        }
+                        foreach (var item in GrahamScan.ComputeConvexHull(points))
+                        {
+                            polygon.Attribute.Points.Add(new Point(item.X, item.Y));
                         }
                         polygon.Attribute.Brush = Brushes.Transparent;
                         polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);

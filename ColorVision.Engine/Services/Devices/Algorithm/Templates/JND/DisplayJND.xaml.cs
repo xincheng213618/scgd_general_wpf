@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
 using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -25,6 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateJND.Params;
             ComboxTemplate.SelectedIndex = 0;
+
+
+            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
