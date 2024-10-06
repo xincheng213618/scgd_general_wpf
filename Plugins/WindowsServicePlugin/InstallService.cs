@@ -51,20 +51,10 @@ namespace WindowsServicePlugin
                 {
                     windowUpdate.Close();
                 });
-                // 启动新的实例
-                ProcessStartInfo startInfo = new();
-                startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                startInfo.FileName = downloadPath;
-                startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                          // 如果需要静默安装，添加静默安装参数
-                                          //quiet 没法自启，桌面图标也是空                       
-                                          //startInfo.Arguments = "/quiet";
 
                 try
                 {
-                    Process p = Process.Start(startInfo);
-                    p?.WaitForExit();
+                    PlatformHelper.Open(downloadPath);
                 }
                 catch (Exception ex)
                 {
