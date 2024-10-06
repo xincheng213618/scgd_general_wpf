@@ -17,7 +17,6 @@ namespace WindowsServicePlugin
         public override int Order => 99;
         public override string Header => "安装MQTT";
 
-
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallMQTT()
         {

@@ -66,33 +66,19 @@ namespace ColorVision.UI
         {
             if (!Directory.Exists(path)) 
                 return ;
-            // 获取所有 dll 文件
-            foreach (string file in Directory.GetFiles(path, "*.dll"))
+            foreach (var directory in Directory.GetDirectories(path))
             {
+                string directoryName = Path.GetFileName(directory);
+                string dllPath = Path.Combine(directory, directoryName + ".dll");
+
                 try
                 {
-                    Assembly assembly = Assembly.LoadFrom(file); ;
+                    Assembly assembly = Assembly.LoadFrom(dllPath); ;
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     MessageBox.Show("加载插件错误：" + ex.Message, "ColorVision");
                     log.Error(ex);
-                }
-            }
-
-            foreach (var item in Directory.GetDirectories(path))
-            {
-                foreach (var file in Directory.GetFiles(item, "*.dll"))
-                {
-                    try
-                    {
-                        Assembly assembly = Assembly.LoadFrom(file); ;
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("加载插件错误：" + ex.Message, "ColorVision");
-                        log.Error(ex);
-                    }
                 }
             }
         }
