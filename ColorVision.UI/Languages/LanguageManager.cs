@@ -73,7 +73,7 @@ namespace ColorVision.UI.Languages
 
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, defaultProcessDllName, SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, defaultProcessDllName, SearchOption.TopDirectoryOnly);
 
                 if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
@@ -104,6 +104,7 @@ namespace ColorVision.UI.Languages
                 if (MessageBox.Show(Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
+
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
 
                     Application.Current.Shutdown();
