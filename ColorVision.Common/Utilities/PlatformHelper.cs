@@ -38,14 +38,7 @@ public static class PlatformHelper
         {
             if (OperatingSystem.IsWindows())
             {
-                if (Environment.OSVersion.Version >= new Version(10, 0, 21996))
-                {
-                    Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
-                }
-                else
-                {
-                    Process.Start("explorer.exe", $"{filename}");
-                }
+                Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
             }
             if (OperatingSystem.IsMacOS())
             {   
