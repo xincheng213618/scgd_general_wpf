@@ -146,7 +146,6 @@ namespace WindowsServicePlugin
                         CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser.SelectedPath + "\\InstallTool\\CVWinSMS.exe";
                     }
 
-
                     // 启动新的实例
                     ProcessStartInfo startInfo = new();
                     startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性

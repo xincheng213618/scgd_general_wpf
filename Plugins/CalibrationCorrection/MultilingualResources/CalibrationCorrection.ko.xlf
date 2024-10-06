@@ -4,7 +4,7 @@
     <body>
       <group id="PLUGINS/CALIBRATIONCORRECTION/PROPERTIES/RESOURCES.RESX" datatype="resx">
         <trans-unit id="CalibrationCorrection" translate="yes" xml:space="preserve">
-          <source>校正工具</source>
+          <source>校正生成工具</source>
           <target state="new">교정 도구</target>
         </trans-unit>
         <trans-unit id="CannotFindCalibToolsExe_HelpMeFindIt" translate="yes" xml:space="preserve">
