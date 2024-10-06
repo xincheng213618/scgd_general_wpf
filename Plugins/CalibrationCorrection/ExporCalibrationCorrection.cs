@@ -86,7 +86,10 @@ namespace CalibrationCorrection
                                 folderBrowser.RootFolder = Environment.SpecialFolder.Desktop;
                                 if (folderBrowser.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                                ZipFile.ExtractToDirectory(downloadPath, folderBrowser.SelectedPath, true);
+                                if (!Directory.Exists(folderBrowser.SelectedPath + "\\generateCaliFileTool240906"))
+                                    Directory.CreateDirectory(folderBrowser.SelectedPath + "\\generateCaliFileTool240906");
+
+                                ZipFile.ExtractToDirectory(downloadPath, folderBrowser.SelectedPath + "\\generateCaliFileTool240906", true);
 
                                 CalibrationConfig.Instance.CalibToolsPath = folderBrowser.SelectedPath + "\\generateCaliFileTool240906\\CalibTools.exe";
                             }
