@@ -1,9 +1,7 @@
 ﻿using ColorVision.UI.HotKey;
-using System;
 using System.Windows;
 using System.Windows.Input;
 using ColorVision.UI.Menus;
-using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update
@@ -26,26 +24,5 @@ namespace ColorVision.Update
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
-    }
-
-
-
-
-
-    /// <summary>
-    /// WindowUpdate.xaml 的交互逻辑
-    /// </summary>
-    public partial class WindowUpdate : Window
-    {
-        public WindowUpdate()
-        {
-            InitializeComponent();
-            this.ApplyCaption();
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            DataContext = AutoUpdater.GetInstance(); 
-        }
     }
 }

@@ -1,7 +1,8 @@
 ﻿using ColorVision.Themes;
+using System;
 using System.Windows;
 
-namespace WindowsServicePlugin
+namespace ColorVision.Themes.Controls
 {
     public interface IUpdate
     {

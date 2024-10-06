@@ -1,16 +1,15 @@
 ﻿#pragma warning disable SYSLIB0014
+using ColorVision.Common.Utilities;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Http.Headers;
+using System.IO.Compression;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Windows;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using System.IO.Compression;
 
 namespace WindowsServicePlugin
 {

@@ -1,14 +1,13 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Windows;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 
 namespace WindowsServicePlugin
 {

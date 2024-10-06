@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
@@ -54,7 +55,7 @@ namespace ColorVision.Update
     }
 
 
-    public class AutoUpdater : ViewModelBase
+    public class AutoUpdater : ViewModelBase,IUpdate
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
         private static AutoUpdater _instance;
@@ -126,8 +127,8 @@ namespace ColorVision.Update
         public void Update(Version Version, string DownloadPath)
         {
             CancellationTokenSource _cancellationTokenSource = new();
-            WindowUpdate windowUpdate = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowUpdate.Title += $" {Version}" ;
+            WindowUpdate windowUpdate = new WindowUpdate(this) { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            windowUpdate.Title += $" {Version} 下载中" ;
             windowUpdate.Closed += (s, e) =>
             {
                 _cancellationTokenSource.Cancel();
@@ -288,6 +289,10 @@ namespace ColorVision.Update
         private string _SpeedValue;
 
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+
+        public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; NotifyPropertyChanged(); } }
+        private string _DownloadTile = Resources.ColorVisionUpdater;
+
         private string _RemainingTimeValue;
 
 
