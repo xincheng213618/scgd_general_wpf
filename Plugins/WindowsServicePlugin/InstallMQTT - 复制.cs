@@ -8,25 +8,25 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallMQTT : MenuItemBase, IWizardStep
+    public class InstallNavivate : MenuItemBase, IWizardStep
     {
         public override string OwnerGuid => "ServiceLog";
 
-        public override string GuidId => "InstallMQTT";
+        public override string GuidId => "InstallNavivate";
 
         public override int Order => 99;
-        public override string Header => "安装MQTT";
+        public override string Header => "InstallNavivate";
 
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public InstallMQTT()
+        public InstallNavivate()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载MQTT";
+            DownloadFile.DownloadTile = "下载Navicate";
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mosquitto-2.0.18-install-windows-x64.exe";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" +  @"ColorVision\\mosquitto-2.0.18-install-windows-x64.exe";
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/navicat/navicat161_premium_cs_x64.exe";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\navicat161_premium_cs_x64.exe";
 
         public override void Execute()
         {
@@ -66,7 +66,6 @@ namespace WindowsServicePlugin
                 {
                     Process p = Process.Start(startInfo);
                     p?.WaitForExit();
-                    Tool.ExecuteCommandAsAdmin("net start mosquitto");
                 }
                 catch (Exception ex)
                 {

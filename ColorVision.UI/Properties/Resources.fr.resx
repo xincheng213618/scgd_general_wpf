@@ -225,4 +225,13 @@
   <data name="Clear" xml:space="preserve">
     <value>Clair</value>
   </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>Une erreur s'est produite</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>temps restant:</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Vitesse actuelle:</value>
+  </data>
 </root>

@@ -225,4 +225,13 @@
   <data name="Clear" xml:space="preserve">
     <value>분명한</value>
   </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>에러 발생됨</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>남은 시간:</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>현재 속도:</value>
+  </data>
 </root>

@@ -23,6 +23,14 @@
           <source>清除</source>
           <target state="new">クリア</target>
         </trans-unit>
+        <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
+          <source>当前速度：</source>
+          <target state="new">現在の速度:</target>
+        </trans-unit>
+        <trans-unit id="ErrorOccurred" translate="yes" xml:space="preserve">
+          <source>发生错误</source>
+          <target state="new">エラーが発生しました</target>
+        </trans-unit>
         <trans-unit id="FilterSupportsRegex" translate="yes" xml:space="preserve">
           <source>过滤器支持正则</source>
           <target state="new">フィルターは正規表現をサポートします</target>
@@ -106,6 +114,10 @@
         <trans-unit id="OpenLogFolder" translate="yes" xml:space="preserve">
           <source>打开日志文件夹</source>
           <target state="new">ログフォルダを開く</target>
+        </trans-unit>
+        <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
+          <source>剩余时间：</source>
+          <target state="new">残り時間：</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

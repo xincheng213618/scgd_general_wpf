@@ -135,15 +135,6 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>Журнал обслуживания RC</value>
   </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>оставшееся время:</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>Произошла ошибка</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Текущая скорость:</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>Управленческие услуги</value>
   </data>

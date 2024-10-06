@@ -205,4 +205,13 @@
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
   </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>发生错误</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>剩余时间：</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>当前速度：</value>
+  </data>
 </root>

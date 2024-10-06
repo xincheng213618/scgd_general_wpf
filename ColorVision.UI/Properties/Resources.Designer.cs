@@ -106,11 +106,29 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前速度： 的本地化字符串。
+        /// </summary>
+        public static string CurrentSpeed {
+            get {
+                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 英语 的本地化字符串。
         /// </summary>
         public static string en {
             get {
                 return ResourceManager.GetString("en", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发生错误 的本地化字符串。
+        /// </summary>
+        public static string ErrorOccurred {
+            get {
+                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
             }
         }
         
@@ -336,6 +354,15 @@ namespace ColorVision.UI.Properties {
         public static string ru {
             get {
                 return ResourceManager.GetString("ru", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剩余时间： 的本地化字符串。
+        /// </summary>
+        public static string TimeLeft {
+            get {
+                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         

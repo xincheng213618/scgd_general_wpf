@@ -135,15 +135,6 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>RCサービスログ</value>
   </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>残り時間：</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>エラーが発生しました</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>現在の速度:</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>管理サービス</value>
   </data>

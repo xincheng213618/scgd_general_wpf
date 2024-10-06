@@ -7,13 +7,9 @@
           <source>相机日志</source>
           <target state="new">カメラログ</target>
         </trans-unit>
-        <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
-          <source>当前速度：</source>
-          <target state="new">現在の速度:</target>
-        </trans-unit>
-        <trans-unit id="ErrorOccurred" translate="yes" xml:space="preserve">
-          <source>发生错误</source>
-          <target state="new">エラーが発生しました</target>
+        <trans-unit id="ManagementService" translate="yes" xml:space="preserve">
+          <source>管理服务</source>
+          <target state="new">管理サービス</target>
         </trans-unit>
         <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
           <source>RC服务日志</source>
@@ -26,10 +22,6 @@
         <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
           <source>光谱仪日志</source>
           <target state="new">分光計のログ</target>
-        </trans-unit>
-        <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
-          <source>剩余时间：</source>
-          <target state="new">残り時間：</target>
         </trans-unit>
         <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
           <source>x64服务日志</source>

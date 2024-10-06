@@ -225,4 +225,13 @@
   <data name="Clear" xml:space="preserve">
     <value>Прозрачный</value>
   </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>Произошла ошибка</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>оставшееся время:</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Текущая скорость:</value>
+  </data>
 </root>

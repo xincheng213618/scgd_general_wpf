@@ -6,9 +6,6 @@ using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Windows;
 
 namespace WindowsServicePlugin
@@ -21,8 +18,9 @@ namespace WindowsServicePlugin
         private string _CVWinSMSPath = string.Empty;
     }
 
-    public class InstallTool : MenuItemBase, IWizardStep, IUpdate
+    public class InstallTool : MenuItemBase, IWizardStep
     {
+
         public override string OwnerGuid => "ServiceLog";
 
         public override string GuidId => "InstallTool";
@@ -30,112 +28,21 @@ namespace WindowsServicePlugin
         public override int Order => 99;
 
         public override string Header => Properties.Resources.ManagementService;
-        public string DownloadTile { get; set; } = "下载服务管理工具";
+
+        public DownloadFile DownloadFile { get; set; } = new DownloadFile();
+        public InstallTool()
+        {
+            DownloadFile = new DownloadFile();
+            DownloadFile.DownloadTile = "下载服务管理工具";
+        }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[2.0.0.24092].zip";
         private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\InstallTool[2.0.0.24092].zip";
 
-        public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
-        private int _ProgressValue;
-
-        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; NotifyPropertyChanged(); } }
-        private string _SpeedValue;
-
-        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
-        private string _RemainingTimeValue;
-
-        bool IsPassWorld;
-
-        public async Task GetIsPassWorld()
-        {
-            string url = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
-            using HttpClient _httpClient = new();
-            string versionString = null;
-            try
-            {
-                versionString = await _httpClient.GetStringAsync(url);
-            }
-            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-            {
-                IsPassWorld = true;
-            }
-        }
-
-        private async Task Download(string downloadUrl, string DownloadPath, CancellationToken cancellationToken)
-        {
-            using (var client = new HttpClient())
-            {
-                if (IsPassWorld)
-                {
-                    string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-                }
-                Stopwatch stopwatch = new();
-                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
-                    return;
-                }
-
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var totalReadBytes = 0L;
-                var readBytes = 0;
-                var buffer = new byte[8192];
-                var isMoreToRead = true;
-
-                stopwatch.Start();
-
-                using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
-                {
-                    do
-                    {
-                        readBytes = await stream.ReadAsync(buffer, cancellationToken);
-                        if (readBytes == 0)
-                        {
-                            isMoreToRead = false;
-                        }
-                        else
-                        {
-                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
-
-                            totalReadBytes += readBytes;
-                            int progressPercentage = totalBytes != -1L
-                                ? (int)((totalReadBytes * 100) / totalBytes)
-                                : -1;
-
-                            ProgressValue = progressPercentage;
-
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                return;
-                            }
-
-                            if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
-                            {
-                                double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
-
-                                if (totalBytes != -1L)
-                                {
-                                    double remainingBytes = totalBytes - totalReadBytes;
-                                    double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
-                                }
-                            }
-                        }
-                    }
-                    while (isMoreToRead);
-                }
-                stopwatch.Stop();
-            }
-        }
 
         public void Download()
         {
-            WindowUpdate windowUpdate = new WindowUpdate(this);
+            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
             if (!File.Exists(downloadPath))
             {
                 windowUpdate.Show();
@@ -145,13 +52,13 @@ namespace WindowsServicePlugin
             {
                 if (!File.Exists(downloadPath))
                 {
-                    await GetIsPassWorld();
+                    await DownloadFile.GetIsPassWorld();
                     CancellationTokenSource _cancellationTokenSource = new();
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         windowUpdate.Show();
                     });
-                    await Download(url, downloadPath, _cancellationTokenSource.Token);
+                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
                 }
                 Application.Current.Dispatcher.Invoke(() =>
                 {
