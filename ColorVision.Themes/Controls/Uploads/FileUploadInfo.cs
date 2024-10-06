@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Themes.Controls
+namespace ColorVision.Themes.Controls.Uploads
 {
-    public class FileUploadInfo:ViewModelBase
+    public class FileUploadInfo : ViewModelBase
     {
         public RelayCommand OpenFilePathCommand { get; set; }
 

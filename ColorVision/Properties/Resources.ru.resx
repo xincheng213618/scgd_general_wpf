@@ -213,9 +213,6 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Уровень журнала</value>
-  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Версия ПО</value>
   </data>
@@ -224,9 +221,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>Прозрачный</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>Тестирование производительности</value>
@@ -353,15 +347,6 @@
   </data>
   <data name="Initializer" xml:space="preserve">
     <value>Модуль инициализации</value>
-  </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>Фильтр поддерживает регулярные выражения</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>Автоматическое обновление</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>Автоматически прокручивать вниз</value>
   </data>
   <data name="ForceUpdate" xml:space="preserve">
     <value>ForceUpdate</value>

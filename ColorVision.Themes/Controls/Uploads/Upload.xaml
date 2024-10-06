@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Themes.Controls.Upload"
+﻿<UserControl x:Class="ColorVision.Themes.Controls.Uploads.UploadControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Themes.Controls"
+             xmlns:local="clr-namespace:ColorVision.Themes.Controls.Uploads"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="400"   AllowDrop="True" Drop="UIElement_OnDrop">

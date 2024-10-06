@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace ColorVision.Themes.Controls
+namespace ColorVision.Themes.Controls.Uploads
 {
     /// <summary>
     /// UploadMsg.xaml 的交互逻辑

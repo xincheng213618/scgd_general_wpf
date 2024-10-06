@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Themes.Controls
+namespace ColorVision.Themes.Controls.Uploads
 {
     /// <summary>
     /// UploadWindow.xaml 的交互逻辑
@@ -16,8 +16,6 @@ namespace ColorVision.Themes.Controls
             InitializeComponent();
             this.ApplyCaption();
         }
-
-
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -60,7 +58,7 @@ namespace ColorVision.Themes.Controls
             e.Effects = DragDropEffects.Copy;
         }
 
-        public EventHandler<Upload> OnUpload { get; set; }
+        public EventHandler<UploadControl> OnUpload { get; set; }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {

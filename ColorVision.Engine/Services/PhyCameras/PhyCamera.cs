@@ -12,7 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
-using ColorVision.Themes.Controls;
+using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;

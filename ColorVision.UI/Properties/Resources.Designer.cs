@@ -70,6 +70,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新 的本地化字符串。
+        /// </summary>
+        public static string AutoRefresh {
+            get {
+                return ResourceManager.GetString("AutoRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动滚动到底部 的本地化字符串。
+        /// </summary>
+        public static string AutoScrollToEnd {
+            get {
+                return ResourceManager.GetString("AutoScrollToEnd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动切换选中视图 的本地化字符串。
         /// </summary>
         public static string AutoSwitchSelectedView {
@@ -79,11 +97,29 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 清除 的本地化字符串。
+        /// </summary>
+        public static string Clear {
+            get {
+                return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 英语 的本地化字符串。
         /// </summary>
         public static string en {
             get {
                 return ResourceManager.GetString("en", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 过滤器支持正则 的本地化字符串。
+        /// </summary>
+        public static string FilterSupportsRegex {
+            get {
+                return ResourceManager.GetString("FilterSupportsRegex", resourceCulture);
             }
         }
         
@@ -192,6 +228,15 @@ namespace ColorVision.UI.Properties {
         public static string Log {
             get {
                 return ResourceManager.GetString("Log", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 日志级别 的本地化字符串。
+        /// </summary>
+        public static string LogLevel {
+            get {
+                return ResourceManager.GetString("LogLevel", resourceCulture);
             }
         }
         

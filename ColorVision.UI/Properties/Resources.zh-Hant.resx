@@ -210,4 +210,19 @@
   <data name="OpenLogFolder" xml:space="preserve">
     <value>打開日誌資料夾</value>
   </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>自動滾動到底部</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>自動重新整理</value>
+  </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>過濾器支援正規</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>日誌等級</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>清除</value>
+  </data>
 </root>

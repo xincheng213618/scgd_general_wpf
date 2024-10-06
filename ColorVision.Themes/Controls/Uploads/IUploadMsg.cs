@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Themes.Controls
+namespace ColorVision.Themes.Controls.Uploads
 {
 
     public class UploadMsgManager : IUploadMsg

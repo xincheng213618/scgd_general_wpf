@@ -7,9 +7,25 @@
           <source>自动调整列宽</source>
           <target state="new">列幅を自動的に調整する</target>
         </trans-unit>
+        <trans-unit id="AutoRefresh" translate="yes" xml:space="preserve">
+          <source>自动刷新</source>
+          <target state="new">自動更新</target>
+        </trans-unit>
+        <trans-unit id="AutoScrollToEnd" translate="yes" xml:space="preserve">
+          <source>自动滚动到底部</source>
+          <target state="new">自動的に一番下までスクロールします</target>
+        </trans-unit>
         <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
           <source>自动切换选中视图</source>
           <target state="new">選択したビューを自動的に切り替える</target>
+        </trans-unit>
+        <trans-unit id="Clear" translate="yes" xml:space="preserve">
+          <source>清除</source>
+          <target state="new">クリア</target>
+        </trans-unit>
+        <trans-unit id="FilterSupportsRegex" translate="yes" xml:space="preserve">
+          <source>过滤器支持正则</source>
+          <target state="new">フィルターは正規表現をサポートします</target>
         </trans-unit>
         <trans-unit id="GlobalMode" translate="yes" xml:space="preserve">
           <source>全局</source>
@@ -46,6 +62,10 @@
         <trans-unit id="Log" translate="yes" xml:space="preserve">
           <source>日志</source>
           <target state="new">ログ</target>
+        </trans-unit>
+        <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
+          <source>日志级别</source>
+          <target state="new">ログレベル</target>
         </trans-unit>
         <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
           <source>退出(_X)</source>

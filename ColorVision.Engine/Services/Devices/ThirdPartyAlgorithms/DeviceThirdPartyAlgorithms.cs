@@ -16,6 +16,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes.Controls.Uploads;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {

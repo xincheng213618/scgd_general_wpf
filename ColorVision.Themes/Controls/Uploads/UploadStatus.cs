@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Themes.Controls
+﻿namespace ColorVision.Themes.Controls.Uploads
 {
     public enum UploadStatus
     {

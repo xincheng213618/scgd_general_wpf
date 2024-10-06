@@ -5,14 +5,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Themes.Controls
+namespace ColorVision.Themes.Controls.Uploads
 {
     /// <summary>
-    /// Upload.xaml 的交互逻辑
+    /// Uploads.xaml 的交互逻辑
     /// </summary>
-    public partial class Upload : UserControl
+    public partial class UploadControl : UserControl
     {
-        public Upload()
+        public UploadControl()
         {
             InitializeComponent();
 
@@ -30,14 +30,14 @@ namespace ColorVision.Themes.Controls
         public event EventHandler SelectChaned;
 
 
-        public static readonly DependencyProperty UploadFileNameProperty = DependencyProperty.Register(nameof(UploadFileNameProperty), typeof(string), typeof(Upload), new PropertyMetadata(""));
+        public static readonly DependencyProperty UploadFileNameProperty = DependencyProperty.Register(nameof(UploadFileNameProperty), typeof(string), typeof(UploadControl), new PropertyMetadata(""));
         public string UploadFileName
         {
             get { return (string)GetValue(UploadFileNameProperty); }
             set { SetValue(UploadFileNameProperty, value); }
         }
        
-        public static readonly DependencyProperty UploadFilePathProperty = DependencyProperty.Register(nameof(UploadFilePathProperty), typeof(string), typeof(Upload), new PropertyMetadata(""));
+        public static readonly DependencyProperty UploadFilePathProperty = DependencyProperty.Register(nameof(UploadFilePathProperty), typeof(string), typeof(UploadControl), new PropertyMetadata(""));
         public string UploadFilePath
         {
             get { return (string)GetValue(UploadFilePathProperty); }
@@ -45,7 +45,7 @@ namespace ColorVision.Themes.Controls
         }
 
 
-        public static readonly DependencyProperty FilterProperty = DependencyProperty.Register(nameof(FilterProperty), typeof(string), typeof(Upload), new PropertyMetadata("All files (*.*)|*.*"));
+        public static readonly DependencyProperty FilterProperty = DependencyProperty.Register(nameof(FilterProperty), typeof(string), typeof(UploadControl), new PropertyMetadata("All files (*.*)|*.*"));
         public string Filter
         {
             get { return (string)GetValue(FilterProperty); }

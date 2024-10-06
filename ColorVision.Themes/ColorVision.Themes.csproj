@@ -42,7 +42,7 @@
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
-	  <Compile Update="Controls\Upload.xaml.cs">
+	  <Compile Update="Controls\Uploads\Upload.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
 	</ItemGroup>
