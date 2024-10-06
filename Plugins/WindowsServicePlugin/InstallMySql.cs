@@ -8,25 +8,26 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallService : MenuItemBase, IWizardStep
+    public class InstallMySql : MenuItemBase, IWizardStep
     {
         public override string OwnerGuid => "ServiceLog";
 
-        public override string GuidId => "InstallService";
+        public override string GuidId => "InstallMySql";
 
         public override int Order => 99;
-        public override string Header => "InstallService";
-
+        public override string Header => "InstallMySql";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public InstallService()
+
+        public InstallMySql()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载最新的Service";
+            DownloadFile.DownloadTile = "下载mysql-5.7.37-winx64";
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/CVWindowsService[1.7.0.929]-0929";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\CVWindowsService[1.7.0.929]-0929";
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mysql-5.7.37-winx64.zip";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\mysql-5.7.37-winx64.zip";
+
         public override void Execute()
         {
             WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
@@ -54,7 +55,7 @@ namespace WindowsServicePlugin
 
                 try
                 {
-                    PlatformHelper.Open(downloadPath);
+                    PlatformHelper.OpenFolder(Directory.GetParent(downloadPath).FullName);
                 }
                 catch (Exception ex)
                 {
