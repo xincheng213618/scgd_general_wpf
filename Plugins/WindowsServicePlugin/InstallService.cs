@@ -26,7 +26,7 @@ namespace WindowsServicePlugin
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/FullPackage%5B1.7.0.929%5D-0929.zip";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\FullPackage[1.7.0.929]-0929.exe";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\FullPackage[1.7.0.929]-0929.zip";
         public override void Execute()
         {
             WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
