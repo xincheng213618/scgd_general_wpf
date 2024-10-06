@@ -25,7 +25,7 @@ namespace WindowsServicePlugin
             DownloadFile.DownloadTile = "下载mysql-5.7.37-winx64";
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/MQTT/mysql-5.7.37-winx64.zip";
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Mysql/mysql-5.7.37-winx64.zip";
         private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\mysql-5.7.37-winx64.zip";
 
         public override void Execute()
