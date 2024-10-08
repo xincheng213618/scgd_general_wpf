@@ -55,7 +55,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
             TenantId = 0;
             ValidateId = poiParam.ValidateId;
         }
-
         public string? Name { get; set; }
         public int? Type { get; set; }
         public int? Width { get; set; }

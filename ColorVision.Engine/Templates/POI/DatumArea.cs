@@ -188,9 +188,7 @@ namespace ColorVision.Engine.Templates.POI
         [JsonIgnore]
         public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
 
-
         public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
-
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; NotifyPropertyChanged(); } }
         private int _DefaultCircleRadius = 10;
@@ -200,7 +198,6 @@ namespace ColorVision.Engine.Templates.POI
 
         public int DefaultRectHeight { get => _DefaultRectHeight; set { _DefaultRectHeight = value; NotifyPropertyChanged(); } }
         private int _DefaultRectHeight = 20;
-
 
         public double LedLen1 { get => _LedLen1; set { _LedLen1 = value; NotifyPropertyChanged(); } }
         private double _LedLen1;
@@ -215,6 +212,12 @@ namespace ColorVision.Engine.Templates.POI
         private double _LedLen4;
 
         public POIFilter Filter { get; set; } = new POIFilter();
+
+        public bool IsPoiCIEFile { get => _IsPoiCIEFile; set { _IsPoiCIEFile = value; NotifyPropertyChanged(); } }
+        private bool _IsPoiCIEFile;
+
+        public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; NotifyPropertyChanged(); } }
+        private string _PoiCIEFileName;
     }
 
 

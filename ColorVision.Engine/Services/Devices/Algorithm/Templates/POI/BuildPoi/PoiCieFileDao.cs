@@ -25,7 +25,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 
         [Column("file_type")]
         public int FileType { get; set; }
-
     }
 
     public class PoiCieFileDao : BaseTableDao<PoiCieFileModel>
