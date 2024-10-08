@@ -38,7 +38,7 @@ namespace CalibrationCorrection
         public ExporCalibrationCorrection()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载校正生成工具";
+            DownloadFile.DownloadTile = "下载校正生成工具240906";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CalibTool/generateCaliFileTool240906.zip";
