@@ -85,7 +85,7 @@
                         <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
                     <TextBlock Text="{Binding Header}" Grid.Row="0" HorizontalAlignment="Center"/>
-                    <TextBox x:Name="TextBoxMsg" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Description,Mode=OneWay}" VerticalContentAlignment="Top"  Foreground="White"  Background="Transparent" BorderThickness="0"/>
+                    <TextBox x:Name="TextBoxMsg" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Description,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
 
                     <Button Grid.Row="2" Content="配置" Width="120" Height="40"  Command="{Binding Command}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10"/>
 

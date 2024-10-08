@@ -64,6 +64,7 @@ namespace ColorVision.Wizards
                 if (ListWizard.SelectedIndex == -1) return;
                 BorderContent.DataContext = IWizardSteps[ListWizard.SelectedIndex];
             };
+            if (IWizardSteps.Count > 0) ListWizard.SelectedIndex = 0;
 
             foreach (var step in IWizardSteps)
             {
