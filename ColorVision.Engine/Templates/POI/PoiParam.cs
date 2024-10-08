@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }
-
+          
 
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
