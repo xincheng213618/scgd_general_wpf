@@ -14,8 +14,9 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallMQTT";
 
-        public override int Order => 99;
+        public override int Order => 1;
         public override string Header => "安装MQTT";
+        public string Description => "安装本地的MQTT服务，如果使用其他机器作为转发请跳过";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallMQTT()

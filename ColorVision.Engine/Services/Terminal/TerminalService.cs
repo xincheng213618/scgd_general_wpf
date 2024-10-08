@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Terminal
             Config.Code = Code;
             Config.Name = Name;
 
-            RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
+            RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
                 EditTerminal window = new(this);
@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             VSysResourceDao.Instance.Save(SysResourceModel);
            
-            MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
+            MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }
 }

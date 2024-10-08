@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Services.DataHistory.Dao
         {
             if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.BatchCode !=null)
             {
-                MQTTRCService.GetInstance().Archived(viewBatchResult.BatchCode);
+                MqttRCService.GetInstance().Archived(viewBatchResult.BatchCode);
                 MessageBox.Show("归档指令已经发送");
                 Frame.Refresh();
             }

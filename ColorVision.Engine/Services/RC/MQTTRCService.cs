@@ -27,7 +27,6 @@ namespace ColorVision.Engine.Services.RC
         {
             NodeStatus = status;
         }
-
         public ServiceNodeStatus NodeStatus { get;set; }
     }
 
@@ -35,12 +34,12 @@ namespace ColorVision.Engine.Services.RC
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class MQTTRCService : MQTTServiceBase
+    public class MqttRCService : MQTTServiceBase
     {
-        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(MQTTRCService));
-        private static MQTTRCService _instance;
+        private static readonly ILog logger = LogManager.GetLogger(typeof(MqttRCService));
+        private static MqttRCService _instance;
         private static readonly object _locker = new();
-        public static MQTTRCService GetInstance() { lock (_locker) { return _instance ??= new MQTTRCService(); } }
+        public static MqttRCService GetInstance() { lock (_locker) { return _instance ??= new MqttRCService(); } }
 
         private string NodeName;
         private string NodeType;
@@ -63,9 +62,9 @@ namespace ColorVision.Engine.Services.RC
         private ServiceNodeStatus _RegStatus;
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
 
-
         public event RCServiceStatusChangedHandler StatusChangedEventHandler;
-        public MQTTRCService():base()
+
+        public MqttRCService():base()
         {
             NodeType = "client";
             NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);

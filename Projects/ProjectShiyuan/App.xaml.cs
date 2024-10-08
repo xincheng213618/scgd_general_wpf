@@ -38,7 +38,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             MySqlControl.GetInstance().Connect();
             MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
             {
-                await MQTTRCService.GetInstance().Connect();
+                await MqttRCService.GetInstance().Connect();
             };
             Task.Run(() => MQTTControl.GetInstance().Connect());
             ServiceManager.GetInstance().GenDeviceDisplayControl();

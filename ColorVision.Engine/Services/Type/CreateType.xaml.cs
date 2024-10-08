@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Types
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
 
-                MQTTRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
+                MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
                 Close();
             }

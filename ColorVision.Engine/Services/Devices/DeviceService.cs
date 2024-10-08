@@ -202,7 +202,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public void RestartRCService()
         {
-            MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+            MqttRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
         }
 
 

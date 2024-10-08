@@ -1,7 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Globalization;
@@ -10,17 +8,6 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-
-    public class PhyCamerManagerWizardStep : IWizardStep
-    {
-        public int Order => 9;
-
-        public string Header => Properties.Resources.AddPhysicalCamera;
-        public RelayCommand Command => new RelayCommand(a =>
-        {
-            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        });
-    }
 
     public class ExportPhyCamerManager : MenuItemBase
     {

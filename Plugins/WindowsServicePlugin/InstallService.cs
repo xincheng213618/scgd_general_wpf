@@ -14,9 +14,10 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallService";
 
-        public override int Order => 99;
+        public override int Order => 3;
         public override string Header => "InstallService";
 
+        public string Description => "下载最近的服务压缩包，安装服务时请先解压到需要安装的位置在下载服务管理工具，配置路径到该位置，推荐放在统一文件夹下";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallService()

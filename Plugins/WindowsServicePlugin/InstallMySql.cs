@@ -14,8 +14,10 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallMySql";
 
-        public override int Order => 99;
-        public override string Header => "InstallMySql";
+        public override int Order => 2;
+        public override string Header => "Download MySql";
+
+        public string Description => "下载mysql-5.7.37-winx64压缩包到本地，后续可以在管理工具中选择并安装";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 

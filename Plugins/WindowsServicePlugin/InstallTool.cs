@@ -1,18 +1,13 @@
 ﻿#pragma warning disable SYSLIB0014
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using Mysqlx.Prepare;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
-using System.Xml.Linq;
 
 namespace WindowsServicePlugin
 {
@@ -27,63 +22,6 @@ namespace WindowsServicePlugin
         private string _Version = string.Empty;
     }
 
-
-    public class SetMysqlConfig : IWizardStep
-    {
-        public int Order => 55;
-
-        public string Header => "从服务中配置Mysql";
-
-        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
-
-        Dictionary<string, string> dic = new Dictionary<string, string>();  
-        public void Execute()
-        {
-            if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
-            {
-                MessageBox.Show("请先配置服务管理工具");
-                return;
-            }
-            string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
-
-            if (!File.Exists(filePath))
-            {
-                MessageBox.Show("请先运行服务管理工具");
-                return;
-            }
-            // Load the XML document
-            XDocument config = XDocument.Load(filePath);
-
-            // Query the appSettings
-            var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
-
-            if (appSettings != null)
-            {
-                foreach (var setting in appSettings)
-                {
-                    string key = setting.Attribute("key")?.Value;
-                    string value = setting.Attribute("value")?.Value;
-                    if (key != null && value !=null)
-                    {
-                        dic.Add(key, value);
-                    }
-                }
-                MySqlSetting.Instance.MySqlConfig.UserName = dic["MysqlUser"];
-                MySqlSetting.Instance.MySqlConfig.UserPwd = dic["MysqlPwd"];
-                MySqlSetting.Instance.MySqlConfig.Database = dic["MysqlDatabase"];
-                MySqlConfig mySqlConfig = new MySqlConfig() { Host = dic["MysqlHost"], UserName = "root", UserPwd = dic["MysqlRootPwd"], Database = dic["MysqlDatabase"] };
-
-                CVWinSMSConfig.Instance.Version = dic["Version"];
-                RCSetting.Instance.Config.RCName = dic["RCName"];
-                MessageBox.Show("配置成功");
-            }
-            else
-            {
-            }
-        }
-    }
-
-
     public class InstallTool : MenuItemBase, IWizardStep
     {
 
@@ -91,9 +29,11 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallTool";
 
-        public override int Order => 99;
+        public override int Order => 4;
 
         public override string Header => Properties.Resources.ManagementService;
+
+        public string Description => "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallTool()

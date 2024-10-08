@@ -14,11 +14,14 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallWinrar";
 
-        public override int Order => 99;
+        public override int Order => -1;
         public override string Header => "InstallWinrar";
 
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
+
+        public string Description => "下载并安装Winrar7.0 作为默认的解压软件"; 
+
         public InstallWinrar()
         {
             DownloadFile = new DownloadFile();

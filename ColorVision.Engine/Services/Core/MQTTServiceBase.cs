@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Services.Core
                     //Token unavailable
                     if (json.Code == -10)
                     {
-                        MQTTRCService.GetInstance().QueryServices();
+                        MqttRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
                     if (json.Code == 102)

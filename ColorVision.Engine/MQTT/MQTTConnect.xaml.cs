@@ -90,8 +90,8 @@ namespace ColorVision.Engine.MQTT
                 {
                     Task.Run(() =>
                     {
-                        MQTTRCService.GetInstance().QueryServices();
-                        MQTTRCService.GetInstance().ReRegist();
+                        MqttRCService.GetInstance().QueryServices();
+                        MqttRCService.GetInstance().ReRegist();
                     });
                     MessageBox1.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision");
                 });

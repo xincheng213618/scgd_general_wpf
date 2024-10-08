@@ -8,18 +8,18 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallNavivate : MenuItemBase, IWizardStep
+    public class InstallNavicate : MenuItemBase, IWizardStep
     {
         public override string OwnerGuid => "ServiceLog";
 
-        public override string GuidId => "InstallNavivate";
+        public override string GuidId => "InstallNavicate";
 
         public override int Order => 99;
-        public override string Header => "InstallNavivate";
-
+        public override string Header => "InstallNavicate";
+        public string Description => "下载Navicate作为第三方数据库查看软件";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public InstallNavivate()
+        public InstallNavicate()
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载Navicate";
