@@ -26,8 +26,8 @@ namespace WindowsServicePlugin
             DownloadFile.DownloadTile = "下载最新的Service";
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/CVWindowsService%5B1.7.0.929%5D-0929.rar";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\CVWindowsService[1.7.0.929]-0929.rar";
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/CVWindowsService%5B1.7.0.1009%5D-1009.rar";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\CVWindowsService[1.7.0.1009]-1009.rar";
         public override void Execute()
         {
             WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
