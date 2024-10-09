@@ -64,20 +64,6 @@ def copy_with_progress(src, dst):
 
         print()
 
-def run_script():
-    try:
-        # 执行 build_update.py 脚本
-        result = subprocess.run(['python', 'build_update.py'], check=True, capture_output=True, text=True)
-        
-        # 输出脚本的标准输出
-        print("Script output:")
-        print(result.stdout)
-        
-    except subprocess.CalledProcessError as e:
-        # 如果脚本执行失败，输出错误信息
-        print("An error occurred while running the script:")
-        print(e.stderr)
-
 def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):
     try:
         with open(latest_release_path, 'r') as file:
@@ -101,7 +87,6 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             print(f"Could not copy file to {target_directory}: {e}")
     else:
         print(f"The current version ({current_version}) is up to date.")   
-    run_script()
 
 
 if __name__ == "__main__":

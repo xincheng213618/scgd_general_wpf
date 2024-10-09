@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
@@ -23,7 +24,43 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
     public class BuildPoiFileHandle : IResultHandle
     {
         public AlgorithmResultType ResultType => AlgorithmResultType.BuildPOI_File;
-        private static POIPointInfo ReadPOIPointFromCSV(string fileName)
+
+        public static void CovertPoiParam(PoiParam poiParam ,string fileName)
+        {
+            var poiInfo = ReadPOIPointFromCSV(fileName);
+            poiParam.PoiPoints.Clear();
+            foreach (var item in poiInfo.Positions)
+            {
+                poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (RiPointTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
+            }
+        }
+        public static void CoverFile(PoiParam poiParam, string fileName)
+        {
+            POIPointInfo poiInfo = new POIPointInfo();
+            poiInfo.HeaderInfo = new POIHeaderInfo() { Height = poiParam.Height, Width = poiParam.Width, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
+            foreach (var item in poiParam.PoiPoints)
+            {
+                poiInfo.Positions.Add(new POIPointPosition() { PixelX = (int)item.PixX, PixelY = (int)item.PixY });
+            }
+            POIPointToCSV(fileName, poiInfo);
+        }
+
+        public static void POIPointToCSV(string fileName, POIPointInfo poiInfo)
+        {
+            using (var writer = new StreamWriter(fileName))
+            {
+                using (var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    csvWriter.WriteRecord(poiInfo.HeaderInfo);
+                    csvWriter.NextRecord();
+                    csvWriter.WriteHeader<POIPointPosition>();
+                    csvWriter.NextRecord();
+                    csvWriter.WriteRecords(poiInfo.Positions);
+                }
+            }
+        }
+
+        public static POIPointInfo ReadPOIPointFromCSV(string fileName)
         {
             POIPointInfo poiInfo = null;
             using (var reader = new StreamReader(fileName))
@@ -47,6 +84,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             }
             return poiInfo;
         }
+
+
         public void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();

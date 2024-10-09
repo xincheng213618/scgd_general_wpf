@@ -2,8 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.POI.Comply;
 using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
@@ -62,11 +64,17 @@ namespace ColorVision.Engine.Templates.POI
 
     public class DatumArea : ViewModelBase
     {
-        public RelayCommand ValidateCIECommand => new RelayCommand(a =>
+        public RelayCommand SetPoiFileCommand { get; set; }
+        public RelayCommand ValidateCIECommand { get; set; }
+        public DatumArea()
         {
-            var Template = new TemplateComplyParam("Comply.CIE");
-            new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+            ValidateCIECommand = new RelayCommand(a =>
+            {
+                var Template = new TemplateComplyParam("Comply.CIE");
+                new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            });
+            SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
+        }
 
         public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
         private int _DeafultValidateCIEId = -1;
@@ -218,6 +226,21 @@ namespace ColorVision.Engine.Templates.POI
 
         public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; NotifyPropertyChanged(); } }
         private string _PoiCIEFileName;
+
+        public void SetPoiCIEFile()
+        {
+            using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                saveFileDialog.Filter = "All Files (*.*)|*.*";
+                saveFileDialog.Title = "Save File";
+                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    PoiCIEFileName = saveFileDialog.FileName;
+                }
+            }
+
+        }
     }
 
 

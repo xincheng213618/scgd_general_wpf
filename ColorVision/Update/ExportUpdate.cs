@@ -11,7 +11,7 @@ namespace ColorVision.Update
     {
         public HotKeys HotKeys => new(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
-        public override string OwnerGuid => "Help";
+        public override string OwnerGuid => "Update";
 
         public override string GuidId => "IncrementUpdate";
 

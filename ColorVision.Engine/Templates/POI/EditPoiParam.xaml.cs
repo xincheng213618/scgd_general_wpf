@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
@@ -1009,6 +1010,11 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (MessageBox.Show("清空关注点", "ColorVision", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
                 return;
+            ClearRender();
+        }
+
+        public void ClearRender()
+        {
             foreach (var item in DrawingVisualLists.ToList())
                 if (item is Visual visual)
                     ImageShow.RemoveVisual(visual);
@@ -1584,6 +1590,24 @@ namespace ColorVision.Engine.Services.Templates.POI
             if (sender is ComboBox comboBox)
             {
                 comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
+            }
+        }
+
+        private void ReadFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists(PoiParam.DatumArea.PoiCIEFileName))
+            {
+                ClearRender();
+                BuildPoiFileHandle.CovertPoiParam(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
+                PoiParamToDrawingVisual(PoiParam);
+            }
+        }
+
+        private void SaveFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists(PoiParam.DatumArea.PoiCIEFileName))
+            {
+                BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
             }
         }
     }
