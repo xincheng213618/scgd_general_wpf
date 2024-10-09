@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI
             List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
             foreach (var dbModel in poiDetails)
             {
-                poiParam.PoiPoints.AddUnique(new PoiPoint(dbModel));
+                poiParam.PoiPoints.Add(new PoiPoint(dbModel));
             }
         }
 
