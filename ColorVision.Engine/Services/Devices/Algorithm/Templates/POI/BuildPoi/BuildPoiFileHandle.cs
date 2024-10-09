@@ -42,8 +42,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             POIPointInfo poiInfo = new POIPointInfo();
             poiInfo.Positions = new List<POIPointPosition>();
             poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
-            poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaRectRow;
-            poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaRectCol;
+            if (poiParam.DatumArea.IsAreaRect)
+            {
+                poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaRectRow;
+                poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaRectCol;
+            }
+            if (poiParam.DatumArea.IsAreaMask)
+            {
+                poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaPolygonRow;
+                poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaPolygonCol;
+            }
+
             foreach (var item in poiParam.PoiPoints)
             {
                 poiInfo.Positions.Add(new POIPointPosition() { PixelX = (int)item.PixX, PixelY = (int)item.PixY });
