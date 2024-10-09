@@ -787,9 +787,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PoiParam.DatumArea.IsLayoutUpdated = false;
                     }
 
-                    if (all > 100000)
+                    if (PoiParam.DatumArea.IsPoiCIEFile)
                     {
-                        MessageBox.Show("关注点数量太多强制启用文件保存");
+                        MessageBox.Show("关注点强制启用文件保存");
                         PoiParam.PoiPoints.Clear();
                     }
 
@@ -812,7 +812,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             switch (PoiParam.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
-                                    if (all > 100000)
+                                    if (PoiParam.DatumArea.IsPoiCIEFile)
                                     {
                                         PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PixWidth = PoiParam.DatumArea.DefaultCircleRadius, PixHeight = PoiParam.DatumArea.DefaultCircleRadius });
                                     }
@@ -832,9 +832,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     }
                                     break;
                                 case RiPointTypes.Rect:
-                                    if (all > 100000)
+                                    if (PoiParam.DatumArea.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = RiPointTypes.Circle, PixWidth = PoiParam.DatumArea.DefaultRectWidth, PixHeight = PoiParam.DatumArea.DefaultRectHeight });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = RiPointTypes.Rect, PixWidth = PoiParam.DatumArea.DefaultRectWidth, PixHeight = PoiParam.DatumArea.DefaultRectHeight });
                                     }
                                     else
                                     {
@@ -857,7 +857,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             }
                         }
                     }
-                    if (all > 100000)
+                    if (PoiParam.DatumArea.IsPoiCIEFile)
                     {
                         Thread thread = new(() =>
                         {
@@ -890,6 +890,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                     cols = PoiParam.DatumArea.AreaPolygonCol;
                     rows = PoiParam.DatumArea.AreaPolygonRow;
 
+                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    {
+                        MessageBox.Show("关注点强制启用文件保存");
+                        PoiParam.PoiPoints.Clear();
+                    }
+
 
                     double rowStep = 1.0 / (rows - 1);
                     double columnStep = 1.0 / (cols - 1);
@@ -913,27 +919,42 @@ namespace ColorVision.Engine.Services.Templates.POI
                             switch (PoiParam.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
-                                    DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(point.X, point.Y);
-                                    Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
-                                    Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
-                                    Circle.Attribute.Id = start + i * cols + j + 1;
-                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute);
-                                    Circle.Render();
-                                    ImageShow.AddVisual(Circle);
+                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    {
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PixWidth = PoiParam.DatumArea.DefaultCircleRadius, PixHeight = PoiParam.DatumArea.DefaultCircleRadius });
+                                    }
+                                    else
+                                    {
+                                        DVCircleText Circle = new();
+                                        Circle.Attribute.Center = new Point(point.X, point.Y);
+                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Brush = Brushes.Transparent;
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.Id = start + i * cols + j + 1;
+                                        Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute);
+                                        Circle.Render();
+                                        ImageShow.AddVisual(Circle);
+                                    }
                                     break;
                                 case RiPointTypes.Rect:
-                                    DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
-                                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
-                                    Rectangle.Attribute.Id = start + i * cols + j + 1;
-                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
-                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
-                                    Rectangle.Render();
-                                    ImageShow.AddVisual(Rectangle);
+                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    {
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PointType = RiPointTypes.Rect, PixWidth = PoiParam.DatumArea.DefaultRectWidth, PixHeight = PoiParam.DatumArea.DefaultRectHeight });
+                                    }
+                                    else
+                                    {
+                                        DVRectangleText Rectangle = new();
+                                        Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.Id = start + i * cols + j + 1;
+                                        Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
+                                        Rectangle.Render();
+                                        ImageShow.AddVisual(Rectangle);
+                                    }
+
                                     break;
                                 case RiPointTypes.Mask:
                                     break;
@@ -941,6 +962,20 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     break;
                             }
                         }
+                    }
+
+                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    {
+                        Thread thread = new(() =>
+                        {
+                            PoiParam.Save2DB(PoiParam);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                WaitControl.Visibility = Visibility.Collapsed;
+                            });
+                            SaveAsFile();
+                        });
+                        thread.Start();
                     }
                     break;
 
