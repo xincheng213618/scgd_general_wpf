@@ -122,7 +122,7 @@ namespace WindowsServicePlugin
                 }
 
 
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?", "Open in CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes) return;
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CVWinSMS (CVWinSMS.exe). Would you like to help me find it?", "Open in CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
                 using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
                 {
                     openFileDialog.Title = "Select CVWinSMS.exe";
