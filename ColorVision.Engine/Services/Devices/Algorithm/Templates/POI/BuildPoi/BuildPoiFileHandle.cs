@@ -6,6 +6,7 @@ using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -33,11 +34,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (RiPointTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
             }
+            poiParam.DatumArea.AreaRectRow = poiInfo.HeaderInfo.Rows;
+            poiParam.DatumArea.AreaRectCol = poiInfo.HeaderInfo.Cols;
         }
         public static void CoverFile(PoiParam poiParam, string fileName)
         {
             POIPointInfo poiInfo = new POIPointInfo();
-            poiInfo.HeaderInfo = new POIHeaderInfo() { Height = poiParam.Height, Width = poiParam.Width, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
+            poiInfo.Positions = new List<POIPointPosition>();
+            poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
+            poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaRectRow;
+            poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaRectCol;
             foreach (var item in poiParam.PoiPoints)
             {
                 poiInfo.Positions.Add(new POIPointPosition() { PixelX = (int)item.PixX, PixelY = (int)item.PixY });
@@ -51,6 +57,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 using (var csvWriter = new CsvWriter(writer, CultureInfo.InvariantCulture))
                 {
+                    csvWriter.WriteHeader<POIHeaderInfo>();
+                    csvWriter.NextRecord();
                     csvWriter.WriteRecord(poiInfo.HeaderInfo);
                     csvWriter.NextRecord();
                     csvWriter.WriteHeader<POIPointPosition>();

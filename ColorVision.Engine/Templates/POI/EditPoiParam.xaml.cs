@@ -1605,6 +1605,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void SaveFile_Click(object sender, RoutedEventArgs e)
         {
+            SavePoiParam();
             if (File.Exists(PoiParam.DatumArea.PoiCIEFileName))
             {
                 BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
