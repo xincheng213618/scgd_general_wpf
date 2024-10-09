@@ -437,7 +437,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             try
             {
-                if (poiParam.PoiPoints.Count > 100000)
+                if (poiParam.DatumArea.IsPoiCIEFile)
                 {
                     Init = true;
                     return;
