@@ -1609,6 +1609,20 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
             }
+            else
+            {
+                using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+                {
+                    saveFileDialog.Filter = "All Files (*.*)|*.*";
+                    saveFileDialog.Title = "Save File";
+                    saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                    if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        PoiParam.DatumArea.PoiCIEFileName = saveFileDialog.FileName;
+                        BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
+                    }
+                }
+            }
         }
     }
 
