@@ -1613,8 +1613,9 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
                 {
-                    saveFileDialog.Filter = "All Files (*.*)|*.*";
+                    saveFileDialog.Filter = "csv Files (*.csv)|*.csv";
                     saveFileDialog.Title = "Save File";
+                    saveFileDialog.FileName = "PoiCIE.csv";
                     saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                     if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
