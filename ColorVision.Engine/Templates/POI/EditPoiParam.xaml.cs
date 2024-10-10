@@ -13,6 +13,7 @@ using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
@@ -30,6 +31,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -265,7 +267,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.cvraw,*.cvcie) | *.jpg; *.jpeg; *.png;*.tif;*.cvraw;*.cvcie";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.tiff,*.cvraw,*.cvcie) | *.jpg; *.jpeg; *.png;*.tif;*.tiff;*.cvraw;*.cvcie";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -327,8 +329,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
                 else
                 {
-                    BitmapSource bitmapImage = new BitmapImage(new Uri(filePath));
-                    SetImageSource(bitmapImage);
+                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
             }
         }
@@ -867,6 +869,37 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 WaitControl.Visibility = Visibility.Collapsed;
                             });
                             SaveAsFile();
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+
+                                int[] ints = new int[PoiParam.PoiPoints.Count * 2];
+                                for (int i = 0; i < PoiParam.PoiPoints.Count; i++)
+                                {
+                                    ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
+                                    ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
+                                }
+                                HImage hImage;
+                                if (ImageShow.Source is WriteableBitmap writeable)
+                                {
+                                    hImage = writeable.ToHImage();
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+                                            ImageShow.Source = image;
+                                        }
+                                    });
+                                }
+                            });
+
+
+
                         });
                         thread.Start();
                     }
@@ -974,6 +1007,37 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 WaitControl.Visibility = Visibility.Collapsed;
                             });
                             SaveAsFile();
+
+
+                            int[] ints = new int[PoiParam.PoiPoints.Count * 2];
+                            for (int i = 0; i < PoiParam.PoiPoints.Count; i++)
+                            {
+                                ints[2 * i] = (int)PoiParam.PoiPoints[i].PixX;
+                                ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
+                            }
+                            HImage hImage;
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (ImageShow.Source is WriteableBitmap writeable)
+                                {
+                                    hImage = writeable.ToHImage();
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+                                            ImageShow.Source = image;
+                                        }
+                                    });
+                                }
+                            });
+
+
                         });
                         thread.Start();
                     }

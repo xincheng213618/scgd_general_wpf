@@ -39,6 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
         }
         public static void CoverFile(PoiParam poiParam, string fileName)
         {
+            if (poiParam.PoiPoints.Count <= 0) return;
             POIPointInfo poiInfo = new POIPointInfo();
             poiInfo.Positions = new List<POIPointPosition>();
             poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };

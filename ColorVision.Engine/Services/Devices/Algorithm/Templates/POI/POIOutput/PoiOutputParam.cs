@@ -17,8 +17,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
             {
                 saveFileDialog.Filter = "Tif Files (*.tif)|*.txt|All Files (*.*)|*.*";
                 saveFileDialog.Title = "Save File";
-                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-
+                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     PropertyInfo prop = target.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);

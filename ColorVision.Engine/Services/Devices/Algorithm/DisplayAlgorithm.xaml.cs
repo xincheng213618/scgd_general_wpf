@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using CVCommCore;
 using log4net;
 using System;
@@ -9,6 +10,15 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
+    public class DisplayAlgorithmConfig:ViewModelBase,IConfig
+    {
+        public static DisplayAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<DisplayAlgorithmConfig>();
+
+        public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; NotifyPropertyChanged(); } }
+        private string _LastSelectTemplate;
+
+    }
+
     /// <summary>
     /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
@@ -18,7 +28,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm Service { get => Device.DService; }
         public string DisPlayName => Device.Config.Name;
-
         public DisplayAlgorithm(DeviceAlgorithm device)
         {
             Device = device;
@@ -41,16 +50,28 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
 
             CB_Algorithms.ItemsSource = Algorithms;
+
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
                 if (CB_Algorithms.SelectedItem is IDisplayAlgorithm algorithm)
                 {
+                    DisplayAlgorithmConfig.Instance.LastSelectTemplate = algorithm.Name;
                     CB_StackPanel.Children.Clear();
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
                 }
             };
-            CB_Algorithms.SelectedIndex = 0;
 
+            var lastSelectedAlgorithm = Algorithms
+                .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+
+            if (lastSelectedAlgorithm != null)
+            {
+                CB_Algorithms.SelectedIndex = Algorithms.IndexOf(lastSelectedAlgorithm);
+            }
+            else
+            {
+                CB_Algorithms.SelectedIndex = 0; // Default to the first item if no match is found
+            }
             this.AddViewConfig(Device.View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
