@@ -77,9 +77,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
-            ToolBarTop.ImageEditMode = true;
             ToolBar1.DataContext = ToolBarTop;
-
 
             ImageShow.VisualsAdd += (s, e) =>
             {
@@ -841,6 +839,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
+                            PoiParam.Save2DB(PoiParam);
+
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 WaitControl.Visibility = Visibility.Collapsed;
@@ -993,8 +993,11 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     if (PoiParam.DatumArea.IsPoiCIEFile)
                     {
+
                         Thread thread = new(() =>
                         {
+                            PoiParam.Save2DB(PoiParam);
+
                             log.Info("正在保存关注点");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
