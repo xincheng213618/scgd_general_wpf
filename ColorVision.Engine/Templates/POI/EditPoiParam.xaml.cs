@@ -13,11 +13,9 @@ using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
-using SkiaSharp.Views.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -42,6 +40,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         private string TagName { get; set; } = "P_";
 
         public PoiParam PoiParam { get; set; }
+
         public EditPoiParam(PoiParam poiParam) 
         {
             PoiParam = poiParam;
@@ -51,7 +50,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
-
         private async void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
@@ -165,10 +163,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                 WaitControl.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Visibility = Visibility.Visible;
                 WaitControlProgressBar.Value = 0;
-                await Task.Delay(30);
-
                 if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
                     PoiParam.LoadPoiDetailFromDB(PoiParam);
+
 
                 WaitControlProgressBar.Value = 10;
 
@@ -767,7 +764,8 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     if (PoiParam.DatumArea.IsPoiCIEFile)
                     {
-                        MessageBox.Show("关注点强制启用文件保存");
+                        WaitControlText.Text = "关注点强制启用文件保存";
+                        WaitControl.Visibility = Visibility.Visible;
                         PoiParam.PoiPoints.Clear();
                     }
 
@@ -839,15 +837,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                WaitControl.Visibility = Visibility.Collapsed;
-                            });
+                            WaitControlText.Text = "关注点强制启用文件保存";
                             SaveAsFile();
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-
+                                WaitControlText.Text = "正在绘制关注点";
                                 int[] ints = new int[PoiParam.PoiPoints.Count * 2];
                                 for (int i = 0; i < PoiParam.PoiPoints.Count; i++)
                                 {
@@ -881,13 +876,17 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         if (ret == 0)
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
-
                                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                             hImageProcessed.pData = IntPtr.Zero;
                                             ImageShow.Source = image;
+                                            WaitControl.Visibility = Visibility.Collapsed;
                                         }
                                     });
                                 }
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    WaitControl.Visibility = Visibility.Collapsed;
+                                });
                             });
 
 

@@ -187,7 +187,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
@@ -197,7 +197,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
