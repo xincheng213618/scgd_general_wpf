@@ -17,6 +17,7 @@ using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
+using SkiaSharp.Views.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -896,6 +897,23 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         }
                                     });
                                 }
+
+                                if (ImageShow.Source is BitmapImage bitmapSource)
+                                {
+                                    hImage = bitmapSource.ToHImage();
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+                                            ImageShow.Source = image;
+                                        }
+                                    });
+                                }
                             });
 
 
@@ -1019,6 +1037,23 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
+                                if (ImageShow.Source is BitmapImage bitmapSource)
+                                {
+                                    hImage = bitmapSource.ToHImage();
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+                                            ImageShow.Source = image;
+                                        }
+                                    });
+                                }
+
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
                                     hImage = writeable.ToHImage();
