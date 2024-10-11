@@ -66,6 +66,7 @@ namespace ColorVision.Engine.Templates.POI
             DatumArea.CenterY = (DatumArea.X4Y - DatumArea.X1Y) / 2;
             CfgJson = dbModel.CfgJson ?? string.Empty;
             ValidateId = dbModel.ValidateId ?? -1;
+            DatumArea.IsPoiCIEFile = dbModel.IsDynamics ??false;
         }
 
         public string CfgJson

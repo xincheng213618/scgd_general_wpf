@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.POI.Dao
             RightBottomY = poiParam.DatumArea.X3Y;
             LeftBottomX = poiParam.DatumArea.X4X;
             LeftBottomY = poiParam.DatumArea.X4Y;
-            IsDynamics = false;
+            IsDynamics = poiParam.DatumArea.IsPoiCIEFile;
             CfgJson = poiParam.CfgJson;
             CreateDate = DateTime.Now;
             IsEnable = true;
