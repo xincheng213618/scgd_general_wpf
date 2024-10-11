@@ -148,5 +148,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
         }
+
+        private void Open_Raw_File(object sender, RoutedEventArgs e)
+        {
+            if (File.Exists(ImageFile.Text))
+            {
+                IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
+            }
+        }
     }
 }
