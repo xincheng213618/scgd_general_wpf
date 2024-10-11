@@ -404,29 +404,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void InitDatumAreaValue(int width,int height)
         {
-            PoiParam.DatumArea.X1X = 0;
-            PoiParam.DatumArea.X1Y = 0;
-            PoiParam.DatumArea.X2X = width;
-            PoiParam.DatumArea.X2Y = 0;
-            PoiParam.DatumArea.X3X = width;
-            PoiParam.DatumArea.X3Y = height;
-            PoiParam.DatumArea.X4X = 0;
-            PoiParam.DatumArea.X4Y = height;
-            PoiParam.DatumArea.CenterX = width / 2;
-            PoiParam.DatumArea.CenterY = height / 2;
-
-            PoiParam.DatumArea.AreaCircleRadius = width> height? height / 2: width/2;
-            PoiParam.DatumArea.AreaRectWidth = width;
-            PoiParam.DatumArea.AreaRectHeight = height;
-
-            PoiParam.DatumArea.Polygon1X = 0;
-            PoiParam.DatumArea.Polygon1Y = 0;
-            PoiParam.DatumArea.Polygon2X = width;
-            PoiParam.DatumArea.Polygon2Y = 0;
-            PoiParam.DatumArea.Polygon3X = width;
-            PoiParam.DatumArea.Polygon3Y = height;
-            PoiParam.DatumArea.Polygon4X = 0;
-            PoiParam.DatumArea.Polygon4Y = height;
             Application.Current.Dispatcher.Invoke(() => PoiParam.DatumArea.IsShowDatumArea = true);
             RenderDatumArea();
             DatumSet();
@@ -864,7 +841,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
-                            PoiParam.Save2DB(PoiParam);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 WaitControl.Visibility = Visibility.Collapsed;
@@ -1020,7 +996,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                         Thread thread = new(() =>
                         {
                             log.Info("正在保存关注点");
-                            PoiParam.Save2DB(PoiParam);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 WaitControl.Visibility = Visibility.Collapsed;
@@ -1037,6 +1012,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             HImage hImage;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
+                                MessageBox.Show("绘制关注点图像");
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
                                     log.Info("正在绘制BitmapImage图像");
