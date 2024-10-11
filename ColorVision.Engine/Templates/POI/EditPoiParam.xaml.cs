@@ -839,8 +839,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
-                            PoiParam.Save2DB(PoiParam);
-
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 WaitControl.Visibility = Visibility.Collapsed;
@@ -996,8 +994,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                         Thread thread = new(() =>
                         {
-                            PoiParam.Save2DB(PoiParam);
-
                             log.Info("正在保存关注点");
                             Application.Current.Dispatcher.Invoke(() =>
                             {
