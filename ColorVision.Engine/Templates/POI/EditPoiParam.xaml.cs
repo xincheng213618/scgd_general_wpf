@@ -1019,13 +1019,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         Thread thread = new(() =>
                         {
+                            log.Info("正在保存关注点");
                             PoiParam.Save2DB(PoiParam);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 WaitControl.Visibility = Visibility.Collapsed;
                             });
+                            log.Info("正在保存成csv文件");
                             SaveAsFile();
-
 
                             int[] ints = new int[PoiParam.PoiPoints.Count * 2];
                             for (int i = 0; i < PoiParam.PoiPoints.Count; i++)
@@ -1034,11 +1035,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 ints[2 * i + 1] = (int)PoiParam.PoiPoints[i].PixY;
                             }
                             HImage hImage;
-
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
+                                    log.Info("正在绘制BitmapImage图像");
+
                                     hImage = bitmapSource.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
@@ -1056,6 +1058,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
+                                    log.Info("正在绘制WriteableBitmap图像");
                                     hImage = writeable.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
