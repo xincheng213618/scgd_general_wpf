@@ -144,14 +144,6 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 			// 将单通道图像转换为三通道
 			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
 		}
-		else if (mat.channels() == 4) {
-			// 将四通道图像（通常包含Alpha通道）转换为三通道
-			cv::cvtColor(mat, mat, cv::COLOR_BGRA2BGR);
-		}
-		else {
-			// 其他情况暂不处理
-			return -1;
-		}
 	}
 
 	cv::Mat out = mat.clone();
