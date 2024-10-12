@@ -40,7 +40,6 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-
         public PoiParam()
         {
 
@@ -76,17 +75,17 @@ namespace ColorVision.Engine.Templates.POI
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    DatumArea ??= new DatumArea();
+                    DatumArea ??= new PoiConfig();
                 }
                 else
                 {
                     try
                     {
-                        DatumArea = JsonConvert.DeserializeObject<DatumArea>(value) ?? new DatumArea();
+                        DatumArea = JsonConvert.DeserializeObject<PoiConfig>(value) ?? new PoiConfig();
                     }
                     catch
                     {
-                        DatumArea = new DatumArea();
+                        DatumArea = new PoiConfig();
                     }
                 }
             }
@@ -115,7 +114,7 @@ namespace ColorVision.Engine.Templates.POI
         /// </summary>
         public ObservableCollection<PoiPoint> PoiPoints { get; set; } = new ObservableCollection<PoiPoint>();
 
-        public DatumArea DatumArea { get; set; } = new DatumArea();
+        public PoiConfig DatumArea { get; set; } = new PoiConfig();
 
         [JsonIgnore]
         public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }

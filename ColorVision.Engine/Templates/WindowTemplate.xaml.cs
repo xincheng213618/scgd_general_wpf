@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates
         {
             ITemplate = template;
             DefaultIndex = defaultIndex < 0 ? -1: defaultIndex;
-            template.Load();
+            template.Load();  
             InitializeComponent();
             this.ApplyCaption();
         }

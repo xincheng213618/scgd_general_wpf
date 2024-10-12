@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 
@@ -62,11 +63,13 @@ namespace ColorVision.Engine.Templates.POI
     }
 
 
-    public class DatumArea : ViewModelBase
+    public class PoiConfig : ViewModelBase
     {
         public RelayCommand SetPoiFileCommand { get; set; }
         public RelayCommand ValidateCIECommand { get; set; }
-        public DatumArea()
+        public RelayCommand OpenPoiCIEFileCommand { get; set; }
+
+        public PoiConfig()
         {
             ValidateCIECommand = new RelayCommand(a =>
             {
@@ -74,6 +77,7 @@ namespace ColorVision.Engine.Templates.POI
                 new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             });
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
+            OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
         }
 
         public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
@@ -226,6 +230,13 @@ namespace ColorVision.Engine.Templates.POI
 
         public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; NotifyPropertyChanged(); } }
         private string _PoiCIEFileName;
+
+        public void OpenPoiCIEFile()
+        {
+            if (File.Exists(PoiCIEFileName))
+                if (Directory.GetParent(PoiCIEFileName)?.FullName is string FullName)
+                    PlatformHelper.OpenFolder(FullName);
+        }
 
         public void SetPoiCIEFile()
         {

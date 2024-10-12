@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
-    public class MysqlPoiGenCali : IMysqlCommand
+    public class MysqlPOIFilter : IMysqlCommand
     {
         public string GetMysqlCommandName() => "恢复MysqlPoiGenCali";
         public string GetRecover()

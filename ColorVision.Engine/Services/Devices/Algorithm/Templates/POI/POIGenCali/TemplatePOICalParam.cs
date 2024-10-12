@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 
         public override IMysqlCommand? GetMysqlCommand()
         {
-            return new MysqlPoiGenCali();
+            return new MysqlPOIFilter();
         }
     }
 }

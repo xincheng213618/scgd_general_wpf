@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
         public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
-        private async void Window_Initialized(object sender, EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = PoiParam;
 
@@ -71,7 +71,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageContentGrid.MouseDown += (s, e) => FocusTextBox.Focus();
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
@@ -136,8 +135,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                     }
                 };
             }
-
-
             //如果是不显示
             ImageShow.VisualsRemove += (s, e) =>
             {
@@ -187,16 +184,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                 PoiParam.Height = 300;
             }
 
-            Closed += (s, e) =>
-            {
-                if (ImageShow.Source == null)
-                {
-                    PoiParam.Width = 0;
-                    PoiParam.Height = 0;
-                }
-                PoiParam.PoiPoints.Clear();
-            };
-
             PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape)
@@ -229,8 +216,6 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             UpdateVisualLayout(true);
         }
-
-
         private void UpdateVisualLayout(bool IsLayoutUpdated)
         {
             foreach (var item in DefaultPoint)
@@ -902,12 +887,13 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     break;
                 case RiPointTypes.Mask:
-                    List<Point> pts_src = new();
-                    pts_src.Add(PoiParam.DatumArea.Polygon1);
-                    pts_src.Add(PoiParam.DatumArea.Polygon2);
-                    pts_src.Add(PoiParam.DatumArea.Polygon3);
-                    pts_src.Add(PoiParam.DatumArea.Polygon4);
-
+                    List<Point> pts_src =
+                    [
+                        PoiParam.DatumArea.Polygon1,
+                        PoiParam.DatumArea.Polygon2,
+                        PoiParam.DatumArea.Polygon3,
+                        PoiParam.DatumArea.Polygon4,
+                    ];
 
                     List<Point> points = Helpers.SortPolyPoints(pts_src);
 
