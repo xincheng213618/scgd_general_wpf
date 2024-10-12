@@ -12,6 +12,10 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
+using MySql.Data.MySqlClient;
+using ColorVision.Engine.MySql;
+using MySqlConnector;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Engine.Templates
 {
@@ -345,6 +349,21 @@ namespace ColorVision.Engine.Templates
             if (sender is Control button && button.Tag is TemplateModelBase templateModelBase)
             {
                 templateModelBase.IsEditMode = true;
+            }
+        }
+
+        private void Button_Reset_Click(object sender, RoutedEventArgs e)
+        {
+            if (ITemplate.GetMysqlCommand() is IMysqlCommand mysqlCommand)
+            {
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                }
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"没有配置数据库重置选项", "ColorVision");
             }
         }
     }

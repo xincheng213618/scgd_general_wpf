@@ -804,43 +804,6 @@ namespace ColorVision.Engine.Media
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
-
-        public bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
-        {
-            if (PseudoImage is not WriteableBitmap writeableBitmap) return false;
-            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
-
-            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
-            {
-                writeableBitmap.Lock();
-                unsafe
-                {
-                    byte* src = (byte*)hImage.pData;
-                    byte* dst = (byte*)writeableBitmap.BackBuffer;
-
-                    for (int y = 0; y < hImage.rows; y++)
-                    {
-                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
-                        src += hImage.stride;
-                        dst += writeableBitmap.BackBufferStride;
-                    }
-                }
-
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
-                writeableBitmap.Unlock();
-
-                OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
-                hImage.pData = IntPtr.Zero;
-                return true;
-            }
-            return false;
-        }
-
-
         public void RenderPseudo()
         {
             Application.Current.Dispatcher.Invoke(() =>
@@ -867,7 +830,7 @@ namespace ColorVision.Engine.Media
                         {
                             if (ret == 0)
                             {
-                                if (!UpdateWriteableBitmap(PseudoImage , hImageProcessed))
+                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage , hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
@@ -1037,7 +1000,8 @@ namespace ColorVision.Engine.Media
                 {
                     if (ret == 0)
                     {
-                        if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+
+                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
@@ -1080,7 +1044,7 @@ namespace ColorVision.Engine.Media
 
                 if (ret == 0)
                 {
-                    if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
@@ -1108,7 +1072,7 @@ namespace ColorVision.Engine.Media
                 int ret = OpenCVMediaHelper.M_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
@@ -1136,7 +1100,7 @@ namespace ColorVision.Engine.Media
             int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
             if (ret == 0)
             {
-                if (!UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                 {
                     var image = hImageProcessed.ToWriteableBitmap();
 

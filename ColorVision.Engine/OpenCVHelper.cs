@@ -70,6 +70,41 @@ namespace ColorVision
             return format;
         }
 
+        public static bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
+        {
+            if (imageSource is not WriteableBitmap writeableBitmap) return false;
+            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
+
+            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            {
+                writeableBitmap.Lock();
+                unsafe
+                {
+                    byte* src = (byte*)hImage.pData;
+                    byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                    for (int y = 0; y < hImage.rows; y++)
+                    {
+                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                        src += hImage.stride;
+                        dst += writeableBitmap.BackBufferStride;
+                    }
+                }
+
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
+                writeableBitmap.Unlock();
+
+                OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
+                hImage.pData = IntPtr.Zero;
+                return true;
+            }
+            return false;
+        }
+
         public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
         {
             PixelFormat format = hImage.ToPixelFormat();

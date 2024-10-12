@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Collections;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
@@ -23,6 +24,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -46,6 +48,16 @@ namespace ColorVision.Engine.Services.Templates.POI
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
+            TaskDelay(1);
+        }
+        public async Task TaskDelay(int time)
+        {
+            await Task.Delay(time);
+            this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+            {
+                ToolBarTop.ClearImage();
+                writeableBitmap = null;
+            }));
         }
 
         public BulkObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new BulkObservableCollection<IDrawingVisual>();
@@ -70,7 +82,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
-
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
@@ -183,7 +194,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                 PoiParam.Width = 400;
                 PoiParam.Height = 300;
             }
-
             PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape)
@@ -331,34 +341,56 @@ namespace ColorVision.Engine.Services.Templates.POI
             Zoombox1.ZoomUniform();
         }
 
-        private bool Init; 
+        private bool Init;
+        public static WriteableBitmap CreateWhiteLayer(int width, int height)
+        {
+            // 创建 WriteableBitmap
+            var writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
 
+            // 计算每行的字节数
+            int bytesPerPixel = (writeableBitmap.Format.BitsPerPixel + 7) / 8;
+            int stride = width * bytesPerPixel;
+            byte[] pixels = new byte[height * stride];
+
+            // 填充白色
+            for (int i = 0; i < pixels.Length; i += bytesPerPixel)
+            {
+                pixels[i] = 255;     // Blue
+                pixels[i + 1] = 255; // Green
+                pixels[i + 2] = 255; // Red
+                pixels[i + 3] = 255; // Alpha
+            }
+
+            // 写入像素数据
+            writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
+            return writeableBitmap;
+        }
+        WriteableBitmap writeableBitmap;
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
             Thread thread = new(() => 
             {
-                BitmapImage bitmapImage = ImageUtils.CreateSolidColorBitmap(width, height, color);
-                bitmapImage.Freeze();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    writeableBitmap = CreateWhiteLayer(width, height);
                     if (ImageShow.Source == null)
                     {
-                        ImageShow.Source = bitmapImage;
+                        ImageShow.Source = writeableBitmap;
                         Zoombox1.ZoomUniform();
                         if (IsClear|| !Init)
-                            InitPoiConfigValue((int)bitmapImage.Width,(int)bitmapImage.Height);
+                            InitPoiConfigValue((int)writeableBitmap.Width,(int)writeableBitmap.Height);
                     }
                     else
                     {
-                        if (ImageShow.Source is BitmapImage img && (img.PixelWidth != bitmapImage.PixelWidth || img.PixelHeight != bitmapImage.PixelHeight))
+                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != writeableBitmap.PixelWidth || img.PixelHeight != writeableBitmap.PixelHeight))
                         {
-                            InitPoiConfigValue((int)bitmapImage.Width, (int)bitmapImage.Height);
-                            ImageShow.Source = bitmapImage;
+                            InitPoiConfigValue((int)writeableBitmap.Width, (int)writeableBitmap.Height);
+                            ImageShow.Source = writeableBitmap;
                             Zoombox1.ZoomUniform();
                         }
                         else
                         {
-                            ImageShow.Source = bitmapImage;
+                            ImageShow.Source = writeableBitmap;
                         }
 
                     }
@@ -1023,10 +1055,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        if (ret == 0)
+                                        if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
                                         {
                                             var image = hImageProcessed.ToWriteableBitmap();
-
                                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                             hImageProcessed.pData = IntPtr.Zero;
                                             ImageShow.Source = image;
@@ -1766,6 +1797,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             SaveAsFile();
         }
+
     }
 
 }
