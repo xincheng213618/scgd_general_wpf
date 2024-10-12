@@ -974,7 +974,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i * cols + j + 1;
                                         Circle.Attribute.Name = Circle.Attribute.Id.ToString();
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute);
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                     }
