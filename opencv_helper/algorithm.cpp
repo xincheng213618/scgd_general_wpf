@@ -20,7 +20,7 @@ int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointC
     {
         int x = points[i * 2];
         int y = points[i * 2 + 1];
-        cv::circle(img, cv::Point(x, y), radius, cv::Scalar(0, 0, 255), 2);
+        cv::circle(img, cv::Point(x, y), radius, cv::Scalar(0, 0, 255), 1);
     }
     dst = img;
     return 0; // ³É¹¦
