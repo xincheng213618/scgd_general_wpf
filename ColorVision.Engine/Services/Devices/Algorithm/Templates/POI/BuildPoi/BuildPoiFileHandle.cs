@@ -34,8 +34,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             {
                 poiParam.PoiPoints.Add(new PoiPoint() { PixX = item.PixelX, PixY = item.PixelY ,PointType = (RiPointTypes)poiInfo.HeaderInfo.PointType ,PixWidth = poiInfo .HeaderInfo.Width, PixHeight = poiInfo.HeaderInfo.Height });
             }
-            poiParam.DatumArea.AreaRectRow = poiInfo.HeaderInfo.Rows;
-            poiParam.DatumArea.AreaRectCol = poiInfo.HeaderInfo.Cols;
+            poiParam.PoiConfig.AreaRectRow = poiInfo.HeaderInfo.Rows;
+            poiParam.PoiConfig.AreaRectCol = poiInfo.HeaderInfo.Cols;
         }
         public static void CoverFile(PoiParam poiParam, string fileName)
         {
@@ -43,15 +43,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             POIPointInfo poiInfo = new POIPointInfo();
             poiInfo.Positions = new List<POIPointPosition>();
             poiInfo.HeaderInfo = new POIHeaderInfo() { Height = (int)poiParam.PoiPoints[0].PixHeight, Width = (int)poiParam.PoiPoints[0].PixWidth, PointType = (POIPointTypes)poiParam.PoiPoints[0].PointType };
-            if (poiParam.DatumArea.IsAreaRect)
+            if (poiParam.PoiConfig.IsAreaRect)
             {
-                poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaRectRow;
-                poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaRectCol;
+                poiInfo.HeaderInfo.Rows = poiParam.PoiConfig.AreaRectRow;
+                poiInfo.HeaderInfo.Cols = poiParam.PoiConfig.AreaRectCol;
             }
-            if (poiParam.DatumArea.IsAreaMask)
+            if (poiParam.PoiConfig.IsAreaMask)
             {
-                poiInfo.HeaderInfo.Rows = poiParam.DatumArea.AreaPolygonRow;
-                poiInfo.HeaderInfo.Cols = poiParam.DatumArea.AreaPolygonCol;
+                poiInfo.HeaderInfo.Rows = poiParam.PoiConfig.AreaPolygonRow;
+                poiInfo.HeaderInfo.Cols = poiParam.PoiConfig.AreaPolygonCol;
             }
 
             foreach (var item in poiParam.PoiPoints)

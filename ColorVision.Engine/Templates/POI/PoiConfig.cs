@@ -89,8 +89,8 @@ namespace ColorVision.Engine.Templates.POI
         public bool IsShowText { get => _IsShowText; set { _IsShowText = value; NotifyPropertyChanged(); } }
         private bool _IsShowText = true;
 
-        public bool IsShowDatumArea { get => _IsShowDatumArea; set { _IsShowDatumArea = value; NotifyPropertyChanged(); } }
-        private bool _IsShowDatumArea;
+        public bool IsShowPoiConfig { get => _IsShowPoiConfig; set { _IsShowPoiConfig = value; NotifyPropertyChanged(); } }
+        private bool _IsShowPoiConfig;
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;

@@ -78,7 +78,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ImageShow.VisualsAdd += (s, e) =>
             {
-                if (!PoiParam.DatumArea.IsShowText)
+                if (!PoiParam.PoiConfig.IsShowText)
                 {
                     if (s is IDrawingVisual visual)
                     {
@@ -119,7 +119,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
             };
-            if (PoiParam.DatumArea.IsShowText)
+            if (PoiParam.PoiConfig.IsShowText)
             {
                 DrawingVisualLists.CollectionChanged += (s, e) =>
                 {
@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 if (oldMax != Zoombox1.ContentMatrix.M11)
                 {
                     oldMax = Zoombox1.ContentMatrix.M11;
-                    UpdateVisualLayout(PoiParam.DatumArea.IsLayoutUpdated);
+                    UpdateVisualLayout(PoiParam.PoiConfig.IsLayoutUpdated);
                 }
             };
 
@@ -167,12 +167,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 500)
-                    PoiParam.DatumArea.IsLayoutUpdated = false;
+                    PoiParam.PoiConfig.IsLayoutUpdated = false;
 
                 CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
                 WaitControlProgressBar.Value = 20;
                 DatumSet();
-                RenderDatumArea();
+                RenderPoiConfig();
                 PoiParamToDrawingVisual(PoiParam);
                 WaitControl.Visibility = Visibility.Collapsed;
                 WaitControlProgressBar.Visibility = Visibility.Collapsed;
@@ -325,7 +325,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 PoiParam.Width = bitmapSource.PixelWidth;
                 PoiParam.Height = bitmapSource.PixelHeight;
-                InitDatumAreaValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
+                InitPoiConfigValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
             }
             ImageShow.ImageInitialize();
             Zoombox1.ZoomUniform();
@@ -346,13 +346,13 @@ namespace ColorVision.Engine.Services.Templates.POI
                         ImageShow.Source = bitmapImage;
                         Zoombox1.ZoomUniform();
                         if (IsClear|| !Init)
-                            InitDatumAreaValue((int)bitmapImage.Width,(int)bitmapImage.Height);
+                            InitPoiConfigValue((int)bitmapImage.Width,(int)bitmapImage.Height);
                     }
                     else
                     {
                         if (ImageShow.Source is BitmapImage img && (img.PixelWidth != bitmapImage.PixelWidth || img.PixelHeight != bitmapImage.PixelHeight))
                         {
-                            InitDatumAreaValue((int)bitmapImage.Width, (int)bitmapImage.Height);
+                            InitPoiConfigValue((int)bitmapImage.Width, (int)bitmapImage.Height);
                             ImageShow.Source = bitmapImage;
                             Zoombox1.ZoomUniform();
                         }
@@ -382,10 +382,10 @@ namespace ColorVision.Engine.Services.Templates.POI
         }
 
 
-        private void InitDatumAreaValue(int width,int height)
+        private void InitPoiConfigValue(int width,int height)
         {
-            Application.Current.Dispatcher.Invoke(() => PoiParam.DatumArea.IsShowDatumArea = true);
-            RenderDatumArea();
+            Application.Current.Dispatcher.Invoke(() => PoiParam.PoiConfig.IsShowPoiConfig = true);
+            RenderPoiConfig();
             DatumSet();
         }
 
@@ -397,7 +397,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             try
             {
-                if (poiParam.DatumArea.IsPoiCIEFile)
+                if (poiParam.PoiConfig.IsPoiCIEFile)
                 {
                     Init = true;
                     return;
@@ -405,7 +405,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 DrawingVisualLists.SuspendUpdate();
                 int WaitNum = 50;
-                if (!PoiParam.DatumArea.IsShowText)
+                if (!PoiParam.PoiConfig.IsShowText)
                     WaitNum = 1000;
                 foreach (var item in poiParam.PoiPoints)
                 {
@@ -419,7 +419,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         case RiPointTypes.Circle:
                             DVCircleText Circle = new();
-                            Circle.IsShowText = PoiParam.DatumArea.IsShowText;
+                            Circle.IsShowText = PoiParam.PoiConfig.IsShowText;
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -435,7 +435,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             break;
                         case RiPointTypes.Rect:
                             DVRectangleText Rectangle = new();
-                            Rectangle.IsShowText = PoiParam.DatumArea.IsShowText;
+                            Rectangle.IsShowText = PoiParam.PoiConfig.IsShowText;
                             Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -497,16 +497,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                         startR = bitmapImage.PixelWidth * startR / 100;
                     }
 
-                    PoiParam.DatumArea.X1X = (int)startL;
-                    PoiParam.DatumArea.X1Y = (int)startU;
-                    PoiParam.DatumArea.X2X = bitmapImage.PixelWidth - (int)startR;
-                    PoiParam.DatumArea.X2Y = (int)startU;
-                    PoiParam.DatumArea.X3X = bitmapImage.PixelWidth - (int)startR;
-                    PoiParam.DatumArea.X3Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiParam.DatumArea.X4X = (int)startR;
-                    PoiParam.DatumArea.X4Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiParam.DatumArea.CenterX = (int)bitmapImage.PixelWidth / 2;
-                    PoiParam.DatumArea.CenterY = bitmapImage.PixelHeight / 2;
+                    PoiParam.PoiConfig.X1X = (int)startL;
+                    PoiParam.PoiConfig.X1Y = (int)startU;
+                    PoiParam.PoiConfig.X2X = bitmapImage.PixelWidth - (int)startR;
+                    PoiParam.PoiConfig.X2Y = (int)startU;
+                    PoiParam.PoiConfig.X3X = bitmapImage.PixelWidth - (int)startR;
+                    PoiParam.PoiConfig.X3Y = bitmapImage.PixelHeight - (int)startD;
+                    PoiParam.PoiConfig.X4X = (int)startR;
+                    PoiParam.PoiConfig.X4Y = bitmapImage.PixelHeight - (int)startD;
+                    PoiParam.PoiConfig.CenterX = (int)bitmapImage.PixelWidth / 2;
+                    PoiParam.PoiConfig.CenterY = bitmapImage.PixelHeight / 2;
                 }
             }
             DatumSet();
@@ -519,15 +519,15 @@ namespace ColorVision.Engine.Services.Templates.POI
                 ImageShow.RemoveVisual(item);
             }
             DefaultPoint.Clear();
-            if (PoiParam.DatumArea.IsShowDatum)
+            if (PoiParam.PoiConfig.IsShowDatum)
             {
                 List<Point> Points = new()
                 {
-                    new Point(PoiParam.DatumArea.X1X, PoiParam.DatumArea.X1Y),
-                    new Point(PoiParam.DatumArea.X2X, PoiParam.DatumArea.X2Y),
-                    new Point(PoiParam.DatumArea.X3X, PoiParam.DatumArea.X3Y),
-                    new Point(PoiParam.DatumArea.X4X, PoiParam.DatumArea.X4Y),
-                    new Point(PoiParam.DatumArea.CenterX, PoiParam.DatumArea.CenterY),
+                    new Point(PoiParam.PoiConfig.X1X, PoiParam.PoiConfig.X1Y),
+                    new Point(PoiParam.PoiConfig.X2X, PoiParam.PoiConfig.X2Y),
+                    new Point(PoiParam.PoiConfig.X3X, PoiParam.PoiConfig.X3Y),
+                    new Point(PoiParam.PoiConfig.X4X, PoiParam.PoiConfig.X4Y),
+                    new Point(PoiParam.PoiConfig.CenterX, PoiParam.PoiConfig.CenterY),
                 };
 
                 for (int i = 0; i < Points.Count; i++)
@@ -553,35 +553,35 @@ namespace ColorVision.Engine.Services.Templates.POI
             int Num = 0;
             int start = DrawingVisualLists.Count;
 
-            switch (PoiParam.DatumArea.PointType)
+            switch (PoiParam.PoiConfig.PointType)
             {
                 case RiPointTypes.Circle:
-                    if (PoiParam.DatumArea.AreaCircleNum < 1)
+                    if (PoiParam.PoiConfig.AreaCircleNum < 1)
                     {
                         MessageBox.Show("绘制的个数不能小于1", "ColorVision");
                         return;
                     }
 
-                    if (PoiParam.DatumArea.AreaCircleNum > 1000)
+                    if (PoiParam.PoiConfig.AreaCircleNum > 1000)
                     {
                         WaitControl.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Value = 0;
-                        PoiParam.DatumArea.IsLayoutUpdated = false;
+                        PoiParam.PoiConfig.IsLayoutUpdated = false;
                     }
 
 
-                    for (int i = 0; i < PoiParam.DatumArea.AreaCircleNum; i++)
+                    for (int i = 0; i < PoiParam.PoiConfig.AreaCircleNum; i++)
                     {
                         Num++;
                         if (Num % 100 == 0 && WaitControl.Visibility == Visibility.Visible)
                         {
-                            WaitControlProgressBar.Value = Num * 1000 / PoiParam.DatumArea.AreaCircleNum;
+                            WaitControlProgressBar.Value = Num * 1000 / PoiParam.PoiConfig.AreaCircleNum;
                             await Task.Delay(1);
                         }
 
-                        double x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                        double y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                        double x1 = PoiParam.PoiConfig.CenterX + PoiParam.PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                        double y1 = PoiParam.PoiConfig.CenterY + PoiParam.PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
 
                         switch (PoiParam.DefaultPointType)
                         {
@@ -592,16 +592,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     switch (pOIPosition)
                                     {
                                         case DrawingPOIPosition.LineOn:
-                                            x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + PoiParam.PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + PoiParam.PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         case DrawingPOIPosition.Internal:
-                                            x1 = PoiParam.DatumArea.CenterX + (PoiParam.DatumArea.AreaCircleRadius - PoiParam.DatumArea.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + (PoiParam.DatumArea.AreaCircleRadius - PoiParam.DatumArea.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + (PoiParam.PoiConfig.AreaCircleRadius - PoiParam.PoiConfig.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + (PoiParam.PoiConfig.AreaCircleRadius - PoiParam.PoiConfig.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         case DrawingPOIPosition.External:
-                                            x1 = PoiParam.DatumArea.CenterX + (PoiParam.DatumArea.AreaCircleRadius + PoiParam.DatumArea.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + (PoiParam.DatumArea.AreaCircleRadius + PoiParam.DatumArea.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + (PoiParam.PoiConfig.AreaCircleRadius + PoiParam.PoiConfig.DefaultCircleRadius) * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + (PoiParam.PoiConfig.AreaCircleRadius + PoiParam.PoiConfig.DefaultCircleRadius) * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         default:
                                             break;
@@ -611,9 +611,9 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                                 DVCircleText Circle = new();
                                 Circle.Attribute.Center = new Point(x1, y1);
-                                Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                Circle.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                 Circle.Attribute.Id = start + i + 1;
                                 Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                 Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
@@ -627,16 +627,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     switch (pOIPosition2)
                                     {
                                         case DrawingPOIPosition.LineOn:
-                                            x1 = PoiParam.DatumArea.CenterX + PoiParam.DatumArea.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + PoiParam.DatumArea.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + PoiParam.PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + PoiParam.PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         case DrawingPOIPosition.Internal:
-                                            x1 = PoiParam.DatumArea.CenterX + (PoiParam.DatumArea.AreaCircleRadius - PoiParam.DatumArea.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + (PoiParam.DatumArea.AreaCircleRadius - PoiParam.DatumArea.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + (PoiParam.PoiConfig.AreaCircleRadius - PoiParam.PoiConfig.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + (PoiParam.PoiConfig.AreaCircleRadius - PoiParam.PoiConfig.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         case DrawingPOIPosition.External:
-                                            x1 = PoiParam.DatumArea.CenterX + (PoiParam.DatumArea.AreaCircleRadius + PoiParam.DatumArea.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
-                                            y1 = PoiParam.DatumArea.CenterY + (PoiParam.DatumArea.AreaCircleRadius + PoiParam.DatumArea.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiParam.DatumArea.AreaCircleNum + Math.PI / 180 * PoiParam.DatumArea.AreaCircleAngle);
+                                            x1 = PoiParam.PoiConfig.CenterX + (PoiParam.PoiConfig.AreaCircleRadius + PoiParam.PoiConfig.DefaultRectWidth / 2) * Math.Cos(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
+                                            y1 = PoiParam.PoiConfig.CenterY + (PoiParam.PoiConfig.AreaCircleRadius + PoiParam.PoiConfig.DefaultRectHeight / 2) * Math.Sin(i * 2 * Math.PI / PoiParam.PoiConfig.AreaCircleNum + Math.PI / 180 * PoiParam.PoiConfig.AreaCircleAngle);
                                             break;
                                         default:
                                             break;
@@ -644,9 +644,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 }
 
                                 DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                 Rectangle.Attribute.Id = start + i + 1;
                                 Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                 Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
@@ -662,22 +662,22 @@ namespace ColorVision.Engine.Services.Templates.POI
                     break;
                 case RiPointTypes.Rect:
 
-                    int cols = PoiParam.DatumArea.AreaRectCol;
-                    int rows = PoiParam.DatumArea.AreaRectRow;
+                    int cols = PoiParam.PoiConfig.AreaRectCol;
+                    int rows = PoiParam.PoiConfig.AreaRectRow;
 
                     if (rows < 1 || cols < 1)
                     {
                         MessageBox.Show("点阵数的行列不能小于1", "ColorVision");
                         return;
                     }
-                    double Width = PoiParam.DatumArea.AreaRectWidth;
-                    double Height = PoiParam.DatumArea.AreaRectHeight;
+                    double Width = PoiParam.PoiConfig.AreaRectWidth;
+                    double Height = PoiParam.PoiConfig.AreaRectHeight;
 
 
-                    double startU = PoiParam.DatumArea.CenterY - Height / 2;
-                    double startD = bitmapImage.PixelHeight - PoiParam.DatumArea.CenterY - Height / 2;
-                    double startL = PoiParam.DatumArea.CenterX - Width / 2;
-                    double startR = bitmapImage.PixelWidth - PoiParam.DatumArea.CenterX - Width / 2;
+                    double startU = PoiParam.PoiConfig.CenterY - Height / 2;
+                    double startD = bitmapImage.PixelHeight - PoiParam.PoiConfig.CenterY - Height / 2;
+                    double startL = PoiParam.PoiConfig.CenterX - Width / 2;
+                    double startR = bitmapImage.PixelWidth - PoiParam.PoiConfig.CenterX - Width / 2;
 
                     if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition1)
                     {
@@ -689,16 +689,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     case DrawingPOIPosition.LineOn:
                                         break;
                                     case DrawingPOIPosition.Internal:
-                                        startU += PoiParam.DatumArea.DefaultCircleRadius;
-                                        startD += PoiParam.DatumArea.DefaultCircleRadius;
-                                        startL += PoiParam.DatumArea.DefaultCircleRadius;
-                                        startR += PoiParam.DatumArea.DefaultCircleRadius;
+                                        startU += PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startD += PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startL += PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startR += PoiParam.PoiConfig.DefaultCircleRadius;
                                         break;
                                     case DrawingPOIPosition.External:
-                                        startU -= PoiParam.DatumArea.DefaultCircleRadius;
-                                        startD -= PoiParam.DatumArea.DefaultCircleRadius;
-                                        startL -= PoiParam.DatumArea.DefaultCircleRadius;
-                                        startR -= PoiParam.DatumArea.DefaultCircleRadius;
+                                        startU -= PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startD -= PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startL -= PoiParam.PoiConfig.DefaultCircleRadius;
+                                        startR -= PoiParam.PoiConfig.DefaultCircleRadius;
                                         break;
                                     default:
                                         break;
@@ -710,16 +710,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     case DrawingPOIPosition.LineOn:
                                         break;
                                     case DrawingPOIPosition.Internal:
-                                        startU += PoiParam.DatumArea.DefaultRectWidth / 2;
-                                        startD += PoiParam.DatumArea.DefaultRectWidth / 2;
-                                        startL += PoiParam.DatumArea.DefaultRectHeight / 2;
-                                        startR += PoiParam.DatumArea.DefaultRectHeight / 2;
+                                        startU += PoiParam.PoiConfig.DefaultRectWidth / 2;
+                                        startD += PoiParam.PoiConfig.DefaultRectWidth / 2;
+                                        startL += PoiParam.PoiConfig.DefaultRectHeight / 2;
+                                        startR += PoiParam.PoiConfig.DefaultRectHeight / 2;
                                         break;
                                     case DrawingPOIPosition.External:
-                                        startU -= PoiParam.DatumArea.DefaultRectWidth / 2;
-                                        startD -= PoiParam.DatumArea.DefaultRectWidth / 2;
-                                        startL -= PoiParam.DatumArea.DefaultRectHeight / 2;
-                                        startR -= PoiParam.DatumArea.DefaultRectHeight / 2;
+                                        startU -= PoiParam.PoiConfig.DefaultRectWidth / 2;
+                                        startD -= PoiParam.PoiConfig.DefaultRectWidth / 2;
+                                        startL -= PoiParam.PoiConfig.DefaultRectHeight / 2;
+                                        startR -= PoiParam.PoiConfig.DefaultRectHeight / 2;
                                         break;
                                     default:
                                         break;
@@ -744,10 +744,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                         WaitControl.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Visibility = Visibility.Visible;
                         WaitControlProgressBar.Value = 0;
-                        PoiParam.DatumArea.IsLayoutUpdated = false;
+                        PoiParam.PoiConfig.IsLayoutUpdated = false;
                     }
 
-                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
                         WaitControlText.Text = "关注点强制启用文件保存";
                         WaitControl.Visibility = Visibility.Visible;
@@ -773,18 +773,18 @@ namespace ColorVision.Engine.Services.Templates.POI
                             switch (PoiParam.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
-                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PixWidth = PoiParam.DatumArea.DefaultCircleRadius, PixHeight = PoiParam.DatumArea.DefaultCircleRadius });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PixWidth = PoiParam.PoiConfig.DefaultCircleRadius, PixHeight = PoiParam.PoiConfig.DefaultCircleRadius });
                                     }
                                     else
                                     {
                                         DVCircleText Circle = new();
-                                        Circle.IsShowText = PoiParam.DatumArea.IsShowText;
+                                        Circle.IsShowText = PoiParam.PoiConfig.IsShowText;
                                         Circle.Attribute.Center = new Point(x1, y1);
-                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
-                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i * cols + j + 1;
                                         Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                         Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
@@ -793,17 +793,17 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     }
                                     break;
                                 case RiPointTypes.Rect:
-                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = RiPointTypes.Rect, PixWidth = PoiParam.DatumArea.DefaultRectWidth, PixHeight = PoiParam.DatumArea.DefaultRectHeight });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = x1, PixY = y1, PointType = RiPointTypes.Rect, PixWidth = PoiParam.PoiConfig.DefaultRectWidth, PixHeight = PoiParam.PoiConfig.DefaultRectHeight });
                                     }
                                     else
                                     {
                                         DVRectangleText Rectangle = new();
-                                        Rectangle.IsShowText = PoiParam.DatumArea.IsShowText;
-                                        Rectangle.Attribute.Rect = new Rect(x1 - (double)PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
+                                        Rectangle.IsShowText = PoiParam.PoiConfig.IsShowText;
+                                        Rectangle.Attribute.Rect = new Rect(x1 - (double)PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectWidth);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
                                         Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                         Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
@@ -818,7 +818,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             }
                         }
                     }
-                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
                         Thread thread = new(() =>
                         {
@@ -838,7 +838,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
                                     hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -855,7 +855,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
                                     hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -889,18 +889,18 @@ namespace ColorVision.Engine.Services.Templates.POI
                 case RiPointTypes.Mask:
                     List<Point> pts_src =
                     [
-                        PoiParam.DatumArea.Polygon1,
-                        PoiParam.DatumArea.Polygon2,
-                        PoiParam.DatumArea.Polygon3,
-                        PoiParam.DatumArea.Polygon4,
+                        PoiParam.PoiConfig.Polygon1,
+                        PoiParam.PoiConfig.Polygon2,
+                        PoiParam.PoiConfig.Polygon3,
+                        PoiParam.PoiConfig.Polygon4,
                     ];
 
                     List<Point> points = Helpers.SortPolyPoints(pts_src);
 
-                    cols = PoiParam.DatumArea.AreaPolygonCol;
-                    rows = PoiParam.DatumArea.AreaPolygonRow;
+                    cols = PoiParam.PoiConfig.AreaPolygonCol;
+                    rows = PoiParam.PoiConfig.AreaPolygonRow;
 
-                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
                         MessageBox.Show("关注点强制启用文件保存");
                         PoiParam.PoiPoints.Clear();
@@ -929,17 +929,17 @@ namespace ColorVision.Engine.Services.Templates.POI
                             switch (PoiParam.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
-                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PixWidth = PoiParam.DatumArea.DefaultCircleRadius, PixHeight = PoiParam.DatumArea.DefaultCircleRadius });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PixWidth = PoiParam.PoiConfig.DefaultCircleRadius, PixHeight = PoiParam.PoiConfig.DefaultCircleRadius });
                                     }
                                     else
                                     {
                                         DVCircleText Circle = new();
                                         Circle.Attribute.Center = new Point(point.X, point.Y);
-                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
-                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i * cols + j + 1;
                                         Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                         Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute);
@@ -948,16 +948,16 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     }
                                     break;
                                 case RiPointTypes.Rect:
-                                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                                     {
-                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PointType = RiPointTypes.Rect, PixWidth = PoiParam.DatumArea.DefaultRectWidth, PixHeight = PoiParam.DatumArea.DefaultRectHeight });
+                                        PoiParam.PoiPoints.Add(new PoiPoint() { PixX = point.X, PixY = point.Y, PointType = RiPointTypes.Rect, PixWidth = PoiParam.PoiConfig.DefaultRectWidth, PixHeight = PoiParam.PoiConfig.DefaultRectHeight });
                                     }
                                     else
                                     {
                                         DVRectangleText Rectangle = new();
-                                        Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.PoiConfig.DefaultRectWidth / 2, point.Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
-                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
                                         Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                         Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
@@ -974,7 +974,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         }
                     }
 
-                    if (PoiParam.DatumArea.IsPoiCIEFile)
+                    if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
 
                         Thread thread = new(() =>
@@ -1002,7 +1002,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     log.Info("正在绘制BitmapImage图像");
 
                                     hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -1020,7 +1020,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 {
                                     log.Info("正在绘制WriteableBitmap图像");
                                     hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.DatumArea.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -1044,12 +1044,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                 case RiPointTypes.Polygon:
 
                     int No = 0;
-                    for (int i = 0; i < PoiParam.DatumArea.Polygons.Count - 1; i++)
+                    for (int i = 0; i < PoiParam.PoiConfig.Polygons.Count - 1; i++)
                     {
-                        double dx = (PoiParam.DatumArea.Polygons[i + 1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
-                        double dy = (PoiParam.DatumArea.Polygons[i + 1].Y - PoiParam.DatumArea.Polygons[i].Y) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
+                        double dx = (PoiParam.PoiConfig.Polygons[i + 1].X - PoiParam.PoiConfig.Polygons[i].X) / (PoiParam.PoiConfig.Polygons[i].SplitNumber + 1);
+                        double dy = (PoiParam.PoiConfig.Polygons[i + 1].Y - PoiParam.PoiConfig.Polygons[i].Y) / (PoiParam.PoiConfig.Polygons[i].SplitNumber + 1);
 
-                        for (int j = 1; j < PoiParam.DatumArea.Polygons[i].SplitNumber + 1; j++)
+                        for (int j = 1; j < PoiParam.PoiConfig.Polygons[i].SplitNumber + 1; j++)
                         {
                             No++;
                             switch (PoiParam.DefaultPointType)
@@ -1057,10 +1057,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 case RiPointTypes.Circle:
 
                                     DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X + dx * j, PoiParam.DatumArea.Polygons[i].Y + dy * j);
-                                    Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                    Circle.Attribute.Center = new Point(PoiParam.PoiConfig.Polygons[i].X + dx * j, PoiParam.PoiConfig.Polygons[i].Y + dy * j);
+                                    Circle.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                                     Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                     Circle.Attribute.Id = start + No;
                                     Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                     Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
@@ -1069,9 +1069,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     break;
                                 case RiPointTypes.Rect:
                                     DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X + dx * j - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y + dy * j - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                    Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Polygons[i].X + dx * j - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y + dy * j - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                     Rectangle.Attribute.Id = start + No;
                                     Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                     Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
@@ -1086,19 +1086,19 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     }
 
-                    for (int i = 0; i < PoiParam.DatumArea.Polygons.Count; i++)
+                    for (int i = 0; i < PoiParam.PoiConfig.Polygons.Count; i++)
                     {
-                        if (PoiParam.DatumArea.AreaPolygonUsNode)
+                        if (PoiParam.PoiConfig.AreaPolygonUsNode)
                         {
                             switch (PoiParam.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
 
                                     DVCircleText Circle = new();
-                                    Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X, PoiParam.DatumArea.Polygons[i].Y);
-                                    Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                    Circle.Attribute.Center = new Point(PoiParam.PoiConfig.Polygons[i].X, PoiParam.PoiConfig.Polygons[i].Y);
+                                    Circle.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                                     Circle.Attribute.Brush = Brushes.Transparent;
-                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultCircleRadius / 30);
                                     Circle.Attribute.Id = start + i + 1;
                                     Circle.Attribute.Name = Circle.Attribute.Id.ToString();
                                     Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
@@ -1108,9 +1108,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     break;
                                 case RiPointTypes.Rect:
                                     DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                    Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Polygons[i].X - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                     Rectangle.Attribute.Id = start + i + 1;
                                     Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
                                     Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
@@ -1127,7 +1127,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 default:
                     break;
             }
-            if (PoiParam.DatumArea.IsShowText)
+            if (PoiParam.PoiConfig.IsShowText)
             {
                 UpdateVisualLayout(true);
                 ScrollViewer1.ScrollToEnd();
@@ -1194,30 +1194,30 @@ namespace ColorVision.Engine.Services.Templates.POI
         }
 
         DrawingVisual drawingVisualDatum;
-        private void ShowDatumArea_Click(object sender, RoutedEventArgs e)
+        private void ShowPoiConfig_Click(object sender, RoutedEventArgs e)
         {
-            RenderDatumArea();
+            RenderPoiConfig();
         }
 
         private void RadioButtonArea_Checked(object sender, RoutedEventArgs e)
         {
-            RenderDatumArea();
+            RenderPoiConfig();
         }
 
-        private void RenderDatumArea()
+        private void RenderPoiConfig()
         {
             if (drawingVisualDatum != null)
             {
                 ImageShow.RemoveVisual(drawingVisualDatum);
             }
-            if (PoiParam.DatumArea.IsShowDatumArea)
+            if (PoiParam.PoiConfig.IsShowPoiConfig)
             {
-                switch (PoiParam.DatumArea.PointType)
+                switch (PoiParam.PoiConfig.PointType)
                 {
                     case RiPointTypes.Circle:
                         DVDatumCircle Circle = new();
-                        Circle.Attribute.Center = PoiParam.DatumArea.Center;
-                        Circle.Attribute.Radius = PoiParam.DatumArea.AreaCircleRadius;
+                        Circle.Attribute.Center = PoiParam.PoiConfig.Center;
+                        Circle.Attribute.Radius = PoiParam.PoiConfig.AreaCircleRadius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Circle.Render();
@@ -1225,10 +1225,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
                     case RiPointTypes.Rect:
-                        double Width = PoiParam.DatumArea.AreaRectWidth;
-                        double Height = PoiParam.DatumArea.AreaRectHeight;
+                        double Width = PoiParam.PoiConfig.AreaRectWidth;
+                        double Height = PoiParam.PoiConfig.AreaRectHeight;
                         DVDatumRectangle Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.DatumArea.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
+                        Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.PoiConfig.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
@@ -1238,10 +1238,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                     case RiPointTypes.Mask:
 
                         List<Point> pts_src = new();
-                        pts_src.Add(PoiParam.DatumArea.Polygon1);
-                        pts_src.Add(PoiParam.DatumArea.Polygon2);
-                        pts_src.Add(PoiParam.DatumArea.Polygon3);  
-                        pts_src.Add(PoiParam.DatumArea.Polygon4);
+                        pts_src.Add(PoiParam.PoiConfig.Polygon1);
+                        pts_src.Add(PoiParam.PoiConfig.Polygon2);
+                        pts_src.Add(PoiParam.PoiConfig.Polygon3);  
+                        pts_src.Add(PoiParam.PoiConfig.Polygon4);
 
                         List<Point> result = Helpers.SortPolyPoints(pts_src);
                         DVDatumPolygon Polygon = new() { IsComple = true };
@@ -1259,7 +1259,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         DVDatumPolygon Polygon1 = new() { IsComple = false };
                         Polygon1.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon1.Attribute.Brush = Brushes.Transparent;
-                        foreach (var item in PoiParam.DatumArea.Polygons)
+                        foreach (var item in PoiParam.PoiConfig.Polygons)
                         {
                             Polygon1.Attribute.Points.Add(new Point(item.X, item.Y));
                         }
@@ -1391,16 +1391,16 @@ namespace ColorVision.Engine.Services.Templates.POI
         }
 
 
-        private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
+        private void PoiConfigImport_Click(object sender, RoutedEventArgs e)
         {
-            PoiParam.DatumArea.Polygon1X = PoiParam.DatumArea.X1X;
-            PoiParam.DatumArea.Polygon1Y = PoiParam.DatumArea.X1Y;
-            PoiParam.DatumArea.Polygon2X = PoiParam.DatumArea.X2X;
-            PoiParam.DatumArea.Polygon2Y = PoiParam.DatumArea.X2Y;
-            PoiParam.DatumArea.Polygon3X = PoiParam.DatumArea.X3X;
-            PoiParam.DatumArea.Polygon3Y = PoiParam.DatumArea.X3Y;
-            PoiParam.DatumArea.Polygon4X = PoiParam.DatumArea.X4X;
-            PoiParam.DatumArea.Polygon4Y = PoiParam.DatumArea.X4Y;
+            PoiParam.PoiConfig.Polygon1X = PoiParam.PoiConfig.X1X;
+            PoiParam.PoiConfig.Polygon1Y = PoiParam.PoiConfig.X1Y;
+            PoiParam.PoiConfig.Polygon2X = PoiParam.PoiConfig.X2X;
+            PoiParam.PoiConfig.Polygon2Y = PoiParam.PoiConfig.X2Y;
+            PoiParam.PoiConfig.Polygon3X = PoiParam.PoiConfig.X3X;
+            PoiParam.PoiConfig.Polygon3Y = PoiParam.PoiConfig.X3Y;
+            PoiParam.PoiConfig.Polygon4X = PoiParam.PoiConfig.X4X;
+            PoiParam.PoiConfig.Polygon4Y = PoiParam.PoiConfig.X4Y;
         }
 
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
@@ -1504,10 +1504,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                     ledCheckCfg.灯珠宽方向数量, ledCheckCfg.灯珠高方向数量, ledCheckCfg.关注范围, ledCheckCfg.关注区域二值化, ledCheckCfg.boundry,
                     ledCheckCfg.LengthCheck, ledCheckCfg.LengthRange, LengthResult, ledCheckCfg.是否使用本地点位信息计算, localRDMark, PointX, PointY);
 
-                PoiParam.DatumArea.LedLen1 = Math.Round(LengthResult[0], 2);
-                PoiParam.DatumArea.LedLen2 = Math.Round(LengthResult[1], 2);
-                PoiParam.DatumArea.LedLen3 = Math.Round(LengthResult[2], 2);
-                PoiParam.DatumArea.LedLen4 = Math.Round(LengthResult[3], 2);
+                PoiParam.PoiConfig.LedLen1 = Math.Round(LengthResult[0], 2);
+                PoiParam.PoiConfig.LedLen2 = Math.Round(LengthResult[1], 2);
+                PoiParam.PoiConfig.LedLen3 = Math.Round(LengthResult[2], 2);
+                PoiParam.PoiConfig.LedLen4 = Math.Round(LengthResult[3], 2);
                 if (calresult != 3)
                 {
                     MessageBox.Show("灯珠抓取异常，请检查参数设置", "ColorVision");
@@ -1659,14 +1659,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                     startL = bitmapImage.PixelWidth * startL / 100;
                     startR = bitmapImage.PixelWidth * startR / 100;
                 }
-                PoiParam.DatumArea.Polygon1X = (int)startL;
-                PoiParam.DatumArea.Polygon1Y = (int)startU;
-                PoiParam.DatumArea.Polygon2X = bitmapImage.PixelWidth - (int)startR;
-                PoiParam.DatumArea.Polygon2Y = (int)startU;
-                PoiParam.DatumArea.Polygon3X = bitmapImage.PixelWidth - (int)startR;
-                PoiParam.DatumArea.Polygon3Y = bitmapImage.PixelHeight - (int)startD;
-                PoiParam.DatumArea.Polygon4X = (int)startR;
-                PoiParam.DatumArea.Polygon4Y = bitmapImage.PixelHeight - (int)startD;
+                PoiParam.PoiConfig.Polygon1X = (int)startL;
+                PoiParam.PoiConfig.Polygon1Y = (int)startU;
+                PoiParam.PoiConfig.Polygon2X = bitmapImage.PixelWidth - (int)startR;
+                PoiParam.PoiConfig.Polygon2Y = (int)startU;
+                PoiParam.PoiConfig.Polygon3X = bitmapImage.PixelWidth - (int)startR;
+                PoiParam.PoiConfig.Polygon3Y = bitmapImage.PixelHeight - (int)startD;
+                PoiParam.PoiConfig.Polygon4X = (int)startR;
+                PoiParam.PoiConfig.Polygon4Y = bitmapImage.PixelHeight - (int)startD;
                 
             }
             ImportMarinPopup.IsOpen =  false;
@@ -1693,8 +1693,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                     startR = bitmapImage.PixelWidth * startR / 100;
                 }
 
-                PoiParam.DatumArea.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
-                PoiParam.DatumArea.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
+                PoiParam.PoiConfig.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
+                PoiParam.PoiConfig.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
             }
             ImportMarinPopup1.IsOpen = false;
         }
@@ -1708,8 +1708,8 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (sender is Button button && button.Tag is PolygonPoint polygonPoint)
             {
-                PoiParam.DatumArea.Polygons.Remove(polygonPoint);
-                RenderDatumArea();
+                PoiParam.PoiConfig.Polygons.Remove(polygonPoint);
+                RenderPoiConfig();
             }
         }
 
@@ -1717,7 +1717,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             foreach (var item in DrawingVisualLists)
             {
-                item.BaseAttribute.Tag = PoiParam.DatumArea.DeafultValidateCIEId;
+                item.BaseAttribute.Tag = PoiParam.PoiConfig.DeafultValidateCIEId;
             }
         }
 
@@ -1731,19 +1731,19 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void ReadFile_Click(object sender, RoutedEventArgs e)
         {
-            if (File.Exists(PoiParam.DatumArea.PoiCIEFileName))
+            if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
                 ClearRender();
-                BuildPoiFileHandle.CovertPoiParam(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
+                BuildPoiFileHandle.CovertPoiParam(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                 PoiParamToDrawingVisual(PoiParam);
             }
         }
 
         public void SaveAsFile()
         {
-            if (File.Exists(PoiParam.DatumArea.PoiCIEFileName))
+            if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
-                BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
+                BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
             }
             else
             {
@@ -1755,8 +1755,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                     saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
                     if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
-                        PoiParam.DatumArea.PoiCIEFileName = saveFileDialog.FileName;
-                        BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.DatumArea.PoiCIEFileName);
+                        PoiParam.PoiConfig.PoiCIEFileName = saveFileDialog.FileName;
+                        BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                     }
                 }
             }

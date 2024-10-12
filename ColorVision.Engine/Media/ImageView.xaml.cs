@@ -1172,9 +1172,9 @@ namespace ColorVision.Engine.Media
 
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable, poiParams.DatumArea.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
+            int result = ConvertXYZ.CM_SetFilter(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
 
             poiParams.PoiPoints.Clear();
             foreach (var item in DrawingVisualLists)

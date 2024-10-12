@@ -101,35 +101,35 @@ namespace ColorVision.Engine.Services.Templates.POI
         }
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (PoiParam.DatumArea.IsUserDraw)
+            if (PoiParam.PoiConfig.IsUserDraw)
             {
-                if (PoiParam.DatumArea.IsAreaPolygon && ToolBarTop.DrawPolygon && DrawingPolygonCache != null) 
+                if (PoiParam.PoiConfig.IsAreaPolygon && ToolBarTop.DrawPolygon && DrawingPolygonCache != null) 
                 { 
                     ImageShow.RemoveVisual(DrawingPolygonCache);
-                    PoiParam.DatumArea.Polygons.Clear();
+                    PoiParam.PoiConfig.Polygons.Clear();
                     foreach (var item in DrawingPolygonCache.Attribute.Points)
                     {
-                        PoiParam.DatumArea.Polygons.Add(new PolygonPoint(item.X, item.Y));
+                        PoiParam.PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
                     }
                     DrawingPolygonCache = null;
-                    RenderDatumArea();
+                    RenderPoiConfig();
                 }
 
-                if (PoiParam.DatumArea.IsAreaMask && ToolBarTop.DrawPolygon)
+                if (PoiParam.PoiConfig.IsAreaMask && ToolBarTop.DrawPolygon)
                 {
                     ImageShow.RemoveVisual(DrawingPolygonCache);
                     if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count == 4)
                     {
-                        PoiParam.DatumArea.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
-                        PoiParam.DatumArea.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
-                        PoiParam.DatumArea.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
-                        PoiParam.DatumArea.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
-                        PoiParam.DatumArea.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
-                        PoiParam.DatumArea.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
-                        PoiParam.DatumArea.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
-                        PoiParam.DatumArea.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
+                        PoiParam.PoiConfig.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
+                        PoiParam.PoiConfig.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
+                        PoiParam.PoiConfig.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
+                        PoiParam.PoiConfig.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
+                        PoiParam.PoiConfig.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
+                        PoiParam.PoiConfig.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
+                        PoiParam.PoiConfig.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
+                        PoiParam.PoiConfig.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
 
-                        RenderDatumArea();
+                        RenderPoiConfig();
                     }
                     else
                     {
@@ -157,17 +157,17 @@ namespace ColorVision.Engine.Services.Templates.POI
                 drawCanvas.CaptureMouse();
 
 
-                Brush brush = PoiParam.DatumArea.IsUserDraw ? Brushes.Blue : Brushes.Red;
+                Brush brush = PoiParam.PoiConfig.IsUserDraw ? Brushes.Blue : Brushes.Red;
 
-                if (PoiParam.DatumArea.IsUserDraw)
+                if (PoiParam.PoiConfig.IsUserDraw)
                 {
-                    if (PoiParam.DatumArea.IsAreaCircle)
+                    if (PoiParam.PoiConfig.IsAreaCircle)
                         ToolBarTop.DrawCircle = true;
-                    if (PoiParam.DatumArea.IsAreaRect)
+                    if (PoiParam.PoiConfig.IsAreaRect)
                         ToolBarTop.DrawRect = true;
-                    if (PoiParam.DatumArea.IsAreaPolygon)
+                    if (PoiParam.PoiConfig.IsAreaPolygon)
                         ToolBarTop.DrawPolygon = true;
-                    if (PoiParam.DatumArea.IsAreaMask)
+                    if (PoiParam.PoiConfig.IsAreaMask)
                         ToolBarTop.DrawPolygon = true;
                 }
 
@@ -184,7 +184,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawCircleCache.Attribute.Id = No;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
-                    DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                    DrawCircleCache.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                     DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawCircleCache);
                 }
@@ -295,25 +295,25 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
 
-                if (PoiParam.DatumArea.IsUserDraw)
+                if (PoiParam.PoiConfig.IsUserDraw)
                 {
-                    if (PoiParam.DatumArea.IsAreaCircle && ToolBarTop.DrawCircle)
+                    if (PoiParam.PoiConfig.IsAreaCircle && ToolBarTop.DrawCircle)
                     {
-                        PoiParam.DatumArea.CenterX = (int)DrawCircleCache.Attribute.Center.X;
-                        PoiParam.DatumArea.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
-                        PoiParam.DatumArea.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
+                        PoiParam.PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
+                        PoiParam.PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
+                        PoiParam.PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
                         drawCanvas.RemoveVisual(DrawCircleCache);
                     }
 
-                    if (PoiParam.DatumArea.IsAreaRect && ToolBarTop.DrawRect)
+                    if (PoiParam.PoiConfig.IsAreaRect && ToolBarTop.DrawRect)
                     {
-                        PoiParam.DatumArea.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
-                        PoiParam.DatumArea.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
-                        PoiParam.DatumArea.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
-                        PoiParam.DatumArea.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
+                        PoiParam.PoiConfig.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
+                        PoiParam.PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
+                        PoiParam.PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
+                        PoiParam.PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
                         drawCanvas.RemoveVisual(DrawingRectangleCache);
                     }
-                    RenderDatumArea();
+                    RenderPoiConfig();
                 }
 
 
