@@ -15,15 +15,15 @@
 
         public async Task InitializeAsync()
         {
-            _messageUpdater.UpdateMessage("Debug Mode: " + SystemHelper.IsDebugMode());
-            _messageUpdater.UpdateMessage("OS Version: " + SystemHelper.GetOSVersion());
-            _messageUpdater.UpdateMessage(".NET Version: " + SystemHelper.GetDotNetVersion());
-            _messageUpdater.UpdateMessage("Application Version: " + SystemHelper.GetApplicationVersion());
-            _messageUpdater.UpdateMessage("User Name: " + SystemHelper.GetUserName());
-            _messageUpdater.UpdateMessage("Machine Name: " + SystemHelper.GetMachineName());
-            _messageUpdater.UpdateMessage("Memory Info: " + SystemHelper.GetMemoryInfo());
-            _messageUpdater.UpdateMessage("System Language: " + SystemHelper.GetSystemLanguage());
-            _messageUpdater.UpdateMessage("Screen Resolution: " + SystemHelper.GetScreenResolution());
+            _messageUpdater.Update("Debug Mode: " + SystemHelper.IsDebugMode());
+            _messageUpdater.Update("OS Version: " + SystemHelper.GetOSVersion());
+            _messageUpdater.Update(".NET Version: " + SystemHelper.GetDotNetVersion());
+            _messageUpdater.Update("Application Version: " + SystemHelper.GetApplicationVersion());
+            _messageUpdater.Update("User Name: " + SystemHelper.GetUserName());
+            _messageUpdater.Update("Machine Name: " + SystemHelper.GetMachineName());
+            _messageUpdater.Update("Memory Info: " + SystemHelper.GetMemoryInfo());
+            _messageUpdater.Update("System Language: " + SystemHelper.GetSystemLanguage());
+            _messageUpdater.Update("Screen Resolution: " + SystemHelper.GetScreenResolution());
             await Task.Delay(1);
 
         }

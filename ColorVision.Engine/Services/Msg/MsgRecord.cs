@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Core;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
@@ -9,7 +8,7 @@ namespace ColorVision.Engine.Services.Msg
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
     public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);
 
-    public class MsgRecord : ViewModelBase, IServiceConfig
+    public class MsgRecord : ViewModelBase
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
         public event MsgRecordSucessChangedHandler? MsgSucessed;

@@ -38,7 +38,7 @@ namespace ColorVision.UI.CUDA
             Config.IsCudaSupported = CheckCudaSupport();
             if (Config.IsCudaSupported)
             {
-                _messageUpdater.UpdateMessage("正在检测是否支持CUDA");
+                _messageUpdater.Update("正在检测是否支持CUDA");
 
                 Config.DeviceNames = new string[Config.DeviceCount];
                 Config.ComputeCapabilities = new (int Major, int Minor)[Config.DeviceCount];
@@ -64,17 +64,17 @@ namespace ColorVision.UI.CUDA
                 {
                     for (int i = 0; i < Config.DeviceCount; i++)
                     {
-                        _messageUpdater.UpdateMessage($"Device {i}:");
-                        _messageUpdater.UpdateMessage($"  Name: {Config.DeviceNames[i]}");
-                        _messageUpdater.UpdateMessage($"  Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
-                        _messageUpdater.UpdateMessage($"  Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
+                        _messageUpdater.Update($"Device {i}:");
+                        _messageUpdater.Update($"  Name: {Config.DeviceNames[i]}");
+                        _messageUpdater.Update($"  Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
+                        _messageUpdater.Update($"  Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
                     }
                     await Task.Delay(1);
                 }
             }
             else
             {
-                _messageUpdater.UpdateMessage("CUDA is either not supported or not enabled.");
+                _messageUpdater.Update("CUDA is either not supported or not enabled.");
             }
 
         }

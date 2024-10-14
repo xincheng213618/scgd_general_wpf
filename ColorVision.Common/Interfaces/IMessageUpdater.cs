@@ -2,6 +2,6 @@
 {
     public interface IMessageUpdater
     {
-        void UpdateMessage(string message);
+        void Update(string message);
     }
 }

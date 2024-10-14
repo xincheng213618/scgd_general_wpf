@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services
         {
             if (MySqlControl.GetInstance().IsConnect)
             {
-                _messageUpdater.UpdateMessage("正在加载物理相机");
+                _messageUpdater.Update("正在加载物理相机");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     PhyCameraManager.GetInstance();
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services
                 });
                 if (!ServicesConfig.Instance.IsDefaultOpenService)
                 {
-                    _messageUpdater.UpdateMessage("初始化服务");
+                    _messageUpdater.Update("初始化服务");
                     await Task.Delay(10);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
@@ -40,18 +40,18 @@ namespace ColorVision.Engine.Services
                 }
                 else
                 {
-                    _messageUpdater.UpdateMessage("自动配置服务中");
+                    _messageUpdater.Update("自动配置服务中");
                     await Task.Delay(10);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         ServiceManager.GetInstance().GenDeviceDisplayControl();
                     });
                 }
-                _messageUpdater.UpdateMessage("服务初始化完成");
+                _messageUpdater.Update("服务初始化完成");
             }
             else
             {
-                _messageUpdater.UpdateMessage("数据库连接失败，跳过服务配置");
+                _messageUpdater.Update("数据库连接失败，跳过服务配置");
             }
 
         }
