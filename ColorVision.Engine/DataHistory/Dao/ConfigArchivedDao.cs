@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
 
-namespace ColorVision.Engine.Services.DataHistory.Dao
+namespace ColorVision.Engine.DataHistory.Dao
 {
     public class ConfigArchivedModel : ViewModelBase, IPKModel
     {

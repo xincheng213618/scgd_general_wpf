@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.DataHistory.Dao
+namespace ColorVision.Engine.DataHistory.Dao
 {
 
 

@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Engine.Services.DataHistory.Dao
+namespace ColorVision.Engine.DataHistory.Dao
 {
     /// <summary>
     /// EditCalibration.xaml 的交互逻辑

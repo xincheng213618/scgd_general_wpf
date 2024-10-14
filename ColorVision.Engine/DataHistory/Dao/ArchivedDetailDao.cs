@@ -3,7 +3,7 @@
 using ColorVision.Engine.MySql.ORM;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.DataHistory.Dao
+namespace ColorVision.Engine.DataHistory.Dao
 {
     public class ArchivedDetailModel : PKModel
     {

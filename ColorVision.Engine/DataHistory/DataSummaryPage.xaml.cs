@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.DataHistory.Dao
+namespace ColorVision.Engine.DataHistory.Dao
 {
     public enum ArchiveStatus
     {
