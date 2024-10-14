@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {
-    public class FocusPointsParam : ParamBase
+    public class FocusPointsParam : ParamModBase
     {
         public FocusPointsParam() { }
 

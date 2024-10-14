@@ -9,7 +9,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
 {
 
-    public class LEDStripDetectionParam : ParamBase
+    public class LEDStripDetectionParam : ParamModBase
     {
 
         public LEDStripDetectionParam()

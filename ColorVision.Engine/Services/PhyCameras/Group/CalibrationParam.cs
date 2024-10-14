@@ -219,9 +219,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
 
-    public class CalibrationParam : ParamBase
+    public class CalibrationParam : ParamModBase
     {
-        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamBase, new()
+        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamModBase, new()
         {
             if (!MySqlSetting.IsConnect)
                 return;

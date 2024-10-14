@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 {
-    public class PoiOutputParam : ParamBase
+    public class PoiOutputParam : ParamModBase
     {
 
         public static void SetFile(object target, string propertyName)

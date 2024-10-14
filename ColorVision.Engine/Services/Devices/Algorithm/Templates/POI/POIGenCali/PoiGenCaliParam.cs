@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
-    public class PoiGenCaliParam : ParamBase
+    public class PoiGenCaliParam : ParamModBase
     {
 
         public PoiGenCaliParam()

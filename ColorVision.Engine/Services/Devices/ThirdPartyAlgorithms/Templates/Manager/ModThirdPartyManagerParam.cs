@@ -3,7 +3,7 @@ using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {
-    public class ModThirdPartyManagerParam : ParamBase
+    public class ModThirdPartyManagerParam : ParamModBase
     {
 
         public ModThirdPartyManagerParam()

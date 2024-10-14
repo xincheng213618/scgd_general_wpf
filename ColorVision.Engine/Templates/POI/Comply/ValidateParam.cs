@@ -6,7 +6,7 @@ using System.Collections.ObjectModel;
 namespace ColorVision.Engine.Templates.POI.Comply
 {
 
-    public class ValidateParam : ParamBase
+    public class ValidateParam : ParamModBase
     {
         public ValidateParam()
         {

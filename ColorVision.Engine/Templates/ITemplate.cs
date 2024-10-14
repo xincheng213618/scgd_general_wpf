@@ -135,9 +135,7 @@ namespace ColorVision.Engine.Templates
         }
     }
 
-
-
-    public class ITemplate<T> : ITemplate where T : ParamBase, new()
+    public class ITemplate<T> : ITemplate where T : ParamModBase, new()
     {
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 

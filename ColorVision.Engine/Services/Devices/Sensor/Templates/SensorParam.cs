@@ -118,7 +118,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
 
 
-    public class SensorParam:ParamBase
+    public class SensorParam:ParamModBase
     {
         public SensorParam() : base()
         {

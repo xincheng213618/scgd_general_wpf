@@ -29,8 +29,7 @@ namespace ColorVision.Engine.Templates
         }
     }
 
-
-    public class TemplateModel<T> : TemplateBase where T : ParamBase
+    public class TemplateModel<T> : TemplateBase where T : ParamModBase
     {
         public RelayCommand ReNameCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }

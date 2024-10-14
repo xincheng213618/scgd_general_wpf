@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Templates.POI
     /// <summary>
     /// 关注点模板
     /// </summary>
-    public class PoiParam : ParamBase
+    public class PoiParam : ParamModBase
     {
         public static void Save2DB(PoiParam poiParam)
         {

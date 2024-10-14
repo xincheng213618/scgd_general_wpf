@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
         }
     }
 
-    public class PGParam : ParamBase
+    public class PGParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<PGParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PGParam>>();
 

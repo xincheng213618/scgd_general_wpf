@@ -8,22 +8,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ParamBase : ModelBase
+    public class ParamModBase : ModelBase
     {
         public event EventHandler IsEnabledChanged;
-
-        [Category("设置"), DisplayName("是否启用模板"), Browsable(false)]
-        public bool IsEnable
-        {
-            get => _IsEnable; set
-            {
-                if (IsEnable == value) return;
-                _IsEnable = value;
-                if (value == true) IsEnabledChanged?.Invoke(this, new EventArgs());
-                NotifyPropertyChanged();
-            }
-        }
-        private bool _IsEnable;
 
         [Browsable(false)]
         public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
@@ -38,11 +25,12 @@ namespace ColorVision.Engine.Templates
 
         [Browsable(false)]
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
-        public ParamBase() : base(new List<ModDetailModel>())
+        public ParamModBase() : base(new List<ModDetailModel>())
         {
+
         }
 
-        public ParamBase(int id, string name, List<ModDetailModel> detail) : base(detail)
+        public ParamModBase(int id, string name, List<ModDetailModel> detail) : base(detail)
         {
             Id = id;
             Name = name;
@@ -52,7 +40,7 @@ namespace ColorVision.Engine.Templates
         [Browsable(false)]
         public ModMasterModel ModMaster { get; set; }
 
-        public ParamBase(ModMasterModel modMaster, List<ModDetailModel> detail) : base(detail)
+        public ParamModBase(ModMasterModel modMaster, List<ModDetailModel> detail) : base(detail)
         {
             Id = modMaster.Id;
             Name = modMaster.Name ?? string.Empty;

@@ -7,7 +7,7 @@
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
-        Title="视图配置" Height="450" Width="400" Initialized="Window_Initialized">
+        Title="编辑模板设置" Height="450" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -22,13 +22,9 @@
             <StackPanel x:Name="StackPanelContent" Margin="5">
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="10,5">
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="自动刷新数据"  MinWidth="120"  />
-                            <ui:ToggleSwitch IsChecked="{Binding  AutoRefreshView}"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5" >
-                            <TextBlock Text="数据库配置" Width="120"/>
-                            <Button Click="Mysql_Reset_Click" Content="重置"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Click="Mysql_Reset_Click"  Content="重置"/>
+                            <TextBlock Text="数据库配置(如果出现无法配置的情况)" />
                         </DockPanel>
                     </StackPanel>
                 </Border>

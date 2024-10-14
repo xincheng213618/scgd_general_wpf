@@ -5,7 +5,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
-    public class FOVParam : ParamBase
+    public class FOVParam : ParamModBase
     {
 
         public FOVParam() { }

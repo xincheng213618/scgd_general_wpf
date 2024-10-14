@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
     }
 
-    public class SMUParam : ParamBase
+    public class SMUParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<SMUParam>> Params { get; set; } = new ObservableCollection<TemplateModel<SMUParam>>();
 

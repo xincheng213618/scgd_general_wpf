@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// 流程引擎模板
     /// </summary>
-    public class FlowParam : ParamBase
+    public class FlowParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 

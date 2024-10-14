@@ -9,7 +9,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
 
-    public class ModThirdPartyParam : ParamBase
+    public class ModThirdPartyParam : ParamModBase
     {
 
         public RelayCommand ResetCommand { get; set; }

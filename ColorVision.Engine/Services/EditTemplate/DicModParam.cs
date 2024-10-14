@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
 
 
-    public class DicModParam : ParamBase
+    public class DicModParam : ParamModBase
     {
 
         public SysDictionaryModModel modMasterModel { get; set; }

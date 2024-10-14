@@ -5,7 +5,7 @@ using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Aoi
 {
-    public class AOIParam : ParamBase
+    public class AOIParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<AOIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<AOIParam>>();
 

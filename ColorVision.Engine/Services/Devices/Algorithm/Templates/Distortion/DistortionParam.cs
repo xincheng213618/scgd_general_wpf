@@ -5,7 +5,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 {
-    public class DistortionParam : ParamBase
+    public class DistortionParam : ParamModBase
     {
 
         public DistortionParam() { }

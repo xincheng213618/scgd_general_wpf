@@ -43,9 +43,9 @@ namespace ColorVision.Engine.Templates
         }
 
 
-        public ParamBase Param { get; set; }
+        public ParamModBase Param { get; set; }
 
-        public void SetParam(ParamBase param)
+        public void SetParam(ParamModBase param)
         {
             Param = param;
             this.DataContext = Param;

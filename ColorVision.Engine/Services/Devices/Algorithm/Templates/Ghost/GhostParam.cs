@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
 {
 
-    public class GhostParam : ParamBase
+    public class GhostParam : ParamModBase
     {
 
         public GhostParam() { }

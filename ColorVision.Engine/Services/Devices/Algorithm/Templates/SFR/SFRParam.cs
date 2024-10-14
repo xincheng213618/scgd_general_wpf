@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
 
-    public class SFRParam : ParamBase
+    public class SFRParam : ParamModBase
     {
         public SFRParam()
         {

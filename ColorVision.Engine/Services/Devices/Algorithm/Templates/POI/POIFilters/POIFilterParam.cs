@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
-    public class PoiFilterParam : ParamBase
+    public class PoiFilterParam : ParamModBase
     {
         public PoiFilterParam()
         {
