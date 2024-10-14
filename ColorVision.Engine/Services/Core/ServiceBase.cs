@@ -2,21 +2,21 @@
 
 namespace ColorVision.Engine.Services.Core
 {
-    public class BaseFileResource : BaseResource
+    public class ServiceFileBase : ServiceBase
     {
-        public BaseFileResource(SysResourceModel sysResourceModel):base(sysResourceModel)
+        public ServiceFileBase(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             FilePath = sysResourceModel.Value;
         }
         public string? FilePath { get; set; }
     }
 
-    public class BaseResource : BaseResourceObject
+    public class ServiceBase : ServiceObjectBase
     {
         public SysResourceModel SysResourceModel { get; set; }
         public int Id { get => SysResourceModel.Id; }
 
-        public BaseResource(SysResourceModel sysResourceModel)
+        public ServiceBase(SysResourceModel sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? string.Empty;

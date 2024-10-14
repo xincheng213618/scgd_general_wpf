@@ -19,7 +19,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices
 {
-    public abstract class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
+    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -159,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
 
 
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
 
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;

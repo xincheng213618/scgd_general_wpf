@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             ComboBoxList.ItemsSource = BaseResources;
 
         }
-        public ObservableCollection<BaseResource> BaseResources { get; set; } = new ObservableCollection<BaseResource>();
+        public ObservableCollection<ServiceBase> BaseResources { get; set; } = new ObservableCollection<ServiceBase>();
 
         public void Initializedsss(DeviceSpectrum deviceSpectrum, SpectrumResourceParam spectrumResourceParam)
         {
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             BaseResources.Clear();
             foreach (var item in deviceSpectrum.VisualChildren)
             {
-                if (item is BaseResource baseResources)
+                if (item is ServiceBase baseResources)
                 {
                     BaseResources.Add(baseResources);
                 }
@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 SpectrumResourceParam.IsSelected = false;
 
-                if (comboBox.SelectedValue is BaseResource baseResource)
+                if (comboBox.SelectedValue is ServiceBase baseResource)
                 {
                     SpectrumResourceParam.ResourceName = baseResource.Name;
                     SpectrumResourceParam.ResourceId = baseResource.Id;

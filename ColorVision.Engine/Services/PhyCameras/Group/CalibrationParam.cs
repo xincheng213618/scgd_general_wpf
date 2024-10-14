@@ -162,7 +162,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
-        public TemplateCalibrationParam(ICalibrationService<BaseResourceObject> device)
+        public TemplateCalibrationParam(ICalibrationService<ServiceObjectBase> device)
         {
             if (device.CalibrationParams.Count > 0)
             {
@@ -195,7 +195,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
         }
 
-        public ICalibrationService<BaseResourceObject> Device { get; set; }
+        public ICalibrationService<ServiceObjectBase> Device { get; set; }
 
 
         public override void Load()

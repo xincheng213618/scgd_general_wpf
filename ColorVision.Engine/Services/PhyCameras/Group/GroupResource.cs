@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private double _ImgBpp;
     }
 
-    public class GroupResource : BaseFileResource, IEditable
+    public class GroupResource : ServiceFileBase, IEditable
     {
         public static void LoadgroupResource(GroupResource groupResource)
         {
@@ -87,14 +87,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 }
                 else
                 {
-                    BaseResource calibrationResource = new(sysResourceModel);
+                    ServiceBase calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }
             groupResource.SetCalibrationResource();
         }
 
-        public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService, string Name)
+        public static GroupResource? AddGroupResource(ICalibrationService<ServiceObjectBase> deviceService, string Name)
         {
             SysResourceModel sysResourceModel = new() { Name = Name, Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
             ContextMenu.Items.Add( new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });

@@ -16,7 +16,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Terminal
 {
-    public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
+    public class TerminalServiceBase : ServiceObjectBase, ITreeViewItem
     {
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded = true;
@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.Terminal
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
             Config.Code = Code;
             Config.Name = Name;

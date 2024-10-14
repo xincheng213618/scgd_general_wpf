@@ -6,19 +6,19 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Core
 {
-    public class BaseResourceObject : ViewModelBase
+    public class ServiceObjectBase : ViewModelBase
     {
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
 
-        public ObservableCollection<BaseResourceObject> VisualChildren { get; set; }
-        public BaseResourceObject()
+        public ObservableCollection<ServiceObjectBase> VisualChildren { get; set; }
+        public ServiceObjectBase()
         {
-            VisualChildren = new ObservableCollection<BaseResourceObject>();
+            VisualChildren = new ObservableCollection<ServiceObjectBase>();
             SaveCommand = new RelayCommand(a => Save());
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
         }
-        public BaseResourceObject Parent
+        public ServiceObjectBase Parent
         {
             get { return _Parent; }
             set
@@ -27,15 +27,15 @@ namespace ColorVision.Engine.Services.Core
                 NotifyPropertyChanged();
             }
         }
-        private BaseResourceObject _Parent;
+        private ServiceObjectBase _Parent;
 
-        public virtual void AddChild(BaseResourceObject baseObject)
+        public virtual void AddChild(ServiceObjectBase baseObject)
         {
             if (baseObject == null) return;
             baseObject.Parent = this;
             VisualChildren.SortedAdd(baseObject);
         }
-        public virtual void RemoveChild(BaseResourceObject baseObject)
+        public virtual void RemoveChild(ServiceObjectBase baseObject)
         {
             if (baseObject == null) return;
             baseObject.Parent = null;

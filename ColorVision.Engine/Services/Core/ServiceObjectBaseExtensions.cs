@@ -6,12 +6,12 @@ using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Core
 {
-    public static class BaseResourceObjectExtensions
+    public static class ServiceObjectBaseExtensions
     {
         /// <summary>
         /// 得到指定数据类型的祖先节点。
         /// </summary>
-        public static T? GetAncestor<T>(this BaseResourceObject This) where T : BaseResourceObject
+        public static T? GetAncestor<T>(this ServiceObjectBase This) where T : ServiceObjectBase
         {
             if (This is T t)
                 return t;
@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Core
         }
 
 
-        public static bool ExistsDevice<T>(this T This,string Code) where T : BaseResourceObject
+        public static bool ExistsDevice<T>(this T This,string Code) where T : ServiceObjectBase
         {
             foreach (var item in This.VisualChildren)
             {
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Core
             return false;
         }
 
-        public static string NewCreateFileName<T>(this T t ,string FileName) where T : BaseResourceObject
+        public static string NewCreateFileName<T>(this T t ,string FileName) where T : ServiceObjectBase
         {
             if (!t.ExistsDevice(FileName))
                 return FileName;

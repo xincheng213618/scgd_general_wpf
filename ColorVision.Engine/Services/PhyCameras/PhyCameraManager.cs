@@ -239,7 +239,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         phyCamera.AddChild(calibrationResource);
                         break;
                     default:
-                        var baseFileResource = new BaseFileResource(sysResourceModel);
+                        var baseFileResource = new ServiceFileBase(sysResourceModel);
                         phyCamera.AddChild(baseFileResource);
                         break;
                 }
@@ -263,7 +263,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         groupResource.AddChild(calibrationResource);
                         break;
                     default:
-                        var baseResource = new BaseResource(sysResourceModel);
+                        var baseResource = new ServiceBase(sysResourceModel);
                         groupResource.AddChild(baseResource);
                         break;
                 }

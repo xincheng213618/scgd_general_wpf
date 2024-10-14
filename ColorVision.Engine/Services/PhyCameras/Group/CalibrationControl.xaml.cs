@@ -32,9 +32,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value;} }
         private CalibrationParam _CalibrationParam;
 
-        public ICalibrationService<BaseResourceObject> CalibrationService { get; set; }
+        public ICalibrationService<ServiceObjectBase> CalibrationService { get; set; }
 
-        public CalibrationControl(ICalibrationService<BaseResourceObject> calibrationService)
+        public CalibrationControl(ICalibrationService<ServiceObjectBase> calibrationService)
         {
             CalibrationService = calibrationService;
 
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public Dictionary<string, List<ZipCalibrationItem>> CalibrationModeList { get; set; }
 
-        public CalibrationControl(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
+        public CalibrationControl(ICalibrationService<ServiceObjectBase> calibrationService, CalibrationParam calibrationParam)
         {
             CalibrationService = calibrationService;
             InitializeComponent();
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
         TempCache TempCache { get; set; } = new TempCache();
 
-        public void Initializedsss(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
+        public void Initializedsss(ICalibrationService<ServiceObjectBase> calibrationService, CalibrationParam calibrationParam)
         {
 
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;

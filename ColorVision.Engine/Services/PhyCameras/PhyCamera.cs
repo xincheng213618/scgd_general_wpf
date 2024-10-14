@@ -33,7 +33,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-    public class PhyCamera : BaseResource,ITreeViewItem, IUploadMsg, ICalibrationService<BaseResourceObject>, IIcon
+    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, ICalibrationService<ServiceObjectBase>, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             this.SetIconResource("DrawingImageCamera");
             
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
             {

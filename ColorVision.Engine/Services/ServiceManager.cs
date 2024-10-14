@@ -322,7 +322,7 @@ namespace ColorVision.Engine.Services
                     }
                     else
                     {
-                        BaseFileResource calibrationResource = new(sysResourceModel);
+                        ServiceFileBase calibrationResource = new(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                 }
@@ -354,7 +354,7 @@ namespace ColorVision.Engine.Services
                 }
                 else
                 {
-                    BaseResource calibrationResource = new(sysResourceModel);
+                    ServiceBase calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }

@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             SysResourceDao.Instance.Save(sysResourceModel);
             if (sysResourceModel != null)
             {
-                BaseFileResource calibrationResource = new(sysResourceModel);
+                ServiceFileBase calibrationResource = new(sysResourceModel);
                 AddChild(calibrationResource);
             }
 
