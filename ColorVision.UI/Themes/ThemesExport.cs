@@ -2,9 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using System;
 using System.Globalization;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

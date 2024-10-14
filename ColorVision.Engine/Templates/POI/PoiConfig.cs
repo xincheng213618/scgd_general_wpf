@@ -6,7 +6,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI

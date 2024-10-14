@@ -4,7 +4,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Shell;
 
 namespace ColorVision.Update.Export
 {

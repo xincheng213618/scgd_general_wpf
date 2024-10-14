@@ -1,15 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
-using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
-using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
-using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 

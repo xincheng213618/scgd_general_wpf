@@ -2,9 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {

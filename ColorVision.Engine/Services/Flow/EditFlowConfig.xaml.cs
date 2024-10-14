@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

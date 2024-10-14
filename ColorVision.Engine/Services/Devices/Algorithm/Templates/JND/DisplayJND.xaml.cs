@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
-using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;

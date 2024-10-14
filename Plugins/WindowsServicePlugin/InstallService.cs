@@ -2,7 +2,6 @@
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using System.Diagnostics;
 using System.IO;
 using System.Windows;
 

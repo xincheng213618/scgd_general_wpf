@@ -17,7 +17,6 @@ using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using Quartz;
-using ScottPlot.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

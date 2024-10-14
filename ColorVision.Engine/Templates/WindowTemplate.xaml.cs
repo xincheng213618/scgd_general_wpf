@@ -1,5 +1,10 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Themes;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -8,14 +13,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Themes;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Themes.Controls;
-using MySql.Data.MySqlClient;
-using ColorVision.Engine.MySql;
-using MySqlConnector;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Engine.Templates
 {
@@ -356,7 +353,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ITemplate.GetMysqlCommand() is IMysqlCommand mysqlCommand)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(T)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{mysqlCommand.GetMysqlCommandName()}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
                 }

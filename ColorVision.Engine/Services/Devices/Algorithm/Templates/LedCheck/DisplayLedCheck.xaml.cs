@@ -6,7 +6,6 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 {

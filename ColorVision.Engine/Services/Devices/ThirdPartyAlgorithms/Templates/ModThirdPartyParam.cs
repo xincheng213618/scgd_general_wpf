@@ -1,9 +1,6 @@
 ﻿
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System;
 using ColorVision.UI.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;

@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Comply;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 

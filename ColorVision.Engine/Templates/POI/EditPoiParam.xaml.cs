@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Collections;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
@@ -24,7 +23,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;

@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using MQTTMessageLib.Algorithm;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm

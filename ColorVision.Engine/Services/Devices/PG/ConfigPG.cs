@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Services.Core;
-
-namespace ColorVision.Engine.Services.Devices.PG
+﻿namespace ColorVision.Engine.Services.Devices.PG
 {
     public class ConfigPG : DeviceServiceConfig
     {

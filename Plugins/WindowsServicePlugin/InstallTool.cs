@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using Mysqlx.Prepare;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -11,7 +10,7 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class CVWinSMSConfig : IConfig
+    public class CVWinSMSConfig : IConfig   
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 

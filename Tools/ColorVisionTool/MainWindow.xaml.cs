@@ -1,15 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using CsharpDEMO;
-using cvColorVision;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-using StructTestN;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

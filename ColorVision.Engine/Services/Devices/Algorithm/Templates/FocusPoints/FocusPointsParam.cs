@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {

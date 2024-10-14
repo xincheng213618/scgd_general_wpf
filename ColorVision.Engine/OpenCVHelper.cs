@@ -1,12 +1,7 @@
 ﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
-using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using System;
-using System.Drawing;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 

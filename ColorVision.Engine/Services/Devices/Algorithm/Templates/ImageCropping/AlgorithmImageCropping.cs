@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;

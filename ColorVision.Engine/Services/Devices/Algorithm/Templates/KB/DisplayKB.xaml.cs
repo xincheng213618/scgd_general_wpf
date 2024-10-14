@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+﻿using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using MQTTMessageLib.FileServer;
@@ -11,7 +9,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
 {

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
 
 namespace ColorVision.UI
 {

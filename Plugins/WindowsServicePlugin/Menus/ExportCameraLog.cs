@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using WindowsServicePlugin.Properties;
+﻿using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.Menus
 {

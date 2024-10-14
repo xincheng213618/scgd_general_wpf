@@ -2,10 +2,8 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
-using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
 {

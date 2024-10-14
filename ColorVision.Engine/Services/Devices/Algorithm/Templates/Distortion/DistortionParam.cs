@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion

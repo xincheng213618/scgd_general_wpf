@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace ColorVision.RecentFile
+﻿namespace ColorVision.RecentFile
 {
     public class RecentFileList
     {
