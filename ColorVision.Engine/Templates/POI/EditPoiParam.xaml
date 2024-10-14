@@ -100,7 +100,6 @@
                         <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding PoiConfig.IsPoiCIEFile}"/>
                     </DockPanel>
                     <DockPanel Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
-                        
                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" >
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding PoiConfig.OpenPoiCIEFileCommand}"/>
                             <TextBlock Text="&#xED25;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -109,6 +108,10 @@
                         <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SetPoiFileCommand}" Margin="2,0" />
                         <TextBox Margin="2,0" BorderThickness="1" Text="{Binding PoiConfig.PoiCIEFileName}"/>
                     </DockPanel>
+                    <StackPanel Margin="2"  Orientation="Horizontal" Visibility="{Binding  PoiConfig.IsPoiCIEFile,Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock Text="半径:" Width="40"/>
+                        <TextBox Text="{Binding PoiConfig.Thickness}"  Width="55"  />
+                    </StackPanel>
                     <StackPanel  Margin="2" Orientation="Horizontal">
                         <Button  ToolTip="保存关注点" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
                             <Image Source="{StaticResource DrawingImageSave}" Height="20" />

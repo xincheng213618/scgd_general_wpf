@@ -4,7 +4,7 @@
 
 #include <opencv2/opencv.hpp>
 
-int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount);
+int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 
 /// <summary>
 /// Î±²ÊÉ«

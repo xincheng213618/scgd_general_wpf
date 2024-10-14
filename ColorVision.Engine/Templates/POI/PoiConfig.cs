@@ -230,6 +230,9 @@ namespace ColorVision.Engine.Templates.POI
         public string PoiCIEFileName { get => _PoiCIEFileName; set { _PoiCIEFileName = value; NotifyPropertyChanged(); } }
         private string _PoiCIEFileName;
 
+        public int Thickness { get => _Thickness; set { _Thickness = value; NotifyPropertyChanged(); } }
+        private int _Thickness = 1;
+
         public void OpenPoiCIEFile()
         {
             if (File.Exists(PoiCIEFileName))

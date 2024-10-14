@@ -868,7 +868,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
                                     hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -885,7 +885,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
                                     hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -1032,7 +1032,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     log.Info("正在绘制BitmapImage图像");
 
                                     hImage = bitmapSource.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (ret == 0)
@@ -1050,7 +1050,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 {
                                     log.Info("正在绘制WriteableBitmap图像");
                                     hImage = writeable.ToHImage();
-                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length);
+                                    int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length , PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         if (!HImageExtension.UpdateWriteableBitmap(ImageShow.Source, hImageProcessed))
