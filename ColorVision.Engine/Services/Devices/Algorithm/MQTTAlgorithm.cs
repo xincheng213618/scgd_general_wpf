@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;

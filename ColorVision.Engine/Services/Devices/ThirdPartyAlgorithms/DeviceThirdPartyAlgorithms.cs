@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;

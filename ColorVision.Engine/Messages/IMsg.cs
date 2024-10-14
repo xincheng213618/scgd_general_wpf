@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Engine.Services.Msg
+﻿namespace ColorVision.Engine.Messages
 {
     public delegate void MsgReturnHandler(MsgReturn msg);
 

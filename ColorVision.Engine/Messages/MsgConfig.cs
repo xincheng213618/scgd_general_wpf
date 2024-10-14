@@ -5,7 +5,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Msg
+namespace ColorVision.Engine.Messages
 {
     public class MsgConfig : ViewModelBase,IConfig
     {

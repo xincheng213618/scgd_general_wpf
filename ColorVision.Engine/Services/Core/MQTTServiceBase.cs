@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;

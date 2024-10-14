@@ -11,7 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.Msg
+namespace ColorVision.Engine.Messages
 {
     public class ExportMsgList : MenuItemBase
     {

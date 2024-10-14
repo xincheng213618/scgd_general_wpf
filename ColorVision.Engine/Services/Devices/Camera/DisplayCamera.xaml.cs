@@ -4,7 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;

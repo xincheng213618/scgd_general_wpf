@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using CVCommCore;
 using System.Collections.Generic;
 using System.Windows;

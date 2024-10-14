@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System.Collections.Generic;

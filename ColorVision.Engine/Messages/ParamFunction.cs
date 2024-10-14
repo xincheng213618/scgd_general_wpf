@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ColorVision.Engine.Services.Msg
+namespace ColorVision.Engine.Messages
 {
     public class ParamFunction
     {

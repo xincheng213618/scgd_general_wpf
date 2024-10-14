@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Themes.Controls;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;

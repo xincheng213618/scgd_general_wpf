@@ -2,7 +2,7 @@
 using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.Engine.Draw.Ruler;

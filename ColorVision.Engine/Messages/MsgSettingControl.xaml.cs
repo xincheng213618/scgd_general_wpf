@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Msg
+namespace ColorVision.Engine.Messages
 {
     public class MQTTMsgProvider : IConfigSettingProvider
     {

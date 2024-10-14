@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;

@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Msg
+namespace ColorVision.Engine.Messages
 {
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
     public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);

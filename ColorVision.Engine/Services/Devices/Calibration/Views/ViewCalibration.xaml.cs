@@ -4,7 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
