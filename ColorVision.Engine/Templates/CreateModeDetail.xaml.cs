@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

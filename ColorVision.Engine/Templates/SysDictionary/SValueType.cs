@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1720
-namespace ColorVision.Engine.Services.SysDictionary
+namespace ColorVision.Engine.Templates.SysDictionary
 {
     public enum SValueType
     {

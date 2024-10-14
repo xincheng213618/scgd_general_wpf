@@ -19,7 +19,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;

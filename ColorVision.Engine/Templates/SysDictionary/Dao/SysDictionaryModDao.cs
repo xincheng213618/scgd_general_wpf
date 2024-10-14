@@ -3,7 +3,7 @@ using ColorVision.Engine.MySql.ORM;
 using System;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.SysDictionary
+namespace ColorVision.Engine.Templates.SysDictionary
 {
     public class SysDictionaryModModel : ViewModelBase,IPKModel
     {

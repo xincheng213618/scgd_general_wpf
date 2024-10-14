@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Engine.Services.SysDictionary
+namespace ColorVision.Engine.Templates.SysDictionary
 {
     public class SysDictionaryModDetaiModel : VPKModel
     {

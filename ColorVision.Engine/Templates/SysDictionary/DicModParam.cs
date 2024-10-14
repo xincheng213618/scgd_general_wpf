@@ -13,7 +13,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.SysDictionary
+namespace ColorVision.Engine.Templates.SysDictionary
 {
 
 
