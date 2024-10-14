@@ -8,11 +8,11 @@ namespace ColorVision.Engine.Templates
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑
     /// </summary>
-    public partial class CreateTemplate : Window
+    public partial class TemplateCreate : Window
     {
         public ITemplate ITemplate { get; set; }
 
-        public CreateTemplate(ITemplate template,bool IsImport =false)  
+        public TemplateCreate(ITemplate template,bool IsImport =false)  
         {
             ITemplate = template;
             InitializeComponent();

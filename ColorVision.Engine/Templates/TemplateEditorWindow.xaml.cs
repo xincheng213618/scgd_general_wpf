@@ -280,7 +280,7 @@ namespace ColorVision.Engine.Templates
             if (ITemplate.Import())
             {
                 int oldnum = ITemplate.Count;
-                CreateTemplate createWindow = new CreateTemplate(ITemplate, true) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                TemplateCreate createWindow = new TemplateCreate(ITemplate, true) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 createWindow.ShowDialog();
                 if (oldnum != ITemplate.Count)
                 {

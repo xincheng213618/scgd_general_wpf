@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Templates
 
         public virtual void OpenCreate()
         {
-            CreateTemplate createWindow = new CreateTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            TemplateCreate createWindow = new TemplateCreate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
         }
 
