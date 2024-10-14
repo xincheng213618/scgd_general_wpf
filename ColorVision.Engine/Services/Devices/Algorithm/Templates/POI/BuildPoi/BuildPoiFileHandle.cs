@@ -144,7 +144,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                             BitmapImage bitmapImage = new BitmapImage(new Uri(result.FilePath));
                             hImage = bitmapImage.ToHImage();
                         }
-                        int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length);
+                        int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, pointinfo.HeaderInfo.Height, ints, ints.Length,1);
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
