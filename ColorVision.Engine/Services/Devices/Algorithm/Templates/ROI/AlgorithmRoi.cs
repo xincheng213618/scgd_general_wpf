@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateRoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateRoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()

@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Templates.POI
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {
             var Template = new TemplateComplyParam("Comply.CIE.AVG");
-            new WindowTemplate(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
         /// <summary>

@@ -24,9 +24,9 @@ namespace ColorVision.Engine.Templates
             List<string> list =
             [
                 ITemplate.NewCreateFileName(ITemplate.Code),
-                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateWindowSetting.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateWindowSetting.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(TemplateWindowSetting.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateSetting.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateSetting.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(TemplateSetting.Instance.DefaultCreateTemplateName),
             ];
 
             CreateCode.ItemsSource = list;

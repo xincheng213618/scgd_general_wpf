@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
         }
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

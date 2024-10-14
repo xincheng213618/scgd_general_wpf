@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 return;
             }
             TemplateThirdPartyManager.Params.Clear();
-            new WindowTemplate(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UploadMsgManager UploadMsgManager { get; set; } = new UploadMsgManager();

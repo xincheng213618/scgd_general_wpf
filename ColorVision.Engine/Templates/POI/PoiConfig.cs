@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.POI
             ValidateCIECommand = new RelayCommand(a =>
             {
                 var Template = new TemplateComplyParam("Comply.CIE");
-                new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                new TemplateEditorWindow(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             });
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());

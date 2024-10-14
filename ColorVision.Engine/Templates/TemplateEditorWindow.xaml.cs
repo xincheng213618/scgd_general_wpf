@@ -1,10 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -16,26 +12,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
-    public class TemplateWindowSetting : ViewModelBase, IConfig
-    {
-        public static TemplateWindowSetting Instance => ConfigService.Instance.GetRequiredService<TemplateWindowSetting>();
-
-        public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
-        private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-    }
-
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowTemplate : Window 
+    public partial class TemplateEditorWindow : Window 
     {
         public ITemplate ITemplate { get; set; }
 
         public int DefaultIndex { get; set; }
 
-        public WindowTemplate(ITemplate template,int defaultIndex = 0)
+        public TemplateEditorWindow(ITemplate template,int defaultIndex = 0)
         {
             ITemplate = template;
             DefaultIndex = defaultIndex < 0 ? -1: defaultIndex;
@@ -44,7 +30,7 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        public static TemplateWindowSetting Config => TemplateWindowSetting.Instance;
+        public static TemplateSetting Config => TemplateSetting.Instance;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -96,14 +82,14 @@ namespace ColorVision.Engine.Templates
             {
                 if (e.Key == Key.F2)
                 {
-                    if (ListView1.SelectedIndex >-1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    if (ListView1.SelectedIndex >-1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
                     {
                         templateModelBase.IsEditMode = true;
                     }
                 }
                 if (e.Key == Key.Enter)
                 {
-                    if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
                     {
                         templateModelBase.IsEditMode = false;
                     }
@@ -143,7 +129,7 @@ namespace ColorVision.Engine.Templates
                             }
                             else if (columnName == Properties.Resources.Choice)
                             {
-                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
+                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateBase>())
                                 {
                                     modebase.IsSelected = item.IsSortD;
                                 }
@@ -182,8 +168,6 @@ namespace ColorVision.Engine.Templates
             }
 
         }
-        private MeasureMasterDao measureMaster = new();
-        private MeasureDetailDao measureDetail = new();
 
         private int LastSelectedIndex = -1;
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -192,7 +176,7 @@ namespace ColorVision.Engine.Templates
             {
                 if (LastSelectedIndex >= 0 && LastSelectedIndex< listView.Items.Count)
                 {
-                    if (ITemplate.GetValue(LastSelectedIndex) is TemplateModelBase templateModelBase)
+                    if (ITemplate.GetValue(LastSelectedIndex) is TemplateBase templateModelBase)
                     {
                         templateModelBase.IsEditMode = false;
                     }
@@ -259,7 +243,7 @@ namespace ColorVision.Engine.Templates
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
-            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            if (sender is TextBox textBox && textBox.Tag is TemplateBase templateModelBase)
             {
                 templateModelBase.IsEditMode = false;
             }
@@ -273,7 +257,7 @@ namespace ColorVision.Engine.Templates
 
         private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
+            if (sender is TextBox textBox && textBox.Tag is TemplateBase templateModelBase)
             {
                 templateModelBase.IsEditMode = true;
             }
@@ -308,9 +292,6 @@ namespace ColorVision.Engine.Templates
             }
         }
        
-
-
-
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -324,7 +305,7 @@ namespace ColorVision.Engine.Templates
                 else
                 {
 
-                    var filteredResults = FilterHelper.FilterByKeywords<TemplateModelBase>(ITemplate.ItemsSource, textBox.Text);
+                    var filteredResults = FilterHelper.FilterByKeywords<TemplateBase>(ITemplate.ItemsSource, textBox.Text);
                     // 更新 ListView 的数据源
                     ListView1.ItemsSource = filteredResults;
 
@@ -337,35 +318,17 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
-
-
-
-
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Control button && button.Tag is TemplateModelBase templateModelBase)
+            if (sender is Control button && button.Tag is TemplateBase templateModelBase)
             {
                 templateModelBase.IsEditMode = true;
             }
         }
 
-        private void Button_Reset_Click(object sender, RoutedEventArgs e)
-        {
-            if (ITemplate.GetMysqlCommand() is IMysqlCommand mysqlCommand)
-            {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{mysqlCommand.GetMysqlCommandName()}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
-                }
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"没有配置数据库重置选项", "ColorVision");
-            }
-        }
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-
+            new TemplateSettingEdit(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 }

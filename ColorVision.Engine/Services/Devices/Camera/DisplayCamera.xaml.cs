@@ -426,19 +426,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-            var windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new WindowTemplate(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
         private void EditAutoExpTime1(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new WindowTemplate(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 

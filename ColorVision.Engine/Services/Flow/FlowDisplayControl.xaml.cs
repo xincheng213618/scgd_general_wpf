@@ -221,7 +221,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
             FlowUpdate();
         }
 

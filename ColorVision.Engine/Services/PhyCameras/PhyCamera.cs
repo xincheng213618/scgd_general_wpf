@@ -193,7 +193,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(this);
-            new WindowTemplate(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
 

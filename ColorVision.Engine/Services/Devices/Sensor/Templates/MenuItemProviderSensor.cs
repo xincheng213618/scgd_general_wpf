@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 menuItemMetadata.OwnerGuid = "TemplateSensor";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate( new TemplateSensor(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow( new TemplateSensor(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 items.Add(menuItemMetadata);
             }

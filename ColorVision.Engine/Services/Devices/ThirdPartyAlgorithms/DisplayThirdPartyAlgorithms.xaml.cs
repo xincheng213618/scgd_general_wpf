@@ -276,7 +276,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (CB_ThirdPartyAlgorithms.SelectedValue is not ThirdPartyAlgorithmsModel model) return;
 
-            new WindowTemplate(new TemplateThirdParty(model.Code)){ Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateThirdParty(model.Code)){ Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         private void Templates_Click(object sender, RoutedEventArgs e)
         {

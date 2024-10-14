@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateLEDStripDetection(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateLEDStripDetection(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

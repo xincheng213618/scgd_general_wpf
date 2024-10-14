@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
                 var ITemplate = new TemplateSpectrumResourceParam() {  Device =this,TemplateParams = this.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
 
-                WindowTemplate windowTemplate = new(ITemplate);
+                TemplateEditorWindow windowTemplate = new(ITemplate);
                 windowTemplate.Owner = Application.Current.GetActiveWindow();
                 windowTemplate.ShowDialog();
             });

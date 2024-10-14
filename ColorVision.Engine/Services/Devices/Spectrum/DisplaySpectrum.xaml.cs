@@ -294,7 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             if (sender is Control menuItem)
             {
-                WindowTemplate windowTemplate;
+                TemplateEditorWindow windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
@@ -307,7 +307,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         var  ITemplate = new TemplateSpectrumResourceParam() { Device = DeviceSpectrum, TemplateParams = DeviceSpectrum.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
 
 
-                        windowTemplate = new WindowTemplate(ITemplate);
+                        windowTemplate = new TemplateEditorWindow(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

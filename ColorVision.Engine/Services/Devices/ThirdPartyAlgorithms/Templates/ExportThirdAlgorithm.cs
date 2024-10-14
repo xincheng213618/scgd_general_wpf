@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                     menuItemMetadata.OwnerGuid = dll.Code;
                     menuItemMetadata.Command = new RelayCommand(a =>
                     {
-                        new WindowTemplate(new TemplateThirdParty(mod.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new TemplateEditorWindow(new TemplateThirdParty(mod.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     });
                     new TemplateThirdParty(mod.Code).Load();
                     items.Add(menuItemMetadata);

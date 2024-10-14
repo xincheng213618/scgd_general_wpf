@@ -189,7 +189,7 @@
     <Compile Update="Services\Devices\Algorithm\Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\TemplateEditWindowSetting.xaml.cs">
+    <Compile Update="Templates\TemplateSettingEdit.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

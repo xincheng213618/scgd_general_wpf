@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public void OpenTemplatePOIFilter()
         {
-            new WindowTemplate(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public void OpenTemplatePoiRevise()
         {
-            new WindowTemplate(new TemplatePoiReviseParam(), TemplatePoiReviseSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoiReviseParam(), TemplatePoiReviseSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplatePoiOutputSelectedIndex { get => _TemplatePoiOutputSelectedIndex; set { _TemplatePoiOutputSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public void OpenTemplatePoiOutput()
         {
-            new WindowTemplate(new  TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new  TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()

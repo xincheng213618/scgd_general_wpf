@@ -237,7 +237,7 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
             }
             if (sender is Button button)
             {
-                WindowTemplate windowTemplate;
+                TemplateEditorWindow windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
@@ -247,7 +247,7 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
                 {
                     case "Calibration":
                         var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-                        windowTemplate = new WindowTemplate(ITemplate);
+                        windowTemplate = new TemplateEditorWindow(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

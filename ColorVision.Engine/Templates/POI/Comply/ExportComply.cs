@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
