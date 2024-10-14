@@ -26,11 +26,15 @@
             </Grid.ColumnDefinitions>
             <Grid Grid.Row="0" Grid.Column="0">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TreeView x:Name="TreeView1" Style="{StaticResource TreeView.Small}" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="切换列表" Margin="5,0,5,0" Click="Button_Click_2" />
+                    <Button Content="重启WindowsService" Click="Button_Click_1" />
+                </StackPanel>
+
+                <TreeView x:Name="TreeView1" Grid.Row="1" Style="{StaticResource TreeView.Small}" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                             <StackPanel >
@@ -63,8 +67,6 @@
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
-                <Button Grid.Row="2" Content="切换列表" Margin="5" Click="Button_Click_2" />
-                <Button Grid.Row="1" Content="重启WindowsService" Margin="5" Click="Button_Click_1" />
             </Grid>
             <Border CornerRadius="5" Grid.Column="1" Margin="2,5,5,5">
                 <Grid x:Name="StackPanelShow"/>

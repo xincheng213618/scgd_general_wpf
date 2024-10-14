@@ -21,16 +21,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCServiceStatusChangedEvent
-    {
-        public RCServiceStatusChangedEvent(ServiceNodeStatus status)
-        {
-            NodeStatus = status;
-        }
-        public ServiceNodeStatus NodeStatus { get;set; }
-    }
-
-    public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
     /// <summary>
     /// 注册服务
     /// </summary>
@@ -61,8 +51,6 @@ namespace ColorVision.Engine.Services.RC
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
         private ServiceNodeStatus _RegStatus;
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
-
-        public event RCServiceStatusChangedHandler StatusChangedEventHandler;
 
         public MqttRCService():base()
         {
@@ -132,7 +120,6 @@ namespace ColorVision.Engine.Services.RC
                                 if (!TryTestRegist)
                                 {
                                     Token = req.Data.Token;
-                                    StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
                                     QueryServices();
                                 }
                             }
@@ -165,7 +152,6 @@ namespace ColorVision.Engine.Services.RC
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
-                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
                             Regist();
                             break;
                     }
@@ -313,7 +299,6 @@ namespace ColorVision.Engine.Services.RC
 
         public bool Regist()
         {
-            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
             Token = null;
             RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
