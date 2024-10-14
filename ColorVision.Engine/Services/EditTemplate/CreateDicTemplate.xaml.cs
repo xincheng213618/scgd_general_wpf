@@ -25,10 +25,10 @@ namespace ColorVision.Engine.Services.SysDictionary
             this.Title += ITemplate.Title;
             List<string> list =
             [
-                ITemplate.NewCreateFileName(ITemplate.Code + "_" + WindowTemplateConfig.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(ITemplate.Code + "." + WindowTemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateWindowSetting.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateWindowSetting.Instance.DefaultCreateTemplateName),
                 ITemplate.NewCreateFileName(ITemplate.Code),
-                ITemplate.NewCreateFileName(WindowTemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(TemplateWindowSetting.Instance.DefaultCreateTemplateName),
             ];
 
             CreateCode.ItemsSource = list;

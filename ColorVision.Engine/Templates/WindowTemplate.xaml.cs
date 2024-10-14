@@ -16,9 +16,9 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
-    public class WindowTemplateConfig : ViewModelBase, IConfig
+    public class TemplateWindowSetting : ViewModelBase, IConfig
     {
-        public static WindowTemplateConfig Instance => ConfigService.Instance.GetRequiredService<WindowTemplateConfig>();
+        public static TemplateWindowSetting Instance => ConfigService.Instance.GetRequiredService<TemplateWindowSetting>();
 
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        public static WindowTemplateConfig Config => WindowTemplateConfig.Instance;
+        public static TemplateWindowSetting Config => TemplateWindowSetting.Instance;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -362,6 +362,10 @@ namespace ColorVision.Engine.Templates
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"没有配置数据库重置选项", "ColorVision");
             }
+        }
+        private void Setting_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
