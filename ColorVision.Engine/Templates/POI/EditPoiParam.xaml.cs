@@ -779,7 +779,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
-                        WaitControlText.Text = "关注点强制启用文件保存";
                         WaitControl.Visibility = Visibility.Visible;
                         PoiParam.PoiPoints.Clear();
                     }
@@ -932,7 +931,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     if (PoiParam.PoiConfig.IsPoiCIEFile)
                     {
-                        MessageBox.Show("关注点强制启用文件保存");
                         PoiParam.PoiPoints.Clear();
                     }
 
@@ -1010,10 +1008,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         Thread thread = new(() =>
                         {
                             log.Info("正在保存关注点");
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                WaitControl.Visibility = Visibility.Collapsed;
-                            });
+
                             log.Info("正在保存成csv文件");
                             SaveAsFile();
 
@@ -1026,11 +1021,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                             HImage hImage;
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                MessageBox.Show("绘制关注点图像");
                                 if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
-                                    log.Info("正在绘制BitmapImage图像");
-
                                     hImage = bitmapSource.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
@@ -1042,13 +1034,13 @@ namespace ColorVision.Engine.Services.Templates.POI
                                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                             hImageProcessed.pData = IntPtr.Zero;
                                             ImageShow.Source = image;
+
                                         }
                                     });
                                 }
 
                                 if (ImageShow.Source is WriteableBitmap writeable)
                                 {
-                                    log.Info("正在绘制WriteableBitmap图像");
                                     hImage = writeable.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiParam.PoiConfig.DefaultCircleRadius, ints, ints.Length , PoiParam.PoiConfig.Thickness);
                                     Application.Current.Dispatcher.Invoke(() =>
@@ -1063,7 +1055,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     });
                                 }
                             });
-
 
                         });
                         thread.Start();
