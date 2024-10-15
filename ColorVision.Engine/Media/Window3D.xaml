@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Media"
         mc:Ignorable="d"
-        Title="Window3D" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="3D视图" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid Background="Black">
-        <Grid x:Name="ContentGrid" Grid.RowSpan="2" >
-
-
-        </Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="73*"/>
+            <ColumnDefinition Width="727*"/>
+        </Grid.ColumnDefinitions>
+        <Grid x:Name="ContentGrid" Grid.ColumnSpan="2" />
         <StackPanel  VerticalAlignment="Top" HorizontalAlignment="Left">
             <Button Content="+"  Click="Button_Click"  Panel.ZIndex="99" Grid.RowSpan="2"/>
             <Button Content="-"  Click="Button_Click_1"  Panel.ZIndex="99" Grid.RowSpan="2"/>
