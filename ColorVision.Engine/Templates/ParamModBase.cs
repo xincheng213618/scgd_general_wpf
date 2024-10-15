@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,13 +22,14 @@ namespace ColorVision.Engine.Templates
         private string _Name;
 
         [Browsable(false)]
+        [JsonIgnore]
         public virtual RelayCommand CreateCommand { get; set; }
 
         [Browsable(false)]
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
+
         public ParamModBase() : base(new List<ModDetailModel>())
         {
-
         }
 
         public ParamModBase(int id, string name, List<ModDetailModel> detail) : base(detail)

@@ -152,6 +152,60 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 	return 0;
 }
 
+int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
+{
+	int closestFactor = allowedFactors[0];
+	for (int i = 1; i < size; ++i)
+	{
+		if (std::abs(value - allowedFactors[i]) < std::abs(value - closestFactor))
+		{
+			closestFactor = allowedFactors[i];
+		}
+	}
+	return closestFactor;
+}
+
+COLORVISIONCORE_API int M_ConvertImage(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+
+	cv::Mat outMat;
+
+	// 如果是彩色图像，转换为灰度图
+	if (mat.channels() == 3 || mat.channels() == 4)  // 判断是否为彩色图（BGR 或 BGRA）
+	{
+		cv::cvtColor(mat, outMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
+	}
+	else
+	{
+		mat.convertTo(outMat, CV_8U);  // 如果已经是灰度图，则直接转换
+	}
+
+	// 目标分辨率设置
+	int targetPixels = 512 * 152; // 目标像素数（可以调整）
+	int originalWidth = outMat.cols;
+	int originalHeight = outMat.rows;
+
+	// 计算初始比例因子
+	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
+
+	// 确保比例因子是 1、2、4、8 等倍数
+	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
+
+	// 计算新的宽度和高度
+	int newWidth = originalWidth / scaleFactor;
+	int newHeight = originalHeight / scaleFactor;
+
+	// 缩放图像
+	cv::resize(outMat, outMat, cv::Size(newWidth, newHeight));
+
+	MatToHImage(outMat, outImage);
+	return 0;
+}
+
 COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int channel)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

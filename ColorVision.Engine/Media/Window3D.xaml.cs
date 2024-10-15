@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Media
         {
             if (scaleFactor == -1)
             {
-                int targetPixels = 512 * 512; // 目标像素数
+                int targetPixels = 512 * 152; // 目标像素数
 
                 int originalWidth = colorBitmap.PixelWidth;
                 int originalHeight = colorBitmap.PixelHeight;

@@ -16,6 +16,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates.SysDictionary;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Templates
 {
@@ -368,9 +369,15 @@ namespace ColorVision.Engine.Templates
             //}
             byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+            CreateDefault();
             try
             {
-                ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+                T Temp = JsonConvert.DeserializeObject<T>(fileContent);
+                foreach (var item in Temp.ModDetailModels)
+                {
+                    CreateTemp.ModDetailModels.First(a => a.SysPid == item.SysPid).ValueA = item.ValueA;
+                }
+                ExportTemp =CreateTemp;
                 return true;
             }
             catch (JsonException ex)
@@ -448,6 +455,7 @@ namespace ColorVision.Engine.Templates
                 return null;
             }
             T? param = AddParamMode();
+            if (ExportTemp != null) ExportTemp = null;
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);
