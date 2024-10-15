@@ -26,7 +26,7 @@ extern "C" COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage*
 
 extern "C" COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage, int radius, int* point, int pointCount, int thickness);
 
-extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, HImage* outImage);
+extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactor);
 
 
 

@@ -165,28 +165,28 @@ int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
 	return closestFactor;
 }
 
-COLORVISIONCORE_API int M_ConvertImage(HImage img, HImage* outImage)
+COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactout)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
 
-	cv::Mat outMat;
+	cv::Mat grayMat;
 
 	// 如果是彩色图像，转换为灰度图
 	if (mat.channels() == 3 || mat.channels() == 4)  // 判断是否为彩色图（BGR 或 BGRA）
 	{
-		cv::cvtColor(mat, outMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
+		cv::cvtColor(mat, grayMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
 	}
 	else
 	{
-		mat.convertTo(outMat, CV_8U);  // 如果已经是灰度图，则直接转换
+		mat.convertTo(grayMat, CV_8U);  // 如果已经是灰度图，则直接转换
 	}
 
 	// 目标分辨率设置
 	int targetPixels = 512 * 152; // 目标像素数（可以调整）
-	int originalWidth = outMat.cols;
-	int originalHeight = outMat.rows;
+	int originalWidth = grayMat.cols;
+	int originalHeight = grayMat.rows;
 
 	// 计算初始比例因子
 	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
@@ -194,15 +194,31 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, HImage* outImage)
 	// 确保比例因子是 1、2、4、8 等倍数
 	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
 	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
-
 	// 计算新的宽度和高度
 	int newWidth = originalWidth / scaleFactor;
 	int newHeight = originalHeight / scaleFactor;
 
-	// 缩放图像
-	cv::resize(outMat, outMat, cv::Size(newWidth, newHeight));
+	// 分配内存给 rowGrayPixels
+	*length = newWidth * newHeight;
+	*rowGrayPixels = new uchar[*length];
 
-	MatToHImage(outMat, outImage);
+	// 并行处理图像像素缩放
+#pragma omp parallel for
+	for (int y = 0; y < newHeight; ++y)
+	{
+		uchar* row = *rowGrayPixels + y * newWidth;
+		for (int x = 0; x < newWidth; ++x)
+		{
+			int oldX = x * scaleFactor;
+			int oldY = y * scaleFactor;
+			int oldIndex = oldY * grayMat.cols + oldX;
+
+			// 将像素值存储到 rowGrayPixels
+			row[x] = grayMat.data[oldIndex];
+		}
+	}
+
+
 	return 0;
 }
 

@@ -1,5 +1,6 @@
 ﻿using HelixToolkit.Wpf;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -18,6 +19,7 @@ namespace ColorVision.Engine.Media
         int newHeight;
         double heightScale = 100.0; // 初始化 heightScale
 
+
         public Window3D(WriteableBitmap writeableBitmap)
         {
             this.colorBitmap = writeableBitmap;
@@ -26,6 +28,22 @@ namespace ColorVision.Engine.Media
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            HImage hImage = colorBitmap.ToHImage();
+            // 调用 C++ 函数并接收输出数据
+            IntPtr rowGrayPixelsPtr;
+            int length;
+            int scaleFactor = 2;  // 设置缩放因子
+
+            int ret = OpenCVMediaHelper.M_ConvertImage(hImage, out rowGrayPixelsPtr, out length, scaleFactor);
+            if (ret == 0)
+            {
+                // 将返回的指针转换为字节数组
+                grayPixels = new byte[length];
+                Marshal.Copy(rowGrayPixelsPtr, grayPixels, 0, length);
+                // 释放指针
+                Marshal.FreeHGlobal(rowGrayPixelsPtr);
+            }
+
             GenGrayPixels();
 
             viewport = new HelixViewport3D
@@ -95,6 +113,7 @@ namespace ColorVision.Engine.Media
             }
             newWidth = colorBitmap.PixelWidth / scaleFactor;
             newHeight = colorBitmap.PixelHeight / scaleFactor;
+            return;
 
             int stride = colorBitmap.PixelWidth * (colorBitmap.Format.BitsPerPixel / 8);
             byte[] originalPixels = new byte[colorBitmap.PixelHeight * stride];
