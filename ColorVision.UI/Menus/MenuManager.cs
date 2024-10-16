@@ -34,7 +34,6 @@ namespace ColorVision.UI.Menus
                     menuItems.Add("Help", item);
                 if (item.Name == "MenuView")
                     menuItems.Add("View", item);
-                item.Items.Clear();
             }
 
             List<IMenuItem> iMenuItems = new();
