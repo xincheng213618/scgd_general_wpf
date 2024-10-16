@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Media
         {
             this.colorBitmap = writeableBitmap;
             InitializeComponent();
+           
         }
 
         private async void Window_Initialized(object sender, EventArgs e)
@@ -81,6 +82,21 @@ namespace ColorVision.Engine.Media
 
             GenOpenGLAsync(heightScale); // 异步调用
             viewport.CameraController.AddRotateForce(0,4.5);
+            this.PreviewKeyDown += Window3D_PreviewKeyDown;
+        }
+
+        private void Window3D_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Add)
+            {
+
+            }
+            if (e.Key == System.Windows.Input.Key.L)
+            {
+                var Position = viewport.Camera.Position;
+                viewport.Camera.Position = new Point3D(Position.X - 10, Position.Y, Position.Z);
+            }
+           
         }
 
         static int FindClosestFactor(int value, int[] factors)
