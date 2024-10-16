@@ -1,6 +1,8 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -8,6 +10,7 @@ using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -15,6 +18,14 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Services.Flow
 {
 
+    public class FlowDisplayConfig : ViewModelBase, IConfig
+    {
+        public static FlowDisplayConfig Instance => ConfigService.Instance.GetRequiredService<FlowDisplayConfig>();
+
+        public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
+        private int _LastSelectFlow;
+
+    }
 
     public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
@@ -24,7 +35,6 @@ namespace ColorVision.Engine.Services.Flow
 
         public CVFlowView1 View { get; set; }
         public string DisPlayName => "Flow";
-
         public static FlowConfig Config => FlowConfig.Instance;
 
         public FlowDisplayControl()
@@ -48,8 +58,22 @@ namespace ColorVision.Engine.Services.Flow
             View.View.ViewIndex = 0;
 
             ComboBoxFlow.ItemsSource = FlowParam.Params;
-            ComboBoxFlow.SelectionChanged +=(s,e)=> FlowUpdate();
-            ComboBoxFlow.SelectedIndex = 0;
+            ComboBoxFlow.SelectionChanged += (s, e) =>
+            {
+                if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
+                    FlowDisplayConfig.Instance.LastSelectFlow = flowParam.Id;
+                FlowUpdate();
+            };
+            var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowDisplayConfig.Instance.LastSelectFlow);
+            if (s !=null)
+            {
+                ComboBoxFlow.SelectedItem = s;
+            }
+            else
+            {
+                ComboBoxFlow.SelectedIndex = 0;
+            }
+
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
