@@ -75,9 +75,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisionTool", "Tools\Co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectShiyuan", "Projects\ProjectShiyuan\ProjectShiyuan.csproj", "{EC72ACC7-0327-47EF-BF1F-3616BA258696}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsServicePlugin", "Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj", "{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj", "{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{BF3D024B-583C-403A-A213-BFC0D1BED4F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Core", "ColorVision.Core\ColorVision.Core.csproj", "{8B8E05E3-F002-4A01-852C-B537041BFF8C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -475,6 +477,22 @@ Global
 		{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A}.Release|x64.Build.0 = Release|x64
 		{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A}.Release|x86.ActiveCfg = Release|x64
 		{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A}.Release|x86.Build.0 = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|Any CPU.Build.0 = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|ARM64.Build.0 = Debug|ARM64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|x64.ActiveCfg = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|x64.Build.0 = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|x86.ActiveCfg = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Debug|x86.Build.0 = Debug|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|Any CPU.ActiveCfg = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|Any CPU.Build.0 = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|ARM64.ActiveCfg = Release|ARM64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|ARM64.Build.0 = Release|ARM64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|x64.ActiveCfg = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|x64.Build.0 = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|x86.ActiveCfg = Release|x64
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -503,14 +521,15 @@ Global
 		{D02AD0A5-CCEF-4C25-B56E-5A46C612F4DE} = {4ECBD19E-35CB-47A4-83B6-29E12F759F6E}
 		{EC72ACC7-0327-47EF-BF1F-3616BA258696} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{EAA08DC1-0C5A-45E0-BE00-639BE32B8F0A} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
+		{8B8E05E3-F002-4A01-852C-B537041BFF8C} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
-		RESX_EnableXlifSync = True
-		RESX_AutoCreateNewLanguageFiles = True
 		RESX_ConfirmAddLanguageFile = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_EnableXlifSync = True
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal

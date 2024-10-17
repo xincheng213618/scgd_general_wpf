@@ -12,9 +12,13 @@
 
   <ItemGroup>
     <Compile Remove="Controls\**" />
+    <Compile Remove="libs\**" />
     <EmbeddedResource Remove="Controls\**" />
+    <EmbeddedResource Remove="libs\**" />
     <None Remove="Controls\**" />
+    <None Remove="libs\**" />
     <Page Remove="Controls\**" />
+    <Page Remove="libs\**" />
   </ItemGroup>
 
 	<ItemGroup>
@@ -101,6 +105,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
     <ProjectReference Include="..\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
     <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
@@ -332,29 +337,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="libs\" />
     <Folder Include="Rbac\Users\" />
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\packages\opencv\x64\opencv_core4100.dll" Link="libs\opencv_core4100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\opencv\x64\opencv_highgui4100.dll" Link="libs\opencv_highgui4100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="libs\opencv_imgcodecs4100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\opencv\x64\opencv_imgproc4100.dll" Link="libs\opencv_imgproc4100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\opencv\x64\opencv_videoio4100.dll" Link="libs\opencv_videoio4100.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>
