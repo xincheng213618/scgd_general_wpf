@@ -1,14 +1,30 @@
-﻿using HelixToolkit.Wpf;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using HelixToolkit.Wpf;
 using System;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Media
 {
+    public class Window3DConfig : ViewModelBase, IConfig
+    {
+        public static Window3DConfig Instance => ConfigService.Instance.GetRequiredService<Window3DConfig>();
+
+        public int TargetPixelsX { get => _TargetPixelsX; set { _TargetPixelsX = 512;NotifyPropertyChanged(); } }
+        private int _TargetPixelsX = 512;
+
+        public int TargetPixelsY { get => _TargetPixelsY; set { _TargetPixelsY = 512; NotifyPropertyChanged(); } }
+        private int _TargetPixelsY = 512;
+    }
+
+
+
     public partial class Window3D : Window
     {
         WriteableBitmap colorBitmap { get; set; }
@@ -19,6 +35,7 @@ namespace ColorVision.Engine.Media
         int newHeight;
         double heightScale = 100.0; // 初始化 heightScale
 
+        public static Window3DConfig Config => Window3DConfig.Instance;
 
         public Window3D(WriteableBitmap writeableBitmap)
         {
@@ -35,7 +52,7 @@ namespace ColorVision.Engine.Media
             int length;
             int scaleFactor = 2;  // 设置缩放因子
 
-            int ret = OpenCVMediaHelper.M_ConvertImage(hImage, out rowGrayPixelsPtr, out length, scaleFactor);
+            int ret = OpenCVMediaHelper.M_ConvertImage(hImage, out rowGrayPixelsPtr, out length, scaleFactor, Config.TargetPixelsX,Config.TargetPixelsY);
             if (ret == 0)
             {
                 // 将返回的指针转换为字节数组
@@ -89,14 +106,31 @@ namespace ColorVision.Engine.Media
         {
             if (e.Key == System.Windows.Input.Key.Add)
             {
-
+                heightScale *= 1.1; // 例如，每次点击增加 10.0
+                GenOpenGLAsync(heightScale); // 异步调用
+            }
+            if(e.Key == Key.Subtract)
+            {
+                heightScale *= 0.9; // 例如，每次点击增加 10.0
+                GenOpenGLAsync(heightScale); // 异步调用
             }
             if (e.Key == System.Windows.Input.Key.L)
             {
-                var Position = viewport.Camera.Position;
                 viewport.Camera.Position = new Point3D(Position.X - 10, Position.Y, Position.Z);
             }
-           
+            if (e.Key == Key.A)
+            {
+                viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z + 10);
+            }
+            if (e.Key == Key.R)
+            {
+                viewport.Camera.Position = new Point3D(Position.X + 10, Position.Y, Position.Z);
+            }
+            if(e.Key == Key.B)
+            {
+                viewport.Camera.Position = new Point3D(Position.X, Position.Y - 10, Position.Z);
+            }
+
         }
 
         static int FindClosestFactor(int value, int[] factors)
@@ -115,7 +149,7 @@ namespace ColorVision.Engine.Media
         {
             if (scaleFactor == -1)
             {
-                int targetPixels = 512 * 152; // 目标像素数
+                int targetPixels = Config.TargetPixelsX * Config.TargetPixelsY; // 目标像素数
 
                 int originalWidth = colorBitmap.PixelWidth;
                 int originalHeight = colorBitmap.PixelHeight;
@@ -130,105 +164,6 @@ namespace ColorVision.Engine.Media
             newWidth = colorBitmap.PixelWidth / scaleFactor;
             newHeight = colorBitmap.PixelHeight / scaleFactor;
             return;
-
-            int stride = colorBitmap.PixelWidth * (colorBitmap.Format.BitsPerPixel / 8);
-            byte[] originalPixels = new byte[colorBitmap.PixelHeight * stride];
-            colorBitmap.CopyPixels(originalPixels, stride, 0);
-
-            var PixelWidth = colorBitmap.PixelWidth;
-            grayPixels = new byte[newWidth * newHeight];
-
-            if (colorBitmap.Format == PixelFormats.Bgr24 || colorBitmap.Format == PixelFormats.Bgr32 || colorBitmap.Format == PixelFormats.Bgra32)
-            {
-                unsafe
-                {
-                    fixed (byte* pOriginalPixels = originalPixels)
-                    fixed (byte* pGrayPixels = grayPixels)
-                    {
-                        byte* localOriginalPixels = pOriginalPixels;
-                        byte* localGrayPixels = pGrayPixels;
-
-                        Parallel.For(0, newHeight, y =>
-                        {
-                            byte* rowGrayPixels = localGrayPixels + y * newWidth;
-                            for (int x = 0; x < newWidth; x++)
-                            {
-                                int oldX = x * scaleFactor;
-                                int oldY = y * scaleFactor;
-                                int oldIndex = (oldY * PixelWidth + oldX) * 3;
-
-                                byte* pixel = localOriginalPixels + oldIndex;
-                                byte b = pixel[0];
-                                byte g = pixel[1];
-                                byte r = pixel[2];
-
-                                // 使用加权平均值计算灰度值
-                                byte gray = (byte)(0.299 * r + 0.587 * g + 0.114 * b);
-                                rowGrayPixels[x] = gray;
-                            }
-                        });
-                    }
-                }
-            }
-            else if (colorBitmap.Format == PixelFormats.Rgb24)
-            {
-                unsafe
-                {
-                    fixed (byte* pOriginalPixels = originalPixels)
-                    fixed (byte* pGrayPixels = grayPixels)
-                    {
-                        byte* localOriginalPixels = pOriginalPixels;
-                        byte* localGrayPixels = pGrayPixels;
-
-                        Parallel.For(0, newHeight, y =>
-                        {
-                            byte* rowGrayPixels = localGrayPixels + y * newWidth;
-                            for (int x = 0; x < newWidth; x++)
-                            {
-                                int oldX = x * scaleFactor;
-                                int oldY = y * scaleFactor;
-                                int oldIndex = (oldY * PixelWidth + oldX) * 3;
-
-                                byte* pixel = localOriginalPixels + oldIndex;
-                                byte b = pixel[2];
-                                byte g = pixel[1];
-                                byte r = pixel[0];
-                                // 使用加权平均值计算灰度值
-                                byte gray = (byte)(0.299 * r + 0.587 * g + 0.114 * b);
-                                rowGrayPixels[x] = gray;
-                            }
-                        });
-                    }
-                }
-
-            }
-            else if (colorBitmap.Format == PixelFormats.Gray8)
-            {
-                unsafe
-                {
-                    fixed (byte* pOriginalPixels = originalPixels)
-                    fixed (byte* pGrayPixels = grayPixels)
-                    {
-                        byte* localOriginalPixels = pOriginalPixels;
-                        byte* localGrayPixels = pGrayPixels;
-
-                        Parallel.For(0, newHeight, y =>
-                        {
-                            byte* rowGrayPixels = localGrayPixels + y * newWidth;
-                            for (int x = 0; x < newWidth; x++)
-                            {
-                                int oldX = x * scaleFactor;
-                                int oldY = y * scaleFactor;
-                                int oldIndex = (oldY * PixelWidth + oldX) * 3;
-
-                                byte* pixel = localOriginalPixels + oldIndex;
-                                byte gray = pixel[0];
-                                rowGrayPixels[x] = gray;
-                            }
-                        });
-                    }
-                }
-            }
         }
 
         public void GenOpenGLAsync(double heightScale)
@@ -270,6 +205,7 @@ namespace ColorVision.Engine.Media
                 modelVisual.Content = geometryModel;
             }
         }
+        public Vector3D Position => viewport.Camera.LookDirection;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -285,50 +221,43 @@ namespace ColorVision.Engine.Media
 
         private void L_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.Position;
             viewport.Camera.Position = new Point3D(Position.X - 10, Position.Y, Position.Z);
 
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.Position;
             viewport.Camera.Position = new Point3D(Position.X + 10, Position.Y, Position.Z);
         }
 
         private void T_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.Position;
             viewport.Camera.Position = new Point3D(Position.X , Position.Y +10, Position.Z);
         }
 
         private void B_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.Position;
             viewport.Camera.Position = new Point3D(Position.X, Position.Y -10, Position.Z);
         }
 
         private void D_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.LookDirection;
             viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y - 10, Position.Z);
         }
 
         private void F_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.LookDirection;
             viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y + 10, Position.Z);
         }
 
+
         private void A_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.LookDirection;
             viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z +10);
         }
 
         private void C_Click(object sender, RoutedEventArgs e)
         {
-            var Position = viewport.Camera.LookDirection;
             viewport.Camera.LookDirection = new Vector3D(Position.X, Position.Y, Position.Z- 10);
         }
     }

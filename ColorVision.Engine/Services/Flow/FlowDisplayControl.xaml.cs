@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;

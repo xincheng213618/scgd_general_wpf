@@ -281,7 +281,7 @@ namespace ColorVision
         public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radio, int[] points, int pointCount, int thickness);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, int scaleFactor);
+        public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, int scaleFactor , int targetPixelsX, int targetPixelsY);
         [DllImport(LibPath)]
         public static extern int CM_Fusion(string fusionjson, out HImage hImage);
 

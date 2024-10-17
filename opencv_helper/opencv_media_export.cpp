@@ -165,7 +165,7 @@ int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
 	return closestFactor;
 }
 
-COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactout)
+COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactout,int targetPixelsX, int targetPixelsY)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
@@ -184,7 +184,7 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	}
 
 	// 目标分辨率设置
-	int targetPixels = 512 * 152; // 目标像素数（可以调整）
+	int targetPixels = targetPixelsX * targetPixelsY; // 目标像素数（可以调整）
 	int originalWidth = grayMat.cols;
 	int originalHeight = grayMat.rows;
 
