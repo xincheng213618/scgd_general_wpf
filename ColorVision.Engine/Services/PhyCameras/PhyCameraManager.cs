@@ -137,9 +137,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void UpdateLicenseModel(CameraLicenseModel licenseModel)
         {
-            licenseModel.CusTomerName = licenseModel.ColorVisionLincense.Licensee;
-            licenseModel.Model = licenseModel.ColorVisionLincense.DeviceMode;
-            licenseModel.ExpiryDate = licenseModel.ColorVisionLincense.ExpiryDateTime;
+            licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
+            licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
+            licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
 
             int ret = CameraLicenseDao.Instance.Save(licenseModel);
 

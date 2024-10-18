@@ -47,11 +47,11 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
 
-        public RelayCommand UploadLincenseCommand { get; set; }
+        public RelayCommand UploadLicenseCommand { get; set; }
 
-        public RelayCommand UploadLincenseNetCommand { get; set; }
+        public RelayCommand UploadLicenseNetCommand { get; set; }
 
-        public RelayCommand RefreshLincenseCommand { get; set; }
+        public RelayCommand RefreshLicenseCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
@@ -107,9 +107,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CalibrationEdit.Show();
             });
 
-            UploadLincenseCommand = new RelayCommand(a => UploadLincense());
-            RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
-            RefreshLincense();
+            UploadLicenseCommand = new RelayCommand(a => UploadLicense());
+            RefreshLicenseCommand = new RelayCommand(a => RefreshLicense());
+            RefreshLicense();
             EditCameraCommand = new RelayCommand(a => DeviceCamera?.EditCommand.Execute(this) ,a=> DeviceCamera!=null && DeviceCamera.EditCommand.CanExecute(this));
             EditCalibrationCommand = new RelayCommand(a => DeviceCalibration?.EditCommand.Execute(this), a => DeviceCalibration != null && DeviceCalibration.EditCommand.CanExecute(this));
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
@@ -120,20 +120,23 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
-            UploadLincenseNetCommand = new RelayCommand(a => UploadLincenseNet());
+            UploadLicenseNetCommand = new RelayCommand(a => UploadLicenseNet());
         }
 
-        public async void UploadLincenseNet()
+        public async void UploadLicenseNet()
         {
             // 设置请求的URL和数据
             string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
             var postData = new { macSn = Code };
 
-            string fileName = $"{Environments.ConfigFolderPath}\\{Code}-license.zip";
+            if (!Directory.Exists($"{Environments.ConfigFolderPath}\\License"))
+                Directory.CreateDirectory($"{Environments.ConfigFolderPath}\\License");
+
+            string fileName = $"{Environments.ConfigFolderPath}\\License\\{Code}-license.zip";
 
             if (File.Exists(fileName))
             {
-                SetLincense(fileName);
+                SetLicense(fileName);
                 return;
             }
 
@@ -153,7 +156,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                         throw new Exception($"请求数据失败. 返回的不是文件：{response.Content.Headers.ContentType.MediaType} => {errorContent}");
                     }
 
-
                     // 获取文件名
                     fileName = "license.zip"; // 默认文件名
                     if (response.Content.Headers.ContentDisposition != null)
@@ -165,7 +167,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         await response.Content.CopyToAsync(fs);
                     }
-                    SetLincense(fileName);
+                    SetLicense(fileName);
                 }
                 catch (Exception ex)
                 {
@@ -286,7 +288,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 CameraLicenseModel.DevCameraId = null;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                RefreshLincense();
+                RefreshLicense();
             }
         }
 
@@ -297,7 +299,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                RefreshLincense();
+                RefreshLicense();
 
                 if (CameraLicenseModel.DevCaliId != null)
                 {
@@ -321,7 +323,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 CameraLicenseModel.DevCaliId = null;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                RefreshLincense();
+                RefreshLicense();
             }
         }
 
@@ -334,7 +336,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                RefreshLincense();
+                RefreshLicense();
                 if (CameraLicenseModel.DevCameraId != null)
                 {
                     ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCameraId).ToList().ForEach(a =>
@@ -350,12 +352,12 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLincensed)); } }
+        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); } }
         private CameraLicenseModel? _CameraLicenseModel;
 
-        public bool IsLincensed { get => CameraLicenseModel != null;  }
+        public bool IsLicensed { get => CameraLicenseModel != null;  }
 
-        public void RefreshLincense()
+        public void RefreshLicense()
         {
             if (SysResourceModel.Code == null)
             {
@@ -364,7 +366,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
         }
 
-        private void UploadLincense()
+        private void UploadLicense()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
@@ -378,14 +380,14 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 foreach (string file in selectedFiles)
                 {
-                    SetLincense(file);
+                    SetLicense(file);
                 }
             }
             DeviceCalibration?.RestartRCService();
             DeviceCamera?.RestartRCService();
         }
 
-        public void SetLincense(string filepath)
+        public void SetLicense(string filepath)
         {
             if (!File.Exists(filepath)) return;
             if (Path.GetExtension(filepath) == ".zip")
@@ -404,9 +406,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                         using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
                         cameraLicenseModel.LicenseValue = reader.ReadToEnd();
 
-                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLicense.Licensee;
+                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLicense.DeviceMode;
+                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
                         int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
                         MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
@@ -428,13 +430,13 @@ namespace ColorVision.Engine.Services.PhyCameras
                         CameraLicenseModel = new CameraLicenseModel();
                     CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
                     CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
-                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
-                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
-                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
                     int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
-                    RefreshLincense();
+                    RefreshLicense();
                 }
                 else
                 {

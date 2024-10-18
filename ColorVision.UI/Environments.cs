@@ -11,7 +11,7 @@ namespace ColorVision.UI
     {
         public static string AssemblyCompany { get => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision"; }
 
-        public static string ConfigFolderPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
+        public static string ConfigFolderPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\";
 
     }
 }
