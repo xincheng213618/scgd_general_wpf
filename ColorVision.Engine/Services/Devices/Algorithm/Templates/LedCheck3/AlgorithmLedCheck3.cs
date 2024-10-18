@@ -1,17 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 {
@@ -36,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow( new TemplateThirdParty("LedCheck2"), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateThirdParty("LedCheck3"), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
