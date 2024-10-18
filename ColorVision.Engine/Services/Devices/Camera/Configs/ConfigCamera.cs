@@ -45,6 +45,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
 
+        public int AverageTimes { get => _AverageTimes; set { _AverageTimes = value; NotifyPropertyChanged(); } }
+        private int _AverageTimes =1;
+
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
         private bool _UsingFileCaching;
 
