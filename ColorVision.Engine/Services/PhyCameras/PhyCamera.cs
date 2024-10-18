@@ -30,6 +30,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -46,6 +48,9 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand UploadLincenseCommand { get; set; }
+
+        public RelayCommand UploadLincenseNetCommand { get; set; }
+
         public RelayCommand RefreshLincenseCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
@@ -114,7 +119,63 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
 
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
+
+            UploadLincenseNetCommand = new RelayCommand(a => UploadLincenseNet());
         }
+
+        public async void UploadLincenseNet()
+        {
+            // 设置请求的URL和数据
+            string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
+            var postData = new { macSn = Code };
+
+            string fileName = $"{Environments.ConfigFolderPath}\\{Code}-license.zip";
+
+            if (File.Exists(fileName))
+            {
+                SetLincense(fileName);
+                return;
+            }
+
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    // 发送POST请求
+                    HttpResponseMessage response = await client.PostAsJsonAsync(url, postData);
+                    // 检查响应状态码
+                    response.EnsureSuccessStatusCode();
+
+                    // 确保返回的是一个文件而不是JSON
+                    if (response.Content.Headers.ContentType.MediaType == "application/json")
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                        throw new Exception($"请求数据失败. 返回的不是文件：{response.Content.Headers.ContentType.MediaType} => {errorContent}");
+                    }
+
+
+                    // 获取文件名
+                    fileName = "license.zip"; // 默认文件名
+                    if (response.Content.Headers.ContentDisposition != null)
+                    {
+                        fileName = response.Content.Headers.ContentDisposition.FileName.Trim('"');
+                    }
+                    fileName = $"{Environments.ConfigFolderPath}\\{fileName}";
+                    using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await response.Content.CopyToAsync(fs);
+                    }
+                    SetLincense(fileName);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error: {ex.Message}");
+                }
+
+
+            }
+        }
+
         private string productBrochure;
 
         private bool HaveProductBrochure()
@@ -317,70 +378,77 @@ namespace ColorVision.Engine.Services.PhyCameras
 
                 foreach (string file in selectedFiles)
                 {
-                    if (Path.GetExtension(file) == ".zip")
-                    {
-                        try
-                        {
-                            using ZipArchive archive = ZipFile.OpenRead(file);
-                            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
-
-                            foreach (var item in licFiles)
-                            {
-                                CameraLicenseModel cameraLicenseModel = new();
-                                cameraLicenseModel.DevCameraId = SysResourceModel.Id;
-                                cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
-                                using var stream = item.Open();
-                                using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
-                                cameraLicenseModel.LicenseValue = reader.ReadToEnd();
-
-                                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                                int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
-                                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
-                        }
-                    }
-                    else if (Path.GetExtension(file) == ".lic")
-                    {
-                        string Code = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                        if (Code == SysResourceModel.Code)
-                        {
-                            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
-                            if (CameraLicenseModel == null)
-                                CameraLicenseModel = new CameraLicenseModel();
-                            CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                            CameraLicenseModel.LicenseValue = File.ReadAllText(file);
-                            CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
-                            CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
-                            CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                            int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
-                            RefreshLincense();
-                        }
-                        else
-                        {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), "该相机不支持此许可证", "ColorVision");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
-                    }
+                    SetLincense(file);
                 }
             }
-
-
             DeviceCalibration?.RestartRCService();
             DeviceCamera?.RestartRCService();
         }
+
+        public void SetLincense(string filepath)
+        {
+            if (!File.Exists(filepath)) return;
+            if (Path.GetExtension(filepath) == ".zip")
+            {
+                try
+                {
+                    using ZipArchive archive = ZipFile.OpenRead(filepath);
+                    var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    foreach (var item in licFiles)
+                    {
+                        CameraLicenseModel cameraLicenseModel = new();
+                        cameraLicenseModel.DevCameraId = SysResourceModel.Id;
+                        cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+                        using var stream = item.Open();
+                        using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                        cameraLicenseModel.LicenseValue = reader.ReadToEnd();
+
+                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+
+                        int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                }
+            }
+            else if (Path.GetExtension(filepath) == ".lic")
+            {
+                string Code = Path.GetFileNameWithoutExtension(filepath);
+                if (Code == SysResourceModel.Code)
+                {
+                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                    if (CameraLicenseModel == null)
+                        CameraLicenseModel = new CameraLicenseModel();
+                    CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
+                    CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
+                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
+                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
+                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+
+                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+                    RefreshLincense();
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "该相机不支持此许可证", "ColorVision");
+                }
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+            }
+
+        }
+
+
         #endregion
 
 

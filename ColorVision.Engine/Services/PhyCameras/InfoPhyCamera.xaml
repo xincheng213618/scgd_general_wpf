@@ -61,6 +61,7 @@
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </Grid>
                                 </Button>
+                                <Button Content="在线下载许可证" Margin="5" Height="100" Width="180" Command="{Binding UploadLincenseNetCommand}" />
 
                                 <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Command="{Binding UploadCalibrationCommand}" />
                                 <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Command="{Binding CalibrationTemplateOpenCommand}" />
