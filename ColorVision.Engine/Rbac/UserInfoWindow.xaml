@@ -23,6 +23,7 @@
                     <TextBlock Text="Account:" Width="100"/>
                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.Code}"/>
                 </DockPanel>
+                <hc:Gravatar Height="180" Width="180" Id="{Binding Text,ElementName=UserModel.Code}" Margin="10"/>
                 <DockPanel Margin="0,2">
                     <TextBlock Text="User Name:" Width="100"/>
                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.UserName}"/>

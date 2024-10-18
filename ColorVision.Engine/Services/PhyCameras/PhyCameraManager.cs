@@ -23,7 +23,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-    public class PhyCameraManager
+    public class PhyCameraManager:ViewModelBase
     {
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
@@ -39,7 +39,17 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
             ImportCommand = new RelayCommand(a => Import());
+
+            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+            PhyCameras.CollectionChanged += (s, e) =>
+            {
+                Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+            };
         }
+
+        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        private int _Count;
+
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
