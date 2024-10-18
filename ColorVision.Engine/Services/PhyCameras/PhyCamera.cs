@@ -767,9 +767,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
+        public UserControl UserControl { get; set; }
 
-        public UserControl GetDeviceInfo() => new InfoPhyCamera(this);
-
+        public UserControl GetDeviceInfo()
+        {
+            UserControl ??= new InfoPhyCamera(this);
+            return UserControl;
+        }
         public override void Delete()
         {
             SysResourceModel.Value = null;
