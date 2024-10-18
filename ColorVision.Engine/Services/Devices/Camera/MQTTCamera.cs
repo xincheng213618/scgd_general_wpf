@@ -269,7 +269,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
-            Params.Add("AverageTimes", Config.AverageTimes);
+            Params.Add("AvgCount", Config.AvgCount);
             Params.Add("ExpTime", expTime);
             if (param.Id == -1)
             {

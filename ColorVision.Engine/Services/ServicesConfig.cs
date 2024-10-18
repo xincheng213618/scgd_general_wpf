@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Services
     public class ServicesConfigProvider : IConfigSettingProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
+        { 
             return new List<ConfigSettingMetadata>
             {
                 new ConfigSettingMetadata
