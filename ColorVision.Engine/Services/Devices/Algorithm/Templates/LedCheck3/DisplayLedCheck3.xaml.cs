@@ -36,11 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
             ComboxPoiTemplate.SelectedIndex = 0;
 
-
-            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
-                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
-            ComboxCVOLEDCOLOR.SelectedIndex = 0;
-
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
@@ -57,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 
             if (ComboxTemplate.SelectedValue is not ModThirdPartyParam param) return;
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
-            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
 
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
@@ -69,8 +63,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, color,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LedCheck2");
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,type, code, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "LedCheck3");
             }
         }
 

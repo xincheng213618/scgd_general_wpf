@@ -6,14 +6,10 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmLedCheck2}"
+             d:DataContext="{d:DesignInstance local:AlgorithmLedCheck3}"
              d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="CVOLED_COLOR" Width="60"/>
-                <ComboBox  x:Name="ComboxCVOLEDCOLOR"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-            </DockPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="POI" Width="60"/>
                 <ComboBox  x:Name="ComboxPoiTemplate" SelectedIndex="{Binding TemplatePoiSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />

@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(ModThirdPartyParam param, PoiParam poiParam, CVOLEDCOLOR cOLOR,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ModThirdPartyParam param, PoiParam poiParam,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -65,11 +65,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
-            Params.Add("Color", cOLOR);
 
             MsgSend msg = new()
             {
-                EventName = "LedCheck3",
+                EventName = "OLED.FindLedPosition",
                 SerialNumber = sn,
                 Params = Params
             };
