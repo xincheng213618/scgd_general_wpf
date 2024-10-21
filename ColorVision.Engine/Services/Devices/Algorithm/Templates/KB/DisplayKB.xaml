@@ -34,10 +34,6 @@
                 <CheckBox x:Name="CB_CalculateHalo" Content="CM_CalculateHalo" IsChecked="True" />
                 <CheckBox x:Name="CB_CalculateKey" Content="CM_CalculateKey" IsChecked="True" />
             </UniformGrid>
-
-            <CheckBox Content="计算Key"/>
-            <CheckBox Content="计算Key"/>
-
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}"  IsSelected="True">
                     <StackPanel Orientation="Horizontal" Margin="0,2">

@@ -138,11 +138,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
 
-            TextBaudRate.ItemsSource = BaudRates;
+            Ser
 
+            TextBaudRate.ItemsSource = BaudRates;
+            TextBaudRate1.ItemsSource = BaudRates;
 
             TextSerial.ItemsSource = Serials;
-
+            TextSerial1.ItemsSource = Serials;
 
             ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
                                           select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
