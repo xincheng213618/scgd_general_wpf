@@ -200,6 +200,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
+        public void OpenGhostImage(string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
+        {
+            if (filePath == null)
+                return;
+            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
+            if (i != 0) return;
+            ImageView.SetImageSource(hImage.ToWriteableBitmap());
+            OpenCVHelper.FreeHImageData(hImage.pData);
+            hImage.pData = IntPtr.Zero;
+        }
+
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
@@ -480,7 +491,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 }
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                    OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                                 });
                             }
                             catch (Exception ex)

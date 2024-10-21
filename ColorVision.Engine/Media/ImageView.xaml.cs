@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Draw;
+using ColorVision.Engine.Draw.Ruler;
 using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
@@ -8,8 +10,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.Engine.Draw;
-using ColorVision.Engine.Draw.Ruler;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
@@ -224,7 +224,6 @@ namespace ColorVision.Engine.Media
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-
 
         private DrawingVisual SelectRect = new();
 
@@ -676,24 +675,9 @@ namespace ColorVision.Engine.Media
             ToolBarLayers.Visibility = Visibility.Visible;
         }
 
-
-
-
-        public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
-        {
-            if (filePath == null)
-                return;
-
-            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
-            if (i != 0) return;
-            SetImageSource(hImage.ToWriteableBitmap());
-            OpenCVHelper.FreeHImageData(hImage.pData);
-            hImage.pData = IntPtr.Zero;
-        }
-
         public HImage? HImageCache { get; set; }
 
-        private void SetImageSource(ImageSource imageSource)
+        public void SetImageSource(ImageSource imageSource)
         {
             if (HImageCache != null)
             {
@@ -798,10 +782,6 @@ namespace ColorVision.Engine.Media
                 menuPop1.IsOpen = false;
             }
         }
-
-
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
         public void RenderPseudo()
         {
@@ -918,7 +898,6 @@ namespace ColorVision.Engine.Media
                 histogramChartWindow.Show();
             }
         }
-
 
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
