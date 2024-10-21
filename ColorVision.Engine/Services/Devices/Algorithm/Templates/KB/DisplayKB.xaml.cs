@@ -65,8 +65,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                         try
                         {
                             IRECT rect = new IRECT((int)(item.PixX - (int)item.PixWidth / 2), (int)(item.PixY - (int)item.PixHeight / 2), (int)item.PixWidth, (int)item.PixHeight);
-                            float haloGray = KeyBoardDLL.CM_CalculateHalo(rect, 20, 500, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
-                            float keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, 3000, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
+                            float haloGray = -1;
+                            if (CB_CalculateHalo.IsChecked == true)
+                            {
+                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, 20, 500, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
+                            }
+                            float keyGray = -1;
+                            if (CB_CalculateKey.IsChecked == true)
+                            {
+                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, 3000, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
+                            }
                             writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
                         }
                         catch (Exception ex)
