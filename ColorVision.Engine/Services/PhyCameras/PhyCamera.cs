@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseNetCommand = new RelayCommand(a => UploadLicenseNet());
         }
 
-        public async void UploadLicenseNet()
+        public async Task UploadLicenseNet()
         {
             // 设置请求的URL和数据
             string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
@@ -175,8 +175,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     MessageBox.Show($"Error: {ex.Message}");
                 }
-
-
             }
         }
 
@@ -771,6 +769,10 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public UserControl GetDeviceInfo()
         {
+            if (UserControl !=null &&UserControl.Parent is Grid grid)
+            {
+                grid.Children.Remove(UserControl);
+            }
             UserControl ??= new InfoPhyCamera(this);
             return UserControl;
         }

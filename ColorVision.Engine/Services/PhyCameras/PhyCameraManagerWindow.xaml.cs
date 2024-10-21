@@ -2,6 +2,7 @@
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -36,6 +37,18 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
+            Task.Run(() => Load());
+        }
+
+        public async void Load()
+        {
+            foreach (var item in PhyCameraManager.GetInstance().PhyCameras)
+            {
+                if (!item.IsLicensed)
+                {
+                    await item.UploadLicenseNet();
+                }
+            }
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
