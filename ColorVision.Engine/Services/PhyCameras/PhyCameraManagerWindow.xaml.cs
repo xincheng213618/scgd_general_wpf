@@ -46,7 +46,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 if (!item.IsLicensed)
                 {
-                    await item.UploadLicenseNet();
+                    try
+                    {
+                        await item.UploadLicenseNet();
+
+                    }
+                    catch 
+                    {
+
+                    }
                 }
             }
         }
