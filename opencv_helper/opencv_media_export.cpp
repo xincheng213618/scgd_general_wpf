@@ -45,6 +45,39 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	MediaList.push_back(std::make_pair(reinterpret_cast<uintptr_t>(outImage->pData), mat));
 }
 
+COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
+
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.channels() == 3)
+	{
+		cv::cvtColor(mat, mat, cv::ColorConversionCodes::COLOR_BGR2GRAY);
+	}
+	cv::Mat TempMen;
+	cv::Mat TempStd;
+	double value = -1;
+	switch (type)
+	{
+	case Variance:
+		cv::meanStdDev(mat, TempMen, TempStd);
+		value = TempStd.at<double>(0, 0);
+	case Tenengrad:
+		//cv::Sobel(tempImg, imgSobel, CV_8UC1, dx, dy, ksize);
+		//convertScaleAbs(imgSobel, imgSobel, 1, 0);
+		//articulation = mean(imgSobel)[0];
+		break;
+	case Laplace:
+		cv::Laplacian(mat, TempStd, CV_8UC1);
+		value = cv::mean(TempStd)[0];
+	case CalResol:
+		break;
+	default:
+		cv::meanStdDev(mat, TempMen, TempStd);
+		value = TempStd.at<double>(0, 0);
+	}
+
+	return value;
+}
+
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
 	std::lock_guard<std::mutex> lock(mediaListMutex); // ¼ÓËø

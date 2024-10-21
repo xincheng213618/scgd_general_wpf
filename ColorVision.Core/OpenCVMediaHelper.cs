@@ -67,9 +67,15 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern void M_SetHImageData(IntPtr data);
+        public enum EvaFunc
+        {
+            Variance = 0,
+            Tenengrad = 1,
+            Laplace,
+            CalResol,
+        };
 
-
-
-
+        [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern double M_CalArtculation(HImage image, EvaFunc evaFunc);
     }
 }
