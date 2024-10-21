@@ -15,6 +15,10 @@
           <source>RC服务日志</source>
           <target state="new">RCサービスログ</target>
         </trans-unit>
+        <trans-unit id="Service" translate="yes" xml:space="preserve">
+          <source>服务</source>
+          <target state="new">サービス</target>
+        </trans-unit>
         <trans-unit id="ServiceLog" translate="yes" xml:space="preserve">
           <source>服务日志</source>
           <target state="new">サービスログ</target>

@@ -138,4 +138,7 @@
   <data name="ManagementService" xml:space="preserve">
     <value>Управленческие услуги</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>Услуга</value>
+  </data>
 </root>

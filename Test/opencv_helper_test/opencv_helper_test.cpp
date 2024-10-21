@@ -13,7 +13,7 @@ int main()
 	std::chrono::steady_clock::time_point start, end;
 	std::chrono::microseconds duration;
 
-	cv::Mat image = cv::imread("C:\\Users\\17917\\Desktop\\moreBad.tif",cv::ImreadModes::IMREAD_UNCHANGED);
+	cv::Mat image = cv::imread("C:\\Users\\17917\\Documents\\WXWork\\1688854819471931\\Cache\\File\\2024-10\\ledTest-q.tif",cv::ImreadModes::IMREAD_UNCHANGED);
 
 	if (image.empty()) {
 		std::cerr << "无法读取图像文件！" << std::endl;

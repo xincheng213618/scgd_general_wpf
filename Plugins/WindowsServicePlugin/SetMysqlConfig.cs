@@ -48,7 +48,10 @@ namespace WindowsServicePlugin
                     string value = setting.Attribute("value")?.Value;
                     if (key != null && value !=null)
                     {
-                        dic.Add(key, value);
+                        if (!dic.TryAdd(key, value))
+                        {
+                            dic[key] = value;
+                        }
                     }
                 }
                 MySqlSetting.Instance.MySqlConfig.UserName = dic["MysqlUser"];
