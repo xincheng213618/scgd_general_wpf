@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(type, code, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FOV");
             }
         }

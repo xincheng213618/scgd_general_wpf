@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,type, code, imgFileName, fileExtType, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, code, type, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "LedCheck3");
             }
         }

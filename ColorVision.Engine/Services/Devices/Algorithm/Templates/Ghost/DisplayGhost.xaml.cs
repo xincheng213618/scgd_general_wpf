@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(type, code, imgFileName, fileExtType, param, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(code, type, imgFileName, fileExtType, param, sn);
                 ServicesHelper.SendCommand(msg, "正在计算鬼影");
             }
         }

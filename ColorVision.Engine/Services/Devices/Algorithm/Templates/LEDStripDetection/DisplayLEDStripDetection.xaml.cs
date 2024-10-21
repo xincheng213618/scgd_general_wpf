@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "LEDStripDetection");
             }
         }
