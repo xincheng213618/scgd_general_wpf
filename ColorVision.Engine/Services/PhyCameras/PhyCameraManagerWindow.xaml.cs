@@ -7,7 +7,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
@@ -37,26 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
-            Task.Run(() => Load());
             PhyCameraManager.GetInstance().RefreshEmptyCamera();
-        }
-
-        public async void Load()
-        {
-            foreach (var item in PhyCameraManager.GetInstance().PhyCameras)
-            {
-                if (!item.IsLicensed)
-                {
-                    try
-                    {
-                        await item.UploadLicenseNet();
-                    }
-                    catch 
-                    {
-
-                    }
-                }
-            }
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

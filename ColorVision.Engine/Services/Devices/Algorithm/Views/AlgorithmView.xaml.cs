@@ -378,6 +378,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
                         header = new() { "Name","位置", "大小", "形状", "h_jnd", "v_jnd" };
                         bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
+
                         foreach (var item in result.ViewResults)
                         {
                             if (item is PoiResultData poiResultData)
@@ -386,7 +387,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                         }
                         AddPOIPoint(DrawPoiPoint);
-
                         break;
 
                     case AlgorithmResultType.MTF:
@@ -839,7 +839,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 dialog.Description = "请选择保存文件的文件夹";
                 dialog.ShowNewFolderButton = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
                 string selectedPath = dialog.SelectedPath;
 
                 foreach (var selectedItem in listView1.SelectedItems)
@@ -861,6 +860,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
                                 PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
                                 // Handle POI_Y result saving logic here
+                                break;
+                            case AlgorithmResultType.OLED_JND_CalVas:
+                                var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
+                                ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
                                 break;
                             case AlgorithmResultType.FOV:
                                 // Handle SendCommand result saving logic here
