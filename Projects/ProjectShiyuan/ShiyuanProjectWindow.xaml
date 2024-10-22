@@ -16,7 +16,7 @@
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Grid>
             <Grid.RowDefinitions>
@@ -234,7 +234,7 @@
                     </StackPanel>
                 </StackPanel>
                 
-                <Border HorizontalAlignment="Right" Width="150" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
+                <Border HorizontalAlignment="Right" Width="150" Visibility="Collapsed" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
                     <StackPanel Orientation="Vertical"  Margin="5">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="入账状态:" Margin="5,2" Width="55"/>
@@ -258,7 +258,7 @@
             </Grid>
             
         </Grid>
-        <Grid Grid.Column="1">
+        <Grid Grid.Column="1" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>

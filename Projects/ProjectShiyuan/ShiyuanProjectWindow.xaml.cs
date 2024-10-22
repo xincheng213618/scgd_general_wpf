@@ -351,8 +351,8 @@ namespace ColorVision.Projects.ProjectShiYuan
                             }
                             else
                             {
-                                HYMesManager.GetInstance().UploadNG("流程结果数据错误");
-                                MessageBox.Show(Application.Current.GetActiveWindow(), "流程结果数据错误", "ColorVision");
+                                //HYMesManager.GetInstance().UploadNG("流程结果数据错误");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算完成，未能匹配POI结果", "ColorVision");
                             }
                         }
                         else
@@ -383,12 +383,6 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(HYMesManager.GetInstance().SN))
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "产品编号为空，在运行前请配置产品编号");
-                return;
-            }
-
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
                 string startNode = flowEngine.GetStartNodeName();
