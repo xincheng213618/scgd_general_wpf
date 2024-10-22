@@ -38,6 +38,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
             Task.Run(() => Load());
+            PhyCameraManager.GetInstance().RefreshEmptyCamera();
         }
 
         public async void Load()

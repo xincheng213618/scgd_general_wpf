@@ -40,13 +40,15 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
             ImportCommand = new RelayCommand(a => Import());
-
-            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            PhyCameras.CollectionChanged += (s, e) =>
-            {
-                Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            };
+            RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
+
+        public void RefreshEmptyCamera()
+        {
+            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+        }
+
 
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
         private int _Count;
