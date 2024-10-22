@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -68,12 +69,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                             float haloGray = -1;
                             if (CB_CalculateHalo.IsChecked == true)
                             {
-                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, 20, 500, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
+                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, 20, IAlgorithm.HaloThreadV, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
                             }
                             float keyGray = -1;
                             if (CB_CalculateKey.IsChecked == true)
                             {
-                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, 3000, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
+                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, IAlgorithm.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
                             }
                             writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
                         }
