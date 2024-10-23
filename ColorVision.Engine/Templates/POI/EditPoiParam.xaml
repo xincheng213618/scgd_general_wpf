@@ -156,7 +156,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,2" >
                             <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFixFilePath" Width="80"/>
                             <TextBox Text="{Binding PoiFixFilePath}" Margin="2,0"  Width="90"/>
-                            <Button DockPanel.Dock="Right" Margin="2,0" Content="创建模板" Click="PoiFix_Create_Click"/>
+                            <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
                         
                     </StackPanel>

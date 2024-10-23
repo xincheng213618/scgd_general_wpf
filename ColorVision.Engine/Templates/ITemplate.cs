@@ -189,6 +189,20 @@ namespace ColorVision.Engine.Templates
             return FileName;
         }
 
+        public virtual void Save(TemplateModel<T> item)
+        {
+            var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+            if (modMasterModel?.Pcode != null)
+            {
+                modMasterModel.Name = item.Value.Name;
+                var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
+            var details = new List<ModDetailModel>();
+            item.Value.GetDetail(details);
+            ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+        }
+
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
@@ -198,6 +212,7 @@ namespace ColorVision.Engine.Templates
                 if(index >-1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
+
                     var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
 
                     if (modMasterModel?.Pcode != null)

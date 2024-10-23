@@ -1793,6 +1793,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void PoiFix_Create_Click(object sender, RoutedEventArgs e)
         {
+            
             if (TemplatePoiFix.Params.FirstOrDefault(a => a.Id == PoiParam.PoiConfig.PoiFixId) is TemplateModel<PoiFixParam> template)
             {
                 string csvFilePath = template.Value.PoiFixFilePath;
@@ -1821,12 +1822,14 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 using (StreamWriter writer = new StreamWriter(template.Value.PoiFixFilePath, false, Encoding.UTF8))
                 {
-                    writer.WriteLine("Id,Name,PixX,PixY,PixWidth,PixHeight,x,y,u,v,CCT,wave");
+                    writer.WriteLine("Id,Name,PixX,PixY,PixWidth,PixHeight,X,Y,Z");
                     foreach (var item in PoiParam.PoiPoints)
                     {
-                        writer.WriteLine($"{item.Id},{item.Name},{item.PixX},{item.PixY},{item.PixWidth},{item.PixHeight},1,1,1,1,1,1");
+                        writer.WriteLine($"{item.Id},{item.Name},{item.PixX},{item.PixY},{item.PixWidth},{item.PixHeight},1,1,1");
                     }
                 };
+
+                new TemplatePoiFix().Save(template);
             }
         }
 
