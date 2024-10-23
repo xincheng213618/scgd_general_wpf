@@ -677,23 +677,9 @@ namespace ColorVision.Engine.Media
         }
 
 
-
-
-        public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
-        {
-            if (filePath == null)
-                return;
-
-            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
-            if (i != 0) return;
-            SetImageSource(hImage.ToWriteableBitmap());
-            OpenCVHelper.FreeHImageData(hImage.pData);
-            hImage.pData = IntPtr.Zero;
-        }
-
         public HImage? HImageCache { get; set; }
 
-        private void SetImageSource(ImageSource imageSource)
+        public void SetImageSource(ImageSource imageSource)
         {
             if (HImageCache != null)
             {
@@ -1302,7 +1288,6 @@ namespace ColorVision.Engine.Media
                     }
                 }
             }
-
         }
 
         private void Button_3D_Click(object sender, RoutedEventArgs e)

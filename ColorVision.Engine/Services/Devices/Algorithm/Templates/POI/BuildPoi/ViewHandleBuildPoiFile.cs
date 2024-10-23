@@ -19,9 +19,9 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
-    public class BuildPoiFileHandle : IResultHandle
+    public class ViewHandleBuildPoiFile : IResultHandle
     {
-        public AlgorithmResultType ResultType => AlgorithmResultType.BuildPOI_File;
+        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI_File};
 
         public static void CovertPoiParam(PoiParam poiParam ,string fileName)
         {

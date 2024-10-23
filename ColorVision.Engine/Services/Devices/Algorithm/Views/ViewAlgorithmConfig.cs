@@ -29,13 +29,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowSideListView = true;
 
-
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
         private bool _AutoRefreshView = true;
 
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; NotifyPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
-
 
     }
 }

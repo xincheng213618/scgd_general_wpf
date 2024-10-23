@@ -1758,7 +1758,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
                 ClearRender();
-                BuildPoiFileHandle.CovertPoiParam(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                ViewHandleBuildPoiFile.CovertPoiParam(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                 PoiParamToDrawingVisual(PoiParam);
             }
         }
@@ -1767,7 +1767,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
-                BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                ViewHandleBuildPoiFile.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
             }
             else
             {
@@ -1780,7 +1780,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         PoiParam.PoiConfig.PoiCIEFileName = saveFileDialog.FileName;
-                        BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                        ViewHandleBuildPoiFile.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                     }
                 }
             }
