@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -34,6 +35,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; NotifyPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
+
+        public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; NotifyPropertyChanged(); } }
+        private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; NotifyPropertyChanged(); } }
+        private bool _AutoSaveSideData;
 
     }
 }

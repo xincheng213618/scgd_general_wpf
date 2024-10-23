@@ -176,6 +176,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
+                if (Config.AutoSaveSideData)
+                    SideSave(algorithmResult, Config.SaveSideDataDirPath);
             }
         }
 
@@ -652,6 +654,46 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
+        public void SideSave(AlgorithmResult result,string selectedPath)
+        {
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
+            switch (result.ResultType)
+            {
+                case AlgorithmResultType.POI:
+                    break;
+                case AlgorithmResultType.POI_XYZ:
+                    var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
+                    PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
+                    break;
+                case AlgorithmResultType.POI_Y:
+                    var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
+                    PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
+                    break;
+                case AlgorithmResultType.OLED_JND_CalVas:
+                    var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
+                    ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
+                    break;
+                case AlgorithmResultType.FOV:
+                    break;
+                case AlgorithmResultType.SFR:
+                    break;
+                case AlgorithmResultType.MTF:
+                    break;
+                case AlgorithmResultType.Ghost:
+                    break;
+                case AlgorithmResultType.LedCheck:
+                    break;
+                case AlgorithmResultType.LightArea:
+                    break;
+                case AlgorithmResultType.Distortion:
+                    break;
+                case AlgorithmResultType.BuildPOI:
+                    break;
+                default:
+                    break;
+            }
+
+        }
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
@@ -667,54 +709,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 {
                     if (selectedItem is AlgorithmResult result)
                     {
-                        string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
-
-                        switch (result.ResultType)
-                        {
-                            case AlgorithmResultType.POI:
-                                // Handle POI result saving logic here
-                                break;
-                            case AlgorithmResultType.POI_XYZ:
-                                var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                                PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
-                                break;
-                            case AlgorithmResultType.POI_Y:
-                                var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
-                                PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
-                                // Handle POI_Y result saving logic here
-                                break;
-                            case AlgorithmResultType.OLED_JND_CalVas:
-                                var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
-                                ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
-                                break;
-                            case AlgorithmResultType.FOV:
-                                // Handle SendCommand result saving logic here
-                                break;
-                            case AlgorithmResultType.SFR:
-                                // Handle SFR result saving logic here
-                                break;
-                            case AlgorithmResultType.MTF:
-                                // Handle SendCommand result saving logic here
-                                break;
-                            case AlgorithmResultType.Ghost:
-                                // Handle Ghost result saving logic here
-                                break;
-                            case AlgorithmResultType.LedCheck:
-                                // Handle LedCheck result saving logic here
-                                break;
-                            case AlgorithmResultType.LightArea:
-                                // Handle LightArea result saving logic here
-                                break;
-                            case AlgorithmResultType.Distortion:
-                                // Handle Distortion result saving logic here
-                                break;
-                            case AlgorithmResultType.BuildPOI:
-                                // Handle BuildPOI result saving logic here
-                                break;
-                            default:
-                                // Handle default case here
-                                break;
-                        }
+                        SideSave(result, selectedPath);
                     }
                 }
             }

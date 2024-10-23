@@ -26,9 +26,17 @@
                             <TextBlock Text="自动刷新数据"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  AutoRefreshView}"/>
                         </DockPanel>
-                        <DockPanel>
+                        <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="插入数据在列表末尾"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  InsertAtBeginning}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="自动保存数据列"  MinWidth="120"  />
+                            <ui:ToggleSwitch IsChecked="{Binding  AutoSaveSideData}"/>
+                        </DockPanel>
+                        <DockPanel>
+                            <TextBlock Text="数据列保存路径"  MinWidth="120"  Visibility="{Binding AutoSaveSideData,Converter={StaticResource bool2VisibilityConverter}}" />
+                            <TextBox Text="{Binding SaveSideDataDirPath}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>
