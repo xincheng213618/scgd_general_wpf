@@ -5,12 +5,12 @@ using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
 {
@@ -44,7 +44,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             new TemplateEditorWindow(new TemplatePoi(), TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLED_FDAType { get=> _CVOLED_FDAType; set{ _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
+        private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
+        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point1 = new PointFloat();
+        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point2 = new PointFloat();
+        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point3 = new PointFloat();
+        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point4 = new PointFloat();
 
 
         public UserControl GetUserControl()
@@ -65,10 +75,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             Params.Add("Color", cOLOR);
+            Params.Add("FDAType", CVOLED_FDAType);
+
+
+            PointFloat[] FixedLEDPoint = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            Params.Add("FixedLEDPoint", FixedLEDPoint);
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
+                EventName = MQTTMessageLib.Algorithm.MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
