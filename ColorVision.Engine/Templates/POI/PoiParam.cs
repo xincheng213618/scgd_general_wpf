@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Engine.Templates.POI.Dao;
 using Newtonsoft.Json;
@@ -99,8 +100,11 @@ namespace ColorVision.Engine.Templates.POI
 
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
+
         public int ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
         private int _ValidateId;
+
+
 
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {

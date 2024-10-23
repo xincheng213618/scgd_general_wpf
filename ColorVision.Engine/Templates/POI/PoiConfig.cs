@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
+using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates.POI.Comply;
 using Newtonsoft.Json;
 using System;
@@ -67,20 +69,36 @@ namespace ColorVision.Engine.Templates.POI
         public RelayCommand SetPoiFileCommand { get; set; }
         public RelayCommand ValidateCIECommand { get; set; }
         public RelayCommand OpenPoiCIEFileCommand { get; set; }
+        public RelayCommand TemplatePoiFixCommand { get; set; }
+
 
         public PoiConfig()
         {
-            ValidateCIECommand = new RelayCommand(a =>
-            {
-                var Template = new TemplateComplyParam("Comply.CIE");
-                new TemplateEditorWindow(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            });
+            ValidateCIECommand = new RelayCommand(a => OpenTemplate());
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
+            TemplatePoiFixCommand = new RelayCommand(a => OpenPoiFixTemplate());
+        }
+
+        public int PoiFixId { get => _PoiFixId; set { _PoiFixId = value; NotifyPropertyChanged(); } }
+        private int _PoiFixId = -1;
+
+        public void OpenPoiFixTemplate()
+        {
+            var Template = new TemplatePoiFix();
+            new TemplateEditorWindow(Template, Template.FindIndex(PoiFixId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
         private int _DeafultValidateCIEId = -1;
+
+        public void OpenTemplate()
+        {
+            var Template = new TemplateComplyParam("Comply.CIE");
+            new TemplateEditorWindow(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+
 
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
         private bool _IsShowDatum;

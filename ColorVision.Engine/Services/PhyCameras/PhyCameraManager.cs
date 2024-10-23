@@ -19,7 +19,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -36,17 +35,21 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
+            ImportCommand = new RelayCommand(a => Import());
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-            ImportCommand = new RelayCommand(a => Import());
-
-            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            PhyCameras.CollectionChanged += (s, e) =>
-            {
-                Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            };
+            RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
+
+
+
+        public void RefreshEmptyCamera()
+        {
+            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+        }
+
 
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
         private int _Count;
