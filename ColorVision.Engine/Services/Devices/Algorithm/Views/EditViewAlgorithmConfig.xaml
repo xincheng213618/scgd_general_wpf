@@ -34,8 +34,8 @@
                             <TextBlock Text="自动保存数据列"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  AutoSaveSideData}"/>
                         </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="数据列保存路径"  MinWidth="120"  Visibility="{Binding AutoSaveSideData,Converter={StaticResource bool2VisibilityConverter}}" />
+                        <DockPanel Visibility="{Binding AutoSaveSideData,Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="数据列保存路径"  MinWidth="120"   />
                             <TextBox Text="{Binding SaveSideDataDirPath}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                     </StackPanel>
