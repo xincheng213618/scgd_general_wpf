@@ -4,16 +4,10 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.Draw.Ruler;
 using ColorVision.Engine.Impl.SolutionImpl.Export;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
-using ColorVision.Themes.Controls;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
-using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -23,7 +17,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +27,35 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
+    public interface IImageViewComponent
+    {
+        public void Execute(ImageView imageView);
+    }
+
+    public class ImageViewComponentManager
+    {
+        private static ImageViewComponentManager _instance;
+        private static readonly object _locker = new();
+        public static ImageViewComponentManager GetInstance() { lock (_locker) { return _instance ??= new ImageViewComponentManager(); } }
+
+        public ImageViewComponentManager()
+        {
+            IImageViewComponents = new ObservableCollection<IImageViewComponent>();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IImageViewComponent).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IImageViewComponent componentInitialize)
+                    {
+                        IImageViewComponents.Add(componentInitialize);
+                    }
+                }
+            }
+        }
+
+        public ObservableCollection<IImageViewComponent> IImageViewComponents { get; set; }
+    }
+
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -67,6 +89,8 @@ namespace ColorVision.Engine.Media
             View = new View();
             InitializeComponent();
             SetConfig(Config);
+            foreach (var item in ImageViewComponentManager.GetInstance().IImageViewComponents)
+                item.Execute(this);
         }
 
 
@@ -76,7 +100,6 @@ namespace ColorVision.Engine.Media
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
             ToolBarLayers.DataContext = Config;
-            ToolBarAl.DataContext = Config;
             ToolBarTop.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
         }
 
@@ -99,39 +122,7 @@ namespace ColorVision.Engine.Media
             this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
 
-            if (TemplatePoi.Params.Count == 0)
-            {
-                MySqlControl.GetInstance().Connect();
-                new TemplatePoi().Load();
-
-            }
-
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                ComboxPOITemplate.SelectedIndex = 0;
-                ToolBarAl.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                Task.Run(()=> LoadMysql());
-            }
-
         }
-
-        public async Task LoadMysql()
-        {
-            await Task.Delay(100);
-            await MySqlControl.GetInstance().Connect();
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-                new TemplatePoi().Load();
-                ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                ComboxPOITemplate.SelectedIndex = 0;
-                ToolBarAl.Visibility = Visibility.Visible;
-            }
-        }
-
 
         public void Clear(object? sender, EventArgs e)
         {
@@ -1114,190 +1105,6 @@ namespace ColorVision.Engine.Media
             }, e.NewValue);
         }
 
-        private void CalculPOI_Click(object sender, RoutedEventArgs e)
-        {
-            if (!Config.IsCVCIE)
-            {
-                MessageBox1.Show("仅对CVCIE图像支持");
-                return;
-            }
-            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
-            {
-                MessageBox1.Show("需要配置关注点");
-                return;
-            }
-
-
-            ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
-
-            poiParams.PoiPoints.Clear();
-            foreach (var item in DrawingVisualLists)
-            {
-                BaseProperties drawAttributeBase = item.BaseAttribute;
-                if (drawAttributeBase is CircleTextProperties circle)
-                {
-                    PoiPoint poiParamData = new PoiPoint()
-                    {
-                        PointType = RiPointTypes.Circle,
-                        PixX = circle.Center.X,
-                        PixY = circle.Center.Y,
-                        PixWidth = circle.Radius * 2,
-                        PixHeight = circle.Radius * 2,
-                        Tag = circle.Tag,
-                        Name = circle.Text
-                    };
-                    poiParams.PoiPoints.Add(poiParamData);
-                }
-                else if (drawAttributeBase is CircleProperties circleProperties)
-                {
-                    PoiPoint poiParamData = new PoiPoint()
-                    {
-                        PointType = RiPointTypes.Circle,
-                        PixX = circleProperties.Center.X,
-                        PixY = circleProperties.Center.Y,
-                        PixWidth = circleProperties.Radius * 2,
-                        PixHeight = circleProperties.Radius * 2,
-                        Tag = circleProperties.Tag,
-                        Name = circleProperties.Id.ToString()
-                    };
-                    poiParams.PoiPoints.Add(poiParamData);
-                }
-                else if (drawAttributeBase is RectangleTextProperties rectangle)
-                {
-                    PoiPoint poiParamData = new()
-                    {
-                        Name = rectangle.Text,
-                        PointType = RiPointTypes.Rect,
-                        PixX = rectangle.Rect.X + rectangle.Rect.Width / 2,
-                        PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
-                        PixWidth = rectangle.Rect.Width,
-                        PixHeight = rectangle.Rect.Height,
-                        Tag = rectangle.Tag,
-                    };
-                    poiParams.PoiPoints.Add(poiParamData);
-                }
-                else if (drawAttributeBase is RectangleProperties rectangleProperties)
-                {
-                    PoiPoint poiParamData = new PoiPoint()
-                    {
-                        PointType = RiPointTypes.Rect,
-                        PixX = rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2,
-                        PixY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2,
-                        PixWidth = rectangleProperties.Rect.Width,
-                        PixHeight = rectangleProperties.Rect.Height,
-                        Tag = rectangleProperties.Tag,
-                    };
-                    poiParams.PoiPoints.Add(poiParamData);
-                }
-            }
-
-
-
-            foreach (var item in poiParams.PoiPoints)
-            {
-                POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
-                var sss = GetCVCIE(pOIPoint);
-                PoiResultCIExyuvDatas.Add(sss);
-            }
-
-
-            WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
-            windowCIE.Show();
-        }
-
-
-        public PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
-        {
-            int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
-            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
-            poiResultCIExyuvData.Point = pOIPoint;
-            float dXVal = 0;
-            float dYVal = 0;
-            float dZVal = 0;
-            float dx = 0;
-            float dy = 0;
-            float du = 0;
-            float dv = 0;
-            float CCT = 0;
-            float Wave = 0;
-
-            switch (pOIPoint.PointType)
-            {
-                case POIPointTypes.None:
-                    break;
-                case POIPointTypes.SolidPoint:
-                    _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
-                    break;
-                case POIPointTypes.Circle:
-                    _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)(rect / 2));
-                    break;
-                case POIPointTypes.Rect:
-                     _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
-                    break;
-                default:
-                    break;
-            }
-
-            poiResultCIExyuvData.u = du;
-            poiResultCIExyuvData.v = dv;
-            poiResultCIExyuvData.x = dx;
-            poiResultCIExyuvData.y = dy;
-            poiResultCIExyuvData.X = dXVal;
-            poiResultCIExyuvData.Y = dYVal;
-            poiResultCIExyuvData.Z = dZVal;
-
-            int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, (int)(rect / 2));
-            poiResultCIExyuvData.CCT = CCT;
-            poiResultCIExyuvData.Wave = Wave;
-
-            return poiResultCIExyuvData;
-        }
-
-        private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
-            {
-                ImageShow.Clear();
-                DrawingVisualLists.Clear();
-
-                if (poiParams.Id == -1) return;
-
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    switch (item.PointType)
-                    {
-                        case RiPointTypes.Circle:
-                            DVCircleText Circle = new();
-                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                            Circle.Attribute.Radius = item.PixHeight / 2;
-                            Circle.Attribute.Brush = Brushes.Transparent;
-                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.Id = item.Id;
-                            Circle.Attribute.Text = item.Name;
-                            Circle.Render();
-                            ImageShow.AddVisual(Circle);
-                            break;
-                        case RiPointTypes.Rect:
-                            DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
-                            Rectangle.Attribute.Brush = Brushes.Transparent;
-                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Text = item.Name;
-                            Rectangle.Render();
-                            ImageShow.AddVisual(Rectangle);
-                            break;
-                        case RiPointTypes.Mask:
-                            break;
-                    }
-                }
-            }
-        }
-
         private void Button_3D_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is WriteableBitmap writeableBitmap)
@@ -1305,10 +1112,7 @@ namespace ColorVision.Engine.Media
                 Window3D window3D = new Window3D(writeableBitmap);
                 window3D.Show();
             }
-
         }
-
-
 
         private bool disposedValue;
         protected virtual void Dispose(bool disposing)
