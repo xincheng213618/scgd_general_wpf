@@ -127,6 +127,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             exportCVCIE.ShowDialog();
         }
 
+
+
         public void Open()
         {
             if (File.Exists(FileUrl))

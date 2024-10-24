@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Draw
                 Brush brush = Brushes.Red;
                 double fontSize = Attribute.Pen.Thickness * 10;
                 FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(Attribute.Rect.X - fontSize, Attribute.Rect.Y - fontSize - Attribute.Pen.Thickness));
+                dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - formattedText.Width / 2, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
