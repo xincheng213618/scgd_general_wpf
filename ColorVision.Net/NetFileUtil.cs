@@ -73,8 +73,8 @@ namespace ColorVision.Net
         {
             Task t = new(() =>
             {
-                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType, param.ChannelType);
-                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileExtType, param.ChannelType);
+                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType, (CVImageChannelType)param.ChannelType);
+                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileExtType, ((CVImageChannelType)(param.ChannelType)));
             });
             t.Start();
         }

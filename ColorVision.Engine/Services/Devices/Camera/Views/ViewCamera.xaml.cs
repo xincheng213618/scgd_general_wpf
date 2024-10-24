@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Messages;
@@ -407,15 +406,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             TbDeviceCode.Text = string.Empty;
         }
 
-        private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
-            {
-                ViewResultCameras.Remove(viewResult);
-                ImageView.Clear();
-            }
-        }
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
@@ -450,81 +440,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
-            {
-                if (File.Exists(viewCamera.FileUrl))
-                {
-                    ExportCVCIE exportCamera = new(viewCamera.FileUrl) { Icon = Device.Icon };
-                    exportCamera.Owner = Application.Current.GetActiveWindow();
-                    exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                    exportCamera.ShowDialog();
-                }
-                else
-                {
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
-                }
-            }
-        }
-
-        private void MenuItem_ExportFile_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
-            {
-                string FilePath = viewCamera.FileUrl;
-
-                if (File.Exists(FilePath))
-                {
-                    if (CVFileUtil.IsCIEFile(FilePath))
-                    {
-                        int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
-                        if (index > 0)
-                        {
-                            if (!File.Exists(meta.srcFileName))
-                                meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
-                        }
-
-                        System.Windows.Forms.FolderBrowserDialog dialog = new();
-                        dialog.UseDescriptionForTitle = true;
-                        dialog.Description = "选择要保存到得位置";
-                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            if (string.IsNullOrEmpty(dialog.SelectedPath))
-                            {
-                                MessageBox.Show("文件夹路径不能为空", "提示");
-                                return;
-                            }
-                            string savePath = dialog.SelectedPath;
-                            // Copy the file to the new location
-                            string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
-                            File.Copy(FilePath, newFilePath, true);
-
-                            // If srcFileName exists, copy it to the new location as well
-                            if (File.Exists(meta.srcFileName))
-                            {
-                                string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
-                                File.Copy(meta.srcFileName, newSrcFilePath, true);
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
-                    }
-                }
-                else
-                {
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
-                }
-            }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {

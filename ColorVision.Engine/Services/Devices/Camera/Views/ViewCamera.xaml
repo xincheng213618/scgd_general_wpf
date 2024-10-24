@@ -80,16 +80,11 @@
 
             <ListView  x:Name="listView1" Height="200" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1"   BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                 <ListView.Resources >
-                    <ContextMenu x:Key="ContextMenuItem">
-                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="{x:Static properties:Resources.Export}"  Click="MenuItem_Export_Click" Tag="{Binding .}"  />
-                        <MenuItem Header="另存为"  Click="MenuItem_ExportFile_Click" Tag="{Binding .}"  />
-                    </ContextMenu>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View >

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Impl.CVFile.Export;
+using ColorVision.Engine.Media;
 using ColorVision.Net;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Drawing.Imaging;
 using System.Threading;
 using System.Windows;
 
-namespace ColorVision.Engine.Impl.SolutionImpl.Export
+namespace ColorVision.Engine.Media
 {
 
 

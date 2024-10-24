@@ -9,7 +9,7 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 
-namespace ColorVision.Engine.Impl.CVFile.Export
+namespace ColorVision.Engine.Media
 {
     public class VExportCIE : ViewModelBase
     {

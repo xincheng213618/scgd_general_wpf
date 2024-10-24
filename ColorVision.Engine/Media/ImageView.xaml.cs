@@ -3,12 +3,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Draw;
 using ColorVision.Engine.Draw.Ruler;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
-using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
 using System;
@@ -501,6 +499,7 @@ namespace ColorVision.Engine.Media
                 SelectDCircle = null;
             }
         }
+
 
         private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
         {

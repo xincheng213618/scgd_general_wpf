@@ -3,13 +3,14 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
+using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -29,6 +30,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
     public class ViewResultCamera : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
     {
+        public ContextMenu ContextMenu { get; set; }
+        public RelayCommand ExportCVCIECommand { get; set; }
+        public RelayCommand OpenCVCIECommand { get; set; }
+        public RelayCommand CopyToCommand { get; set; }
+
+
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
@@ -46,14 +53,80 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl) );
             OpenCVCIECommand = new RelayCommand(a => Open(), a => File.Exists(FileUrl));
+            CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "导出" ,Command = ExportCVCIECommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = CopyToCommand });
+        }
+
+
+
+        public void CopyTo()
+        {
+            string FilePath = FileUrl;
+
+            if (File.Exists(FilePath))
+            {
+                if (CVFileUtil.IsCIEFile(FilePath))
+                {
+                    int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
+                    if (index > 0)
+                    {
+                        if (meta.srcFileName != null && !File.Exists(meta.srcFileName))
+                        {
+                            meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
+
+                        }
+                        else
+                        {
+                            meta.srcFileName = string.Empty;
+                        }
+                    }
+
+                    System.Windows.Forms.FolderBrowserDialog dialog = new();
+                    dialog.UseDescriptionForTitle = true;
+                    dialog.Description = "选择要保存到得位置";
+                    if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        if (string.IsNullOrEmpty(dialog.SelectedPath))
+                        {
+                            MessageBox.Show("文件夹路径不能为空", "提示");
+                            return;
+                        }
+                        string savePath = dialog.SelectedPath;
+                        // Copy the file to the new location
+                        string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
+                        File.Copy(FilePath, newFilePath, true);
+
+                        // If srcFileName exists, copy it to the new location as well
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
+                            File.Copy(meta.srcFileName, newSrcFilePath, true);
+                        }
+                    }
+
+                }
+                else
+                {
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
+                }
+            }
+            else
+            {
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+            }
         }
 
 
         public void Export()
         {
             ExportCVCIE exportCVCIE = new(FileUrl);
-            exportCVCIE.Show();
+            exportCVCIE.Owner = Application.Current.GetActiveWindow();
+            exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            exportCVCIE.ShowDialog();
         }
+
         public void Open()
         {
             if (File.Exists(FileUrl))
@@ -73,8 +146,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        public RelayCommand ExportCVCIECommand { get; set; }
-        public RelayCommand OpenCVCIECommand { get; set; }
+
         
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
