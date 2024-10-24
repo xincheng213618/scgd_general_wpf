@@ -43,6 +43,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         }
         public UserControl UserControl { get; set; }
 
+        public bool IsInversion { get => _IsInversion; set { _IsInversion = value; NotifyPropertyChanged(); } }
+        private bool _IsInversion;
+
 
         public MsgRecord SendCommand(LEDStripDetectionParam param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
@@ -52,6 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            Params.Add("IsInversion", IsInversion);
 
             MsgSend msg = new()
             {
