@@ -107,11 +107,11 @@
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
-    <ProjectReference Include="..\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
-    <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
     <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

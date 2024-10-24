@@ -6,34 +6,24 @@
 #include <stack>
 
 
-void LampBeadDetection(cv::Mat image)
+void LampBeadDetection(cv::Mat image,int rows, int cols)
 {
     cv::Mat image8bit;
     image.convertTo(image8bit, CV_8UC3, 255.0 / 65535.0);
 
-    cv::Mat binary;
-    cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
-
-    // 定义结构元素
-    cv::Mat binary;
-    cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
-
-
     cv::Mat gray;
     cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
 
-    // 二值化
-
     // 定义结构元素
     cv::Mat binary;
     cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
+
 
     // 腐蚀操作
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
 
     cv::dilate(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(4, 4)));
     cv::erode(binary, binary, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(2, 2)));
-
 
     // 检测轮廓
     std::vector<std::vector<cv::Point>> contours;
@@ -199,10 +189,7 @@ int main()
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	std::cout << ": " << duration.count() / 1000.0 << " 毫秒" << std::endl;
 
-    cv::imwrite("reee.tif", image8bit);
 
-
-	//cv::imshow("tif读", image);
 	cv::waitKey(0);
 }
 
