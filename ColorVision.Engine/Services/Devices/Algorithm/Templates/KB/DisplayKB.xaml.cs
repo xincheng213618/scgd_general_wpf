@@ -76,6 +76,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                             {
                                  keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, IAlgorithm.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
                             }
+                            if (item.Name.Contains(",") || item.Name.Contains("\""))
+                            {
+                                item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
+                            }
                             writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
                         }
                         catch (Exception ex)

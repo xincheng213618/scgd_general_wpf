@@ -89,6 +89,16 @@ namespace ColorVision.Engine.Services.Templates.POI
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ToolBarTop;
 
+            ToolBarTop.EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    PoiParam.PoiConfig.IsShowDatum = false;
+                    PoiParam.PoiConfig.IsShowPoiConfig = false;
+                    RenderPoiConfig();
+                }
+            };
+
             ImageShow.VisualsAdd += (s, e) =>
             {
                 if (!PoiParam.PoiConfig.IsShowText)
@@ -184,7 +194,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
                 WaitControlProgressBar.Value = 20;
-                DatumSet();
                 RenderPoiConfig();
                 PoiParamToDrawingVisual(PoiParam);
                 WaitControl.Visibility = Visibility.Collapsed;
@@ -1844,6 +1853,12 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 PoiFixStackPanel.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            FocusPointGrid.Height = FocusPointRowDefinition.ActualHeight;
+            PropertyGrid21.Height = FocusPointRowDefinition.ActualHeight;
         }
     }
 

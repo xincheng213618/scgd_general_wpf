@@ -538,11 +538,12 @@
         <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="auto"/>
+                <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
             </Grid.RowDefinitions>
             <draw:ZoomboxSub x:Name="Zoombox1" >
                 <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
+            <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
