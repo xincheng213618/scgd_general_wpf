@@ -12,9 +12,9 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {
-    public class AlgorithmFocusPoints : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmFocusPoints : ViewModelBase
     {
-        public string Name { get; set; } = "FocusPoints";
+        public string Name { get; set; } = "发光区1";
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
