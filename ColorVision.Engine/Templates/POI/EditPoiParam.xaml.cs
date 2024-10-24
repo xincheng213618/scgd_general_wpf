@@ -5,6 +5,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali;
+using ColorVision.Engine.Services.Templates.POI.ListViewAdorners;
 using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -21,6 +22,7 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -68,7 +70,15 @@ namespace ColorVision.Engine.Services.Templates.POI
             DataContext = PoiParam;
 
             ListView1.ItemsSource = DrawingVisualLists;
-
+            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
+            listViewDragDropManager.EventHandler += (s, e) =>
+            {
+                int old = DBIndex[e[0]];
+                DBIndex[e[0]] = DBIndex[e[1]];
+                e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
+                DBIndex[e[1]] = old;
+                e[1].BaseAttribute.Name = old.ToString();
+            };
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
@@ -87,7 +97,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ToolBarTop;
-
             ToolBarTop.EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
