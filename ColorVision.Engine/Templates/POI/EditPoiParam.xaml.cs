@@ -75,8 +75,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxValidate.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE.AVG")?.CreateEmpty();
             ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE")?.CreateEmpty();
 
-            ComboBoxPoiFix.ItemsSource = TemplatePoiFix.Params.CreateEmpty();
-
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -1573,6 +1571,8 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowFocusPointAd.ShowDialog();
+
+            PoiParamToDrawingVisual(PoiParam);
         }
 
         MeasureImgResultDao MeasureImgResultDao = new();

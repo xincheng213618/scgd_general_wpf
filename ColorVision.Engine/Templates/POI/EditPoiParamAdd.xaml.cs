@@ -27,13 +27,15 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                    PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
-
+                SelectPoiParam = TemplatePoi.Params[ListView1.SelectedIndex].Value;
+                PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
+                PoiParam.PoiPoints.Clear();
                 foreach (var item in SelectPoiParam.PoiPoints)
                 {
+                    item.Id = -1;
                     PoiParam.PoiPoints.Add(item);
                 }
+                SelectPoiParam.PoiPoints.Clear();
                 MessageBox.Show("导入成功", "ColorVision");
             }
         }
