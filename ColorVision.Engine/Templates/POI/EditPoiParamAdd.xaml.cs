@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.POI
                 foreach (var item in SelectPoiParam.PoiPoints)
                 {
                     item.Id = -1;
-                    PoiParam.PoiPoints.Add(item);
+                    PoiParam.PoiPoints.Add(item); 
                 }
                 SelectPoiParam.PoiPoints.Clear();
                 MessageBox.Show("导入成功", "ColorVision");

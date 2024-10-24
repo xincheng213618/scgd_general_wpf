@@ -68,7 +68,6 @@ namespace ColorVision
                 //Environment.Exit(0);
             }
             //杀死僵尸进程
-            KillZombieProcesses();
             log.Info("程序打开");
             App app;
             app = new App();
