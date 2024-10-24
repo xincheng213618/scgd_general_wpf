@@ -2,11 +2,11 @@
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
@@ -36,6 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
+            PhyCameraManager.GetInstance().RefreshEmptyCamera();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

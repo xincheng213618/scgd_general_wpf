@@ -2,11 +2,46 @@
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
     public class ViewRsultJND : PoiResultData, IViewResult
     {
+        public static void SaveCsv(ObservableCollection<ViewRsultJND> ViewRsultJNDs, string FileName)
+        {
+            var csvBuilder = new StringBuilder();
+            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "h_jnd", "v_jnd" };
+            // 写入列头
+            csvBuilder.AppendLine(string.Join(",", properties));
+            // 写入数据行
+            foreach (var item in ViewRsultJNDs)
+            {
+                List<string> values = new()
+                {
+                    item.POIPoint.Id?.ToString(CultureInfo.InvariantCulture),
+                    item.Name,
+                    $"{item.Point.PixelX}|{item.Point.PixelY}" ,
+                    $"{item.Point.Width}|{item.Point.Height}",
+                    item.Shapes,
+                    item.JND.h_jnd.ToString(),
+                    item.JND.v_jnd.ToString(),
+                };
+
+                csvBuilder.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+
+
+
         public MQTTMessageLib.Algorithm.POIResultDataJND JND { get { return _JND; } set { _JND = value; NotifyPropertyChanged(); } }
 
         private MQTTMessageLib.Algorithm.POIResultDataJND _JND;

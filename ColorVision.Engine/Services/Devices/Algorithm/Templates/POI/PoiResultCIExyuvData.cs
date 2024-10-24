@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u'", "v'", "x", "y" };
 
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));

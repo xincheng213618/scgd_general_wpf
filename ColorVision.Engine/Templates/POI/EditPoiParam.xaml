@@ -10,6 +10,7 @@
         xmlns:draw ="clr-namespace:ColorVision.Engine.Draw"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:poifix ="clr-namespace:ColorVision.Engine.Services.Templates.POI.POIFix"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -143,6 +144,23 @@
                         </Grid>
                         <Button DockPanel.Dock="Right" Margin="2,0" Content="应用全部" Click="Button_Click_4"/>
                     </DockPanel>
+                    <StackPanel Margin="0,2" Orientation="Horizontal">
+                        <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFix" Width="80"/>
+                        <ComboBox x:Name="ComboBoxPoiFix" SelectedValue="{Binding PoiConfig.PoiFixId}" SelectionChanged="ComboBoxPoiFix_SelectionChanged" Width="90" SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
+                        <Grid Width="20" Margin="5,0"  DockPanel.Dock="Right">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding PoiConfig.TemplatePoiFixCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel x:Name="PoiFixStackPanel" d:DataContext="{d:DesignInstance poifix:PoiFixParam}" >
+                        <StackPanel Orientation="Horizontal" Margin="0,2" >
+                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFixFilePath" Width="80"/>
+                            <TextBox Text="{Binding PoiFixFilePath}" Margin="2,0"  Width="90"/>
+                            <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
+                        </StackPanel>
+                        
+                    </StackPanel>
+                    
                 </StackPanel>
             </Border>
 

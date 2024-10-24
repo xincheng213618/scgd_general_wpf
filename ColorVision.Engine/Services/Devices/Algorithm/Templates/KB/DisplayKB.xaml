@@ -30,7 +30,18 @@
                 <TextBlock Text="SaveFilePath" Width="60"/>
                 <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding SaveFolderPath}"/>
             </DockPanel>
-            
+            <UniformGrid Columns="2">
+                <CheckBox x:Name="CB_CalculateHalo" Content="CM_CalculateHalo" IsChecked="True" />
+                <CheckBox x:Name="CB_CalculateKey" Content="CM_CalculateKey" IsChecked="True" />
+            </UniformGrid>
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="HaloThreadV" Width="100"/>
+                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding HaloThreadV}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="KeyThreadV" Width="100"/>
+                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding KeyThreadV}"/>
+            </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}"  IsSelected="True">
                     <StackPanel Orientation="Horizontal" Margin="0,2">

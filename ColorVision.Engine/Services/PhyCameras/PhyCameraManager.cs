@@ -35,17 +35,21 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
+            ImportCommand = new RelayCommand(a => Import());
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-            ImportCommand = new RelayCommand(a => Import());
-
-            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            PhyCameras.CollectionChanged += (s, e) =>
-            {
-                Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
-            };
+            RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
+
+
+
+        public void RefreshEmptyCamera()
+        {
+            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+        }
+
 
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
         private int _Count;
@@ -222,6 +226,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
+                        if (!newPhyCamera.IsLicensed)
+                            newPhyCamera.UploadLicenseNet();
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);

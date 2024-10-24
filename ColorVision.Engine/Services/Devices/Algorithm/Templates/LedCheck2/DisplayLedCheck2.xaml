@@ -7,12 +7,16 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:AlgorithmLedCheck2}"
-             d:DesignHeight="100" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="300" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="CVOLED_COLOR" Width="60"/>
                 <ComboBox  x:Name="ComboxCVOLEDCOLOR"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+            </DockPanel>
+            <DockPanel Margin="0,2">
+                <TextBlock Text="FDAType" Width="60"/>
+                <ComboBox  x:Name="ComboxFDAType"  Width="130" SelectedValue="{Binding CVOLED_FDAType}" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
             </DockPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="POI" Width="60"/>
@@ -32,6 +36,40 @@
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
+            <UniformGrid Columns="4" Margin="0,2">
+                <DockPanel Margin="0,0,5,2" >
+                    <TextBlock Text="x1" Width="20"/>
+                    <TextBox Text="{Binding Point1.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="y1" Width="20"/>
+                    <TextBox Text="{Binding Point1.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x2" Width="20"/>
+                    <TextBox Text="{Binding Point2.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,0,2">
+                    <TextBlock Text="y2" Width="20"/>
+                    <TextBox Text="{Binding Point2.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x3" Width="20"/>
+                    <TextBox Text="{Binding Point3.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="y3" Width="20"/>
+                    <TextBox Text="{Binding Point3.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,5,2">
+                    <TextBlock Text="x4" Width="20"/>
+                    <TextBox Text="{Binding Point4.X}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+                <DockPanel Margin="0,0,0,2">
+                    <TextBlock Text="y4" Width="20"/>
+                    <TextBox Text="{Binding Point4.Y}" Style="{StaticResource TextBox.Small}"/>
+                </DockPanel>
+            </UniformGrid>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">

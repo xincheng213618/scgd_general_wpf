@@ -4,6 +4,7 @@ using ColorVision.Engine.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
+using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
@@ -23,6 +24,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -71,6 +73,8 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ComboBoxValidate.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE.AVG")?.CreateEmpty();
             ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE")?.CreateEmpty();
+
+            ComboBoxPoiFix.ItemsSource = TemplatePoiFix.Params.CreateEmpty();
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -1754,7 +1758,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
                 ClearRender();
-                BuildPoiFileHandle.CovertPoiParam(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                ViewHandleBuildPoiFile.CovertPoiParam(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                 PoiParamToDrawingVisual(PoiParam);
             }
         }
@@ -1763,7 +1767,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (File.Exists(PoiParam.PoiConfig.PoiCIEFileName))
             {
-                BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                ViewHandleBuildPoiFile.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
             }
             else
             {
@@ -1776,7 +1780,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         PoiParam.PoiConfig.PoiCIEFileName = saveFileDialog.FileName;
-                        BuildPoiFileHandle.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
+                        ViewHandleBuildPoiFile.CoverFile(PoiParam, PoiParam.PoiConfig.PoiCIEFileName);
                     }
                 }
             }
@@ -1787,6 +1791,60 @@ namespace ColorVision.Engine.Services.Templates.POI
             SaveAsFile();
         }
 
+        private void PoiFix_Create_Click(object sender, RoutedEventArgs e)
+        {
+            
+            if (TemplatePoiFix.Params.FirstOrDefault(a => a.Id == PoiParam.PoiConfig.PoiFixId) is TemplateModel<PoiFixParam> template)
+            {
+                string csvFilePath = template.Value.PoiFixFilePath;
+                if (File.Exists(template.Value.PoiFixFilePath))
+                {
+
+                }
+                else
+                {
+                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+                    {
+                        saveFileDialog.Filter = "csv Files (*.csv)|*.csv";
+                        saveFileDialog.Title = "Save File";
+                        saveFileDialog.FileName = "PoiFix.csv";
+                        saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            template.Value.PoiFixFilePath = saveFileDialog.FileName;
+                        }
+                        else
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                using (StreamWriter writer = new StreamWriter(template.Value.PoiFixFilePath, false, Encoding.UTF8))
+                {
+                    writer.WriteLine("Id,Name,PixX,PixY,PixWidth,PixHeight,X,Y,Z");
+                    foreach (var item in PoiParam.PoiPoints)
+                    {
+                        writer.WriteLine($"{item.Id},{item.Name},{item.PixX},{item.PixY},{item.PixWidth},{item.PixHeight},1,1,1");
+                    }
+                };
+
+                new TemplatePoiFix().Save(template);
+            }
+        }
+
+        private void ComboBoxPoiFix_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (TemplatePoiFix.Params.FirstOrDefault(a =>a.Id == PoiParam.PoiConfig.PoiFixId) is TemplateModel<PoiFixParam> template)
+            {
+                PoiFixStackPanel.Visibility = Visibility.Visible;
+                PoiFixStackPanel.DataContext = template.Value;
+            }
+            else
+            {
+                PoiFixStackPanel.Visibility = Visibility.Collapsed;
+            }
+        }
     }
 
 }

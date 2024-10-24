@@ -5,34 +5,24 @@
 #include <opencv.hpp>
 #include <stack>
 
-int main()
+
+void LampBeadDetection(cv::Mat image)
 {
-    int rows = 650;
-    int cols = 850;
-
-	std::chrono::steady_clock::time_point start, end;
-	std::chrono::microseconds duration;
-
-	cv::Mat image = cv::imread("C:\\Users\\17917\\Desktop\\moreBad.tif",cv::ImreadModes::IMREAD_UNCHANGED);
-
-	if (image.empty()) {
-		std::cerr << "无法读取图像文件！" << std::endl;
-		return -1;
-	}
-    start = std::chrono::high_resolution_clock::now();
-	cv::Mat image8bit;
+    cv::Mat image8bit;
     image.convertTo(image8bit, CV_8UC3, 255.0 / 65535.0);
 
-    // Extract the blue channel
-    //std::vector<cv::Mat> channels;
-    //cv::split(image8bit, channels);
-    //cv::Mat gray = channels[0];
+    cv::Mat binary;
+    cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
 
-	 cv::Mat gray;
-	cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
-     //cv::extractChannel(image8bit, gray, 0); // 0 is the index for the blue channel
+    // 定义结构元素
+    cv::Mat binary;
+    cv::threshold(gray, binary, 20, 255, cv::THRESH_BINARY);
 
-	// 二值化
+
+    cv::Mat gray;
+    cv::cvtColor(image8bit, gray, cv::COLOR_BGR2GRAY);
+
+    // 二值化
 
     // 定义结构元素
     cv::Mat binary;
@@ -71,7 +61,7 @@ int main()
     }
 
     //总亮点
-	int coutns = centers.size();
+    int coutns = centers.size();
 
     // 计算中心点的凸包
     std::vector<cv::Point> hull;
@@ -90,7 +80,7 @@ int main()
             cv::line(image8bit, hull[i], hull[(i + 1) % hull.size()], cv::Scalar(255), 2);
         }
     }
-    
+
     // 计算凸包的面积
     double area = cv::contourArea(hull);
     std::cout << "Convex Hull Area: " << area << std::endl;
@@ -100,8 +90,8 @@ int main()
     double width = boundingRect.width;
     double height = boundingRect.height;
 
-	double singlewith = width / 850;
-	double singleheight = height / 650;
+    double singlewith = width / 850;
+    double singleheight = height / 650;
 
     // 创建一个掩码，初始为全零
     cv::Mat mask = cv::Mat::zeros(image.size(), CV_8UC1);
@@ -138,8 +128,6 @@ int main()
     std::vector<std::vector<cv::Point>> contourless;
     cv::findContours(binary, contourless, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
-    int length = 0;
-
     // 遍历轮廓
     for (const auto& contour : contourless) {
         // 计算轮廓的边界框
@@ -154,7 +142,7 @@ int main()
             int cy = boundingBox.y + boundingBox.height / 2;
             blackcenters.push_back(cv::Point(cx, cy));
         }
-        else 
+        else
         {
             // 计算凸包的边界矩形
             cv::Rect boundingRect = cv::boundingRect(contour);
@@ -181,15 +169,31 @@ int main()
 
     //缺少的点
     std::cout << blackcenters.size() << std::endl;
-	for (const auto& contour : blackcenters) 
+    for (const auto& contour : blackcenters)
     {
         std::cout << contour << std::endl;
-        cv::circle(image8bit, contour, 5, cv::Scalar(0,0,255), 1);
-	}
-    std::cout << length  << std::endl;
-    std::cout << length + blackcenters.size() << std::endl;
+        cv::circle(image8bit, contour, 5, cv::Scalar(0, 0, 255), 1);
+    }
+    std::cout << blackcenters.size() << std::endl;
 
-    
+}
+
+int main()
+{
+    int rows = 650;
+    int cols = 850;
+
+	std::chrono::steady_clock::time_point start, end;
+	std::chrono::microseconds duration;
+
+	cv::Mat image = cv::imread("C:\\Users\\17917\\Documents\\WXWork\\1688854819471931\\Cache\\File\\2024-10\\ledTest-q.tif",cv::ImreadModes::IMREAD_UNCHANGED);
+
+	if (image.empty()) {
+		std::cerr << "无法读取图像文件！" << std::endl;
+		return -1;
+	}
+    start = std::chrono::high_resolution_clock::now();
+
 
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

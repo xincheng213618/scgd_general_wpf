@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(type, code, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
+                MsgRecord msg = IAlgorithm.SendCommand( code, type, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FOV");
             }
         }

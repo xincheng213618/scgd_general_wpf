@@ -118,4 +118,7 @@
   <data name="ManagementService" xml:space="preserve">
     <value>管理服务</value>
   </data>
+  <data name="Service" xml:space="preserve">
+    <value>服务</value>
+  </data>
 </root>

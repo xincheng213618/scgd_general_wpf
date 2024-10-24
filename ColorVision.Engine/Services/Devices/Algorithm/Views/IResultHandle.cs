@@ -1,10 +1,13 @@
 ﻿using MQTTMessageLib.Algorithm;
+using System.Collections.Generic;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public interface IResultHandle
     {
-        AlgorithmResultType ResultType { get; }
+        public List<AlgorithmResultType> CanHandle { get; set; }
+
         void Handle(AlgorithmView view, AlgorithmResult result);
     }
 }

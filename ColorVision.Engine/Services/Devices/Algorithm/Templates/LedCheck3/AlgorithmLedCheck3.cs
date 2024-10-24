@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 {
-    public  class AlgorithmLedCheck3 : ViewModelBase, IDisplayAlgorithm
+    public  class AlgorithmLedCheck3 : ViewModelBase
     {
         public string Name { get; set; } = "灯珠检测3";
 
