@@ -69,25 +69,16 @@ namespace ColorVision.Engine.Templates.POI
         public RelayCommand SetPoiFileCommand { get; set; }
         public RelayCommand ValidateCIECommand { get; set; }
         public RelayCommand OpenPoiCIEFileCommand { get; set; }
-        public RelayCommand TemplatePoiFixCommand { get; set; }
-
 
         public PoiConfig()
         {
             ValidateCIECommand = new RelayCommand(a => OpenTemplate());
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
-            TemplatePoiFixCommand = new RelayCommand(a => OpenPoiFixTemplate());
         }
 
-        public int PoiFixId { get => _PoiFixId; set { _PoiFixId = value; NotifyPropertyChanged(); } }
-        private int _PoiFixId = -1;
-
-        public void OpenPoiFixTemplate()
-        {
-            var Template = new TemplatePoiFix();
-            new TemplateEditorWindow(Template, Template.FindIndex(PoiFixId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
+        public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
+        private string? _PoiFixFilePath;
 
         public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
         private int _DeafultValidateCIEId = -1;

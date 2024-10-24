@@ -4,6 +4,7 @@ using ColorVision.Engine.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali;
 using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -1802,58 +1803,34 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void PoiFix_Create_Click(object sender, RoutedEventArgs e)
         {
-            
-            if (TemplatePoiFix.Params.FirstOrDefault(a => a.Id == PoiParam.PoiConfig.PoiFixId) is TemplateModel<PoiFixParam> template)
-            {
-                string csvFilePath = template.Value.PoiFixFilePath;
-                if (File.Exists(template.Value.PoiFixFilePath))
-                {
 
+            if (!File.Exists(PoiParam.PoiConfig.PoiFixFilePath))
+            {
+                using System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                saveFileDialog.Filter = "csv Files (*.csv)|*.csv";
+                saveFileDialog.Title = "Save File";
+                saveFileDialog.FileName = "PoiFix.csv";
+                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    PoiParam.PoiConfig.PoiFixFilePath = saveFileDialog.FileName;
                 }
                 else
                 {
-                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
-                    {
-                        saveFileDialog.Filter = "csv Files (*.csv)|*.csv";
-                        saveFileDialog.Title = "Save File";
-                        saveFileDialog.FileName = "PoiFix.csv";
-                        saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            template.Value.PoiFixFilePath = saveFileDialog.FileName;
-                        }
-                        else
-                        {
-                            return;
-                        }
-                    }
+                    return;
                 }
+            }
 
-                using (StreamWriter writer = new StreamWriter(template.Value.PoiFixFilePath, false, Encoding.UTF8))
+            using (StreamWriter writer = new StreamWriter(PoiParam.PoiConfig.PoiFixFilePath, false, Encoding.UTF8))
+            {
+                writer.WriteLine("Id,Name,PixX,PixY,PixWidth,PixHeight,GenCalibrationType,M,N,P");
+                foreach (var item in PoiParam.PoiPoints)
                 {
-                    writer.WriteLine("Id,Name,PixX,PixY,PixWidth,PixHeight,X,Y,Z");
-                    foreach (var item in PoiParam.PoiPoints)
-                    {
-                        writer.WriteLine($"{item.Id},{item.Name},{item.PixX},{item.PixY},{item.PixWidth},{item.PixHeight},1,1,1");
-                    }
-                };
-
-                new TemplatePoiFix().Save(template);
-            }
+                    writer.WriteLine($"{item.Id},{item.Name},{item.PixX},{item.PixY},{item.PixWidth},{item.PixHeight},{GenCalibrationType.BrightnessAndChroma},1,1,1");
+                }
+            };
         }
 
-        private void ComboBoxPoiFix_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (TemplatePoiFix.Params.FirstOrDefault(a =>a.Id == PoiParam.PoiConfig.PoiFixId) is TemplateModel<PoiFixParam> template)
-            {
-                PoiFixStackPanel.Visibility = Visibility.Visible;
-                PoiFixStackPanel.DataContext = template.Value;
-            }
-            else
-            {
-                PoiFixStackPanel.Visibility = Visibility.Collapsed;
-            }
-        }
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
