@@ -10,7 +10,6 @@
         xmlns:draw ="clr-namespace:ColorVision.Engine.Draw"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:poifix ="clr-namespace:ColorVision.Engine.Services.Templates.POI.POIFix"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -144,18 +143,10 @@
                         </Grid>
                         <Button DockPanel.Dock="Right" Margin="2,0" Content="应用全部" Click="Button_Click_4"/>
                     </DockPanel>
-                    <StackPanel Margin="0,2" Orientation="Horizontal">
-                        <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFix" Width="80"/>
-                        <ComboBox x:Name="ComboBoxPoiFix" SelectedValue="{Binding PoiConfig.PoiFixId}" SelectionChanged="ComboBoxPoiFix_SelectionChanged" Width="90" SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
-                        <Grid Width="20" Margin="5,0"  DockPanel.Dock="Right">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding PoiConfig.TemplatePoiFixCommand}"/>
-                        </Grid>
-                    </StackPanel>
-                    <StackPanel x:Name="PoiFixStackPanel" d:DataContext="{d:DesignInstance poifix:PoiFixParam}" >
+                    <StackPanel x:Name="PoiFixStackPanel" >
                         <StackPanel Orientation="Horizontal" Margin="0,2" >
                             <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFixFilePath" Width="80"/>
-                            <TextBox Text="{Binding PoiFixFilePath}" Margin="2,0"  Width="90"/>
+                            <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
                         
@@ -538,11 +529,12 @@
         <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="auto"/>
+                <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
             </Grid.RowDefinitions>
             <draw:ZoomboxSub x:Name="Zoombox1" >
                 <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
+            <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
@@ -588,7 +580,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <WindowsFormsHost Grid.Column="0" Width="400" Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
-                    <winf:PropertyGrid   x:Name="PropertyGrid2" />
+                    <winf:PropertyGrid  x:Name="PropertyGrid2" />
                 </WindowsFormsHost>
                 <ListView  x:Name="ListView1" VirtualizingPanel.IsVirtualizing="True"  VirtualizingPanel.VirtualizationMode="Recycling" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>

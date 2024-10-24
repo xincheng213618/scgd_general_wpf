@@ -12,7 +12,7 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

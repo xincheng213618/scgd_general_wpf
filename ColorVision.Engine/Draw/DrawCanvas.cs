@@ -100,6 +100,8 @@ namespace ColorVision.Engine.Draw
             return hitResult.VisualHit as DrawingVisual;
         }
 
+
+
         private List<DrawingVisual> hits = new();
         public List<DrawingVisual> GetVisuals(Geometry region)
         {

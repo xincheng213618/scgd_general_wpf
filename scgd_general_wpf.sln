@@ -25,7 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{55F5939D-C
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "UI\ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Net", "ColorVision.Net\ColorVision.Net.csproj", "{BAF74DE2-805D-42FB-B64F-38F789EEF292}"
 EndProject
@@ -33,7 +33,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorVisionIcons64", "Color
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVisionSetup", "ColorVisionSetup\ColorVisionSetup.csproj", "{62EE75AB-AC8D-4E34-BC89-094E05298902}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "ColorVision.UI\ColorVision.UI.csproj", "{04BB9722-017A-466F-B4ED-80165C654618}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "UI\ColorVision.UI\ColorVision.UI.csproj", "{04BB9722-017A-466F-B4ED-80165C654618}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{3978403E-55E4-4AAC-8978-1D39651BEA7C}"
 EndProject
@@ -49,11 +49,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projects", "Projects", "{7D
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectHeyuan", "Projects\ProjectHeyuan\ProjectHeyuan.csproj", "{CC562826-7B20-4FFB-B2D9-3E568389480E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "ColorVision.Themes\ColorVision.Themes.csproj", "{C17AAAC2-DE62-41AA-8D9F-DB6345C8C22C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "UI\ColorVision.Themes\ColorVision.Themes.csproj", "{C17AAAC2-DE62-41AA-8D9F-DB6345C8C22C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{3593FFAA-9AB9-47DC-8D13-A943A469384A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{3593FFAA-9AB9-47DC-8D13-A943A469384A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "ColorVision.Solution\ColorVision.Solution.csproj", "{7736CE9C-0059-420C-A841-5B71293C1A88}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "UI\ColorVision.Solution\ColorVision.Solution.csproj", "{7736CE9C-0059-420C-A841-5B71293C1A88}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{E24919A5-7981-44FF-82A9-E7259C5492CE}"
 EndProject
@@ -79,7 +79,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{BF3D024B-583C-403A-A213-BFC0D1BED4F0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Core", "ColorVision.Core\ColorVision.Core.csproj", "{8B8E05E3-F002-4A01-852C-B537041BFF8C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "ColorVision.Core\ColorVision.Core.csproj", "{8B8E05E3-F002-4A01-852C-B537041BFF8C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -498,7 +498,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{AD038578-6456-48BF-9379-151DCBE9DBF5} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 		{AA343239-476E-43E3-BEE3-D3313C883341} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{C8071225-73B5-4559-A22E-CD057B424A3C} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
@@ -524,12 +523,12 @@ Global
 		{8B8E05E3-F002-4A01-852C-B537041BFF8C} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal
