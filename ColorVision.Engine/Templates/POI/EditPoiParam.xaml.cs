@@ -50,11 +50,22 @@ namespace ColorVision.Engine.Services.Templates.POI
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
-            this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+
+            Task.Run(() => Test());
+        }
+
+        public async void Test()
+        {
+            await Task.Delay(100);
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                ToolBarTop?.ClearImage();
-                writeableBitmap = null;
-            }));
+                this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ToolBarTop?.ClearImage();
+                    writeableBitmap = null;
+                }));
+            });
         }
         
 
