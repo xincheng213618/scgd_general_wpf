@@ -8,14 +8,22 @@
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resources.Export}" Background="{StaticResource BackgroundBrush}" Height="400" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Export}" Background="{StaticResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <StackPanel>
+        <StackPanel >
             <DockPanel  Margin="0,3">
                 <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resources.Name}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
@@ -33,7 +41,7 @@
                               />
             </DockPanel>
             <DockPanel>
-                <TextBlock Text="图像信息：" Width="80"/>
+                <TextBlock Text="图像信息：" Width="80" />
                 <TextBlock Text="{Binding Rows}"/>
                 <TextBlock Text="x"/>
                 <TextBlock Text="{Binding Cols}"/>

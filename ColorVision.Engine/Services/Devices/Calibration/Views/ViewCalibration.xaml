@@ -36,9 +36,6 @@
                     <Button Click="Button_Click_Export" Margin="0,0,2,0">
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
-                    <Button Click="Button_Click_Clear" Margin="0,0,2,0"  >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                    </Button>
                     <Button Content="{x:Static properties:Resources.Search}" Click="SearchAdvanced_Click" Margin="0,0,2,0"/>
                     <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click" Margin="0,0,2,0"/>
                     <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
@@ -74,9 +71,14 @@
                     </Popup>
                 </ToolBar>
             </ToolBarTray>
-            <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  HorizontalAlignment="Right" VerticalAlignment="Center" Command="{Binding Config.EditCommand}" >
-                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
-            </Button>
+            <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                <Button Click="Button_Click_Clear" Background="#01FFFFFF" BorderThickness="0"    >
+                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="4" />
+                </Button>
+                <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  VerticalAlignment="Center" Command="{Binding Config.EditCommand}" >
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+            </StackPanel>
             <ListView Height="200"  Grid.Row="1" x:Name="listView1" BorderThickness="0" Padding="0" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ContextMenuItem">

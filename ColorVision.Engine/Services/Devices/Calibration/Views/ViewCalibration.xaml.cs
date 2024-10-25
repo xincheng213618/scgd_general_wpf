@@ -29,20 +29,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
-
-    public class ViewCalibrationConfig : ViewModelBase, IConfig
-    {
-        public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-    }
-
-
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>

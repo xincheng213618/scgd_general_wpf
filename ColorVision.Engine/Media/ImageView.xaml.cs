@@ -91,7 +91,6 @@ namespace ColorVision.Engine.Media
                 item.Execute(this);
         }
 
-
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             Config = imageViewConfig;
@@ -179,6 +178,10 @@ namespace ColorVision.Engine.Media
             else if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            }
+            else if (e.Key == Key.E)
+            {
+                ToolBarTop.ImageEditMode = !ToolBarTop.ImageEditMode;
             }
         }
 
@@ -535,8 +538,8 @@ namespace ColorVision.Engine.Media
                 HImageCache = null;
             }
             GC.Collect();
-            int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
 
+            int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
             ToolBarLayers.Visibility = Visibility.Collapsed;
         }
 
@@ -586,13 +589,6 @@ namespace ColorVision.Engine.Media
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
-                    RelayCommand ExportImageCommand = new RelayCommand(a =>
-                    {
-                        ExportCVCIE exportCVCIE = new(filePath);
-                        exportCVCIE.Show();
-                    });
-                    Zoombox1.ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportImageCommand });
-
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     CVCIESetBuffer(filePath);
                     try
