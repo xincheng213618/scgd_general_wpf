@@ -1568,20 +1568,17 @@ namespace ColorVision.Engine.Services.Templates.POI
                     ImageShow.AddVisual(Circle);
                 }
 
-                //for (int i = 0; i < 4; i++)
-                //{
-                //    //LAPoints[i].Y = PointY[i];
-                //    dataGridViewLightArea.Rows[i].Cells[0].Value = LedLengthResult[i];
-                //    //dataGridViewLightArea.Rows[i].Cells[1].Value = LAPoints[i].Y;
-                //}
         }
 
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
             EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            windowFocusPointAd.Closed += (s, e) =>
+            {
+                if(windowFocusPointAd.IsSucess)
+                    PoiParamToDrawingVisual(PoiParam);
+            };
             windowFocusPointAd.ShowDialog();
-
-            PoiParamToDrawingVisual(PoiParam);
         }
 
         MeasureImgResultDao MeasureImgResultDao = new();

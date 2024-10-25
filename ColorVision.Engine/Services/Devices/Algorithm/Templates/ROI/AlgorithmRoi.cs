@@ -15,6 +15,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
     public class AlgorithmRoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "发光区检测";
+        public int Order { get; set; } = 11;
+
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

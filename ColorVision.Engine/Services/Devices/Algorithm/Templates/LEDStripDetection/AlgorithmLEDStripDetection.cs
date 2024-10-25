@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
     public class AlgorithmLEDStripDetection : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "灯带检测";
+        public int Order { get; set; } = 10;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

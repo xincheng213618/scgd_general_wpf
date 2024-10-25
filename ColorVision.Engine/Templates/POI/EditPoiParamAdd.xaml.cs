@@ -18,6 +18,8 @@ namespace ColorVision.Engine.Templates.POI
             InitializeComponent();
         }
 
+        public bool IsSucess { get; set; }
+
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
             e.Handled = true;
@@ -37,6 +39,8 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 SelectPoiParam.PoiPoints.Clear();
                 MessageBox.Show("导入成功", "ColorVision");
+                IsSucess = true;
+                this.Close();
             }
         }
 

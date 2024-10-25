@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
     public class AlgorithmGhost : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = Properties.Resources.GhostShadow;
+        public int Order { get; set; } = 54;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

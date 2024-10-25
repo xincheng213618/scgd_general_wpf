@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using cvColorVision;
 using CVCommCore;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -33,22 +35,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             Device = device;
             InitializeComponent();
         }
-        public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } = new ObservableCollection<IDisplayAlgorithm>();
+        public ObservableCollection<IDisplayAlgorithm> Algorithms { get; set; } 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
+            List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type, Device) is IDisplayAlgorithm  algorithm)
                     {
-                        Algorithms.Add(algorithm);
+                        algorithms.Add(algorithm);
                     }
                 }
             }
 
+            Algorithms = new ObservableCollection<IDisplayAlgorithm>(algorithms.OrderBy(item => item.Order));
             CB_Algorithms.ItemsSource = Algorithms;
 
             CB_Algorithms.SelectionChanged += (s, e) =>

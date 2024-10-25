@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
     public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "JND";
+        public int Order { get; set; } = 3;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

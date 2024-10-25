@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
     public class AlgorithmFocusPoints : ViewModelBase
     {
         public string Name { get; set; } = "发光区1";
+        public int Order { get; set; } = 12;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

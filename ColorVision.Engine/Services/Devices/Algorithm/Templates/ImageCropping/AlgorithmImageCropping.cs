@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
     public class AlgorithmImageCropping : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "发光区裁剪";
+        public int Order { get; set; } = 5;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

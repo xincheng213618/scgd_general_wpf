@@ -15,6 +15,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
     public class AlgorithmFOV : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "FOV";
+        public int Order { get; set; } = 53;
+
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 

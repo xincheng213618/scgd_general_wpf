@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
     public class AlgorithmMTF : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "MTF";
+        public int Order { get; set; } = 50;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

@@ -25,6 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
     public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "KB";
+        public int Order { get; set; } = 99;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

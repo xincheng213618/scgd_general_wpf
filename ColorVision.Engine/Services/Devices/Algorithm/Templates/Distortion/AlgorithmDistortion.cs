@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
     public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "畸变";
+        public int Order { get; set; } = 55;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

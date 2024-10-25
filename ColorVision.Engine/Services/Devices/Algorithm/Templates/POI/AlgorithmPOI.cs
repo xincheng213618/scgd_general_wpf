@@ -18,6 +18,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
     public class AlgorithmPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "POI";
+        public int Order { get; set; } = 1;
+
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
