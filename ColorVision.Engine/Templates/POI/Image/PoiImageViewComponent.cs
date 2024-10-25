@@ -34,6 +34,7 @@ namespace ColorVision.Engine.Templates.POI.Image
             }
             ImageView.ComboxPOITemplate.SelectionChanged += ComboxPOITemplate_SelectionChanged;
             ImageView.ButtonCalculPOI.Click += CalculPOI_Click;
+
             async Task LoadMysql(ImageView imageView)
             {
                 await Task.Delay(100);
@@ -46,6 +47,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                     ImageView.ToolBarAl.Visibility = Visibility.Visible;
                 }
             }
+
             void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
             {
                 if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)

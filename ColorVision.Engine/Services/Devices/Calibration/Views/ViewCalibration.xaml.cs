@@ -213,9 +213,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             ViewResultCalibration result = new(model);
             ViewResults.AddUnique(result);
-
-            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
-            listView1.ScrollIntoView(listView1.SelectedItem);
+            if (Config.AutoRefreshView)
+            {
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                listView1.ScrollIntoView(listView1.SelectedItem);
+            }
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

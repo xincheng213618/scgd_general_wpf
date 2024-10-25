@@ -347,7 +347,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCamera result = new(model);
 
             ViewResultCameras.AddUnique(result, Config.InsertAtBeginning);
-
             if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
