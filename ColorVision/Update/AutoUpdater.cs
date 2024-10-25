@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes.Controls;
@@ -412,7 +413,7 @@ namespace ColorVision.Update
                 // 创建批处理文件内容
                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
                 string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string executableName = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
+                string? executableName = Path.GetFileName(Environment.ProcessPath);
 
                 string batchContent = $@"
 @echo off

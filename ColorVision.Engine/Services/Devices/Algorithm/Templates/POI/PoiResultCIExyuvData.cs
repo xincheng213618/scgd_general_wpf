@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1708,CS8604
+﻿#pragma warning disable CA1708,CS8604,CS8602
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;

@@ -11,7 +11,6 @@ namespace ColorVision.Engine.Templates
 {
     public class ParamModBase : ModelBase
     {
-        public event EventHandler IsEnabledChanged;
 
         [Browsable(false)]
         public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }

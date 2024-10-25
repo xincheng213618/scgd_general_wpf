@@ -148,7 +148,7 @@ namespace ColorVision.Engine.Templates.POI
         public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); } }
 
         public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; NotifyPropertyChanged(); } }
-        private bool _IsUserDraw =false;
+        private bool _IsUserDraw;
 
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }
         private int _AreaCircleRadius = 100;

@@ -16,7 +16,7 @@
             </DockPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="FDAType" Width="60"/>
-                <ComboBox  x:Name="ComboxFDAType"  Width="130" SelectedValue="{Binding CVOLED_FDAType}" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                <ComboBox  x:Name="ComboxFDAType"  Width="130" SelectedValue="{Binding CVOLEDFDAType}" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
             </DockPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="POI" Width="60"/>

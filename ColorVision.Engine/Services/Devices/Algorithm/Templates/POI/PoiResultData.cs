@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8629, CS8604
+﻿#pragma warning disable CS8629, CS8604,CS8602
 using ColorVision.Common.MVVM;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;

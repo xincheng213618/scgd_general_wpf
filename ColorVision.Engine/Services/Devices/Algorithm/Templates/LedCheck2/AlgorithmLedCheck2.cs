@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             new TemplateEditorWindow(new TemplatePoi(), TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLED_FDAType { get=> _CVOLED_FDAType; set{ _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
+        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get=> _CVOLED_FDAType; set{ _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
         private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
         public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             Params.Add("Color", cOLOR);
-            Params.Add("FDAType", CVOLED_FDAType);
+            Params.Add("FDAType", CVOLEDFDAType);
 
 
             PointFloat[] FixedLEDPoint = new PointFloat[] { Point1, Point2, Point3, Point4 };

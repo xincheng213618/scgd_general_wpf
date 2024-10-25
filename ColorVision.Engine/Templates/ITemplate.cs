@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;

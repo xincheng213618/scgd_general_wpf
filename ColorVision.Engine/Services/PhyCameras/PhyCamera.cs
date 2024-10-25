@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
-            UploadLicenseNetCommand = new RelayCommand(a => UploadLicenseNet());
+            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
         }
 
         public async Task UploadLicenseNet()
@@ -152,17 +152,19 @@ namespace ColorVision.Engine.Services.PhyCameras
                     response.EnsureSuccessStatusCode();
 
                     // 确保返回的是一个文件而不是JSON
-                    if (response.Content.Headers.ContentType.MediaType == "application/json")
+                    if (response.Content.Headers.ContentType?.MediaType == "application/json")
                     {
                         string errorContent = await response.Content.ReadAsStringAsync();
+#pragma warning disable CA2201 // 不要引发保留的异常类型
                         throw new Exception($"请求数据失败. 返回的不是文件：{response.Content.Headers.ContentType.MediaType} => {errorContent}");
+#pragma warning restore CA2201 // 不要引发保留的异常类型
                     }
 
                     // 获取文件名
                     fileName = "license.zip"; // 默认文件名
                     if (response.Content.Headers.ContentDisposition != null)
                     {
-                        fileName = response.Content.Headers.ContentDisposition.FileName.Trim('"');
+                        fileName = response.Content.Headers.ContentDisposition.FileName?.Trim('"');
                     }
                     fileName = $"{DirLicense}\\{fileName}";
                     using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))

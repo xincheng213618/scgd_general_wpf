@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Media;
+﻿#pragma warning disable CS8602
+
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using MQTTMessageLib.Algorithm;
@@ -24,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
             public int X { get; set; }
             public int Y { get; set; }
         }
-        public void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
+        public static void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
             if (filePath == null)
                 return;

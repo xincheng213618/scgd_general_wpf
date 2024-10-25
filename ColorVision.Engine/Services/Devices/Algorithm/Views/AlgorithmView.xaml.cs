@@ -654,43 +654,51 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public void SideSave(AlgorithmResult result,string selectedPath)
+        public static void SideSave(AlgorithmResult result,string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
-            switch (result.ResultType)
+            try
             {
-                case AlgorithmResultType.POI:
-                    break;
-                case AlgorithmResultType.POI_XYZ:
-                    var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                    PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
-                    break;
-                case AlgorithmResultType.POI_Y:
-                    var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
-                    PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
-                    break;
-                case AlgorithmResultType.OLED_JND_CalVas:
-                    var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
-                    ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
-                    break;
-                case AlgorithmResultType.FOV:
-                    break;
-                case AlgorithmResultType.SFR:
-                    break;
-                case AlgorithmResultType.MTF:
-                    break;
-                case AlgorithmResultType.Ghost:
-                    break;
-                case AlgorithmResultType.LedCheck:
-                    break;
-                case AlgorithmResultType.LightArea:
-                    break;
-                case AlgorithmResultType.Distortion:
-                    break;
-                case AlgorithmResultType.BuildPOI:
-                    break;
-                default:
-                    break;
+                switch (result.ResultType)
+                {
+                    case AlgorithmResultType.POI:
+                        break;
+                    case AlgorithmResultType.POI_XYZ:
+                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
+                        PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
+                        break;
+                    case AlgorithmResultType.POI_Y:
+                        var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
+                        PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
+                        break;
+                    case AlgorithmResultType.OLED_JND_CalVas:
+                        var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
+                        ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
+                        break;
+                    case AlgorithmResultType.FOV:
+                        break;
+                    case AlgorithmResultType.SFR:
+                        break;
+                    case AlgorithmResultType.MTF:
+                        break;
+                    case AlgorithmResultType.Ghost:
+                        break;
+                    case AlgorithmResultType.LedCheck:
+                        break;
+                    case AlgorithmResultType.LightArea:
+                        break;
+                    case AlgorithmResultType.Distortion:
+                        break;
+                    case AlgorithmResultType.BuildPOI:
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                logg.Error(ex);
             }
 
         }

@@ -102,10 +102,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void Export()
         {
-            ExportCVCIE exportCVCIE = new(FilePath);
-            exportCVCIE.Owner = Application.Current.GetActiveWindow();
-            exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            exportCVCIE.ShowDialog();
+            if (FilePath != null)
+            {
+                ExportCVCIE exportCVCIE = new(FilePath);
+                exportCVCIE.Owner = Application.Current.GetActiveWindow();
+                exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                exportCVCIE.ShowDialog();
+            }
+
         }
 
 

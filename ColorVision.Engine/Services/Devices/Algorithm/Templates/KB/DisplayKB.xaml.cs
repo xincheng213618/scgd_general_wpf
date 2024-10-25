@@ -43,7 +43,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                 MessageBox.Show("请先选择标定文件");
                 return;
             }
-            float exposure = 1.0f;
             string luminFile = IAlgorithm.LuminFile;
 
             Mat image = Cv2.ImRead(imgFileName, ImreadModes.Unchanged);
@@ -76,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                             {
                                  keyGray = KeyBoardDLL.CM_CalculateKey(rect, 35, IAlgorithm.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
                             }
-                            if (item.Name.Contains(",") || item.Name.Contains("\""))
+                            if (item.Name.Contains(',') || item.Name.Contains('"'))
                             {
                                 item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
                             }

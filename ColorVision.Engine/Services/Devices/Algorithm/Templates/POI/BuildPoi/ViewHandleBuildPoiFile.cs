@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Media;
+﻿#pragma warning disable CS8604,CS8603
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI;

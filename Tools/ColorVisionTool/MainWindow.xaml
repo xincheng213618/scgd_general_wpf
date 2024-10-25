@@ -18,7 +18,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <StackPanel x:Name="StackPanelInfo" d:DataContext="{d:DesignInstance local:MotorInfo}" Margin="5">
+            <StackPanel x:Name="StackPanelInfo" Margin="5">
                 <Button Content="打开输出文件夹" Click="OpenOutputFile_Click" Margin="0,0,0,5"/>
 
                 <Button Content="自动聚焦" Click="Button_Click" Margin="0,0,0,5"/>

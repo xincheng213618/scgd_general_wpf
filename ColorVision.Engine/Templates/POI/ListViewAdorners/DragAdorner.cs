@@ -1,4 +1,4 @@
-// Copyright (C) Josh Smith - January 2007
+#pragma warning disable CS8625,CA1805
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;

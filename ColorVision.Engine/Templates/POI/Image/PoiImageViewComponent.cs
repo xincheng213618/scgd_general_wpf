@@ -19,21 +19,21 @@ namespace ColorVision.Engine.Templates.POI.Image
 {
     public class PoiImageViewComponent : IImageViewComponent
     {
-        public void Execute(ImageView ImageView)
+        public void Execute(ImageView imageView)
         {
             if (MySqlControl.GetInstance().IsConnect)
             {
-                ImageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-                ImageView.ComboxPOITemplate.SelectedIndex = 0;
-                ImageView.ToolBarAl.Visibility = Visibility.Visible;
+                imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
+                imageView.ComboxPOITemplate.SelectedIndex = 0;
+                imageView.ToolBarAl.Visibility = Visibility.Visible;
 
             }
             else
             {
-                Task.Run(() => LoadMysql(ImageView));
+                Task.Run(() => LoadMysql(imageView));
             }
-            ImageView.ComboxPOITemplate.SelectionChanged += ComboxPOITemplate_SelectionChanged;
-            ImageView.ButtonCalculPOI.Click += CalculPOI_Click;
+            imageView.ComboxPOITemplate.SelectionChanged += ComboxPOITemplate_SelectionChanged;
+            imageView.ButtonCalculPOI.Click += CalculPOI_Click;
 
             async Task LoadMysql(ImageView imageView)
             {
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                     new TemplatePoi().Load();
                     imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                     imageView.ComboxPOITemplate.SelectedIndex = 0;
-                    ImageView.ToolBarAl.Visibility = Visibility.Visible;
+                    imageView.ToolBarAl.Visibility = Visibility.Visible;
                 }
             }
 
@@ -52,8 +52,8 @@ namespace ColorVision.Engine.Templates.POI.Image
             {
                 if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
                 {
-                    ImageView.ImageShow.Clear();
-                    ImageView.DrawingVisualLists.Clear();
+                    imageView.ImageShow.Clear();
+                    imageView.DrawingVisualLists.Clear();
 
                     if (poiParams.Id == -1) return;
 
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Circle.Attribute.Id = item.Id;
                                 Circle.Attribute.Text = item.Name;
                                 Circle.Render();
-                                ImageView.ImageShow.AddVisual(Circle);
+                                imageView.ImageShow.AddVisual(Circle);
                                 break;
                             case RiPointTypes.Rect:
                                 DVRectangleText Rectangle = new();
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                                 Rectangle.Attribute.Id = item.Id;
                                 Rectangle.Attribute.Text = item.Name;
                                 Rectangle.Render();
-                                ImageView.ImageShow.AddVisual(Rectangle);
+                                imageView.ImageShow.AddVisual(Rectangle);
                                 break;
                             case RiPointTypes.Mask:
                                 break;
@@ -93,12 +93,12 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             void CalculPOI_Click(object sender, RoutedEventArgs e)
             {
-                if (!ImageView.Config.IsCVCIE)
+                if (!imageView.Config.IsCVCIE)
                 {
                     MessageBox1.Show("仅对CVCIE图像支持");
                     return;
                 }
-                if (ImageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+                if (imageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
                 {
                     MessageBox1.Show("需要配置关注点");
                     return;
@@ -106,12 +106,12 @@ namespace ColorVision.Engine.Templates.POI.Image
 
 
                 ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-                int result = ConvertXYZ.CM_SetFilter(ImageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
-                result = ConvertXYZ.CM_SetFilterNoArea(ImageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
-                result = ConvertXYZ.CM_SetFilterXYZ(ImageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
+                int result = ConvertXYZ.CM_SetFilter(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
+                result = ConvertXYZ.CM_SetFilterNoArea(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
+                result = ConvertXYZ.CM_SetFilterXYZ(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
 
                 poiParams.PoiPoints.Clear();
-                foreach (var item in ImageView.DrawingVisualLists)
+                foreach (var item in imageView.DrawingVisualLists)
                 {
                     BaseProperties drawAttributeBase = item.BaseAttribute;
                     if (drawAttributeBase is CircleTextProperties circle)
@@ -206,13 +206,13 @@ namespace ColorVision.Engine.Templates.POI.Image
                     case POIPointTypes.None:
                         break;
                     case POIPointTypes.SolidPoint:
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
                         break;
                     case POIPointTypes.Circle:
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect / 2);
                         break;
                     case POIPointTypes.Rect:
-                        _ = ConvertXYZ.CM_GetXYZxyuvRect(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
+                        _ = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
                         break;
                     default:
                         break;
@@ -226,7 +226,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                 poiResultCIExyuvData.Y = dYVal;
                 poiResultCIExyuvData.Z = dZVal;
 
-                int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, rect / 2);
+                int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(imageView.Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, rect / 2);
                 poiResultCIExyuvData.CCT = CCT;
                 poiResultCIExyuvData.Wave = Wave;
 

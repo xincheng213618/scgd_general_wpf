@@ -19,6 +19,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -227,7 +228,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         var newPhyCamera = new PhyCamera(item);
                         if (!newPhyCamera.IsLicensed)
-                            newPhyCamera.UploadLicenseNet();
+                            Task.Run(() => newPhyCamera.UploadLicenseNet());
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);

@@ -1,4 +1,4 @@
-// Copyright (C) Josh Smith - January 2007
+#pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,13 +16,13 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
 
     /// <summary>
     /// Manages the dragging and dropping of ListViewItems in a ListView.
-    /// The ItemType type parameter indicates the type of the objects in
+    /// The T type parameter indicates the type of the objects in
     /// the ListView's items source.  The ListView's ItemsSource must be
-    /// set to an instance of ObservableCollection of ItemType, or an
+    /// set to an instance of ObservableCollection of T, or an
     /// Exception will be thrown.
     /// </summary>
-    /// <typeparam name="ItemType">The type of the ListView's items.</typeparam>
-    public class ListViewDragDropManager<ItemType> where ItemType : class
+    /// <typeparam name="T">The type of the ListView's items.</typeparam>
+    public class ListViewDragDropManager<T> where T : class
     {
         #region Data
 
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
         double dragAdornerOpacity;
         int indexToSelect;
         bool isDragInProgress;
-        ItemType itemUnderDragCursor;
+        T itemUnderDragCursor;
         ListView listView;
         Point ptMouseDown;
         bool showDragAdorner;
@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
             this.showDragAdorner = true;
         }
 
-        public EventHandler<List<ItemType>> EventHandler { get; set; }
+        public EventHandler<List<T>> EventHandler { get; set; }
 
         /// <summary>
         /// Initializes a new instance of ListViewDragManager.
@@ -205,7 +205,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
         /// requires custom behavior.  Note, if this event is handled the default
         /// item dropping logic will not occur.
         /// </summary>
-        public event EventHandler<ProcessDropEventArgs<ItemType>> ProcessDrop;
+        public event EventHandler<ProcessDropEventArgs<T>> ProcessDrop;
 
         #endregion // ProcessDrop [event]
 
@@ -272,13 +272,13 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
                 this.indexToSelect = -1;
             }
         }
-        private static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        private static T1 FindAncestor<T1>(DependencyObject current) where T1 : DependencyObject
         {
             while (current != null)
             {
-                if (current is T)
+                if (current is T1)
                 {
-                    return (T)current;
+                    return (T1)current;
                 }
                 current = VisualTreeHelper.GetParent(current);
             }
@@ -328,7 +328,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
             // Update the item which is known to be currently under the drag cursor.
             int index = this.IndexUnderDragCursor;
 
-            this.ItemUnderDragCursor = index < 0 ? null : this.ListView.Items[index] as ItemType;
+            this.ItemUnderDragCursor = index < 0 ? null : this.ListView.Items[index] as T;
         }
 
         #endregion // listView_DragOver
@@ -367,31 +367,33 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
 
         void listView_Drop(object sender, DragEventArgs e)
         {
-            ItemType data = ItemUnderDragCursor;
+            T data = ItemUnderDragCursor;
 
             if (this.ItemUnderDragCursor != null)
                 this.ItemUnderDragCursor = null;
 
             e.Effects = DragDropEffects.None;
 
-            //if (!e.Data.GetDataPresent(typeof(ItemType)))
+            //if (!e.Data.GetDataPresent(typeof(T)))
             //    return;
 
             // Get the data object which was dropped.
-            //ItemType data = e.Data.GetData(typeof(ItemType)) as ItemType;
+            //T data = e.Data.GetData(typeof(T)) as T;
 
             if (data == null)
                 return;
 
-            // Get the ObservableCollection<ItemType> which contains the dropped data object.
-            ObservableCollection<ItemType> itemsSource = this.listView.ItemsSource as ObservableCollection<ItemType>;
+            // Get the ObservableCollection<T> which contains the dropped data object.
+            ObservableCollection<T> itemsSource = this.listView.ItemsSource as ObservableCollection<T>;
             if (itemsSource == null)
+#pragma warning disable CA2201 // 不要引发保留的异常类型
                 throw new Exception(
                     "A ListView managed by ListViewDragManager must have its ItemsSource set to an ObservableCollection<ItemType>.");
+#pragma warning restore CA2201 // 不要引发保留的异常类型
 
             int oldIndex = indexToSelect;
 
-            EventHandler.Invoke(this, new List<ItemType> { data, itemsSource[indexToSelect] });
+            EventHandler.Invoke(this, new List<T> { data, itemsSource[indexToSelect] });
 
             int newIndex = itemsSource.IndexOf(data);
             if (newIndex < 0)
@@ -420,7 +422,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
             if (this.ProcessDrop != null)
             {
                 // Let the client code process the drop.
-                ProcessDropEventArgs<ItemType> args = new ProcessDropEventArgs<ItemType>(itemsSource, data, oldIndex, newIndex, e.AllowedEffects);
+                ProcessDropEventArgs<T> args = new ProcessDropEventArgs<T>(itemsSource, data, oldIndex, newIndex, e.AllowedEffects);
                 this.ProcessDrop(this, args);
                 e.Effects = args.Effects;
             }
@@ -501,7 +503,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
             return this.listView.ItemContainerGenerator.ContainerFromIndex(index) as ListViewItem;
         }
 
-        ListViewItem GetListViewItem(ItemType dataItem)
+        ListViewItem GetListViewItem(T dataItem)
         {
             if (this.listView.ItemContainerGenerator.Status != GeneratorStatus.ContainersGenerated)
                 return null;
@@ -665,7 +667,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
 
         #region ItemUnderDragCursor
 
-        ItemType ItemUnderDragCursor
+        T ItemUnderDragCursor
         {
             get { return this.itemUnderDragCursor; }
             set
@@ -696,7 +698,7 @@ namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
 
         void PerformDragOperation()
         {
-            ItemType selectedItem = this.listView.SelectedItem as ItemType;
+            T selectedItem = this.listView.SelectedItem as T;
             DragDropEffects allowedEffects = DragDropEffects.Move | DragDropEffects.Move | DragDropEffects.Link;
             if (DragDrop.DoDragDrop(this.listView, selectedItem, allowedEffects) != DragDropEffects.None)
             {
