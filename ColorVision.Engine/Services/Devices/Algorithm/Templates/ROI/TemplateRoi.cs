@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         public TemplateRoi()
         {
-            Title = "发光区检测2";
+            Title = "发光区检测";
             Code = "OLED.GetROI";
             TemplateParams = Params;
         }

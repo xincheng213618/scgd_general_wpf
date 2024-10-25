@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 {
     public class MysqlPoiRevise : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复MysqlMysqlPoiRevise";
+        public string GetMysqlCommandName() => "恢复Mysql Poi修正模板设置";
 
         public string GetRecover()
         {

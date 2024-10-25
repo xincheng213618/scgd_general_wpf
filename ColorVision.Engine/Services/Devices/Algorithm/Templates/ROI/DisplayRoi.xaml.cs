@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测2模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测模板")) return;
 
             if (ComboxTemplate.SelectedValue is not RoiParam param) return;
 
@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
                 }
 
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(msg, "发光区检测");
             }
         }
 

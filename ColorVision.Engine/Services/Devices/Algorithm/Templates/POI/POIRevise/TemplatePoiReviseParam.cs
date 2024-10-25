@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 
         public TemplatePoiReviseParam()
         {
-            Title = "Poi修正算法设置";
+            Title = "Poi修正模板设置";
             Code = "PoiRevise";
             TemplateParams = Params;
         }

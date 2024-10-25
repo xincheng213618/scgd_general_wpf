@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
     public class MysqlPOIFilter : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "MysqlPOIFilter";
+        public string GetMysqlCommandName() => "POI过滤模板";
         public string GetRecover()
         {
             string t_scgd_sys_dictionary_mod_master = "INSERT INTO `t_scgd_sys_dictionary_mod_master` (`id`, `code`, `name`, `pid`, `mod_type`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`) VALUES (23, 'POIFilter', 'POIFliter', NULL, 112, '2024-07-23 14:25:21', 1, 0, NULL, 0);\r\n";

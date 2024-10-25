@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
     public class MysqlBuildPoi:IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复MysqlBuildPoi";
+        public string GetMysqlCommandName() => "恢复Mysql Poi布点模板设置";
         public string GetRecover()
         {
             string t_scgd_sys_dictionary_mod_master = "INSERT INTO `t_scgd_sys_dictionary_mod_master` (`id`, `code`, `name`, `pid`, `mod_type`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`) VALUES (16, 'BuildPOI', 'POI校正', NULL, 7, '2024-04-28 11:40:23', 1, 0, NULL, 0);\r\n";

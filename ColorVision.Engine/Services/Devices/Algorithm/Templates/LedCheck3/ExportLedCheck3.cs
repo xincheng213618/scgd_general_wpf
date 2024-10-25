@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Templates;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 {
@@ -9,6 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
         public override string GuidId => "LedCheck3";
         public override string Header => "灯珠检测3";
         public override int Order => 2;
+        public override Visibility Visibility => Visibility.Collapsed;
         public override ITemplate Template => new TemplateThirdParty("LedCheck3");
     }
 }
