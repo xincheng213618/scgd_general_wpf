@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
             var postData = new { macSn = Code };
 
-            string DirLicense = $"{Environments.ConfigFolderPath}\\Licenses";
+            string DirLicense = $"{Environments.DirAppData}\\Licenses";
 
             if (!Directory.Exists(DirLicense))
                 Directory.CreateDirectory(DirLicense);

@@ -11,8 +11,6 @@
             _messageUpdater = messageUpdater;
         }
 
-
-
         public async Task InitializeAsync()
         {
             _messageUpdater.Update("Debug Mode: " + SystemHelper.IsDebugMode());

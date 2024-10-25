@@ -40,6 +40,11 @@
                         <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
                         <TextBlock Text="显示RAM"/>
                     </DockPanel>
+                    <DockPanel Margin="5">
+                        <Button Content="清理" DockPanel.Dock="Right" Command="{Binding ClearCacheCommand}"/>
+                        <TextBlock Text="清理缓存"/>
+                    </DockPanel>
+
                     <ui:RatingControl HorizontalAlignment="Left" Value="5" />
                 </StackPanel>
             </Border>

@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 namespace ColorVision.UI.Configs
 {
     public class SystemMonitorSetting : ViewModelBase, IConfig
@@ -25,6 +26,46 @@ namespace ColorVision.UI.Configs
         private static SystemMonitor _instance;
         private static readonly object _locker = new();
         public static SystemMonitor GetInstance() { lock (_locker) { return _instance ??= new SystemMonitor(); } }
+
+
+        public RelayCommand ClearCacheCommand { get; set; }
+
+
+        public void ClearCache()
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(Environments.DirAppData);
+            foreach (var item in directoryInfo.GetFiles())
+            {
+                try
+                {
+                    item.Delete();
+                }
+                catch
+                {
+
+                }
+            }
+
+            if (Environments.DirLog != null)
+            {
+                DirectoryInfo logDir = new DirectoryInfo(Environments.DirLog);
+                foreach (var item in logDir.GetFiles())
+                {
+                    try
+                    {
+                        item.Delete();
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+            MessageBox.Show("清除成功");
+        }
+
+
+
 
         private bool PerformanceCounterIsOpen;
         private PerformanceCounter PCCPU;
@@ -71,6 +112,7 @@ namespace ColorVision.UI.Configs
                 }
             });
             timer = new Timer(TimeRun, null, 0, UpdateSpeed);
+            ClearCacheCommand = new RelayCommand(a => ClearCache());
 
             DriveInfo[] allDrives = DriveInfo.GetDrives();
             foreach (var item in allDrives)
@@ -78,6 +120,8 @@ namespace ColorVision.UI.Configs
                 DriveInfos.Add(item);
             }
         }
+
+
         public ObservableCollection<DriveInfo> DriveInfos { get; set; } = new ObservableCollection<DriveInfo>();
 
         private void TimeRun(object? state)
