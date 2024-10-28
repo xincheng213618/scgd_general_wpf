@@ -69,7 +69,8 @@ namespace ColorVision.UI
             {
                 return (T1)service;
             }
-            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
+            LoadConfigs();
+            return GetRequiredService<T1>();
         }
 
         public void SaveConfigs(string fileName)
