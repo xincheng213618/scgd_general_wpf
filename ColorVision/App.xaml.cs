@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
@@ -10,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -67,6 +67,8 @@ namespace ColorVision
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
             PluginLoader.LoadPluginsAssembly("Plugins");
+            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
 
@@ -107,8 +109,6 @@ namespace ColorVision
             }
             else
             {
-                MySqlControl.GetInstance();
-
                 var _IComponentInitializers = new List<UI.IInitializer>();
                 MessageUpdater messageUpdater = new MessageUpdater();
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
