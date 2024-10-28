@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Media
         public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
         public WindowCVCIE(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas)
         {
-            PoiResultCIExyuvDatas = poiResultCIExyuvDatas;
+            PoiResultCIExyuvDatas = poiResultCIExyuvDatas;  
             InitializeComponent();
             this.ApplyCaption();
         }
