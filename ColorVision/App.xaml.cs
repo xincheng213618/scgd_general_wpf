@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -108,7 +107,6 @@ namespace ColorVision
             }
             else
             {
-                SolutionManager.GetInstance();
                 MySqlControl.GetInstance();
 
                 var _IComponentInitializers = new List<UI.IInitializer>();
