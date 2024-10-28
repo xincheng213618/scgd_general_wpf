@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.Engine.Draw
+namespace ColorVision.ImageEditor.Draw
 {
     public interface ICircle
     {

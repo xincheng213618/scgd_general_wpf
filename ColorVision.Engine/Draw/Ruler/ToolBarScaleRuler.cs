@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Engine.Draw.Ruler
+namespace ColorVision.ImageEditor.Draw.Ruler
 {
     public class ToolBarScaleRuler
     {

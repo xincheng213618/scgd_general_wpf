@@ -4,7 +4,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Common.Utilities;
 
-namespace ColorVision.Engine.Draw.Special
+namespace ColorVision.ImageEditor.Draw.Special
 {
     public class Crosshair
     {

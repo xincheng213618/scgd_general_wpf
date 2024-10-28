@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Engine.Draw.Line
+﻿namespace ColorVision.ImageEditor.Draw.Line
 {
     public class ILine
     {

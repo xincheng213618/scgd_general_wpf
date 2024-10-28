@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.Draw.Ruler;
-using ColorVision.Engine.Draw;
+﻿using ColorVision.ImageEditor.Draw.Ruler;
+using ColorVision.ImageEditor.Draw;
 using System.Windows;
 using System;
 using ColorVision.Util.Draw.Special;

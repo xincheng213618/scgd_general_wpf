@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group" 
-        xmlns:draw="clr-namespace:ColorVision.Engine.Draw" 
+        xmlns:draw="clr-namespace:ColorVision.ImageEditor.Draw" 
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
         Title="四色标定" Height="450" Width="800" Background="#F0F0F0">

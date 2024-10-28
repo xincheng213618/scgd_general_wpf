@@ -5,7 +5,7 @@ using System.Windows.Input;
 using System.Globalization;
 using System.Linq;
 
-namespace ColorVision.Engine.Draw.Special
+namespace ColorVision.ImageEditor.Draw.Special
 {
     public class Gridline
     {
