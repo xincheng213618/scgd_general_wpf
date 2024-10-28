@@ -828,7 +828,6 @@ namespace ColorVision.Engine.Media
                     if (comboBoxItem.Content.ToString() == "R")
                     {
                         OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.RGB_R).ToWriteableBitmap());
-
                     }
                     if (comboBoxItem.Content.ToString() == "G")
                     {
