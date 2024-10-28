@@ -69,7 +69,39 @@ namespace ColorVision.UI
             {
                 return (T1)service;
             }
-            LoadConfigs();
+
+            var configName = type.Name;
+            try
+            {
+                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                {
+                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    if (config is IConfigSecure configSecure)
+                    {
+                        configSecure.Decrypt();
+                        Configs[type] = configSecure;
+                    }
+                    else if (config is IConfig configInstance)
+                    {
+                        Configs[type] = configInstance;
+                    }
+                }
+                else
+                {
+                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                    {
+                        Configs[type] = defaultConfig;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn(ex);
+                if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                {
+                    Configs[type] = defaultConfig;
+                }
+            }
             return GetRequiredService<T1>();
         }
 
@@ -130,6 +162,8 @@ namespace ColorVision.UI
 
         public void LoadConfigs() => LoadConfigs(ConfigFilePath);
 
+        private JObject jsonObject;
+
         public void LoadConfigs(string fileName)
         {
             Configs = new Dictionary<Type, IConfig>();
@@ -138,7 +172,7 @@ namespace ColorVision.UI
                 try
                 {
                     string json = File.ReadAllText(fileName);
-                    var jsonObject = JObject.Parse(json);
+                    jsonObject = JObject.Parse(json);
 
                     foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                     {
