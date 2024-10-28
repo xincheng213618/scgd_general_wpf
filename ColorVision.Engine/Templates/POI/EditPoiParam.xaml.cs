@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Collections;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Draw;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
@@ -50,11 +50,22 @@ namespace ColorVision.Engine.Services.Templates.POI
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
-            this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+
+            Task.Run(() => Test());
+        }
+
+        public async void Test()
+        {
+            await Task.Delay(100);
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                ToolBarTop?.ClearImage();
-                writeableBitmap = null;
-            }));
+                this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ToolBarTop?.ClearImage();
+                    writeableBitmap = null;
+                }));
+            });
         }
         
 

@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Draw;
-using ColorVision.Engine.Draw.Ruler;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
@@ -579,7 +579,6 @@ namespace ColorVision.Engine.Media
             log.Info($"OpenImageFile :{filePath}");
             ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
 
-            ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
             Config.IsCVCIE = false;
             if (filePath != null && File.Exists(filePath))
             {
@@ -659,21 +658,6 @@ namespace ColorVision.Engine.Media
             ComboBoxLayers.SelectedIndex = 0;
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
             ToolBarLayers.Visibility = Visibility.Visible;
-        }
-
-
-
-
-        public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
-        {
-            if (filePath == null)
-                return;
-
-            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
-            if (i != 0) return;
-            SetImageSource(hImage.ToWriteableBitmap());
-            OpenCVHelper.FreeHImageData(hImage.pData);
-            hImage.pData = IntPtr.Zero;
         }
 
         public HImage? HImageCache { get; set; }
@@ -827,7 +811,6 @@ namespace ColorVision.Engine.Media
                 };
             });
         }
-
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {

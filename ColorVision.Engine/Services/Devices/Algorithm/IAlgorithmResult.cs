@@ -10,8 +10,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
 
 
-
-
     public static class CollectionExtensions
     {
         public static ObservableCollection<IViewResult> ToViewResults<T>(this IEnumerable<T> source) where T : IViewResult

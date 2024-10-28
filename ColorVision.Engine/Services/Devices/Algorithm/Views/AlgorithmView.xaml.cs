@@ -1,7 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Draw;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
@@ -64,8 +64,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     }
                 }
             }
-
             this.DataContext = this;
+
+            ImageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                ViewResults[listView1.SelectedIndex].Width = (int)ImageView.ImageShow.Source.Width;
+                ViewResults[listView1.SelectedIndex].Height = (int)ImageView.ImageShow.Source.Height;
+            };
+
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
