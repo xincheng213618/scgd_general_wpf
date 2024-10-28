@@ -68,8 +68,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             ImageView.ImageShow.ImageInitialized += (s, e) =>
             {
-                ViewResults[listView1.SelectedIndex].Width = (int)ImageView.ImageShow.Source.Width;
-                ViewResults[listView1.SelectedIndex].Height = (int)ImageView.ImageShow.Source.Height;
+                if (listView1.SelectedIndex > -1)
+                {
+                    ViewResults[listView1.SelectedIndex].Width = (int)ImageView.ImageShow.Source.Width;
+                    ViewResults[listView1.SelectedIndex].Height = (int)ImageView.ImageShow.Source.Height;
+                }
+
             };
 
             View = new View();

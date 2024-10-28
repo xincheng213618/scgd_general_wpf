@@ -1,12 +1,11 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes.Controls;
+using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using System.Collections.ObjectModel;
@@ -236,10 +235,47 @@ namespace ColorVision.Engine.Templates.POI.Image
 
                 return poiResultCIExyuvData;
             }
+            WindowCIE windowCIE = null;
 
+            void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
+            {
+                imageView.ToolBarTop.ShowImageInfo = true;
 
+                if (windowCIE == null)
+                {
+                    windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
+                    void mouseMoveColorHandler(object s, ImageInfo e)
+                    {
+                        if (imageView.Config.IsCVCIE)
+                        {
+                            int xx = e.X;
+                            int yy = e.Y;
+                            float dXVal = 0;
+                            float dYVal = 0;
+                            float dZVal = 0;
+                            float dx = 0, dy = 0, du = 0, dv = 0;
+                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            windowCIE.ChangeSelect(dx, dy);
+                        }
+                        else
+                        {
+                            windowCIE.ChangeSelect(e);
+                        }
+                    }
 
+                    imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+                    windowCIE.Closed += (s, e) =>
+                    {
+                        imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+                        imageView.ToolBarTop.ShowImageInfo = false;
+                        windowCIE = null;
+                    };
+                }
+                windowCIE.Show();
+                windowCIE.Activate();
+            }
 
+            imageView.Button1931.Click += ButtonCIE1931_Click;
         }
 
     }
