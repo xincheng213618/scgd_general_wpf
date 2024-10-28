@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
@@ -22,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public RelayCommand ExportCVCIECommand { get; set; }
         public RelayCommand CopyToCommand { get; set; }
 
+        public RelayCommand ExportToPoiCommand { get; set; }
 
         public AlgorithmResult(AlgResultMasterModel item)
         {
@@ -37,12 +40,44 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
+            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = CopyToCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
         }
 
+        public int Width { get; set; }
+        public int Height { get; set; }
 
+        public void ExportToPoi()
+        {
+            var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
+            if (list ==null )
+                return;
+            
+            TemplatePoi templatePoi = new TemplatePoi();
+            templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
+            templatePoi.ExportTemp.Width = Width;
+            templatePoi.ExportTemp.Height = Height;
+
+            foreach (var item in list)
+            {
+                PoiPoint poiPoint = new PoiPoint() {
+                    Name = item.Name, 
+                    PixX = item.Point.PixelX, 
+                    PixY = item.Point.PixelY,
+                    PixHeight = item.Point.Height,
+                    PixWidth = item.Point.Width,    
+                    PointType = (RiPointTypes)item.Point.PointType,
+                    Id =-1
+                };
+                templatePoi.ExportTemp.PoiPoints.Add(poiPoint);
+            }
+
+
+            templatePoi.OpenCreate();
+        }
 
         public void CopyTo()
         {
