@@ -3,15 +3,23 @@
   <PropertyGroup>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
+    <PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ColorVision.Core\ColorVision.Core.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Window3D.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
 </Project>
