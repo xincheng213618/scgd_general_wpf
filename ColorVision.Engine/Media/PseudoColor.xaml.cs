@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Media
         {
             var ColormapTypes = GetColormapsDictionary().First(x => x.Value == ComColormapTypes.SelectedValue.ToString()).Key;
             string valuepath = ComColormapTypes.SelectedValue.ToString();
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.Engine;component/{valuepath}", UriKind.Relative));
+            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
