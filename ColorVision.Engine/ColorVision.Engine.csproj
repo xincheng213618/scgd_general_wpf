@@ -120,6 +120,9 @@
     <Compile Update="Services\Devices\Algorithm\Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\Matching\DisplayMatching.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\Algorithm\Templates\MTF\DisplayMTF.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
