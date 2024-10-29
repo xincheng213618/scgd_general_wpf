@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:ColorVision.Projects.ProjectShiYuan"
         xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        d:DataContext="{d:DesignInstance local:ProjectShiYuanConfig}"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:HYMesManager}"
         Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
@@ -205,13 +205,13 @@
                 </Grid>
 
             </Grid>
-            
+
 
             <Grid Grid.Row="3">
                 <StackPanel  Margin="0,2">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="流程" Width="100"/>
-                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2">
@@ -220,116 +220,14 @@
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="型號名稱" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="设备序号" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="数据存储路径" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.DataPath}" Width="200" HorizontalAlignment="Left"/>
-                        <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding DataPath}" Width="200" HorizontalAlignment="Left"/>
+                        <Button Content="..."   Click="SelectDataPath_Click" Margin="5,0" Height="30"  Width="30" VerticalAlignment="Center" />
                     </StackPanel>
                 </StackPanel>
-                
-                <Border HorizontalAlignment="Right" Width="150" Visibility="Collapsed" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
-                    <StackPanel Orientation="Vertical"  Margin="5">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="入账状态:" Margin="5,2" Width="55"/>
-                            <TextBlock Text="{Binding CSNResult}" Foreground="{Binding CSNResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="上传NG:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CGIResult}" Foreground="{Binding CGIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="上传MES:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CMIResult}" Foreground="{Binding CMIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="过帐状态:" Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CPTResult}" Foreground="{Binding CPTResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
-                        </StackPanel>
-                    </StackPanel>
 
-                </Border>
             </Grid>
-            
+
         </Grid>
-        <Grid Grid.Column="1" Visibility="Collapsed">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <GroupBox Header="MES"  VerticalAlignment="Top" Margin="5,0">
-                <Grid Margin="5,3">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel >
-                        <StackPanel Margin="0,2" Orientation="Horizontal">
-                            <DockPanel Margin="0,2" Width="200" HorizontalAlignment="Left">
-                                <TextBlock Text="串口" Width="50"/>
-                                <ComboBox x:Name="ComboBoxSer" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.PortName}"  />
-                            </DockPanel>
-                            <Button  Content="连接MES" Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="10,0,0,0"/>
-                        </StackPanel>
-                        <DockPanel Margin="2">
-                            <DockPanel>
-                                <TextBlock Text="连接情况:" Width="60"/>
-                                <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
-                            </DockPanel>
-                        </DockPanel>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Margin="0,2" VerticalAlignment="Top">
-                        <ui:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
-                        <ui:ToggleSwitch Content="产品编号改变时自动上传MES" IsChecked="{Binding Config.IsAutoUploadSn}" Margin="0,2"/>
-                    </StackPanel>
-
-                </Grid>
-            </GroupBox>
-
-            <ListView x:Name="ListViewMes" Grid.Row="1" Margin="5">
-                <ListView.View>
-                    <GridView>
-                        <GridViewColumn  Header="创建日期" Width="150">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
-                                    <TextBlock Text="{Binding  SendTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="SerialStatus" Width="100">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
-                                    <TextBlock Text="{Binding  SerialStatus}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="ASCII">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
-                                    <TextBlock Text="{Binding ASCII, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="Hex">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
-                                    <TextBlock Text="{Binding Hex, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
-            </ListView>
-            
-           
-        </Grid>
-        
-
     </Grid>
 </Window>

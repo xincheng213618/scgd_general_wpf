@@ -80,11 +80,15 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
 
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
+	uintptr_t address = reinterpret_cast<uintptr_t>(data);
 	std::lock_guard<std::mutex> lock(mediaListMutex); // ¼ÓËø
-	auto it = std::find_if(MediaList.begin(), MediaList.end(),
-		[data](const std::pair<int, cv::Mat>& pair) {
-			return pair.first == reinterpret_cast<uintptr_t>(data);
+
+	std::vector<std::pair<uintptr_t, cv::Mat>>::iterator it = std::find_if(
+		MediaList.begin(), MediaList.end(),
+		[address](const std::pair<uintptr_t, cv::Mat>& pair) {
+			return pair.first == address;
 		});
+
 	if (it != MediaList.end()) {
 		it->second.release();
 		// ´Ó»º´æÖÐÒÆ³ý
