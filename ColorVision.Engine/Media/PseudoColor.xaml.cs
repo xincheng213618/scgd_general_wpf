@@ -27,6 +27,8 @@ namespace ColorVision.Engine.Media
         double MinMax { get; set; }
         double MinData { get; set; }
         double MaxData { get; set; }= 255;
+
+
         public ObservableCollection<PseudoValue> PseudoValues { get; set; }
 
         public ImageViewConfig Config { get; set; }
@@ -39,7 +41,7 @@ namespace ColorVision.Engine.Media
         }
 
 
-        public static Dictionary<ColormapTypes, string> GetColormapDictionary()
+        public static Dictionary<ColormapTypes, string> GetColormapsDictionary()
         {
             var colormapDictionary = new Dictionary<ColormapTypes, string>
         {
@@ -66,13 +68,42 @@ namespace ColorVision.Engine.Media
             { ColormapTypes.COLORMAP_TURBO, "Assets/Colormaps/colorscale_turbo.jpg" },
             { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormaps/colorscale_deepgreen.jpg" }
         };
+            return colormapDictionary;
+        }
 
+        public static Dictionary<ColormapTypes, string> GetColormapDictionary()
+        {
+            var colormapDictionary = new Dictionary<ColormapTypes, string>
+        {
+            { ColormapTypes.COLORMAP_AUTUMN, "Assets/Colormap/colorscale_autumn.jpg" },
+            { ColormapTypes.COLORMAP_BONE, "Assets/Colormap/colorscale_bone.jpg" },
+            { ColormapTypes.COLORMAP_JET, "Assets/Colormap/colorscale_jet.jpg" },
+            { ColormapTypes.COLORMAP_WINTER, "Assets/Colormap/colorscale_winter.jpg" },
+            { ColormapTypes.COLORMAP_RAINBOW, "Assets/Colormap/colorscale_rainbow.jpg" },
+            { ColormapTypes.COLORMAP_OCEAN, "Assets/Colormap/colorscale_ocean.jpg" },
+            { ColormapTypes.COLORMAP_SUMMER, "Assets/Colormap/colorscale_summer.jpg" },
+            { ColormapTypes.COLORMAP_SPRING, "Assets/Colormap/colorscale_spring.jpg" },
+            { ColormapTypes.COLORMAP_COOL, "Assets/Colormap/colorscale_cool.jpg" },
+            { ColormapTypes.COLORMAP_HSV, "Assets/Colormap/colorscale_hsv.jpg" },
+            { ColormapTypes.COLORMAP_PINK, "Assets/Colormap/colorscale_pink.jpg" },
+            { ColormapTypes.COLORMAP_HOT, "Assets/Colormap/colorscale_hot.jpg" },
+            { ColormapTypes.COLORMAP_PARULA, "Assets/Colormap/colorscale_parula.jpg" },
+            { ColormapTypes.COLORMAP_MAGMA, "Assets/Colormap/colorscale_magma.jpg" },
+            { ColormapTypes.COLORMAP_INFERNO, "Assets/Colormap/colorscale_inferno.jpg" },
+            { ColormapTypes.COLORMAP_PLASMA, "Assets/Colormap/colorscale_plasma.jpg" },
+            { ColormapTypes.COLORMAP_VIRIDIS, "Assets/Colormap/colorscale_viridis.jpg" },
+            { ColormapTypes.COLORMAP_CIVIDIS, "Assets/Colormap/colorscale_cividis.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT, "Assets/Colormap/colorscale_twilight.jpg" },
+            { ColormapTypes.COLORMAP_TWILIGHT_SHIFTED, "Assets/Colormap/colorscale_twilight_shifted.jpg" },
+            { ColormapTypes.COLORMAP_TURBO, "Assets/Colormap/colorscale_turbo.jpg" },
+            { ColormapTypes.COLORMAP_DEEPGREEN, "Assets/Colormap/colorscale_deepgreen.jpg" }
+        };
             return colormapDictionary;
         }
 
         private void ComColormapTypes_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            var ColormapTypes = GetColormapDictionary().First(x => x.Value == ComColormapTypes.SelectedValue.ToString()).Key;
+            var ColormapTypes = GetColormapsDictionary().First(x => x.Value == ComColormapTypes.SelectedValue.ToString()).Key;
             string valuepath = ComColormapTypes.SelectedValue.ToString();
             ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.Engine;component/{valuepath}", UriKind.Relative));
         }
@@ -80,9 +111,7 @@ namespace ColorVision.Engine.Media
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-
-            ComColormapTypes.ItemsSource = GetColormapDictionary();
-            dataGrid1.ItemsSource = PseudoValues;
+            ComColormapTypes.ItemsSource = GetColormapsDictionary();
         }
 
         private void button_Create_Click(object sender, RoutedEventArgs e)

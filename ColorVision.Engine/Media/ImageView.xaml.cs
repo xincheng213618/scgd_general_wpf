@@ -121,6 +121,10 @@ namespace ColorVision.Engine.Media
             ToolBarLeft.DataContext = Config;
             ToolBarLayers.DataContext = Config;
             ToolBarTop.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
+
+            var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
+            string valuepath = ColormapTypes.Value;
+            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.Engine;component/{valuepath}", UriKind.Relative));
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -667,7 +671,6 @@ namespace ColorVision.Engine.Media
                 })));
             }
 
-
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
@@ -685,7 +688,11 @@ namespace ColorVision.Engine.Media
         private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
             PseudoColor pseudoColor = new PseudoColor(Config);
-            pseudoColor.Show();
+            pseudoColor.ShowDialog();
+            var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
+            string valuepath = ColormapTypes.Value;
+            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.Engine;component/{valuepath}", UriKind.Relative));
+            RenderPseudo();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

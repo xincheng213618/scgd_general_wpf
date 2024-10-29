@@ -260,7 +260,7 @@
 
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
-                            <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
+                            <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
                         <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" >
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -282,7 +282,7 @@
                                 </Grid.RowDefinitions>
                                 <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
                                 <Border Grid.Row="1"  Background="Transparent">
-                                    <Image Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                                    <Image x:Name="ColormapTypesImage" Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
                                 </Border>
                                 <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
                             </Grid>
