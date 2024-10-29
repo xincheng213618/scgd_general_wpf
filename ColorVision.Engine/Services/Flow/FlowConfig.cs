@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Flow
