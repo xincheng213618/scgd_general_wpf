@@ -13,12 +13,14 @@
 
             <DockPanel Margin="0,2">
                 <TextBlock Text="TemplateFile" Width="80"/>
-                <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding TemplateFile}" Width="150" HorizontalAlignment="Left" />
+                <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding TemplateFile}" Width="140" HorizontalAlignment="Left"  Margin="0,0,5,0"/>
+                <Button Content="..." Command="{Binding SetTemplateFileCommand}"/>
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
             </DockPanel>
             <DockPanel Margin="0,2">
                 <TextBlock Text="MaskFile" Width="80"/>
-                <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding MaskFile}" Width="150" HorizontalAlignment="Left" />
+                <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding MaskFile}" Width="140" HorizontalAlignment="Left" Margin="0,0,5,0" />
+                <Button Content="..." Command="{Binding SetTemplateFileCommand}" HorizontalAlignment="Left"/>
             </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
