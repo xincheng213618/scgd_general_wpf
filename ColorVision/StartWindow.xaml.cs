@@ -63,7 +63,7 @@ namespace ColorVision
         private  List<IInitializer> _IComponentInitializers;
 
 
-        public void UpdateMessage(string message)
+        public void Update(string message)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -95,7 +95,6 @@ namespace ColorVision
             Stopwatch stopwatch = new Stopwatch();
             foreach (var initializer in _IComponentInitializers)
             {
-                await Task.Delay(100);
                 stopwatch.Start();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -110,7 +109,6 @@ namespace ColorVision
                 });
                 stopwatch.Reset();
             }
-            await Task.Delay(100);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try

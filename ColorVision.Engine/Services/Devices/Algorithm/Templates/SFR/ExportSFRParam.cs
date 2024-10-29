@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         public override string GuidId => "SFRParam";
         public override string Header => Properties.Resources.MenuSFR;
         public override int Order => 2;
-        public override ITemplate Template => new TemplateSFRParam();
+        public override ITemplate Template => new TemplateSFR();
     }
 }

@@ -7,7 +7,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 {
 
-    public class AutoExpTimeParam : ParamBase
+    public class AutoExpTimeParam : ParamModBase
     {
         public AutoExpTimeParam() { }
         public AutoExpTimeParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

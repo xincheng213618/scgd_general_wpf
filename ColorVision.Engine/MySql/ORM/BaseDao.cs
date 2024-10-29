@@ -67,6 +67,7 @@ namespace ColorVision.Engine.MySql.ORM
         public DataTable GetData(string sql, Dictionary<string, object>? param)
         {
             DataTable dt = new();
+            if (!MySqlControl.IsConnect) return dt;
             try
             {
                 if (param == null || param.Count == 0)

@@ -1,13 +1,10 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
-using ColorVision.UI.Draw.Ruler;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
@@ -27,21 +24,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
-    public class ViewCameraConfig : ViewModelBase, IConfig
-    {
-        public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-
-        public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefreshView;
-    }
-
 
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
@@ -52,6 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
+
         public DeviceCamera Device { get; set; }
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
@@ -128,6 +111,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private MeasureImgResultDao measureImgResultDao = new();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
+            if (arg.DeviceCode != Device.Config.Code) return;
+            
             if (arg.Code == 0)
             {
                 switch (arg.EventName)
@@ -283,6 +268,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
                             log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
                             if (fileInfo.Length > 0)
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
@@ -291,10 +280,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 });
                             }
                         }
-                        catch(Exception ex)
+                        catch
                         {
                             log.Warn("文件还在写入");
-                            await Task.Delay(Device.Config.ViewImageReadDelay);
+                            await Task.Delay(Config.ViewImageReadDelay);
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 ImageView.OpenImage(data.FileUrl);
@@ -356,11 +345,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public void ShowResult(MeasureImgResultModel model)
         {
             ViewResultCamera result = new(model);
-            ViewResultCameras.AddUnique(result);
 
+            ViewResultCameras.AddUnique(result, Config.InsertAtBeginning);
             if (Config.AutoRefreshView)
             {
-                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }
@@ -416,15 +405,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             TbDeviceCode.Text = string.Empty;
         }
 
-        private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
-            {
-                ViewResultCameras.Remove(viewResult);
-                ImageView.Clear();
-            }
-        }
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
@@ -459,75 +439,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
+
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
-            {
-                if (File.Exists(viewCamera.FileUrl))
-                {
-                    ExportCVCIE exportCamera = new(viewCamera.FileUrl) { Icon = Device.Icon };
-                    exportCamera.Owner = Application.Current.GetActiveWindow();
-                    exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                    exportCamera.ShowDialog();
-                }
-                else
-                {
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
-                }
-            }
-        }
-
-        private void MenuItem_ExportFile_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
-            {
-                string FilePath = viewCamera.FileUrl;
-
-                if (File.Exists(FilePath))
-                {
-                    if (CVFileUtil.IsCIEFile(FilePath))
-                    {
-                        int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
-                        if (index > 0)
-                        {
-                            if (!File.Exists(meta.srcFileName))
-                                meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
-                        }
-
-                        System.Windows.Forms.FolderBrowserDialog dialog = new();
-                        dialog.UseDescriptionForTitle = true;
-                        dialog.Description = "选择要保存到得位置";
-                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            if (string.IsNullOrEmpty(dialog.SelectedPath))
-                            {
-                                MessageBox.Show("文件夹路径不能为空", "提示");
-                                return;
-                            }
-                            string savePath = dialog.SelectedPath;
-                            // Copy the file to the new location
-                            string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
-                            File.Copy(FilePath, newFilePath, true);
-
-                            // If srcFileName exists, copy it to the new location as well
-                            if (File.Exists(meta.srcFileName))
-                            {
-                                string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
-                                File.Copy(meta.srcFileName, newSrcFilePath, true);
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
-                    }
-                }
-                else
-                {
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
-                }
-            }
+            listView1.Height = MainGridRow2.ActualHeight - 32;
+            MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
+            MainGridRow2.Height = GridLength.Auto;
         }
     }
 }

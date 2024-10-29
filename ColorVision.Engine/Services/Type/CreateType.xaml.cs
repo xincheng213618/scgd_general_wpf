@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
@@ -65,7 +64,7 @@ namespace ColorVision.Engine.Services.Types
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
 
-                MQTTRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
+                MqttRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
                 Close();
             }

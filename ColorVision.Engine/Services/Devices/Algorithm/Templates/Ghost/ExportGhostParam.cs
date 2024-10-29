@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
         public override string GuidId => "GhostParam";
         public override string Header => Properties.Resources.MenuGhost;
         public override int Order => 3;
-        public override ITemplate Template => new TemplateGhostParam();
+        public override ITemplate Template => new TemplateGhost();
     }
 
 

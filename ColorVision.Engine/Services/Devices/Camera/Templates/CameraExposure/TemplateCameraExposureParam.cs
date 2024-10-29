@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
         public TemplateCameraExposureParam()
         {
             Title = "CameraExposureParam设置";
-            Code = ModMasterType.CameraExposure;
+            Code = "camera_exp_time";
             TemplateParams = CameraExposureParam.Params;
         }
     }

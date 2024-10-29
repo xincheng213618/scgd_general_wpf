@@ -15,7 +15,7 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 	</ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0-windows|AnyCPU'">
@@ -64,7 +64,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Engine\ColorVision.Engine.csproj" />
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -103,15 +103,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\Image\ColorVision.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="..\CHANGELOG.md">
+    <None Include="..\CHANGELOG.md" Link="CHANGELOG.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    </None>
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="..\Directory.Build.props" Link="Directory.Build.props" />
+    <Resource Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>
 
   <ItemGroup>

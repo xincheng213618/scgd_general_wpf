@@ -1,3 +1,5 @@
+#pragma warning disable CS8603,CS0067
+using System;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Media.Imaging;
@@ -25,7 +27,7 @@ public class H264Reader : CVImageReaderProxy
 		if (bitmap != null)
 		{
 			MessageBox.Show("µÈ´ýÐÞ¸´");
-			//this.H264ReaderRecv?.Invoke(bitmap);
+			//this.H264ReaderRecv?.Invoke(bitmap.ToBitmapSource());
 		}
 	}
 
@@ -43,6 +45,7 @@ public class H264Reader : CVImageReaderProxy
 	{
 		subscriber.Dispose();
 		Decoder.Dispose();
+		GC.SuppressFinalize(this);
 		base.Dispose();
 	}
 }

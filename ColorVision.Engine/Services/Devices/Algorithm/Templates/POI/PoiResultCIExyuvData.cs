@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1708,CS8604
+﻿#pragma warning disable CA1708,CS8604,CS8602
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            List<string> properties = new() { "Id", "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u'", "v'", "x", "y" };
 
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
@@ -113,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-
         public double CCT { get { return _CCT; } set { _CCT = value; NotifyPropertyChanged(); } }
         private double _CCT;
 
@@ -147,7 +146,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
         {
             if (pOIPointResultModel.Value != null)
             {
-                POIDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIDataCIExyuv>(pOIPointResultModel.Value);
+                POIResultDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIResultDataCIExyuv>(pOIPointResultModel.Value);
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;
 

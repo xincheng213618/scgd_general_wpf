@@ -4,6 +4,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
+
     public class MySqlInitializer : IInitializer
     {
         private readonly IMessageUpdater _messageUpdater;
@@ -19,11 +20,11 @@ namespace ColorVision.Engine.MySql
         {
             if (MySqlSetting.Instance.IsUseMySql)
             {
-                _messageUpdater.UpdateMessage("正在检测MySql数据库连接情况");
+                _messageUpdater.Update("正在检测MySql数据库连接情况");
 
                 bool isConnect = await MySqlControl.GetInstance().Connect();
 
-                _messageUpdater.UpdateMessage($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
+                _messageUpdater.Update($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
                 if (!isConnect)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.MySql
             }
             else
             {
-                _messageUpdater.UpdateMessage("已经跳过数据库连接");
+                _messageUpdater.Update("已经跳过数据库连接");
                 await Task.Delay(10);
             }
         }

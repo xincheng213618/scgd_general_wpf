@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using Panuon.WPF.UI;
 using System;
 using System.Globalization;
@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services
                 }
             }
         }
-        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg,bool canCancel =true)
+        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg,bool canCancel = true)
         {
             IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, canCancel);
             var temp = Application.Current.MainWindow.Cursor;

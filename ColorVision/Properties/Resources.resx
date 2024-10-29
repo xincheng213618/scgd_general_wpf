@@ -216,9 +216,6 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
   </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>日志级别</value>
-  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>软件版本</value>
   </data>
@@ -227,9 +224,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>向导</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>清除</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能检测</value>
@@ -354,16 +348,10 @@
   <data name="Initializer" xml:space="preserve">
     <value>初始化模块</value>
   </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>过滤器支持正则</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>自动刷新</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>自动滚动到底部</value>
-  </data>
   <data name="ForceUpdate" xml:space="preserve">
     <value>强制更新</value>
+  </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>上传文件</value>
   </data>
 </root>

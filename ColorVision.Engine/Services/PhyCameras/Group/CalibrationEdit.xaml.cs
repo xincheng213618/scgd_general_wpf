@@ -16,11 +16,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     /// </summary>
     public partial class CalibrationEdit : Window
     {
-        public ICalibrationService<BaseResourceObject> CalibrationService { get; set; }
+        public ICalibrationService<ServiceObjectBase> CalibrationService { get; set; }
 
         private int Index;
 
-        public CalibrationEdit(ICalibrationService<BaseResourceObject> calibrationService , int index = 0)
+        public CalibrationEdit(ICalibrationService<ServiceObjectBase> calibrationService , int index = 0)
         {
             CalibrationService = calibrationService;
             Index = index;

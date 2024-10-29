@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -11,6 +12,7 @@ using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -53,7 +55,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             };
-            
+
+            void UpdateCB_SourceImageFiles()
+            {
+                CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
+                CB_SourceImageFiles.SelectedIndex = 0;
+            }
+            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
+            UpdateCB_SourceImageFiles();
+
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -67,6 +77,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnInit, Visibility.Collapsed);
                 }
                 // Default state
                 HideAllButtons();
@@ -82,6 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     case DeviceStatusType.OffLine:
                         break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(TextBlockUnInit, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
                         break;
@@ -185,7 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -209,8 +221,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            DeviceService.GetRawFiles();
+            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+
+            DeviceService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
+
+
+
         public TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
@@ -222,7 +239,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
             if (sender is Button button)
             {
-                WindowTemplate windowTemplate;
+                TemplateEditorWindow windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
@@ -232,7 +249,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 {
                     case "Calibration":
                         var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-                        windowTemplate = new WindowTemplate(ITemplate);
+                        windowTemplate = new TemplateEditorWindow(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
@@ -247,8 +264,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
         {
-            bool? isSN = AlgBatchSelect.IsChecked;
-            bool? isRaw = AlgRawSelect.IsChecked;
+            bool? isSN = AlgBatchSelect.IsSelected;
+            bool? isRaw = AlgRawSelect.IsSelected;
             if (isSN.HasValue && isSN.Value)
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))

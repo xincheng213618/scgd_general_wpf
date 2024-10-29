@@ -16,11 +16,10 @@ namespace ColorVision.Engine.Services.RC
     {
         public int Order => 3;
 
-        public string Title => "RC配置";
+        public string Header => "RC配置";
+        public string Description => "配置注册中心，如果已经正确配置服务可以点击服务配置即可不需要手动配置";
 
-        public string Description => "RC配置";
-
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public RelayCommand Command => new RelayCommand(a =>
         {
             new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         });
@@ -80,8 +79,8 @@ namespace ColorVision.Engine.Services.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             Task.Run(() => {
-                MQTTRCService.GetInstance().QueryServices();
-                MQTTRCService.GetInstance().ReRegist(); });
+                MqttRCService.GetInstance().QueryServices();
+                MqttRCService.GetInstance().ReRegist(); });
             Close();
         }
 
@@ -96,7 +95,7 @@ namespace ColorVision.Engine.Services.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             Task.Run(() =>
             {
-                bool IsConnect = MQTTRCService.GetInstance().TryRegist(rcServiceConfig);
+                bool IsConnect = MqttRCService.GetInstance().TryRegist(rcServiceConfig);
                 Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
             });
         }

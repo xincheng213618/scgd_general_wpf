@@ -103,6 +103,39 @@ namespace ColorVision.Engine.MySql
             return count;
         }
 
+        public int BatchExecuteNonQuery(string sqlBatch)
+        {
+            // 将整个SQL批次按照分号拆分为单个SQL语句
+            var statements = sqlBatch.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            int totalCount = 0;
+            foreach (var sql in statements)
+            {
+                try
+                {
+                    // 去除SQL语句两端的空白字符
+                    string trimmedSql = sql.Trim();
+                    if (string.IsNullOrEmpty(trimmedSql))
+                        continue;
+
+                    using (MySqlCommand command = new(trimmedSql, MySqlConnection))
+                    {
+                        int count = command.ExecuteNonQuery();
+                        totalCount += count;
+                        log.Info($"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {trimmedSql}\n");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 记录错误信息，但不影响后续语句的执行
+                    log.Info( $"SQL执行失败。\n错误信息: {ex.Message}\n出错的SQL语句: {sql.Trim()}\n");
+                    // 您也可以选择记录到日志或其他处理方式
+                }
+            }
+            log.Info($"总共受影响的行数: {totalCount}\n");
+            return totalCount;
+        }
+
+
         public void EnsureLocalInfile()
         {
             string checkLocalInfile = "SHOW GLOBAL VARIABLES LIKE 'local_infile';";

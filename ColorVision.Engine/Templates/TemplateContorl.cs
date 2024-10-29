@@ -29,8 +29,8 @@ namespace ColorVision.Engine.Templates
 
         public async Task InitializeAsync()
         {
-            _messageUpdater.UpdateMessage("正在加载模板");
-            await Task.Delay(10);
+            _messageUpdater.Update("正在加载模板");
+            await Task.Delay(0);
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates
         private static async void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
-            await Task.Delay(10);
+            await Task.Delay(0);
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)

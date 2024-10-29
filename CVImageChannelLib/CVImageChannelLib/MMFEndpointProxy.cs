@@ -1,3 +1,6 @@
+#pragma warning disable CA1051
+
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 
@@ -46,6 +49,7 @@ public class MMFEndpointProxy<T> : CVEndpointProxy where T : ISerializer<T>, new
 	{
 		memoryMappedViewStream.Dispose();
 		memoryMappedFile.Dispose();
+		GC.SuppressFinalize(this);
 		base.Dispose();
 	}
 }

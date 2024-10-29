@@ -1,8 +1,6 @@
-﻿using ColorVision.Engine.Services.Core;
-
-namespace ColorVision.Engine.Services.Devices.PG
+﻿namespace ColorVision.Engine.Services.Devices.PG
 {
-    public class ConfigPG : DeviceServiceConfig, IServiceConfig
+    public class ConfigPG : DeviceServiceConfig
     {
         public string Category { get => _Category; set { _Category = value; NotifyPropertyChanged(); } }
         private string _Category;

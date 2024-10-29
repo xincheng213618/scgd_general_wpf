@@ -1,22 +1,21 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MQTTWizardStep : IWizardStep
+    public class MQTTWizardStep : WizardStepBase
     {
-        public int Order => 2;
+        public override int Order => 10;
 
-        public string Title => "Mqtt配置";
+        public override string Header => "Mqtt配置";
 
-        public string Description => "Mqtt配置";
+        public override string Description => "配置Mqtt连接，默认为本地连接，可以不进行配置";
 
-        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        public override void Execute()
         {
-            MQTTConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow()};
+            MQTTConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow() };
             mySqlConnect.ShowDialog();
-        });
+        }
     }
 }

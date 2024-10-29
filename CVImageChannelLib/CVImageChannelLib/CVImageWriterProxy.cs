@@ -11,5 +11,6 @@ public abstract class CVImageWriterProxy : IDisposable
 
 	public virtual void Dispose()
 	{
-	}
+        GC.SuppressFinalize(this);
+    }
 }

@@ -117,17 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 service log</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 service log</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Process engine debug window</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>Process Engine(F)</value>
+  <data name="WorkflowEngine" xml:space="preserve">
+    <value>_Process Engine</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>Independent</value>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>Starting service</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>Spectrometer log</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>size</value>
   </data>
@@ -240,9 +231,6 @@
   <data name="ServiceName" xml:space="preserve">
     <value>Service Name</value>
   </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>Service Log</value>
-  </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>Service ID</value>
   </data>
@@ -250,7 +238,7 @@
     <value>Service configuration</value>
   </data>
   <data name="SerialNumber1" xml:space="preserve">
-    <value>Serial Number</value>
+    <value>No</value>
   </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>Serial Number</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>Receive Channel</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC service log</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>Quick Preview</value>
@@ -446,9 +431,6 @@
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>_Login account</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>_Led Check</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>_Ghost</value>
@@ -714,9 +696,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
   </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>Camera log</value>
-  </data>
   <data name="Calibration" xml:space="preserve">
     <value>Calibration</value>
   </data>
@@ -812,5 +791,17 @@
   </data>
   <data name="DataLoading" xml:space="preserve">
     <value>loading</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>OpenFile</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>OpenFolder</value>
+  </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>Product Brochure</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>Unknown Status</value>
   </data>
 </root>

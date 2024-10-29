@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.Motor

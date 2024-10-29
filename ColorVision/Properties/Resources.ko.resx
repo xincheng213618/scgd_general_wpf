@@ -213,9 +213,6 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>로그 수준</value>
-  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>소프트웨어 버전</value>
   </data>
@@ -224,9 +221,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>분명한</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>성능 시험</value>
@@ -354,16 +348,10 @@
   <data name="Initializer" xml:space="preserve">
     <value>초기화 모듈</value>
   </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>필터는 정규식을 지원합니다</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>자동 새로고침</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>자동으로 아래쪽으로 스크롤</value>
-  </data>
   <data name="ForceUpdate" xml:space="preserve">
     <value>강제 업데이트</value>
+  </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>파일 업로드</value>
   </data>
 </root>

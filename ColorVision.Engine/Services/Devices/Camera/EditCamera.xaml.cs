@@ -162,5 +162,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             UpdateConfig();
         }
+
+        private void RoiDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is Int32RectViewModel int32RectViewModel)
+            {
+                EditConfig.ROIParams.Remove(int32RectViewModel);
+            }
+        }
     }
 }

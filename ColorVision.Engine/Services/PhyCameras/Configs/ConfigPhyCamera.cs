@@ -38,7 +38,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [Description("NN_USB")]
         NN_USB,
         [Description("TOUP_USB")]
-        TOUP_USB
+        TOUP_USB,
+        [Description("HK_FG_CARD")]
+        HK_FG_CARD,
+        [Description("CameraModel_Total")]
+        CameraModel_Total,
     };
 
     /// <summary>

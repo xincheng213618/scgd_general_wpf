@@ -3,11 +3,11 @@ using ColorVision.UI.Sorts;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
-using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Drawing;
+using ScottPlot.DataSources;
+using ScottPlot.Plottables;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
@@ -98,14 +98,14 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 xs = listV.ToArray();
                 ys = listI.ToArray();
 
-                ScatterPlot = new ScatterPlot(xs, ys)
+                ScatterSourceDoubleArray source = new(xs, ys);
+                ScatterPlot = new Scatter(source)
                 {
-                    Color = Color.DarkGoldenrod,
+                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
                     LineWidth = 1,
                     MarkerSize = 1,
-                    Label = null,
-                    MarkerShape = MarkerShape.none,
-                    LineStyle = LineStyle.Solid
+                    LegendText = string.Empty,
+                    MarkerShape = MarkerShape.None,
                 };
 
 
@@ -130,21 +130,21 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 xs = listV.ToArray();
                 ys = listI.ToArray();
 
-                ScatterPlot = new ScatterPlot(xs, ys)
+                ScatterSourceDoubleArray source = new(xs, ys);
+                ScatterPlot = new Scatter(source)
                 {
-                    Color = Color.DarkGoldenrod,
+                    Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod),
                     LineWidth = 1,
                     MarkerSize = 1,
-                    Label = null,
-                    MarkerShape = MarkerShape.none,
-                    LineStyle = LineStyle.Solid
+                    LegendText = string.Empty,
+                    MarkerShape = MarkerShape.None,
                 };
 
             }
         }
 
 
-        public ScatterPlot ScatterPlot { get; set; }
+        public Scatter ScatterPlot { get; set; }
 
 
         public int Id { get => _ID; set { _ID = value; NotifyPropertyChanged(); } }

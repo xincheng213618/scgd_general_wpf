@@ -213,9 +213,6 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>ログレベル</value>
-  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>ソフトウェアバージョン</value>
   </data>
@@ -224,9 +221,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>ウィザード</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>クリア</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能試験</value>
@@ -354,16 +348,10 @@
   <data name="Initializer" xml:space="preserve">
     <value>初期化モジュール</value>
   </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>フィルターは正規表現をサポートします</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>自動更新</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>自動的に一番下までスクロールします</value>
-  </data>
   <data name="ForceUpdate" xml:space="preserve">
     <value>強制アップデート</value>
+  </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>ファイルをアップロードする</value>
   </data>
 </root>

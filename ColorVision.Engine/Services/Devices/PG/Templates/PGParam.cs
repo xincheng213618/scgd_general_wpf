@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(new TemplatePGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplatePGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
     public class TemplatePGParam : ITemplate<PGParam>, IITemplateLoad
@@ -42,12 +42,12 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
         public TemplatePGParam()
         {
             Title = "PGParam设置";
-            Code = ModMasterType.PG;
+            Code = "pg";
             TemplateParams = PGParam.Params;
         }
     }
 
-    public class PGParam : ParamBase
+    public class PGParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<PGParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PGParam>>();
 

@@ -1,3 +1,5 @@
+#pragma warning disable CA1816,CA2201,CS8604
+
 using System;
 using System.Collections.Generic;
 using log4net;

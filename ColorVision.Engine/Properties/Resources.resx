@@ -97,16 +97,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64服务日志</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86服务日志</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>流程引擎调试窗口</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
+  <data name="WorkflowEngine" xml:space="preserve">
     <value>流程引擎(_F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
@@ -196,9 +190,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>正在启动服务</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>光谱仪日志</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>大小</value>
   </data>
@@ -219,9 +210,6 @@
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>服务名称</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>服务日志</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>服务标识</value>
@@ -279,9 +267,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>接收信道</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服务日志</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>快速预览</value>
@@ -426,9 +411,6 @@
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>登录账号(_L)</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>灯珠检测模板设置(_L)</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板设置(_G)</value>
@@ -694,9 +676,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>相机日志</value>
-  </data>
   <data name="Calibration" xml:space="preserve">
     <value>校正</value>
   </data>
@@ -792,5 +771,17 @@
   </data>
   <data name="DataLoading" xml:space="preserve">
     <value>数据加载中</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>打开文件</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打开文件夹</value>
+  </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>产品宣传手册</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>未知状态</value>
   </data>
 </root>

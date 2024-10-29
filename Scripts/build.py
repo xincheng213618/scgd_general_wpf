@@ -64,7 +64,6 @@ def copy_with_progress(src, dst):
 
         print()
 
-
 def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):
     try:
         with open(latest_release_path, 'r') as file:
@@ -87,7 +86,7 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         except IOError as e:
             print(f"Could not copy file to {target_directory}: {e}")
     else:
-        print(f"The current version ({current_version}) is up to date.")
+        print(f"The current version ({current_version}) is up to date.")   
 
 
 if __name__ == "__main__":
@@ -120,3 +119,6 @@ if __name__ == "__main__":
             print("Could not extract the version from the filename.")
     else:
         print("No .exe files found in the directory.")
+        
+    
+

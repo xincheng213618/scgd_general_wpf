@@ -10,7 +10,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="500" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -33,10 +33,6 @@
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="心跳时间"  Width="120"/>
                                 <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" >
-                                <TextBlock Text="打开图像超时" Width="120"/>
-                                <TextBox Text="{Binding ViewImageReadDelay}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                             <DockPanel Margin="0,0,0,0" >
                                 <TextBlock Text="设备自动连接" Width="120"/>
@@ -73,20 +69,101 @@
                                 <TextBlock Text="默认通道数" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Channel}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,2">
+                            <DockPanel >
                                 <TextBlock Text="默认图像位数" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding ImageBpp}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
 
+                    <GroupBox Header="ZBDebayer">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="启用" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding ZBDebayer.IsEnabled}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5" Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="Method" Width="120"/>
+                                <TextBox Text="{Binding ZBDebayer.Method}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
+                                <TextBlock Text="Channeltype" Width="120"/>
+                                <TextBox Text="{Binding ZBDebayer.Channeltype}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <Button Content="Add" Command="{Binding AddROIParamsCommand}" />
+                    <GroupBox Header="小窗口">
+                        <ListView  x:Name="listView1" Height="200" Background="Transparent" ItemsSource="{Binding ROIParams}" Grid.Row="1"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
+                            <ListView.Resources >
+                                <ContextMenu x:Key="ContextMenuItem">
+                                    <MenuItem Header="{x:Static properties:Resources.Delete}"   Click="RoiDelete_Click"  Tag="{Binding .}"  />
+                                </ContextMenu>
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View >
+                                <GridView >
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn  Header="X" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding X}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Y" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Y}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Height" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Height}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Width" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Width}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+
+                        </ListView>
+
+
+                    </GroupBox>
+
                     <GroupBox Header="默认参数" Margin="0,5">
                         <StackPanel Margin="5">
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel  >
+                            <DockPanel>
+                                <TextBlock Text="最大曝光时间" Width="120"/>
+                                <TextBox Text="{Binding ExpTimeMax}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="最小曝光时间" Width="120"/>
+                                <TextBox Text="{Binding ExpTimeMin}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <StackPanel Margin="0,2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
+                                <DockPanel>
                                     <TextBlock  Text="默认曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
-                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Maximum="60000">
+                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Minimum="{Binding ExpTimeMin}"  Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -97,7 +174,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认R通道曝光(ms)" Width="120"/>
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeR}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -106,7 +183,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认G通道曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeG}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -115,7 +192,7 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock  Text="默认B通道曝光(ms)" Width="120" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeB}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Maximum="60000">
+                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
                                         <hc:PreviewSlider.PreviewContent>
                                             <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
                                         </hc:PreviewSlider.PreviewContent>
@@ -130,7 +207,7 @@
                         <StackPanel  Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="评价函数类型:" Width="120"/>
-                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"   Margin="0,0,10,0"/>
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="超时时间:" Width="120"/>

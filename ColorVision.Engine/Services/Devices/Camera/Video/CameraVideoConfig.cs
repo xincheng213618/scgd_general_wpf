@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using System.Collections.Generic;
-using System;
 using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
@@ -49,92 +47,19 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private long _Capacity = 1073741824;
 
         [JsonIgnore]
-        public string CapacityText => MemorySizeText(_Capacity);
+        public string CapacityText => Common.Utilities.MemorySize.MemorySizeText(_Capacity);
 
         [JsonIgnore]
         public string CapacityInput
         {
-            get => MemorySizeText(_Capacity);
+            get => Common.Utilities.MemorySize.MemorySizeText(_Capacity);
             set
             {
-                if (TryParseMemorySize(value, out long parsedValue))
+                if (Common.Utilities.MemorySize.TryParseMemorySize(value, out long parsedValue))
                 {
                     Capacity = parsedValue;
                 }
             }
-        }
-
-        public static string MemorySizeText(long memorySize)
-        {
-            const long KB = 1024;
-            const long MB = KB * 1024;
-            const long GB = MB * 1024;
-            const long TB = GB * 1024;
-            const long PB = TB * 1024;
-
-            var units = new[]
-            {
-            Tuple.Create(PB, "PB"),
-            Tuple.Create(TB, "TB"),
-            Tuple.Create(GB, "GB"),
-            Tuple.Create(MB, "MB"),
-            Tuple.Create(KB, "kB"),
-            Tuple.Create(1L, "Byte")
-        };
-
-            foreach (var unit in units)
-            {
-                if (memorySize >= unit.Item1)
-                {
-                    double value = (double)memorySize / unit.Item1;
-                    if (memorySize < unit.Item1 * 10)
-                    {
-                        return $"{value:F3} {unit.Item2}";
-                    }
-                    return $"{(long)value} {unit.Item2}";
-                }
-            }
-            return "0 Byte";
-        }
-
-        public static bool TryParseMemorySize(string input, out long memorySize)
-        {
-            input = input.Trim().ToUpperInvariant();
-            memorySize = 0;
-
-            if (string.IsNullOrEmpty(input))
-            {
-                return false;
-            }
-
-            var units = new Dictionary<string, long>
-        {
-            { "PB", 1024L * 1024 * 1024 * 1024 * 1024 },
-            { "P", 1024L * 1024 * 1024 * 1024 * 1024 },
-            { "TB", 1024L * 1024 * 1024 * 1024 },
-            { "T", 1024L * 1024* 1024  * 1024},
-            { "GB", 1024L * 1024 * 1024 },
-            { "G", 1024L * 1024* 1024 },
-            { "MB", 1024L * 1024 },
-            { "M", 1024L * 1024 }, // Adding "M" for MB
-            { "KB", 1024L },
-            { "K", 1024L * 1024 },
-            { "B", 1L }
-        };
-
-            foreach (var unit in units)
-            {
-                if (input.EndsWith(unit.Key,StringComparison.CurrentCulture))
-                {
-                    if (double.TryParse(input.AsSpan(0, input.Length - unit.Key.Length), out double value))
-                    {
-                        memorySize = (long)(value * unit.Value);
-                        return true;
-                    }
-                }
-            }
-
-            return long.TryParse(input, out memorySize); // Try to parse as bytes if no unit is found
         }
 
     }

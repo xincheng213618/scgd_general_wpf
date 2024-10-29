@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
@@ -16,6 +16,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes.Controls.Uploads;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -49,6 +50,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             ThirdPartyAlgorithmsManagerCommand = new RelayCommand(a => ThirdPartyAlgorithmsManager(), a => AccessControl.Check(PermissionMode.Administrator));
         }
 
+        public SysResourceTpaDLLModel? DLLModel => SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
+
         public  void ThirdPartyAlgorithmsManager()
         {
             var model = SysResourceTpaDLLDao.Instance.GetByParam(new Dictionary<string, object>() { { "Code", Config.BindCode } });
@@ -58,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 return;
             }
             TemplateThirdPartyManager.Params.Clear();
-            new WindowTemplate(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateThirdPartyManager() { DLLId = model.Id}) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UploadMsgManager UploadMsgManager { get; set; } = new UploadMsgManager();

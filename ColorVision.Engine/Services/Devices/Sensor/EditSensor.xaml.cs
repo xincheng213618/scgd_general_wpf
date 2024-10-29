@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

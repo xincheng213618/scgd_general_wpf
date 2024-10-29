@@ -162,7 +162,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
-        public TemplateCalibrationParam(ICalibrationService<BaseResourceObject> device)
+        public TemplateCalibrationParam(ICalibrationService<ServiceObjectBase> device)
         {
             if (device.CalibrationParams.Count > 0)
             {
@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             Title = "校正参数设置";
             Device = device;
             IsUserControl = true;
-            Code = ModMasterType.Calibration;
+            Code = "calibration";
             TemplateParams = Device.CalibrationParams;
         }
 
@@ -185,7 +185,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override bool ExitsTemplateName(string templateName)
         {
-            ModMasterDao modMasterDao = new ModMasterDao(ModMasterType.Calibration);
+            ModMasterDao modMasterDao = new ModMasterDao("calibration");
             List<ModMasterModel> smus = modMasterDao.GetAll(UserConfig.Instance.TenantId);
            return smus.Any(a => a.Name?.Equals(templateName, StringComparison.OrdinalIgnoreCase) ?? false);
         }
@@ -195,12 +195,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
         }
 
-        public ICalibrationService<BaseResourceObject> Device { get; set; }
+        public ICalibrationService<ServiceObjectBase> Device { get; set; }
 
 
         public override void Load()
         {
-            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, ModMasterType.Calibration);
+            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id);
         }
         public override void Create(string templateName)
         {
@@ -219,16 +219,16 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
 
-    public class CalibrationParam : ParamBase
+    public class CalibrationParam : ParamModBase
     {
-        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId, string ModeType) where T : ParamBase, new()
+        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamModBase, new()
         {
             if (!MySqlSetting.IsConnect)
                 return;
 
             // Create a dictionary for efficient lookup of existing items
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            ModMasterDao masterFlowDao = new(ModeType);
+            ModMasterDao masterFlowDao = new("calibration");
             List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
 
             foreach (var dbModel in smus)

@@ -9,5 +9,6 @@ public abstract class CVImageReaderProxy : IDisposable
 
 	public virtual void Dispose()
 	{
-	}
+        GC.SuppressFinalize(this);
+    }
 }

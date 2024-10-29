@@ -1083,32 +1083,18 @@ namespace cvColorVision
 
     public struct IRECT
     {
+        public IRECT() { }
+        public IRECT(int tx, int ty, int tcx, int tcy)
+        {
+            x = tx;
+            y = ty;
+            cx = tcx;
+            cy = tcy;
+        }
         public int x;
         public int y;
         public int cx;
         public int cy;
-    };
-
-
-
-
-    public enum CVOLED_ERROR
-    {
-        CVOLED_SUCCESS = 0,
-        CVOLED_PARAM_E,   //参数错误
-        CVOLED_INPUT_E,   //输入错误
-        CVOLED_SCRREN_NOT_SUPPORT, //屏幕类型不支持 
-        CVOLED_INIT_E,     //初始化错误
-        SAVE_E,           //保存文件错误
-        OUT_OF_BOUNDRY,   //越界
-        ALGORITHM_E,      //算法错误
-        MORIE_E, //       摩尔纹
-    };
-    public enum CVLED_COLOR
-    {
-        BLUE = 0,
-        GREEN = 1,
-        RED = 2,
     };
     public enum DistortionType //TV畸变H,V方向与光学畸变的检测方法
     {
@@ -1116,43 +1102,4 @@ namespace cvColorVision
         TVDistH = 1,
         TVDistV = 2,
     };
-
-    public class CvOledDLL
-    {
-        private const string LIBRARY_CVOLED = "cvOled.dll";
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvOledInit",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void CvOledInit();
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvOledRealse",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void CvOledRealse();
-
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "CvLoadParam",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern CVOLED_ERROR CvLoadParam(string json);
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "loadPictureMemLength",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern ulong loadPictureMemLength(string path);
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "loadPicture",   CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int loadPicture(string path, ref int w, ref int h, byte[] imgdata);
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "findDotsArray",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern CVOLED_ERROR findDotsArray(int w, int h, byte[] imgdata, int type, CVLED_COLOR color);
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "rebuildPixels", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern CVOLED_ERROR rebuildPixels(int w, int h, byte[] imgdata, int type, CVLED_COLOR color, float exp, string path);
-        [DllImport(LIBRARY_CVOLED, EntryPoint = "morieFilter", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern CVOLED_ERROR morieFilter(int w, int h, byte[] imgdata, int type, string path);
-    }
-    public class KBDLL
-    {
-        private const string LIBRARY_KB = "cvCameraKb.dll";
-        [DllImport(LIBRARY_KB, EntryPoint = "createResultCsv", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void createResultCsv(string cfg_path, string rst_path);
-        [DllImport(LIBRARY_KB, EntryPoint = "processKeyborad",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void processKeyborad(string img_path, string cfg_path, string rst_path, string setting_json, string serial_no, float exp, uint w, uint h, int PicPart, double correctData, string correctPath);
-        [DllImport(LIBRARY_KB, EntryPoint = "getPassFail",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void getPassFail(StringBuilder pass);
-        [DllImport(LIBRARY_KB, EntryPoint = "calculateHalo",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern double calculateHalo(uint w, uint h, byte[] rawArray, int x, int y, int width, int height, int outMOVE);
-        [DllImport(LIBRARY_KB, EntryPoint = "InitResource",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern void InitResource();
-        [DllImport(LIBRARY_KB, EntryPoint = "CM_ExportToTIFF",  CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_ExportToTIFF(string fileName, uint w, uint h, byte[] rawArray, ulong buflen, bool iscolor, float img_rotate_angle);
-
-    }
 }

@@ -97,24 +97,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 自动刷新 的本地化字符串。
-        /// </summary>
-        public static string AutoRefresh {
-            get {
-                return ResourceManager.GetString("AutoRefresh", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 自动滚动到底部 的本地化字符串。
-        /// </summary>
-        public static string AutoScrollToEnd {
-            get {
-                return ResourceManager.GetString("AutoScrollToEnd", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
@@ -147,15 +129,6 @@ namespace ColorVision.Properties {
         public static string CheckUpdatesOnStartup {
             get {
                 return ResourceManager.GetString("CheckUpdatesOnStartup", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 清除 的本地化字符串。
-        /// </summary>
-        public static string Clear {
-            get {
-                return ResourceManager.GetString("Clear", resourceCulture);
             }
         }
         
@@ -268,15 +241,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 过滤器支持正则 的本地化字符串。
-        /// </summary>
-        public static string FilterSupportsRegex {
-            get {
-                return ResourceManager.GetString("FilterSupportsRegex", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 强制更新 的本地化字符串。
         /// </summary>
         public static string ForceUpdate {
@@ -363,15 +327,6 @@ namespace ColorVision.Properties {
         public static string Log {
             get {
                 return ResourceManager.GetString("Log", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日志级别 的本地化字符串。
-        /// </summary>
-        public static string LogLevel {
-            get {
-                return ResourceManager.GetString("LogLevel", resourceCulture);
             }
         }
         
@@ -786,6 +741,15 @@ namespace ColorVision.Properties {
         public static string Upgrade {
             get {
                 return ResourceManager.GetString("Upgrade", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传文件 的本地化字符串。
+        /// </summary>
+        public static string UploadFile {
+            get {
+                return ResourceManager.GetString("UploadFile", resourceCulture);
             }
         }
         

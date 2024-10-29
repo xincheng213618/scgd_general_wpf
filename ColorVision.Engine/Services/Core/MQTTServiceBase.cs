@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;
@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Services.Core
                     //Token unavailable
                     if (json.Code == -10)
                     {
-                        MQTTRCService.GetInstance().QueryServices();
+                        MqttRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
                     if (json.Code == 102)

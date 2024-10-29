@@ -5,7 +5,7 @@ using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
-    public class CameraExposureParam : ParamBase
+    public class CameraExposureParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<CameraExposureParam>> Params { get; set; } = new ObservableCollection<TemplateModel<CameraExposureParam>>();
 
