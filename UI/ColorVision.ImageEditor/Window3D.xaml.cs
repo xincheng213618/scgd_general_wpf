@@ -75,7 +75,8 @@ namespace ColorVision.Engine.Media
 
                 },
                 ShowFrameRate = true,
-                ZoomExtentsWhenLoaded =true
+                ZoomExtentsWhenLoaded =true,
+                
             };
 
             viewport.Children.Add(new DefaultLights());
