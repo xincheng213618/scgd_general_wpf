@@ -291,6 +291,9 @@
 
                                             <Grid>
                                                 <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                                
+                                                <Button Content="模板匹配" Margin="3" Height="25" HorizontalAlignment="Center" Click="SplitImage_Click"/>
+
                                                 <StackPanel  HorizontalAlignment="Right">
                                                     <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
                                                     <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">

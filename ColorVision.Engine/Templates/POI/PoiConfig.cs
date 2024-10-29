@@ -77,6 +77,11 @@ namespace ColorVision.Engine.Templates.POI
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
         }
 
+
+        public string? TemplateMatchingFilePath { get => _TemplateMatchingFilePath; set { _TemplateMatchingFilePath = value; NotifyPropertyChanged(); } }
+        private string? _TemplateMatchingFilePath;
+
+
         public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
         private string? _PoiFixFilePath;
 

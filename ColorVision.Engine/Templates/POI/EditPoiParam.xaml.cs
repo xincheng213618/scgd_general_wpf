@@ -35,6 +35,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
+using Microsoft.Win32;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -346,8 +347,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                              src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
-                        BitmapSource bitmapSource = src.ToBitmapSource();
-                        SetImageSource(bitmapSource);
+                        SetImageSource(src.ToWriteableBitmap());
                     }
                 }
                 else
@@ -360,15 +360,14 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
 
-        public void SetImageSource(ImageSource imageSource)
+        public void SetImageSource(WriteableBitmap imageSource)
         {
             ImageShow.Source = imageSource;
-            if (imageSource is BitmapSource bitmapSource)
-            {
-                PoiParam.Width = bitmapSource.PixelWidth;
-                PoiParam.Height = bitmapSource.PixelHeight;
-                InitPoiConfigValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
-            }
+
+            PoiParam.Width = imageSource.PixelWidth;
+            PoiParam.Height = imageSource.PixelHeight;
+            InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
+
             ImageShow.ImageInitialize();
             Zoombox1.ZoomUniform();
         }
@@ -1629,7 +1628,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 if (fileInfo.data != null)
                 {
                     var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
-                    SetImageSource(src.ToBitmapSource());
+                    SetImageSource(src.ToWriteableBitmap());
                 }
             }
             else if (fileInfo.FileExtType == FileExtType.Raw)
@@ -1646,7 +1645,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     dst = src;
                 }
-                SetImageSource(dst.ToBitmapSource());
+                SetImageSource(dst.ToWriteableBitmap());
             }
         }
 
@@ -1855,6 +1854,53 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             FocusPointGrid.Height = FocusPointRowDefinition.ActualHeight;
             PropertyGrid21.Height = FocusPointRowDefinition.ActualHeight;
+        }
+
+        private void SplitImage_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (ImageShow.Source is not WriteableBitmap sourceBitmap) return;
+
+            Int32Rect region = new Int32Rect();
+            region.X = PoiParam.PoiConfig.CenterX - PoiParam.PoiConfig.AreaRectWidth/2;
+            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectWidth /2;
+            region.Width = PoiParam.PoiConfig.AreaRectWidth;
+            region.Height = PoiParam.PoiConfig.AreaRectHeight;
+
+
+            // Validate region
+            if (region.X < 0 || region.Y < 0 ||
+                region.X + region.Width > sourceBitmap.PixelWidth ||
+                region.Y + region.Height > sourceBitmap.PixelHeight)
+            {
+                throw new ArgumentException("The specified region is out of bounds.");
+            }
+
+            // Create a cropped bitmap
+            var croppedBitmap = new CroppedBitmap(sourceBitmap, region);
+
+            // Encode cropped bitmap to TIFF
+            var encoder = new TiffBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "TIFF files (*.tif)|*.tif",
+                DefaultExt = "tif",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                FileName = "output"
+            };
+
+            // Show save file dialog
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                SetImageSource(new WriteableBitmap(croppedBitmap));
+                using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create))
+                {
+                    encoder.Save(fileStream);
+                }
+                PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
+            }
         }
     }
 
