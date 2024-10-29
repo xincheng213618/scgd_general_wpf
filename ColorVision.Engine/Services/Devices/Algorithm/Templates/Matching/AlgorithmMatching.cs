@@ -38,10 +38,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
 
         public static void SetFile(object target, string propertyName)
         {
-            using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+            using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 saveFileDialog.Filter = "Tif Files (*.tif)|*.txt|All Files (*.*)|*.*";
-                saveFileDialog.Title = "Save File";
+                saveFileDialog.Title = "打开文件";
                 saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 saveFileDialog.RestoreDirectory = true;
                 if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
