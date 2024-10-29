@@ -165,8 +165,6 @@ namespace ColorVision.Projects.ProjectShiYuan
 
 
 
-
-
         public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
 
@@ -184,8 +182,6 @@ namespace ColorVision.Projects.ProjectShiYuan
 
             ListViewSetting.ItemsSource = Settings;
             ListViewResult.ItemsSource = Results;
-            ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
-            ComboBoxSer.SelectedIndex = 0;
 
             FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectionChanged += (s, e) =>
@@ -202,6 +198,8 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 Settings.Add(new TempResult() { Name = item });
             }
+
+            this.DataContext = ProjectShiYuanConfig.Instance;
 
         }
         private Engine.Services.Flow.FlowControl flowControl;
@@ -431,14 +429,6 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (!HYMesManager.GetInstance().IsConnect)
-            {
-                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
-            }
-            else
-            {
-                HYMesManager.GetInstance().Close();
-            }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -458,7 +448,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                     MessageBox.Show("文件夹路径不能为空", "提示");
                     return;
                 }
-                HYMesManager.Config.DataPath = dialog.SelectedPath;
+                ProjectShiYuanConfig.Instance.DataPath = dialog.SelectedPath;
             }
         }
 
