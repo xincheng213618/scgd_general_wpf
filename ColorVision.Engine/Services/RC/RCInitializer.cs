@@ -19,21 +19,21 @@ namespace ColorVision.Engine.Services.RC
         {
             if (RCSetting.Instance.IsUseRCService)
             {
-                _messageUpdater.UpdateMessage("正在尝试连接注册中心");
-                bool isConnect = await MQTTRCService.GetInstance().Connect();
+                _messageUpdater.Update("正在尝试连接注册中心");
+                bool isConnect = await MqttRCService.GetInstance().Connect();
                 if (!isConnect)
                 {
-                    _messageUpdater.UpdateMessage("检测是否本地服务");
+                    _messageUpdater.Update("检测是否本地服务");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        RCServiceConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
-                        mQTTConnect.ShowDialog();
+                        RCServiceConnect connect = new() { Owner = Application.Current.GetActiveWindow() };
+                        connect.ShowDialog();
                     });
                 }
             }
             else
             {
-                _messageUpdater.UpdateMessage("跳过注册中心连接");
+                _messageUpdater.Update("跳过注册中心连接");
             }
         }
     }

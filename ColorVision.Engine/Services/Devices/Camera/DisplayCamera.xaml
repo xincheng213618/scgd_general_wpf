@@ -83,10 +83,10 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="相机未注册" Command="{Binding PhyCamera.UploadLincenseCommand}"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="相机未注册" Command="{Binding PhyCamera.UploadLicenseCommand}"/>
                 <Button x:Name="ButtonInit" Margin="0,0,0,3" Content="请先配置相机ID" Click="CameraInit_Click"/>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
-                <DockPanel x:Name="ButtonOpen">
+                <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
                     <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
                     <Button  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
                 </DockPanel>
@@ -133,6 +133,10 @@
                                 </DockPanel>
                             </StackPanel>
                         </StackPanel>
+                        <DockPanel Margin="0,0,0,3">
+                            <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.AvgCount}" HorizontalAlignment="Left" Width="100" />
+                        </DockPanel>
 
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}" Margin="0,0,0,3">
                             <DockPanel >

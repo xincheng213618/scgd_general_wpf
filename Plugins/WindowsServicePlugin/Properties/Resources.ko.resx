@@ -135,16 +135,10 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>RC 서비스 로그</value>
   </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>남은 시간:</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>에러 발생됨</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>현재 속도:</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>관리 서비스</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>서비스</value>
   </data>
 </root>

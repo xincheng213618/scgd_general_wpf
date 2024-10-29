@@ -19,7 +19,7 @@
                     </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn>
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate DataType="{x:Type Templates:TemplateModelBase}" >
+                            <DataTemplate DataType="{x:Type Templates:TemplateBase}" >
                                 <TextBlock Text="{Binding Key}" TextTrimming = "CharacterEllipsis"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

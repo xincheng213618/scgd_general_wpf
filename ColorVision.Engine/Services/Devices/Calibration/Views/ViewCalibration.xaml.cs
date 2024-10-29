@@ -1,13 +1,10 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -32,20 +29,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
-
-    public class ViewCalibrationConfig : ViewModelBase, IConfig
-    {
-        public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
-
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
-
-        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowListView = true;
-    }
-
-
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
@@ -216,9 +199,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             ViewResultCalibration result = new(model);
             ViewResults.AddUnique(result);
-
-            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
-            listView1.ScrollIntoView(listView1.SelectedItem);
+            if (Config.AutoRefreshView)
+            {
+                if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+                listView1.ScrollIntoView(listView1.SelectedItem);
+            }
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

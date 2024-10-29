@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Extension;
@@ -269,6 +269,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
+            Params.Add("AvgCount", Config.AvgCount);
             Params.Add("ExpTime", expTime);
             if (param.Id == -1)
             {

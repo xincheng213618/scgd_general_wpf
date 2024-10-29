@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -15,11 +15,11 @@ namespace ColorVision.Engine.Templates
     /// </summary>
     public partial class CreateModeDetail : Window
     {
-        ParamBase Param { get; set; }
+        ParamModBase Param { get; set; }
 
         public ModDetailModel CreateConfig { get; set; }
 
-        public CreateModeDetail(ParamBase dicModParam)
+        public CreateModeDetail(ParamModBase dicModParam)
         {
             Param = dicModParam;
             InitializeComponent();

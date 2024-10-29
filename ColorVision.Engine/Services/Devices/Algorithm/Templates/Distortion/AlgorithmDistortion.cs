@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -15,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
     public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "畸变";
+        public int Order { get; set; } = 55;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -29,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateDistortionParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateDistortionParam(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

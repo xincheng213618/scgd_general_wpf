@@ -7,7 +7,7 @@
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ViewCameraConfig}"
-        Title="视图配置" Height="450" Width="400" Initialized="Window_Initialized">
+        Title="视图配置" Height="450" Width="400" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

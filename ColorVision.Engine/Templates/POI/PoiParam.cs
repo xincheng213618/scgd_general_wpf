@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Templates.POI
     /// <summary>
     /// 关注点模板
     /// </summary>
-    public class PoiParam : ParamBase
+    public class PoiParam : ParamModBase
     {
         public static void Save2DB(PoiParam poiParam)
         {
@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }
-
+          
 
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
@@ -36,10 +36,9 @@ namespace ColorVision.Engine.Templates.POI
             List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
             foreach (var dbModel in poiDetails)
             {
-                poiParam.PoiPoints.AddUnique(new PoiPoint(dbModel));
+                poiParam.PoiPoints.Add(new PoiPoint(dbModel));
             }
         }
-
 
         public PoiParam()
         {
@@ -54,38 +53,39 @@ namespace ColorVision.Engine.Templates.POI
             Width = dbModel.Width ?? 0;
             Height = dbModel.Height ?? 0;
             Type = dbModel.Type ?? 0;
-            DatumArea.X1X = dbModel.LeftTopX ?? 0;
-            DatumArea.X1Y = dbModel.LeftTopY ?? 0;
-            DatumArea.X2X = dbModel.RightTopX ?? 0;
-            DatumArea.X2Y = dbModel.RightTopY ?? 0;
-            DatumArea.X3X = dbModel.RightBottomX ?? 0;
-            DatumArea.X3Y = dbModel.RightBottomY ?? 0;
-            DatumArea.X4X = dbModel.LeftBottomX ?? 0;
-            DatumArea.X4Y = dbModel.LeftBottomY ?? 0;
-            DatumArea.CenterX = (DatumArea.X2X - DatumArea.X1X) / 2;
-            DatumArea.CenterY = (DatumArea.X4Y - DatumArea.X1Y) / 2;
+            PoiConfig.X1X = dbModel.LeftTopX ?? 0;
+            PoiConfig.X1Y = dbModel.LeftTopY ?? 0;
+            PoiConfig.X2X = dbModel.RightTopX ?? 0;
+            PoiConfig.X2Y = dbModel.RightTopY ?? 0;
+            PoiConfig.X3X = dbModel.RightBottomX ?? 0;
+            PoiConfig.X3Y = dbModel.RightBottomY ?? 0;
+            PoiConfig.X4X = dbModel.LeftBottomX ?? 0;
+            PoiConfig.X4Y = dbModel.LeftBottomY ?? 0;
+            PoiConfig.CenterX = (PoiConfig.X2X - PoiConfig.X1X) / 2;
+            PoiConfig.CenterY = (PoiConfig.X4Y - PoiConfig.X1Y) / 2;
             CfgJson = dbModel.CfgJson ?? string.Empty;
             ValidateId = dbModel.ValidateId ?? -1;
+            PoiConfig.IsPoiCIEFile = dbModel.IsDynamics ??false;
         }
 
         public string CfgJson
         {
-            get => JsonConvert.SerializeObject(DatumArea);
+            get => JsonConvert.SerializeObject(PoiConfig);
             set
             {
                 if (string.IsNullOrEmpty(value))
                 {
-                    DatumArea ??= new DatumArea();
+                    PoiConfig ??= new PoiConfig();
                 }
                 else
                 {
                     try
                     {
-                        DatumArea = JsonConvert.DeserializeObject<DatumArea>(value) ?? new DatumArea();
+                        PoiConfig = JsonConvert.DeserializeObject<PoiConfig>(value) ?? new PoiConfig();
                     }
                     catch
                     {
-                        DatumArea = new DatumArea();
+                        PoiConfig = new PoiConfig();
                     }
                 }
             }
@@ -100,13 +100,16 @@ namespace ColorVision.Engine.Templates.POI
 
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
+
         public int ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
         private int _ValidateId;
+
+
 
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {
             var Template = new TemplateComplyParam("Comply.CIE.AVG");
-            new WindowTemplate(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
         /// <summary>
@@ -114,7 +117,7 @@ namespace ColorVision.Engine.Templates.POI
         /// </summary>
         public ObservableCollection<PoiPoint> PoiPoints { get; set; } = new ObservableCollection<PoiPoint>();
 
-        public DatumArea DatumArea { get; set; } = new DatumArea();
+        public PoiConfig PoiConfig { get; set; } = new PoiConfig();
 
         [JsonIgnore]
         public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }

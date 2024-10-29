@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
     }
 
-    public class SpectrumResourceParam:ParamBase
+    public class SpectrumResourceParam:ParamModBase
     {
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId)
         {

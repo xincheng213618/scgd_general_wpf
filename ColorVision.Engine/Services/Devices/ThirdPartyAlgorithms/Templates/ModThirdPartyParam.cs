@@ -1,9 +1,6 @@
 ﻿
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
-using System;
 using ColorVision.UI.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
@@ -12,7 +9,7 @@ using System.Windows;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
 
-    public class ModThirdPartyParam : ParamBase
+    public class ModThirdPartyParam : ParamModBase
     {
 
         public RelayCommand ResetCommand { get; set; }

@@ -7,7 +7,7 @@
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ViewAlgorithmConfig}"
-        Title="视图配置" Height="450" Width="400" Initialized="Window_Initialized">
+        Title="视图配置" Background="{StaticResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -26,9 +26,17 @@
                             <TextBlock Text="自动刷新数据"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  AutoRefreshView}"/>
                         </DockPanel>
-                        <DockPanel>
+                        <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="插入数据在列表末尾"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  InsertAtBeginning}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="自动保存数据列"  MinWidth="120"  />
+                            <ui:ToggleSwitch IsChecked="{Binding  AutoSaveSideData}"/>
+                        </DockPanel>
+                        <DockPanel Visibility="{Binding AutoSaveSideData,Converter={StaticResource bool2VisibilityConverter}}">
+                            <TextBlock Text="数据列保存路径"  MinWidth="120"   />
+                            <TextBox Text="{Binding SaveSideDataDirPath}" Style="{StaticResource TextBox.Small}"/>
                         </DockPanel>
                     </StackPanel>
                 </Border>

@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Themes.Controls;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
             ComboxTemplate.SelectedIndex = 0;
 
             CBPOIStorageModel.ItemsSource = EnumExtensions.ToKeyValuePairs<POIStorageModel>();
-
+            CBPOIBuildType.ItemsSource = EnumExtensions.ToKeyValuePairs<POIBuildType>();
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
@@ -92,19 +92,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 else//四边形
                 {
                     Params.Add("LayoutPolygon", BuildLayoutPolygon());
-                    //Params.Add("LayoutPolygonX1", Mask_X1.Text);
-                    //Params.Add("LayoutPolygonY1", Mask_Y1.Text);
-                    //Params.Add("LayoutPolygonX2", Mask_X2.Text);
-                    //Params.Add("LayoutPolygonY2", Mask_Y2.Text);
-                    //Params.Add("LayoutPolygonX3", Mask_X3.Text);
-                    //Params.Add("LayoutPolygonY3", Mask_Y3.Text);
-                    //Params.Add("LayoutPolygonX4", Mask_X4.Text);
-                    //Params.Add("LayoutPolygonY4", Mask_Y4.Text);
                     POILayoutReq = POILayoutTypes.PolygonFour;
                 }
 
-                MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, POILayoutReq, Params, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "关注点布点");
             }
         }
 

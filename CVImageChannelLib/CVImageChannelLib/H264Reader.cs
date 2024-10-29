@@ -1,5 +1,4 @@
 #pragma warning disable CS8603,CS0067
-using OpenCvSharp.WpfExtensions;
 using System;
 using System.Drawing;
 using System.Windows;

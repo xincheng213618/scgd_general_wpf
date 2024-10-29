@@ -78,8 +78,8 @@ namespace ColorVision.Engine.Services
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MQTTRCService.GetInstance().RestartServices();
-            MessageBox.Show(Application.Current.MainWindow,"命令已经发送");
+            MqttRCService.GetInstance().RestartServices();
+            MessageBox.Show(Application.Current.MainWindow,"命令已经发送","ColorVision");
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)

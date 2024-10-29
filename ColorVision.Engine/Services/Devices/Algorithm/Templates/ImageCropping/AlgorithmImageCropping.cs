@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -16,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
     public class AlgorithmImageCropping : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "发光区裁剪";
+        public int Order { get; set; } = 5;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateImageCropping(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateImageCropping(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

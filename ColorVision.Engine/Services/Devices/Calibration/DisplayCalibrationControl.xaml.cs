@@ -2,7 +2,7 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -77,6 +77,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnInit, Visibility.Collapsed);
                 }
                 // Default state
                 HideAllButtons();
@@ -92,6 +93,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     case DeviceStatusType.OffLine:
                         break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(TextBlockUnInit, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
                         break;
@@ -237,7 +239,7 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
             }
             if (sender is Button button)
             {
-                WindowTemplate windowTemplate;
+                TemplateEditorWindow windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
@@ -247,7 +249,7 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
                 {
                     case "Calibration":
                         var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-                        windowTemplate = new WindowTemplate(ITemplate);
+                        windowTemplate = new TemplateEditorWindow(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

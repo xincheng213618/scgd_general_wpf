@@ -1,15 +1,10 @@
 ﻿using ColorVision.Engine.MySql;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 {
-    public class MysqlPoiGenCali : IMysqlCommand
+    public class MysqlPOIFilter : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复MysqlPoiGenCali";
+        public string GetMysqlCommandName() => "恢复Mysql Poi修正标定参数模板设置";
         public string GetRecover()
         {
             string t_scgd_sys_dictionary_mod_master = "INSERT INTO `t_scgd_sys_dictionary_mod_master` (`id`, `code`, `name`, `pid`, `mod_type`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`) VALUES (25, 'POIGenCali', 'POI修正生成', NULL, 7, '2024-08-09 08:44:22', 1, 0, NULL, 0);\r\n";

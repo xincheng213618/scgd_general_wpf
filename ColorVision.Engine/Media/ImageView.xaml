@@ -5,8 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Media"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             xmlns:converter="clr-namespace:ColorVision.Engine.Draw.Converter"
-             xmlns:draw ="clr-namespace:ColorVision.Engine.Draw"
+             xmlns:converter="clr-namespace:ColorVision.ImageEditor.Draw.Converter;assembly=ColorVision.ImageEditor"
+             xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
@@ -125,7 +125,6 @@
             </DockPanel>
         </Grid>
         <Grid x:Name="ZoomGrid" Background="#c3c3c3">
-            
             <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
@@ -145,11 +144,11 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <ToolBarTray  x:Name="ToolBarAl" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
+            <ToolBarTray  x:Name="ToolBarAl" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                     <StackPanel Orientation="Horizontal" >
-                        <ComboBox x:Name="ComboxPOITemplate" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button Content="{x:Static properties:Resources.Calculate}" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
+                        <ComboBox x:Name="ComboxPOITemplate" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                        <Button x:Name="ButtonCalculPOI" Content="{x:Static properties:Resources.Calculate}"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
@@ -247,17 +246,17 @@
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
-                    <Button Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
+                    <Button x:Name="Button1931" Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Content="彩" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Content="彩" Padding="8,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  Content="3D" Click="Button_3D_Click" Margin="0,0,0,2"/>
+                    <ToggleButton  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
 
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >

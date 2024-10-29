@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -12,9 +12,10 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {
-    public class AlgorithmFocusPoints : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmFocusPoints : ViewModelBase
     {
-        public string Name { get; set; } = "灯带检测";
+        public string Name { get; set; } = "发光区1";
+        public int Order { get; set; } = 12;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -29,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 
         public void OpenTemplate()
         {
-            new WindowTemplate(new TemplateFocusPoints(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateFocusPoints(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

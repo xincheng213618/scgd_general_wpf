@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
 using MySql.Data.MySqlClient;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

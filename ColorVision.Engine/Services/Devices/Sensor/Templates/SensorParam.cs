@@ -1,4 +1,6 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602,CS8604
+
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using MQTTMessageLib.Sensor;
 using System;
@@ -118,7 +120,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
 
 
-    public class SensorParam:ParamBase
+    public class SensorParam:ParamModBase
     {
         public SensorParam() : base()
         {

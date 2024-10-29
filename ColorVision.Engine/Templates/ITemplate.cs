@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
@@ -15,7 +16,8 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Templates
 {
@@ -106,7 +108,7 @@ namespace ColorVision.Engine.Templates
 
         public virtual void OpenCreate()
         {
-            CreateTemplate createWindow = new CreateTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            TemplateCreate createWindow = new TemplateCreate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
         }
 
@@ -135,9 +137,7 @@ namespace ColorVision.Engine.Templates
         }
     }
 
-
-
-    public class ITemplate<T> : ITemplate where T : ParamBase, new()
+    public class ITemplate<T> : ITemplate where T : ParamModBase, new()
     {
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
@@ -190,6 +190,20 @@ namespace ColorVision.Engine.Templates
             return FileName;
         }
 
+        public virtual void Save(TemplateModel<T> item)
+        {
+            var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+            if (modMasterModel?.Pcode != null)
+            {
+                modMasterModel.Name = item.Value.Name;
+                var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
+            var details = new List<ModDetailModel>();
+            item.Value.GetDetail(details);
+            ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+        }
+
         public override void Save()
         {
             if (SaveIndex.Count == 0) return;
@@ -199,6 +213,7 @@ namespace ColorVision.Engine.Templates
                 if(index >-1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
+
                     var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
 
                     if (modMasterModel?.Pcode != null)
@@ -370,9 +385,15 @@ namespace ColorVision.Engine.Templates
             //}
             byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+            CreateDefault();
             try
             {
-                ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+                T Temp = JsonConvert.DeserializeObject<T>(fileContent);
+                foreach (var item in Temp.ModDetailModels)
+                {
+                    CreateTemp.ModDetailModels.First(a => a.SysPid == item.SysPid).ValueA = item.ValueA;
+                }
+                ExportTemp =CreateTemp;
                 return true;
             }
             catch (JsonException ex)
@@ -450,6 +471,7 @@ namespace ColorVision.Engine.Templates
                 return null;
             }
             T? param = AddParamMode();
+            if (ExportTemp != null) ExportTemp = null;
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);

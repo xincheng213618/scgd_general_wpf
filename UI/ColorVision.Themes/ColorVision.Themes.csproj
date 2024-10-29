@@ -1,0 +1,56 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>True</UseWindowsForms>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\Image\background0.png" />
+	  <None Remove="Assets\Image\ColorVision.ico" />
+	  <None Remove="Assets\Image\ColorVision1.ico" />
+	  <None Remove="Assets\Image\归档查询.png" />
+	  <None Remove="Assets\Image\综合查询.png" />
+	  <None Remove="Assets\uploadbg.avif" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="HandyControl" Version="3.5.1" />
+		<PackageReference Include="Panuon.WPF.UI" Version="1.2.4.8" />
+		<PackageReference Include="WPF-UI" Version="3.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Assets\Image\background0.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Image\ColorVision.ico" />
+	  <Resource Include="Assets\Image\ColorVision1.ico" />
+	  <Resource Include="Assets\Image\uploadbg.avif" />
+	  <Resource Include="Assets\Image\归档查询.png" />
+	  <Resource Include="Assets\Image\综合查询.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
+	    <DesignTime>True</DesignTime>
+	    <AutoGen>True</AutoGen>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	  <Compile Update="Controls\Uploads\Upload.xaml.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\RESOURCES.RESX">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+</Project>

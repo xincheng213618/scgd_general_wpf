@@ -10,7 +10,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="500" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -91,6 +91,62 @@
                                 <TextBox Text="{Binding ZBDebayer.Channeltype}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                         </StackPanel>
+                    </GroupBox>
+                    <Button Content="Add" Command="{Binding AddROIParamsCommand}" />
+                    <GroupBox Header="小窗口">
+                        <ListView  x:Name="listView1" Height="200" Background="Transparent" ItemsSource="{Binding ROIParams}" Grid.Row="1"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
+                            <ListView.Resources >
+                                <ContextMenu x:Key="ContextMenuItem">
+                                    <MenuItem Header="{x:Static properties:Resources.Delete}"   Click="RoiDelete_Click"  Tag="{Binding .}"  />
+                                </ContextMenu>
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View >
+                                <GridView >
+                                    <GridView.ColumnHeaderContainerStyle>
+                                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="Background" Value="Transparent"/>
+                                        </Style>
+                                    </GridView.ColumnHeaderContainerStyle>
+                                    <GridViewColumn  Header="X" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding X}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Y" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Y}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Height" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Height}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn  Header="Width" Width="50">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate  DataType="{x:Type config:Int32RectViewModel}">
+                                                <TextBox Text="{Binding Width}"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+
+                        </ListView>
+
+
                     </GroupBox>
 
                     <GroupBox Header="默认参数" Margin="0,5">

@@ -19,14 +19,6 @@
           <source>程序关闭</source>
           <target state="new">程式關閉</target>
         </trans-unit>
-        <trans-unit id="AutoRefresh" translate="yes" xml:space="preserve">
-          <source>自动刷新</source>
-          <target state="new">自動重新整理</target>
-        </trans-unit>
-        <trans-unit id="AutoScrollToEnd" translate="yes" xml:space="preserve">
-          <source>自动滚动到底部</source>
-          <target state="new">自動滾動到底部</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">取消</target>
@@ -42,10 +34,6 @@
         <trans-unit id="CheckUpdatesOnStartup" translate="yes" xml:space="preserve">
           <source>软件启动时检测更新</source>
           <target state="new">軟體啟動時偵測更新</target>
-        </trans-unit>
-        <trans-unit id="Clear" translate="yes" xml:space="preserve">
-          <source>清除</source>
-          <target state="new">清除</target>
         </trans-unit>
         <trans-unit id="Close" translate="yes" xml:space="preserve">
           <source>关闭</source>
@@ -95,10 +83,6 @@
           <source>实验性功能</source>
           <target state="new">實驗性功能</target>
         </trans-unit>
-        <trans-unit id="FilterSupportsRegex" translate="yes" xml:space="preserve">
-          <source>过滤器支持正则</source>
-          <target state="new">過濾器支援正規</target>
-        </trans-unit>
         <trans-unit id="ForceUpdate" translate="yes" xml:space="preserve">
           <source>强制更新</source>
           <target state="new">強制更新</target>
@@ -138,10 +122,6 @@
         <trans-unit id="Log" translate="yes" xml:space="preserve">
           <source>日志</source>
           <target state="new">紀錄</target>
-        </trans-unit>
-        <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
-          <source>日志级别</source>
-          <target state="new">日誌等級</target>
         </trans-unit>
         <trans-unit id="Maximize" translate="yes" xml:space="preserve">
           <source>最大化</source>

@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using log4net;
+﻿using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
@@ -50,7 +49,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         public virtual T? GetModelFromDataRow(DataRow item) => ReflectionHelper.GetModelFromDataRow<T>(item);
         public virtual DataRow Model2Row(T item, DataRow row) => ReflectionHelper.Model2RowAuto(item, row);
-        public virtual DataTable CreateColumns(DataTable dataTable) => ReflectionHelper.CreateColumns<ModDetailModel>(dataTable);
+        public virtual DataTable CreateColumns(DataTable dataTable) => ReflectionHelper.CreateColumns<T>(dataTable);
 
         public DataTable SelectById(int id)
         {

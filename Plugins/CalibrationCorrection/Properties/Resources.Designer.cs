@@ -61,7 +61,7 @@ namespace CalibrationCorrection.Properties {
         }
         
         /// <summary>
-        ///   查找类似 校正工具 的本地化字符串。
+        ///   查找类似 校正生成工具 的本地化字符串。
         /// </summary>
         public static string CalibrationCorrection {
             get {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
     {
         public override string OwnerGuid => "Template";
         public override string GuidId => "Comply";
-        public override int Order => 4;
+        public override int Order => 2;
         public override string Header => Properties.Resources.MenuValidue;
     }
 
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);

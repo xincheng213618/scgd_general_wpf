@@ -2,10 +2,8 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
-using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Drawing;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
 {
@@ -17,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
         private float _Y;
     }
 
-    public class ImageCroppingParam : ParamBase
+    public class ImageCroppingParam : ParamModBase
     {
         public ImageCroppingParam() { }
         public ImageCroppingParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

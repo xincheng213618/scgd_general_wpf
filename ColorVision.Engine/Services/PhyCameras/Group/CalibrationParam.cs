@@ -162,7 +162,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
-        public TemplateCalibrationParam(ICalibrationService<BaseResourceObject> device)
+        public TemplateCalibrationParam(ICalibrationService<ServiceObjectBase> device)
         {
             if (device.CalibrationParams.Count > 0)
             {
@@ -195,7 +195,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
         }
 
-        public ICalibrationService<BaseResourceObject> Device { get; set; }
+        public ICalibrationService<ServiceObjectBase> Device { get; set; }
 
 
         public override void Load()
@@ -219,9 +219,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
 
-    public class CalibrationParam : ParamBase
+    public class CalibrationParam : ParamModBase
     {
-        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamBase, new()
+        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId) where T : ParamModBase, new()
         {
             if (!MySqlSetting.IsConnect)
                 return;

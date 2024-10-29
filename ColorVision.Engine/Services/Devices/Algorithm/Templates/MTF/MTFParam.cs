@@ -7,7 +7,7 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-    public class MTFParam : ParamBase
+    public class MTFParam : ParamModBase
     {
         public MTFParam() { }
         public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

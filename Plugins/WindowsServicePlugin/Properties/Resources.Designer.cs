@@ -70,24 +70,6 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
-        ///   查找类似 当前速度： 的本地化字符串。
-        /// </summary>
-        public static string CurrentSpeed {
-            get {
-                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 发生错误 的本地化字符串。
-        /// </summary>
-        public static string ErrorOccurred {
-            get {
-                return ResourceManager.GetString("ErrorOccurred", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 管理服务 的本地化字符串。
         /// </summary>
         public static string ManagementService {
@@ -106,6 +88,15 @@ namespace WindowsServicePlugin.Properties {
         }
         
         /// <summary>
+        ///   查找类似 服务 的本地化字符串。
+        /// </summary>
+        public static string Service {
+            get {
+                return ResourceManager.GetString("Service", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务日志 的本地化字符串。
         /// </summary>
         public static string ServiceLog {
@@ -120,15 +111,6 @@ namespace WindowsServicePlugin.Properties {
         public static string SpectrometerLog {
             get {
                 return ResourceManager.GetString("SpectrometerLog", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剩余时间： 的本地化字符串。
-        /// </summary>
-        public static string TimeLeft {
-            get {
-                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         

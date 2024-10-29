@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput
 
         public TemplatePoiOutputParam()
         {
-            Title = "PoiOutput算法设置";
+            Title = "Poi文件输出模板设置";
             Code = "PoiOutput";
             TemplateParams = Params;
             IsUserControl = true;

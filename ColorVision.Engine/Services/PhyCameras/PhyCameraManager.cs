@@ -19,11 +19,12 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-    public class PhyCameraManager
+    public class PhyCameraManager:ViewModelBase
     {
         private static PhyCameraManager _instance;
         private static readonly object Locker = new();
@@ -35,11 +36,25 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
+            ImportCommand = new RelayCommand(a => Import());
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-            ImportCommand = new RelayCommand(a => Import());
+            RefreshEmptyCamera();
+            PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
+
+
+
+        public void RefreshEmptyCamera()
+        {
+            Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
+        }
+
+
+        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        private int _Count;
+
 
         public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
@@ -137,9 +152,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private static void UpdateLicenseModel(CameraLicenseModel licenseModel)
         {
-            licenseModel.CusTomerName = licenseModel.ColorVisionLincense.Licensee;
-            licenseModel.Model = licenseModel.ColorVisionLincense.DeviceMode;
-            licenseModel.ExpiryDate = licenseModel.ColorVisionLincense.ExpiryDateTime;
+            licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
+            licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
+            licenseModel.ExpiryDate = licenseModel.ColorVisionLicense.ExpiryDateTime;
 
             int ret = CameraLicenseDao.Instance.Save(licenseModel);
 
@@ -212,6 +227,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
+                        if (!newPhyCamera.IsLicensed)
+                            Task.Run(() => newPhyCamera.UploadLicenseNet());
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);
@@ -239,7 +256,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         phyCamera.AddChild(calibrationResource);
                         break;
                     default:
-                        var baseFileResource = new BaseFileResource(sysResourceModel);
+                        var baseFileResource = new ServiceFileBase(sysResourceModel);
                         phyCamera.AddChild(baseFileResource);
                         break;
                 }
@@ -263,7 +280,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         groupResource.AddChild(calibrationResource);
                         break;
                     default:
-                        var baseResource = new BaseResource(sysResourceModel);
+                        var baseResource = new ServiceBase(sysResourceModel);
                         groupResource.AddChild(baseResource);
                         break;
                 }

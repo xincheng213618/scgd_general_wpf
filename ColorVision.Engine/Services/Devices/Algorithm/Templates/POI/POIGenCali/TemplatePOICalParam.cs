@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 
         public TemplatePoiGenCalParam()
         {
-            Title = "PoiGenCali算法设置";
+            Title = "Poi修正标定参数模板设置";
             Code = "POIGenCali";
             TemplateParams = Params;
             IsUserControl = true;
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali
 
         public override IMysqlCommand? GetMysqlCommand()
         {
-            return new MysqlPoiGenCali();
+            return new MysqlPOIFilter();
         }
     }
 }

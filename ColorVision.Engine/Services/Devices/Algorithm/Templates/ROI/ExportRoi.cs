@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
     {
         public override string OwnerGuid => "TemplateAlgorithm";
         public override string GuidId => "RoiParam";
-        public override string Header => "发光区检测2";
+        public override string Header => "发光区检测";
         public override int Order => 3;
         public override ITemplate Template => new TemplateRoi();
     }

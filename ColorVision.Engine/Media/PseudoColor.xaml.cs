@@ -24,7 +24,6 @@ namespace ColorVision.Engine.Media
     /// </summary>
     public partial class PseudoColor : Window
     {
-        public ColorMap ColorMap { get; set; }
         double MinMax { get; set; }
         double MinData { get; set; }
         double MaxData { get; set; }= 255;
@@ -35,7 +34,6 @@ namespace ColorVision.Engine.Media
         {
             Config = config;
             PseudoValues = new ObservableCollection<PseudoValue>();
-            ColorMap = new ColorMap();
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -85,12 +83,10 @@ namespace ColorVision.Engine.Media
 
             ComColormapTypes.ItemsSource = GetColormapDictionary();
             dataGrid1.ItemsSource = PseudoValues;
-            Genera();
         }
 
         private void button_Create_Click(object sender, RoutedEventArgs e)
         {
-            Genera();
             Close();
         }
 
@@ -110,45 +106,14 @@ namespace ColorVision.Engine.Media
         {
             double minLua = RangeSlider1.ValueStart;
             double maxLua = RangeSlider1.ValueEnd;
-            ColorMap.buildCustomMap(Int32.Parse(textBox.Value.ToString()), minLua / MinMax, maxLua / MinMax);
             //colormapNum = Int32.Parse(this.textBox_level.DisPlayName);
             init();
-            ColorMap.reMap();
         }
 
         //初始化伪彩色的这个表
         private void init()
         {
             PseudoValues.Clear();
-            if (ColorMap != null)
-            {
-                int rows = ColorMap.srcColor.Rows;
-                int cols = ColorMap.srcColor.Cols;
-                OpenCvSharp.Mat cm = new(rows + 5, cols + 150, ColorMap.srcColor.Type(), OpenCvSharp.Scalar.All(255));
-                OpenCvSharp.Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, cols, rows)];
-                ColorMap.srcColor.Clone().CopyTo(cmRt);
-                cmRt = cm[new OpenCvSharp.Rect(cols, 0, 150, rows)];
-
-                System.Drawing.Color[] clrMap = ColorMap.colorMap;
-                double stepData = 0;
-                double nowStep = MinData;
-                for (int i = 0; i < clrMap.Length; i++)
-                {
-                    stepData = ColorMap.stepPer[i] * MinMax;
-                    double nextStep = stepData + nowStep;
-                    if (i == clrMap.Length - 1) //最后
-                    {
-                        nextStep = MaxData;
-                    }
-
-                    int colorcont = ColorMap.colorMap.Length - i  -1;
-
-                    PseudoValues.Add(new PseudoValue() { ValText = $"{(int)nowStep}-{(int)nextStep}" , Color = new SolidColorBrush(Color.FromArgb(clrMap[colorcont].A, clrMap[colorcont].R, clrMap[colorcont].G, clrMap[colorcont].B))});
-                    nowStep = nextStep;
-                    cmRt.Line(0, ColorMap.colorMapIdx[i], 50, ColorMap.colorMapIdx[i], OpenCvSharp.Scalar.All(0));
-                }
-                _ = PseudoValues.Reverse();
-            }
         }
 
         private void textBox_ValueChanged(object sender, HandyControl.Data.FunctionEventArgs<double> e)

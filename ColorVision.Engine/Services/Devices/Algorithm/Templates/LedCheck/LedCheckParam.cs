@@ -1,13 +1,12 @@
 ﻿using ColorVision.Engine.Templates;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 {
 
-    public class LedCheckParam : ParamBase
+    public class LedCheckParam : ParamModBase
     {
 
         public LedCheckParam() { }

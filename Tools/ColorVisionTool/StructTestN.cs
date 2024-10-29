@@ -1,9 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using System.Runtime.InteropServices;
 
 namespace StructTestN
 {
-	public class foucusEdge
+    public class foucusEdge
 	{
 		//offy：屏幕与COMS中心的偏差像素；d：屏幕的10-15%；w： COMS的40%-50%；h屏幕的40-50%；nStep：2倍的MAping；nMaxCount：默认20。
 		public int offy;

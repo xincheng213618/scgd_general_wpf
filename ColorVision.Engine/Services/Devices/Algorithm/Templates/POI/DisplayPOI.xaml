@@ -9,11 +9,11 @@
              d:DataContext="{d:DesignInstance local:AlgorithmPoi}"
              d:DesignHeight="400" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
+        <Button  Content="{x:Static properties:Resources.Calculate}" VerticalAlignment="Top" Margin="5" Height="30" HorizontalAlignment="Right" Click="RunTemplate_Click" />
         <StackPanel>
             <StackPanel Margin="0,5" >
                 <DockPanel Margin="0,2" Visibility="{Binding IsUSeFile,Converter={StaticResource bool2VisibilityConverter1}}">
                     <TextBlock Text="POI" Width="50"/>
-                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                     <ComboBox  x:Name="ComboxPoiTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>

@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
 
-    public class CalibrationResource : BaseFileResource, ISortID, ISortFilePath
+    public class CalibrationResource : ServiceFileBase, ISortID, ISortFilePath
     {
         public static List<CalibrationResource> CalibrationResources { get; set; } = new List<CalibrationResource>();
 
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
-            //Config = BaseResourceObjectExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
+            //Config = ServiceObjectBaseExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
         }
 
         public override void Save()

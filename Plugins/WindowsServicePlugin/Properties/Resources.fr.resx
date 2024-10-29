@@ -135,16 +135,10 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>Journal de service RC</value>
   </data>
-  <data name="TimeLeft" xml:space="preserve">
-    <value>temps restant:</value>
-  </data>
-  <data name="ErrorOccurred" xml:space="preserve">
-    <value>Une erreur s'est produite</value>
-  </data>
-  <data name="CurrentSpeed" xml:space="preserve">
-    <value>Vitesse actuelle:</value>
-  </data>
   <data name="ManagementService" xml:space="preserve">
     <value>Services de gestion</value>
+  </data>
+  <data name="Service" xml:space="preserve">
+    <value>Service</value>
   </data>
 </root>

@@ -1,5 +1,7 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
@@ -8,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -54,7 +57,7 @@ namespace ColorVision.Update
     }
 
 
-    public class AutoUpdater : ViewModelBase
+    public class AutoUpdater : ViewModelBase,IUpdate
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
         private static AutoUpdater _instance;
@@ -123,11 +126,11 @@ namespace ColorVision.Update
             return true;
         }
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
-        public void Update(Version Version, string DownloadPath)
+        public void Update(Version Version, string DownloadPath,bool IsIncrement = false)
         {
             CancellationTokenSource _cancellationTokenSource = new();
-            WindowUpdate windowUpdate = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowUpdate.Title += $" {Version}" ;
+            WindowUpdate windowUpdate = new WindowUpdate(this) { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            windowUpdate.Title = $"正在下载 {Version} {(IsIncrement?"增量":"")}更新";
             windowUpdate.Closed += (s, e) =>
             {
                 _cancellationTokenSource.Cancel();
@@ -135,7 +138,7 @@ namespace ColorVision.Update
             SpeedValue = string.Empty;
             RemainingTimeValue = string.Empty;
             ProgressValue = 0;
-            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token));
+            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token, IsIncrement));
             windowUpdate.Show();
         }
 
@@ -164,7 +167,7 @@ namespace ColorVision.Update
         }
 
         // 调用函数以删除所有更新文件
-        public async Task CheckAndUpdate(bool detection = true)
+        public async Task CheckAndUpdate(bool detection = true,bool IsIncrement = false)
         {
             // 获取本地版本
             try
@@ -185,9 +188,9 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.GetTempPath());
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
                         });
                     }
@@ -195,9 +198,9 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox1.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
-                                Update(LatestVersion, Path.GetTempPath());
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
                             }
                         });
                     }
@@ -288,17 +291,26 @@ namespace ColorVision.Update
         private string _SpeedValue;
 
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+
+        public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; NotifyPropertyChanged(); } }
+        private string _DownloadTile = Resources.ColorVisionUpdater;
+
         private string _RemainingTimeValue;
 
 
-        private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
+        private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath, CancellationToken cancellationToken, bool IsIncrement = false)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
             string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
-
             string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
-            // 指定下载路径
 
+            if (IsIncrement)
+            {
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/Update/ColorVision-Update-[{latestVersion}].zip";
+                downloadPath = Path.Combine(DownloadPath, $"ColorVision-Update-[{latestVersion}].zip");
+            }
+
+            // 指定下载路径
             using (var client = new HttpClient())
             {
                 if (IsPassWorld)
@@ -372,11 +384,65 @@ namespace ColorVision.Update
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    RestartApplication(downloadPath);
+                    if (IsIncrement)
+                    {
+                        RestartIsIncrementApplication(downloadPath);
+                    }
+                    else
+                    {
+                        RestartApplication(downloadPath);
+                    }
                 });
             }
         }
 
+        public static void RestartIsIncrementApplication(string downloadPath)
+        {
+            // 保存数据库配置
+            ConfigHandler.GetInstance().SaveConfigs();
+            try
+            {
+                // 解压缩 ZIP 文件到临时目录
+                string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
+                if (Directory.Exists(tempDirectory))
+                {
+                    Directory.Delete(tempDirectory, true);
+                }
+                ZipFile.ExtractToDirectory(downloadPath, tempDirectory);
+
+                // 创建批处理文件内容
+                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+                string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                string? executableName = Path.GetFileName(Environment.ProcessPath);
+
+                string batchContent = $@"
+@echo off
+timeout /t 3
+xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
+start """" ""{Path.Combine(programDirectory, executableName)}""
+rd /s /q ""{tempDirectory}""
+exit
+";
+
+                File.WriteAllText(batchFilePath, batchContent);
+
+                // 设置批处理文件的启动信息
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = batchFilePath,
+                    UseShellExecute = true,
+                    Verb = "runas" // 请求管理员权限
+                };
+
+                // 启动批处理文件并退出当前程序
+                Process.Start(startInfo);
+                Environment.Exit(0);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"更新失败: {ex.Message}");
+            }
+        }
 
         public static void RestartApplication(string downloadPath)
         {

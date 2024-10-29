@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
 
-    public class RoiParam : ParamBase
+    public class RoiParam : ParamModBase
     {
         public RoiParam() { }
         public RoiParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

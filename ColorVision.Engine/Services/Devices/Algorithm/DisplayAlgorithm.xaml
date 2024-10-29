@@ -56,7 +56,7 @@
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,2">
                         <TextBlock Text="算法" Margin="0,0,5,0" MinWidth="62"/>
-                        <ComboBox x:Name="CB_Algorithms"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Name" />
+                        <ComboBox x:Name="CB_Algorithms"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Name" />
                     </DockPanel>
                     <StackPanel x:Name="CB_StackPanel">
                     </StackPanel>

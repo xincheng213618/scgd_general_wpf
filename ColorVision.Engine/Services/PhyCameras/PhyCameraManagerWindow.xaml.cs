@@ -1,27 +1,12 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
-using System.Globalization;
+using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
-
-    public class PhyCamerManagerWizardStep : IWizardStep
-    {
-        public int Order => 9;
-
-        public string Header => Properties.Resources.AddPhysicalCamera;
-        public RelayCommand Command => new RelayCommand(a =>
-        {
-            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        });
-    }
-
     public class ExportPhyCamerManager : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
@@ -51,6 +36,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
+            PhyCameraManager.GetInstance().RefreshEmptyCamera();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

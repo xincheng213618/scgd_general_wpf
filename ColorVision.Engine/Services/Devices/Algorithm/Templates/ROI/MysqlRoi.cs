@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 {
     public class MysqlRoi : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复MysqlMysqlROI";
+        public string GetMysqlCommandName() => "恢复Mysql发光区检测";
 
         public string GetRecover()
         {

@@ -6,9 +6,9 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls;
-using ColorVision.UI.Authorizations;
+using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
                 var ITemplate = new TemplateSpectrumResourceParam() {  Device =this,TemplateParams = this.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
 
-                WindowTemplate windowTemplate = new(ITemplate);
+                TemplateEditorWindow windowTemplate = new(ITemplate);
                 windowTemplate.Owner = Application.Current.GetActiveWindow();
                 windowTemplate.ShowDialog();
             });
@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             SysResourceDao.Instance.Save(sysResourceModel);
             if (sysResourceModel != null)
             {
-                BaseFileResource calibrationResource = new(sysResourceModel);
+                ServiceFileBase calibrationResource = new(sysResourceModel);
                 AddChild(calibrationResource);
             }
 

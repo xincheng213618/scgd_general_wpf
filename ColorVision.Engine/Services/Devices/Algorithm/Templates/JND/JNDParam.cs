@@ -5,7 +5,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
 {
 
-    public class JNDParam : ParamBase
+    public class JNDParam : ParamModBase
     {
         public JNDParam() { }
         public JNDParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

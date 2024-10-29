@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Templates"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:ParamBase}"
+             d:DataContext="{d:DesignInstance local:ParamModBase}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <Grid >
         <Grid.RowDefinitions>

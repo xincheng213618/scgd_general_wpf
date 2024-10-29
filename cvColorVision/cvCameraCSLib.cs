@@ -1083,6 +1083,14 @@ namespace cvColorVision
 
     public struct IRECT
     {
+        public IRECT() { }
+        public IRECT(int tx, int ty, int tcx, int tcy)
+        {
+            x = tx;
+            y = ty;
+            cx = tcx;
+            cy = tcy;
+        }
         public int x;
         public int y;
         public int cx;

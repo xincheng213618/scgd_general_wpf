@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
-using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -26,6 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
             ComboxTemplate.ItemsSource = TemplateJND.Params;
             ComboxTemplate.SelectedIndex = 0;
 
+
+            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
+
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
@@ -50,9 +54,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-
-                MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "JND");
             }
         }
 

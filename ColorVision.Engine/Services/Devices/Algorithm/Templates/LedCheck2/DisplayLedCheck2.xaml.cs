@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
@@ -40,6 +40,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
+            ComboxFDAType.ItemsSource = from e1 in Enum.GetValues(typeof(FlowEngineLib.Algorithm.CVOLED_FDAType)).Cast<FlowEngineLib.Algorithm.CVOLED_FDAType>()
+                                        select new KeyValuePair<string, FlowEngineLib.Algorithm.CVOLED_FDAType>(e1.ToString(), e1);
+            ComboxFDAType.SelectedIndex = 0;
+
             void UpdateCB_SourceImageFiles()
             {
                 CB_SourceImageFiles.ItemsSource = ServiceManager.GetInstance().GetImageSourceServices();
@@ -68,8 +72,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, color,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, color, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "LedCheck2");
             }
         }
 

@@ -1,12 +1,11 @@
 ﻿using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 {
-    public class DistortionParam : ParamBase
+    public class DistortionParam : ParamModBase
     {
 
         public DistortionParam() { }
@@ -31,12 +30,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
         private int _blobColor;
 
         [Category("阈值"), Description("阈值每次间隔值")]
-        public float minThreshold { get => GetValue(_minThreshold); set { SetProperty(ref _minThreshold, value); } }
-        private float _minThreshold = 10;
-
-        [Category("阈值"), Description("斑点最小灰度")]
         public float thresholdStep { get => GetValue(_thresholdStep); set { SetProperty(ref _thresholdStep, value); } }
         private float _thresholdStep = 10;
+
+        [Category("阈值"), Description("斑点最小灰度")]
+        public float minThreshold { get => GetValue(_minThreshold); set { SetProperty(ref _minThreshold, value); } }
+        private float _minThreshold = 10;
 
         [Category("阈值"), Description("斑点最大灰度")]
         public float maxThreshold { get => GetValue(_maxThreshold); set { SetProperty(ref _maxThreshold, value); } }

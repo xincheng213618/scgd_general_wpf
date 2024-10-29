@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -10,11 +11,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 
         public TemplatePoiFilterParam()
         {
-            Title = "POIFilter模板设置";
+            Title = "POI过滤模板设置";
             Code = "POIFilter";
             TemplateParams = Params;
             IsUserControl = true;
         }
+        public override IMysqlCommand? GetMysqlCommand() => new MysqlPOIFilter();
 
         public override void SetUserControlDataContext(int index)
         {

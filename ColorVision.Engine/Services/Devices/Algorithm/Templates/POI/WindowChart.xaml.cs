@@ -1,4 +1,6 @@
-﻿using Microsoft.Win32;
+﻿#pragma warning disable CS8604
+
+using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;
 using ScottPlot.Plottables;

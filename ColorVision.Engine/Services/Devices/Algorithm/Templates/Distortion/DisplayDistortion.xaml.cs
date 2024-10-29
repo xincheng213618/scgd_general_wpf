@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
+                MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
                 ServicesHelper.SendCommand(msg, "LEDStripDetection");
             }
         }

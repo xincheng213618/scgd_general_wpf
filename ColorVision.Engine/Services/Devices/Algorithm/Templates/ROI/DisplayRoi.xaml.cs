@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测2模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择发光区检测模板")) return;
 
             if (ComboxTemplate.SelectedValue is not RoiParam param) return;
 
@@ -50,8 +50,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
                     code = deviceService.Code;
                 }
 
-                MsgRecord msg = IAlgorithm.SendCommand(param,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "发光区检测");
             }
         }
 

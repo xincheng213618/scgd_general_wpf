@@ -6,7 +6,7 @@ using System.ComponentModel;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise
 {
 
-    public class PoiReviseParam : ParamBase
+    public class PoiReviseParam : ParamModBase
     {
 
         public PoiReviseParam()

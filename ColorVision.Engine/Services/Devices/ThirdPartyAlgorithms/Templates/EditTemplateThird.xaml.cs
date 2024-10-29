@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using System.Runtime.CompilerServices;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates

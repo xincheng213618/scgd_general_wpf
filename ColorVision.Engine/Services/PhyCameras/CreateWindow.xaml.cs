@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras
@@ -56,22 +55,26 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (CameraCode.SelectedIndex >= 0)
                     {
                         var model = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
-                        DeviceName.Text = model;
-                        if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
+                        if (model != null)
                         {
-                            CreateConfig.CameraType = CameraType.BV_Q;
-                            CreateConfig.Channel = ImageChannel.Three;
+                            DeviceName.Text = model;
+                            if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.BV_Q;
+                                CreateConfig.Channel = ImageChannel.Three;
+                            }
+                            if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.LV_Q;
+                                CreateConfig.Channel = ImageChannel.One;
+                            }
+                            if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.CV_Q;
+                                CreateConfig.Channel = ImageChannel.Three;
+                            }
                         }
-                        if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
-                        {
-                            CreateConfig.CameraType = CameraType.LV_Q;
-                            CreateConfig.Channel = ImageChannel.One;
-                        }
-                        if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
-                        {
-                            CreateConfig.CameraType = CameraType.CV_Q;
-                            CreateConfig.Channel = ImageChannel.Three;
-                        }
+
                     }
                 };
                 CameraCode.SelectedIndex = 0;
@@ -79,9 +82,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             }
             else
-                {
-                    MessageBox.Show("找不到可以添加的相机");
-                }
+            {
+                MessageBox.Show("找不到可以添加的相机");
+            }
 
 
 
@@ -214,17 +217,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
 
-
-
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
                 sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
 
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
-            int ret =  SysResourceDao.Instance.Save(sysResourceModel);
+            int ret = SysResourceDao.Instance.Save(sysResourceModel);
             if (ret < 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
+                MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RCFileUpload.GetInstance().CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();

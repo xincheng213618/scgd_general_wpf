@@ -4,6 +4,8 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Configs;
+using System.Collections.ObjectModel;
+using System.Windows;
 using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
@@ -13,6 +15,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
+        public ConfigCamera()
+        {
+            AddROIParamsCommand = new RelayCommand(a => AddROIParams());
+            DeleteROIParamsCommand = new RelayCommand(a => DeleteROIParams(a));
+        }
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
         private string? _CameraCode;
 
@@ -37,6 +44,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
+
+        public int AvgCount { get => _AvgCount; set { _AvgCount = value; NotifyPropertyChanged(); } }
+        private int _AvgCount = 1;
 
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
         private bool _UsingFileCaching;
@@ -83,8 +93,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private double _ExpTimeMin = 1;
 
         public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = (int)Math.Pow(Math.E, value); } }
-
-
 
         public float ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
         private float _ExpTimeR = 10;
@@ -230,21 +238,43 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public ZBDebayer ZBDebayer { get => _ZBDebayer; set { _ZBDebayer = value; NotifyPropertyChanged(); } }
         private ZBDebayer _ZBDebayer = new ZBDebayer();
 
+
+        public RelayCommand AddROIParamsCommand { get; set; }
+        public RelayCommand DeleteROIParamsCommand { get; set; }
+
+        public void AddROIParams()
+        {
+            ROIParams.Add(new Int32RectViewModel(0, 0, 100, 100));
+        }
+        public void DeleteROIParams(Object obj)
+        {
+            if (obj is Int32RectViewModel  viewModel)
+            ROIParams.Remove(viewModel);
+        }
+
+        public ObservableCollection<Int32RectViewModel> ROIParams { get; set; } = new ObservableCollection<Int32RectViewModel>();
     }
 
-    /// <summary>
-    /// 追加的class
-    /// </summary>
-    public class ZBDebayer:ViewModelBase
+    public class Int32RectViewModel : ViewModelBase
     {
-        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
-        private bool _IsEnabled;
+        public Int32RectViewModel(int x, int y, int width, int height)
+        {
+            X = x;
+            Y = y;
+            Width = width;
+            Height = height;
+        }
 
-        public int Method { get => _Method; set { _Method = value; NotifyPropertyChanged(); } }
-        private int _Method = 1;
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width;
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height;
+        public int X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        private int _X;
+        public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private int _Y;
 
-        public int Channeltype { get => _Channeltype; set { _Channeltype = value; NotifyPropertyChanged(); } }
-        private int _Channeltype = 3;
-
+        public Int32Rect ToInt32Rect()=> new Int32Rect(X, Y, Width, Height);
     }
+
 }

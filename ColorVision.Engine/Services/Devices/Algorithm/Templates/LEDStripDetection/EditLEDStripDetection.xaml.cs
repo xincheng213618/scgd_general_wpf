@@ -17,8 +17,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
 
         public void SetParam(LEDStripDetectionParam param)
         {
-            ComboBoxValidate.ItemsSource = TemplateComplyParam.Params["Comply.CIE.AVG"]?.CreateEmpty();
-            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params["Comply.CIE"]?.CreateEmpty();
             Param = param;
             this.DataContext = Param;
         }

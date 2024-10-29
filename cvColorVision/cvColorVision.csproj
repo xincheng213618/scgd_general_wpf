@@ -15,30 +15,30 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <Content Include="..\DLL\scgd_internal_dll\cvCamera.dll" Link="libs\cvCamera.dll">
+	  <None Include="..\DLL\scgd_internal_dll\cvCamera.dll" Link="libs\cvCamera.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="..\DLL\scgd_internal_dll\qhyccd.dll" Link="libs\qhyccd.dll">
+	  </None>
+	  <None Include="..\DLL\scgd_internal_dll\qhyccd.dll" Link="libs\qhyccd.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
+	  </None>
 	  <Content Include="..\DLL\scgd_internal_dll\SCBase.dll" Link="libs\SCBase.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
-	  <Content Include="..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="libs\SCGDCamLayer.dll">
+	  <None Include="..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="libs\SCGDCamLayer.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
+	  </None>
 	  <Content Include="..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="libs\SCGDDataProcess.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="libs\SCGDMilCam.dll">
+    <None Include="..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="libs\SCGDMilCam.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-	  <Content Include="..\DLL\scgd_internal_dll\CommLibrary.dll" Link="libs\CommLibrary.dll">
+    </None>
+	  <None Include="..\DLL\scgd_internal_dll\CommLibrary.dll" Link="libs\CommLibrary.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
-	  <Content Include="..\DLL\scgd_internal_dll\opencv_world401.dll" Link="libs\opencv_world401.dll">
+	  </None>
+	  <None Include="..\DLL\scgd_internal_dll\opencv_world401.dll" Link="libs\opencv_world401.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </Content>
+	  </None>
 	  <Content Include="..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="libs\pthreadVC2.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>
@@ -48,10 +48,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\DLL\scgd_internal_dll\cvCalibration.dll" Link="libs\cvCalibration.dll" />
-    <None Include="..\DLL\scgd_internal_dll\cvTableList.dll" Link="libs\cvTableList.dll" />
-    <None Include="..\DLL\scgd_internal_dll\msvcr100.dll" Link="libs\msvcr100.dll" />
-    <None Include="..\DLL\scgd_internal_dll\toupcam.dll" Link="libs\toupcam.dll" />
+    <None Include="..\DLL\scgd_internal_dll\cvCalibration.dll" Link="libs\cvCalibration.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\DLL\scgd_internal_dll\cvTableList.dll" Link="libs\cvTableList.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\DLL\scgd_internal_dll\msvcr100.dll" Link="libs\msvcr100.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\DLL\scgd_internal_dll\toupcam.dll" Link="libs\toupcam.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="libs\cudart64_12.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="libs\cvoled.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

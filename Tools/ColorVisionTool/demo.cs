@@ -1,23 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using ColorVisionTool;
 using cvColorVision;
 using Gu.Wpf.Geometry;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using StructTestN;
 
 namespace CsharpDEMO

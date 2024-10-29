@@ -2,7 +2,7 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.Impl.SolutionImpl.Export;
+using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.Solution;
 using ColorVision.Solution.V.Files;

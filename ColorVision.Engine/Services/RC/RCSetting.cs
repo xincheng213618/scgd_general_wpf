@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.RC
     {
         public static RCSetting Instance => ConfigService.Instance.GetRequiredService<RCSetting>();
 
-        public static MQTTRCService MQTTRCService => MQTTRCService.GetInstance();
+        public static MqttRCService MQTTRCService => MqttRCService.GetInstance();
 
         public RCServiceConfig Config { get; set; } = new RCServiceConfig();
         public bool IsUseRCService { get => _IsUseRCService; set { _IsUseRCService = value; NotifyPropertyChanged(); } }

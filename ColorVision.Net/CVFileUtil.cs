@@ -4,16 +4,32 @@ using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
-using System.Data;
+using System.Globalization;
 using System.IO;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Windows;
+using static System.Net.Mime.MediaTypeNames;
 
 
 namespace ColorVision.Net
 {
+
+    public enum CVImageChannelType
+    {
+        SRC = 0,
+        RGB_R = 1,
+        RGB_G = 2,
+        RGB_B = 3,
+        CIE_XYZ_X = 10,
+        CIE_XYZ_Y = 11,
+        CIE_XYZ_Z = 12,
+        CIE_Lv = 13,
+        CIE_x = 14,
+        CIE_y = 15,
+        CIE_u = 16,
+        CIE_v = 17
+    }
+
     public static class CVFileUtil
     {
         const string MagicHeader = "CVCIE";
@@ -302,6 +318,14 @@ namespace ColorVision.Net
             fileInfo = new CVCIEFile();
             return -1;
         }
+        public static CVCIEFile OpenLocalFileChannel(string fileName, CVImageChannelType channelType)
+        {
+            string ext = Path.GetExtension(fileName)?.ToLower(CultureInfo.CurrentCulture);
+            FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            return OpenLocalFileChannel(fileName, fileExtType, channelType);
+        }
+
+
 
         public static CVCIEFile OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
         {

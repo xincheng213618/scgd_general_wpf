@@ -45,6 +45,39 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	MediaList.push_back(std::make_pair(reinterpret_cast<uintptr_t>(outImage->pData), mat));
 }
 
+COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
+
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.channels() == 3)
+	{
+		cv::cvtColor(mat, mat, cv::ColorConversionCodes::COLOR_BGR2GRAY);
+	}
+	cv::Mat TempMen;
+	cv::Mat TempStd;
+	double value = -1;
+	switch (type)
+	{
+	case Variance:
+		cv::meanStdDev(mat, TempMen, TempStd);
+		value = TempStd.at<double>(0, 0);
+	case Tenengrad:
+		//cv::Sobel(tempImg, imgSobel, CV_8UC1, dx, dy, ksize);
+		//convertScaleAbs(imgSobel, imgSobel, 1, 0);
+		//articulation = mean(imgSobel)[0];
+		break;
+	case Laplace:
+		cv::Laplacian(mat, TempStd, CV_8UC1);
+		value = cv::mean(TempStd)[0];
+	case CalResol:
+		break;
+	default:
+		cv::meanStdDev(mat, TempMen, TempStd);
+		value = TempStd.at<double>(0, 0);
+	}
+
+	return value;
+}
+
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
 	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
@@ -134,17 +167,91 @@ COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
 	return 0;
 }
 
-COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, int* point , int pointCount)
+COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, int* point , int pointCount, int thickness)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
 	if (mat.channels() != 3) {
-		return -1;
+		if (mat.channels() == 1) {
+			// 将单通道图像转换为三通道
+			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
+		}
 	}
+
 	cv::Mat out = mat.clone();
-	drawPoiImage(out, out, radius, point, pointCount);
+	drawPoiImage(out, out, radius, point, pointCount, thickness);
 	MatToHImage(out, outImage);
+	return 0;
+}
+
+int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
+{
+	int closestFactor = allowedFactors[0];
+	for (int i = 1; i < size; ++i)
+	{
+		if (std::abs(value - allowedFactors[i]) < std::abs(value - closestFactor))
+		{
+			closestFactor = allowedFactors[i];
+		}
+	}
+	return closestFactor;
+}
+
+COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactout,int targetPixelsX, int targetPixelsY)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+
+	cv::Mat grayMat;
+
+	// 如果是彩色图像，转换为灰度图
+	if (mat.channels() == 3 || mat.channels() == 4)  // 判断是否为彩色图（BGR 或 BGRA）
+	{
+		cv::cvtColor(mat, grayMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
+	}
+	else
+	{
+		mat.convertTo(grayMat, CV_8U);  // 如果已经是灰度图，则直接转换
+	}
+
+	// 目标分辨率设置
+	int targetPixels = targetPixelsX * targetPixelsY; // 目标像素数（可以调整）
+	int originalWidth = grayMat.cols;
+	int originalHeight = grayMat.rows;
+
+	// 计算初始比例因子
+	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
+
+	// 确保比例因子是 1、2、4、8 等倍数
+	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
+	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
+	// 计算新的宽度和高度
+	int newWidth = originalWidth / scaleFactor;
+	int newHeight = originalHeight / scaleFactor;
+
+	// 分配内存给 rowGrayPixels
+	*length = newWidth * newHeight;
+	*rowGrayPixels = new uchar[*length];
+
+	// 并行处理图像像素缩放
+#pragma omp parallel for
+	for (int y = 0; y < newHeight; ++y)
+	{
+		uchar* row = *rowGrayPixels + y * newWidth;
+		for (int x = 0; x < newWidth; ++x)
+		{
+			int oldX = x * scaleFactor;
+			int oldY = y * scaleFactor;
+			int oldIndex = oldY * grayMat.cols + oldX;
+
+			// 将像素值存储到 rowGrayPixels
+			row[x] = grayMat.data[oldIndex];
+		}
+	}
+
+
 	return 0;
 }
 

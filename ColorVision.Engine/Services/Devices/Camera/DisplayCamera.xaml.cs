@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
@@ -16,8 +17,8 @@ using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using Quartz;
-using ScottPlot.Colormaps;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -144,6 +145,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
+                        CroppedBitmaps.Clear();
+                        smallWindowImages.Clear();
                         break;
                     case DeviceStatusType.LiveOpened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
@@ -365,25 +368,36 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-        CroppedBitmap croppedBitmap1;
-        Image smallWindowImage;
+
+        List<CroppedBitmap> CroppedBitmaps = new List<CroppedBitmap>();
+        List<ImageView> smallWindowImages = new List<ImageView>();
+
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
-            if (croppedBitmap1 == null)
+
+            if (CroppedBitmaps.Count == 0)
             {
-                croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
-                smallWindowImage = new Image
+                foreach (var item in Device.Config.ROIParams)
                 {
-                    Source = croppedBitmap1,
-                    Width = 500,
-                    Height = 500
-                };
-                Window window = new Window() { Content = smallWindowImage };
-                window.Show();
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
+                    ImageView smallWindowImage = new ImageView() { };
+                    smallWindowImage.ImageShow.Source = croppedBitmap;
+                    CroppedBitmaps.Add(croppedBitmap);
+                    smallWindowImages.Add(smallWindowImage);
+                    Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
+                    window.Show();
+                }
             }
-            croppedBitmap1 = new CroppedBitmap(bmp, new Int32Rect(500, 500, 500, 500));
-            smallWindowImage.Source = croppedBitmap1;
+            else
+            {
+                for (int i = 0; i < CroppedBitmaps.Count; i++)
+                {
+                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
+                    smallWindowImages[i].ImageShow.Source = croppedBitmap;
+                }
+            }
+
         }
 
 
@@ -412,19 +426,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-            var windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new WindowTemplate(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
         private void EditAutoExpTime1(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new WindowTemplate(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 

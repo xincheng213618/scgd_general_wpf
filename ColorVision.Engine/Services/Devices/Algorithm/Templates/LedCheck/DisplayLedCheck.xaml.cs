@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
@@ -6,7 +6,6 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using static OpenCvSharp.ML.SVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 {
@@ -57,8 +56,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,type, code, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam,code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "LedCheck");
             }
         }
 

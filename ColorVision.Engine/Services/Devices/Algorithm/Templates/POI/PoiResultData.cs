@@ -1,11 +1,10 @@
-﻿#pragma warning disable CS8629, CS8604
+﻿#pragma warning disable CS8629, CS8604,CS8602
 using ColorVision.Common.MVVM;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Text;

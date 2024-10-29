@@ -1,16 +1,13 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Draw;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
 using ColorVision.UI.Sorts;
@@ -67,8 +64,18 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     }
                 }
             }
-
             this.DataContext = this;
+
+            ImageView.ImageShow.ImageInitialized += (s, e) =>
+            {
+                if (listView1.SelectedIndex > -1)
+                {
+                    ViewResults[listView1.SelectedIndex].Width = (int)ImageView.ImageShow.Source.Width;
+                    ViewResults[listView1.SelectedIndex].Height = (int)ImageView.ImageShow.Source.Height;
+                }
+
+            };
+
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
             if (listView1.View is GridView gridView)
@@ -179,6 +186,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)
                     RefreshResultListView();
+                if (Config.AutoSaveSideData)
+                    SideSave(algorithmResult, Config.SaveSideDataDirPath);
             }
         }
 
@@ -188,21 +197,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
 
-        /// <summary>
-        /// 专门位鬼影设计的类
-        /// </summary>
-        sealed class Point1
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-        }
-
-
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
 
-            var ResultHandle = ResultHandles.FirstOrDefault(a => a.ResultType == ViewResults[listView1.SelectedIndex].ResultType);
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(ViewResults[listView1.SelectedIndex].ResultType));
             if (ResultHandle != null)
             {
                 ResultHandle.Handle(this,ViewResults[listView1.SelectedIndex]);
@@ -212,23 +211,38 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (ViewResults[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ImageShow.Clear();
+                if (File.Exists(result.FilePath))
+                    ImageView.OpenImage(result.FilePath);
+
                 List<POIPoint> DrawPoiPoint = new();
                 List<string> header = new();
                 List<string> bdHeader = new();
-                if (File.Exists(result.FilePath))
-                {
-                    ImageView.OpenImage(result.FilePath);
-                }
+
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.LightArea:
+                        result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+                        DVPolygon polygon = new DVPolygon();
+                        List<System.Drawing.Point> point1s = new List<System.Drawing.Point>();
+                        foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
+                        {
+                            point1s.Add(new System.Drawing.Point((int)item.PosX, (int)item.PosY));
+                        }
+                        foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                        {
+                            polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                        }
+                        polygon.Attribute.Brush = Brushes.Transparent;
+                        polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                        polygon.Attribute.Id =  -1;
+                        polygon.IsComple = true;
+                        polygon.Render();
+                        ImageView.AddVisual(polygon);
+                        header = new List<string> { "PosX", "PosY"};
+                        bdHeader = new List<string> { "PosX", "PosY"};
                         break;
                     case AlgorithmResultType.POI_XYZ_File:
                     case AlgorithmResultType.POI_Y_File:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>(AlgResultPoiCieFileDao.Instance.GetAllByPid(result.Id));
-                        }
                         header = new List<string> { "file_name", "FileUrl" , "FileType" };
                         bdHeader = new List<string> { "FileName", "FileUrl" , "FileType", };
                         break;
@@ -270,7 +284,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.ViewResults.Add(poiResultCIExyuvData);
                             };
                         }
-                        header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+                        header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u'", "v", "x", "y", "Validate" };
                         if (result.ResultType == AlgorithmResultType.LEDStripDetection)
                         {
                             header = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
@@ -311,22 +325,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         AddPOIPoint(DrawPoiPoint);
                         break;
-                    case AlgorithmResultType.FOV:
-
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultFOVModels)
-                            {
-                                ViewResultFOV fOVResultData = new(item);
-                                result.ViewResults.Add(fOVResultData);
-                            };
-                        }
-                        header = new() { "Pattern", "Type", "Degrees" };
-                        bdHeader = new() { "Pattern", "Type", "Degrees" };
-
-                        break;
                     case AlgorithmResultType.SFR:
                         if (result.ViewResults == null)
                         {
@@ -352,19 +350,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
 
                         break;
-                    case AlgorithmResultType.MTF:
+                    case AlgorithmResultType.OLED_JND_CalVas:
                         if (result.ViewResults == null)
                         {
                             result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultMTFModels)
-                            {
-                                ViewResultMTF mTFResultData = new(item);
-                                result.ViewResults.Add(mTFResultData);
-                            }
+                            foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
+                                result.ViewResults.Add(new ViewRsultJND(item));
                         }
-                        header = new() { "位置", "大小", "形状", "MTF", "Value" };
-                        bdHeader = new() { "PixelPos", "PixelSize", "Shapes", "Articulation", "AlgResultMTFModel.ValidateResult" };
+                        header = new() { "Name","位置", "大小", "形状", "h_jnd", "v_jnd" };
+                        bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
 
                         foreach (var item in result.ViewResults)
                         {
@@ -374,87 +368,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                         }
                         AddPOIPoint(DrawPoiPoint);
-
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultGhostModels)
-                            {
-                                ViewResultGhost ghostResultData = new(item);
-                                result.ViewResults.Add(ghostResultData);
-                            }
-                        }
-
-                        if (result.ViewResults.Count != 0 && result.ViewResults[0] is ViewResultGhost viewResultGhost)
-                        {
-                            try
-                            {
-                                string GhostPixels = viewResultGhost.GhostPixels;
-                                List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
-                                int[] Ghost_pixel_X;
-                                int[] Ghost_pixel_Y;
-                                List<Point1> Points = new();
-                                foreach (var item in GhostPixel)
-                                    foreach (var item1 in item)
-                                        Points.Add(item1);
-
-                                if (Points != null)
-                                {
-                                    Ghost_pixel_X = new int[Points.Count];
-                                    Ghost_pixel_Y = new int[Points.Count];
-                                    for (int i = 0; i < Points.Count; i++)
-                                    {
-                                        Ghost_pixel_X[i] = (int)Points[i].X;
-                                        Ghost_pixel_Y[i] = (int)Points[i].Y;
-                                    }
-                                }
-                                else
-                                {
-                                    Ghost_pixel_X = new int[1] { 1 };
-                                    Ghost_pixel_Y = new int[1] { 1 };
-                                }
-
-                                string LedPixels = viewResultGhost.LedPixels;
-                                List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
-                                int[] LED_pixel_X;
-                                int[] LED_pixel_Y;
-
-                                Points.Clear();
-                                foreach (var item in LedPixel)
-                                    foreach (var item1 in item)
-                                        Points.Add(item1);
-
-                                if (Points != null)
-                                {
-                                    LED_pixel_X = new int[Points.Count];
-                                    LED_pixel_Y = new int[Points.Count];
-                                    for (int i = 0; i < Points.Count; i++)
-                                    {
-                                        LED_pixel_X[i] = (int)Points[i].X;
-                                        LED_pixel_Y[i] = (int)Points[i].Y;
-                                    }
-                                }
-                                else
-                                {
-                                    LED_pixel_X = new int[1] { 1 };
-                                    LED_pixel_Y = new int[1] { 1 };
-                                }
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
-                                });
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(ex.Message);
-                            }
-
-                        }
-                        header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
-                        bdHeader = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
                         break;
                     case AlgorithmResultType.Distortion:
                         if (result.ViewResults == null)
@@ -524,46 +437,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                         });
 
-                        break;
-                    case AlgorithmResultType.BuildPOI:
-                        if (result.ViewResults == null)  
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultMTFModels)
-                            {
-                                ViewResultBuildPoi mTFResultData = new(item);
-                                result.ViewResults.Add(mTFResultData);
-                            }
-                        }
-                        foreach (var item in result.ViewResults)
-                        {
-                            if (item is PoiResultData poiResultData)
-                                DrawPoiPoint.Add(poiResultData.Point);
-                        }
-                        AddPOIPoint(DrawPoiPoint);
-                        Config.IsShowSideListView = false;
-                        break;
-                    case AlgorithmResultType.Compliance_Contrast:
-                    case AlgorithmResultType.Compliance_Math:
-                    case AlgorithmResultType.Compliance_Contrast_CIE_Y:
-                    case AlgorithmResultType.Compliance_Math_CIE_Y:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = ComplianceYDao.Instance.GetAllByPid(result.Id).ToViewResults();
-                        }
-
-                        bdHeader = new() { "名称", "值", "Validate" };
-                        bdHeader = new() { "Name", "DataValue", "ValidateResult" };
-                        break;
-                    case AlgorithmResultType.Compliance_Contrast_CIE_XYZ:
-                    case AlgorithmResultType.Compliance_Math_CIE_XYZ:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = ComplianceXYZDao.Instance.GetAllByPid(result.Id).ToViewResults();
-                        }
-                        header = new() { "名称", "x", "y", "z", "xxx", "yyy", "zzz", "cct", "wave", "Validate" };
-                        bdHeader = new() { "Name", "DataValuex", "DataValuey", "DataValuez", "DataValuexxx", "DataValueyyy", "DataValuezzz", "DataValueCCT", "DataValueWave", "ValidateResult" };
                         break;
                     default:
                         break;
@@ -699,7 +572,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-
         public async void AddPOIPoint(List<POIPoint> PoiPoints)
         {
             ImageView.ImageShow.Clear();
@@ -713,21 +585,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DVCircle Circle = new();
+                        DVCircleText Circle = new();
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Circle.Attribute.Id = item.Id ?? -1;
+                        Circle.Attribute.Text = item.Name;
                         Circle.Render();
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DVRectangle Rectangle = new();
+                        DVRectangleText Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                         Rectangle.Attribute.Id = item.Id ?? -1;
+                        Rectangle.Attribute.Text = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;
@@ -790,6 +664,54 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
+        public static void SideSave(AlgorithmResult result,string selectedPath)
+        {
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
+            try
+            {
+                switch (result.ResultType)
+                {
+                    case AlgorithmResultType.POI:
+                        break;
+                    case AlgorithmResultType.POI_XYZ:
+                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
+                        PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
+                        break;
+                    case AlgorithmResultType.POI_Y:
+                        var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
+                        PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
+                        break;
+                    case AlgorithmResultType.OLED_JND_CalVas:
+                        var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
+                        ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
+                        break;
+                    case AlgorithmResultType.FOV:
+                        break;
+                    case AlgorithmResultType.SFR:
+                        break;
+                    case AlgorithmResultType.MTF:
+                        break;
+                    case AlgorithmResultType.Ghost:
+                        break;
+                    case AlgorithmResultType.LedCheck:
+                        break;
+                    case AlgorithmResultType.LightArea:
+                        break;
+                    case AlgorithmResultType.Distortion:
+                        break;
+                    case AlgorithmResultType.BuildPOI:
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                logg.Error(ex);
+            }
+
+        }
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
@@ -799,57 +721,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 dialog.Description = "请选择保存文件的文件夹";
                 dialog.ShowNewFolderButton = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-
                 string selectedPath = dialog.SelectedPath;
 
                 foreach (var selectedItem in listView1.SelectedItems)
                 {
                     if (selectedItem is AlgorithmResult result)
                     {
-                        string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
-
-                        switch (result.ResultType)
-                        {
-                            case AlgorithmResultType.POI:
-                                // Handle POI result saving logic here
-                                break;
-                            case AlgorithmResultType.POI_XYZ:
-                                var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                                PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
-                                break;
-                            case AlgorithmResultType.POI_Y:
-                                var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
-                                PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
-                                // Handle POI_Y result saving logic here
-                                break;
-                            case AlgorithmResultType.FOV:
-                                // Handle SendCommand result saving logic here
-                                break;
-                            case AlgorithmResultType.SFR:
-                                // Handle SFR result saving logic here
-                                break;
-                            case AlgorithmResultType.MTF:
-                                // Handle SendCommand result saving logic here
-                                break;
-                            case AlgorithmResultType.Ghost:
-                                // Handle Ghost result saving logic here
-                                break;
-                            case AlgorithmResultType.LedCheck:
-                                // Handle LedCheck result saving logic here
-                                break;
-                            case AlgorithmResultType.LightArea:
-                                // Handle LightArea result saving logic here
-                                break;
-                            case AlgorithmResultType.Distortion:
-                                // Handle Distortion result saving logic here
-                                break;
-                            case AlgorithmResultType.BuildPOI:
-                                // Handle BuildPOI result saving logic here
-                                break;
-                            default:
-                                // Handle default case here
-                                break;
-                        }
+                        SideSave(result, selectedPath);
                     }
                 }
             }

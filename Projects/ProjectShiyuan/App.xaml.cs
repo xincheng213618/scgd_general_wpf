@@ -7,10 +7,9 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
-using ProjectShiyuan;
 using System.Windows;
 
-namespace ColorVision.Projects.ProjectHeyuan
+namespace ColorVision.Projects.ProjectShiYuan
 {
     /// <summary>
     /// Interaction logic for App.xaml
@@ -39,7 +38,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             MySqlControl.GetInstance().Connect();
             MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
             {
-                await MQTTRCService.GetInstance().Connect();
+                await MqttRCService.GetInstance().Connect();
             };
             Task.Run(() => MQTTControl.GetInstance().Connect());
             ServiceManager.GetInstance().GenDeviceDisplayControl();

@@ -40,8 +40,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding XIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding XSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding XFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -54,8 +53,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding YIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding YSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding YFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -69,8 +67,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding ZIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding ZSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding ZFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -84,8 +81,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding xIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding xSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding xFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -99,8 +95,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding yIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding ySetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding yFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -113,8 +108,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding uIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding uSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding uFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -128,8 +122,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding vIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding vSetFileCommand}" Margin="5,0,0,0" />
-                            <TextBlock Text="文件路径" MinWidth="100"/>
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding vFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -143,8 +136,7 @@
                             <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding CCTIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="文件路径" MinWidth="100"/>
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding CCTSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding CCTFileName}"/>
                         </DockPanel>
                     </StackPanel>
@@ -157,8 +149,7 @@
                             <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding WaveIsEnable}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="文件路径" MinWidth="100"/>
-                            <Button DockPanel.Dock="Right" Content="..." Command="{Binding WaveSetFileCommand}" Margin="5,0,0,0" />
+                            <TextBlock Text="文件名称" MinWidth="100"/>
                             <TextBox Style="{StaticResource  TextBox.Small}" Text="{Binding WaveFileName}"/>
                         </DockPanel>
                     </StackPanel>

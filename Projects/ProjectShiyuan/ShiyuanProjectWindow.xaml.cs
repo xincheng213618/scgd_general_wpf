@@ -1,24 +1,504 @@
-﻿using System.Text;
+﻿#pragma warning disable CS8602,CA1707
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Templates.POI.Comply;
+using ColorVision.Themes;
+using CVCommCore;
+using FlowEngineLib;
+using log4net;
+using Panuon.WPF.UI;
+using ST.Library.UI.NodeEditor;
+using System.Collections.ObjectModel;
+using System.Globalization;
+using System.IO;
+using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
-namespace ProjectShiyuan
+namespace ColorVision.Projects.ProjectShiYuan
 {
+
+    public sealed class ConnectConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isconnect)
+            {
+                return isconnect ? "已经连接":"未连接";
+            }
+            return string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
+
+
+    public sealed class ColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isconnect)
+            {
+                return isconnect ? Brushes.Blue : Brushes.Red;
+            }
+            return Brushes.Black; ;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
+
+
+
+    public class DataRecord
+    {
+        public int SequenceNumber { get; set; }
+        public string Model { get; set; }
+        public string ProductID { get; set; }
+        public DateTime Date { get; set; }
+        public TimeSpan Time { get; set; }
+        public double White_x { get; set; }
+        public double White_y { get; set; }
+        public double White_lv { get; set; }
+        public double White_wl { get; set; }
+        public string White_Result { get; set; }
+        public double Red_x { get; set; }
+        public double Red_y { get; set; }
+        public double Red_lv { get; set; }
+        public double Red_wl { get; set; }
+        public string Red_Result { get; set; }
+        public double Orange_x { get; set; }
+        public double Orange_y { get; set; }
+        public double Orange_lv { get; set; }
+        public double Orange_wl { get; set; }
+        public string Orange_Result { get; set; }
+        public double Blue_x { get; set; }
+        public double Blue_y { get; set; }
+        public double Blue_lv { get; set; }
+        public double Blue_wl { get; set; }
+        public string Blue_Result { get; set; }
+        public string Final_Result { get; set; }
+    }
+
+    public class CsvHandler
+    {
+        private string _filePath;
+        private int _currentSequenceNumber;
+
+        public CsvHandler(string filePath)
+        {
+            _filePath = filePath;
+            _currentSequenceNumber = GetLastSequenceNumber();
+        }
+
+        private int GetLastSequenceNumber()
+        {
+            if (!File.Exists(_filePath))
+            {
+                return 0;
+            }
+
+            using (var reader = new StreamReader(_filePath))
+            {
+                string line;
+                string lastLine = null;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    lastLine = line;
+                }
+
+                if (lastLine != null)
+                {
+                    var values = lastLine.Split(',');
+                    if (int.TryParse(values[0], out int sequenceNumber))
+                    {
+                        return sequenceNumber;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        public void SaveRecord(DataRecord record)
+        {
+            record.SequenceNumber = ++_currentSequenceNumber;
+
+            using (var writer = new StreamWriter(_filePath, true))
+            {
+                if (new FileInfo(_filePath).Length == 0)
+                {
+                    // Write header if file is empty
+                    writer.WriteLine("SequenceNumber,Model,ProductID,Date,Time,White_x,White_y,White_lv(cd),White_wl(nm),White_Result,Red_x,Red_y,Red_lv(cd),Red_wl(nm),Red_Result,Orange_x,Orange_y,Orange_lv(cd),Orange_wl(nm),Orange_Result,Blue_x,Blue_y,Blue_lv(cd),Blue_wl(nm),Blue_Result,Final_Result");
+                }
+
+                writer.WriteLine($"{record.SequenceNumber},{record.Model},{record.ProductID},{record.Date.ToString("yyyy-MM-dd-HH-mm-ss")},{record.Time},{record.White_x},{record.White_y},{record.White_lv},{record.White_wl},{record.White_Result},{record.Red_x},{record.Red_y},{record.Red_lv},{record.Red_wl},{record.Red_Result},{record.Orange_x},{record.Orange_y},{record.Orange_lv},{record.Orange_wl},{record.Orange_Result},{record.Blue_x},{record.Blue_y},{record.Blue_lv},{record.Blue_wl},{record.Blue_Result},{record.Final_Result}");
+            }
+        }
+    }
+
+
     /// <summary>
-    /// Interaction logic for ShiyuanProjectWindow.xaml
+    /// ShiyuanProjectWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ShiyuanProjectWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ShiyuanProjectWindow));
         public ShiyuanProjectWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
+        }
+
+
+
+
+
+        public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
+        public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
+
+
+        private FlowEngineLib.FlowEngineControl flowEngine;
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
+            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            flowEngine = new FlowEngineControl(false);
+
+            STNodeEditor STNodeEditorMain = new STNodeEditor();
+            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            flowEngine.AttachNodeEditor(STNodeEditorMain);
+
+            ListViewSetting.ItemsSource = Settings;
+            ListViewResult.ItemsSource = Results;
+            ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
+            ComboBoxSer.SelectedIndex = 0;
+
+            FlowTemplate.ItemsSource = FlowParam.Params;
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (FlowTemplate.SelectedIndex > -1)
+                {
+                    var tokens = ServiceManager.GetInstance().ServiceTokens;
+                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
+                }
+            };
+
+            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+            foreach (var item in strings)
+            {
+                Settings.Add(new TempResult() { Name = item });
+            }
+
+        }
+        private Engine.Services.Flow.FlowControl flowControl;
+
+        private IPendingHandler handler;
+
+        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        {
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            handler?.Close();
+            if (sender is FlowControlData FlowControlData)
+            {
+                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                {
+                    if (FlowControlData.EventName == "Completed")
+                    {
+                        Results.Clear();
+                        var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                        if (Batch != null)
+                        {
+                            var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
+                            List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                            foreach (var item in resultMaster)
+                            {
+                                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+
+                                foreach (var pointResultModel in POIPointResultModels)
+                                {
+                                    PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                    PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                }
+                            }
+
+                            Results.Clear();
+                            if (PoiResultCIExyuvDatas.Count ==4)
+                            {
+                                var record = new DataRecord
+                                {
+                                    Date = DateTime.Now.Date,
+                                    Time = DateTime.Now.TimeOfDay,
+                                };
+
+
+                                List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+                                for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
+                                {
+                                    var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
+                                    TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
+                                    tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
+                                    tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
+                                    tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
+                                    tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
+                                 
+                                    if (poiResultCIExyuvData1.ValidateSingles != null)
+                                    {
+                                        foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                        {
+                                            if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                    }
+
+                                    Results.Add(tempResult1);
+                                }
+                                var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
+                                Results.Clear();
+                                bool IsOK = true;
+                                List<string> ngstring = new List<string>();
+                                foreach (var result in sortedResults)
+                                {
+                                    IsOK = IsOK && result.Result;
+                                    
+                                    if (!result.Result)
+                                    {
+                                        if (result.Name.Contains("White"))
+                                            ngstring.Add("errorW");
+                                        if (result.Name.Contains("Blue"))
+                                            ngstring.Add("errorB");
+                                        if (result.Name.Contains("Red"))
+                                            ngstring.Add("errorR");
+                                        if (result.Name.Contains("Orange"))
+                                            ngstring.Add("errorO");
+                                    }
+
+                                    Results.Add(result);
+                                }
+                                record.White_x = Results[0].X.Value;
+                                record.White_y = Results[0].Y.Value;
+                                record.White_lv = Results[0].Lv.Value;
+                                record.White_wl = Results[0].Dw.Value;
+                                record.White_Result = Results[0].Result ? "Pass" : "Fail";
+                                record.Blue_x = Results[1].X.Value;
+                                record.Blue_y = Results[1].Y.Value;
+                                record.Blue_lv = Results[1].Lv.Value;
+                                record.Blue_wl = Results[1].Dw.Value;
+                                record.Blue_Result = Results[1].Result ? "Pass" : "Fail";
+                                record.Red_x = Results[2].X.Value;
+                                record.Red_y = Results[2].Y.Value;
+                                record.Red_lv = Results[2].Lv.Value;
+                                record.Red_wl = Results[2].Dw.Value;
+                                record.Red_Result = Results[2].Result ? "Pass" : "Fail";
+                                record.Orange_x = Results[3].X.Value;
+                                record.Orange_y = Results[3].Y.Value;
+                                record.Orange_lv = Results[3].Lv.Value;
+                                record.Orange_wl = Results[3].Dw.Value;
+                                record.Orange_Result = Results[3].Result ? "Pass" : "Fail";
+                                record.Final_Result = IsOK ? "Pass" : "Fail";
+                                if (IsOK)
+                                {
+                                    ResultText.Text = "PASS";
+                                    ResultText.Foreground = Brushes.Blue;
+                                    HYMesManager.GetInstance().UploadMes(Results);
+                                }
+                                else
+                                {
+                                    ResultText.Text = "Fail";
+                                    ResultText.Foreground = Brushes.Red;
+                                    HYMesManager.GetInstance().Results = Results;
+                                }
+
+                                if (Directory.Exists(HYMesManager.Config.DataPath))
+                                {
+                                    string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.TestName + "_" + Environment.MachineName + ".csv";
+                                    CsvHandler csvHandler = new CsvHandler(FilePath);
+
+                                   csvHandler.SaveRecord(record);
+                                    // 清空产品编号
+                                    TextBoxSn.Text = string.Empty;
+                                    // 将焦点移动到产品编号输入框
+                                    TextBoxSn.Focus();
+                                }
+                                log.Debug("mes 已经上传");
+                            }
+                            else
+                            {
+                                //HYMesManager.GetInstance().UploadNG("流程结果数据错误");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算完成，未能匹配POI结果", "ColorVision");
+                            }
+                        }
+                        else
+                        {
+                            HYMesManager.GetInstance().UploadNG("找不到批次号");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
+                        }
+                    }
+                    else
+                    {
+                        HYMesManager.GetInstance().UploadNG("流程运行失败");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                    }
+                }
+                else
+                {
+                    HYMesManager.GetInstance().UploadNG("流程运行失败");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                }
+
+            }
+            else
+            {
+                HYMesManager.GetInstance().UploadNG("流程运行异常");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
+            }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (FlowTemplate.SelectedValue is FlowParam flowParam)
+            {
+                string startNode = flowEngine.GetStartNodeName();
+                if (!string.IsNullOrWhiteSpace(startNode))
+                {
+                    flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
+
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+
+                    flowControl.FlowData += (s, e) =>
+                    {
+                        if (s is FlowControlData msg)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
+                        }
+                    };
+                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    flowControl.Start(sn);
+                    string name = string.Empty;
+                    BeginNewBatch(sn, name);
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
+                }
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
+            }
+        }
+
+        public static void BeginNewBatch(string sn, string name)
+        {
+            BatchResultMasterModel batch = new();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (!HYMesManager.GetInstance().IsConnect)
+            {
+                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+            }
+            else
+            {
+                HYMesManager.GetInstance().Close();
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().UploadSN();
+        }
+
+        private void SelectDataPath_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为新项目选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                HYMesManager.Config.DataPath = dialog.SelectedPath;
+            }
+        }
+
+        private void UploadSN(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().UploadSN();
+        }
+
+        private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.Tag is TempResult tempResult && comboBox.SelectedValue is ValidateParam validateParam)
+            {
+                foreach (var item in validateParam.ValidateSingles)
+                {
+                    if (item.Model.Code == "CIE_x")
+                    {
+                        tempResult.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_y")
+                    {
+                        tempResult.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_lv")
+                    {
+                        tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_dw")
+                    {
+                        tempResult.Dw = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                }
+            }
+        }
+
+        private void ValidateTemplate_Initialized(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
+            }
         }
     }
 }

@@ -63,7 +63,7 @@ namespace ColorVision
         private  List<IInitializer> _IComponentInitializers;
 
 
-        public void UpdateMessage(string message)
+        public void Update(string message)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {

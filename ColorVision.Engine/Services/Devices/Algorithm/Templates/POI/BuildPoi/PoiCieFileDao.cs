@@ -1,11 +1,7 @@
 ﻿#pragma warning disable CS0618
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
-using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 {
@@ -25,7 +21,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
 
         [Column("file_type")]
         public int FileType { get; set; }
-
     }
 
     public class PoiCieFileDao : BaseTableDao<PoiCieFileModel>

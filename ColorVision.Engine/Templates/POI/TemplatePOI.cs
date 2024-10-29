@@ -24,10 +24,11 @@ namespace ColorVision.Engine.Templates.POI
             Code = "POI";
             TemplateParams = Params;
         }
+        public EditPoiParam EditWindow { get; set; }
         public override void PreviewMouseDoubleClick(int index)
         {
-            var WindowFocusPoint = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
-            WindowFocusPoint.ShowDialog();
+            EditWindow = new EditPoiParam(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            EditWindow.ShowDialog();
         }
 
         public override void Load()

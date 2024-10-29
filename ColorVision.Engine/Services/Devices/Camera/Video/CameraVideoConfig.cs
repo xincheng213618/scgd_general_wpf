@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using System.Collections.Generic;
-using System;
 using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video

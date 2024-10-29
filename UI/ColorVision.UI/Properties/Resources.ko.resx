@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MenuFile" xml:space="preserve">
+    <value>파일 (_F)</value>
+  </data>
+  <data name="MenuTemplate" xml:space="preserve">
+    <value>템플릿(_M)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>도구 (_T)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>도움 (_H)</value>
+  </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>글로벌</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>정상</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>충돌</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>Set Hotkeys by Pressing Keys</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>클릭하여 핫키 설정하기</value>
+  </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>중국어 간체</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>중국어 번체</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>시스템 테마 사용</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>영어</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>프랑스 국민</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>일본어</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>한국인</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>러시아인</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>옵션 (_O)</value>
+  </data>
+  <data name="AutoAdjustColumnWidth" xml:space="preserve">
+    <value>열 너비 자동 조정</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>언어(_L)</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>UI 언어</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>선택한 보기를 자동으로 전환</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>키보드 단축키</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>숨기기</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>독립 창</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>종료 (_X)</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>통나무</value>
+  </data>
+  <data name="OpenConfigFile" xml:space="preserve">
+    <value>OpenConfigFile</value>
+  </data>
+  <data name="OpenConfigFolder" xml:space="preserve">
+    <value>오픈 구성 폴더</value>
+  </data>
+  <data name="OpenLogFolder" xml:space="preserve">
+    <value>오픈로그폴더</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>자동으로 아래쪽으로 스크롤</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>자동 새로고침</value>
+  </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>필터는 정규식을 지원합니다</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>로그 수준</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>분명한</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>에러 발생됨</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>남은 시간:</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>현재 속도:</value>
+  </data>
+</root>

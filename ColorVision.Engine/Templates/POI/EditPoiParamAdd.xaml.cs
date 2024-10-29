@@ -18,6 +18,8 @@ namespace ColorVision.Engine.Templates.POI
             InitializeComponent();
         }
 
+        public bool IsSucess { get; set; }
+
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
             e.Handled = true;
@@ -27,14 +29,18 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                    PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
-
+                SelectPoiParam = TemplatePoi.Params[ListView1.SelectedIndex].Value;
+                PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
+                PoiParam.PoiPoints.Clear();
                 foreach (var item in SelectPoiParam.PoiPoints)
                 {
-                    PoiParam.PoiPoints.Add(item);
+                    item.Id = -1;
+                    PoiParam.PoiPoints.Add(item); 
                 }
+                SelectPoiParam.PoiPoints.Clear();
                 MessageBox.Show("导入成功", "ColorVision");
+                IsSucess = true;
+                this.Close();
             }
         }
 

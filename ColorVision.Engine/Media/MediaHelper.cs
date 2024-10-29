@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Media
     public static class MediaHelper
     {
         public static bool UpdateWriteableBitmap(this CVCIEFile fileInfo, WriteableBitmap writeableBitmap)
-        {
+        {   
             OpenCvSharp.Mat? src = null;
             OpenCvSharp.Mat? dst = null;
             try
