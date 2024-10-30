@@ -286,7 +286,7 @@ namespace ColorVision.Engine.Templates
                     int idx = 0;
                     foreach (ModDetailModel model in de)
                     {
-                        string code = model.GetValueMD5();
+                        string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
                         codes[idx++] = code;
                     }
                     VSysResourceDao.Instance.DeleteInCodes(codes);

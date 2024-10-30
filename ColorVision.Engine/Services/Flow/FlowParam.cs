@@ -201,7 +201,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new("flow", text, UserConfig.Instance.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel("flow", text, UserConfig.Instance.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;
