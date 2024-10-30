@@ -91,6 +91,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType ,string serialNumber)
         {
+            MatchParam Param = TemplateMatch.Params[TemplateSelectedIndex].Value;
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
@@ -98,6 +99,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("MaskFile", MaskFile);
             Params.Add("TemplateFile", TemplateFile);
+            Params.Add("MatchParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });
 
             MsgSend msg = new()
             {

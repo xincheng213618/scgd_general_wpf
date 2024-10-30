@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
+            ComboxTemplate.ItemsSource = TemplateMatch.Params;
 
             void UpdateCB_SourceImageFiles()
             {
