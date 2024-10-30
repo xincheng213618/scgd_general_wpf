@@ -603,48 +603,42 @@ namespace ColorVision.ImageEditor
                     return;
                 }
 
-                if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
+                try
                 {
+                    ComboBoxLayers.SelectedIndex = 0;
+                    ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
+                    AddSelectionChangedHandler(ComboBoxLayers_SelectionChanged);
 
-                }
-                else
-                {
-                    try
+                    if (Config.IsShowLoadImage && isLargeFile)
                     {
-                        ComboBoxLayers.SelectedIndex = 0;
-                        ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
-                        AddSelectionChangedHandler(ComboBoxLayers_SelectionChanged) ;
-
-                        if (Config.IsShowLoadImage && isLargeFile)
+                        WaitControl.Visibility = Visibility.Visible;
+                        Config.FilePath = filePath;
+                        await Task.Run(() =>
                         {
-                            WaitControl.Visibility = Visibility.Visible;
-                            Config.FilePath = filePath;
-                            await Task.Run(() =>
+                            byte[] imageData = File.ReadAllBytes(filePath);
+                            BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                byte[] imageData = File.ReadAllBytes(filePath);
-                                BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    SetImageSource(bitmapImage.ToWriteableBitmap());
-                                    WaitControl.Visibility = Visibility.Collapsed;
-                                });
+                                SetImageSource(bitmapImage.ToWriteableBitmap());
+                                UpdateZoomAndScale();
+                                WaitControl.Visibility = Visibility.Collapsed;
                             });
-
-                        }
-                        else
-                        {
-                            Config.FilePath = filePath;
-                            BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                            SetImageSource(bitmapImage.ToWriteableBitmap());
-                        };
+                        });
 
                     }
-                    catch(Exception ex)
+                    else
                     {
-                        MessageBox.Show(ex.Message);
-                    }
+                        Config.FilePath = filePath;
+                        BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                        SetImageSource(bitmapImage.ToWriteableBitmap());
+                    };
 
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+
             }
 
 
@@ -677,7 +671,6 @@ namespace ColorVision.ImageEditor
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
-            UpdateZoomAndScale();
             ImageShow.ImageInitialize();
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
         }
@@ -847,7 +840,6 @@ namespace ColorVision.ImageEditor
             if (channel == -1)
             {
                 ImageShow.Source = ViewBitmapSource;
-                UpdateZoomAndScale();
                 Config.Channel = Config.Ochannel;
                 return;
             }
@@ -859,7 +851,6 @@ namespace ColorVision.ImageEditor
                 {
                     if (ret == 0)
                     {
-
                         if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
@@ -867,7 +858,6 @@ namespace ColorVision.ImageEditor
                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                             hImageProcessed.pData = IntPtr.Zero;
                             PseudoImage = image;
-                            UpdateZoomAndScale();
                         }
                         ImageShow.Source = PseudoImage;
                         Config.Channel = 1;
@@ -877,7 +867,7 @@ namespace ColorVision.ImageEditor
 
         }
 
-        private void UpdateZoomAndScale()
+        public void UpdateZoomAndScale()
         {
             Task.Run(() => {
                 Application.Current?.Dispatcher.Invoke(() =>
@@ -910,7 +900,6 @@ namespace ColorVision.ImageEditor
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
                         PseudoImage = image;
-                        UpdateZoomAndScale();
                     }
                     ImageShow.Source = PseudoImage;
                 }
@@ -938,7 +927,6 @@ namespace ColorVision.ImageEditor
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
                         PseudoImage = image;
-                        UpdateZoomAndScale();
                     }
                     ImageShow.Source = PseudoImage;
                 }
@@ -966,7 +954,6 @@ namespace ColorVision.ImageEditor
                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                     hImageProcessed.pData = IntPtr.Zero;
                     PseudoImage = image;
-                    UpdateZoomAndScale();
                 }
                 ImageShow.Source = PseudoImage;
             }

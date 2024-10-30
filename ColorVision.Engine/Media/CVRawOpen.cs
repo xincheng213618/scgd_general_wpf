@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Media
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             imageView.OpenImage(cVCIEFile.ToWriteableBitmap());
-
+                            imageView.UpdateZoomAndScale();
                             imageView.WaitControl.Visibility = Visibility.Collapsed;
                         });
                     });
