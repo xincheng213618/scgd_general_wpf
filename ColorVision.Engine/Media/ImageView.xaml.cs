@@ -90,9 +90,7 @@ namespace ColorVision.Engine.Media
                 if (item.Parent == null)
                     return item;
             }
-            ImageView imageView = new ImageView();
-            Views.Add(imageView);
-            return imageView;
+            return new ImageView(); ;
         }
 
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));

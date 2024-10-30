@@ -82,8 +82,6 @@ namespace ColorVision.Engine.Media
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
-
-
                     imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
                 }
             }

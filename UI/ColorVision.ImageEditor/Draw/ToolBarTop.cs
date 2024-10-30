@@ -105,22 +105,22 @@ namespace ColorVision.ImageEditor.Draw
             };
             ToolConcentricCircle = new ToolReferenceLine(zoombox, drawCanvas);
 
-            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image.Source != null);
-            ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image.Source != null);
-            ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image.Source != null);
-            ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image.Source != null);
-            ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image.Source != null);
+            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
+            ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
+            ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
+            ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null &&  Image.Source != null);
+            ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
 
-            FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image.Source != null);
-            FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image.Source != null);
+            FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image != null && Image.Source != null);
+            FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image != null && Image.Source != null);
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zoombox.Cursor = Cursors.Hand;
 
-            SaveImageCommand = new RelayCommand(a => Save(),a=>Image.Source!=null);
+            SaveImageCommand = new RelayCommand(a => Save(),a=> Image!=null && Image.Source!=null);
 
-            PrintImageCommand = new RelayCommand(a => Print(), a => Image.Source != null);
+            PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
 
-            ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image.Source != null);
+            ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image != null && Image.Source != null);
             MaxCommand = new RelayCommand(a => MaxImage());
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
@@ -674,6 +674,9 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     // TODO: 释放托管状态(托管对象)
                 }
+                Parent = null;
+                ZoomboxSub = null;
+                Image = null;
 
                 // TODO: 释放未托管的资源(未托管的对象)并重写终结器
                 // TODO: 将大型字段设置为 null
