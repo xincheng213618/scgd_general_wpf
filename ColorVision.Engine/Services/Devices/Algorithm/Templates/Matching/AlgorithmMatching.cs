@@ -23,6 +23,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         public MQTTAlgorithm DService { get => Device.DService; }
 
         public RelayCommand OpenTemplatePoiCommand { get; set; }
+        public RelayCommand OpenTemplateCommand { get; set; }
+
         public RelayCommand SetMaskFileCommand { get; set; }
         public RelayCommand SetTemplateFileCommand { get; set; }
 
@@ -30,12 +32,36 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         public AlgorithmMatching(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
             SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(MaskFile)));
             SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(TemplateFile)));
 
         }
 
+
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
+
+        public void OpenTemplate()
+        {
+            new TemplateEditorWindow(new TemplateMatch(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+
+        public void OpenTemplatePoi()
+        {
+            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplatePoiSelectedIndex;
+
+
+
+        public string MaskFile { get => _MaskFile; set { _MaskFile = value; NotifyPropertyChanged(); } }
+        private string _MaskFile;
+
+        public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; NotifyPropertyChanged(); } }
+        private string _TemplateFile;
         public static void SetFile(object target, string propertyName)
         {
             using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
@@ -54,22 +80,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
                 }
             }
         }
-
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-
-        public string MaskFile { get => _MaskFile; set { _MaskFile = value; NotifyPropertyChanged(); } }
-        private string _MaskFile;
-
-        public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; NotifyPropertyChanged(); } }
-        private string _TemplateFile;
 
 
         public UserControl GetUserControl()
