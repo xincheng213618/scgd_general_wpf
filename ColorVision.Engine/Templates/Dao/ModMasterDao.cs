@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.SysDictionary;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -35,16 +36,17 @@ namespace ColorVision.Engine.Templates
     {
         public static ModMasterDao Instance { get; set; } = new ModMasterDao(string.Empty);
 
-        public string Code { get; set; }
+        public int Pid { get; set; }
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
-            Code = code;
+            Pid = SysDictionaryModMasterDao.Instance.GetByCode(code ,0).Id;
         }
         public override DataTable GetTableAllByTenantId(int tenantId)
         {
+
             string sql;
-            if (string.IsNullOrEmpty(ViewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{Code}'";
-            else sql = $"select * from {ViewName} where is_delete=0 and tenant_id={tenantId} and pcode='{Code}'";
+            if (string.IsNullOrEmpty(ViewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pid={Pid}";
+            else sql = $"select * from {ViewName} where is_delete=0 and tenant_id={tenantId} and pid={Pid}";
             DataTable d_info = GetData(sql);
             return d_info;
         }
@@ -85,7 +87,7 @@ namespace ColorVision.Engine.Templates
 
         public DataTable GetTableAllByTenantIdAdnResId(int tenantId, int resourceId)
         {
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pcode='{Code}' and res_pid={resourceId}" + GetDelSQL(true);
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid='{Pid}' and res_pid={resourceId}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             return d_info;
         }

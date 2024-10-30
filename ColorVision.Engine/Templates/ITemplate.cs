@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Templates
 
         public override object CreateDefault()
         {
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
             if (mod != null)
             {
                 List<ModDetailModel> list = new();
@@ -409,7 +409,7 @@ namespace ColorVision.Engine.Templates
             ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);
             if (resourceId > 0)
                 modMaster.ResourceId = resourceId;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(code, UserConfig.Instance.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;
@@ -437,7 +437,7 @@ namespace ColorVision.Engine.Templates
             T? AddParamMode()
             {
                 ModMasterModel modMaster = new ModMasterModel(Code, templateName, UserConfig.Instance.TenantId);
-                SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+                SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
                 if (mod != null)
                 {
                     modMaster.Pid = mod.Id;

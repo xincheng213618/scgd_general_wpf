@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
             if (index > -1 && index < TemplateParams.Count)
             {
                 var item = TemplateParams[index];
-                SysDictionaryModDao.Instance.DeleteById(item.Value.Id,false);
+                SysDictionaryModMasterDao.Instance.DeleteById(item.Value.Id,false);
                 TemplateParams.RemoveAt(index);
                 MenuManager.GetInstance().LoadMenuItemFromAssembly();
             }
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = SysDictionaryModDao.Instance.GetAllByParam( new Dictionary<string, object>() { {"tenant_id", UserConfig.Instance.TenantId },{"mod_type",7 } });
+                var models = SysDictionaryModMasterDao.Instance.GetAllByParam( new Dictionary<string, object>() { {"tenant_id", UserConfig.Instance.TenantId },{"mod_type",7 } });
                 foreach (var model in models)
                 {
                     var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);
@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    var modMasterModel = SysDictionaryModDao.Instance.GetById(item.Value.Id);
+                    var modMasterModel = SysDictionaryModMasterDao.Instance.GetById(item.Value.Id);
 
                     foreach (var modDetaiModel in TemplateParams[index].Value.ModDetaiModels)
                     {
@@ -125,7 +125,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
         public override void Create(string templateCode, string templateName)
         {
             SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
-            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
             var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
             var t = new DicModParam(sysDictionaryModModel, list);
             var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);

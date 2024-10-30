@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
         public override void Create(string templateCode, string templateName)
         {
             SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 5 };
-            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
             var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
             var t = new DicModParam(sysDictionaryModModel, list);
             var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", 5 } });
+                var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", 5 } });
                 foreach (var model in models)
                 {
                     var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);

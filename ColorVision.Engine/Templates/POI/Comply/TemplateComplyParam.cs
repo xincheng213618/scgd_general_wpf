@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
 
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
             if (mod == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
@@ -115,7 +115,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             ValidateTemplateMasterModel modMaster = new ValidateTemplateMasterModel() { Code = Code, Name = templateName, TenantId = UserConfig.Instance.TenantId };
 
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
             if (mod != null)
             {
                 modMaster.DId = mod.Id;

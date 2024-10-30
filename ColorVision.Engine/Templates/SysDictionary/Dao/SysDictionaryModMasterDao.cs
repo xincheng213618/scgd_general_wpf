@@ -31,11 +31,11 @@ namespace ColorVision.Engine.Templates.SysDictionary
         private DateTime _CreateDate;
     }
 
-    public class SysDictionaryModDao : BaseTableDao<SysDictionaryModModel>
+    public class SysDictionaryModMasterDao : BaseTableDao<SysDictionaryModModel>
     {
-        public static SysDictionaryModDao Instance { get; set; } = new SysDictionaryModDao();
+        public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
 
-        public SysDictionaryModDao() : base("t_scgd_sys_dictionary_mod_master", "id")
+        public SysDictionaryModMasterDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
         }
 
