@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
+
     public class SysDictionaryModModel : ViewModelBase,IPKModel
     {
         [Column("id")]
@@ -19,6 +20,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
         [Column("code")]
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
+
         [Column("name")]
         public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string? _Name;

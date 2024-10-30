@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
-using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates.POI.Comply;
 using Newtonsoft.Json;
 using System;
