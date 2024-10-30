@@ -22,7 +22,6 @@ namespace ColorVision.Engine.Impl.CommonImage
         public void Close()
         {
             ImageView.ToolBarTop.ClearImage();
-            ImageView.Dispose();
         }
 
         public virtual void Open()
