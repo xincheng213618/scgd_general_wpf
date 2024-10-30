@@ -26,8 +26,8 @@
                             <TextBlock Text="自动刷新数据"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  AutoRefreshView}"/>
                         </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="插入数据在列表前面"  MinWidth="120"  />
+                        <DockPanel Margin="0,0,0,5">
+                            <TextBlock Text="插入数据在列表前"  MinWidth="120"  />
                             <ui:ToggleSwitch IsChecked="{Binding  InsertAtBeginning}"/>
                         </DockPanel>
                         <DockPanel Margin="0,0,0,5" >
