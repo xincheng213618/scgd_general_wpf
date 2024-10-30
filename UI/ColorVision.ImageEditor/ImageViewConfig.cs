@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
     public class ImageViewConfig:ViewModelBase
     {

@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;

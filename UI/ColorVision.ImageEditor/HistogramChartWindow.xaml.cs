@@ -14,7 +14,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using LiveChartsCore.Measure;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
 
     public class HistogramChartConfig:ViewModelBase ,IConfig

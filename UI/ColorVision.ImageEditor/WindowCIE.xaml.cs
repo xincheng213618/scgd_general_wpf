@@ -5,7 +5,7 @@ using System;
 using ColorVision.Util.Draw.Special;
 using ColorVision.Themes;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
 
     public class CIEColorConverter

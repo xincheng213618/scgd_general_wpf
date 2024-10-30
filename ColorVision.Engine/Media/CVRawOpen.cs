@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;

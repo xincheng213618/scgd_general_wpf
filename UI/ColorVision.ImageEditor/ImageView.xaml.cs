@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.Net;
 using ColorVision.UI.Views;
 using log4net;
 using System;
@@ -20,7 +19,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
 
     public interface IImageViewComponent
@@ -268,7 +267,7 @@ namespace ColorVision.Engine.Media
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = Properties.Resources.MenuDelete };
+                MenuItem menuIte2 = new() { Header = "" };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);

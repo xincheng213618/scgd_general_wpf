@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Views"
-             xmlns:media="clr-namespace:ColorVision.Engine.Media"
+             xmlns:media="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"

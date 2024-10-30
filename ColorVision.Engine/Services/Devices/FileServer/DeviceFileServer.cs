@@ -6,6 +6,7 @@ using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Services.Devices.FileServer
 {

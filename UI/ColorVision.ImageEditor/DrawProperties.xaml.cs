@@ -9,7 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
     /// <summary>
     /// DrawProperties.xaml 的交互逻辑
