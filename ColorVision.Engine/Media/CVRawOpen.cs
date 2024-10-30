@@ -10,6 +10,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Media
 {
@@ -49,8 +50,12 @@ namespace ColorVision.Engine.Media
 
         public List<string> Extension { get; } = new List<string> { ".cvraw",".cvcie" };
 
+        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
+        public List<string> ComboBoxLayerCIEItems { get; set; } = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
+            
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
                 float dXVal = 0;
@@ -61,6 +66,7 @@ namespace ColorVision.Engine.Media
                 imageView.ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
             }
             imageView.ToolBarTop.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
+
             imageView.ToolBarTop.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
@@ -72,8 +78,44 @@ namespace ColorVision.Engine.Media
                 imageView.Config.ConvertXYZhandleOnce = true;
             }
             imageView.Config.FilePath = filePath;
+            void ComboBoxLayers1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+            {
+                if (imageView.ComboBoxLayers.SelectedIndex < 0) return;
+
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "Src")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.SRC).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "R")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "G")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "B")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "X")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "Y")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                }
+                if (ComboBoxLayerCIEItems[imageView.ComboBoxLayers.SelectedIndex] == "Z")
+                {
+                    imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                }
+            }
+
+
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
+
                 int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
                 if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
@@ -83,6 +125,15 @@ namespace ColorVision.Engine.Media
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                     imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+                    imageView.ComboBoxLayers.ItemsSource =  ComboBoxLayerCIEItems;
+                    imageView.ComboBoxLayers.SelectedIndex = 0;
+                    imageView.AddSelectionChangedHandler(ComboBoxLayers1_SelectionChanged);;
+                }
+                else
+                {
+                    imageView.ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
+                    imageView.ComboBoxLayers.SelectedIndex = 0;
+                    imageView.AddSelectionChangedHandler(ComboBoxLayers1_SelectionChanged); ;
                 }
             }
 

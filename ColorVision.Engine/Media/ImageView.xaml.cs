@@ -73,10 +73,6 @@ namespace ColorVision.Engine.Media
         }
     }
 
-
-
-
-
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -119,7 +115,6 @@ namespace ColorVision.Engine.Media
             Config = imageViewConfig;
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
-            ToolBarLayers.DataContext = Config;
             ToolBarTop.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
             var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
@@ -565,7 +560,6 @@ namespace ColorVision.Engine.Media
                 HImageCache = null;
             }
             GC.Collect();
-
             ToolBarLayers.Visibility = Visibility.Collapsed;
         }
 
@@ -575,13 +569,27 @@ namespace ColorVision.Engine.Media
                 SetImageSource(writeableBitmap);
         }
 
+        private List<SelectionChangedEventHandler> _handlers = new List<SelectionChangedEventHandler>();
+        public void AddSelectionChangedHandler(SelectionChangedEventHandler handler)
+        {
+            ComboBoxLayers.SelectionChanged += handler;
+            _handlers.Add(handler);
+        }
+
+        public void ClearSelectionChangedHandlers()
+        {
+            foreach (var handler in _handlers)
+            {
+                ComboBoxLayers.SelectionChanged -= handler;
+            }
+            _handlers.Clear();
+        }
 
 
         public async void OpenImage(string? filePath)
         {
             log.Info($"OpenImageFile :{filePath}");
-            ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
-
+            ClearSelectionChangedHandlers();
             Config.IsCVCIE = false;
             if (filePath != null && File.Exists(filePath))
             {
@@ -593,16 +601,8 @@ namespace ColorVision.Engine.Media
                 if (ImageViewOpen != null)
                 {
                     ImageViewOpen.OpenImage(this, filePath);
-                    ComboBoxLayers.SelectedIndex = 0;
-                    ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
-                    ToolBarLayers.Visibility = Visibility.Visible;
                     return;
                 }
-                else
-                {
-
-                }
-
 
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
@@ -612,6 +612,9 @@ namespace ColorVision.Engine.Media
                 {
                     try
                     {
+                        ComboBoxLayers.SelectedIndex = 0;
+                        ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
+                        AddSelectionChangedHandler(ComboBoxLayers_SelectionChanged) ;
 
                         if (Config.IsShowLoadImage && isLargeFile)
                         {
@@ -652,6 +655,7 @@ namespace ColorVision.Engine.Media
 
         public void SetImageSource(ImageSource imageSource)
         {
+            ToolBarLayers.Visibility = Visibility.Visible;
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
@@ -821,58 +825,20 @@ namespace ColorVision.Engine.Media
             }
         }
 
+        public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src" ,"R","G","B" };
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem)
-            {
-                if (Config.IsCVCIE)
-                {
-                    if (comboBoxItem.Content.ToString() == "Src")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.SRC).ToWriteableBitmap());
-                    }
-                    if (comboBoxItem.Content.ToString() == "R")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.RGB_R).ToWriteableBitmap());
-                    }
-                    if (comboBoxItem.Content.ToString() == "G")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.RGB_G).ToWriteableBitmap());
+            if (ComboBoxLayers.SelectedIndex < 0) return;
 
-                    }
-                    if (comboBoxItem.Content.ToString() == "B")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.RGB_B).ToWriteableBitmap());
-
-                    }
-                    if (comboBoxItem.Content.ToString() == "X")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
-                    }
-                    if (comboBoxItem.Content.ToString() == "Y")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
-
-                    }
-                    if (comboBoxItem.Content.ToString() == "Z")
-                    {
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
-                    }
-                }
-                else
-                {
-                    if (comboBoxItem.Content.ToString() == "Src")
-                        CM_ExtractChannel(-1);
-                    if (comboBoxItem.Content.ToString() == "R")
-                        CM_ExtractChannel(2);
-                    if (comboBoxItem.Content.ToString() == "G")
-                        CM_ExtractChannel(1);
-                    if (comboBoxItem.Content.ToString() == "B")
-                        CM_ExtractChannel(0);
-
-                }
-            }
+            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "Src")
+                CM_ExtractChannel(-1);
+            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "R")
+                CM_ExtractChannel(2);
+            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "G")
+                CM_ExtractChannel(1);
+            if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "B")
+                CM_ExtractChannel(0);
         }
 
         private void CM_ExtractChannel(int channel)

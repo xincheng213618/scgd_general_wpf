@@ -130,17 +130,10 @@
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
 
-            <ToolBarTray  x:Name="ToolBarLayers" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
+            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
-                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0" SelectionChanged="ComboBoxLayers_SelectionChanged">
-                        <ComboBoxItem Content="Src"/>
-                        <ComboBoxItem Content="R" />
-                        <ComboBoxItem Content="G" />
-                        <ComboBoxItem Content="B" />
-                        <ComboBoxItem Content="X" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
-                        <ComboBoxItem Content="Y" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  />
-                        <ComboBoxItem Content="Z" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
-                    </ComboBox>
+                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0"/>
+
                 </ToolBar>
             </ToolBarTray>
 
