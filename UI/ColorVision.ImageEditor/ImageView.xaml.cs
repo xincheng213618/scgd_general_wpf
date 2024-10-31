@@ -127,7 +127,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 500, () => AdjustWhiteBalance());
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 10, () => AdjustWhiteBalance());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
