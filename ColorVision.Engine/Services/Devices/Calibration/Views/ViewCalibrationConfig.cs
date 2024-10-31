@@ -1,22 +1,23 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
-    public class ViewCameraConfig : ViewModelBase, IConfig
+    public class ViewCalibrationConfig : ViewModelBase, IConfig
     {
-        public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();
+        public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
 
         public RelayCommand EditCommand { get; set; }
 
-        public ViewCameraConfig()
+        public ViewCalibrationConfig()
         {
             EditCommand = new RelayCommand(a => new EditViewCameraConfig(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
@@ -36,5 +37,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public bool InsertAtBeginning { get => _InsertAtBeginning; set { _InsertAtBeginning = value; NotifyPropertyChanged(); } }
         private bool _InsertAtBeginning = true;
+
     }
 }

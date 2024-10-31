@@ -13,7 +13,7 @@ namespace ColorVision.ImageEditor
         private double _MinZoom = 0.01;
 
         public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
-        private int _CVCIENum = 200;
+        private int _CVCIENum = 1;
 
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
@@ -49,6 +49,21 @@ namespace ColorVision.ImageEditor
 
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
+
+        public event EventHandler BalanceChanged;
+
+
+        public float RedBalance { get => _RedBalance; set { _RedBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private float _RedBalance = 1;
+
+        public float GreenBalance { get => _GreenBalance; set { _GreenBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private float _GreenBalance = 1;
+
+        public float BlueBalance { get => _BlueBalance; set { _BlueBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private float _BlueBalance = 1;
+        public HImage? HImageCache { get; set; }
+
+
 
     }
 }

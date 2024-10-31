@@ -38,5 +38,7 @@ extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPix
 
 extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type);
 
+extern "C" COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float redBalance, float greenBalance, float blueBalance);
+
 
 

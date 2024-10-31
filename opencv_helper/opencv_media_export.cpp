@@ -271,3 +271,16 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 	MatToHImage(outMat, outImage);
 	return 0;
 }
+
+
+COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float redBalance, float greenBalance, float blueBalance)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst = mat.clone();
+
+	AdjustWhiteBalance(mat,dst, redBalance, greenBalance, blueBalance);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
+

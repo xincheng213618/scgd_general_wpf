@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
@@ -47,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             Device = device;
             InitializeComponent();
         }
-        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
+        public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;

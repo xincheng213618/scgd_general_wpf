@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Windows;
 
@@ -9,8 +10,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     /// </summary>
     public partial class EditViewCameraConfig : Window
     {
-        public ViewCameraConfig Config { get; set; }
-        public EditViewCameraConfig(ViewCameraConfig config)
+        public IConfig Config { get; set; }
+        public EditViewCameraConfig(IConfig config)
         {
             Config = config;
             InitializeComponent();

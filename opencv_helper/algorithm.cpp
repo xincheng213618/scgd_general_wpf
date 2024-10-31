@@ -76,6 +76,24 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     return 0;
 }
 
+void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance) {
+    // Split the source image into BGR channels
+    std::vector<cv::Mat> channels(3);
+    cv::split(src, channels);
+
+    // Apply balance parameters to each channel
+    channels[2] *= redBalance;    // Red channel
+    channels[1] *= greenBalance;  // Green channel
+    channels[0] *= blueBalance;   // Blue channel
+
+    // Merge the channels back into the destination image
+    cv::merge(channels, dst);
+
+    // Clip values to the appropriate range
+    double maxVal = (src.depth() == CV_8U) ? 255.0 : 65535.0;
+    cv::threshold(dst, dst, maxVal, maxVal, cv::THRESH_TRUNC);
+}
+
 
 
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)

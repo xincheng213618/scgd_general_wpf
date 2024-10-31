@@ -77,5 +77,10 @@ namespace ColorVision
 
         [DllImport(LibPath, EntryPoint = "M_CalArtculation", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern double M_CalArtculation(HImage image, EvaFunc evaFunc);
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, float redBalance, float greenBalance, float blueBalance);
+
     }
 }

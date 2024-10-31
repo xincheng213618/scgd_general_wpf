@@ -111,6 +111,8 @@ namespace ColorVision.ImageEditor
 
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
+            if (Config != null)
+                Config.BalanceChanged -= ImageViewConfig_BalanceChanged;
             Config = imageViewConfig;
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
@@ -119,6 +121,13 @@ namespace ColorVision.ImageEditor
             var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
             string valuepath = ColormapTypes.Value;
             ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
+
+            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
+        }
+
+        private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
+        {
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 500, () => AdjustWhiteBalance());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -644,7 +653,7 @@ namespace ColorVision.ImageEditor
 
         }
 
-        public HImage? HImageCache { get; set; }
+        private HImage? HImageCache { get => Config.HImageCache; set { Config.HImageCache = value;  } }
 
         public void SetImageSource(ImageSource imageSource)
         {
@@ -905,6 +914,36 @@ namespace ColorVision.ImageEditor
                 }
             };
         }
+        private void AdjustWhiteBalance_Click(object sender, RoutedEventArgs e)
+        {
+            AdjustWhiteBalance();
+        }
+
+        public void AdjustWhiteBalance()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (HImageCache != null)
+                {
+                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
+
+                    if (ret == 0)
+                    {
+                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        {
+                            var image = hImageProcessed.ToWriteableBitmap();
+
+                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                            hImageProcessed.pData = IntPtr.Zero;
+                            PseudoImage = image;
+                        }
+                        ImageShow.Source = PseudoImage;
+                    }
+                };
+            });
+
+
+        }
 
         private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
         {
@@ -999,5 +1038,7 @@ namespace ColorVision.ImageEditor
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+
     }
 }
