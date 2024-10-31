@@ -1,0 +1,57 @@
+﻿<Window x:Class="ColorVision.Engine.Templates.SysDictionary.CreateDicModeDetail"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Templates.SysDictionary"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:DicModParam}"
+        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:SysDictionaryModDetaiModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+            <StackPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="Id" Width="100" />
+                    <TextBox Text="{Binding Id}"/>
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="符号" Width="100" />
+                    <TextBox Text="{Binding Symbol}"/>
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="名称" Width="100" />
+                    <TextBox Text="{Binding Name}"/>
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="默认值类型" Width="100" />
+                    <ComboBox x:Name="ComboBoxValueType" SelectedValue="{Binding ValueType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="默认值" Width="100" />
+                    <TextBox Text="{Binding DefaultValue}"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Height="30">
+            <Button Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
+        </Border>
+    </Grid>
+</Window>

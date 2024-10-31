@@ -1,36 +1,39 @@
+using System;
+
 namespace CVImageChannelLib;
 
 public class H264WriterProxy : CVEndpointProxy
 {
-	protected OpenH264OutputStream h264Stream;
+	protected OpenH264OutputStream H264Stream { get; set; }
 
 	public H264WriterProxy(OpenH264OutputStream stream)
 		: base(stream)
 	{
-		h264Stream = stream;
+		H264Stream = stream;
 	}
 
 	public void Publish(CVImagePacket packet)
 	{
-		if (h264Stream != null)
+		if (H264Stream != null)
 		{
-			h264Stream.Encode(packet);
+			H264Stream.Encode(packet);
 		}
 	}
 
 	public override void Dispose()
 	{
-		h264Stream.Dispose();
-		base.Dispose();
-	}
+		H264Stream.Dispose();
+        GC.SuppressFinalize(this);
+        base.Dispose();
+    }
 
-	public void SetRemotePoint(string remoteIP, int remotePort)
+    public void SetRemotePoint(string remoteIP, int remotePort)
 	{
-		h264Stream.SetRemotePoint(remoteIP, remotePort);
+		H264Stream.SetRemotePoint(remoteIP, remotePort);
 	}
 
 	public void Setup(int width, int height, float resizeRatio)
 	{
-		h264Stream.Setup(width, height, resizeRatio);
+		H264Stream.Setup(width, height, resizeRatio);
 	}
 }

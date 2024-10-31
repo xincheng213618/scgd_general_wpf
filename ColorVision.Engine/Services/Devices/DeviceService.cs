@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;
@@ -20,8 +19,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices
 {
-
-    public abstract class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
+    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -44,7 +42,6 @@ namespace ColorVision.Engine.Services.Devices
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
-        public RelayCommand ResourceManagerCommand { get; set; }
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
@@ -128,12 +125,6 @@ namespace ColorVision.Engine.Services.Devices
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => { });
 
-            ResourceManagerCommand = new RelayCommand(a => 
-            {
-                ResourceManagerWindow resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
-                resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                resourceManager.ShowDialog();
-            });
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";
@@ -168,7 +159,7 @@ namespace ColorVision.Engine.Services.Devices
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
 
 
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
 
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
@@ -195,13 +186,23 @@ namespace ColorVision.Engine.Services.Devices
         {
             base.Save();
             SaveConfig();
-            ///每次提交之后重启服务
+
             RestartRCService();
+
+            OnConfigChanged();
             ConfigChanged?.Invoke(this, new EventArgs());
         }
+
+        protected virtual void OnConfigChanged()
+        {
+            // 这里可以放置你希望在配置变更时执行的逻辑
+            // 比如记录日志，刷新缓存等
+            Console.WriteLine("Configuration has changed.");
+        }
+
         public void RestartRCService()
         {
-            MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+            MqttRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
         }
 
 

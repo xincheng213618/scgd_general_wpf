@@ -1,6 +1,4 @@
-﻿
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;

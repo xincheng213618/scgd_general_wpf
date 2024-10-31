@@ -6,6 +6,8 @@ namespace ColorVision.Net
 {
     public struct CVCIEFile
     {
+        public uint version;
+
         public FileExtType FileExtType;
         public int rows;
         public int cols;

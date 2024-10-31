@@ -21,26 +21,15 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCServiceStatusChangedEvent
-    {
-        public RCServiceStatusChangedEvent(ServiceNodeStatus status)
-        {
-            NodeStatus = status;
-        }
-
-        public ServiceNodeStatus NodeStatus { get;set; }
-    }
-
-    public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
     /// <summary>
     /// 注册服务
     /// </summary>
-    public class MQTTRCService : MQTTServiceBase
+    public class MqttRCService : MQTTServiceBase
     {
-        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(MQTTRCService));
-        private static MQTTRCService _instance;
+        private static readonly ILog logger = LogManager.GetLogger(typeof(MqttRCService));
+        private static MqttRCService _instance;
         private static readonly object _locker = new();
-        public static MQTTRCService GetInstance() { lock (_locker) { return _instance ??= new MQTTRCService(); } }
+        public static MqttRCService GetInstance() { lock (_locker) { return _instance ??= new MqttRCService(); } }
 
         private string NodeName;
         private string NodeType;
@@ -63,9 +52,7 @@ namespace ColorVision.Engine.Services.RC
         private ServiceNodeStatus _RegStatus;
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
 
-
-        public event RCServiceStatusChangedHandler StatusChangedEventHandler;
-        public MQTTRCService():base()
+        public MqttRCService():base()
         {
             NodeType = "client";
             NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
@@ -133,19 +120,29 @@ namespace ColorVision.Engine.Services.RC
                                 if (!TryTestRegist)
                                 {
                                     Token = req.Data.Token;
-                                    StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Registered));
                                     QueryServices();
                                 }
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServices:
-                            MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
-                            if (respQurey != null)
+                            log.Debug("Event_QueryServices：" + Msg);
+                            try
                             {
-                                Application.Current.Dispatcher.Invoke((Action)delegate {
-                                    UpdateServices(respQurey.Data);
-                                });
+                                MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
+                                if (respQurey != null)
+                                {
+                                    Application.Current.Dispatcher.Invoke((Action)delegate {
+                                        UpdateServices(respQurey.Data);
+                                    });
+                                }
+
                             }
+                            catch(Exception ex)
+                            {
+                                log.Error(ex);
+                                MessageBox.Show("Event_QueryServices:" + ex.Message);
+                            }
+
                             break;
                         case MQTTNodeServiceEventEnum.Event_QueryServiceStatus:
                             MQTTRCServiceStatusQueryResponse respStatus = JsonConvert.DeserializeObject<MQTTRCServiceStatusQueryResponse>(Msg);
@@ -155,7 +152,6 @@ namespace ColorVision.Engine.Services.RC
                             }
                             break;
                         case MQTTNodeServiceEventEnum.Event_NotRegist:
-                            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
                             Regist();
                             break;
                     }
@@ -303,7 +299,6 @@ namespace ColorVision.Engine.Services.RC
 
         public bool Regist()
         {
-            StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
             Token = null;
             RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);

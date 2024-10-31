@@ -2,6 +2,7 @@
 using log4net;
 using MQTTnet;
 using MQTTnet.Client;
+using MQTTnet.Server;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.MQTT
 
         private MQTTControl()
         {
-
+            MQTTClient = new MqttFactory().CreateMqttClient();
         }
 
         public async Task<bool> Connect()=> await Connect(Config);
@@ -40,46 +41,27 @@ namespace ColorVision.Engine.MQTT
             log.Info($"Connecting to MQTT: {mqttConfig}");
 
             IsConnect = false;
-            MQTTClient?.Dispose();
+
+            MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
+            MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
+            MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
+
+            await MQTTClient.DisconnectAsync();
 
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttConfig.Host, mqttConfig.Port)
                 .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
                 .WithClientId(Guid.NewGuid().ToString("N"))
                 .Build();
-
-            MQTTClient = new MqttFactory().CreateMqttClient();
-            MQTTClient.ConnectedAsync += async e =>
-            {
-                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
-                MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT connected"));
-                IsConnect = true;
-                await ResubscribeTopics();
-            };
-
-            MQTTClient.DisconnectedAsync += async e =>
-            {
-                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
-                MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected"));
-                IsConnect = false;
-                await Task.Delay(3000);
-                await ReConnectAsync();
-            };
-
-            MQTTClient.ApplicationMessageReceivedAsync += async e =>
-            {
-                var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
-                MQTTMsgChanged?.Invoke(new MQMsg(1, message, e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)));
-                if (ApplicationMessageReceivedAsync != null)
-                {
-                    await ApplicationMessageReceivedAsync(e);
-                }
-            };
+            MQTTClient.ConnectedAsync += MQTTClient_ConnectedAsync;
+            MQTTClient.DisconnectedAsync += MQTTClient_DisconnectedAsync;
+            MQTTClient.ApplicationMessageReceivedAsync += MQTTClient_ApplicationMessageReceivedAsync;
 
             try
             {
                 await MQTTClient.ConnectAsync(options);
                 IsConnect = true;
+                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
                 return true;
             }
             catch (Exception ex)
@@ -88,6 +70,37 @@ namespace ColorVision.Engine.MQTT
                 IsConnect = false;
                 return false;
             }
+        }
+
+        private async Task MQTTClient_ConnectedAsync(MqttClientConnectedEventArgs arg)
+        {
+            _subscribeTopicCache.AddRange(SubscribeTopic);
+            SubscribeTopic.Clear();
+
+            log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT connected");
+            MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT connected"));
+            IsConnect = true;
+            await ResubscribeTopics();
+        }
+
+        private async Task MQTTClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs e)
+        {
+            var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
+            log.Debug(message);
+            MQTTMsgChanged?.Invoke(new MQMsg(1, message, e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)));
+            if (ApplicationMessageReceivedAsync != null)
+            {
+                await ApplicationMessageReceivedAsync(e);
+            }
+        }
+
+        private async Task MQTTClient_DisconnectedAsync(MqttClientDisconnectedEventArgs arg)
+        {
+            log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected");
+            MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected"));
+            IsConnect = false;
+            await Task.Delay(3000);
+            await ReConnectAsync();
         }
 
         private async Task ReConnectAsync()
@@ -131,7 +144,7 @@ namespace ColorVision.Engine.MQTT
             return isConnected;
         }
 
-        private readonly List<string> _subscribeTopicCache = new();
+        private  List<string> _subscribeTopicCache = new();
         public void SubscribeCache(string subscribeTopic)
         {
             if (string.IsNullOrEmpty(subscribeTopic)) return;
@@ -156,13 +169,13 @@ namespace ColorVision.Engine.MQTT
         }
 
         public ObservableCollection<string> SubscribeTopic { get; } = new ObservableCollection<string>();
+
         private async Task ResubscribeTopics()
         {
             foreach (var topic in _subscribeTopicCache)
             {
                 await SubscribeAsyncClientAsync(topic);
             }
-            _subscribeTopicCache.Clear();
         }
         public async Task SubscribeAsyncClientAsync(string topic)
         {
@@ -218,6 +231,9 @@ namespace ColorVision.Engine.MQTT
             if (MQTTClient.IsConnected)
             {
                 await MQTTClient.PublishAsync(message);
+
+                log.Debug($"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'");
+
                 MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} Published to '{topic}', message: '{msg}'", topic, msg));
             }
             else

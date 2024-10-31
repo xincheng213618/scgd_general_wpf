@@ -215,7 +215,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (sender is Control control)
             {
-                WindowTemplate windowTemplate;
+                TemplateEditorWindow windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox1.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
@@ -225,7 +225,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 {
 
                     case "SMUParam":
-                        windowTemplate = new WindowTemplate(new TemplateSMUParam());
+                        windowTemplate = new TemplateEditorWindow(new TemplateSMUParam());
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

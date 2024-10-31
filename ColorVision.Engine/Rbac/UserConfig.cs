@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Rbac
 
     public class UserConfig : ViewModelBase, IConfig
     {
-        public static UserConfig Instance => ConfigHandler.GetInstance().GetRequiredService<UserConfig>();
+        public static UserConfig Instance => ConfigService.Instance.GetRequiredService<UserConfig>();
 
         public string Account { get => _Account; set { _Account = value; NotifyPropertyChanged(); } }
         private string _Account = "admin";

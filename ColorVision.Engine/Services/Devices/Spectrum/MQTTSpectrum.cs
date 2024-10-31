@@ -1,6 +1,10 @@
-﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+﻿#pragma warning disable CS8604
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Messages;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -11,10 +15,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -43,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                log.Info(Msg);
                 try
                 {
                     MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(Msg);
@@ -58,13 +59,26 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         }
                         else if (json.EventName == "GetData")
                         {
-                            int MasterId = json.Data.MasterId;
-                            var sss = SpectumResultDao.Instance.GetById(MasterId);
-                            ViewResultSpectrum viewResultSpectrum = new(sss);
-                            Application.Current.Dispatcher.Invoke(() =>
+                            try
                             {
-                                DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
-                            });
+                                int MasterId = json.Data.MasterId;
+                                var sss = SpectumResultDao.Instance.GetById(MasterId);
+                                ViewResultSpectrum viewResultSpectrum = new(sss);
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    DeviceSpectrum.View.AddViewResultSpectrum(viewResultSpectrum);
+                                });
+                            }
+                            catch
+                            {
+                                ///旧版本兼容
+
+                                JObject data = json.Data;
+                                SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                            }
+
+
                         }
                         else if (json.EventName == "GetDataAuto")
                         {
@@ -109,11 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 EventName = "SetParam",
                 ServiceName = Config.Code,
-                Params = new AutoIntTimeParam()
-                {
-                    iLimitTime = iLimitTime,
-                    fTimeB = fTimeB
-                }
+                Params = new Dictionary<string, object>() { { "IntegralTime", iLimitTime }, { "NumberOfAverage", fTimeB } }
             };
             PublishAsyncClient(msg);
             return true;
@@ -173,23 +183,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return true;
         }
 
-        internal bool InitDark(float IntTime, int AveNum)
+        public bool InitDark(float IntTime, int AveNum)
         {
             MsgSend msg = new()
             {
                 EventName = "InitDark",
                 ServiceName = Config.Code,
-                Params = new InitDarkParamMQTT()
-                {
-                    IntTime = IntTime,
-                    AveNum = AveNum,
-                }
+                Params = new Dictionary<string, object>() { { "IntegralTime", IntTime }, { "NumberOfAverage", AveNum } }
+
             };
             PublishAsyncClient(msg);
             return true;
         }
 
-        internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
+        public void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             MsgSend msg = new()
             {
@@ -208,7 +215,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             cmdMap.Add(msg.MsgID.ToString(), msg);
         }
 
-        internal void GetDataAutoStop()
+        public void GetDataAutoStop()
         {
             MsgSend msg = new()
             {

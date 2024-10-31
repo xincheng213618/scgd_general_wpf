@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Flow
     {
         public override string OwnerGuid => "Tool";
         public override string GuidId => "FlowEngine";
-        public override string Header => Resources.WorkflowEngine_F;
+        public override string Header => Resources.WorkflowEngine;
         public override int Order => 3;
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -38,8 +38,6 @@ namespace ColorVision.Engine.Services.Flow
         public FlowEngineToolWindow()
         {
             InitializeComponent();
-            //ButtonSave.Visibility = Visibility.Collapsed;
-            //ButtonClear.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
             ButtonNew.Visibility = Visibility.Collapsed;
             this.ApplyCaption();
@@ -106,6 +104,18 @@ namespace ColorVision.Engine.Services.Flow
                 }
             };
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
+            this.Closed += (s, e) =>
+            {
+                if (AutoSave())
+                {
+                    if (MessageBox.Show("是否保存修改", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        SaveFlow();
+                    }
+
+                }
+            };
         }
 
         //private string startNodeName;
@@ -128,13 +138,13 @@ namespace ColorVision.Engine.Services.Flow
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            SaveFlow(FileName);
+            SaveFlow();
             STNodeEditorMain.Nodes.Clear();
         }
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
-            SaveFlow(FileName);
+            SaveFlow();
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
@@ -204,14 +214,23 @@ namespace ColorVision.Engine.Services.Flow
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
 
-        private void SaveFlow(string flowName)
+        private bool AutoSave()
+        {
+            if (FlowParam == null) return false;
+            if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return false; } }
+            var data = STNodeEditorMain.GetCanvasData();
+
+            string base64 = Convert.ToBase64String(data);
+            return FlowParam.DataBase64.Length != base64.Length;
+        }
+
+        private void SaveFlow()
         {
             if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
             var data = STNodeEditorMain.GetCanvasData();
 
             if (FlowParam != null)
             {
-                //FlowParam.FileName = Path.GetFileName(flowName);
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 FlowParam.Save2DB(FlowParam);
             }

@@ -1,21 +1,19 @@
 ﻿using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
-    public class FOVParam : ParamBase
+    public class FOVParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; } = new ObservableCollection<TemplateModel<FOVParam>>();
 
         public FOVParam() { }
 
         public FOVParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
-        }
 
+        }
 
         [Category("FOV"), Description("计算FOV时中心区亮度的百分比多少认为是暗区")]
         public double Radio { get => GetValue(_Radio); set { SetProperty(ref _Radio, value); } }

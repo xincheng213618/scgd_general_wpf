@@ -1,3 +1,7 @@
+#pragma warning disable CS8625,CA1051,CS8603
+
+using System;
+
 namespace CVImageChannelLib;
 
 public class H264ReaderProxy : CVEndpointProxy
@@ -18,12 +22,12 @@ public class H264ReaderProxy : CVEndpointProxy
 		h264Stream.H264Received += H264Stream_H264Received;
 	}
 
-	private void H264Stream_H264Received(H264StateEventArgs args)
+	private void H264Stream_H264Received(H264StateEvent args)
 	{
 		this.H264PacketHandler?.Invoke(new H264Packet
 		{
-			len = args.packet.Length,
-			data = args.packet
+			len = args.Packet.Length,
+			data = args.Packet
 		});
 	}
 
@@ -50,6 +54,7 @@ public class H264ReaderProxy : CVEndpointProxy
 	public override void Dispose()
 	{
 		h264Stream.Dispose();
-		base.Dispose();
+        GC.SuppressFinalize(this);
+        base.Dispose();
 	}
 }

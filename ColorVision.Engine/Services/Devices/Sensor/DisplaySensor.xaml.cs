@@ -133,7 +133,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }

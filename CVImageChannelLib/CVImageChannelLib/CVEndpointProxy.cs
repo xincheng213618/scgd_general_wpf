@@ -1,3 +1,4 @@
+#pragma warning disable CA1051
 using System;
 using System.IO;
 
@@ -19,5 +20,6 @@ public abstract class CVEndpointProxy : IDisposable
 	{
 		writer.Dispose();
 		reader.Dispose();
-	}
+        GC.SuppressFinalize(this);
+    }
 }

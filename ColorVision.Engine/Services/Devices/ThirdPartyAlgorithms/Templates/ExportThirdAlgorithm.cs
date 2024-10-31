@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         public override string OwnerGuid => "Template";
         public override string GuidId => "ThirdPartyAlgorithms";
         public override string Header => ColorVision.Engine.Properties.Resources.EditThirdPartyAlgorithmTemplate;
-        public override int Order => 3;
+        public override int Order => 4;
     }
 
 
@@ -23,25 +23,32 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             List<MenuItemMetadata> items = new List<MenuItemMetadata>();
-
-            var mods = ThirdPartyAlgorithmsDao.Instance.GetAll();
-
-            foreach (var item in mods)
+            var dlls = SysResourceTpaDLLDao.Instance.GetAll();
+            foreach (var dll in dlls)
             {
-                if (item.Code == null) continue;
+                MenuItemMetadata menuitemdll = new MenuItemMetadata();
+                menuitemdll.Header = dll.Name;
+                menuitemdll.GuidId = dll.Code;
+                menuitemdll.OwnerGuid = "ThirdPartyAlgorithms";
+                items.Add(menuitemdll);
 
-                MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-                menuItemMetadata.Order = 1;
-                menuItemMetadata.Header = item.Name;
-                menuItemMetadata.OwnerGuid = "ThirdPartyAlgorithms";
-                menuItemMetadata.Command = new RelayCommand(a =>
+                var mods = ThirdPartyAlgorithmsDao.Instance.GetAllByPid(dll.Id);
+                foreach (var mod in mods)
                 {
-                    new WindowTemplate(new TemplateThirdParty(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                });
-                new TemplateThirdParty(item.Code).Load();
-                items.Add(menuItemMetadata);
-            }
+                    if (mod.Code == null) continue;
 
+                    MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
+                    menuItemMetadata.Header = mod.Name;
+                    menuItemMetadata.GuidId = mod.Code;
+                    menuItemMetadata.OwnerGuid = dll.Code;
+                    menuItemMetadata.Command = new RelayCommand(a =>
+                    {
+                        new TemplateEditorWindow(new TemplateThirdParty(mod.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    });
+                    new TemplateThirdParty(mod.Code).Load();
+                    items.Add(menuItemMetadata);
+                }
+            }
             return items;
         }
     }

@@ -11,6 +11,14 @@
 #define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
+enum EvaFunc
+{
+    Variance = 0,
+    Tenengrad = 1,
+    Laplace,
+    CalResol,
+};
+
 
 extern "C" COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data);
 
@@ -23,5 +31,12 @@ extern "C" COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outIma
 extern "C" COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage, int radius, int* point, int pointCount, int thickness);
+
+extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* length, int* scaleFactor, int targetPixelsX = 512, int targetPixelsY = 512);
+
+extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type);
+
 
 

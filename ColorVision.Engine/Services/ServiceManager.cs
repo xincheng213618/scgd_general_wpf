@@ -18,9 +18,8 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Flow;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
@@ -30,61 +29,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Engine.Services
 {
-
-    public class ServiceInitializer : IInitializer
-    {
-        private readonly IMessageUpdater _messageUpdater;
-
-        public ServiceInitializer(IMessageUpdater messageUpdater)
-        {
-            _messageUpdater = messageUpdater;
-        }
-
-        public int Order => 5;
-
-        public async Task InitializeAsync()
-        {
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-                _messageUpdater.UpdateMessage("正在加载物理相机");
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    PhyCameraManager.GetInstance();
-                    ServiceManager ServiceManager = ServiceManager.GetInstance();
-                });
-                if (!ServicesConfig.Instance.IsDefaultOpenService)
-                {
-                    _messageUpdater.UpdateMessage("初始化服务");
-                    await Task.Delay(10);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ServiceManager.GetInstance().GenDeviceDisplayControl();
-                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    });
-                }
-                else
-                {
-                    _messageUpdater.UpdateMessage("自动配置服务中");
-                    await Task.Delay(10);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ServiceManager.GetInstance().GenDeviceDisplayControl();
-                    });
-                }
-                _messageUpdater.UpdateMessage("服务初始化完成");
-            }
-            else
-            {
-                _messageUpdater.UpdateMessage("数据库连接失败，跳过服务配置");
-            }
-
-        }
-    }
 
     public class ServiceManager
     {
@@ -96,6 +43,8 @@ namespace ColorVision.Engine.Services
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
+
+        public IEnumerable<DeviceService> GetImageSourceServices() => DeviceServices.Where(item => item is DeviceCamera || item is DeviceCalibration);
 
         public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
@@ -373,7 +322,7 @@ namespace ColorVision.Engine.Services
                     }
                     else
                     {
-                        BaseFileResource calibrationResource = new(sysResourceModel);
+                        ServiceFileBase calibrationResource = new(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                 }
@@ -405,7 +354,7 @@ namespace ColorVision.Engine.Services
                 }
                 else
                 {
-                    BaseResource calibrationResource = new(sysResourceModel);
+                    ServiceBase calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }

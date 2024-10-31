@@ -56,7 +56,7 @@ namespace ColorVision.Engine.MySql
 
     public class MySqlSetting : ViewModelBase , IConfigSecure
     {
-        public static MySqlSetting Instance  => ConfigHandler.GetInstance().GetRequiredService<MySqlSetting>();
+        public static MySqlSetting Instance  => ConfigService.Instance.GetRequiredService<MySqlSetting>();
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
         public static bool IsConnect => MySqlControl.IsConnect;

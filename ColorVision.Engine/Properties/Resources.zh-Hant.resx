@@ -117,17 +117,11 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64服務日誌</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86服務日誌</value>
-  </data>
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>流程引擎調試視窗</value>
   </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>流程引擎(F)</value>
+  <data name="WorkflowEngine" xml:space="preserve">
+    <value>流程引擎(_F)</value>
   </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>獨立視窗</value>
@@ -216,9 +210,6 @@
   <data name="StartingService" xml:space="preserve">
     <value>正在啟動服務</value>
   </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>光譜儀日誌</value>
-  </data>
   <data name="Size" xml:space="preserve">
     <value>大小</value>
   </data>
@@ -240,9 +231,6 @@
   <data name="ServiceName" xml:space="preserve">
     <value>服務名稱</value>
   </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>服務日誌</value>
-  </data>
   <data name="ServiceIdentifier" xml:space="preserve">
     <value>服務標識</value>
   </data>
@@ -253,7 +241,7 @@
     <value>序號</value>
   </data>
   <data name="SerialNumber" xml:space="preserve">
-    <value>序號</value>
+    <value>序列号</value>
   </data>
   <data name="Sended" xml:space="preserve">
     <value>已經發送</value>
@@ -299,9 +287,6 @@
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>接收頻道</value>
-  </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服務日誌</value>
   </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>快速預覽</value>
@@ -446,9 +431,6 @@
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>登入帳號(_L)</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>燈珠偵測模板設定(L)</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板設定(G)</value>
@@ -714,9 +696,6 @@
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
   </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>相機日誌</value>
-  </data>
   <data name="Calibration" xml:space="preserve">
     <value>校正</value>
   </data>
@@ -812,5 +791,17 @@
   </data>
   <data name="DataLoading" xml:space="preserve">
     <value>資料載入中</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>開啟文件</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>打開資料夾</value>
+  </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>產品宣傳手冊</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>未知狀態</value>
   </data>
 </root>

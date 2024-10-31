@@ -9,7 +9,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {
-        public static HYMesConfig Instance => ConfigHandler.GetInstance().GetRequiredService<HYMesConfig>();
+        public static HYMesConfig Instance => ConfigService.Instance.GetRequiredService<HYMesConfig>();
 
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;

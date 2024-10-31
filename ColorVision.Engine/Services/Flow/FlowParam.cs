@@ -4,7 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow.Dao;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using CVCommCore;
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 
@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             IsSideHide = true;
             Title = "流程引擎";
-            Code = ModMasterType.Flow;
+            Code = "flow";
             TemplateParams = FlowParam.Params;
         }
 
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Flow
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+        private static ModMasterDao masterFlowDao = new ModMasterDao("flow");
         public override void Load()
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
@@ -193,15 +193,15 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// 流程引擎模板
     /// </summary>
-    public class FlowParam : ParamBase
+    public class FlowParam : ParamModBase
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
-        private static ModMasterDao masterFlowDao = new(ModMasterType.Flow);
+        private static ModMasterDao masterFlowDao = new("flow");
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new(ModMasterType.Flow, text, UserConfig.Instance.TenantId);
+            ModMasterModel flowMaster = new("flow", text, UserConfig.Instance.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;

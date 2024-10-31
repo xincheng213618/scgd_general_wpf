@@ -15,7 +15,7 @@ namespace ScreenRecorder
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            new MainWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new MainWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 

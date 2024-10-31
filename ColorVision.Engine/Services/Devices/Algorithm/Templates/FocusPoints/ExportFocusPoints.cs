@@ -8,6 +8,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
         public override string GuidId => "FocusPoints";
         public override int Order => 2;
         public override string Header => Properties.Resources.MenuFocusPoints;
-        public override ITemplate Template => new TemplateFocusPointsParam();
+        public override ITemplate Template => new TemplateFocusPoints();
     }
 }

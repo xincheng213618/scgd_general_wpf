@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Services
     public class ServicesConfigProvider : IConfigSettingProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
+        { 
             return new List<ConfigSettingMetadata>
             {
                 new ConfigSettingMetadata
@@ -36,12 +36,12 @@ namespace ColorVision.Engine.Services
 
     public class ServicesConfig : ViewModelBase, IConfig
     {
-        public static ServicesConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ServicesConfig>();
+        public static ServicesConfig Instance => ConfigService.Instance.GetRequiredService<ServicesConfig>();
 
         public int ShowType { get; set; }
 
         public bool IsDefaultOpenService { get => _IsDefaultOpenService; set { _IsDefaultOpenService = value; NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService;
+        private bool _IsDefaultOpenService = true;
 
         public bool IsRetorePlayControls { get => _IsRetorePlayControls; set { _IsRetorePlayControls = value; NotifyPropertyChanged(); } }
         private bool _IsRetorePlayControls = true;

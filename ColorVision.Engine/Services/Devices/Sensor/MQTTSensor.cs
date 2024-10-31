@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Messages;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
@@ -56,16 +56,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = req,
-            };
-            PublishAsyncClient(msg);
-        }
-
-        public void ExecCmd(string command)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTSensorEventEnum.Event_ExecCmd,
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } ,{ "cmd",command} }
             };
             PublishAsyncClient(msg);
         }

@@ -1,18 +1,16 @@
 ﻿using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
 
-    public class SFRParam : ParamBase
+    public class SFRParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
-
         public SFRParam()
         {
+
         }
         public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {

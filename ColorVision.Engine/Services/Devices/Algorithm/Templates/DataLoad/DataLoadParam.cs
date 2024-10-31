@@ -1,14 +1,12 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.DataLoad
 {
 
-    public class DataLoadParam : ParamBase
+    public class DataLoadParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<DataLoadParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DataLoadParam>>();
 
         public DataLoadParam()
         {

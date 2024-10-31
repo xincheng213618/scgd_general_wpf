@@ -1,11 +1,11 @@
-﻿#pragma warning disable CS8602,CS8603,CS8622,CS8625,CS8604,CS8619,CS8605,CS8604
-
+﻿#pragma warning disable CS8602,CS8603,CS8622,CS8625,CS8604,CS8619,CS8605,CS8604,CA1001
 using ScreenRecorder.Sources;
 using ScreenRecorderLib;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -23,8 +23,8 @@ namespace ScreenRecorder
         private Recorder _rec;
         private DispatcherTimer _progressTimer;
         private readonly List<long> _recordedFrameTimes = new List<long>();
-        private DateTimeOffset? _recordingStartTime = null;
-        private DateTimeOffset? _recordingPauseTime = null;
+        private DateTimeOffset? _recordingStartTime;
+        private DateTimeOffset? _recordingPauseTime;
         private Stream _outputStream;
 
         public bool IsRecording { get; set; }
@@ -38,177 +38,38 @@ namespace ScreenRecorder
         public bool IsLogToFileEnabled { get; set; }
         public string LogFilePath { get; set; } = "Log.txt";
 
-        private bool _recordToStream;
-        public bool RecordToStream
-        {
-            get { return _recordToStream; }
-            set
-            {
-                if (_recordToStream != value)
-                {
-                    _recordToStream = value;
-                    RaisePropertyChanged("RecordToStream");
-                }
-            }
-        }
+        public bool RecordToStream { get => _RecordToStream; set { if (_RecordToStream == value) return; _RecordToStream = value; NotifyPropertyChanged(); } }
+        private bool _RecordToStream;
 
-        private bool _isExcludeWindowEnabled = false;
-        public bool IsExcludeWindowEnabled
-        {
-            get { return _isExcludeWindowEnabled; }
-            set
-            {
-                if (_isExcludeWindowEnabled != value)
-                {
-                    _isExcludeWindowEnabled = value;
-                    RaisePropertyChanged("IsExcludeWindowEnabled");
+        public bool IsExcludeWindowEnabled { get => _IsExcludeWindowEnabled; set { if (_IsExcludeWindowEnabled == value) return; _IsExcludeWindowEnabled = value; NotifyPropertyChanged();   IntPtr hwnd = new WindowInteropHelper(this).Handle; Recorder.SetExcludeFromCapture(hwnd, value); } }
+        private bool _IsExcludeWindowEnabled;
 
-                    IntPtr hwnd = new WindowInteropHelper(this).Handle;
-                    Recorder.SetExcludeFromCapture(hwnd, value);
-                }
-            }
-        }
+        public VideoEncoderFormat CurrentVideoEncoderFormat { get => _CurrentVideoEncoderFormat; set { if (_CurrentVideoEncoderFormat == value) return; _CurrentVideoEncoderFormat = value; NotifyPropertyChanged(); } }
+        private VideoEncoderFormat _CurrentVideoEncoderFormat;
 
-        private VideoEncoderFormat _currentVideoEncoderFormat;
-        public VideoEncoderFormat CurrentVideoEncoderFormat
-        {
-            get { return _currentVideoEncoderFormat; }
-            set
-            {
-                if (_currentVideoEncoderFormat != value)
-                {
-                    _currentVideoEncoderFormat = value;
-                    RaisePropertyChanged(nameof(CurrentVideoEncoderFormat));
-                }
-            }
-        }
+        public H264BitrateControlMode CurrentH264VideoBitrateMode { get => _CurrentH264VideoBitrateMode; set { if (_CurrentH264VideoBitrateMode == value) return; _CurrentH264VideoBitrateMode = value; NotifyPropertyChanged(); } }
+        private H264BitrateControlMode _CurrentH264VideoBitrateMode = H264BitrateControlMode.Quality;
 
-        private H264BitrateControlMode _currentH264VideoBitrateMode = H264BitrateControlMode.Quality;
-        public H264BitrateControlMode CurrentH264VideoBitrateMode
-        {
-            get { return _currentH264VideoBitrateMode; }
-            set
-            {
-                if (_currentH264VideoBitrateMode != value)
-                {
-                    _currentH264VideoBitrateMode = value;
-                    RaisePropertyChanged(nameof(CurrentH264VideoBitrateMode));
-                }
-            }
-        }
+        public H265BitrateControlMode CurrentH265VideoBitrateMode { get => _CurrentH265VideoBitrateMode; set { if (_CurrentH265VideoBitrateMode == value) return; _CurrentH265VideoBitrateMode = value; NotifyPropertyChanged(); } }
+        private H265BitrateControlMode _CurrentH265VideoBitrateMode = H265BitrateControlMode.Quality;
 
-        private H265BitrateControlMode _currentH265VideoBitrateMode = H265BitrateControlMode.Quality;
-        public H265BitrateControlMode CurrentH265VideoBitrateMode
-        {
-            get { return _currentH265VideoBitrateMode; }
-            set
-            {
-                if (_currentH265VideoBitrateMode != value)
-                {
-                    _currentH265VideoBitrateMode = value;
-                    RaisePropertyChanged(nameof(CurrentH265VideoBitrateMode));
-                }
-            }
-        }
+        public bool IsCustomOutputSourceRectEnabled { get => _IsCustomOutputSourceRectEnabled; set { if (_IsCustomOutputSourceRectEnabled == value) return; _IsCustomOutputSourceRectEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsCustomOutputSourceRectEnabled;
 
-        private bool _isCustomOutputSourceRectEnabled;
-        public bool IsCustomOutputSourceRectEnabled
-        {
-            get { return _isCustomOutputSourceRectEnabled; }
-            set
-            {
-                if (_isCustomOutputSourceRectEnabled != value)
-                {
-                    _isCustomOutputSourceRectEnabled = value;
-                    RaisePropertyChanged(nameof(IsCustomOutputSourceRectEnabled));
-                }
-            }
-        }
+        public ScreenRect SourceRect { get => _SourceRect; set { if (_SourceRect == value) return; _SourceRect = value; NotifyPropertyChanged(); } }
+        private ScreenRect _SourceRect;
 
-        private ScreenRect _sourceRect;
-        public ScreenRect SourceRect
-        {
-            get { return _sourceRect; }
-            set
-            {
-                if (_sourceRect != value)
-                {
-                    _sourceRect = value;
-                    RaisePropertyChanged(nameof(SourceRect));
-                }
-            }
-        }
+        public bool IsCustomOutputFrameSizeEnabled { get => _IsCustomOutputFrameSizeEnabled; set { if (_IsCustomOutputFrameSizeEnabled == value) return; _IsCustomOutputFrameSizeEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsCustomOutputFrameSizeEnabled;
+        public ScreenSize OutputFrameSize { get => _OutputFrameSize; set { if (_OutputFrameSize == value) return; _OutputFrameSize = value; NotifyPropertyChanged(); } }
+        private ScreenSize _OutputFrameSize;
 
-        private bool _isCustomOutputFrameSizeEnabled;
-        public bool IsCustomOutputFrameSizeEnabled
-        {
-            get { return _isCustomOutputFrameSizeEnabled; }
-            set
-            {
-                if (_isCustomOutputFrameSizeEnabled != value)
-                {
-                    _isCustomOutputFrameSizeEnabled = value;
-                    RaisePropertyChanged(nameof(IsCustomOutputFrameSizeEnabled));
-                }
-            }
-        }
-
-        private ScreenSize _outputFrameSize;
-        public ScreenSize OutputFrameSize
-        {
-            get { return _outputFrameSize; }
-            set
-            {
-                if (_outputFrameSize != value)
-                {
-                    _outputFrameSize = value;
-                    RaisePropertyChanged(nameof(OutputFrameSize));
-                }
-            }
-        }
-
-
-        private int _currentFrameNumber;
-        public int CurrentFrameNumber
-        {
-            get { return _currentFrameNumber; }
-            set
-            {
-                if (_currentFrameNumber != value)
-                {
-                    _currentFrameNumber = value;
-                    RaisePropertyChanged(nameof(CurrentFrameNumber));
-                }
-            }
-        }
-
-        private double _averageFrameRate;
-        public double AverageFrameRate
-        {
-            get { return _averageFrameRate; }
-            set
-            {
-                if (_averageFrameRate != value)
-                {
-                    _averageFrameRate = value;
-                    RaisePropertyChanged(nameof(AverageFrameRate));
-                }
-            }
-        }
-
-        private double _currentFrameRate;
-        public double CurrentFrameRate
-        {
-            get { return _currentFrameRate; }
-            set
-            {
-                if (_currentFrameRate != value)
-                {
-                    _currentFrameRate = value;
-                    RaisePropertyChanged(nameof(CurrentFrameRate));
-                }
-            }
-        }
+        public int CurrentFrameNumber { get => _CurrentFrameNumber; set { if (_CurrentFrameNumber == value) return; _CurrentFrameNumber = value; NotifyPropertyChanged(); } }
+        private int _CurrentFrameNumber;
+        public double AverageFrameRate { get => _AverageFrameRate; set { if (_AverageFrameRate == value) return; _AverageFrameRate = value; NotifyPropertyChanged(); } }
+        private double _AverageFrameRate;
+        public double CurrentFrameRate { get => _CurrentFrameRate; set { if (_CurrentFrameRate == value) return; _CurrentFrameRate = value; NotifyPropertyChanged(); } }
+        private double _CurrentFrameRate;
 
 
         public H264Profile CurrentH264Profile { get; set; } = H264Profile.High;
@@ -227,7 +88,7 @@ namespace ScreenRecorder
             RecorderOptions.OutputOptions.PropertyChanged += RecorderOptions_PropertyChanged;
         }
 
-        private void MainWindow_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void MainWindow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -244,7 +105,7 @@ namespace ScreenRecorder
             }
         }
 
-        private void RecordingSource_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void RecordingSource_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -285,7 +146,7 @@ namespace ScreenRecorder
                     break;
             }
         }
-        private void Overlay_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void Overlay_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -309,7 +170,7 @@ namespace ScreenRecorder
                     break;
             }
         }
-        private void RecorderOptions_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        private void RecorderOptions_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             switch (e.PropertyName)
             {
@@ -474,12 +335,12 @@ namespace ScreenRecorder
             }
         }
 
-        protected void RaisePropertyChanged(string propertyName)
-        {
-            PropertyChangedEventHandler handler = PropertyChanged;
-            if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
-        }
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// 消息通知事件
+        /// </summary>
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
 
         private void RecordButton_Click(object sender, RoutedEventArgs e)
         {
@@ -768,7 +629,7 @@ namespace ScreenRecorder
         private void ProgressTimer_Tick(object sender, EventArgs e)
         {
             UpdateProgress();
-            if (_recordedFrameTimes.Count > 0)
+            if (_recordingStartTime !=null && _recordedFrameTimes.Count > 0)
             {
                 AverageFrameRate = CurrentFrameNumber / DateTimeOffset.FromUnixTimeMilliseconds(_recordedFrameTimes.Last()).Subtract(_recordingStartTime.Value).TotalSeconds;
                 _recordedFrameTimes.RemoveRange(0, Math.Max(0, _recordedFrameTimes.Count - 10));
@@ -1185,7 +1046,7 @@ namespace ScreenRecorder
                 {
                     if (this.IsCustomOutputSourceRectEnabled)
                     {
-                        this.RaisePropertyChanged(nameof(SourceRect));
+                        this.NotifyPropertyChanged(nameof(SourceRect));
                     }
                 }
             }));

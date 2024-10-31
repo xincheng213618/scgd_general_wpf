@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Extension;
@@ -241,16 +241,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     var Fun = new ParamFunction() { Name = "CM_SetExpTimeEx", Params = item };
                     Func.Add(Fun);
                 }
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
                 Params.Add("Func", Func);
             }
             else
             {
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
-                FunParams.Add("Gain", Config.Gain);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 var Func = new List<ParamFunction>();
                 Func.Add(Fun);
+                Func.Add(new ParamFunction() { Name = "CM_SetGain", Params = new Dictionary<string, object>() { { "Gain", Config.Gain } } });
                 Params.Add("Func", Func);
             }
 
@@ -268,6 +269,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 SerialNumber = SerialNumber,
                 Params = Params
             };
+            Params.Add("AvgCount", Config.AvgCount);
             Params.Add("ExpTime", expTime);
             if (param.Id == -1)
             {

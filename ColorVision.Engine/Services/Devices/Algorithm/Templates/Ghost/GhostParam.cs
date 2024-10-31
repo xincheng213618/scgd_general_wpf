@@ -1,15 +1,13 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
 {
 
-    public class GhostParam : ParamBase
+    public class GhostParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; } = new ObservableCollection<TemplateModel<GhostParam>>();
 
         public GhostParam() { }
         public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)

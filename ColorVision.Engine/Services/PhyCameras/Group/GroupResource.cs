@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,23 +16,49 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class ConfigGroup : ViewModelBase
     {
+        /// <summary>
+        /// 增益
+        /// </summary>
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain;
 
         public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private int _ExpTime = 10;
 
-        public double Aperturein { get => _Aperturein; set { _Aperturein = value; NotifyPropertyChanged(); } }
-        private double _Aperturein;
+        /// <summary>
+        /// 光圈 
+        /// </summary>
+        public double Aperture{ get => _Aperture; set { _Aperture = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ApertureShow)); } }
+        private double _Aperture;
 
-        public double ND { get => _ND; set { _ND = value; NotifyPropertyChanged(); } }
+        public string ApertureShow { get => $"F{_Aperture}";  set { } } 
+
+        /// <summary>
+        ///  ND 滤镜
+        /// </summary>
+        public double ND { get => _ND; set { _ND = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(NDShow)); } }
         private double _ND;
+        public string NDShow { get => $"ND{_ND}"; set { } }
+
 
         public double ShotType { get => _ShotType; set { _ShotType = value; NotifyPropertyChanged(); } }
         private double _ShotType;
 
-        public double Focallength { get => _Focallength; set { _Focallength = value; NotifyPropertyChanged(); } }
-        private double _Focallength;
+        /// <summary>
+        /// 焦距
+        /// </summary>
+        public double FocalLength { get => _FocalLength; set { _FocalLength = value; NotifyPropertyChanged(); } }
+        private double _FocalLength = 95;
+        public string FocalLengthShow { get => $"{_FocalLength}mm"; set { } }
+
+        /// <summary>
+        /// 对焦距离 
+        /// </summary>
+        public double? FocusDistance { get => _FocusDistance; set { _FocusDistance = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(FocusDistanceShow)); } }
+        private double? _FocusDistance;
+        public string FocusDistanceShow { get => $"{_FocusDistance}m"; set { } } 
+
+
 
         public double GetImgMode { get => _GetImgMode; set { _GetImgMode = value; NotifyPropertyChanged(); } }
         private double _GetImgMode;
@@ -40,7 +67,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private double _ImgBpp;
     }
 
-    public class GroupResource : BaseFileResource, IEditable
+    public class GroupResource : ServiceFileBase, IEditable
     {
         public static void LoadgroupResource(GroupResource groupResource)
         {
@@ -60,14 +87,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 }
                 else
                 {
-                    BaseResource calibrationResource = new(sysResourceModel);
+                    ServiceBase calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }
             groupResource.SetCalibrationResource();
         }
 
-        public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService, string Name)
+        public static GroupResource? AddGroupResource(ICalibrationService<ServiceObjectBase> deviceService, string Name)
         {
             SysResourceModel sysResourceModel = new() { Name = Name, Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
@@ -100,7 +127,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
             ContextMenu.Items.Add( new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
@@ -196,7 +223,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _DefectPoint;
         public CalibrationResource DSNU { get => _DSNU; set { _DSNU = value; NotifyPropertyChanged(); } }
         private CalibrationResource _DSNU;
-        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged(); } }
+        public CalibrationResource Uniformity { get => _Uniformity; set { _Uniformity = value; NotifyPropertyChanged(); ParseFileName(_Uniformity.Name);
+            }
+        }
         private CalibrationResource _Uniformity;
         public CalibrationResource Distortion { get => _Distortion; set { _Distortion = value; NotifyPropertyChanged(); } }
         private CalibrationResource _Distortion;
@@ -208,7 +237,41 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _LumOneColor;
         public CalibrationResource LumFourColor { get => _LumFourColor; set { _LumFourColor = value; NotifyPropertyChanged(); } }
         private CalibrationResource _LumFourColor;
-        public CalibrationResource LumMultiColor { get => _LumMultiColor; set { _LumMultiColor = value; NotifyPropertyChanged(); } }
+        public CalibrationResource LumMultiColor { get => _LumMultiColor; set {    _LumMultiColor = value;  NotifyPropertyChanged(); } }
         private CalibrationResource _LumMultiColor;
+
+        public void ParseFileName(string fileName)
+        {
+            // 提取焦距并转换为 double
+            var focalLengthMatch = Regex.Match(fileName, @"(\d+)mm");
+            if (focalLengthMatch.Success && double.TryParse(focalLengthMatch.Groups[1].Value, out double focalLength))
+            {
+                Config.FocalLength = focalLength;
+            }
+            // 提取 ND 滤镜（如果有），并转换为 int
+            var ndFilterMatch = Regex.Match(fileName, @"ND(\d+)");
+            if (ndFilterMatch.Success && int.TryParse(ndFilterMatch.Groups[1].Value, out int ndFilter))
+            {
+                Config.ND = ndFilter;
+            }
+            // 提取光圈并转换为 double
+            var apertureMatch = Regex.Match(fileName, @"F(\d+\.?\d*)");
+            if (apertureMatch.Success && double.TryParse(apertureMatch.Groups[1].Value, out double aperture))
+            {
+                Config.Aperture = aperture;
+            }
+            // 提取对焦距离并转换为 double
+            var focusDistanceMatch = Regex.Match(fileName, @"F\d+\.?\d*_?(\d+\.?\d*)m");
+            if (focusDistanceMatch.Success && double.TryParse(focusDistanceMatch.Groups[1].Value, out double focusDistance))
+            {
+                Config.FocusDistance = focusDistance;
+            }
+            // 提取增益并转换为 double
+            var gainMatch = Regex.Match(fileName, @"(\d+\.?\d*)gain");
+            if (gainMatch.Success && int.TryParse(gainMatch.Groups[1].Value, out int gain))
+            {
+                Config.Gain = gain;
+            }
+        }
     }
 }

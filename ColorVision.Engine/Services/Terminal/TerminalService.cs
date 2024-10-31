@@ -16,7 +16,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Terminal
 {
-    public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
+    public class TerminalServiceBase : ServiceObjectBase, ITreeViewItem
     {
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded = true;
@@ -53,12 +53,12 @@ namespace ColorVision.Engine.Services.Terminal
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-            Config = BaseResourceObjectExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
+            Config = ServiceObjectBaseExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
             Config.Code = Code;
             Config.Name = Name;
 
-            RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
+            RefreshCommand = new RelayCommand(a => MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
                 EditTerminal window = new(this);
@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Services.Terminal
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             VSysResourceDao.Instance.Save(SysResourceModel);
            
-            MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
+            MqttRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }
 }

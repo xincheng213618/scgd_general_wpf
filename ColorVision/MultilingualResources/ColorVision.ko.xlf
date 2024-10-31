@@ -19,14 +19,6 @@
           <source>程序关闭</source>
           <target state="new">프로그램 종료</target>
         </trans-unit>
-        <trans-unit id="AutoRefresh" translate="yes" xml:space="preserve">
-          <source>自动刷新</source>
-          <target state="new">자동 새로고침</target>
-        </trans-unit>
-        <trans-unit id="AutoScrollToEnd" translate="yes" xml:space="preserve">
-          <source>自动滚动到底部</source>
-          <target state="new">자동으로 아래쪽으로 스크롤</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">취소</target>
@@ -42,10 +34,6 @@
         <trans-unit id="CheckUpdatesOnStartup" translate="yes" xml:space="preserve">
           <source>软件启动时检测更新</source>
           <target state="new">소프트웨어가 시작될 때 업데이트 감지</target>
-        </trans-unit>
-        <trans-unit id="Clear" translate="yes" xml:space="preserve">
-          <source>清除</source>
-          <target state="new">분명한</target>
         </trans-unit>
         <trans-unit id="Close" translate="yes" xml:space="preserve">
           <source>关闭</source>
@@ -95,10 +83,6 @@
           <source>实验性功能</source>
           <target state="new">실험적 기능</target>
         </trans-unit>
-        <trans-unit id="FilterSupportsRegex" translate="yes" xml:space="preserve">
-          <source>过滤器支持正则</source>
-          <target state="new">필터는 정규식을 지원합니다</target>
-        </trans-unit>
         <trans-unit id="ForceUpdate" translate="yes" xml:space="preserve">
           <source>强制更新</source>
           <target state="new">강제 업데이트</target>
@@ -138,10 +122,6 @@
         <trans-unit id="Log" translate="yes" xml:space="preserve">
           <source>日志</source>
           <target state="new">통나무</target>
-        </trans-unit>
-        <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
-          <source>日志级别</source>
-          <target state="new">로그 수준</target>
         </trans-unit>
         <trans-unit id="Maximize" translate="yes" xml:space="preserve">
           <source>最大化</source>
@@ -326,6 +306,10 @@
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">업그레이드</target>
+        </trans-unit>
+        <trans-unit id="UploadFile" translate="yes" xml:space="preserve">
+          <source>上传文件</source>
+          <target state="new">파일 업로드</target>
         </trans-unit>
         <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
           <source>隐藏</source>

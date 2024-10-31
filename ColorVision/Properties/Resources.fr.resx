@@ -216,9 +216,6 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Niveau de journalisation</value>
-  </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
   </data>
@@ -227,9 +224,6 @@
   </data>
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>Clair</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>Test de performance</value>
@@ -354,16 +348,10 @@
   <data name="Initializer" xml:space="preserve">
     <value>Module d'initialisation</value>
   </data>
-  <data name="FilterSupportsRegex" xml:space="preserve">
-    <value>Le filtre prend en charge les expressions régulières</value>
-  </data>
-  <data name="AutoRefresh" xml:space="preserve">
-    <value>Actualisation automatique</value>
-  </data>
-  <data name="AutoScrollToEnd" xml:space="preserve">
-    <value>Faire défiler automatiquement vers le bas</value>
-  </data>
   <data name="ForceUpdate" xml:space="preserve">
     <value>Mise à jour forcée</value>
+  </data>
+  <data name="UploadFile" xml:space="preserve">
+    <value>Télécharger des fichiers</value>
   </data>
 </root>

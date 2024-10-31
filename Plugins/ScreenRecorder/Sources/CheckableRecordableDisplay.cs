@@ -29,7 +29,7 @@ namespace ScreenRecorder.Sources
             }
             else
             {
-                device = Displays.FirstOrDefault(x => value.ToString().Equals(x.DeviceName));
+                device = Displays.FirstOrDefault(x => value.ToString().Equals(x.DeviceName, StringComparison.Ordinal));
             }
             return device;
         }

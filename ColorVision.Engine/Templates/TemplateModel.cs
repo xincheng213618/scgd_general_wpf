@@ -6,7 +6,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
-    public class TemplateModelBase : ViewModelBase, ISortID, ISortKey
+    public class TemplateBase : ViewModelBase, ISortID, ISortKey
     {
         [JsonIgnore]
         public ContextMenu ContextMenu { get; set; }
@@ -29,8 +29,7 @@ namespace ColorVision.Engine.Templates
         }
     }
 
-
-    public class TemplateModel<T> : TemplateModelBase where T : ParamBase
+    public class TemplateModel<T> : TemplateBase where T : ParamModBase
     {
         public RelayCommand ReNameCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,7 +9,6 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 {
-
     public class TemplateSensorDicModParam : TemplateModParam
     {
         public new static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();

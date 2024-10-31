@@ -3,16 +3,14 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Comply;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
 {
 
-    public class LEDStripDetectionParam : ParamBase
+    public class LEDStripDetectionParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<LEDStripDetectionParam>> Params { get; set; } = new ObservableCollection<TemplateModel<LEDStripDetectionParam>>();
 
         public LEDStripDetectionParam()
         {
@@ -76,13 +74,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {
             var Template = new TemplateComplyParam("Comply.CIE.AVG");
-            new WindowTemplate(Template, Template.FindIndex(ValidateCIEAVGId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(Template, Template.FindIndex(ValidateCIEAVGId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
         public RelayCommand ValidateCIECommand => new RelayCommand(a =>
         {
             var Template = new TemplateComplyParam("Comply.CIE");
-            new WindowTemplate(Template, Template.FindIndex(ValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(Template, Template.FindIndex(ValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
     }

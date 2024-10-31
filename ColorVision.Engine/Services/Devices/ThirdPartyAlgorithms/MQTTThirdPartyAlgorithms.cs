@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates.POI;
 using CVCommCore;
 using MQTTMessageLib;
@@ -109,7 +109,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
             return PublishAsyncClient(msg);
         }
-
 
         public void UploadCIEFile(string fileName)
         {

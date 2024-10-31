@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
         public override string OwnerGuid => "Template";
         public override string GuidId => "TemplateAlgorithm";
         public override string Header => Properties.Resources.MenuAlgorithm;
-        public override int Order => 2;
+        public override int Order => 3;
     }
 
     public class ExportMenuItemPOI : MenuItemBase

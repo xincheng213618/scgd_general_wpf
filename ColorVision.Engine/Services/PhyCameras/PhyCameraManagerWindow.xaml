@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
-        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
@@ -32,14 +32,10 @@
             </Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="{x:Static properties:Resources.AddUncreatedCamera}" Command="{Binding CreateCommand}" Margin="0,0,5,0"/>
-                    <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
-                </StackPanel>
-                <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
+                <TreeView x:Name="TreeView1" Grid.Row="0" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
                             <StackPanel Margin="-15,5,0,5">
@@ -56,6 +52,12 @@
                         </Style>
                     </TreeView.ItemContainerStyle>
                 </TreeView>
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,5,0,0">
+                    <hc:Badge Value="{Binding Count}" BadgeMargin="0,-14,-10,0"  Style="{StaticResource BadgeDanger}" Margin="0,0,10,0">
+                        <Button Content="{x:Static properties:Resources.AddUncreatedCamera}" Command="{Binding CreateCommand}" />
+                    </hc:Badge>
+                    <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
+                </StackPanel>
 
             </Grid>
             <Grid x:Name="StackPanelShow" Grid.Column="1" Margin="0,0,0,0" />

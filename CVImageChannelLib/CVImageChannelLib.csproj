@@ -13,7 +13,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="log4net" Version="2.0.17" />
+    <PackageReference Include="log4net" Version="3.0.2" />
     <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20240616" />
   </ItemGroup>
   <ItemGroup>

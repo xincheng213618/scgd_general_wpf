@@ -62,7 +62,7 @@ namespace ColorVision.Net
         }
         public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, FileExtType extType)
         {
-            Task t = new(() =>
+           Task t = new(() =>
             {
                 if (isLocal) OpenLocalFile(fileName, extType);
                 else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName, extType);
@@ -73,8 +73,8 @@ namespace ColorVision.Net
         {
             Task t = new(() =>
             {
-                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType, param.ChannelType);
-                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileExtType, param.ChannelType);
+                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType, (CVImageChannelType)param.ChannelType);
+                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileExtType, ((CVImageChannelType)(param.ChannelType)));
             });
             t.Start();
         }

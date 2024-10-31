@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿#pragma warning disable CS8602,CS8603
+using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using ScreenRecorderLib;
@@ -29,7 +30,7 @@ namespace ScreenRecorder.Sources
             }
             else
             {
-                device = MediaDevices.FirstOrDefault(x => value.ToString().Equals(x.DeviceName));
+                device = MediaDevices.FirstOrDefault(x => value.ToString().Equals(x.DeviceName, StringComparison.Ordinal));
             }
             return device;
         }

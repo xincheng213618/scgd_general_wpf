@@ -1,10 +1,10 @@
-﻿using ColorVision.Engine.Services.SysDictionary;
+﻿using ColorVision.Engine.Templates.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.POI.Comply.Dic
 {
-    public class DicComplyParam : ParamBase
+    public class DicComplyParam : ParamModBase
     {
 
         public SysDictionaryModModel ModMasterModel { get; set; }

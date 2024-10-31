@@ -3,16 +3,12 @@
 using ColorVision.Engine.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-
-    public class MTFParam : ParamBase
+    public class MTFParam : ParamModBase
     {
-        public static ObservableCollection<TemplateModel<MTFParam>> MTFParams { get; set; } = new ObservableCollection<TemplateModel<MTFParam>>();
-
         public MTFParam() { }
         public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {

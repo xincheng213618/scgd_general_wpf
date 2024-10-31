@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Dao
 {
-    public class ColorVisionLincense
+    public class ColorVisionLicense
     {
         [JsonProperty("authority_signature")]
         public string AuthoritySignature { get; set; }
@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         [ColumnIgnore]
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
         [ColumnIgnore]
-        public ColorVisionLincense ColorVisionLincense { get => JsonConvert.DeserializeObject<ColorVisionLincense>(LicenseContent??string.Empty)?? new ColorVisionLincense(); }
+        public ColorVisionLicense ColorVisionLicense { get => JsonConvert.DeserializeObject<ColorVisionLicense>(LicenseContent??string.Empty)?? new ColorVisionLicense(); }
         [Column("model")]
         public string? Model { get; set; }
         [Column("mac_sn")]

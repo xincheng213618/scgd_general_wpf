@@ -8,9 +8,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 {
     public partial class ResourceManagerWindow : Window
     {
-        public BaseResourceObject DeviceService { get;set;}
+        public ServiceObjectBase DeviceService { get;set;}
 
-        public ResourceManagerWindow(BaseResourceObject deviceService)
+        public ResourceManagerWindow(ServiceObjectBase deviceService)
         {
             DeviceService = deviceService;
             InitializeComponent();

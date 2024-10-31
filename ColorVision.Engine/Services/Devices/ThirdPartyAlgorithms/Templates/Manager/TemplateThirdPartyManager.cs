@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Man
                 }
                 else
                 {
-                   thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = DLLId >0? 1 :DLLId, Code = templateName, Name = templateName };
+                   thirdPartyAlgorithmsModel = new ThirdPartyAlgorithmsModel() { Pid = DLLId, Code = templateName, Name = templateName };
                 }
                 ThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
                 if (thirdPartyAlgorithmsModel.Id > 0)

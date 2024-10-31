@@ -1,0 +1,74 @@
+﻿#pragma warning disable SYSLIB0014
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.RC;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using System.IO;
+using System.Windows;
+using System.Xml.Linq;
+
+namespace WindowsServicePlugin
+{
+    public class SetMysqlConfig : IWizardStep
+    {
+        public int Order => 8;
+
+        public string Header => "从服务中配置Mysql";
+        public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
+
+        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+
+        Dictionary<string, string> dic = new Dictionary<string, string>();  
+        public void Execute()
+        {
+            if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+            {
+                MessageBox.Show("请先配置服务管理工具");
+                return;
+            }
+            string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
+
+            if (!File.Exists(filePath))
+            {
+                MessageBox.Show("请先运行服务管理工具");
+                return;
+            }
+            // Load the XML document
+            XDocument config = XDocument.Load(filePath);
+
+            // Query the appSettings
+            var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
+
+            if (appSettings != null)
+            {
+                foreach (var setting in appSettings)
+                {
+                    string key = setting.Attribute("key")?.Value;
+                    string value = setting.Attribute("value")?.Value;
+                    if (key != null && value !=null)
+                    {
+                        if (!dic.TryAdd(key, value))
+                        {
+                            dic[key] = value;
+                        }
+                    }
+                }
+                MySqlSetting.Instance.MySqlConfig.UserName = dic["MysqlUser"];
+                MySqlSetting.Instance.MySqlConfig.UserPwd = dic["MysqlPwd"];
+                MySqlSetting.Instance.MySqlConfig.Database = dic["MysqlDatabase"];
+                MySqlConfig mySqlConfig = new MySqlConfig() { Host = dic["MysqlHost"], UserName = "root", UserPwd = dic["MysqlRootPwd"], Database = dic["MysqlDatabase"] };
+
+                CVWinSMSConfig.Instance.Version = dic["Version"];
+                RCSetting.Instance.Config.RCName = dic["RCName"];
+                MessageBox.Show("配置成功");
+            }
+            else
+            {
+            }
+        }
+    }
+
+
+
+}

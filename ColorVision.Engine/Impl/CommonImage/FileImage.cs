@@ -11,8 +11,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Impl.CommonImage
 {
-
-
     public class FileImage : ViewModelBase, IFileMeta
     {
         public FileImage() { }

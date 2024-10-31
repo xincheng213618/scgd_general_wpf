@@ -70,7 +70,7 @@ public class OpenH264Coder : IDisposable
 		return Encoder.Encode(i420);
 	}
 
-	private void GetMaxWid(ref int width, ref int height)
+	private static void GetMaxWid(ref int width, ref int height)
 	{
 		if (width * height > 9437184)
 		{
@@ -127,5 +127,6 @@ public class OpenH264Coder : IDisposable
 	{
 		Decoder.Dispose();
 		Encoder.Dispose();
+		GC.SuppressFinalize(this);
 	}
 }

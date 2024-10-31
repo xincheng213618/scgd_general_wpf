@@ -1,0 +1,335 @@
+﻿<Window x:Class="ColorVision.Projects.ProjectShiYuan.ShiyuanProjectWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Projects.ProjectShiYuan"
+        xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:HYMesManager}"
+        Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <local:ConnectConverter x:Key="ConnectConverter"/>
+        <local:ColorConverter x:Key="ColorConverter"/>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,5">
+                <ListView x:Name="ListViewSetting" Grid.Row="1" Height="170"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
+                    <ListView.Resources>
+                        <ContextMenu x:Key="ContextMenuItem">
+                        </ContextMenu>
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                            <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn >
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="设定" Foreground="Red" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="x(上限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  X.ValMax}" Width="40"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="x(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  X.ValMin}" Width="40"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="y(上限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding Y.ValMax}" Width="40"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="y(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Y.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="Lv(上限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding Lv.ValMax}" Width="40"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="Lv(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Lv.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="dw(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="dw(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="模板" Width="200" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" HorizontalAlignment="Left" Tag="{Binding .}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+
+                </ListView>
+            </Grid>
+            <Grid Grid.Row="1" Margin="0,0,0,5">
+                <ListView x:Name="ListViewResult" Height="150">
+                    <ListView.Resources >
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  Width="80">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="测试结果" Foreground="Blue" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="x" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="y" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="Lv" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="dw" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="结果" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{Binding Result}" Foreground="{Binding Result,Converter={StaticResource ColorConverter}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Margin="15" BorderBrush="Black" BorderThickness="1">
+                    <TextBlock x:Name="ResultText" Text="PASS" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <Grid  Grid.Column="1">
+                    <Button  Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>
+                </Grid>
+
+            </Grid>
+            
+
+            <Grid Grid.Row="3">
+                <StackPanel  Margin="0,2">
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="流程" Width="100"/>
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="产品编号" Width="100"/>
+                        <TextBox x:Name="TextBoxSn" DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
+                        <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="型號名稱" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="设备序号" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="数据存储路径" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.DataPath}" Width="200" HorizontalAlignment="Left"/>
+                        <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
+                    </StackPanel>
+                </StackPanel>
+                
+                <Border HorizontalAlignment="Right" Width="150" Visibility="Collapsed" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
+                    <StackPanel Orientation="Vertical"  Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="入账状态:" Margin="5,2" Width="55"/>
+                            <TextBlock Text="{Binding CSNResult}" Foreground="{Binding CSNResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="上传NG:"  Margin="5,2"  Width="55"/>
+                            <TextBlock Text="{Binding CGIResult}" Foreground="{Binding CGIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="上传MES:"  Margin="5,2"  Width="55"/>
+                            <TextBlock Text="{Binding CMIResult}" Foreground="{Binding CMIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="过帐状态:" Margin="5,2"  Width="55"/>
+                            <TextBlock Text="{Binding CPTResult}" Foreground="{Binding CPTResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                </Border>
+            </Grid>
+            
+        </Grid>
+        <Grid Grid.Column="1" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <GroupBox Header="MES"  VerticalAlignment="Top" Margin="5,0">
+                <Grid Margin="5,3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel >
+                        <StackPanel Margin="0,2" Orientation="Horizontal">
+                            <DockPanel Margin="0,2" Width="200" HorizontalAlignment="Left">
+                                <TextBlock Text="串口" Width="50"/>
+                                <ComboBox x:Name="ComboBoxSer" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding Config.PortName}"  />
+                            </DockPanel>
+                            <Button  Content="连接MES" Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        <DockPanel Margin="2">
+                            <DockPanel>
+                                <TextBlock Text="连接情况:" Width="60"/>
+                                <TextBlock Text="{Binding  IsConnect ,Converter={StaticResource ConnectConverter}}"/>
+                            </DockPanel>
+                        </DockPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,2" VerticalAlignment="Top">
+                        <ui:ToggleSwitch Content="启动时尝试连接MES" IsChecked="{Binding Config.IsOpenConnect}" Margin="0,2"/>
+                        <ui:ToggleSwitch Content="产品编号改变时自动上传MES" IsChecked="{Binding Config.IsAutoUploadSn}" Margin="0,2"/>
+                    </StackPanel>
+
+                </Grid>
+            </GroupBox>
+
+            <ListView x:Name="ListViewMes" Grid.Row="1" Margin="5">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn  Header="创建日期" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding  SendTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="SerialStatus" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding  SerialStatus}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="ASCII">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding ASCII, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="Hex">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding Hex, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+            
+           
+        </Grid>
+        
+
+    </Grid>
+</Window>

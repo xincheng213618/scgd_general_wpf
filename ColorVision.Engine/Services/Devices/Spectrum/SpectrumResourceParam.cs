@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public TemplateSpectrumResourceParam()
         {
             IsUserControl = true;
-            Code = ModMasterType.SpectrumResource;
+            Code = "SpectrumResource";
         }
 
         public SpectrumResourceControl SpectrumResourceControl { get; set; }
@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public override void Load()
         {
             base.Load();
-            SpectrumResourceParam.Load(TemplateParams, Device.SysResourceModel.Id, Code);
+            SpectrumResourceParam.Load(TemplateParams, Device.SysResourceModel.Id);
         }
 
         public override void Create(string templateName)
@@ -50,15 +50,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
     }
 
-    public class SpectrumResourceParam:ParamBase
+    public class SpectrumResourceParam:ParamModBase
     {
-        public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId, string ModeType)
+        public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId)
         {
             ModDetailDao detailDao = new();
             CalibrationParamModes.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                ModMasterDao masterFlowDao = new(ModeType);
+                ModMasterDao masterFlowDao = new("SpectrumResource");
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {

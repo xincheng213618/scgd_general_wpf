@@ -5,6 +5,8 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
 using ColorVision.Engine.Services.Devices.FlowDevice;
@@ -80,6 +82,18 @@ namespace ColorVision.Engine.Services.Terminal
             int fromPort;
             switch (TerminalService.ServiceType)
             {
+                case ServiceTypes.Camera:
+                    ConfigCamera configCamera = new ConfigCamera()
+                    {
+                        Id = CreateCode.Text,
+                        Name = CreateName.Text,
+                    };
+                    sysDevModel = saveDevConfigInfo(configCamera, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        deviceService = new DeviceCamera(sysDevModel);
+                    }
+                    break;
                 case ServiceTypes.PG:
                     ConfigPG pGConfig = new()
                     {
@@ -238,7 +252,7 @@ namespace ColorVision.Engine.Services.Terminal
                 TerminalService.AddChild(deviceService);
                 ServiceManager.GetInstance().DeviceServices.Add(deviceService);
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
-                    RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+                    RC.MqttRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 //MessageBox.Show(WindowHelpers.GetActiveWindow(),"创建成功，正在重启服务", "ColorVision");
                 Close();
             }

@@ -42,8 +42,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
             };
-
-
             var list = SysResourceDao.Instance.GetAllEmptyCameraId();
 
             if (list != null)
@@ -51,18 +49,44 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CameraCode.ItemsSource = list;
                 CameraCode.DisplayMemberPath = "Code";
                 CameraCode.SelectedValuePath = "Name";
-                CameraCode.SelectedIndex = 0;
-                CreateConfig.Code = list[0].Code ??string.Empty;
+                CreateConfig.Code = list[0].Code ?? string.Empty;
                 CameraCode.SelectionChanged += (s, e) =>
                 {
                     if (CameraCode.SelectedIndex >= 0)
-                        DeviceName.Text = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code??string.Empty)?.Model;
+                    {
+                        var model = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code ?? string.Empty)?.Model;
+                        if (model != null)
+                        {
+                            DeviceName.Text = model;
+                            if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.BV_Q;
+                                CreateConfig.Channel = ImageChannel.Three;
+                            }
+                            if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.LV_Q;
+                                CreateConfig.Channel = ImageChannel.One;
+                            }
+                            if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
+                            {
+                                CreateConfig.CameraType = CameraType.CV_Q;
+                                CreateConfig.Channel = ImageChannel.Three;
+                            }
+                        }
+
+                    }
                 };
+                CameraCode.SelectedIndex = 0;
+
+
             }
             else
             {
                 MessageBox.Show("找不到可以添加的相机");
             }
+
+
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -193,17 +217,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
 
-
-
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
                 sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
 
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
-            int ret =  SysResourceDao.Instance.Save(sysResourceModel);
+            int ret = SysResourceDao.Instance.Save(sysResourceModel);
             if (ret < 0)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
+                MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             RCFileUpload.GetInstance().CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
