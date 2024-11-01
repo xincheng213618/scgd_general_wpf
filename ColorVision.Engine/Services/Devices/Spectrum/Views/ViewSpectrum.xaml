@@ -90,7 +90,7 @@
                         </Popup>
                     </ToolBar>
                 </ToolBarTray>
-                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding Config.EditCommand}" >
                     <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
                 <ListView  Height="200" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >

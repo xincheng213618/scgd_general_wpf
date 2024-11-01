@@ -144,6 +144,9 @@
     <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Spectrum\Views\EditViewSpectrumConfig.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
