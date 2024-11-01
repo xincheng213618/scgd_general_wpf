@@ -32,6 +32,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
+        public ViewSpectrumConfig Config { get; set; } = ViewSpectrumConfig.Instance;
+
         public ViewSpectrum(DeviceSpectrum device)
         {
             Device = device;

@@ -39,7 +39,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
         [Category("SFR"), Description("ROI"), Browsable(false)]
         public Rect RECT { get => new Rect() { X =X , Y = Y, Width = Width, Height = Height }; set { X = (int)value.X; Y = (int)value.Y; Width = (int)value.Width; Height = (int)value.Height; NotifyPropertyChanged(); } }
-        private Rect _RECT;
 
     }
 }

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
+namespace ColorVision.Common.Adorners.ListViewAdorners
 {
     /// <summary>
     /// Provides access to the mouse location by calling unmanaged code.

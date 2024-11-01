@@ -4,7 +4,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
+namespace ColorVision.Common.Adorners.ListViewAdorners
 {
     /// <summary>
     /// Renders a visual which can follow the mouse cursor,

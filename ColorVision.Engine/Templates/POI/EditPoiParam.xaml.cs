@@ -6,7 +6,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali;
-using ColorVision.Engine.Services.Templates.POI.ListViewAdorners;
+using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
@@ -77,7 +77,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             DataContext = PoiParam;
 
             ListView1.ItemsSource = DrawingVisualLists;
-            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
+            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
             listViewDragDropManager.EventHandler += (s, e) =>
             {
                 if (!DBIndex.ContainsKey(e[0]))
