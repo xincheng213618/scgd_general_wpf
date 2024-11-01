@@ -653,7 +653,7 @@ namespace ColorVision.ImageEditor
 
         }
 
-        private HImage? HImageCache { get => Config.HImageCache; set { Config.HImageCache = value;  } }
+        public HImage? HImageCache { get; set; }
 
         public void SetImageSource(ImageSource imageSource)
         {

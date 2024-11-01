@@ -659,7 +659,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public static void SideSave(AlgorithmResult result,string selectedPath)
         {
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
             {
                 switch (result.ResultType)
@@ -681,6 +681,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.FOV:
                         break;
                     case AlgorithmResultType.SFR:
+                        var ViewResultSFRs = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
+                        ViewResultSFR.SaveCsv(ViewResultSFRs, fileName);
                         break;
                     case AlgorithmResultType.MTF:
                         break;
