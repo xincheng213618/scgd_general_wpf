@@ -277,6 +277,8 @@ namespace ColorVision.Engine.Templates.POI.Image
             }
 
             imageView.Button1931.Click += ButtonCIE1931_Click;
+
+            imageView.ButtonCalculSFR.Click += ButtonCIE1931_Click;
         }
 
     }
