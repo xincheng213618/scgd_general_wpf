@@ -1,24 +1,22 @@
-﻿using ColorVision.Engine.Templates.POI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI.Comply;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditPoiFilters : UserControl
+    public partial class EditSFR : UserControl
     {
-        public EditPoiFilters()
+        public EditSFR()
         {
             InitializeComponent();
         }
-        public PoiFilterParam Param { get; set; }
+        public SFRParam Param { get; set; }
 
-        public void SetParam(PoiFilterParam param)
+        public void SetParam(SFRParam param)
         {
             Param = param;
             this.DataContext = Param;
@@ -26,8 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxXYZType.ItemsSource = from e1 in Enum.GetValues(typeof(XYZType)).Cast<XYZType>() select new KeyValuePair<int, string>((int)e1, e1.ToString());
-            ComboBoxXYZType.SelectedIndex = 0;
+
         }
 
         private void TextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

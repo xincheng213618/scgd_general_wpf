@@ -5,7 +5,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
 {
     /// <summary>
-    /// EditLEDStripDetection.xaml 的交互逻辑
+    /// EditSFR.xaml 的交互逻辑
     /// </summary>
     public partial class EditLEDStripDetection : UserControl
     {

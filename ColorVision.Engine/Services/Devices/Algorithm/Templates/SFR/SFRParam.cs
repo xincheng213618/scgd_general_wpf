@@ -1,7 +1,9 @@
 ﻿using ColorVision.Engine.Templates;
 using cvColorVision;
+using OpenTK.Graphics.OpenGL;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
@@ -22,19 +24,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 
         [Category("SFR"), Description("ROI x"), DisplayName("ROI X")]
 
-        public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
+        public int X { get => GetValue(_X); set { SetProperty(ref _X, value); NotifyPropertyChanged(nameof(RECT)); } }
         private int _X;
+
         [Category("SFR"), Description("ROI y"), DisplayName("ROI Y")]
-        public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); } }
+        public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); NotifyPropertyChanged(nameof(RECT)); } }
         private int _Y;
         [Category("SFR"), Description("ROI Width"), DisplayName("ROI Width")]
-        public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
-        private int _Width = 1000;
+        public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); NotifyPropertyChanged(nameof(RECT)); } }
+        private int _Width = 100;
         [Category("SFR"), Description("ROI Height"), DisplayName("ROI Height")]
-        public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
-        private int _Height = 1000;
+        public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); NotifyPropertyChanged(nameof(RECT)); } }
+        private int _Height = 100;
 
         [Category("SFR"), Description("ROI"), Browsable(false)]
-        public CRECT ROI { get => new() { x = X, y = Y, cx = Width, cy = Height }; }
+        public Rect RECT { get => new Rect() { X =X , Y = Y, Width = Width, Height = Height }; set { X = (int)value.X; Y = (int)value.Y; Width = (int)value.Width; Height = (int)value.Height; NotifyPropertyChanged(); } }
+        private Rect _RECT;
+
     }
 }

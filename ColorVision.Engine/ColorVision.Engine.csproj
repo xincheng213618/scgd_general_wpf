@@ -138,6 +138,9 @@
     <Compile Update="Services\Devices\Algorithm\Templates\SFR\DisplaySFR.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Devices\Algorithm\Templates\SFR\EditSFR.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
