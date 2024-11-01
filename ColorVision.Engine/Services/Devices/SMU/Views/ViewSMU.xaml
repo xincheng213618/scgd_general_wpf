@@ -115,10 +115,10 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
+                            <GridViewColumn  Header="序号" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
-                                        <TextBlock Text="{Binding IdShow}"/>
+                                        <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -178,7 +178,7 @@
                             <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="电压" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
+                    <GridViewColumn  Header="电压" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SMUData}">
                                 <TextBlock Text="{ Binding  Voltage}"/>
