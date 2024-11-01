@@ -245,7 +245,7 @@
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Content="彩" Padding="8,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
                     </ToggleButton>

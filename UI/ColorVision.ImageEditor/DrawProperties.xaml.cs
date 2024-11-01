@@ -30,6 +30,8 @@ namespace ColorVision.ImageEditor
             PhysicalUnitTableItem.DataContext = DefalutTextAttribute.Defalut;
             ComboBoxBrush.ItemsSource = from Brushes in typeof(Brushes).GetProperties()
                                         select new KeyValuePair<Brush, string>((Brush)Brushes.GetValue(null), Brushes.Name);
+
+            ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
             ComboBoxBrush.SelectedValuePath = "Key";
             ComboBoxBrush.DisplayMemberPath = "Value";
 
@@ -95,6 +97,11 @@ namespace ColorVision.ImageEditor
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void ComColormapTypes_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }
