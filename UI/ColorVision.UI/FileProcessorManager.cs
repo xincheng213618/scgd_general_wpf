@@ -24,6 +24,7 @@
             _fileProcessors = [.. _fileProcessors.OrderBy(handler => handler.Order)];
         }
 
+
         public bool HandleFile(string filePath)
         {
             foreach (var processor in _fileProcessors)
@@ -37,19 +38,19 @@
             return false;
         }
 
+
+        public bool ExportFile(string filePath)
+        {
+            foreach (var processor in _fileProcessors)
+            {
+                if (processor.CanExport(filePath))
+                {
+                    processor.Export(filePath);
+                    return true;
+                }
+            }
+            return false;
+        }
+
     }
-
-    //public class DefaultFileHandler : IFileProcessor
-    //{
-    //    public int Order => 4;
-
-    //    public bool CanProcess(string filePath)
-    //    {
-    //        return File.Exists(filePath);
-    //    }
-    //    public void Process(string filePath)
-    //    {
-    //        PlatformHelper.Open(filePath);
-    //    }
-    //}
 }
