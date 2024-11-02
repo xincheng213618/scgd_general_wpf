@@ -364,10 +364,6 @@ namespace ColorVision.Engine.Templates.POI.Image
                     float[] pdfrequency = new float[10];
                     float[] pdomainSamplingData = new float[10];
                     int  i = cvCameraCSLib.SFRCalculation(ToCHImage((HImage)imageView.HImageCache),new CRECT() { x = pOIPoint.PixelX, y = pOIPoint.PixelY,cx = pOIPoint.Width,cy = pOIPoint.Height }, 1,pdfrequency, pdomainSamplingData,10);
-
-                   
-
-
                 }
 
 

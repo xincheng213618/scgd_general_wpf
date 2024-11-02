@@ -47,7 +47,7 @@
                             <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>
                         
-                        <DockPanel Visibility="{Binding MaxPercent,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel >
                             <TextBlock Text="MaxPercent"  MinWidth="100"/>
                             <TextBox Text="{Binding MaxPercent}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
                         </DockPanel>

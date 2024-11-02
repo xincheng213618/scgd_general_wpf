@@ -139,11 +139,17 @@ namespace ColorVision.Engine.Media
             }
 
         }
-
-
         public async void OpenImage(ImageView imageView, string? filePath)
         {
             CVCIESetBuffer(imageView, filePath);
+
+            void export()
+            {
+                new ExportCVCIE(imageView.Config.FilePath).ShowDialog();
+            }
+            MenuItem menuItem = new MenuItem() { Header = "导出" };
+            menuItem.Click +=(s,e) => export();
+            imageView.Zoombox1.ContextMenu.Items.Add(menuItem);
             try
             {
                 if (imageView.Config.IsShowLoadImage)

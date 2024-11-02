@@ -35,7 +35,7 @@
                     <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBarTray Grid.Row="0" Panel.ZIndex="9">
+                <ToolBarTray Grid.Row="0">
                     <ToolBar Padding="3,2" ToolBarTray.IsLocked="True">
                         <ToggleButton Click="Button1_Click" Margin="0,0,2,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
