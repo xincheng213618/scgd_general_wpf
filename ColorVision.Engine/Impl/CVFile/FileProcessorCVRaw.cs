@@ -15,6 +15,14 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         {
             return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
         }
+        public void Export(string filePath)
+        {
+            new ExportCVCIE(filePath).Show();
+        }
+        public bool CanExport(string filePath)
+        {
+            return filePath.EndsWith("cvcie", StringComparison.OrdinalIgnoreCase);
+        }
 
         public void Process(string filePath)
         {
