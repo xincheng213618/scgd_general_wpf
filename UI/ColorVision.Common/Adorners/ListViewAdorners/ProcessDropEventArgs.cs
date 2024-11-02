@@ -3,7 +3,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
+namespace ColorVision.Common.Adorners.ListViewAdorners
 {
     /// <summary>
     /// Event arguments used by the ListViewDragDropManager.ProcessDrop event.

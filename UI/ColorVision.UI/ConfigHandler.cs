@@ -25,7 +25,7 @@ namespace ColorVision.UI
         public string ConfigFilePath { get; set; }
         public ConfigHandler()
         {
-            string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+            string AssemblyCompany = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
             string ConfigDIFileName = $"{AssemblyCompany}Config.json";
             if (Directory.Exists("Config"))
             {

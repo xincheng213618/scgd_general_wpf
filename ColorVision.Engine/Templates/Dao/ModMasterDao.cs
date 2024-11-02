@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates
         public int Pid { get; set; }
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
-            Pid = SysDictionaryModMasterDao.Instance.GetByCode(code ,0).Id;
+            Pid = string.IsNullOrWhiteSpace(code)? -1: SysDictionaryModMasterDao.Instance.GetByCode(code ,0)?.Id ?? -1;
         }
         public override DataTable GetTableAllByTenantId(int tenantId)
         {

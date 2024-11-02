@@ -61,9 +61,6 @@ namespace ColorVision.ImageEditor
 
         public float BlueBalance { get => _BlueBalance; set { _BlueBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private float _BlueBalance = 1;
-        public HImage? HImageCache { get; set; }
-
-
 
     }
 }

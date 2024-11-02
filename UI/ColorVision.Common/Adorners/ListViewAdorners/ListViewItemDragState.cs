@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
+namespace ColorVision.Common.Adorners.ListViewAdorners
 {
     /// <summary>
     /// Exposes attached properties used in conjunction with the ListViewDragDropManager class.

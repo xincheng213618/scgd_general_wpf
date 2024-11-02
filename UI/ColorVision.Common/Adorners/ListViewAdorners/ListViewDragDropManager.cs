@@ -1,4 +1,4 @@
-#pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601
+#pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601ColorVision.Common.Adorners.ListViewAdorners
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,7 +9,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.Templates.POI.ListViewAdorners
+namespace ColorVision.Common.Adorners.ListViewAdorners
 {
 
 

@@ -5,7 +5,6 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
@@ -24,13 +23,6 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
-    public class ViewSpectrumConfig :IConfig
-    {
-        public static ViewSpectrumConfig Instance => ConfigService.Instance.GetRequiredService<ViewSpectrumConfig>();
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-    }
-
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -39,6 +31,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
+
+        public ViewSpectrumConfig Config { get; set; } = ViewSpectrumConfig.Instance;
 
         public ViewSpectrum(DeviceSpectrum device)
         {

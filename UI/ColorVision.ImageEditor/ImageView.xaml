@@ -140,7 +140,8 @@
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                     <StackPanel Orientation="Horizontal" >
                         <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button x:Name="ButtonCalculPOI"  x:FieldModifier="public" Content="计算"/>
+                        <Button x:Name="ButtonCalculPOI"  x:FieldModifier="public" Content="POI"/>
+                        <Button x:Name="ButtonCalculSFR"  x:FieldModifier="public" Content="SFR"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
