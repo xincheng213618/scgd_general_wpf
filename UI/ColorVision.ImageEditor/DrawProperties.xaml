@@ -106,6 +106,10 @@
                         <TextBlock Text="自动刷新绘图" Width="100"/>
                         <ui:ToggleSwitch IsChecked="{Binding IsLayoutUpdated}" />
                     </DockPanel>
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBlock Text="伪彩色" Width="100"/>
+                        <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Text="{Binding  ColormapTypes}" DisplayMemberPath="Key" SelectionChanged="ComColormapTypes_SelectionChanged" />
+                    </DockPanel>
 
                     <DockPanel Margin="0,0,0,5">
                         <TextBlock  Text="RedBalance" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="100" />

@@ -22,7 +22,6 @@ namespace ColorVision
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
 
         public bool IsRestoreWindow { get; set; } = true;
-
         public double Width { get; set; }
         public double Height { get; set; }
         public double Left { get; set; }

@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
-        public ViewSpectrumConfig Config { get; set; } = ViewSpectrumConfig.Instance;
+        public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
 
         public ViewSpectrum(DeviceSpectrum device)
         {
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = this;
+            this.DataContext = this;
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
