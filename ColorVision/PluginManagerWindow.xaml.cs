@@ -10,7 +10,7 @@ namespace ColorVision
     public class PluginManagerExport : MenuItemBase
     {
         public override string OwnerGuid => "Help";
-        public override string GuidId => "Wizard";
+        public override string GuidId => nameof(PluginManagerExport);
         public override int Order => 10000;
         public override string Header => "PluginManager";
 
