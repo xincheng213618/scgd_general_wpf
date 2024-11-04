@@ -12,43 +12,7 @@ namespace ColorVision.Engine.Services
 {
     public static class Extension
     {
-        public static void ApplyChangedSelectedColor(this IDisPlayControl disPlayControl,Border border)
-        {
-            void UpdateDisPlayBorder()
-            {
-                if (disPlayControl.IsSelected)
-                {
-                    border.BorderBrush = ImageUtils.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
-                    {
-                        Theme.Light => "#5649B0",
-                        Theme.Dark => "#A79CF1",
-                        Theme.Pink => "#F06292", // 粉色主题选中颜色
-                        Theme.Cyan => "#00BCD4", // 青色主题选中颜色
-                        _ => "#A79CF1" // 默认颜色
-                    });
-                }
-                else
-                {
-                    Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
-                    border.BorderBrush = brush;
-                }
-            }
-            disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
-            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
-            UpdateDisPlayBorder();
 
-            if (disPlayControl is UserControl userControl)
-                userControl.PreviewMouseDown += (s, e) =>
-                {
-                    if (userControl.Parent is StackPanel stackPanel)
-                    {
-                        if (stackPanel.Tag is IDisPlayControl lastDisPlayControl)
-                            lastDisPlayControl.IsSelected = false;
-                        stackPanel.Tag = userControl;
-                        disPlayControl.IsSelected = true;
-                    }
-                };
-        }
 
         public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)
         {

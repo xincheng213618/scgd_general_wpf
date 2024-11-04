@@ -6,6 +6,8 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Remove="Assets\Image\background0.png" />
