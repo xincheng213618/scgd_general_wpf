@@ -87,7 +87,7 @@ namespace ColorVision
                 if (isok) return;
             }
 
-            string exportFile = parser.GetValue("input");
+            string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
                 bool isok = FileProcessorManager.GetInstance().ExportFile(exportFile);
