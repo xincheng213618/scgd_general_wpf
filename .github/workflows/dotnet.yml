@@ -36,7 +36,8 @@ jobs:
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       run: |
-        dotnet nuget push D:\a\scgd_general_wpf\scgd_general_wpf\UI\ColorVision.Common\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
-        dotnet nuget push D:\a\scgd_general_wpf\scgd_general_wpf\UI\ColorVision.UI\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
-        dotnet nuget push D:\a\scgd_general_wpf\scgd_general_wpf\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+        dotnet nuget add source --username YOUR_USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
+        dotnet nuget push .\UI\ColorVision.Common\bin\x64\Release\*.nupkg --source "github"
+        dotnet nuget push .\UI\ColorVision.UI\bin\x64\Release\*.nupkg --source "github"
+        dotnet nuget push .\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --source "github"
       
