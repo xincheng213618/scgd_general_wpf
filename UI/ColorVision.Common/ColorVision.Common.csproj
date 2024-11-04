@@ -7,6 +7,9 @@
 	  <ImplicitUsings>disable</ImplicitUsings>
 	  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+	  <IncludeSymbols>True</IncludeSymbols>
+	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
