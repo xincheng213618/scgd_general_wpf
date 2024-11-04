@@ -92,17 +92,20 @@ namespace ColorVision.Engine.Services
             };
             view.View.ViewIndex = -1;
 
-            userControl.PreviewMouseLeftButtonDown += (s, e) =>
+            if (userControl is IDisPlayControl disPlayControl)
             {
-                if (ViewConfig.Instance.IsAutoSelect)
+                disPlayControl.Selected += (s, e) =>
                 {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    if (ViewConfig.Instance.IsAutoSelect)
                     {
-                        view.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                        if (ViewGridManager.GetInstance().ViewMax == 1)
+                        {
+                            view.View.ViewIndex = 0;
+                            ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                        }
                     }
-                }
-            };
+                };
+            }
 
         }
 

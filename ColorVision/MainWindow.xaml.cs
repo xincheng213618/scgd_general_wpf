@@ -11,6 +11,7 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using LiveChartsCore.VisualElements;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -87,6 +88,7 @@ namespace ColorVision
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.LastViewCount = e;
 
+            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
@@ -102,6 +104,7 @@ namespace ColorVision
             LoadIMainWindowInitialized();
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
+
         }
 
         public static async void LoadIMainWindowInitialized() 
@@ -188,13 +191,11 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel1)
             {
-                DisPlayManager.GetInstance().Init(this,stackPanel1);
                 FluidMoveBehavior fluidMoveBehavior = new()
                 {
                     AppliesTo = FluidMoveScope.Children,
                     Duration = TimeSpan.FromSeconds(0.1)
                 };
-
                 Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
             }
 

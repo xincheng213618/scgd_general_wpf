@@ -75,21 +75,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += Timer_Tick; 
-            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }  
+       
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Services.Flow
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
-            View.View.ViewIndex = 0;
 
             ComboBoxFlow.ItemsSource = FlowParam.Params;
             ComboBoxFlow.SelectionChanged += (s, e) =>

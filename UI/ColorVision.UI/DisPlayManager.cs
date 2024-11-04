@@ -1,4 +1,5 @@
 ﻿using ColorVision.Adorners;
+using ColorVision.UI.Views;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -101,6 +102,13 @@ namespace ColorVision.UI
                         DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
                 }
             };
+
+            if (IDisPlayControls.Count > 0)
+            {
+                IDisPlayControls[0].IsSelected = true;
+                StackPanel.Tag = IDisPlayControls[0];
+            }
+
         }
 
 
