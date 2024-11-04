@@ -5,6 +5,7 @@
 		<UseWindowsForms>True</UseWindowsForms>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Remove="Assets\Image\background0.png" />

@@ -6,6 +6,7 @@
 	  <UseWindowsForms>True</UseWindowsForms>
 	  <ImplicitUsings>disable</ImplicitUsings>
 	  <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
