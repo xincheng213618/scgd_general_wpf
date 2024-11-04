@@ -35,9 +35,10 @@ jobs:
     - name: Publish to NuGet
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: |
-        dotnet nuget add source --username YOUR_USERNAME --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
-        dotnet nuget push .\UI\ColorVision.Common\bin\x64\Release\*.nupkg --source "github"
-        dotnet nuget push .\UI\ColorVision.UI\bin\x64\Release\*.nupkg --source "github"
-        dotnet nuget push .\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --source "github"
+        dotnet nuget add source --username YOUR_USERNAME --password $GH_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/YOUR_USERNAME/index.json"
+        dotnet nuget push .\UI\ColorVision.Common\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source "github"
+        dotnet nuget push .\UI\ColorVision.UI\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source "github"
+        dotnet nuget push .\UI\ColorVision.Themes\bin\x64\Release\*.nupkg --api-key $NUGET_API_KEY --source "github"
       
