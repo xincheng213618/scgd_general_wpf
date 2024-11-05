@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             {
                 ModDetailDao.Instance.DeleteById(sensorCommand.Model.Id, false);
                 Param.ModDetailModels.Remove(sensorCommand.Model);
-                Param.Delete(sensorCommand.Model);
             }
         }
 
