@@ -391,64 +391,68 @@ namespace ColorVision.ImageEditor.Draw
                 ZoomDecrease.RaiseExecute(e);
             }
 
-            if (e.Key == Key.Left)
+            if (_ImageEditMode == false)
             {
-                TranslateTransform translateTransform = new();
-                Vector vector = new(-10, 0);
-                translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
-            }
-            else if (e.Key == Key.Right)
-            {
-                TranslateTransform translateTransform = new();
-                Vector vector = new(10, 0);
-                translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
-            }
-            else if (e.Key == Key.Up)
-            {
-                TranslateTransform translateTransform = new();
-                Vector vector = new(0, -10);
-                translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
-            }
-            else if (e.Key == Key.Down)
-            {
-                TranslateTransform translateTransform = new();
-                Vector vector = new(0, 10);
-                translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
-                translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
-                ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
-            }
-            else if (e.Key == Key.Add)
-            {
-                ZoomboxSub.Zoom(1.1);
-            }
-            else if (e.Key == Key.Subtract)
-            {
-                ZoomboxSub.Zoom(0.9);
-            }
-            else if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            {
-                // 确保imageControl已经加载了内容
-                if (Image.Source == null)
+                if (e.Key == Key.Left)
                 {
-                    return;
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(-10, 0);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
                 }
-                if (Image.Source is BitmapSource bitmapSource)
+                else if (e.Key == Key.Right)
                 {
-                    Clipboard.Clear();
-                    Clipboard.SetImage(bitmapSource);
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(10, 0);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
                 }
-                // 可选：强制垃圾回收
-                // GC.Collect();
-                // GC.WaitForPendingFinalizers();
-                // 将图像复制到剪贴板
-                MessageBox.Show("图像已经复制到粘贴板中,该操作目前存在内存泄露");
+                else if (e.Key == Key.Up)
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(0, -10);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                }
+                else if (e.Key == Key.Down)
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(0, 10);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                }
+                else if (e.Key == Key.Add)
+                {
+                    ZoomboxSub.Zoom(1.1);
+                }
+                else if (e.Key == Key.Subtract)
+                {
+                    ZoomboxSub.Zoom(0.9);
+                }
             }
+
+            //if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            //{
+            //    // 确保imageControl已经加载了内容
+            //    if (Image.Source == null)
+            //    {
+            //        return;
+            //    }
+            //    if (Image.Source is BitmapSource bitmapSource)
+            //    {
+            //        Clipboard.Clear();
+            //        Clipboard.SetImage(bitmapSource);
+            //    }
+            //    // 可选：强制垃圾回收
+            //    // GC.Collect();
+            //    // GC.WaitForPendingFinalizers();
+            //    // 将图像复制到剪贴板
+            //    MessageBox.Show("图像已经复制到粘贴板中,该操作目前存在内存泄露");
+            //}
         }
 
         public bool ScaleRulerShow

@@ -2,6 +2,7 @@
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor.Draw;
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -89,6 +90,8 @@ namespace ColorVision.Engine.Services.Templates.POI
         private DVCircleText? DrawCircleCache;
         private DVRectangleText? DrawingRectangleCache;
 
+        private List<DrawingVisual>? SelectDrawingVisuals;
+
 
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
@@ -148,14 +151,14 @@ namespace ColorVision.Engine.Services.Templates.POI
             }
         }
 
-        private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
+
+        private void ImageShow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
                 drawCanvas.CaptureMouse();
-
 
                 Brush brush = PoiParam.PoiConfig.IsUserDraw ? Brushes.Blue : Brushes.Red;
 
@@ -176,8 +179,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
+                    return;
                 }
-                else if (ToolBarTop.DrawCircle)
+
+                if (ToolBarTop.DrawCircle)
                 {
                     No++;
                     DrawCircleCache = new DVCircleText() { AutoAttributeChanged = false };
@@ -188,7 +193,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawCircleCache);
                 }
-                else if (ToolBarTop.DrawRect)
+                if (ToolBarTop.DrawRect)
                 {
                     No++;
 
@@ -199,7 +204,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawingRectangleCache);
                 }
-                else if (ToolBarTop.DrawPolygon)
+                if (ToolBarTop.DrawPolygon)
                 {
                     if (DrawingPolygonCache == null)
                     {
@@ -208,7 +213,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         drawCanvas.AddVisual(DrawingPolygonCache);
                     }
                 }
-                else if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
+                if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
                     PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
 
@@ -217,15 +222,20 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                     if (ToolBarTop.ImageEditMode == true)
                     {
+                        if (SelectDrawingVisuals != null)
+                            return;
                         if (drawingVisual is DrawingVisual visual)
                             SelectDrawingVisual = visual;
-
                         if (SelectDrawingVisual is DVCircle Circl)
                         {
                             Circl.IsDrawing = true;
                         }
                     }
+                    return;
                 }
+                DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                drawCanvas.AddVisual(SelectRect);
+                SelectDrawingVisuals = null;
             }
         }
         Point LastMouseMove;
@@ -251,11 +261,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                 if (IsMouseDown)
                 {
 
-                    if (ToolBarTop.EraseVisual)
-                    {
-                        DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
-                    }
-                    else if (ToolBarTop.DrawCircle && DrawCircleCache !=null)
+                    DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
+
+
+                    if (ToolBarTop.DrawCircle && DrawCircleCache !=null)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
                         DrawCircleCache.Attribute.Radius = Radius;
@@ -270,7 +279,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
 
                     }
-                    else if (SelectDrawingVisual != null)
+                    if (SelectDrawingVisual != null)
                     {
                         if (SelectDrawingVisual is IRectangle rectangle)
                         {
@@ -280,6 +289,21 @@ namespace ColorVision.Engine.Services.Templates.POI
                         else if (SelectDrawingVisual is ICircle Circl)
                         {
                             Circl.Center += point - LastMouseMove;
+                        }
+                    }
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Center += point - LastMouseMove;
+                            }
                         }
                     }
                 }
@@ -292,8 +316,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 IsMouseDown = false;
                 var MouseUpP = e.GetPosition(drawCanvas);
-
-
 
                 if (PoiParam.PoiConfig.IsUserDraw)
                 {
@@ -325,9 +347,18 @@ namespace ColorVision.Engine.Services.Templates.POI
                     {
                         drawCanvas.RemoveVisual(item);
                     }
-                    drawCanvas.RemoveVisual(SelectRect);
                 }
-                else if (ToolBarTop.DrawPolygon && DrawingPolygonCache != null)
+                else 
+                {
+                    SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                    if (SelectDrawingVisuals.Count ==0)
+                        SelectDrawingVisuals =null;
+                }
+
+                drawCanvas.RemoveVisual(SelectRect);
+
+
+                if (ToolBarTop.DrawPolygon && DrawingPolygonCache != null)
                 {
                     DrawingPolygonCache.Points.Add(MouseUpP);
                     DrawingPolygonCache.MovePoints = null;

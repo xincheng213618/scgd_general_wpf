@@ -109,6 +109,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType2.SelectedIndex = 0;
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
+
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ToolBarTop;
             ToolBarTop.EditModeChanged += (s, e) =>

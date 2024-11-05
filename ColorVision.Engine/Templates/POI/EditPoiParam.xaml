@@ -540,7 +540,7 @@
                 <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
             </Grid.RowDefinitions>
             <draw:ZoomboxSub x:Name="Zoombox1" >
-                <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >

@@ -7,7 +7,7 @@ namespace ColorVision.UI.Views
     {
         public HotKeys HotKeys => new HotKeys("视图模式1", new Hotkey(Key.D1, ModifierKeys.Control), Execute);
 
-        public void Execute()
+        public static void Execute()
         {
             ViewGridManager.GetInstance().SetViewGrid(1);
         }
@@ -17,7 +17,7 @@ namespace ColorVision.UI.Views
     {
         public HotKeys HotKeys => new HotKeys("视图模式2", new Hotkey(Key.D2, ModifierKeys.Control), Execute);
 
-        public void Execute()
+        public static void Execute()
         {
             ViewGridManager.GetInstance().SetViewGrid(2);
         }
@@ -28,7 +28,7 @@ namespace ColorVision.UI.Views
     {
         public HotKeys HotKeys => new HotKeys("视图模式4", new Hotkey(Key.D4, ModifierKeys.Control), Execute);
 
-        public void Execute()
+        public static void Execute()
         {
             ViewGridManager.GetInstance().SetViewGrid(4);
         }
@@ -38,7 +38,7 @@ namespace ColorVision.UI.Views
     {
         public HotKeys HotKeys => new HotKeys("视图模式9", new Hotkey(Key.D9, ModifierKeys.Control), Execute);
 
-        public void Execute()
+        public static void Execute()
         {
             ViewGridManager.GetInstance().SetViewGrid(9);
         }
