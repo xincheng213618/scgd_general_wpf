@@ -41,7 +41,7 @@
 
         public bool ExportFile(string filePath)
         {
-            foreach (var processor in _fileProcessors)
+            foreach (var processor in   _fileProcessors)
             {
                 if (processor.CanExport(filePath))
                 {

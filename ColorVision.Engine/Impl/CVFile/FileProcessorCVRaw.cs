@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         }
         public bool CanExport(string filePath)
         {
-            return filePath.EndsWith("cvcie", StringComparison.OrdinalIgnoreCase);
+            return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
         }
 
         public void Process(string filePath)

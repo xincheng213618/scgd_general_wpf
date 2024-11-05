@@ -160,6 +160,14 @@ namespace ColorVision.Engine.Templates
         {
             list.AddRange(parameters.Values.ToList());
         }
+        public void Delete(ModDetailModel model)
+        {
+            var key = parameters.FirstOrDefault(item => item.Value == model).Key;
+            if (key != null)
+            {
+                parameters.Remove(key);
+            }
+        }
 
 
     }

@@ -179,6 +179,19 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
+
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IDrawingVisual id)
+                            {
+                                id.Pen.Brush = Brushes.Red;
+                                id.Render();
+                            }
+                        }
+                        SelectDrawingVisuals = null;
+                    }
                     return;
                 }
 
@@ -192,6 +205,20 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawCircleCache.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                     DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawCircleCache);
+
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IDrawingVisual id)
+                            {
+                                id.Pen.Brush = Brushes.Red;
+                                id.Render();
+                            }
+                        }
+                        SelectDrawingVisuals = null;
+                    }
+                    return;
                 }
                 if (ToolBarTop.DrawRect)
                 {
@@ -203,6 +230,20 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawingRectangleCache);
+
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IDrawingVisual id)
+                            {
+                                id.Pen.Brush = Brushes.Red;
+                                id.Render();
+                            }
+                        }
+                        SelectDrawingVisuals = null;
+                    }
+                    return;
                 }
                 if (ToolBarTop.DrawPolygon)
                 {
@@ -212,6 +253,21 @@ namespace ColorVision.Engine.Services.Templates.POI
                         DrawingPolygonCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                         drawCanvas.AddVisual(DrawingPolygonCache);
                     }
+
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IDrawingVisual id)
+                            {
+                                id.Pen.Brush = Brushes.Red;
+                                id.Render();
+                            }
+                        }
+                        SelectDrawingVisuals = null;
+                    }
+
+                    return;
                 }
                 if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                 {
@@ -225,17 +281,32 @@ namespace ColorVision.Engine.Services.Templates.POI
                         if (SelectDrawingVisuals != null)
                             return;
                         if (drawingVisual is DrawingVisual visual)
+                        {
                             SelectDrawingVisual = visual;
+                            drawingVisual.Pen.Brush = Brushes.Yellow;
+                            drawingVisual.Render();
+                        }
                         if (SelectDrawingVisual is DVCircle Circl)
                         {
                             Circl.IsDrawing = true;
+                        }
+                        if (SelectDrawingVisuals != null)
+                        {
+                            foreach (var item in SelectDrawingVisuals)
+                            {
+                                if (item is IDrawingVisual id)
+                                {
+                                    id.Pen.Brush = Brushes.Red;
+                                    id.Render();
+                                }
+                            }
+                            SelectDrawingVisuals = null;
                         }
                     }
                     return;
                 }
                 DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
-                SelectDrawingVisuals = null;
             }
         }
         Point LastMouseMove;
@@ -260,7 +331,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 if (IsMouseDown)
                 {
-
                     DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
 
 
@@ -338,24 +408,47 @@ namespace ColorVision.Engine.Services.Templates.POI
                     RenderPoiConfig();
                 }
 
-
-                if (ToolBarTop.EraseVisual)
+                if (SelectDrawingVisuals !=null)
                 {
-                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
-                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                    foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                    foreach (var item in SelectDrawingVisuals)
                     {
-                        drawCanvas.RemoveVisual(item);
+                        if (item is IDrawingVisual drawingVisual)
+                        {
+                            drawingVisual.Pen.Brush = Brushes.Red;
+                            drawingVisual.Render();
+                        }
                     }
                 }
-                else 
-                {
-                    SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                    if (SelectDrawingVisuals.Count ==0)
-                        SelectDrawingVisuals =null;
-                }
 
-                drawCanvas.RemoveVisual(SelectRect);
+                if (drawCanvas.ContainsVisual(SelectRect))
+                {
+                    if (ToolBarTop.EraseVisual)
+                    {
+                        drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
+                        drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
+                        foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                        {
+                            drawCanvas.RemoveVisual(item);
+                        }
+                    }
+                    else
+                    {
+                        SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IDrawingVisual drawingVisual)
+                            {
+                                drawingVisual.Pen.Brush = Brushes.Yellow;
+                                drawingVisual.Render();
+                            }
+                        }
+
+                        if (SelectDrawingVisuals.Count == 0)
+                            SelectDrawingVisuals = null;
+                    }
+
+                    drawCanvas.RemoveVisual(SelectRect);
+                }
 
 
                 if (ToolBarTop.DrawPolygon && DrawingPolygonCache != null)
@@ -364,7 +457,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawingPolygonCache.MovePoints = null;
                     DrawingPolygonCache.Render();
                 }
-                else if (ToolBarTop.DrawCircle && DrawCircleCache != null)
+                else if (ToolBarTop.DrawCircle   && DrawCircleCache != null)
                 {
                     DrawCircleCache.Render();
                     PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
@@ -392,6 +485,11 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     circle.IsDrawing = false;
                     circle.Render();
+                }
+                if (SelectDrawingVisual is IDrawingVisual drawingVisual1)
+                {
+                    drawingVisual1.Pen.Brush = Brushes.Red;
+                    drawingVisual1.Render();
                 }
                 SelectDrawingVisual = null;
             }
