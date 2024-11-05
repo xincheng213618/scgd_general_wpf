@@ -57,7 +57,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "导出" ,Command = ExportCVCIECommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = CopyToCommand });
         }
 
 

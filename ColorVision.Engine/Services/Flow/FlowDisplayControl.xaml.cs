@@ -126,7 +126,7 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
                     });
                 }
             }

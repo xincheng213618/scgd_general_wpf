@@ -43,7 +43,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = CopyToCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
         }
 
