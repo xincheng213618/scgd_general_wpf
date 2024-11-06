@@ -43,8 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             EditTemplateSensor.SetParam(TemplateParams[index].Value);
         }
-
-                public override void Save()
+        public override void Save()
         {
             if (SaveIndex.Count == 0) return;
 

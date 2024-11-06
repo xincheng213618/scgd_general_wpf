@@ -92,7 +92,6 @@
                                 <Button Content="刷新设备列表" Margin="5" Height="100" Width="180"  Command="{Binding RefreshDeviceIdCommand}" />
                                 <Button Content="管理物理相机"  Margin="5" Height="100" Width="180" Command="{Binding OpenPhyCameraMangerCommand}"  />
                                 <Button Content="清理服务缓存" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ServiceClearCommand }"/>
-                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

@@ -87,7 +87,6 @@
                                 <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
                                 <Button Content="{x:Static properties:Resources.RefreshService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="{x:Static properties:Resources.ManagePhysicalCamera}" Margin="5" Height="100" Width="180" Command="{Binding OpenPhyCameraMangerCommand}"  />
-                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red"  Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

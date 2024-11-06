@@ -305,6 +305,18 @@ namespace ColorVision.Engine.Services.Templates.POI
                     }
                     return;
                 }
+                if (SelectDrawingVisuals != null)
+                {
+                    foreach (var item in SelectDrawingVisuals)
+                    {
+                        if (item is IDrawingVisual id)
+                        {
+                            id.Pen.Brush = Brushes.Red;
+                            id.Render();
+                        }
+                    }
+                    SelectDrawingVisuals = null;
+                }
                 DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
             }
