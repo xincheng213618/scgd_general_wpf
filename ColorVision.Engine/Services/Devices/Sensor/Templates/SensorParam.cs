@@ -120,7 +120,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void GenerateRequestString()
         {
             Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
+           NotifyPropertyChanged(nameof(OriginText));
         }
+
+        public string? OriginText { get => Model.ValueA; set { } }
 
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; NotifyPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;

@@ -39,35 +39,42 @@
                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Width="450">
+                    <GridViewColumn  Width="650">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SensorCommand}">
-                                <StackPanel  Width="400" Margin="0,5">
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="指令类型" Width="60"/>
-                                        <ComboBox x:Name="ComboBoxType" Initialized="ComboBoxType_Initialized" SelectedValue="{Binding SensorCmdType}" Style="{StaticResource ComboBox.Small}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="发送指令" Width="60"/>
-                                        <TextBox  x:Name="TextBoxSendCommand" Height="50" Padding="5" AcceptsReturn="True" VerticalContentAlignment="Top"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}" Text="{Binding Request}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="返回指令" Width="60"/>
-                                        <TextBox  x:Name="TextBoxResCommand" Height="50" Padding="2"  AcceptsReturn="True" VerticalContentAlignment="Top"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding Response}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="超时(ms)" Width="60"/>
-                                        <TextBox  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding Timeout}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="延时(ms)" Width="60"/>
-                                        <TextBox  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  Delay}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,0,0,5">
-                                        <TextBlock Text="重试次数" Width="60"/>
-                                        <TextBox TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  RetryCount}"/>
-                                    </DockPanel>
-                                </StackPanel>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Row="0"  Width="400" Margin="0,5">
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="指令类型" Width="60"/>
+                                            <ComboBox x:Name="ComboBoxType" Initialized="ComboBoxType_Initialized" SelectedValue="{Binding SensorCmdType}" Style="{StaticResource ComboBox.Small}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="发送指令" Width="60"/>
+                                            <TextBox  x:Name="TextBoxSendCommand" Height="50" Padding="5" AcceptsReturn="True" VerticalContentAlignment="Top"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}" Text="{Binding Request}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="返回指令" Width="60"/>
+                                            <TextBox  x:Name="TextBoxResCommand" Height="50" Padding="2"  AcceptsReturn="True" VerticalContentAlignment="Top"  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding Response}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="超时(ms)" Width="60"/>
+                                            <TextBox  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding Timeout}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="延时(ms)" Width="60"/>
+                                            <TextBox  TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  Delay}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,0,0,5">
+                                            <TextBlock Text="重试次数" Width="60"/>
+                                            <TextBox TextWrapping="Wrap"  Style="{StaticResource TextBox.Small}"  Text="{Binding  RetryCount}"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                    <TextBox Grid.Column="1" Text="{Binding OriginText}" IsReadOnly="True"  Margin="10" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Center" TextWrapping="Wrap"/>
+                                </Grid>
 
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
