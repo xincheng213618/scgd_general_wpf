@@ -10,6 +10,7 @@
         xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -62,11 +63,11 @@
                                         <TextBlock   HorizontalAlignment="Left" Text="不显示文字"/>
                                     </DockPanel>
                                     <DockPanel Margin="2">
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsShowDatum}"/>
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"   BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsShowDatum}"/>
                                         <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
                                     </DockPanel>
                                     <DockPanel  Margin="2" >
-                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
+                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"   BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
                                         <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
                                     </DockPanel>
                                 </StackPanel>
@@ -162,9 +163,8 @@
 
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="3" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0" Grid.Row="0" >
-                    <ToggleButton x:Name="PoiConfigToggleButton" Margin="0,5" Content="基准点设置" Style="{StaticResource ButtonPageControl1}" IsChecked="False" HorizontalAlignment="Left"/>
-                    <Border  Style="{StaticResource BorderModuleArea}" Margin="0,0,0,5" CornerRadius="5">
-                        <StackPanel x:Name="StackPanelPoiConfigPoints" Margin="5"  Visibility="{Binding ElementName=PoiConfigToggleButton,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+                    <Border  Style="{StaticResource BorderModuleArea}" Visibility="{Binding PoiConfig.IsShowDatum,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,0,5" CornerRadius="5">
+                        <StackPanel x:Name="StackPanelPoiConfigPoints" Margin="5" >
                             <DockPanel  Margin="2" HorizontalAlignment="Left">
                                 <TextBlock Text="X1"   MinWidth="40"/>
                                 <TextBox Text="{Binding PoiConfig.X1X}" Width="80" Margin="5,0" />
@@ -233,10 +233,12 @@
                         <TabControl Background="Transparent">
                             <TabItem Header="配置参数">
                                 <StackPanel >
-                                    <DockPanel>
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
-                                        <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加"/>
-                                    </DockPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
+                                        <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
+                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
+                                        <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
+                                    </StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                         <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
                                         <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
@@ -599,37 +601,21 @@
                         </ContextMenu>
                         <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
                             <StackPanel  Orientation="Horizontal">
-                                <TextBlock  HorizontalAlignment="Center">
-                                                    <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=","/>
-                                                    <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                                   <Run Text=","/>
-                                </TextBlock>
-                                <TextBlock Text="{Binding Path=Attribute.Radius}" />
+                                <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
                             <StackPanel  Orientation="Horizontal">
-                                <TextBlock HorizontalAlignment="Center">
-                                                    <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=","/>
-                                                    <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=","/>
-                                </TextBlock>
-                                <TextBlock  Text="{Binding Path=Attribute.Text}" />
-                                <TextBlock  Text=",  " />
-                                <TextBlock  Text="{Binding Path=Attribute.Radius}" />
+                                <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Width="130"  Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Width="60"  Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
 
                         <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
                             <StackPanel  Orientation="Horizontal">
-                                <TextBlock>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
+                                <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Width="200"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DVRectangleText}">
@@ -639,12 +625,8 @@
                                         <MenuItem Header="{x:Static properties:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
-                                <TextBlock>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
+                                <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" Width="200" Margin="5,0"/>
+                                <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" Width="100"  Margin="5,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.Resources>
@@ -685,7 +667,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="值"  Width="300">
+                            <GridViewColumn  Header="值"  Width="400">
                                 <GridViewColumn.CellTemplateSelector>
                                     <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                 </GridViewColumn.CellTemplateSelector>
