@@ -155,7 +155,7 @@ namespace ColorVision.Engine.Media
                 if (imageView.Config.IsShowLoadImage)
                 {
                     imageView.WaitControl.Visibility = Visibility.Visible;
-                    await Task.Delay(100);
+                    await Task.Delay(30);
                     await Task.Run(() =>
                     {
                         CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);

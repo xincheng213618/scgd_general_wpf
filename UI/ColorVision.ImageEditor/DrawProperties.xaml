@@ -21,68 +21,75 @@
         <TabControl Margin="5" BorderThickness="0">
             <TabItem Header="常规">
                 <ScrollViewer x:Name="DrawScrollViewer">
-                    <StackPanel Margin="0,5,0,0" x:Name="StackPanelTextAttribute"  d:DataContext="{d:DesignInstance draw:DefalutTextAttribute}">
+                    <StackPanel>
                         <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="FontFamily" Width="100"/>  
-                            <hc:ComboBox Width="120" Name="ComboBoxFontFamily" ItemsSource="{x:Static Fonts.SystemFontFamilies}"  SelectedValue="{Binding FontFamily}"   SelectionChanged="ComboBoxFontFamily_SelectionChanged" >
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Path=Value}" FontFamily="{Binding Path=Key}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </hc:ComboBox>
-                            <ComboBox Name="ComboBoxBrush" SelectedValue="{Binding Brush}"  SelectionChanged="ComboBoxBrush_SelectionChanged" />
+                            <TextBlock Text="伪彩色" Width="100"/>
+                            <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Text="{Binding  ColormapTypes}" DisplayMemberPath="Key" SelectionChanged="ComColormapTypes_SelectionChanged" />
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="FontWeight" Width="100"/>
-                            <ComboBox Name="ComboBoxFontWeight" SelectedValue="{Binding FontWeight}"  SelectionChanged="ComboBoxBrush_SelectionChanged" >
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Path=Value}" FontWeight="{Binding Path=Key}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="FontStyle" Width="100"/>
-                            <ComboBox Name="ComboBoxFontStyle" SelectedValue="{Binding FontStyle}"  SelectionChanged="ComboBoxFontStyle_SelectionChanged" >
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Path=Value}" FontStyle="{Binding Path=Key}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </DockPanel>
+                        <StackPanel Margin="0,5,0,0" x:Name="StackPanelTextAttribute"  d:DataContext="{d:DesignInstance draw:DefalutTextAttribute}">
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FontFamily" Width="100"/>
+                                <hc:ComboBox Width="120" Name="ComboBoxFontFamily" ItemsSource="{x:Static Fonts.SystemFontFamilies}"  SelectedValue="{Binding FontFamily}"   SelectionChanged="ComboBoxFontFamily_SelectionChanged" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Value}" FontFamily="{Binding Path=Key}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </hc:ComboBox>
+                                <ComboBox Name="ComboBoxBrush" SelectedValue="{Binding Brush}"  SelectionChanged="ComboBoxBrush_SelectionChanged" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FontWeight" Width="100"/>
+                                <ComboBox Name="ComboBoxFontWeight" SelectedValue="{Binding FontWeight}"  SelectionChanged="ComboBoxBrush_SelectionChanged" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Value}" FontWeight="{Binding Path=Key}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FontStyle" Width="100"/>
+                                <ComboBox Name="ComboBoxFontStyle" SelectedValue="{Binding FontStyle}"  SelectionChanged="ComboBoxFontStyle_SelectionChanged" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Value}" FontStyle="{Binding Path=Key}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
 
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="FlowDirection" Width="100"/>
-                            <ComboBox Name="ComboBoxFlowDirection" SelectedValue="{Binding FlowDirection}"  SelectionChanged="ComboBoxFlowDirection_SelectionChanged" >
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Path=Value}" FlowDirection="{Binding Path=Key}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FlowDirection" Width="100"/>
+                                <ComboBox Name="ComboBoxFlowDirection" SelectedValue="{Binding FlowDirection}"  SelectionChanged="ComboBoxFlowDirection_SelectionChanged" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Value}" FlowDirection="{Binding Path=Key}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
 
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="FontStretch" Width="100"/>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="FontStretch" Width="100"/>
 
-                            <ComboBox Name="ComboBoxFontStretch" SelectedValue="{Binding FontStretch}"  SelectionChanged="ComboBoxFontStretch_SelectionChanged" >
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding Path=Value}" FontStretch="{Binding Path=Key}"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-                        </DockPanel>
-                        <Grid>
-                            <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="5">
-                                <TextBlock Text="样例  Aa 01"   VerticalAlignment="Center" Foreground="{Binding Brush}" FontWeight="{Binding FontWeight}"  FontFamily="{Binding FontFamily}" HorizontalAlignment="Center" FontSize="{Binding FontSize}"   FontStyle="{Binding FontStyle}" >
-                                </TextBlock>
-                            </Border>
-                            <hc:ColorPicker  x:Name="ColorPicker1"  SelectedColorChanged="ColorPicker_SelectedColorChanged" HorizontalAlignment="Left" />
-                        </Grid>
+                                <ComboBox Name="ComboBoxFontStretch" SelectedValue="{Binding FontStretch}"  SelectionChanged="ComboBoxFontStretch_SelectionChanged" >
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Path=Value}" FontStretch="{Binding Path=Key}"/>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </DockPanel>
+                            <Grid>
+                                <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="5">
+                                    <TextBlock Text="样例  Aa 01"   VerticalAlignment="Center" Foreground="{Binding Brush}" FontWeight="{Binding FontWeight}"  FontFamily="{Binding FontFamily}" HorizontalAlignment="Center" FontSize="{Binding FontSize}"   FontStyle="{Binding FontStyle}" >
+                                    </TextBlock>
+                                </Border>
+                                <hc:ColorPicker  x:Name="ColorPicker1"  SelectedColorChanged="ColorPicker_SelectedColorChanged" HorizontalAlignment="Left" />
+                            </Grid>
+                        </StackPanel>
+
                     </StackPanel>
 
                 </ScrollViewer>
@@ -106,10 +113,7 @@
                         <TextBlock Text="自动刷新绘图" Width="100"/>
                         <ui:ToggleSwitch IsChecked="{Binding IsLayoutUpdated}" />
                     </DockPanel>
-                    <DockPanel Margin="0,0,0,5">
-                        <TextBlock Text="伪彩色" Width="100"/>
-                        <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Text="{Binding  ColormapTypes}" DisplayMemberPath="Key" SelectionChanged="ComColormapTypes_SelectionChanged" />
-                    </DockPanel>
+
 
                     <DockPanel Margin="0,0,0,5">
                         <TextBlock  Text="RedBalance" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="100" />

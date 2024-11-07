@@ -4,6 +4,7 @@
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>disable</ImplicitUsings>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -74,7 +75,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ColorVision.Core\ColorVision.Core.csproj" />
+    <ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 

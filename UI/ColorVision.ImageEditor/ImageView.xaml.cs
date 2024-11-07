@@ -22,6 +22,27 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
+    public class TiffReader
+    {
+        public static BitmapSource ReadTiff(string filePath)
+        {
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException("File not found", filePath);
+
+            // 使用 BitmapDecoder 读取 TIFF 图像
+            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            {
+                TiffBitmapDecoder decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+                BitmapSource bitmapSource = decoder.Frames[0];
+
+                // 确保图像数据已加载
+                bitmapSource.Freeze();
+
+                return bitmapSource;
+            }
+        }
+    }
+
 
     /// <summary>
     /// ImageView.xaml 的交互逻辑
@@ -160,6 +181,7 @@ namespace ColorVision.ImageEditor
             else if (e.Key == Key.Tab)
             {
                 BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+                InfoText.Text = Config.GetPropertyString();
             }
             else if (e.Key == Key.E)
             {
@@ -661,6 +683,7 @@ namespace ColorVision.ImageEditor
 
         public void Clear()
         {
+            Config.Properties.Clear();
             PseudoImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
@@ -699,17 +722,24 @@ namespace ColorVision.ImageEditor
         public async void OpenImage(string? filePath)
         {
             log.Info($"OpenImageFile :{filePath}");
+
+            Config.AddProperties("FilePath", filePath);
+
             ClearSelectionChangedHandlers();
             Config.IsCVCIE = false;
+            Config.FilePath = filePath;
             if (filePath != null && File.Exists(filePath))
             {
                 long fileSize = new FileInfo(filePath).Length;
+                Config.AddProperties("FileSize", fileSize);
+
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 var ImageViewOpen = ImageViewComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
                 if (ImageViewOpen != null)
                 {
+                    Config.AddProperties("ImageViewOpen", ImageViewOpen);
                     ImageViewOpen.OpenImage(this, filePath);
                     return;
                 }
@@ -723,7 +753,6 @@ namespace ColorVision.ImageEditor
                     if (Config.IsShowLoadImage && isLargeFile)
                     {
                         WaitControl.Visibility = Visibility.Visible;
-                        Config.FilePath = filePath;
                         await Task.Run(() =>
                         {
                             byte[] imageData = File.ReadAllBytes(filePath);
@@ -739,9 +768,9 @@ namespace ColorVision.ImageEditor
                     }
                     else
                     {
-                        Config.FilePath = filePath;
                         BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                         SetImageSource(bitmapImage.ToWriteableBitmap());
+                        UpdateZoomAndScale();
                     };
 
                 }
@@ -773,6 +802,11 @@ namespace ColorVision.ImageEditor
                     HImageCache = writeableBitmap.ToHImage();
                     if (HImageCache is HImage hImage)
                     {
+                        Config.AddProperties("Cols", hImage.cols);
+                        Config.AddProperties("Rows", hImage.rows);
+                        Config.AddProperties("Channel", hImage.channels);
+                        Config.AddProperties("Depth", hImage.depth);
+                        Config.AddProperties("Stride", hImage.stride);
                         Config.Channel = hImage.channels;
                         Config.Ochannel = Config.Channel;
                     }
@@ -930,7 +964,7 @@ namespace ColorVision.ImageEditor
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src" ,"R","G","B" };
 
-        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ComboBoxLayers.SelectedIndex < 0) return;
 
@@ -1102,7 +1136,7 @@ namespace ColorVision.ImageEditor
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 10, (e) =>
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
             {
                 RenderPseudo();
             }, e.NewValue);

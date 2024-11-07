@@ -2,11 +2,32 @@
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace ColorVision.ImageEditor
 {
     public class ImageViewConfig:ViewModelBase
     {
+        [JsonIgnore]
+        public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
+
+        public void AddProperties(string Key,object? Value)
+        {
+            if (!Properties.TryAdd(Key, Value))
+                Properties[Key] = Value;
+        }
+        public string GetPropertyString()
+        {
+            var sb = new StringBuilder();
+            foreach (var item in Properties)
+            {
+                sb.AppendLine($"{item.Key}:{item.Value}");
+            }
+            return sb.ToString();
+        }
+
+
         public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; NotifyPropertyChanged(); } }
         private double _MaxZoom = 10;
         public double MinZoom { get => _MinZoom; set { _MinZoom = value; NotifyPropertyChanged(); } }

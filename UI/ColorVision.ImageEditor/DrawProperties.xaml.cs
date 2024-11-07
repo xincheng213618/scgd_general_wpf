@@ -26,7 +26,7 @@ namespace ColorVision.ImageEditor
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ImageViewConfig;
-            DrawScrollViewer.DataContext = DefalutTextAttribute.Defalut;
+            StackPanelTextAttribute.DataContext = DefalutTextAttribute.Defalut;
             PhysicalUnitTableItem.DataContext = DefalutTextAttribute.Defalut;
             ComboBoxBrush.ItemsSource = from Brushes in typeof(Brushes).GetProperties()
                                         select new KeyValuePair<Brush, string>((Brush)Brushes.GetValue(null), Brushes.Name);

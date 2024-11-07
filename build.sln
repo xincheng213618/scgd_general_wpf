@@ -54,7 +54,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{106E1C5D-57C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj", "{289B350A-0052-47D2-B93E-1FDAA526B507}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "ColorVision.Core\ColorVision.Core.csproj", "{F5A74929-90C7-407C-87F4-D2176ACC2ACC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "UI\ColorVision.Core\ColorVision.Core.csproj", "{F5A74929-90C7-407C-87F4-D2176ACC2ACC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.ImageEditor", "UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj", "{B5D3A18A-0E0E-4818-A3B5-5AA7AA9B3D25}"
 EndProject
