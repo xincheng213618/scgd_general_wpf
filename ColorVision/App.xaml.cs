@@ -71,7 +71,7 @@ namespace ColorVision
 
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
-
+            LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
