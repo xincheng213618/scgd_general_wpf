@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
 
             if (result.ViewResults == null)
             {
-                result.ViewResults = ComplianceYDao.Instance.GetAllByPid(result.Id).ToViewResults();
+                result.ViewResults = ComplianceXYZDao.Instance.GetAllByPid(result.Id).ToViewResults();
             }
             List<string> header;
             List<string> bdHeader;
