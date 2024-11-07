@@ -84,8 +84,11 @@ namespace ColorVision.Engine.Services.Flow
 
             foreach (var index in SaveIndex)
             {
-                var item = TemplateParams[index];
-                FlowParam.Save2DB(item.Value);
+                if (index > -1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+                    FlowParam.Save2DB(item.Value);
+                }
             }
         }
 

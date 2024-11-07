@@ -12,13 +12,9 @@
         <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding ValidateSingles}"  ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.Resources>
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
-                <ContextMenu x:Key="ContextMenuItem">
-                    <MenuItem Header="{x:Static properties:Resources.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
-                </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>
                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                 </Style>
             </ListView.ItemContainerStyle>
             <ListView.View>

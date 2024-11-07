@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 
         public override string GuidId => "TemplateSensorEdit";
         public override int Order => 99;
-        public override string Header => "编辑默认传感器模板";
+        public override string Header => "编辑默认传感器字典";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

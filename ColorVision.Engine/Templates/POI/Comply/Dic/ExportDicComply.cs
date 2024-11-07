@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
 
         public override string GuidId => "ComplyEdit";
         public override int Order => 99;
-        public override string Header => "编辑默认合规模板";
+        public override string Header => "编辑默认合规字典";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

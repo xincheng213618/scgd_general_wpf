@@ -1,4 +1,5 @@
 ﻿#pragma warning disable SYSLIB0014
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -10,7 +11,7 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class CVWinSMSConfig : IConfig   
+    public class CVWinSMSConfig : ViewModelBase, IConfig   
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
@@ -19,6 +20,9 @@ namespace WindowsServicePlugin
 
         public string Version { get => _Version; set => _Version = value; }
         private string _Version = string.Empty;
+
+        public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
     }
 
     public class InstallTool : MenuItemBase, IWizardStep
@@ -35,15 +39,28 @@ namespace WindowsServicePlugin
         public string Description => "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
+
+
         public InstallTool()
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载服务管理工具";
+            Task.Run(() => GetLATEST_RELEASE());
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[2.0.0.24092].zip";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\InstallTool[2.0.0.24092].zip";
+        public void GetLATEST_RELEASE()
+        {
 
+            string url = CVWinSMSConfig.Instance.UpdatePath + "/LATEST_RELEASE";
+            string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\Version.txt";
+
+        }
+
+
+
+
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[2.1.0.24111].zip";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\InstallTool[2.1.0.24111].zip";
 
         public void Download()
         {

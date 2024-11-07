@@ -31,16 +31,6 @@ namespace ColorVision.Engine.Templates.POI.Comply
             e.Handled = true;  
         }
 
-        private void Button_Del_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is ValidateSingle validateSingle)
-            {
-                ValidateTemplateDetailDao.Instance.DeleteById(validateSingle.Model.Id ,false);
-                ValidateParam.DetailModels.Remove(validateSingle.Model);
-                ValidateParam.ValidateSingles.Remove(validateSingle);
-            };
-        }
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
 
@@ -51,6 +41,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 }
