@@ -115,8 +115,7 @@ namespace ColorVision.ImageEditor.Draw
             FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image != null && Image.Source != null);
             FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image != null && Image.Source != null);
             this.Parent.PreviewKeyDown += PreviewKeyDown;
-            zoombox.Cursor = Cursors.Hand;
-
+            zoombox.Cursor = Cursors.Arrow;
             SaveImageCommand = new RelayCommand(a => Save(),a=> Image!=null && Image.Source!=null);
 
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
@@ -525,7 +524,7 @@ namespace ColorVision.ImageEditor.Draw
                 else
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.None;
-                    ZoomboxSub.Cursor = Cursors.Hand;
+                    ZoomboxSub.Cursor = Cursors.Arrow;
 
                     LastChoice = string.Empty;
                 }
