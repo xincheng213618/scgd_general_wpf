@@ -541,12 +541,12 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
             </Grid.RowDefinitions>
-            <draw:ZoomboxSub x:Name="Zoombox1" >
+            <draw:ZoomboxSub x:Name="Zoombox1"   MaxZoom="10"  MinZoom="0.01">
                 <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
+                <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
                         <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
@@ -569,7 +569,6 @@
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
                     </ToggleButton>
                     <TextBox   BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                    <Button Content="属性" Command="{Binding OpenProperty}" />
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
                     </ToggleButton>

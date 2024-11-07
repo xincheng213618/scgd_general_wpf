@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ToolBarTop?.ClearImage();
+                    ImageEditViewMode?.ClearImage();
                     writeableBitmap = null;
                 }));
             });
@@ -92,6 +92,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 DBIndex[e[1]] = old;
                 e[1].BaseAttribute.Name = old.ToString();
             };
+            ImageShow.Focus();
 
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
@@ -108,11 +109,11 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
+            ImageEditViewMode = new ImageEditViewMode(ImageContentGrid, Zoombox1, ImageShow);
 
-            ToolBarTop.ToolBarScaleRuler.IsShow = false;
-            ToolBar1.DataContext = ToolBarTop;
-            ToolBarTop.EditModeChanged += (s, e) =>
+            ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
+            ToolBar1.DataContext = ImageEditViewMode;
+            ImageEditViewMode.EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
                 {
@@ -254,7 +255,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             };
         }
 
-        public ToolBarTop ToolBarTop { get; set; }
+        public ImageEditViewMode ImageEditViewMode { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {

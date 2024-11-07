@@ -5,6 +5,7 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -36,7 +37,7 @@ namespace ColorVision.ImageEditor.Draw
         public ResizeMode ResizeMode { get; set; }
     }
 
-    public class ToolBarTop : ViewModelBase,IDisposable
+    public class ImageEditViewMode : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniform { get; set; }
@@ -80,7 +81,18 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public ToolBarTop(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public DrawingVisual? SelectDrawingVisual { get; set; }
+
+        public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
+
+        public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
+        {
+            using DrawingContext dc = drawingVisual.RenderOpen();
+            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
+        }
+
+
+        public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;
             ZoomboxSub = zoombox ?? throw new ArgumentNullException(nameof(zoombox));
@@ -186,7 +198,6 @@ namespace ColorVision.ImageEditor.Draw
             contextMenu.Items.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
 
             contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-
 
             ZoomboxSub.ContextMenu = contextMenu;
         }
@@ -389,6 +400,85 @@ namespace ColorVision.ImageEditor.Draw
             {
                 ZoomDecrease.RaiseExecute(e);
             }
+
+
+            if (_ImageEditMode ==true)
+            {
+
+                if (e.Key == Key.Left)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X -10, OldRect.Y, OldRect.Width, OldRect.Height);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Center += new Vector(-10, 0);
+                            }
+                        }
+                    }
+                }
+                else if (e.Key == Key.Right)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X +10, OldRect.Y, OldRect.Width, OldRect.Height);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Center += new Vector(10, 0);
+                            }
+                        }
+                    }
+                }
+                else if (e.Key == Key.Up)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -10, OldRect.Width, OldRect.Height);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Center += new Vector(0, -10);
+                            }
+                        }
+                    }
+                }
+                else if (e.Key == Key.Down)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +10, OldRect.Width, OldRect.Height);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Center += new Vector(0, 10);
+                            }
+                        }
+                    }
+                }
+            }
+
 
             if (_ImageEditMode == false)
             {
@@ -651,20 +741,22 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (_EraseVisual == value) return;
                     _EraseVisual = value;
-                if (value)
-                {
-                    ZoomboxSub.Cursor = Input.Cursors.Eraser;
-                }
-                else
-                {
-                    ZoomboxSub.Cursor = Cursors.Arrow;
-                }
+
                 if (value)
                 {
                     ImageEditMode = true;
                     LastChoice = nameof(EraseVisual);
                 }
 
+
+                if (value)
+                {
+                    ZoomboxSub.Cursor = Input.Cursors.Eraser;
+                }
+                else
+                {
+                    ZoomboxSub.Cursor = Cursors.Cross;
+                }
 
                 NotifyPropertyChanged();
             }

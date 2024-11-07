@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 
         public TemplateSensorDicModParam()
         {
-            Title = "传感器模板编辑";
+            Title = "传感器字典编辑";
             TemplateParams = Params;
             IsUserControl = true;
         }

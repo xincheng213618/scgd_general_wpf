@@ -241,7 +241,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
             {
-                imageView.ToolBarTop.ShowImageInfo = true;
+                imageView.ImageEditViewMode.ShowImageInfo = true;
 
                 if (windowCIE == null)
                 {
@@ -265,11 +265,11 @@ namespace ColorVision.Engine.Templates.POI.Image
                         }
                     }
 
-                    imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+                    imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
                     windowCIE.Closed += (s, e) =>
                     {
-                        imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                        imageView.ToolBarTop.ShowImageInfo = false;
+                        imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+                        imageView.ImageEditViewMode.ShowImageInfo = false;
                         windowCIE = null;
                     };
                 }

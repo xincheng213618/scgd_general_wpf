@@ -139,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 imageView.OpenImage(FileUrl);
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
-                    imageView.ToolBarTop.ClearImage();
+                    imageView.ImageEditViewMode.ClearImage();
                 }));
             }
             else

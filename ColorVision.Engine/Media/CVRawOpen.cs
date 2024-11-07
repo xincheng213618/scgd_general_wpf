@@ -64,11 +64,11 @@ namespace ColorVision.Engine.Media
                 float dZVal = 0;
                 float dx = 0, dy = 0, du = 0, dv = 0;
                 _ = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
-                imageView.ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+                imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
             }
-            imageView.ToolBarTop.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
+            imageView.ImageEditViewMode.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 
-            imageView.ToolBarTop.ClearImageEventHandler += (s, e) =>
+            imageView.ImageEditViewMode.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
             };
@@ -125,7 +125,7 @@ namespace ColorVision.Engine.Media
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
-                    imageView.ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+                    imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
                     imageView.ComboBoxLayers.ItemsSource =  ComboBoxLayerCIEItems;
                     imageView.ComboBoxLayers.SelectedIndex = 0;
                     imageView.AddSelectionChangedHandler(ComboBoxLayers1_SelectionChanged);;

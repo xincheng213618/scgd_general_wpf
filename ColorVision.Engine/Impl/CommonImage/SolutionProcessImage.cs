@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Impl.CommonImage
 
         public void Close()
         {
-            ImageView.ToolBarTop.ClearImage();
+            ImageView.ImageEditViewMode.ClearImage();
         }
 
         public virtual void Open()

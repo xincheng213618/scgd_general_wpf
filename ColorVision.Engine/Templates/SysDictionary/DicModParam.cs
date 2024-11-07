@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
 
         public override string GuidId => "EditDeaflutAlgrothmParam";
         public override int Order => 99;
-        public override string Header => "编辑默认算法模板";
+        public override string Header => "编辑默认算法字典";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
