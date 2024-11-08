@@ -23,6 +23,7 @@ namespace ColorVision.ImageEditor.Tif
         {
             return Extension.Contains(System.IO.Path.GetExtension(filePath).ToLower());
         }
+
         public void Process(string filePath)
         {
             ImageView imageView = new ImageView();

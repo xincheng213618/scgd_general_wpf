@@ -17,6 +17,7 @@ namespace ColorVision.ImageEditor
     public partial class DrawProperties : Window
     {
         public ImageViewConfig ImageViewConfig { get; set; }
+
         public DrawProperties(ImageViewConfig imageViewConfig)
         {
             ImageViewConfig = imageViewConfig;

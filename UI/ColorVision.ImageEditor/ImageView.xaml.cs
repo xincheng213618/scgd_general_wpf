@@ -22,28 +22,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
-    public class TiffReader
-    {
-        public static BitmapSource ReadTiff(string filePath)
-        {
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("File not found", filePath);
-
-            // 使用 BitmapDecoder 读取 TIFF 图像
-            using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            {
-                TiffBitmapDecoder decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
-                BitmapSource bitmapSource = decoder.Frames[0];
-
-                // 确保图像数据已加载
-                bitmapSource.Freeze();
-
-                return bitmapSource;
-            }
-        }
-    }
-
-
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -61,7 +39,6 @@ namespace ColorVision.ImageEditor
             Views.Add(imageView);
             return imageView;
         }
-
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageEditViewMode ImageEditViewMode { get; set; }
@@ -113,7 +90,6 @@ namespace ColorVision.ImageEditor
             ToolBarBottom.DataContext = ImageEditViewMode;
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
-
             ImageEditViewMode.ClearImageEventHandler += Clear;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
@@ -220,11 +196,10 @@ namespace ColorVision.ImageEditor
 
         private bool IsMouseDown;
         private Point MouseDownP;
+
         private DVCircle DrawCircleCache;
         private DVRectangle DrawingRectangleCache;
         private DVPolygon? DrawingVisualPolygonCache;
-
-
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -826,6 +801,7 @@ namespace ColorVision.ImageEditor
         {
             RenderPseudo();
         }
+
         private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
             PseudoColor pseudoColor = new PseudoColor(Config);

@@ -283,7 +283,6 @@
                             </Grid>
                             <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
                         </Grid>
-
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
