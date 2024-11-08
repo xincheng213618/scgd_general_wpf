@@ -23,10 +23,12 @@ namespace ColorVision.UI
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        bool IsPassWorld;
+        static bool IsPassWorld;
 
         public async Task GetIsPassWorld()
         {
+            if (IsPassWorld)
+                return;
             string url = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
             using HttpClient _httpClient = new();
             string versionString = null;

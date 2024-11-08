@@ -769,7 +769,6 @@ namespace ColorVision.ImageEditor
                 HImageCache?.Dispose();
                 HImageCache = null;
             };
-
             if (imageSource is WriteableBitmap writeableBitmap)
             {
                 Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
