@@ -73,19 +73,19 @@
                             </UniformGrid>
                         </StackPanel>
                     </GroupBox>
+                    <UniformGrid Columns="2">
+                        <Button Margin="2" x:Name="btn_open" Content="打开" Click="PGOpen"/>
+                        <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
+                    </UniformGrid>
                     <GroupBox Header="操作" Margin="2">
                         <StackPanel Visibility="Visible" >
                             <UniformGrid Columns="2">
-                                <Button Margin="2" x:Name="btn_open" Content="打开" Click="PGOpen"/>
-                                <Button Margin="2" Content="ReSet" Click="PGReSetPG"/>
-                            </UniformGrid>
-                            <UniformGrid Columns="2">
-                                <Button Margin="2"  Content="Start" Click="PGStartPG"/>
-                                <Button Margin="2"  Content="Stop" Click="PGStopPG"/>
-                                <Button Margin="2"  Content="SwitchUp" Click="PGSwitchUpPG"/>
-                                <Button  Margin="2" Content="SwitchDown" Click="PGSwitchDownPG"/>
+                                <Button Margin="2"  Content="上电" Click="PGStartPG"/>
+                                <Button Margin="2"  Content="下电" Click="PGStopPG"/>
+                                <Button Margin="2"  Content="上" Click="PGSwitchUpPG"/>
+                                <Button  Margin="2" Content="下" Click="PGSwitchDownPG"/>
                                 <TextBox VerticalContentAlignment="Center"  BorderThickness="0,0,0,1" Margin="2" x:Name="PGFrameText" Text="0"/>
-                                <Button  Margin="2" Content="SwitchFrame" Click="PGSwitchFramePG"/>
+                                <Button  Margin="2" Content="切换" Click="PGSwitchFramePG"/>
                             </UniformGrid>
 
                             <StackPanel>

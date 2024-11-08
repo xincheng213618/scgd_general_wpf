@@ -7,6 +7,9 @@ using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Net.Http.Headers;
+using System.Net.Http;
+using System.Text;
 using System.Windows;
 
 namespace WindowsServicePlugin
@@ -28,6 +31,7 @@ namespace WindowsServicePlugin
     public class InstallTool : MenuItemBase, IWizardStep
     {
 
+
         public override string OwnerGuid => "ServiceLog";
 
         public override string GuidId => "InstallTool";
@@ -40,19 +44,24 @@ namespace WindowsServicePlugin
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
+        public static CVWinSMSConfig Config => CVWinSMSConfig.Instance;
+        public static string LatestReleaseUrl => Config.UpdatePath + "/LATEST_RELEASE";
+
 
         public InstallTool()
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载服务管理工具";
-            Task.Run(() => GetLATEST_RELEASE());
+            Task.Run(() => GetLatestReleaseVersion());
         }
 
-        public void GetLATEST_RELEASE()
+        public async void GetLatestReleaseVersion()
         {
+            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
 
-            string url = CVWinSMSConfig.Instance.UpdatePath + "/LATEST_RELEASE";
-            string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\Version.txt";
+            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(Config.CVWinSMSPath);
+
+
 
         }
 

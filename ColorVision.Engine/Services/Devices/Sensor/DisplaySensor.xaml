@@ -81,7 +81,7 @@
                     </DockPanel>
                     <CheckBox Content="调试模式" Margin="0,0,0,5"  IsChecked="True" x:Name="CheckBoxIsDeBug"/>
 
-                    <StackPanel>
+                    <StackPanel Visibility="{Binding ElementName=CheckBoxIsDeBug,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,5">
                             <TextBlock Text="指令类型" Width="60"/>
                             <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
