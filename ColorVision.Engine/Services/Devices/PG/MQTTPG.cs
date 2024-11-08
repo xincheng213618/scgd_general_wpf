@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public void ReLoadCategoryLib()
         {
             PGCategoryLib.Clear();
-            foreach (var item in PGParam.Params)
+            foreach (var item in TemplatePGParam.Params)
             {
                 PGCategoryLib.Add(item.Key, item.Value.ConvertToMap());
             }
