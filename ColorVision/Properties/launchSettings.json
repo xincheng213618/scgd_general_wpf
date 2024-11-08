@@ -2,6 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\17917\\Desktop\\20241104142506_1_src.tif",
       "nativeDebugging": true
     }
   }
