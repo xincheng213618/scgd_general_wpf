@@ -1,10 +1,12 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes;
@@ -99,7 +101,36 @@ namespace ColorVision.Engine.Services.Flow
             }
 
         }
+        void AddStackPanel(Action<string> updateStorageAction, string signName, IEnumerable itemSource)
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
 
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is ParamModBase templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -114,38 +145,6 @@ namespace ColorVision.Engine.Services.Flow
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
                 {
-
-                    void AddStackPanel(Action<string> updateStorageAction, string signName, IEnumerable itemSource)
-                    {
-                        DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-                        dockPanel.Children.Add(new TextBlock() { Text = signName });
-
-                        HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-                        {
-                            SelectedValuePath = "Value",
-                            DisplayMemberPath = "Key",
-                            Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
-                        };
-
-                        HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-                        comboBox.ItemsSource = itemSource;
-                        comboBox.SelectionChanged += (s, e) =>
-                        {
-                            string selectedName = string.Empty;
-
-                            if (comboBox.SelectedValue is ParamModBase templateModel)
-                            {
-                                selectedName = templateModel.Name;
-                            }
-
-                            updateStorageAction(selectedName);
-                            STNodePropertyGrid1.Refresh();
-                        };
-
-                        dockPanel.Children.Add(comboBox);
-                        SignStackPannel.Children.Add(dockPanel);
-                    }
-
                     // Usage
                     AddStackPanel(name => commCaeraNode.TempName = name, "曝光模板", TemplateCameraExposureParam.Params);
                     AddStackPanel(name => commCaeraNode.POITempName = name, "POI模板", TemplatePoi.Params);
@@ -159,8 +158,19 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         AddStackPanel(name => commCaeraNode.POIReviseTempName = name, "校正", cameras[0].PhyCamera.CalibrationParams);
                     }
+                }
 
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.POINode poinode)
+                {
+                    AddStackPanel(name => poinode.TemplateName = name, "POI模板", TemplatePoi.Params);
+                    AddStackPanel(name => poinode.FilterTemplateName = name, "POI过滤", TemplatePoiFilterParam.Params);
+                    AddStackPanel(name => poinode.ReviseTemplateName = name, "POI修正", TemplatePoiReviseParam.Params);
+                    AddStackPanel(name => poinode.OutputTemplateName = name, "文件输出模板", TemplatePoiOutputParam.Params);
+                }
 
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
+                {
+                    AddStackPanel(name => commonsendorNode.TempName = name, "模板名称", TemplateSensor.AllParams);
                 }
             };
 

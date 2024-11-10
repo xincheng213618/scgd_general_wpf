@@ -16,6 +16,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     {
         public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
+        public static ObservableCollection<TemplateModel<SensorParam>> AllParams { get => new(Params.SelectMany(p => p.Value)); }
+
         public TemplateSensor(string code)
         {
             Code = code;
