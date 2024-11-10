@@ -8,7 +8,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters
 {
     /// <summary>
-    /// EditLEDStripDetection.xaml 的交互逻辑
+    /// EditSFR.xaml 的交互逻辑
     /// </summary>
     public partial class EditPoiFilters : UserControl
     {

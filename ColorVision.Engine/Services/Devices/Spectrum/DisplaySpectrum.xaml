@@ -91,7 +91,6 @@
 
                         <StackPanel Margin="0,0,0,5">
                             <UniformGrid Columns="3">
-                                <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
                                 <Button x:Name="btn_oneTest" Content="单次测试"  Margin="2" Click="Button_Click_OneTest"/>
                                 <Button x:Name="btn_autoTest" Content="自动测试"  Margin="2" Click="Button_Click_AutoTest"/>
                                 <Button x:Name="btn_oneInitDark" Content="单次校零"  Margin="2" Click="Button_Click_Init_Dark"/>
@@ -104,7 +103,7 @@
                                     <TextBlock Text=":"/>
                                     <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
                                     <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
-                                </DockPanel>
+                                </DockPanel>                                      
                                 <DockPanel  Margin="0,2">
                                     <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
                                     <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>

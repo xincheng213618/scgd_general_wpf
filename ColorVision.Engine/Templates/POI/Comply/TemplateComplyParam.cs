@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System;
 
 namespace ColorVision.Engine.Templates.POI.Comply
 {
@@ -34,6 +35,20 @@ namespace ColorVision.Engine.Templates.POI.Comply
             IsUserControl = true;
             ValidateControl = new ValidateControl();
         }
+
+
+        public override bool ExitsTemplateName(string templateName)
+        {
+            foreach (var entry in Params)
+            {
+                if (entry.Value.Any(item => item.Value.Name.Equals(templateName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public ValidateControl ValidateControl { get; set; }
@@ -52,7 +67,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
 
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
             if (mod == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
@@ -115,13 +130,13 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             ValidateTemplateMasterModel modMaster = new ValidateTemplateMasterModel() { Code = Code, Name = templateName, TenantId = UserConfig.Instance.TenantId };
 
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
             if (mod != null)
             {
                 modMaster.DId = mod.Id;
                 int ret = ValidateTemplateMasterDao.Instance.Save(modMaster);
 
-                var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByPid(mod.Id);
+                var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", mod.Id },{ "is_enable",true} });
                 foreach (var item in sysDic)
                 {
                     var ss = new ValidateTemplateDetailModel() { Code = item.Code, DicPid = mod.Id, Pid = modMaster.Id, ValMax = item.ValMax, ValEqual = item.ValEqual, ValMin = item.ValMin, ValRadix = item.ValRadix, ValType = item.ValType };

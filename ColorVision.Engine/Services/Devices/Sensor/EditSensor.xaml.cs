@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            var list1 = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
+            var list1 = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
 
             var liss = new Dictionary<string, string>() {  };
 

@@ -6,20 +6,21 @@ namespace ColorVision.Engine.Templates
 {
     public class ModDetailModel : VPKModel
     {
-        public ModDetailModel() : this(-1, -1, null) { }
+        public ModDetailModel()
+        { 
+        }
+
         public ModDetailModel(int sysPid, int pid, string? val)
         {
             SysPid = sysPid;
             Pid = pid;
             ValueA = val;
         }
-
-
         public int SysPid { get => _SysPid; set { _SysPid = value; NotifyPropertyChanged(); } }
         private int _SysPid;
         public int Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }
         private int _Pid;
-
+          
         public string? ValueA { get => _ValueA; set { _ValueA = value; NotifyPropertyChanged(); } }
         private string? _ValueA;
         public string? ValueB { get => _ValueB; set { _ValueB = value; NotifyPropertyChanged(); } }
@@ -31,13 +32,6 @@ namespace ColorVision.Engine.Templates
 
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
-
-        public string GetValueMD5()
-        {
-            string txt = ValueA + Id;
-            string code = Cryptography.GetMd5Hash(txt);
-            return code;
-        }
     }
 
 

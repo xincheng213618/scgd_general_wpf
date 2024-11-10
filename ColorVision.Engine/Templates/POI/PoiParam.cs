@@ -10,6 +10,12 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
+    public static class PoiParamExtension
+    {
+        public static void LoadPoiDetailFromDB(this PoiParam poiParam) => PoiParam.LoadPoiDetailFromDB(poiParam);
+        public static void Save2DB(this PoiParam poiParam) => PoiParam.Save2DB(poiParam);
+    }
+
     /// <summary>
     /// 关注点模板
     /// </summary>

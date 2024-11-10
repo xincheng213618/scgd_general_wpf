@@ -1,9 +1,9 @@
-﻿<Window x:Class="ColorVision.Engine.Media.HistogramChartWindow"
+﻿<Window x:Class="ColorVision.ImageEditor.HistogramChartWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Engine.Media"     
+        xmlns:local="clr-namespace:ColorVision.ImageEditor"     
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         mc:Ignorable="d"
         Title="直方图" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">

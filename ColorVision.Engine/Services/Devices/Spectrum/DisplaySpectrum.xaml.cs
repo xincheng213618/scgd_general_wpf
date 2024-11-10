@@ -98,6 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             UpdateUI(SpectrumService.DeviceStatus);
             SpectrumService.DeviceStatusChanged += UpdateUI;
+
             ComboxResourceTemplate.ItemsSource = DeviceSpectrum.SpectrumResourceParams.CreateEmpty();
             ComboxResourceTemplate.SelectedIndex = 0;
             this.ApplyChangedSelectedColor(DisPlayBorder);

@@ -27,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         }
 
         public static EditTemplateSensorConfig Config => EditTemplateSensorConfig.Instance;
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
@@ -52,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             if (sender is MenuItem menuItem && menuItem.Tag is SensorCommand sensorCommand)
             {
                 ModDetailDao.Instance.DeleteById(sensorCommand.Model.Id, false);
-                Param.ModDetailModels.Remove(sensorCommand.Model);  
+                Param.ModDetailModels.Remove(sensorCommand.Model);
             }
         }
 

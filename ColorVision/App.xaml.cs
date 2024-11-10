@@ -71,12 +71,13 @@ namespace ColorVision
 
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
-
+            LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
             parser.AddArgument("input", false, "i");
+            parser.AddArgument("export", false, "e");
             parser.Parse();
 
             string inputFile = parser.GetValue("input");
@@ -85,6 +86,14 @@ namespace ColorVision
                 bool isok = FileProcessorManager.GetInstance().HandleFile(inputFile);
                 if (isok) return;
             }
+
+            string exportFile = parser.GetValue("export");
+            if (exportFile != null)
+            {
+                bool isok = FileProcessorManager.GetInstance().ExportFile(exportFile);
+                if (isok) return;
+            }
+
             //杀死僵尸进程
             KillZombieProcesses();
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化

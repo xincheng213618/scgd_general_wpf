@@ -23,10 +23,12 @@ namespace ColorVision.UI
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        bool IsPassWorld;
+        static bool IsPassWorld;
 
         public async Task GetIsPassWorld()
         {
+            if (IsPassWorld)
+                return;
             string url = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
             using HttpClient _httpClient = new();
             string versionString = null;
@@ -38,6 +40,34 @@ namespace ColorVision.UI
             {
                 IsPassWorld = true;
             }
+        }
+        public async Task<Version> GetLatestVersionNumber(string url)
+        {
+            using HttpClient _httpClient = new();
+            string versionString = null;
+            try
+            {
+                // First attempt to get the string without authentication
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                IsPassWorld = true;
+                // If the request is unauthorized, add the authentication header and try again
+                var byteArray = Encoding.ASCII.GetBytes("1:1");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                // You should also consider handling other potential issues here, such as network errors
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+
+            // If versionString is still null, it means there was an issue with getting the version number
+            if (versionString == null)
+            {
+                throw new InvalidOperationException("Unable to retrieve version number.");
+            }
+
+            return new Version(versionString.Trim());
         }
 
         public async Task Download(string downloadUrl, string DownloadPath, CancellationToken cancellationToken)

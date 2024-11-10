@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
+using SkiaSharp;
 using System;
 using System.Windows;
 
@@ -30,9 +32,17 @@ namespace ColorVision.Engine.Impl.FileProcessor
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ToolBarTop.ClearImage();
+                    imageView.ImageEditViewMode.ClearImage();
                 }));
             }
+        }
+        public bool CanExport(string filePath)
+        {
+            return filePath.EndsWith("cvcie", StringComparison.OrdinalIgnoreCase);
+        }
+        public void Export(string filePath)
+        {
+            new ExportCVCIE(filePath).Show();
         }
     }
 

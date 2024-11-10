@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             List<MenuItemMetadata> items = new List<MenuItemMetadata>();
 
-            var mods = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 } });
+            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 } });
 
             foreach (var item in mods)
             {
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
             }
-            var mod1s = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 111 } });
+            var mod1s = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 111 } });
             foreach (var item in mod1s)
             {
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();

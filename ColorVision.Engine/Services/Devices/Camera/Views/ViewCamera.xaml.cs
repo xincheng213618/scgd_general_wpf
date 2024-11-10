@@ -51,9 +51,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             View = new View();
             ImageView.SetConfig(ViewCameraConfig.Instance.ImageViewConfig);
 
-            ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
-            ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
-            ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
+            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
+            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
+            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
             {
                 if (s is DrawingVisualScaleHost host)
                 {
@@ -357,23 +357,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         MeasureImgResultDao MeasureImgResultDao = new();
 
-        private void Search_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResultCameras.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
-            foreach (var item in algResults)
-            {
-                ViewResultCamera CameraImgResult = new(item);
-                ViewResultCameras.AddUnique(CameraImgResult);
-            }
-        }
-
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResultCameras.Clear();
-                foreach (var item in MeasureImgResultDao.GetAll())
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
+                foreach (var item in algResults)
                 {
                     ViewResultCamera algorithmResult = new(item);
                     ViewResultCameras.AddUnique(algorithmResult);
@@ -384,12 +376,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             {
                 ViewResultCameras.Clear();
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
                 foreach (var item in algResults)
                 {
                     ViewResultCamera algorithmResult = new(item);
                     ViewResultCameras.AddUnique(algorithmResult);
                 }
-
             }
         }
 

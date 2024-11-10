@@ -571,58 +571,58 @@ namespace ColorVision.Engine.Services.PhyCameras
                             }
                         }
 
-                        foreach (var item in AllCalFiles)
+                        foreach (var CalFile in AllCalFiles)
                         {
-                            foreach (var item1 in item.Value)
+                            foreach (var calzzom in CalFile.Value)
                             {
                                 MsgRecord msgRecord = null;
                                 string FilePath = string.Empty;
-                                switch (item1.CalibrationType)
+                                switch (calzzom.CalibrationType)
                                 {
                                     case CalibrationType.DarkNoise:
-                                        FilePath = path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "DarkNoise\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.DefectWPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.DefectBPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.DefectPoint:
-                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.DSNU:
-                                        FilePath = path + "\\Calibration\\" + "DSNU\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "DSNU\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.Uniformity:
-                                        FilePath = path + "\\Calibration\\" + "Uniformity\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "Uniformity\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.Luminance:
-                                        FilePath = path + "\\Calibration\\" + "Luminance\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "Luminance\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.LumOneColor:
-                                        FilePath = path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "LumOneColor\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.LumFourColor:
-                                        FilePath = path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "LumFourColor\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.LumMultiColor:
-                                        FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.LumColor:
                                         break;
                                     case CalibrationType.Distortion:
-                                        FilePath = path + "\\Calibration\\" + "Distortion\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "Distortion\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.ColorShift:
-                                        FilePath = path + "\\Calibration\\" + "ColorShift\\" + item1.FileName;
+                                        FilePath = path + "\\Calibration\\" + "ColorShift\\" + calzzom.FileName;
                                         break;
                                     case CalibrationType.Empty_Num:
                                         break;
                                     default:
                                         break;
                                 }
-                                FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item1.Title);
+                                FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == calzzom.Title);
                                 uploadMeta.FilePath = FilePath;
                                 uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
                                 uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
@@ -637,9 +637,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 {
                                     if (item2 is CalibrationResource CalibrationResource)
                                     {
-                                        if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5))
+                                        if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5) && CalibrationResource.Name ==calzzom.Title)
                                         {
-                                            keyValuePairs2.TryAdd(item1.Title, CalibrationResource);
+                                            keyValuePairs2.TryAdd(calzzom.Title, CalibrationResource);
                                             isExist = true;
                                             continue;
                                         }
@@ -652,22 +652,22 @@ namespace ColorVision.Engine.Services.PhyCameras
                                     continue;
                                 }
                                 uploadMeta.UploadStatus = UploadStatus.Uploading;
-                                Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
+                                Msg = "正在上传校正文件：" + calzzom.Title + " 请稍后...";
                                 await Task.Delay(10);
-                                msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath);
+                                msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, calzzom.Title, FilePath);
                                 if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
                                 {
                                     uploadMeta.UploadStatus = UploadStatus.Completed;
                                     string FileName = msgRecord.MsgReturn.Data.FileName;
 
                                     SysResourceModel sysResourceModel = new();
-                                    sysResourceModel.Name = item1.Title;
+                                    sysResourceModel.Name = calzzom.Title;
                                     sysResourceModel.Code = Id + md5;
-                                    sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
+                                    sysResourceModel.Type = (int)calzzom.CalibrationType.ToResouceType();
                                     sysResourceModel.Pid = SysResourceModel.Id;
                                     sysResourceModel.Value = Path.GetFileName(FileName);
                                     sysResourceModel.CreateDate = DateTime.Now;
-                                    sysResourceModel.Remark = item1.ToJsonN(new JsonSerializerSettings());
+                                    sysResourceModel.Remark = calzzom.ToJsonN(new JsonSerializerSettings());
                                     int ret = SysResourceDao.Instance.Save(sysResourceModel);
                                     if (sysResourceModel != null)
                                     {
@@ -676,7 +676,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                         {
                                             AddChild(calibrationResource);
                                         });
-                                        keyValuePairs2.TryAdd(item1.Title, calibrationResource);
+                                        keyValuePairs2.TryAdd(calzzom.Title, calibrationResource);
                                     }
                                 }
                                 else

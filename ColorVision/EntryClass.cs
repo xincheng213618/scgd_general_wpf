@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -36,6 +37,7 @@ namespace ColorVision
         public static void Main(string[] args)
         {
             ArgumentParser.GetInstance().CommandLineArgs = args;
+            log.Info("args£º" + string.Join(", ", args));
 
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -48,6 +50,7 @@ namespace ColorVision
                     fileAppender.ActivateOptions();
                 }
             }
+
             mutex = new Mutex(true, "ColorVision", out bool ret);
             if (!ret && !Debugger.IsAttached)
             {

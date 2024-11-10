@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
             {
                 void Add(int mod_type)
                 {
-                    var models = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type } });
+                    var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type } });
                     foreach (var model in models)
                     {
                         var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id);
@@ -70,8 +70,8 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    var modMasterModel = SysDictionaryModDao.Instance.GetById(item.Value.Id);
-                    SysDictionaryModDao.Instance.Save(item.Value.ModMasterModel);
+                    var modMasterModel = SysDictionaryModMasterDao.Instance.GetById(item.Value.Id);
+                    SysDictionaryModMasterDao.Instance.Save(item.Value.ModMasterModel);
                     foreach (var modDetaiModel in TemplateParams[index].Value.ModDetaiModels)
                     {
                         SysDictionaryModItemValidateDao.Instance.Save(modDetaiModel);
@@ -90,7 +90,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
         public override void Create(string templateCode, string templateName)
         {
             SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
-            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
             var t = new DicComplyParam(sysDictionaryModModel, new List<SysDictionaryModItemValidateModel>());
 
             var templateModel = new TemplateModel<DicComplyParam>(t.Name ?? "default", t);

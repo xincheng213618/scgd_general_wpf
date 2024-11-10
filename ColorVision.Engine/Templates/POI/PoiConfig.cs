@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
-using ColorVision.Engine.Services.Templates.POI.POIFix;
 using ColorVision.Engine.Templates.POI.Comply;
 using Newtonsoft.Json;
 using System;
@@ -76,6 +74,12 @@ namespace ColorVision.Engine.Templates.POI
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
         }
+
+        public bool TemplateMatchingIsEnable => string.IsNullOrWhiteSpace(TemplateMatchingFilePath);
+
+        public string? TemplateMatchingFilePath { get => _TemplateMatchingFilePath; set { _TemplateMatchingFilePath = value; NotifyPropertyChanged(); } }
+        private string? _TemplateMatchingFilePath;
+
 
         public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
         private string? _PoiFixFilePath;

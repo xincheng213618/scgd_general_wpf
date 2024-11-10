@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services
 {
@@ -189,16 +190,14 @@ namespace ColorVision.Engine.Services
             ServiceTokens.Clear();
 
 
-            var ServiceTypess = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
-            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetServiceTypes();
+            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
 
             TypeServices.Clear();
-            foreach (var type in ServiceTypess)
+            foreach (var sysDictionaryModel in SysDictionaryModels)
             {
+
                 TypeService typeService = new();
-                var sysDictionaryModel = SysDictionaryModels.Find((x)=>x.Value ==(int)type);
-                if (sysDictionaryModel == null) continue;
-                typeService.Name = sysDictionaryModel.Name ?? type.ToString();
+                typeService.Name = sysDictionaryModel.Name ?? "未配置";
                 typeService.SysDictionaryModel = sysDictionaryModel;
                 TypeServices.Add(typeService);
             }
@@ -206,6 +205,7 @@ namespace ColorVision.Engine.Services
 
             TerminalServices.Clear();
             svrDevices.Clear();
+
             List<SysResourceModel> sysResourceModelServices = VSysResourceDao.Instance.GetServices(UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {

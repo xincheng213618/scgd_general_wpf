@@ -3,6 +3,7 @@
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.ImageEditor;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;

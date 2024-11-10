@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
+using System;
 using System.Windows;
 
 namespace ColorVision.Engine.Impl.CommonImage
@@ -13,6 +15,16 @@ namespace ColorVision.Engine.Impl.CommonImage
         {
             return Tool.IsImageFile(filePath);
         }
+        public bool CanExport(string filePath)
+        {
+            return false;
+        }
+
+        public void Export(string filePath)
+        {
+            new ExportCVCIE(filePath).Show();
+        }
+
         public void Process(string filePath)
         {
             ImageView imageView = new();

@@ -10,7 +10,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
-namespace ColorVision.Engine.Media
+namespace ColorVision.ImageEditor
 {
     public class Window3DConfig : ViewModelBase, IConfig
     {

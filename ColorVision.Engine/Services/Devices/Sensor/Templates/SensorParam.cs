@@ -43,6 +43,28 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             EditTemplateSensor.SetParam(TemplateParams[index].Value);
         }
+        public override void Save()
+        {
+            if (SaveIndex.Count == 0) return;
+
+            foreach (var index in SaveIndex)
+            {
+                if(index >-1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+
+                    var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+
+                    if (modMasterModel?.Pcode != null)
+                    {
+                        modMasterModel.Name = item.Value.Name;
+                        var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                        modMasterDao.Save(modMasterModel);
+                    }
+                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, item.Value.ModDetailModels.ToList());
+                }
+            }
+        }
     }
 
     public class SensorCommand:ViewModelBase
@@ -98,7 +120,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void GenerateRequestString()
         {
             Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
+           NotifyPropertyChanged(nameof(OriginText));
         }
+
+        public string? OriginText { get => Model.ValueA; set { } }
 
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; NotifyPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;

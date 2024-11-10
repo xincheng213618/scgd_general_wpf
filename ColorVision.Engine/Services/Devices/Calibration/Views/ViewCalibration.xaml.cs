@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
@@ -47,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             Device = device;
             InitializeComponent();
         }
-        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
+        public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
@@ -315,23 +314,16 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         MeasureImgResultDao MeasureImgResultDao = new();
 
-        private void Search_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
-            foreach (var item in algResults)
-            {
-                ViewResultCalibration CameraImgResult = new(item);
-                ViewResults.AddUnique(CameraImgResult);
-            }
-        }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResults.Clear();
-                foreach (var item in MeasureImgResultDao.GetAllDevice(Device.Code))
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAllDevice(Device.Code);
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
+                foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new(item);
                     ViewResults.AddUnique(algorithmResult);
@@ -342,6 +334,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             {
                 ViewResults.Clear();
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new(item);

@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
@@ -56,7 +57,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "导出" ,Command = ExportCVCIECommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = CopyToCommand });
         }
 
 
@@ -139,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 imageView.OpenImage(FileUrl);
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
-                    imageView.ToolBarTop.ClearImage();
+                    imageView.ImageEditViewMode.ClearImage();
                 }));
             }
             else

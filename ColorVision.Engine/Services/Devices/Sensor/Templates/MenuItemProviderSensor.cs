@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
-            var mods = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
+            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
 
             List<MenuItemMetadata> items = new List<MenuItemMetadata>();
             foreach (var item in mods)

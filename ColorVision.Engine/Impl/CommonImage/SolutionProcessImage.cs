@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.Solution;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -21,7 +22,7 @@ namespace ColorVision.Engine.Impl.CommonImage
 
         public void Close()
         {
-            ImageView.ToolBarTop.ClearImage();
+            ImageView.ImageEditViewMode.ClearImage();
         }
 
         public virtual void Open()

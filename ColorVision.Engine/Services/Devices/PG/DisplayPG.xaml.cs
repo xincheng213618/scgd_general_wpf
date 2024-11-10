@@ -56,6 +56,52 @@ namespace ColorVision.Engine.Services.Devices.PG
                 }
             };
 
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+                }
+
+                HideAllButtons();
+                switch (status)
+                {
+
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+
+            UpdateUI(PGService.DeviceStatus);
+            PGService.DeviceStatusChanged += UpdateUI;
+
+
+
             if (PGService.Config.IsNet)
             {
                 TextBlockPGIP.Text = "IP地址";

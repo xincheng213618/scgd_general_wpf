@@ -11,6 +11,8 @@ namespace ColorVision.Input
         public static Cursor Eraser { get => EnsureCursor("eraser.cur"); }
         public static Cursor CursorPan { get => EnsureCursor("cursor_pan.cur"); }
 
+        public static Cursor PickUp { get => EnsureCursor("pickup.cur"); }
+
 
         private static Dictionary<string, Cursor> _stockCursors = new();
 
@@ -27,7 +29,6 @@ namespace ColorVision.Input
                 _stockCursors.Add(cursorType, cur);
                 return cur;
             }
-
         }
     }
 }

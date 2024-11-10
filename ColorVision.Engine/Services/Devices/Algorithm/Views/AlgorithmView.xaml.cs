@@ -521,16 +521,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ViewResults.Clear();
         }
 
-        private void Search1_Click(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
-            List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
-            foreach (var item in algResults)
-            {
-                AlgorithmResult algorithmResult = new(item);
-                ViewResults.AddUnique(algorithmResult);
-            }
-        }
         private void Search_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
             SerchPopup.IsOpen = true;
@@ -546,6 +536,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 ViewResults.Clear();
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new(item);
@@ -559,9 +551,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 string altype = string.Empty;
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
-
                 ViewResults.Clear();
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
+                if (Config.InsertAtBeginning)
+                    algResults.Reverse();
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new(item);
@@ -666,7 +659,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public static void SideSave(AlgorithmResult result,string selectedPath)
         {
-            string fileName = System.IO.Path.Combine(selectedPath, $"{result.Batch}.csv");
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
             {
                 switch (result.ResultType)
@@ -688,6 +681,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.FOV:
                         break;
                     case AlgorithmResultType.SFR:
+                        var ViewResultSFRs = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
+                        ViewResultSFR.SaveCsv(ViewResultSFRs, fileName);
                         break;
                     case AlgorithmResultType.MTF:
                         break;

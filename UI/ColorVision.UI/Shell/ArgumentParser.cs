@@ -26,7 +26,7 @@
         public string[] CommandLineArgs { get; set; } = Array.Empty<string>();
         public ArgumentParser()
         {
-
+            AddArgument("input", false, "i");
         }
         public void AddArgument(string name, bool isFlag = false, params string[] aliases)
         {
@@ -35,6 +35,13 @@
         public void Parse() => Parse(CommandLineArgs);
         public void Parse(string[] args)
         {
+            if (args.Length == 1 && !args[0].StartsWith("-", StringComparison.CurrentCulture))
+            {
+                // Handle the case where only a file path is provided
+                _parsedArguments["input"] = args[0];
+                return;
+            }
+
             var aliasMap = BuildAliasMap();
 
             for (int i = 0; i < args.Length; i++)

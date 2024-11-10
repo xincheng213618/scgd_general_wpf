@@ -79,9 +79,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plu
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{BF3D024B-583C-403A-A213-BFC0D1BED4F0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "ColorVision.Core\ColorVision.Core.csproj", "{8B8E05E3-F002-4A01-852C-B537041BFF8C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "UI\ColorVision.Core\ColorVision.Core.csproj", "{8B8E05E3-F002-4A01-852C-B537041BFF8C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.ImageEditor", "UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj", "{6446CF2C-3AA1-4294-AD99-49FDB05F0365}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.ImageEditor", "UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj", "{6446CF2C-3AA1-4294-AD99-49FDB05F0365}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -17,8 +17,8 @@ namespace ColorVision.Engine.MySql.ORM
         {
             Name = name;
         }
-
     }
+
     [AttributeUsage(AttributeTargets.Property)]
     public class ColumnIgnoreAttribute : Attribute
     {

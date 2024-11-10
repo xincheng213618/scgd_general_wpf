@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Templates
             if (SysDictionaryModDetaiModels.Count == 0)
             {
                 int nid = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
-                SysDictionaryModDetaiModel sysDictionaryModDetaiModel = new SysDictionaryModDetaiModel() { Id = nid, AddressCode = nid, PId = Param.Id, Symbol = "default", Name = "default", DefaultValue = "", ValueType = SValueType.String };
+                SysDictionaryModDetaiModel sysDictionaryModDetaiModel = new SysDictionaryModDetaiModel() { Id = nid, AddressCode = nid, PId = Param.Id, Symbol = "default" + nid.ToString(), Name = "default" + nid.ToString(), DefaultValue = "", ValueType = SValueType.String };
                 SysDictionaryModDetailDao.Instance.Save(sysDictionaryModDetaiModel);
                 SysDictionaryModDetaiModels.Add(sysDictionaryModDetaiModel);
             }

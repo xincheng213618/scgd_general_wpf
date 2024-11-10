@@ -35,7 +35,7 @@
                     <RowDefinition Height="32"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBarTray Grid.Row="0" Panel.ZIndex="9">
+                <ToolBarTray Grid.Row="0">
                     <ToolBar Padding="3,2">
                         <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
                             <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
@@ -90,7 +90,7 @@
                         </Popup>
                     </ToolBar>
                 </ToolBarTray>
-                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
+                <Button  Grid.Column="0" Background="#01FFFFFF" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Panel.ZIndex="9"  Command="{Binding Config.EditCommand}" >
                     <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
                 </Button>
                 <ListView  Height="200" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
@@ -238,7 +238,7 @@
                 </ListView>
             
             </Grid>
-            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter  Grid.Row="1" Background="#01FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
         <ListView x:Name="listView2"  Grid.Column="1"  Padding="5,5,0,0"  BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
             <ListView.Resources>

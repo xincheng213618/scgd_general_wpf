@@ -45,3 +45,6 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent = 1);
 cv::Mat fusion(std::vector<cv::Mat> imgs, int STEP);
 
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
+
+//°×Æ½ºâ
+void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance);

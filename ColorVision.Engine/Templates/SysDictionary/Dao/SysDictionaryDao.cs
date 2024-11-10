@@ -4,58 +4,52 @@ using System.Data;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-    public class SysDictionaryModel : PKModel
+    [Table("t_scgd_sys_dictionary")]
+    public class SysDictionaryModel : VPKModel
     {
+        [Column("name")]
         public string? Name { get; set; }
-        public string? Code { get; set; }
+
+        [Column("key")]
+        public string? Key { get; set; }
+
+        [Column("pid")]
         public int Type { get; set; }
+
+        [Column("pid")]
         public int Pid { get; set; }
+        [Column("val")]
         public int Value { get; set; }
+
+        [Column("tenant_id")]
         public int TenantId { get; set; }
 
+        [Column("is_enable")]
+        public bool IsEnable { get; set; }
+
+        [Column("is_delete")]
+        public bool IsDelete { get; set; }
+
+        [Column("is_hide")]
+        public bool IsHide { get; set; }
+
+        [Column("remark")]
+        public string? Remark { get; set; }
+
     }
-    public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
+    public class SysDictionaryDao : BaseTableDao<SysDictionaryModel>
     {
         public static SysDictionaryDao Instance { get; set; } = new SysDictionaryDao();
 
-        public SysDictionaryDao() : base("v_scgd_sys_dictionary", "t_scgd_sys_dictionary", "id", true)
+        public SysDictionaryDao() : base("t_scgd_sys_dictionary", "id")
         {
         }
 
-        public override SysDictionaryModel GetModelFromDataRow(DataRow item)
+        public int? GetPid(string Key)
         {
-            SysDictionaryModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                Pid = item.Field<int>("pid"),
-                Value = item.Field<int>("val"),
-                TenantId = item.Field<int>("tenant_id"),
-            };
-            return model;
+            SysDictionaryModel sysDictionaryModel = GetByParam(new Dictionary<string, object>() { { "key", Key } });
+            return sysDictionaryModel != null ? sysDictionaryModel.Pid : null;
         }
 
-        public List<SysDictionaryModel> GetServiceTypes()
-        {
-            List<SysDictionaryModel> result = GetAllByPcode("service_type");
-            return result;
-        }
-
-        public new List<SysDictionaryModel> GetAllByPcode(string pcode)
-        {
-            List<SysDictionaryModel> list = new();
-            string sql = $"select * from {GetTableName()} where pcode='{pcode}'" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SysDictionaryModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
     }
 }

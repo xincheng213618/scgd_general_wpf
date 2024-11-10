@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.UI;
 using log4net;

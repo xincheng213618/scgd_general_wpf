@@ -5,7 +5,6 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
@@ -24,13 +23,6 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
-    public class ViewSpectrumConfig :IConfig
-    {
-        public static ViewSpectrumConfig Instance => ConfigService.Instance.GetRequiredService<ViewSpectrumConfig>();
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-    }
-
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -40,6 +32,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
+        public static ViewSpectrumConfig Config => ViewSpectrumConfig.Instance;
+
         public ViewSpectrum(DeviceSpectrum device)
         {
             Device = device;
@@ -48,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = this;
+            this.DataContext = this;
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System;
 using System.Windows;
@@ -11,6 +12,14 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         public int Order => 1;
 
         public bool CanProcess(string filePath)
+        {
+            return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
+        }
+        public void Export(string filePath)
+        {
+            new ExportCVCIE(filePath).Show();
+        }
+        public bool CanExport(string filePath)
         {
             return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
         }
@@ -31,7 +40,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ToolBarTop.ClearImage();
+                    imageView.ImageEditViewMode.ClearImage();
                 }));
             }
         }

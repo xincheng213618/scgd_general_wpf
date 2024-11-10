@@ -51,36 +51,40 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Left)
+            if (STNodeEditorMain.ActiveNode == null)
             {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
+                if (e.Key == Key.Left)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Right)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Up)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Add)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Subtract)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                    e.Handled = true;
+                }
             }
-            else if (e.Key == Key.Right)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Add)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Subtract)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
-            }
+
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -97,6 +101,7 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     if (STNodeEditorMain.ActiveNode !=null)
                         STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+
                     foreach (var item in STNodeEditorMain.GetSelectedNode())
                     {
                         STNodeEditorMain.Nodes.Remove(item);

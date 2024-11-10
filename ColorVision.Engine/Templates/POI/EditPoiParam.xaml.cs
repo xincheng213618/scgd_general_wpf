@@ -6,7 +6,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIGenCali;
-using ColorVision.Engine.Services.Templates.POI.ListViewAdorners;
+using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
@@ -35,6 +35,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
+using Microsoft.Win32;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -62,7 +63,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    ToolBarTop?.ClearImage();
+                    ImageEditViewMode?.ClearImage();
                     writeableBitmap = null;
                 }));
             });
@@ -76,7 +77,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             DataContext = PoiParam;
 
             ListView1.ItemsSource = DrawingVisualLists;
-            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
+            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
             listViewDragDropManager.EventHandler += (s, e) =>
             {
                 if (!DBIndex.ContainsKey(e[0]))
@@ -91,6 +92,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 DBIndex[e[1]] = old;
                 e[1].BaseAttribute.Name = old.ToString();
             };
+            ImageShow.Focus();
 
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
@@ -107,10 +109,11 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
-            ToolBarTop.ToolBarScaleRuler.IsShow = false;
-            ToolBar1.DataContext = ToolBarTop;
-            ToolBarTop.EditModeChanged += (s, e) =>
+            ImageEditViewMode = new ImageEditViewMode(ImageContentGrid, Zoombox1, ImageShow);
+
+            ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
+            ToolBar1.DataContext = ImageEditViewMode;
+            ImageEditViewMode.EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
                 {
@@ -252,7 +255,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             };
         }
 
-        public ToolBarTop ToolBarTop { get; set; }
+        public ImageEditViewMode ImageEditViewMode { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {
@@ -346,8 +349,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                              src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
-                        BitmapSource bitmapSource = src.ToBitmapSource();
-                        SetImageSource(bitmapSource);
+                        SetImageSource(src.ToWriteableBitmap());
                     }
                 }
                 else
@@ -360,15 +362,14 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
 
-        public void SetImageSource(ImageSource imageSource)
+        public void SetImageSource(WriteableBitmap imageSource)
         {
             ImageShow.Source = imageSource;
-            if (imageSource is BitmapSource bitmapSource)
-            {
-                PoiParam.Width = bitmapSource.PixelWidth;
-                PoiParam.Height = bitmapSource.PixelHeight;
-                InitPoiConfigValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
-            }
+
+            PoiParam.Width = imageSource.PixelWidth;
+            PoiParam.Height = imageSource.PixelHeight;
+            InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
+
             ImageShow.ImageInitialize();
             Zoombox1.ZoomUniform();
         }
@@ -1629,7 +1630,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 if (fileInfo.data != null)
                 {
                     var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
-                    SetImageSource(src.ToBitmapSource());
+                    SetImageSource(src.ToWriteableBitmap());
                 }
             }
             else if (fileInfo.FileExtType == FileExtType.Raw)
@@ -1646,7 +1647,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     dst = src;
                 }
-                SetImageSource(dst.ToBitmapSource());
+                SetImageSource(dst.ToWriteableBitmap());
             }
         }
 
@@ -1855,6 +1856,53 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             FocusPointGrid.Height = FocusPointRowDefinition.ActualHeight;
             PropertyGrid21.Height = FocusPointRowDefinition.ActualHeight;
+        }
+
+        private void SplitImage_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (ImageShow.Source is not WriteableBitmap sourceBitmap) return;
+
+            Int32Rect region = new Int32Rect();
+            region.X = PoiParam.PoiConfig.CenterX - PoiParam.PoiConfig.AreaRectWidth/2;
+            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectWidth /2;
+            region.Width = PoiParam.PoiConfig.AreaRectWidth;
+            region.Height = PoiParam.PoiConfig.AreaRectHeight;
+
+
+            // Validate region
+            if (region.X < 0 || region.Y < 0 ||
+                region.X + region.Width > sourceBitmap.PixelWidth ||
+                region.Y + region.Height > sourceBitmap.PixelHeight)
+            {
+                throw new ArgumentException("The specified region is out of bounds.");
+            }
+
+            // Create a cropped bitmap
+            var croppedBitmap = new CroppedBitmap(sourceBitmap, region);
+
+            // Encode cropped bitmap to TIFF
+            var encoder = new TiffBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
+
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "TIFF files (*.tif)|*.tif",
+                DefaultExt = "tif",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                FileName = "output"
+            };
+
+            // Show save file dialog
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                SetImageSource(new WriteableBitmap(croppedBitmap));
+                using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create))
+                {
+                    encoder.Save(fileStream);
+                }
+                PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
+            }
         }
     }
 

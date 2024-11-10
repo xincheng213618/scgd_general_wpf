@@ -1,0 +1,176 @@
+﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
+using System;
+using System.Runtime.InteropServices;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+
+namespace ColorVision
+{
+    public static class HImageExtension
+    {
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
+
+        public static PixelFormat ToPixelFormat(this HImage hImage)
+        {
+            PixelFormat format = hImage.channels switch
+            {
+                1 => hImage.depth switch
+                {
+                    8 => PixelFormats.Gray8,
+                    16 => PixelFormats.Gray16,
+                    _ => PixelFormats.Gray8,
+                },
+                3 => hImage.depth switch
+                {
+                    8 => PixelFormats.Bgr24,
+                    16 => PixelFormats.Rgb48,
+                    _ => PixelFormats.Bgr24,
+                },
+                4 => PixelFormats.Bgr32,
+                _ => PixelFormats.Default,
+            };
+            return format;
+        }
+
+        public static bool UpdateWriteableBitmap(ImageSource imageSource, HImage hImage)
+        {
+            if (imageSource is not WriteableBitmap writeableBitmap) return false;
+
+            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
+            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
+
+            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            {
+                writeableBitmap.Lock();
+                unsafe
+                {
+                    byte* src = (byte*)hImage.pData;
+                    byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                    for (int y = 0; y < hImage.rows; y++)
+                    {
+                        RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                        src += hImage.stride;
+                        dst += writeableBitmap.BackBufferStride;
+                    }
+                }
+
+                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
+                writeableBitmap.Unlock();
+
+                OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
+                hImage.pData = IntPtr.Zero;
+                return true;
+            }
+            return false;
+        }
+
+        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        {
+            PixelFormat format = hImage.ToPixelFormat();
+            WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+
+            writeableBitmap.Lock();
+
+            unsafe
+            {
+                byte* src = (byte*)hImage.pData;
+                byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                for (int y = 0; y < hImage.rows; y++)
+                {
+                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                    src += hImage.stride;
+                    dst += writeableBitmap.BackBufferStride;
+                }
+            }
+
+            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels * (hImage.depth / 8)));
+            //writeableBitmap.Lock();
+
+            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            writeableBitmap.Unlock();
+            return writeableBitmap;
+        }
+
+
+        public static HImage ToHImage(this BitmapImage bitmapImage) => bitmapImage.ToWriteableBitmap().ToHImage();
+
+        public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new(bitmapImage);
+
+        public static HImage ToHImage(this WriteableBitmap writeableBitmap)
+        {
+            // Determine the number of channels and Depth based on the pixel format
+            int channels;
+            int depth;
+            switch (writeableBitmap.Format.ToString())
+            {
+                case "Bgr32":
+                case "Bgra32":
+                case "Pbgra32":
+                    channels = 4; // BGRA format has 4 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Bgr24":
+                case "Rgb24":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Rgb48":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 16; // 8 bits per channel
+                    break;
+                case "Gray8":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Gray16":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 16; // 16 bits per channel
+                    break;
+                case "Gray32Float":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 32; // 16 bits per channel
+                    break;
+                default:
+                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                    throw new NotSupportedException("The pixel format is not supported.");
+            }
+
+            // Create a new HImageCache instance
+            HImage hImage = new()
+            {
+                rows = writeableBitmap.PixelHeight,
+                cols = writeableBitmap.PixelWidth,
+                channels = channels,
+                depth = depth, // You might need to adjust this based on the actual bits per pixel
+                pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
+            };
+
+            // Copy the pixel data from the WriteableBitmap to the HImageCache
+            writeableBitmap.Lock();
+            //RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
+            unsafe
+            {
+                byte* src = (byte*)writeableBitmap.BackBuffer;
+                byte* dst = (byte*)hImage.pData;
+
+                for (int y = 0; y < hImage.rows; y++)
+                {
+                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                    src += writeableBitmap.BackBufferStride;
+                    dst += hImage.cols * hImage.channels * (hImage.depth / 8);
+                }
+            }
+
+
+            writeableBitmap.Unlock();
+            return hImage;
+        }
+    }
+}

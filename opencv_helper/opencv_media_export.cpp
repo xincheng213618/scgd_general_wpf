@@ -80,11 +80,15 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
 
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
+	uintptr_t address = reinterpret_cast<uintptr_t>(data);
 	std::lock_guard<std::mutex> lock(mediaListMutex); // 加锁
-	auto it = std::find_if(MediaList.begin(), MediaList.end(),
-		[data](const std::pair<int, cv::Mat>& pair) {
-			return pair.first == reinterpret_cast<uintptr_t>(data);
+
+	std::vector<std::pair<uintptr_t, cv::Mat>>::iterator it = std::find_if(
+		MediaList.begin(), MediaList.end(),
+		[address](const std::pair<uintptr_t, cv::Mat>& pair) {
+			return pair.first == address;
 		});
+
 	if (it != MediaList.end()) {
 		it->second.release();
 		// 从缓存中移除
@@ -104,9 +108,9 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 	if (out.channels() != 1) {
 		cv::cvtColor(out, out, cv::COLOR_BGR2GRAY);
 	}
-	if (out.depth() == CV_16U) {
-		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
-	}
+	//if (out.depth() == CV_16U) {
+	//	cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
+	//}
 	pseudoColor(out, min, max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
 	MatToHImage(out, outImage);
@@ -142,6 +146,7 @@ COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
 		return -1;
 	}
 	cv::Mat out = mat.clone();
+
 	if (out.depth() == CV_16U) {
 		cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
@@ -267,3 +272,16 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 	MatToHImage(outMat, outImage);
 	return 0;
 }
+
+
+COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float redBalance, float greenBalance, float blueBalance)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst = mat.clone();
+
+	AdjustWhiteBalance(mat,dst, redBalance, greenBalance, blueBalance);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
+

@@ -11,12 +11,12 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using LiveChartsCore.VisualElements;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -86,11 +86,9 @@ namespace ColorVision
             ViewGridManager.MainView = ViewGrid;
 
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.LastViewCount = e;
 
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
-            {
-                ViewConfig.Instance.LastViewCount = e;
-            };
+            DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
@@ -106,6 +104,7 @@ namespace ColorVision
             LoadIMainWindowInitialized();
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
+
         }
 
         public static async void LoadIMainWindowInitialized() 
@@ -192,89 +191,12 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel1)
             {
-                foreach (var item in DisPlayManager.GetInstance().IDisPlayControls)
-                {
-                    if (item is UserControl userControl)
-                        stackPanel1.Children.Add(userControl);
-                }
-
-                
-
-                DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += (s, e) =>
-                {
-                    if (s is ObservableCollection<IDisPlayControl> disPlayControls)
-                    {
-                        switch (e.Action)
-                        {
-                            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
-                                if (e.NewItems != null)
-                                    foreach (IDisPlayControl newItem in e.NewItems)
-                                        if (newItem is UserControl userControl)
-                                            stackPanel1.Children.Add(userControl);
-                                break;
-                            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
-                                if (e.OldItems != null)
-                                    foreach (IDisPlayControl oldItem in e.OldItems)
-                                        if (oldItem is UserControl userControl)
-                                            stackPanel1.Children.Remove(userControl);
-                                break;
-                            case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
-                                if (e.OldItems != null && e.NewItems != null && e.OldItems.Count == e.NewItems.Count)
-                                {
-                                    for (int i = 0; i < e.OldItems.Count; i++)
-                                    {
-                                        IDisPlayControl oldItem = (IDisPlayControl)e.OldItems[i];
-                                        IDisPlayControl newItem = (IDisPlayControl)e.NewItems[i];
-                                        if (oldItem is UserControl oldUserControl && newItem is UserControl newUserControl)
-                                        {
-                                            int index = stackPanel1.Children.IndexOf(oldUserControl);
-                                            if (index >= 0)
-                                            {
-                                                stackPanel1.Children[index] = newUserControl;
-                                            }
-                                        }
-                                    }
-                                }
-                                break;
-                            case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
-                                if (e.OldItems != null && e.NewItems != null)
-                                {
-                                    // Assuming only one item is moved at a time
-                                    IDisPlayControl movedItem = (IDisPlayControl)e.NewItems[0];
-                                    if (movedItem is UserControl movedUserControl)
-                                    {
-                                        stackPanel1.Children.Remove(movedUserControl);
-                                        stackPanel1.Children.Insert(e.NewStartingIndex, movedUserControl);
-                                    }
-                                }
-                                break;
-                            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
-                                stackPanel1.Children.Clear();
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                };
-
-
                 FluidMoveBehavior fluidMoveBehavior = new()
                 {
                     AppliesTo = FluidMoveScope.Children,
                     Duration = TimeSpan.FromSeconds(0.1)
                 };
-
                 Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
-                var opoo = stackPanel1.AddAdorners(this);
-
-                opoo.Changed += (s, e) =>
-                {
-                    for (int i = 0; i < stackPanel1.Children.Count; i++)
-                    {
-                        if (stackPanel1.Children[i] is IDisPlayControl disPlayControl)
-                            DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
-                    }
-                };
             }
 
         }

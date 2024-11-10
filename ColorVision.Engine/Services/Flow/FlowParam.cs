@@ -84,8 +84,11 @@ namespace ColorVision.Engine.Services.Flow
 
             foreach (var index in SaveIndex)
             {
-                var item = TemplateParams[index];
-                FlowParam.Save2DB(item.Value);
+                if (index > -1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+                    FlowParam.Save2DB(item.Value);
+                }
             }
         }
 
@@ -201,7 +204,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new("flow", text, UserConfig.Instance.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel("flow", text, UserConfig.Instance.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;
@@ -232,7 +235,7 @@ namespace ColorVision.Engine.Services.Flow
         public static int Save(ModMasterModel modMaster)
         {
             int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode ??string.Empty, modMaster.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(modMaster.Pcode ??string.Empty, modMaster.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;
