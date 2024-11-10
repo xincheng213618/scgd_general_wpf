@@ -31,7 +31,7 @@ namespace ColorVision.UI.Configs
         public RelayCommand ClearCacheCommand { get; set; }
 
 
-        public void ClearCache()
+        public static void ClearCache()
         {
             DirectoryInfo directoryInfo = new DirectoryInfo(Environments.DirAppData);
             foreach (var item in directoryInfo.GetFiles())
