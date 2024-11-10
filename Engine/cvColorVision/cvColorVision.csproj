@@ -15,11 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="libs\cudart64_12.dll" />
+	  <None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="libs\cudart64_12.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="libs\cvCamera.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
-	  <None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="libs\cvoled.dll" />
+	  <None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="libs\cvoled.dll">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
 	  <None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="libs\qhyccd.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
