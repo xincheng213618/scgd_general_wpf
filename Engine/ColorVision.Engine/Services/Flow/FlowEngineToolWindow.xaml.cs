@@ -1,17 +1,30 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
+using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -87,12 +100,70 @@ namespace ColorVision.Engine.Services.Flow
 
         }
 
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             STNodePropertyGrid1.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditorMain.ActiveChanged += (s, e) => STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+            STNodeEditorMain.ActiveChanged += (s, e) =>
+            {
+                STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+
+                SignStackPannel.Children.Clear();
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
+                {
+
+                    void AddStackPanel(Action<string> updateStorageAction, string signName, IEnumerable itemSource)
+                    {
+                        DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+                        dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+                        HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+                        {
+                            SelectedValuePath = "Value",
+                            DisplayMemberPath = "Key",
+                            Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+                        };
+
+                        HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+                        comboBox.ItemsSource = itemSource;
+                        comboBox.SelectionChanged += (s, e) =>
+                        {
+                            string selectedName = string.Empty;
+
+                            if (comboBox.SelectedValue is ParamModBase templateModel)
+                            {
+                                selectedName = templateModel.Name;
+                            }
+
+                            updateStorageAction(selectedName);
+                            STNodePropertyGrid1.Refresh();
+                        };
+
+                        dockPanel.Children.Add(comboBox);
+                        SignStackPannel.Children.Add(dockPanel);
+                    }
+
+                    // Usage
+                    AddStackPanel(name => commCaeraNode.TempName = name, "曝光模板", TemplateCameraExposureParam.Params);
+                    AddStackPanel(name => commCaeraNode.POITempName = name, "POI模板", TemplatePoi.Params);
+                    AddStackPanel(name => commCaeraNode.POIFilterTempName = name, "POI过滤", TemplatePoiFilterParam.Params);
+                    AddStackPanel(name => commCaeraNode.POIReviseTempName = name, "POI修正", TemplatePoiReviseParam.Params);
+                    List<DeviceCamera> cameras = ServiceManager.GetInstance()
+                        .DeviceServices
+                        .OfType<DeviceCamera>()
+                        .ToList();
+                    if (cameras!=null&& cameras.Count>0&& cameras[0].PhyCamera != null)
+                    {
+                        AddStackPanel(name => commCaeraNode.POIReviseTempName = name, "校正", cameras[0].PhyCamera.CalibrationParams);
+                    }
+
+
+                }
+            };
+
             STNodeEditorMain.NodeAdded += StNodeEditor1_NodeAdded;
             ;
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
