@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
+  </ItemGroup>
+
+  <ItemGroup>
+	  <None Include="..\..\DLL\scgd_internal_dll\cudart64_12.dll" Link="libs\cudart64_12.dll" />
+	  <None Include="..\..\DLL\scgd_internal_dll\cvCamera.dll" Link="libs\cvCamera.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="..\..\DLL\scgd_internal_dll\cvoled.dll" Link="libs\cvoled.dll" />
+	  <None Include="..\..\DLL\scgd_internal_dll\qhyccd.dll" Link="libs\qhyccd.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <Content Include="..\..\DLL\scgd_internal_dll\SCBase.dll" Link="libs\SCBase.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <None Include="..\..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="libs\SCGDCamLayer.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <Content Include="..\..\DLL\scgd_internal_dll\SCGDDataProcess.dll" Link="libs\SCGDDataProcess.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="..\..\DLL\scgd_internal_dll\SCGDMilCam.dll" Link="libs\SCGDMilCam.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+	  <None Include="..\..\DLL\scgd_internal_dll\CommLibrary.dll" Link="libs\CommLibrary.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="..\..\DLL\scgd_internal_dll\opencv_world401.dll" Link="libs\opencv_world401.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <Content Include="..\..\DLL\scgd_internal_dll\pthreadVC2.dll" Link="libs\pthreadVC2.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	  <Content Include="..\..\DLL\scgd_internal_dll\sqlite3.dll" Link="libs\sqlite3.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\DLL\scgd_internal_dll\cvCalibration.dll" Link="libs\cvCalibration.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\DLL\scgd_internal_dll\cvTableList.dll" Link="libs\cvTableList.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\DLL\scgd_internal_dll\msvcr100.dll" Link="libs\msvcr100.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\DLL\scgd_internal_dll\toupcam.dll" Link="libs\toupcam.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

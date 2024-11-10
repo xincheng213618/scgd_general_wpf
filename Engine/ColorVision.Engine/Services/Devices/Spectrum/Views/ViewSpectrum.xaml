@@ -1,0 +1,285 @@
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Spectrum.Views.ViewSpectrum"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local ="clr-namespace:ColorVision.Engine.Services.Devices.Spectrum.Views"
+             xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
+             xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:hc="https://handyorg.github.io/handycontrol" 
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:ViewSpectrum}"
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}"  Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid x:Name="MainGrid">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="ListCol1" Width="*"/>
+            <ColumnDefinition x:Name="ListCol2" Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition x:Name="ListRow1" Height="*"/>
+                <RowDefinition x:Name="ListRow2" Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
+            <Grid x:Name="Grid1" Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="32"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ToolBarTray Grid.Row="0">
+                    <ToolBar Padding="3,2">
+                        <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
+                        </ToggleButton>
+                        <Button Click="Button_Click" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+                        </Button>
+                        <Button Click="Button2_Click" Margin="2,0,0,0" ToolTip="您可以全选后删除" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                        </Button>
+                    </ToolBar>
+                    <ToolBar>
+                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
+                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="序号" Width="60"/>
+                                        <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="批次号" Width="60"/>
+                                        <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="开始时间" Width="60"/>
+                                        <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="截至时间" Width="60"/>
+                                        <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
+                                    </DockPanel>
+                                    <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                        <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Order" Content="排序" Click="Order_Click"  Visibility="Collapsed"  Margin="2,0,0,0"/>
+                        <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
+                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="80">
+                                <StackPanel Margin="5">
+                                    <StackPanel Margin="0,5">
+                                        <RadioButton x:Name="RadioID"  Content="名称"  IsChecked="True"  Checked="Radio_Checked"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,5">
+                                        <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"/>
+                                        <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </ToolBar>
+                </ToolBarTray>
+                <Button  Grid.Column="0" Background="#01FFFFFF" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Panel.ZIndex="9"  Command="{Binding Config.EditCommand}" >
+                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                </Button>
+                <ListView  Height="200" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" Padding="0,5,5,0"  BorderThickness="0"  x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                    <ListView.Resources>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+                    </ListView.Resources>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn   Header="序号" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding IdShow}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="批次号">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding BatchID}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="测量时间">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding CreateTime}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="IP" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding IP}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="亮度Lv(cd/m2)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding Lv}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="蓝光" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding Blue}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度x" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fx}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度y" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fy}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度u" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fu}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色度v" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fv}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="相关色温(K)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fCCT}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="主波长Ld(nm)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fLd}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="色纯度(%)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fPur}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="峰值波长Lp(nm)" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fLp}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="显色性指数Ra" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fRa}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="半波宽" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding fHW}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="电压" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding V}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="电流" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{ Binding I}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            
+            </Grid>
+            <GridSplitter  Grid.Row="1" Background="#01FFFFFF"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+        </Grid>
+        <ListView x:Name="listView2"  Grid.Column="1"  Padding="5,5,0,0"  BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
+                </ContextMenu>
+            </ListView.Resources>
+            <ListView.View >
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn  Header="波长" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                <TextBlock Text="{ Binding  Wavelength}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="相对光谱">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                <TextBlock Text="{Binding  RelativeSpectrum, StringFormat={}{0:F4}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="绝对光谱" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SpectralData}">
+                                <TextBlock Text="{ Binding   AbsoluteSpectrum, StringFormat={}{0:F4}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <GridSplitter  Grid.Column="1"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+
+    </Grid>
+</UserControl>

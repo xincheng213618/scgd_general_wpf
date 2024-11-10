@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "ColorVision.Engine": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "hotReloadEnabled": true
+    }
+  }
+}

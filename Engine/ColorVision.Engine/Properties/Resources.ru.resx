@@ -1,0 +1,807 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>Окно отладки механизма обработки</value>
+  </data>
+  <data name="WorkflowEngine" xml:space="preserve">
+    <value>Механизм процесса(F)</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>независимое окно</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>скрывать</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>Просмотр данных об отправке</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>Посмотреть данные о приемке</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>файл данных изображения</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>видео режим</value>
+  </data>
+  <data name="UserPwd" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>пользователь</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>загрузить</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>Отписаться</value>
+  </data>
+  <data name="UnderDevelopment" xml:space="preserve">
+    <value>В развитие</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>прозрачное окно</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>отправить канал</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Тайм-аут</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>оставшееся время:</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>тестовое соединение</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>Имя Шаблона</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>Окно управления шаблонами</value>
+  </data>
+  <data name="Template" xml:space="preserve">
+    <value>шаблон</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>Запуск (может быть неудачным)</value>
+  </data>
+  <data name="Success" xml:space="preserve">
+    <value>успех</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>Подписанные темы</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>подписка</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>представлять на рассмотрение</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>Остановить процесс</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>состояние</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Время начала</value>
+  </data>
+  <data name="StartingService" xml:space="preserve">
+    <value>Запуск службы</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>размер</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>Аналоговая отправка</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>Ложное принятие</value>
+  </data>
+  <data name="Sign_out" xml:space="preserve">
+    <value>покидать</value>
+  </data>
+  <data name="Sign_in" xml:space="preserve">
+    <value>Авторизоваться</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>форма</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>наименование услуги</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>Идентификатор услуги</value>
+  </data>
+  <data name="ServiceConfiguration" xml:space="preserve">
+    <value>Конфигурация сервиса</value>
+  </data>
+  <data name="SerialNumber1" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>Отправлено</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>отправлять</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>поиск</value>
+  </data>
+  <data name="SaveWindowLayout" xml:space="preserve">
+    <value>Сохранить макет окна</value>
+  </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>Сохранить столбец данных</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>сохранять</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>результат</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Восстановить вниз</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Сброс завершен</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>перезагрузить</value>
+  </data>
+  <data name="RegistryCenter" xml:space="preserve">
+    <value>Регистрационный центр</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>обновить</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>канал приема</value>
+  </data>
+  <data name="QuickPreview" xml:space="preserve">
+    <value>быстрый предварительный просмотр</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Атрибуты</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Расположение</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>порт</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>прикрепить сверху</value>
+  </data>
+  <data name="PhysicalCameraManager" xml:space="preserve">
+    <value>Физическое управление камерой</value>
+  </data>
+  <data name="Password" xml:space="preserve">
+    <value>Пароль</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>параметр</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>Выходной вид</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Открыть проект</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Открыть</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Конечно</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>Похожие товары не найдены</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Новый</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Конфигурация соединения MySql</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySql-соединение</value>
+  </data>
+  <data name="MyLicense_R" xml:space="preserve">
+    <value>Моя лицензия(R)</value>
+  </data>
+  <data name="MTFToolTip" xml:space="preserve">
+    <value>Modulation Transfer Function</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>Окно записи сообщения</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Список сообщений</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>Журнал MQTT</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>Конфигурация соединения MQTT</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT-соединение</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>минимизировать</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>сохранение сообщений</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Посмотреть(В)</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>Настройки шаблона проверки проблем (B)</value>
+  </data>
+  <data name="MenuUpdate" xml:space="preserve">
+    <value>Проверить наличие обновлений(U)</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>Отменить(U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>Инструмент(Т)</value>
+  </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>Тема(H)</value>
+  </data>
+  <data name="MenuTemplate" xml:space="preserve">
+    <value>Шаблон(_M)</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>Настройки шаблона исходной таблицы(S)</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>SFR (_S)</value>
+  </data>
+  <data name="MenuSettings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="MenuService" xml:space="preserve">
+    <value>Конфигурация службы администратора(_S)</value>
+  </data>
+  <data name="MenuSensor" xml:space="preserve">
+    <value>Общие настройки шаблона датчика(S)</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Переименовать(_М)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>Настройки шаблона заботы (P)</value>
+  </data>
+  <data name="MenuPhyCameraManager" xml:space="preserve">
+    <value>Физическое управление камерой(_P)</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>Настройки шаблона PG</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>Вариант(_О)</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Открыть(О)</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Новый(Н)</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>_MTF</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>Настройки шаблона измерений</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>Вход в аккаунт(_L)</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>Настройки шаблона призрака (G)</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>Настройки шаблона поля зрения (B)";</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>Настройки шаблона определения светящейся области (F)</value>
+  </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>Процесс(Ф)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Изменить (Е)</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>Настройки шаблона искажения (D)</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>Конфигурация устройства(_D)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>Удалить(Д)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Вырезать(Т)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Копировать (С)</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>Настройки шаблона экспозиции камеры (B)</value>
+  </data>
+  <data name="MenuCalibrationTool" xml:space="preserve">
+    <value>Инструмент генерации калибровки (_C)</value>
+  </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>Настройки шаблона BuildPOI (B)</value>
+  </data>
+  <data name="MenuAlgorithm" xml:space="preserve">
+    <value>Алгоритм(А)</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>управлять</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>Мужчина</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>местный</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>нагрузка</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>Управление лицензиями</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>Слои</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>Началось успешно</value>
+  </data>
+  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
+    <value>Откройте локальную службу при запуске программного обеспечения</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>Запросить</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>информация</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>Лицензия на импорт</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>Импортировать</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>источник изображения</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>Информация об изображении</value>
+  </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>Файлы изображений</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Хозяин</value>
+  </data>
+  <data name="HistoryCache" xml:space="preserve">
+    <value>кэш истории</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>призрак</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>Прирост</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>точка фокусировки</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>процесс</value>
+  </data>
+  <data name="Filter" xml:space="preserve">
+    <value>фильтр</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Пожалуйста введите пароль</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Пожалуйста, введите имя пользователя</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>документ</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>женский</value>
+  </data>
+  <data name="Failure" xml:space="preserve">
+    <value>неудача</value>
+  </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>Экспозиция R</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>ЭкспозицияG</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>Экспозиция Б</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>контакт</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Экспорт</value>
+  </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>Процесс</value>
+  </data>
+  <data name="Exchange" xml:space="preserve">
+    <value>обмен</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>Произошла ошибка</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>Войдите в окно сбора</value>
+  </data>
+  <data name="EnableDatabase" xml:space="preserve">
+    <value>Включить базу данных</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Редактировать</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>затраты времени</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>Загрузка отменена</value>
+  </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>Область данных изображения CIE</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>Имя устройства</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>Идентификация оборудования</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>Код устройства</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>Формат хранения экспорта по умолчанию</value>
+  </data>
+  <data name="DefaultCreateTemplateName" xml:space="preserve">
+    <value>По умолчанию</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>Крайний срок</value>
+  </data>
+  <data name="DatabaseConnectionFailed" xml:space="preserve">
+    <value>Не удалось подключиться к базе данных. Перед началом работы подключитесь к базе данных</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>База данных имен</value>
+  </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>Текущая версия уже является последней версией</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Текущая скорость:</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>измерять время</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Создать новый файл конфигурации</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>Создать устройство</value>
+  </data>
+  <data name="Create_an_account" xml:space="preserve">
+    <value>Зарегистрируйте</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>создавать</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>Скопировать серийный номер</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Скопировать файл конфигурации</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>название соединения</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Обновить или нет</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>Настроить новый проект</value>
+  </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>Настройка завершена</value>
+  </data>
+  <data name="ColorVisionUpdater" xml:space="preserve">
+    <value>Программа обновления ColorVision</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>Код</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>закрытие</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>Очистить данные</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>очистить кэш</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Прозрачный</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>диаграмма</value>
+  </data>
+  <data name="ChangeLog" xml:space="preserve">
+    <value>Журнал изменений</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>Захватывать</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>Калибровка</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>вычислить</value>
+  </data>
+  <data name="BatchNumber" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Основная информация</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Автоматически переключать выбранные представления</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>Автоматическая экспозиция</value>
+  </data>
+  <data name="Alias" xml:space="preserve">
+    <value>Псевдоним</value>
+  </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>тип</value>
+  </data>
+  <data name="AdvanceSearch" xml:space="preserve">
+    <value>Расширенный поиск</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>расширенные настройки</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Добавлять</value>
+  </data>
+  <data name="Acquire" xml:space="preserve">
+    <value>коллекция</value>
+  </data>
+  <data name="AccountLogin" xml:space="preserve">
+    <value>Логин аккаунта</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>счет</value>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>о</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Выберите, где сохранить проект</value>
+  </data>
+  <data name="Choice" xml:space="preserve">
+    <value>выбирать</value>
+  </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>Исдефолтопенсервице</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>Исретореплейконтролс</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>Файл(Ф)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>Общие настройки шаблона датчика(S)</value>
+  </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>Добавить физическую камеру</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>Добавить несозданную камеру</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>Импорт лицензии</value>
+  </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>Шаблон автоматической экспозиции</value>
+  </data>
+  <data name="EditThirdPartyAlgorithmTemplate" xml:space="preserve">
+    <value>Редактировать шаблоны сторонних алгоритмов</value>
+  </data>
+  <data name="ModifyConfiguration" xml:space="preserve">
+    <value>Изменить настройку</value>
+  </data>
+  <data name="RefreshService" xml:space="preserve">
+    <value>обновить сервис</value>
+  </data>
+  <data name="ResetService" xml:space="preserve">
+    <value>Сбросить сервис</value>
+  </data>
+  <data name="ManagePhysicalCamera" xml:space="preserve">
+    <value>Управление физическими камерами</value>
+  </data>
+  <data name="DataLoading" xml:space="preserve">
+    <value>загрузка</value>
+  </data>
+  <data name="OpenFile" xml:space="preserve">
+    <value>ОткрытьФайл</value>
+  </data>
+  <data name="OpenFolder" xml:space="preserve">
+    <value>ОткрытьПапку</value>
+  </data>
+  <data name="ProductBrochure" xml:space="preserve">
+    <value>Брошюра о продукте</value>
+  </data>
+  <data name="UnknownStatus" xml:space="preserve">
+    <value>неизвестный статус</value>
+  </data>
+</root>

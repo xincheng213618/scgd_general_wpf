@@ -1,0 +1,31 @@
+﻿<Window x:Class="ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.WindowChart"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI"
+        xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+        mc:Ignorable="d"
+        Title="WindowChart" Height="450" Width="800"  Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <ComboBox SelectedIndex="0"  SelectionChanged="ComboBox_SelectionChanged" >
+                <ComboBoxItem Content="X"/>
+                <ComboBoxItem Content="Y"/>
+                <ComboBoxItem Content="Z"/>
+                <ComboBoxItem Content="u"/>
+                <ComboBoxItem Content="v"/>
+                <ComboBoxItem Content="x"/>
+                <ComboBoxItem Content="y"/>
+                <ComboBoxItem Content="Wave"/>
+                <ComboBoxItem Content="CCT"/>
+            </ComboBox>
+            <Button x:Name="ButtonSave" Content="Save"  Click="ButtonSave_Click"/>
+        </StackPanel>
+        <ScottPlot:WpfPlot  x:Name="wpfplot1"  Grid.Row="1"/>
+    </Grid>
+</Window>
