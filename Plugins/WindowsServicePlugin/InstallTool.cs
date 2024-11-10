@@ -7,12 +7,7 @@ using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http.Headers;
-using System.Net.Http;
-using System.Text;
 using System.Windows;
-using System.Threading;
-using cvColorVision;
 
 namespace WindowsServicePlugin
 {
@@ -153,10 +148,6 @@ namespace WindowsServicePlugin
         }
 
 
-
-
-
-
         public async void Download()
         {
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
@@ -261,7 +252,4 @@ namespace WindowsServicePlugin
         }
 
     }
-
-
-
 }

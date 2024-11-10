@@ -59,10 +59,7 @@ namespace ColorVision.ImageEditor
         }
         private void Zoombox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (sender is Decorator zoombox && zoombox.ContextMenu is ContextMenu contextMenu)
-            {
-                contextMenu.ItemsSource = Views;
-            }
+
         }
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
@@ -96,6 +93,17 @@ namespace ColorVision.ImageEditor
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
             ImageEditViewMode.ClearImageEventHandler += Clear;
+            ImageEditViewMode.EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    Zoombox1.ContextMenu.Items.Clear();
+                }
+                else
+                {
+                    RenderContextMenu();
+                }
+            };
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -225,7 +233,7 @@ namespace ColorVision.ImageEditor
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = "" };
+                MenuItem menuIte2 = new() { Header = "删除" };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -442,9 +450,8 @@ namespace ColorVision.ImageEditor
             }
         }
 
+
         Point LastMouseMove;
-
-
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
@@ -803,8 +810,10 @@ namespace ColorVision.ImageEditor
         }
         public void RenderContextMenu()
         {
+            Zoombox1.ContextMenu ??= new ContextMenu();
+
             Zoombox1.ContextMenu.Items.Clear();
-            foreach (var item in ImageEditViewMode.ContextMenus)
+            foreach (var item in ImageEditViewMode.GetContextMenus())
             {
                 Zoombox1.ContextMenu.Items.Add(item);
             }

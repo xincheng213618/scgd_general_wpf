@@ -91,7 +91,10 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-        public List<MenuItem> ContextMenus { get; set; } = new List<MenuItem>();
+        public List<MenuItem> GetContextMenus() 
+        {
+            return GenContextMenu();
+        }
 
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
@@ -104,21 +107,7 @@ namespace ColorVision.ImageEditor.Draw
             Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
-
-            ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.ActualLength))
-                {
-
-                }
-                else if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.PhysicalUnit))
-                {
-
-                }
-
-            };
             ToolConcentricCircle = new ToolReferenceLine(zoombox, drawCanvas);
-
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
@@ -138,20 +127,6 @@ namespace ColorVision.ImageEditor.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
-
-            EditModeChanged += (s, e) =>
-            {
-                if (e.IsEditMode)
-                {
-                    ZoomboxSub.ContextMenu = null;
-                }
-                else
-                {
-                    
-                    AddContextMenu();
-                }
-            };
-            AddContextMenu();
         }
 
 
@@ -174,8 +149,9 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-        public void AddContextMenu()
+        public List<MenuItem> GenContextMenu()
         {
+            List<MenuItem> ContextMenus = new List<MenuItem>();
             MenuItem menuItemZoom = new() { Header = "缩放工具", Command = SaveImageCommand };
             menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
@@ -189,8 +165,9 @@ namespace ColorVision.ImageEditor.Draw
             ContextMenus.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
             ContextMenus.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
             ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-            ContextMenus.Add(new MenuItem() { Header = "另存为", Command = SaveImageCommand });
+            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });
             ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
+            return ContextMenus;
         }
 
         public void FlipHorizontal()
