@@ -53,6 +53,7 @@ namespace ColorVision.Engine.Media
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
         public List<string> ComboBoxLayerCIEItems { get; set; } = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+ 
 
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
@@ -139,17 +140,31 @@ namespace ColorVision.Engine.Media
             }
 
         }
+
+        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        {
+            List<MenuItem> MenuItems = new List<MenuItem>();
+            void export()
+            {
+                if (imageView.Config.Properties.TryGetValue("FilePath",out object value) && value is string FilePath && File.Exists(FilePath))
+                {
+                    new ExportCVCIE(FilePath).ShowDialog();
+                }
+            }
+
+            MenuItem menuItem = new MenuItem() { Header = "导出" };
+            menuItem.Click += (s, e) => export();
+
+            MenuItems.Add(menuItem);
+            return MenuItems;
+        }
+
+
+
         public async void OpenImage(ImageView imageView, string? filePath)
         {
             CVCIESetBuffer(imageView, filePath);
 
-            void export()
-            {
-                new ExportCVCIE(imageView.Config.FilePath).ShowDialog();
-            }
-            MenuItem menuItem = new MenuItem() { Header = "导出" };
-            menuItem.Click +=(s,e) => export();
-            imageView.Zoombox1.ContextMenu.Items.Add(menuItem);
             try
             {
                 if (imageView.Config.IsShowLoadImage)

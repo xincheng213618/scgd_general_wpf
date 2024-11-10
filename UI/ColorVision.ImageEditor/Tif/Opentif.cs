@@ -4,6 +4,7 @@ using ColorVision.UI;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
@@ -80,7 +81,10 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
-
+        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        {
+            return new List<MenuItem>();
+        }
     }
 
 }

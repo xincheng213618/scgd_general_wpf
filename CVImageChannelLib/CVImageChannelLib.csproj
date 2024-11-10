@@ -14,7 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="log4net" Version="3.0.2" />
-    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241107" />
+    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="OpenH264Lib">
