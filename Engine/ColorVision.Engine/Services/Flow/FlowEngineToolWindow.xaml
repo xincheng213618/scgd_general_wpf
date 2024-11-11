@@ -78,7 +78,7 @@
                     </WindowsFormsHost>
                 </ScrollViewer>
                 <ScrollViewer Grid.Row="2" Height="150" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="SignStackPannel" Orientation="Vertical" >
+                    <StackPanel x:Name="SignStackPannel" Orientation="Vertical" Margin="3" >
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
