@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public override void PreviewMouseDoubleClick(int index)
         {
-            new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 
         private static ModMasterDao masterFlowDao = new ModMasterDao("flow");

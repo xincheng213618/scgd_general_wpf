@@ -43,6 +43,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
+using static OpenCvSharp.ML.DTrees;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -56,7 +57,7 @@ namespace ColorVision.Engine.Services.Flow
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            new FlowEngineToolWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
+            new FlowEngineToolWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.Show();
         }
     }
 
@@ -82,7 +83,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (STNodeEditorMain.ActiveNode == null)
+            if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length ==0)
             {
                 if (e.Key == Key.Left)
                 {
@@ -115,6 +116,59 @@ namespace ColorVision.Engine.Services.Flow
                     e.Handled = true;
                 }
             }
+            else
+            {
+                if (STNodeEditorMain.ActiveNode != null)
+                {
+                    if (e.Key == Key.Left)
+                    {
+                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X -10, STNodeEditorMain.ActiveNode.Location.Y);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Right)
+                    {
+                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X +10, STNodeEditorMain.ActiveNode.Location.Y);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Up)
+                    {
+                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X, STNodeEditorMain.ActiveNode.Location.Y -10);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Down)
+                    {
+                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X, STNodeEditorMain.ActiveNode.Location.Y +10);
+                        e.Handled = true;
+                    }
+                }
+
+
+                foreach (var item in STNodeEditorMain.GetSelectedNode())
+                {
+                    if (e.Key == Key.Left)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Right)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Up)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Down)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+                        e.Handled = true;
+                    }
+                }
+
+            }
+
 
         }
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
@@ -406,6 +460,7 @@ namespace ColorVision.Engine.Services.Flow
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
         }
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
@@ -471,6 +526,15 @@ namespace ColorVision.Engine.Services.Flow
             if (!string.IsNullOrEmpty(flowParam.DataBase64))
             {
                 STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+                foreach (var item in STNodeEditorMain.Nodes)
+                {
+                    if (item is STNode node)
+                    {
+                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                        node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                    }
+                }
             }
             svrName = "";
             if (nodeStart != null)
