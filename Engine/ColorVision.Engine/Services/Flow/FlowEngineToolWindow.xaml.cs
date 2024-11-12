@@ -39,11 +39,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 using static OpenCvSharp.ML.DTrees;
 
 namespace ColorVision.Engine.Services.Flow
@@ -141,6 +141,10 @@ namespace ColorVision.Engine.Services.Flow
                         STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X, STNodeEditorMain.ActiveNode.Location.Y +10);
                         e.Handled = true;
                     }
+                    if (e.Key == Key.Delete)
+                    {
+                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+                    }
                 }
 
 
@@ -165,6 +169,10 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
                         e.Handled = true;
+                    }
+                    if (e.Key == Key.Delete)
+                    {
+                        STNodeEditorMain.Nodes.Remove(item);
                     }
                 }
 
@@ -312,49 +320,47 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         SignStackPannel.Children.Clear();
 
-                        Button button = new Button() { Content = "刷新" };
-                        button.Click += (s, e) => Refesh();
-                        SignStackPannel.Children.Add(button);
-
                         switch (algorithmNode.Algorithm)
                         {
                             case FlowEngineLib.Algorithm.AlgorithmType.MTF:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateMTF());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.SFR:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateSFR());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR", new TemplateSFR());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateFOV());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateGhost());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateDistortionParam());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测1:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateLedCheck());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测1", new TemplateLedCheck());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateMTF());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateLEDStripDetection()); ;
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.发光区检测1:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateFocusPoints()    );
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测1", new TemplateFocusPoints()    );
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new  TemplateRoi());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测OLED", new  TemplateRoi());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.JND:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板",  new TemplateJND());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "JND",  new TemplateJND());
                                 break;
                             default:
                                 break;
                         }
                     }
+                    algorithmNode.nodeEvent -= (s, e) => Refesh();
+                    algorithmNode.nodeEvent += (s, e) => Refesh();
                     Refesh();
                 }
 
@@ -447,6 +453,7 @@ namespace ColorVision.Engine.Services.Flow
 
                 }
             };
+
         }
 
         //private string startNodeName;
@@ -461,7 +468,6 @@ namespace ColorVision.Engine.Services.Flow
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
-            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
         }
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
@@ -533,7 +539,6 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                         node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
-                        node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
                     }
                 }
             }
@@ -636,49 +641,132 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
-        private void Button_Click_Stop(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void Button_Click_AlignTop(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.AlignTop();
-        }
-
-        private void Button_Click_AlignDis(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.AlignHorizontalDistance();
-        }
 
         void ApplyTreeLayout(STNode rootNode, int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
             int currentY = startY;
-
-            void LayoutNode(STNode node, int depth)
+            HashSet<STNode> MoreParens = new HashSet<STNode>();   
+            void LayoutNode(STNode node,int current)
             {
+                int depeth = GetMaxDepth(node);
                 // 设置当前节点的位置
-                node.Left = startX + depth * horizontalSpacing;
-                node.Top = currentY;
+                node.Left = startX + depeth * horizontalSpacing;
+                node.Top = current;
 
+                var parent = GetParent(node);
                 // 递归布局子节点
                 var children = GetChildren(node);
+
                 foreach (var child in children)
                 {
-                    currentY += verticalSpacing;
-                    LayoutNode(child, depth + 1);
+                    if (GetParent(child).Count > 1)
+                    {
+                        MoreParens.Add(child);
+                    }
+                    else
+                    {
+                        LayoutNode(child, currentY);
+                        currentY +=  verticalSpacing;
+                    }
+                }
+                var childrenWithout = GetChildrenWithout(node);
+                if (childrenWithout.Count > 1)
+                {
+                    currentY = childrenWithout.Last().Top ;
                 }
 
                 // 调整父节点位置到子节点的中心
-                if (children.Any())
+                if (childrenWithout.Any())
                 {
-                    int firstChildY = children.First().Top;
-                    int lastChildY = children.Last().Top;
+                    int firstChildY = childrenWithout.First().Top;
+                    int lastChildY = childrenWithout.Last().Top;
+                    node.Top = (firstChildY + lastChildY) / 2;
+                }
+
+                if (parent.Count >1)
+                {
+                    int firstChildY = parent.First().Top;
+                    int lastChildY = parent.Last().Top;
                     node.Top = (firstChildY + lastChildY) / 2;
                 }
             }
 
-            LayoutNode(rootNode, 0);
+            void MoreParentsLayoutNode(STNode node)
+            {
+                node.Left = startX + GetMaxDepth(node) * horizontalSpacing;
+                var parent = GetParent(node);
+                // 递归布局子节点
+                var children = GetChildren(node);
+
+                int minParentY = parent.Min(c => c.Top);
+                int maxParentY = parent.Max(c => c.Top);
+
+                node.Top = (minParentY + maxParentY) / 2;
+
+                SetCof( node,  verticalSpacing);
+                 int currenty = node.Top;
+                foreach (var child in children)
+                {
+                    LayoutNode(child, currenty);
+                    currenty += verticalSpacing;
+                }
+            }
+
+            LayoutNode(rootNode, currentY);
+            foreach (var item in MoreParens)
+            {
+                MoreParentsLayoutNode(item);
+            }
+        }
+
+        public void SetCof(STNode node,int verticalSpacing)
+        {
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is STNode onode)
+                {
+                    if (onode != node && onode.Left == node.Left && onode.Top == node.Top)
+                    {
+                        onode.Top += verticalSpacing;
+                        SetCof(node, verticalSpacing);
+                    }
+                }
+            }
+        }
+
+
+        public int GetMaxDepth(STNode node)
+        {
+            var parent = GetParent(node);
+            if (!parent.Any())
+            {
+                return 0;
+            }
+            return parent.Max(c => GetMaxDepth(c)) + 1;
+        }
+        List<STNode> GetParent(STNode node)
+        {
+            var list = ConnectionInfo.Where(c => c.Input.Owner == node);
+            List<STNode> children = new();
+            foreach (var item in list)
+            {
+                children.Add(item.Output.Owner);
+
+            }
+            return children;
+        }
+        List<STNode> GetChildrenWithout(STNode node)
+        {
+            var list = ConnectionInfo.Where(c => c.Output.Owner == node);
+            List<STNode> children = new();
+            foreach (var item in list)
+            {
+                if (GetParent(item.Input.Owner).Count == 1)
+                {
+                    children.Add(item.Input.Owner);
+                }
+            }
+            return children;
         }
 
         List<STNode> GetChildren(STNode node)
@@ -709,7 +797,7 @@ namespace ColorVision.Engine.Services.Flow
             ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
 
             STNode rootNode = GetRootNode();
-            ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 300, verticalSpacing: 100);
+            ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 300, verticalSpacing: 200);
             STNodeEditorMain.MoveCanvas(0, 0, bAnimation: true, CanvasMoveArgs.Left);
 
         }

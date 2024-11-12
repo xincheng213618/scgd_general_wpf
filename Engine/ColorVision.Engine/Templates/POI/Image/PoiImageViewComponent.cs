@@ -257,6 +257,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             float dZVal = 0;
                             float dx = 0, dy = 0, du = 0, dv = 0;
                             int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            
                             windowCIE.ChangeSelect(dx, dy);
                         }
                         else
