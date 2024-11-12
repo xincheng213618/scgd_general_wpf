@@ -121,6 +121,10 @@ namespace ColorVision
                     channels = 3; // RGB format has 3 channels
                     depth = 8; // 8 bits per channel
                     break;
+                case "Indexed8":
+                    depth = 8; // 8 bits per channel
+                    channels = 1;
+                    break;
                 case "Rgb48":
                     channels = 3; // RGB format has 3 channels
                     depth = 16; // 8 bits per channel
