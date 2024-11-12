@@ -66,7 +66,6 @@ namespace ColorVision.Engine.Templates.SysDictionary
                 var item = TemplateParams[index];
                 SysDictionaryModMasterDao.Instance.DeleteById(item.Value.Id,false);
                 TemplateParams.RemoveAt(index);
-                MenuManager.GetInstance().LoadMenuItemFromAssembly();
             }
         }
 
