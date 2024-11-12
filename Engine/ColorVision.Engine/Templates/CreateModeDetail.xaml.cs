@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates
             }
 
             var values = SysDictionaryModDetaiModels
-                .Select(item => new KeyValuePair<int, string>((int)item.AddressCode, item.Name ?? item.Symbol ?? item.AddressCode.ToString()))
+                .Select(item => new KeyValuePair<int, string>((int)item.AddressCode, item.Symbol?? item.Name ?? item.AddressCode.ToString()))
                 .ToList();
             CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
             CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
