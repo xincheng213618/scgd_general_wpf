@@ -124,7 +124,7 @@
             </DockPanel>
         </Grid>
         <Grid x:Name="ZoomGrid" Background="#c3c3c3">
-            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
@@ -254,8 +254,8 @@
                     <Button  Content="白" Padding="8,5" Click="AdjustWhiteBalance_Click" Margin="0,0,0,2"/>
 
                     <StackPanel>
-                        <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
-                            <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
+                        <ToggleButton Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter}}" x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
+                            <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
                         <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" Visibility="Collapsed" >
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
