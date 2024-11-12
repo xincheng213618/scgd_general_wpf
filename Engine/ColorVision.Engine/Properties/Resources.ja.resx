@@ -804,4 +804,16 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>不明な状態</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>デフォルト値</value>
+  </data>
+  <data name="AddressCode" xml:space="preserve">
+    <value>住所コード</value>
+  </data>
+  <data name="CreateDate" xml:space="preserve">
+    <value>作成日</value>
+  </data>
+  <data name="IsEnable" xml:space="preserve">
+    <value>有効</value>
+  </data>
 </root>

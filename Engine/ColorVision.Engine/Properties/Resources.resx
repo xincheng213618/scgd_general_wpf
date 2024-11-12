@@ -784,4 +784,19 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>未知状态</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>默认值</value>
+  </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>符号</value>
+  </data>
+  <data name="AddressCode" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="CreateDate" xml:space="preserve">
+    <value>创建时间</value>
+  </data>
+  <data name="IsEnable" xml:space="preserve">
+    <value>启用</value>
+  </data>
 </root>

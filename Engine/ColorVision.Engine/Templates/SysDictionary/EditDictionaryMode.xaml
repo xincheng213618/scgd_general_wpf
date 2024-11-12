@@ -39,42 +39,42 @@
                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="Symbol"  >
+                    <GridViewColumn  Header="{x:Static properties:Resources.Symbol}"  >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  Symbol}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="Name">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Name}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  Name}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="AddressCode">
+                    <GridViewColumn  Header="{x:Static properties:Resources.AddressCode}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  AddressCode}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="DefaultValue" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.DefaultValue}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBox Text="{Binding  DefaultValue}"  Width="100"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="IsEnable" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.IsEnable}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <CheckBox IsChecked="{Binding  IsEnable}"  Width="50"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="CreateDate" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.CreateDate}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding CreateDate}"/>

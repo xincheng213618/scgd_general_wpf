@@ -804,4 +804,16 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>未知狀態</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>預設值</value>
+  </data>
+  <data name="AddressCode" xml:space="preserve">
+    <value>地址代碼</value>
+  </data>
+  <data name="CreateDate" xml:space="preserve">
+    <value>建立日期</value>
+  </data>
+  <data name="IsEnable" xml:space="preserve">
+    <value>是否啟用</value>
+  </data>
 </root>

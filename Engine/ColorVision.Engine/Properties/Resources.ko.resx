@@ -804,4 +804,16 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>알 수 없는 상태</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>기본값</value>
+  </data>
+  <data name="AddressCode" xml:space="preserve">
+    <value>주소코드</value>
+  </data>
+  <data name="CreateDate" xml:space="preserve">
+    <value>생성날짜</value>
+  </data>
+  <data name="IsEnable" xml:space="preserve">
+    <value>활성화되어 있습니까?</value>
+  </data>
 </root>

@@ -115,6 +115,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 ID 的本地化字符串。
+        /// </summary>
+        public static string AddressCode {
+            get {
+                return ResourceManager.GetString("AddressCode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 添加未创建的相机 的本地化字符串。
         /// </summary>
         public static string AddUncreatedCamera {
@@ -394,6 +403,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建时间 的本地化字符串。
+        /// </summary>
+        public static string CreateDate {
+            get {
+                return ResourceManager.GetString("CreateDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 创建设备 的本地化字符串。
         /// </summary>
         public static string CreateDevice {
@@ -489,6 +507,15 @@ namespace ColorVision.Engine.Properties {
         public static string DefaultExportStorageFormat {
             get {
                 return ResourceManager.GetString("DefaultExportStorageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 默认值 的本地化字符串。
+        /// </summary>
+        public static string DefaultValue {
+            get {
+                return ResourceManager.GetString("DefaultValue", resourceCulture);
             }
         }
         
@@ -849,6 +876,15 @@ namespace ColorVision.Engine.Properties {
         public static string IsDefaultOpenService {
             get {
                 return ResourceManager.GetString("IsDefaultOpenService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 启用 的本地化字符串。
+        /// </summary>
+        public static string IsEnable {
+            get {
+                return ResourceManager.GetString("IsEnable", resourceCulture);
             }
         }
         
@@ -1902,6 +1938,15 @@ namespace ColorVision.Engine.Properties {
         public static string Success {
             get {
                 return ResourceManager.GetString("Success", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 符号 的本地化字符串。
+        /// </summary>
+        public static string Symbol {
+            get {
+                return ResourceManager.GetString("Symbol", resourceCulture);
             }
         }
         

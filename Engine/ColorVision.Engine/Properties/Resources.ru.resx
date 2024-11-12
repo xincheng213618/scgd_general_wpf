@@ -804,4 +804,16 @@
   <data name="UnknownStatus" xml:space="preserve">
     <value>неизвестный статус</value>
   </data>
+  <data name="DefaultValue" xml:space="preserve">
+    <value>Значение по умолчанию</value>
+  </data>
+  <data name="AddressCode" xml:space="preserve">
+    <value>АдресКод</value>
+  </data>
+  <data name="CreateDate" xml:space="preserve">
+    <value>Дата создания</value>
+  </data>
+  <data name="IsEnable" xml:space="preserve">
+    <value>IsEnable</value>
+  </data>
 </root>
