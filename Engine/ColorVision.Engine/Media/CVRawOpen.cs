@@ -64,8 +64,20 @@ namespace ColorVision.Engine.Media
                 float dYVal = 0;
                 float dZVal = 0;
                 float dx = 0, dy = 0, du = 0, dv = 0;
-                _ = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
-                imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+
+                switch (imageView.Config.CVCIETYpe)
+                {
+                    case CVCIETYpe.Circle:
+                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum);
+                        imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+                        break;
+                    case CVCIETYpe.Rect:
+                        _ = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                        imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+                        break;
+                    default:
+                        break;
+                }
             }
             imageView.ImageEditViewMode.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 

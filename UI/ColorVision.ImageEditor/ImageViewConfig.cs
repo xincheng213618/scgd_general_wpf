@@ -7,10 +7,18 @@ using System.Text;
 
 namespace ColorVision.ImageEditor
 {
+    public enum CVCIETYpe
+    {
+        Circle,
+        Rect
+    }
+
     public class ImageViewConfig:ViewModelBase
     {
         [JsonIgnore]
         public Dictionary<string, object?> Properties { get; set; } = new Dictionary<string, object?>();
+
+        public Dictionary<string, object?> EditProperties { get; set; } = new Dictionary<string, object?>();
 
         public void AddProperties(string Key,object? Value)
         {
@@ -35,6 +43,9 @@ namespace ColorVision.ImageEditor
 
         public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
         private int _CVCIENum = 1;
+
+        public CVCIETYpe CVCIETYpe { get => _CVCIETYpe; set { _CVCIETYpe = value; NotifyPropertyChanged(); } }
+        public CVCIETYpe _CVCIETYpe;
 
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
