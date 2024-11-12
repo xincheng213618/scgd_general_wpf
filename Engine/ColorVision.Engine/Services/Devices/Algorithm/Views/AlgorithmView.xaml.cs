@@ -223,10 +223,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.LightArea:
                         result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
                         DVPolygon polygon = new DVPolygon();
-                        List<System.Drawing.Point> point1s = new List<System.Drawing.Point>();
+                        List<System.Windows.Point> point1s = new List<System.Windows.Point>();
                         foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
                         {
-                            point1s.Add(new System.Drawing.Point((int)item.PosX, (int)item.PosY));
+                            point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
                         }
                         foreach (var item in GrahamScan.ComputeConvexHull(point1s))
                         {
