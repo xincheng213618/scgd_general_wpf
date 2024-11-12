@@ -312,49 +312,47 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         SignStackPannel.Children.Clear();
 
-                        Button button = new Button() { Content = "刷新" };
-                        button.Click += (s, e) => Refesh();
-                        SignStackPannel.Children.Add(button);
-
                         switch (algorithmNode.Algorithm)
                         {
                             case FlowEngineLib.Algorithm.AlgorithmType.MTF:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateMTF());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.SFR:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateSFR());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR", new TemplateSFR());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateFOV());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateGhost());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateDistortionParam());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测1:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateLedCheck());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测1", new TemplateLedCheck());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateMTF());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateLEDStripDetection()); ;
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.发光区检测1:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new TemplateFocusPoints()    );
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测1", new TemplateFocusPoints()    );
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板", new  TemplateRoi());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测OLED", new  TemplateRoi());
                                 break;
                             case FlowEngineLib.Algorithm.AlgorithmType.JND:
-                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "模板",  new TemplateJND());
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "JND",  new TemplateJND());
                                 break;
                             default:
                                 break;
                         }
                     }
+                    algorithmNode.nodeEvent -= (s, e) => Refesh();
+                    algorithmNode.nodeEvent += (s, e) => Refesh();
                     Refesh();
                 }
 
@@ -636,20 +634,6 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
-        private void Button_Click_Stop(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void Button_Click_AlignTop(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.AlignTop();
-        }
-
-        private void Button_Click_AlignDis(object sender, RoutedEventArgs e)
-        {
-            STNodeEditorMain.AlignHorizontalDistance();
-        }
 
         void ApplyTreeLayout(STNode rootNode, int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
