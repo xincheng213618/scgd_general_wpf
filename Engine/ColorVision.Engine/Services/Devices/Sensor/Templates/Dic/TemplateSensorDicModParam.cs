@@ -18,6 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
             Title = "传感器字典编辑";
             TemplateParams = Params;
             IsUserControl = true;
+            Code = "Sensor";
         }
 
         public override void Create(string templateCode, string templateName)

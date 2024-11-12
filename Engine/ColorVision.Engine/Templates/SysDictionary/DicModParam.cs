@@ -7,6 +7,7 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -40,6 +41,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
     public class TemplateModParam : ITemplate<DicModParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
+        public override bool ExitsTemplateName(string templateName) => SysDictionaryModMasterDao.Instance.GetAll().Any(a => a.Code == templateName);
 
         public TemplateModParam()
         {
