@@ -30,13 +30,14 @@
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <UniformGrid Columns="6">
+            <UniformGrid Columns="10">
                 <Button x:Name="ButtonOpen"  Content="{x:Static properties:Resources.Loading}" Click="Button_Click_Open" Width="70" />
                 <Button x:Name="ButtonNew"  Content="{x:Static properties:Resources.New}" Click="Button_Click_New"  Width="70" />
                 <Button x:Name="ButtonClear"  Content="{x:Static properties:Resources.Clear}" Click="Button_Click_Clear"  Width="70"/>
                 <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
                 <Button x:Name="ButtonAlignTop"  Content="上对齐" Click="Button_Click_AlignTop" Width="70"/>
                 <Button x:Name="ButtonAlignDis"  Content="水平等距" Click="Button_Click_AlignDis" Width="70"/>
+                <Button  Content="自动对齐" Click="AutoAlignment_Click" Width="70"/>
             </UniformGrid>
             <Grid  x:Name="OperateGrid" Grid.Column="1" Margin="100,0,0,0" Visibility="Visible">
                 <Grid.ColumnDefinitions>

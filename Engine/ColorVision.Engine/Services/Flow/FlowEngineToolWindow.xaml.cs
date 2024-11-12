@@ -31,6 +31,7 @@ using FlowEngineLib.Start;
 using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
+using OpenTK.Graphics.OpenGL;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections;
@@ -648,6 +649,69 @@ namespace ColorVision.Engine.Services.Flow
         private void Button_Click_AlignDis(object sender, RoutedEventArgs e)
         {
             STNodeEditorMain.AlignHorizontalDistance();
+        }
+
+        void ApplyTreeLayout(STNode rootNode, int startX, int startY, int horizontalSpacing, int verticalSpacing)
+        {
+            int currentY = startY;
+
+            void LayoutNode(STNode node, int depth)
+            {
+                // 设置当前节点的位置
+                node.Left = startX + depth * horizontalSpacing;
+                node.Top = currentY;
+
+                // 递归布局子节点
+                var children = GetChildren(node);
+                foreach (var child in children)
+                {
+                    currentY += verticalSpacing;
+                    LayoutNode(child, depth + 1);
+                }
+
+                // 调整父节点位置到子节点的中心
+                if (children.Any())
+                {
+                    int firstChildY = children.First().Top;
+                    int lastChildY = children.Last().Top;
+                    node.Top = (firstChildY + lastChildY) / 2;
+                }
+            }
+
+            LayoutNode(rootNode, 0);
+        }
+
+        List<STNode> GetChildren(STNode node)
+        {
+            var list = ConnectionInfo.Where(c => c.Output.Owner == node);
+            List<STNode> children = new();
+            foreach (var item in list)
+            {
+                children.Add(item.Input.Owner);
+
+            }
+            return children;
+        }
+
+        public STNode GetRootNode()
+        {
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is STNode sTNode && sTNode is MQTTStartNode startNode)
+                    return startNode;
+            }
+            return null;
+        }
+        public ConnectionInfo[] ConnectionInfo { get; set; }
+
+        private void AutoAlignment_Click(object sender, RoutedEventArgs e)
+        {
+            ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
+
+            STNode rootNode = GetRootNode();
+            ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 300, verticalSpacing: 100);
+            STNodeEditorMain.MoveCanvas(0, 0, bAnimation: true, CanvasMoveArgs.Left);
+
         }
     }
 }
