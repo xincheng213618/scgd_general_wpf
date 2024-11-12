@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
             this.DataContext = DicModParam;
             CreateConfig = new SysDictionaryModDetaiModel() {  PId = DicModParam.Id};
             CreateConfig.Id = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
+            CreateConfig.ValueType = SValueType.String;
             CreateConfig.IsEnable = true;
             BorderEdit.DataContext  = CreateConfig;
 
@@ -42,16 +44,24 @@ namespace ColorVision.Engine.Templates.SysDictionary
         {
             CreateConfig.AddressCode = CreateConfig.Id;
             CreateConfig.CreateDate = DateTime.Now;
-            int i = SysDictionaryModDetailDao.Instance.Save(CreateConfig);
-            if (i > 0)
+            if (SysDictionaryModDetailDao.Instance.GetById(CreateConfig.Id) == null)
             {
-                DicModParam.ModDetaiModels.Add(CreateConfig);
-                this.Close();
+                int i = SysDictionaryModDetailDao.Instance.Save(CreateConfig);
+                if (i > 0)
+                {
+                    DicModParam.ModDetaiModels.Add(CreateConfig);
+                    this.Close();
+                }
+                else
+                {
+                    MessageBox.Show("添加失败");
+                }
             }
             else
             {
-                MessageBox.Show("添加失败");
+                MessageBox.Show("已经存在ID");
             }
+
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

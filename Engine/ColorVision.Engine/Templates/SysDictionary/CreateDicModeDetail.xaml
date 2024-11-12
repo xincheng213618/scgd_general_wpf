@@ -27,23 +27,23 @@
         </Grid.RowDefinitions>
         <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:SysDictionaryModDetaiModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
-                <DockPanel Margin="2">
+                <DockPanel Margin="5">
                     <TextBlock Text="ID" Width="100" />
                     <TextBox Text="{Binding Id}"/>
                 </DockPanel>
-                <DockPanel Margin="2">
+                <DockPanel Margin="6">
                     <TextBlock Text="符号" Width="100" />
                     <TextBox Text="{Binding Symbol}"/>
                 </DockPanel>
-                <DockPanel Margin="2">
+                <DockPanel Margin="5">
                     <TextBlock Text="名称" Width="100" />
                     <TextBox Text="{Binding Name}"/>
                 </DockPanel>
-                <DockPanel Margin="2">
+                <DockPanel Margin="5">
                     <TextBlock Text="默认值类型" Width="100" />
                     <ComboBox x:Name="ComboBoxValueType" SelectedValue="{Binding ValueType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                 </DockPanel>
-                <DockPanel Margin="2">
+                <DockPanel Margin="5">
                     <TextBlock Text="默认值" Width="100" />
                     <TextBox Text="{Binding DefaultValue}"/>
                 </DockPanel>
