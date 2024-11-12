@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
             BorderEdit.DataContext  = CreateConfig;
 
             ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues(typeof(SValueType)).Cast<SValueType>()
-                                            select new KeyValuePair<SValueType, string>(e1, e1.ToString());
+                                            select new KeyValuePair<SValueType, string>(e1, e1.ToDescription());
 
             
         }
