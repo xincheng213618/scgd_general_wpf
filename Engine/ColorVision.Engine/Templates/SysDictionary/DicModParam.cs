@@ -69,6 +69,12 @@ namespace ColorVision.Engine.Templates.SysDictionary
             }
         }
 
+        public override void Save(TemplateModel<DicModParam> item)
+        {
+            base.Save(item);
+            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+        }
+
         public override void Load()
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
