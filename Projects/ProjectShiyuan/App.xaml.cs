@@ -35,7 +35,6 @@ namespace ColorVision.Projects.ProjectShiYuan
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-
             MySqlControl.GetInstance().Connect();
             MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
             {

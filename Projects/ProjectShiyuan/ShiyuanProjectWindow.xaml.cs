@@ -223,8 +223,47 @@ namespace ColorVision.Projects.ProjectShiYuan
                                     PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
                                     PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                                 }
+
+                                if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                                {
+                                    string sourceFile = item.ImgFile;
+
+                                    // 获取目标目录路径
+                                    string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+
+                                    // 获取源文件的文件名
+                                    string fileName = Path.GetFileName(sourceFile);
+
+                                    // 构造目标文件的完整路径
+                                    string destinationFile = Path.Combine(destinationDirectory, fileName);
+
+                                    try
+                                    {
+                                        // 复制文件到目标路径
+                                        File.Copy(sourceFile, destinationFile, true);
+                                        log.Info(sourceFile +"文件复制成功");
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        log.Info(sourceFile + "文件复制失败");
+                                    }
+
+                                }
+
                             }
                             ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
+
+                            if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                            {
+                                string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + ProjectShiYuanConfig.Instance.SN + "_" + FlowControlData.SerialNumber +  ".csv";
+
+
+
+                                PoiResultCIExyuvData.SaveCsv(new ObservableCollection<PoiResultCIExyuvData>(PoiResultCIExyuvDatas), FilePath);
+
+                                
+
+                            }
                         }
                         else
                         {

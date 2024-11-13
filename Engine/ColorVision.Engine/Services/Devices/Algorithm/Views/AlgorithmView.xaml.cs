@@ -657,7 +657,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public static void SideSave(AlgorithmResult result,string selectedPath)
+        public  void SideSave(AlgorithmResult result,string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
@@ -677,6 +677,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.OLED_JND_CalVas:
                         var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
                         ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
+                        string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
+                        ImageView.ImageEditViewMode.Save(saveng);
                         break;
                     case AlgorithmResultType.FOV:
                         break;

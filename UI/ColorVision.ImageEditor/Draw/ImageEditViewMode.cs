@@ -339,6 +339,11 @@ namespace ColorVision.ImageEditor.Draw
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            Save(dialog.FileName);
+        }
+
+        public void Save(string FileName)
+        {
 
             RenderTargetBitmap renderTargetBitmap = new((int)Image.ActualWidth, (int)Image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(Image);
@@ -348,9 +353,11 @@ namespace ColorVision.ImageEditor.Draw
             pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             // 将PNG内容保存到文件
-            using FileStream fileStream = new(dialog.FileName, FileMode.Create);
+            using FileStream fileStream = new(FileName, FileMode.Create);
             pngEncoder.Save(fileStream);
         }
+
+
 
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
