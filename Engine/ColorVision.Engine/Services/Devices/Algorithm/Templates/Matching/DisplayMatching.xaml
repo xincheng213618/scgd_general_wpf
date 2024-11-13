@@ -24,11 +24,6 @@
                 <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding TemplateFile}" Width="140" HorizontalAlignment="Left"  Margin="0,0,5,0"/>
                 <Button Content="..." Command="{Binding SetTemplateFileCommand}"  HorizontalAlignment="Left"/>
             </DockPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="MaskFile" Width="80"/>
-                <TextBox  Style="{StaticResource TextBox.Small}" Text="{Binding MaskFile}" Width="140" HorizontalAlignment="Left" Margin="0,0,5,0" />
-                <Button Content="..." Command="{Binding SetTemplateFileCommand}" HorizontalAlignment="Left"/>
-            </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">

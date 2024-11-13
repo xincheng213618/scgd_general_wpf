@@ -25,7 +25,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         public RelayCommand OpenTemplatePoiCommand { get; set; }
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public RelayCommand SetMaskFileCommand { get; set; }
         public RelayCommand SetTemplateFileCommand { get; set; }
 
 
@@ -34,7 +33,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
-            SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(MaskFile)));
             SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(TemplateFile)));
 
         }
@@ -55,10 +53,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
 
-
-
-        public string MaskFile { get => _MaskFile; set { _MaskFile = value; NotifyPropertyChanged(); } }
-        private string _MaskFile;
 
         public string TemplateFile { get => _TemplateFile; set { _TemplateFile = value; NotifyPropertyChanged(); } }
         private string _TemplateFile;
@@ -97,7 +91,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
             else sn = serialNumber;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("MaskFile", MaskFile);
             Params.Add("TemplateFile", TemplateFile);
             Params.Add("MatchParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });
 
