@@ -27,106 +27,12 @@
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Margin="0,0,0,5">
-                <ListView x:Name="ListViewSetting" Grid.Row="1" Height="170"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
-                    <ListView.Resources>
-                        <ContextMenu x:Key="ContextMenuItem">
-                        </ContextMenu>
-                    </ListView.Resources>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                            <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View>
-                        <GridView >
-                            <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                </Style>
-                            </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn >
-                                <GridViewColumn.Header>
-                                    <TextBlock Text="设定" Foreground="Red" FontWeight="Bold"/>
-                                </GridViewColumn.Header>
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{Binding Name}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="x(上限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  X.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="x(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  X.ValMin}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="y(上限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding Y.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="y(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  Y.ValMin}" Width="40" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Lv(上限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding Lv.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Lv(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  Lv.ValMin}" Width="40" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="dw(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="dw(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="模板" Width="200" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" HorizontalAlignment="Left" Tag="{Binding .}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-
-                </ListView>
-            </Grid>
-            <Grid Grid.Row="1" Margin="0,0,0,5">
-                <ListView x:Name="ListViewResult" Height="150">
+            <Grid Grid.Row="1" Margin="0,0,0,5"  Height="300">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="250"/>
+                </Grid.ColumnDefinitions>
+                <ListView x:Name="ListViewResult" SelectionChanged="ListViewResult_SelectionChanged">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
@@ -201,24 +107,36 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="ValidateResult" Width="70">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
-                                        <TextBlock Text="{ Binding  ValidateResult, StringFormat={}{0:F3}}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-
                             <GridViewColumn  Header="结果" Width="70">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{Binding Result}" Foreground="{Binding Result,Converter={StaticResource ColorConverter}}" />
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding ValidateResult}" Foreground="{Binding ValidateResult,Converter={StaticResource ColorConverter}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
+                <ListView x:Name="ListViewValue" Grid.Column="1" >
+                    <ListView.Resources >
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
             </Grid>
 
             <Grid Grid.Row="2">

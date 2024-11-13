@@ -180,7 +180,6 @@ namespace ColorVision.Projects.ProjectShiYuan
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
-            ListViewSetting.ItemsSource = Settings;
             ListViewResult.ItemsSource = Results;
 
             FlowTemplate.ItemsSource = FlowParam.Params;
@@ -192,12 +191,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
                 }
             };
-
-            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
-            foreach (var item in strings)
-            {
-                Settings.Add(new TempResult() { Name = item });
-            }
 
             this.DataContext = ProjectShiYuanConfig.Instance;
 
@@ -365,6 +358,26 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
             }
+        }
+
+        private void ListViewResult_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedItem is PoiResultCIExyuvData poiResultCIExyuvData)
+            {
+                List<string> header = new() { "规则" , "结果" };
+                List<string> bdHeader = new() {"Rule.RType" , "Result" };
+
+
+                if (ListViewValue.View is GridView gridView)
+                {
+                    gridView.Columns.Clear();
+                    for (int i = 0; i < header.Count; i++)
+                        gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
+                    ListViewValue.ItemsSource = poiResultCIExyuvData.ValidateSingles;
+                }
+
+            }
+            
         }
     }
 }
