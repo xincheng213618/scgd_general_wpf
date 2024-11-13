@@ -27,9 +27,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public int? TId { get; set; }
         public string TName { get; set; }
         public string ImgFile { get; set; }
-        /// <summary>
-        /// 0-色度;1-亮度
-        /// </summary>
+
         public AlgorithmResultType ImgFileType { get; set; }
         public int? BatchId { get; set; }
         public string BatchCode { get; set; }

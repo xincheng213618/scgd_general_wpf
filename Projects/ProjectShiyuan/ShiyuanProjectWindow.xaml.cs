@@ -4,14 +4,18 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
+using ColorVision.UI;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -168,6 +172,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
 
+        public STNodeEditor STNodeEditorMain { get; set; }
 
         private FlowEngineLib.FlowEngineControl flowEngine;
         private void Window_Initialized(object sender, EventArgs e)
@@ -176,7 +181,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
 
-            STNodeEditor STNodeEditorMain = new STNodeEditor();
+            STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
@@ -209,6 +214,8 @@ namespace ColorVision.Projects.ProjectShiYuan
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
+                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
@@ -216,54 +223,93 @@ namespace ColorVision.Projects.ProjectShiYuan
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in resultMaster)
                             {
-                                List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-
-                                foreach (var pointResultModel in POIPointResultModels)
+                                if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
                                 {
-                                    PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
-                                    PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                    List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+
+                                    foreach (var pointResultModel in POIPointResultModels)
+                                    {
+                                        PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                        PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                    }
+                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                                    {
+                                        string sourceFile = item.ImgFile;
+                                        // 获取目标目录路径
+                                        string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+                                        // 获取源文件的文件名
+                                        string fileName = Path.GetFileName(sourceFile);
+                                        // 构造目标文件的完整路径
+                                        string destinationFile = Path.Combine(destinationDirectory, fileName);
+                                        try
+                                        {
+                                            // 复制文件到目标路径
+                                            File.Copy(sourceFile, destinationFile, true);
+                                            log.Info(sourceFile + "文件复制成功");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            log.Info(sourceFile + "文件复制失败");
+                                        }
+                                    }
                                 }
 
-                                if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                                if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
                                 {
-                                    string sourceFile = item.ImgFile;
-
-                                    // 获取目标目录路径
-                                    string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
-
-                                    // 获取源文件的文件名
-                                    string fileName = Path.GetFileName(sourceFile);
-
-                                    // 构造目标文件的完整路径
-                                    string destinationFile = Path.Combine(destinationDirectory, fileName);
-
-                                    try
+                                    ObservableCollection<ViewRsultJND> ViewRsultJNDs = new ObservableCollection<ViewRsultJND>();
+                                    foreach (var model in PoiPointResultDao.Instance.GetAllByPid(item.Id))
                                     {
-                                        // 复制文件到目标路径
-                                        File.Copy(sourceFile, destinationFile, true);
-                                        log.Info(sourceFile +"文件复制成功");
+                                        ViewRsultJNDs.Add(new ViewRsultJND(model));
                                     }
-                                    catch (Exception ex)
+                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
                                     {
-                                        log.Info(sourceFile + "文件复制失败");
+                                        string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_JND"+ ".csv";
+                                        ViewRsultJND.SaveCsv(ViewRsultJNDs, FilePath);
                                     }
+
 
                                 }
-
+                             
                             }
-                            ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
 
+                            ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
+                          
                             if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
                             {
-                                string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + ProjectShiYuanConfig.Instance.SN + "_" + FlowControlData.SerialNumber +  ".csv";
+                                foreach (var item in STNodeEditorMain.Nodes)
+                                {
+                                    if (item is FlowEngineLib.Node.Algorithm.TPAlgorithmNode tapnode)
+                                    {
+                                        if (File.Exists(tapnode.ImgFileName))
+                                        {
+                                            string sourceFile = tapnode.ImgFileName;
+                                            // 获取目标目录路径
+                                            string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+                                            // 获取源文件的文件名
+                                            string fileName = Path.GetFileNameWithoutExtension(sourceFile) + "_"+timestamp + Path.GetExtension(sourceFile);
+                                            // 构造目标文件的完整路径
+                                            string destinationFile = Path.Combine(destinationDirectory, fileName);
+                                            try
+                                            {
+                                                // 复制文件到目标路径
+                                                File.Copy(sourceFile, destinationFile, true);
+                                                log.Info(sourceFile + "JNDCAD文件复制成功");
+                                            }
+                                            catch (Exception ex)
+                                            {
+                                                log.Info(sourceFile + "文件复制失败");
+                                            }
 
+                                        }
+                                    }
+                                }
 
-
+                                string FilePath = ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_POI" + ".csv";
                                 PoiResultCIExyuvData.SaveCsv(new ObservableCollection<PoiResultCIExyuvData>(PoiResultCIExyuvDatas), FilePath);
 
-                                
-
                             }
+                            ResultText.Text = "OK";
+                            ResultText.Foreground = Brushes.Red;
                         }
                         else
                         {
@@ -417,6 +463,17 @@ namespace ColorVision.Projects.ProjectShiYuan
 
             }
             
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            WindowLog windowLog = new WindowLog() {  Owner =Application.Current.GetActiveWindow() };
+            windowLog.Show();
+        }
+
+        private void Open_Click(object sender, RoutedEventArgs e)
+        {
+            Common.Utilities.PlatformHelper.OpenFolder(ProjectShiYuanConfig.Instance.DataPath);
         }
     }
 }

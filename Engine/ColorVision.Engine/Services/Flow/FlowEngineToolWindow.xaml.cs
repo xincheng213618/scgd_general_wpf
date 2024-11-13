@@ -713,7 +713,7 @@ namespace ColorVision.Engine.Services.Flow
             }
 
             LayoutNode(rootNode, currentY);
-            foreach (var item in MoreParens)
+            foreach (var item in MoreParens.Cast<STNode>().ToList())
             {
                 MoreParentsLayoutNode(item);
             }
