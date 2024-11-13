@@ -1,11 +1,33 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
+using ColorVision.Engine.Services.Flow;
+using System.Windows;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
     public class ProjectShiYuanConfig: ViewModelBase, IConfig
     {
         public static ProjectShiYuanConfig Instance => ConfigService.Instance.GetRequiredService<ProjectShiYuanConfig>();
+        public RelayCommand OpenTemplateCommand { get; set; }
+
+        public ProjectShiYuanConfig()
+        {
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+        }
+
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
+        public void OpenTemplate()
+        {
+            new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        private string _SN;
+
 
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;
@@ -27,6 +49,8 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
+
+
 
     }
 }

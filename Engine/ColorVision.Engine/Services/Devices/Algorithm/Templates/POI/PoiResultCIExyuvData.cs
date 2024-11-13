@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1708,CS8604,CS8602
+using CVCommCore;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -138,6 +139,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public double y { get { return _y; } set { _y = value; NotifyPropertyChanged(); } }
         private double _y;
+
+
+        public bool ValidateResult { get
+                {
+                if (ValidateSingles == null)
+                    return false;
+                bool result = true;
+                foreach (var item in ValidateSingles)
+                {
+                    result= result && item.Result == ValidateRuleResultType.M;
+                }
+                return result;
+            } }
+
+
 
 
         public PoiResultCIExyuvData() { }

@@ -32,6 +32,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
 
+            LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 

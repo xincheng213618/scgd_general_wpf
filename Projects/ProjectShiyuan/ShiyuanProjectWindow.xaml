@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Projects.ProjectShiYuan"
         xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:poi ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;assembly=ColorVision.Engine"
         d:DataContext="{d:DesignInstance local:ProjectShiYuanConfig}"
         mc:Ignorable="d"
         Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -146,39 +147,68 @@
                                     <TextBlock Text="测试结果" Foreground="Blue" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
                                         <TextBlock Text="{Binding Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="x" Width="70">
+                            <GridViewColumn  Header="CCT" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F3}}" />
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  CCT, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="y" Width="70">
+                            <GridViewColumn  Header="Wave" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F3}}" />
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  Wave, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Lv" Width="70">
+                            <GridViewColumn  Header="X" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F3}}" />
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  X, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="dw" Width="70">
+                            <GridViewColumn  Header="Y" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F3}}" />
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  Y, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="Z">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  Z, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="u">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  Z, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="v">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  Z, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="ValidateResult" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type poi:PoiResultCIExyuvData}">
+                                        <TextBlock Text="{ Binding  ValidateResult, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
                             <GridViewColumn  Header="结果" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
@@ -211,9 +241,12 @@
                 <StackPanel  Margin="0,2">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="流程" Width="100"/>
-                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" SelectedValuePath="Value" Text="{Binding FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <Grid Width="30" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
+                        </Grid>
                     </StackPanel>
-
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>
                         <TextBox x:Name="TextBoxSn" DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />

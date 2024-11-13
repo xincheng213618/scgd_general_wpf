@@ -31,7 +31,8 @@ namespace ColorVision.Projects.ProjectShiYuan
         {
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
-
+            
+            LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
