@@ -37,7 +37,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
             result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultAoiDao.Instance.GetAllByPid(result.Id));
 
 
-            DVPolygon polygon = new DVPolygon();
 
             foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultAoiModel>())
             {
@@ -46,6 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
                 point1s.Add(new System.Windows.Point((int)item.RightTopX, (int)item.RightTopY));
                 point1s.Add(new System.Windows.Point((int)item.RightBottomX, (int)item.RightBottomY));
                 point1s.Add(new System.Windows.Point((int)item.LeftBottomX, (int)item.LeftBottomY));
+                DVPolygon polygon = new DVPolygon();
 
                 foreach (var point in GrahamScan.ComputeConvexHull(point1s))
                 {

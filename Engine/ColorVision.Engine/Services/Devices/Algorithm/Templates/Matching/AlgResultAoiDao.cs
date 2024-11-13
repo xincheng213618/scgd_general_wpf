@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         public int Pid { get; set; }
 
         [Column("score")]
-        public float Score { get => Score; set { _Score = value; NotifyPropertyChanged(); } }
+        public float Score { get => _Score; set { _Score = value; NotifyPropertyChanged(); } }
         private float _Score;
 
         [Column("angle")]
@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
         private float _LeftTopY;
 
         [Column("right_top_x")]
-        public float RightTopX { get => _RightTopX; set { _LeftTopY = value; NotifyPropertyChanged(); } }
+        public float RightTopX { get => _RightTopX; set { _RightTopX = value; NotifyPropertyChanged(); } }
         private float _RightTopX;
 
         [Column("right_top_y")]
