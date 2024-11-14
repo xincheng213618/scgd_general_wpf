@@ -1,4 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using CVCommCore;
+using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
 {
@@ -19,6 +22,29 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
 
         [Column("validate_result")]
         public string? ValidateResult { get; set; }
+
+        public ObservableCollection<ValidateRuleResult>? ValidateSingles
+        {
+            get
+            {
+                if (ValidateResult == null) return null;
+                return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(ValidateResult);
+            }
+        }
+        public bool Validate
+        {
+            get
+            {
+                if (ValidateSingles == null)
+                    return false;
+                bool result = true;
+                foreach (var item in ValidateSingles)
+                {
+                    result = result && item.Result == ValidateRuleResultType.M;
+                }
+                return result;
+            }
+        }
     }
 
 

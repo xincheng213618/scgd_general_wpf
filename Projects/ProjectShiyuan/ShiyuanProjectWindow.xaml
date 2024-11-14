@@ -7,6 +7,7 @@
         xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:poi ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;assembly=ColorVision.Engine"
+        xmlns:compliance ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;assembly=ColorVision.Engine"
         d:DataContext="{d:DesignInstance local:ProjectShiYuanConfig}"
         mc:Ignorable="d"
         Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -26,8 +27,83 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="auto"/>
             </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="0,0,0,5"  Height="150">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="300"/>
+                </Grid.ColumnDefinitions>
+                <ListView x:Name="ListViewJNDresult" SelectionChanged="ListViewJND_SelectionChanged">
+                    <ListView.Resources >
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  Width="80">
+                                <GridViewColumn.Header>
+                                    <TextBlock Text="测试结果" Foreground="Blue" FontWeight="Bold"/>
+                                </GridViewColumn.Header>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                        <TextBlock Text="{Binding Name}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="HJND" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                        <TextBlock Text="{ Binding  DataValueH, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="VJND" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                        <TextBlock Text="{ Binding  DataValueV, StringFormat={}{0:F3}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="结果" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                        <TextBlock Text="{ Binding Validate}" Foreground="{Binding Validate,Converter={StaticResource ColorConverter}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+                <ListView x:Name="ListViewJNDValue" Grid.Column="1" >
+                    <ListView.Resources >
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
 
-            <Grid Grid.Row="1" Margin="0,0,0,5"  Height="300">
+            <Grid Grid.Row="1" Margin="0,0,0,5"  Height="200">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="250"/>
@@ -136,7 +212,6 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
-
             </Grid>
 
             <Grid Grid.Row="2">
@@ -146,7 +221,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0" Margin="15" BorderBrush="Black" BorderThickness="1">
-                    <TextBlock x:Name="ResultText" Text="PASS" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ResultText" Text="NG" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <Grid  Grid.Column="1">
                     <Button  Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>

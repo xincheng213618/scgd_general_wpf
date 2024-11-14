@@ -26,6 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -216,10 +217,29 @@ namespace ColorVision.Projects.ProjectShiYuan
                     {
                         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
+                        bool sucess = true;
+
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
                             var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
+                            foreach (var item in resultMaster)
+                            {
+                                if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
+                                {
+                                    var complianceJNDModels = ComplianceJNDDao.Instance.GetAllByPid(item.Id);
+                                    log.Info($"获取JDN信息：  Id{item.Id},nums{complianceJNDModels.Count}");
+                                    ListViewJNDresult.ItemsSource = complianceJNDModels;
+
+                                    foreach (var item222 in complianceJNDModels)
+                                    {
+                                        sucess = sucess && item222.Validate;
+                                    }
+                                }
+                            }
+
+
+
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in resultMaster)
                             {
@@ -232,26 +252,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                                         PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
                                         PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                                     }
-                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
-                                    {
-                                        string sourceFile = item.ImgFile;
-                                        // 获取目标目录路径
-                                        string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
-                                        // 获取源文件的文件名
-                                        string fileName = Path.GetFileName(sourceFile);
-                                        // 构造目标文件的完整路径
-                                        string destinationFile = Path.Combine(destinationDirectory, fileName);
-                                        try
-                                        {
-                                            // 复制文件到目标路径
-                                            File.Copy(sourceFile, destinationFile, true);
-                                            log.Info(sourceFile + "文件复制成功");
-                                        }
-                                        catch (Exception ex)
-                                        {
-                                            log.Info(sourceFile + "文件复制失败");
-                                        }
-                                    }
+
                                 }
 
                                 if (item.ImgFileType == AlgorithmResultType.OLED_JND_CalVas)
@@ -267,9 +268,27 @@ namespace ColorVision.Projects.ProjectShiYuan
                                         ViewRsultJND.SaveCsv(ViewRsultJNDs, FilePath);
                                     }
 
-
+                                    if (Directory.Exists(ProjectShiYuanConfig.Instance.DataPath))
+                                    {
+                                        string sourceFile = item.ImgFile;
+                                        // 获取目标目录路径
+                                        string destinationDirectory = ProjectShiYuanConfig.Instance.DataPath;
+                                        // 获取源文件的文件名
+                                        string fileName = Path.GetFileName(sourceFile);
+                                        // 构造目标文件的完整路径
+                                        string destinationFile = Path.Combine(destinationDirectory, fileName);
+                                        try
+                                        {
+                                            // 复制文件到目标路径
+                                            File.Copy(sourceFile, destinationFile, true);
+                                            log.Info(sourceFile + "JND输入文件复制成功");
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            log.Info(sourceFile + "文件复制失败");
+                                        }
+                                    }
                                 }
-                             
                             }
 
                             ListViewResult.ItemsSource = PoiResultCIExyuvDatas;
@@ -308,8 +327,20 @@ namespace ColorVision.Projects.ProjectShiYuan
                                 PoiResultCIExyuvData.SaveCsv(new ObservableCollection<PoiResultCIExyuvData>(PoiResultCIExyuvDatas), FilePath);
 
                             }
-                            ResultText.Text = "OK";
-                            ResultText.Foreground = Brushes.Red;
+
+                            if (sucess)
+                            {
+
+                                ResultText.Text = "OK";
+                                ResultText.Foreground = Brushes.Red;
+                            }
+                            else
+                            {
+
+                                ResultText.Text = "NG";
+                                ResultText.Foreground = Brushes.Blue;
+                            }
+
                         }
                         else
                         {
@@ -449,8 +480,8 @@ namespace ColorVision.Projects.ProjectShiYuan
         {
             if (sender is ListView listView && listView.SelectedItem is PoiResultCIExyuvData poiResultCIExyuvData)
             {
-                List<string> header = new() { "规则" , "结果" };
-                List<string> bdHeader = new() {"Rule.RType" , "Result" };
+                List<string> header = new() { "规则", "结果", "值", "Max", "Min" };
+                List<string> bdHeader = new() { "Rule.RType", "Result", "Value", "Rule.Max", "Rule.Min" };
 
 
                 if (ListViewValue.View is GridView gridView)
@@ -474,6 +505,25 @@ namespace ColorVision.Projects.ProjectShiYuan
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             Common.Utilities.PlatformHelper.OpenFolder(ProjectShiYuanConfig.Instance.DataPath);
+        }
+
+        private void ListViewJND_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedItem is ComplianceJNDModel complianceJNDModel)
+            {
+                List<string> header = new() { "规则", "结果","值"  , "Max" ,"Min"};
+                List<string> bdHeader = new() { "Rule.RType", "Result" , "Value", "Rule.Max", "Rule.Min" };
+
+
+                if (ListViewJNDValue.View is GridView gridView)
+                {
+                    gridView.Columns.Clear();
+                    for (int i = 0; i < header.Count; i++)
+                        gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
+                    ListViewJNDValue.ItemsSource = complianceJNDModel.ValidateSingles;
+                }
+
+            }
         }
     }
 }

@@ -1,48 +1,31 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using CVCommCore;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
 {
-    [Table("t_scgd_algorithm_result_detail_compliance_xyz")]
-    public class ComplianceXYZModel : PKModel, IViewResult
+    [Table("t_scgd_algorithm_result_detail_compliance_jnd")]
+    public class ComplianceJNDModel : PKModel, IViewResult
     {
         [Column("pid")]
         public int PId { get; set; }
+
         [Column("name")]
         public string Name { get; set; }
+
         [Column("data_type")]
         public int DataType { get; set; }
 
-        [Column("data_value_x")]
-        public float DataValuex { get; set; }
-        [Column("data_value_y")]
-        public float DataValuey { get; set; }
-        [Column("data_value_z")]
-        public float DataValuez { get; set; }
+        [Column("data_val_h")]
+        public float DataValueH { get; set; }
 
-        [Column("data_value_u")]
-        public float DataValueu { get; set; }
-
-        [Column("data_value_v")]
-        public float DataValuev { get; set; }
-
-        [Column("data_value_yyy")]
-        public float DataValueyyy { get; set; }
-        [Column("data_value_xxx")]
-        public float DataValuexxx { get; set; }
-        [Column("data_value_zzz")]
-        public float DataValuezzz { get; set; }
-        [Column("data_value_cct")]
-        public float DataValueCCT { get; set; }
-
-        [Column("data_value_wave")]
-        public float DataValueWave { get; set; }
+        [Column("data_val_v")]
+        public float DataValueV { get; set; }
 
         [Column("validate_result")]
         public string? ValidateResult { get; set; }
-
 
         public ObservableCollection<ValidateRuleResult>? ValidateSingles
         {
@@ -52,6 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
                 return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(ValidateResult);
             }
         }
+
         public bool Validate
         {
             get
@@ -69,5 +53,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
     }
 
 
+    public class ComplianceJNDDao : BaseTableDao<ComplianceJNDModel>
+    {
+        public static ComplianceJNDDao Instance { get; set; } = new ComplianceJNDDao();
+        public ComplianceJNDDao() : base("t_scgd_algorithm_result_detail_compliance_jnd")
+        {
+        }
+    }
 
 }

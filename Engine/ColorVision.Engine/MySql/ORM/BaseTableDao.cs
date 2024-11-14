@@ -20,6 +20,11 @@ namespace ColorVision.Engine.MySql.ORM
             return dao.GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
         }
 
+        public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid,bool isEnable = true,bool isDelete = false) where T : IPKModel, new()
+        {
+            return dao.GetAllByParam(new Dictionary<string, object>() { { "pid", pid }, { "is_enable", isEnable }, { "is_delete", isDelete } });
+        }
+
         public static List<T> GetAllByTenantId<T>(this BaseTableDao<T> dao, int tenantId) where T : IPKModel, new()
         {
             return dao.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", tenantId } });

@@ -165,7 +165,7 @@ namespace ColorVision.Engine.Templates
             if (mod != null)
             {
                 List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id,true,false);
                 foreach (var item in sysDic)
                 {
                     list.Add(new ModDetailModel(item.Id, -1, item.DefaultValue) { Symbol = item.Symbol });
@@ -453,7 +453,7 @@ namespace ColorVision.Engine.Templates
                     }
                     else
                     {
-                        List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
+                        List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id,true,false);
                         foreach (var item in sysDic)
                         {
                             list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
