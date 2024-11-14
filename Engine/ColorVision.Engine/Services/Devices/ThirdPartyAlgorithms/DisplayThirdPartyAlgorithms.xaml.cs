@@ -281,7 +281,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         }
         private void Templates_Click(object sender, RoutedEventArgs e)
         {
-            if (CB_ThirdPartyAlgorithms.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
+            if (CB_Templates.SelectedValue is not ModThirdPartyParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
 
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
