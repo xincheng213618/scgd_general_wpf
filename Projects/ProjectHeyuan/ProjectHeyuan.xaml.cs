@@ -508,7 +508,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
+                comboBox.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE");
             }
         }
     }

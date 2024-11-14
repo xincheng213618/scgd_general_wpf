@@ -73,8 +73,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 {
                     PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
                     Params.Add("LayoutCenter", center);
-                    //Params.Add("LayoutCenterX", centerX.Text);
-                    //Params.Add("LayoutCenterY", centerY.Text);
+                    //CIEParams.Add("LayoutCenterX", centerX.Text);
+                    //CIEParams.Add("LayoutCenterY", centerY.Text);
                     Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
                     POILayoutReq = POILayoutTypes.Circle;
@@ -83,8 +83,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi
                 {
                     PointInt center = new PointInt(Convert.ToInt32(rect_centerX.Text), Convert.ToInt32(rect_centerY.Text));
                     Params.Add("LayoutCenter", center);
-                    //Params.Add("LayoutCenterX", rect_centerX.Text);
-                    //Params.Add("LayoutCenterY", rect_centerY.Text);
+                    //CIEParams.Add("LayoutCenterX", rect_centerX.Text);
+                    //CIEParams.Add("LayoutCenterY", rect_centerY.Text);
                     Params.Add("LayoutWidth", width.Text);
                     Params.Add("LayoutHeight", height.Text);
                     POILayoutReq = POILayoutTypes.Rect;

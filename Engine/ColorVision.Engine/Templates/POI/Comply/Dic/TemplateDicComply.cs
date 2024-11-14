@@ -57,6 +57,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
                 }
                 Add(110);
                 Add(111);
+                Add(120);
             }
         }
 
@@ -89,7 +90,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
 
         public override void Create(string templateCode, string templateName)
         {
-            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 111 };
             SysDictionaryModMasterDao.Instance.Save(sysDictionaryModModel);
             var t = new DicComplyParam(sysDictionaryModModel, new List<SysDictionaryModItemValidateModel>());
 

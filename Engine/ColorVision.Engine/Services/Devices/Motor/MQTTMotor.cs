@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             MsgSend msg = new()
             {
                 EventName = "Open",
-                //Params = new Dictionary<string, object>() { { "CodeID", Config.Key }, { "eFOCUS_COMMUN",(int)Config.eFOCUSCOMMUN },{ "szComName", Config.SzComName }, { "BaudRate", Config.BaudRate } }
+                //CIEParams = new Dictionary<string, object>() { { "CodeID", Config.Key }, { "eFOCUS_COMMUN",(int)Config.eFOCUSCOMMUN },{ "szComName", Config.SzComName }, { "BaudRate", Config.BaudRate } }
             };
 
             return PublishAsyncClient(msg,1000);

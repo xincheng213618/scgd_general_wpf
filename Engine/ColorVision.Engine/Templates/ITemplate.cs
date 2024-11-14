@@ -142,6 +142,7 @@ namespace ColorVision.Engine.Templates
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
         public override Type GetTemplateType => typeof(T);
+        public override string Title { get => nameof(T); }
 
         public int FindIndex(int id) => TemplateParams.ToList().FindIndex(a => a.Id == id);
 

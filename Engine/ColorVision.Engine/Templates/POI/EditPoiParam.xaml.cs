@@ -97,8 +97,8 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE.AVG")?.CreateEmpty();
-            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE")?.CreateEmpty();
+            ComboBoxValidate.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE.AVG")?.CreateEmpty();
+            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE")?.CreateEmpty();
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -1779,7 +1779,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
+                comboBox.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE");
             }
         }
 

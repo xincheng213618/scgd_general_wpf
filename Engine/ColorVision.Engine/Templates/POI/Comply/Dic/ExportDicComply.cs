@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
         public override string OwnerGuid => "Comply";
 
         public override string GuidId => "ComplyEdit";
-        public override int Order => 99;
+        public override int Order => 999;
         public override string Header => "编辑默认合规字典";
 
         [RequiresPermission(PermissionMode.Administrator)]

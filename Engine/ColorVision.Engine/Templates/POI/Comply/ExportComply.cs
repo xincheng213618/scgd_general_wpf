@@ -40,12 +40,26 @@ namespace ColorVision.Engine.Templates.POI.Comply
             foreach (var item in mod1s)
             {
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-                menuItemMetadata.Order = 2;
+                menuItemMetadata.Order = 20;
                 menuItemMetadata.Header = item.Name;
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
                     new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                });
+                new TemplateComplyParam(item.Code).Load();
+                items.Add(menuItemMetadata);
+            }
+            var jjnds = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 120 } });
+            foreach (var item in jjnds)
+            {
+                MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
+                menuItemMetadata.Order = 50;
+                menuItemMetadata.Header = item.Name;
+                menuItemMetadata.OwnerGuid = "Comply";
+                menuItemMetadata.Command = new RelayCommand(a =>
+                {
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code,1)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);

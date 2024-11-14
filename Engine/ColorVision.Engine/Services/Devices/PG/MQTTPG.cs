@@ -126,7 +126,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
-                //Params = communicateType == CommunicateType.Serial ?
+                //CIEParams = communicateType == CommunicateType.Serial ?
                 //new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szComName", value1 }, { "BaudRate", value2 }, { "PGCustomCmd", cmd } } :
                 //new Dictionary<string, object>() { { "eCOM_Type", (int)communicateType }, { "szIPAddress", value1 }, { "nPort", value2 },{ "PGCustomCmd", cmd } }
             };

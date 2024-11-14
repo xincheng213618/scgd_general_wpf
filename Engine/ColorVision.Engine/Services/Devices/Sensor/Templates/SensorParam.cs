@@ -1,13 +1,17 @@
-﻿#pragma warning disable CS8602,CS8604
-
+﻿
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.SysDictionary;
 using MQTTMessageLib.Sensor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
@@ -33,7 +37,64 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
             IsUserControl = true;
         }
-
+        //这里创建模板的时候默认不启用
+        public override void Create(string templateName)
+        {
+            SensorParam? AddParamMode()
+            {
+                ModMasterModel modMaster = new ModMasterModel(Code, templateName, UserConfig.Instance.TenantId);
+                SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+                if (mod != null)
+                {
+                    modMaster.Pid = mod.Id;
+                    ModMasterDao.Instance.Save(modMaster);
+                    List<ModDetailModel> list = new();
+                    if (CreateTemp != null)
+                    {
+                        CreateTemp.GetDetail(list);
+                        foreach (var item in list)
+                        {
+                            item.Pid = modMaster.Id;
+                        }
+                    }
+                    else
+                    {
+                        //List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id, true, false);
+                        //foreach (var item in sysDic)
+                        //{
+                        //    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                        //}
+                    }
+                    ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+                }
+                if (modMaster.Id > 0)
+                {
+                    ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                    List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                    if (modMasterModel != null)
+                        return (SensorParam)Activator.CreateInstance(typeof(SensorParam), new object[] { modMasterModel, modDetailModels });
+                }
+                return null;
+            }
+            SensorParam? param = AddParamMode();
+            if (ExportTemp != null) ExportTemp = null;
+            if (param != null)
+            {
+                var a = new TemplateModel<SensorParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SensorParam)}模板失败", "ColorVision");
+                if (GetMysqlCommand() is IMysqlCommand mysqlCommand)
+                {
+                    if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否重置数据库{typeof(SensorParam)}相关项", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    {
+                        MySqlControl.GetInstance().BatchExecuteNonQuery(mysqlCommand.GetRecover());
+                    }
+                }
+            }
+        }
 
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 

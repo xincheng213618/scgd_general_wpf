@@ -4,6 +4,7 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -82,7 +83,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
             else if (isRaw == true)
             {
                 imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
             }
             else
             {
@@ -92,6 +92,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
             {
                 MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
+            }
+            if (Path.GetExtension(imgFileName).Contains("cvraw"))
+            {
+                fileExtType = FileExtType.Raw;
+            }
+            else if (Path.GetExtension(imgFileName).Contains("cvcie"))
+            {
+                fileExtType = FileExtType.CIE;
+            }
+            else if (Path.GetExtension(imgFileName).Contains("tif"))
+            {
+                fileExtType = FileExtType.Tif;
+            }
+            else
+            {
+                fileExtType = FileExtType.Src;
             }
             return true;
         }

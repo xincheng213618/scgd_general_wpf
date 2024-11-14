@@ -23,6 +23,8 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.Comply;
+using ColorVision.Engine.Templates.POI.Comply.Dic;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
@@ -422,6 +424,27 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
                 }
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
+                {
+                    void Refesh()
+                    {
+                        SignStackPannel.Children.Clear();
+                        switch (algComplianceMathNode.ComplianceMath)
+                        {
+                            case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
+                                AddStackPanel(name => algComplianceMathNode.TempName = name, algComplianceMathNode.TempName, "CIE", new ObservableCollection<TemplateModel<ValidateParam>>(TemplateComplyParam.CIEParams.SelectMany(p => p.Value)) );
+                                break;
+                            case FlowEngineLib.Node.Algorithm.ComplianceMathType.JND:
+                                AddStackPanel(name => algComplianceMathNode.TempName = name, algComplianceMathNode.TempName, "JND", new TemplateComplyParam("Comply.JND"));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    algComplianceMathNode.nodeEvent -= (s, e) => Refesh();
+                    algComplianceMathNode.nodeEvent += (s, e) => Refesh();
+                    Refesh();
+                }
 
             };
 
@@ -676,7 +699,7 @@ namespace ColorVision.Engine.Services.Flow
                 }
 
                 // 调整父节点位置到子节点的中心
-                if (childrenWithout.Any())
+                if (childrenWithout.Count !=0)
                 {
                     int firstChildY = childrenWithout.First().Top;
                     int lastChildY = childrenWithout.Last().Top;
@@ -738,7 +761,7 @@ namespace ColorVision.Engine.Services.Flow
         public int GetMaxDepth(STNode node)
         {
             var parent = GetParent(node);
-            if (!parent.Any())
+            if (parent.Count ==0)
             {
                 return 0;
             }
@@ -797,7 +820,7 @@ namespace ColorVision.Engine.Services.Flow
             ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
 
             STNode rootNode = GetRootNode();
-            ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 300, verticalSpacing: 200);
+            ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 250, verticalSpacing: 200);
             STNodeEditorMain.MoveCanvas(0, 0, bAnimation: true, CanvasMoveArgs.Left);
 
         }

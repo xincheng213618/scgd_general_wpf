@@ -36,7 +36,7 @@
                     <TextBox Text="{Binding Symbol}"/>
                 </DockPanel>
                 <DockPanel Margin="5">
-                    <TextBlock Text="名称" Width="100" />
+                    <TextBlock Text="注释" Width="100" />
                     <TextBox Text="{Binding Name}"/>
                 </DockPanel>
                 <DockPanel Margin="5">

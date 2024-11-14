@@ -46,7 +46,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resources.Name}">
+                    <GridViewColumn  Header="注释">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  Name}" />
@@ -60,10 +60,10 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resources.DefaultValue}" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.DefaultValue}"  Width="200">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
-                                <TextBox Text="{Binding  DefaultValue}"  Width="100"/>
+                                <TextBox Text="{Binding  DefaultValue}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

@@ -17,20 +17,34 @@ namespace ColorVision.Engine.Templates.POI.Comply
 
     public class TemplateComplyParam : ITemplate<ValidateParam>
     {
-        public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> CIEParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> JNDParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
 
-        public TemplateComplyParam(string code)
+
+        public TemplateComplyParam(string code,int type =0)
         {
             Code = code;
-            if (Params.TryGetValue(Code, out var templatesParams))
+            if (CIEParams.TryGetValue(Code, out var templatesParams))
             {
                 TemplateParams = templatesParams;
+            }
+            else if (JNDParams.TryGetValue(Code, out var templateModels))
+            {
+                TemplateParams = templateModels;
             }
             else
             {
                 templatesParams = new ObservableCollection<TemplateModel<ValidateParam>>();
                 TemplateParams = templatesParams;
-                Params.Add(Code, templatesParams);
+
+                if (type == 1)
+                {
+                    JNDParams.Add(Code, templatesParams);
+                }
+                {
+                    CIEParams.Add(Code, templatesParams);
+                }
+
             }
             IsUserControl = true;
             ValidateControl = new ValidateControl();
@@ -39,7 +53,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
 
         public override bool ExitsTemplateName(string templateName)
         {
-            foreach (var entry in Params)
+            foreach (var entry in CIEParams)
             {
                 if (entry.Value.Any(item => item.Value.Name.Equals(templateName, StringComparison.OrdinalIgnoreCase)))
                 {

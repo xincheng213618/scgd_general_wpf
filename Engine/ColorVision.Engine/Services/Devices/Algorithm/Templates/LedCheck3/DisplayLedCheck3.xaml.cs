@@ -11,6 +11,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
+using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 {
@@ -97,9 +98,27 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             }
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
+
+            if (Path.GetExtension(imgFileName).Contains("cvraw"))
+            {
+                fileExtType = FileExtType.Raw;
+            }
+            else if (Path.GetExtension(imgFileName).Contains("cvcie"))
+            {
+                fileExtType = FileExtType.CIE;
+            }
+            else if (Path.GetExtension(imgFileName).Contains("tif"))
+            {
+                fileExtType = FileExtType.Tif;
+            }
+            else
+            {
+                fileExtType = FileExtType.Src;
+            }
+
             return true;
         }
 
