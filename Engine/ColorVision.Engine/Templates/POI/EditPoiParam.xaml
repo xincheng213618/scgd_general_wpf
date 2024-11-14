@@ -608,7 +608,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Width="130"  Margin="5,0"/>
                                 <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}"  Width="60"  Margin="5,0"/>
-                                <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
+                                <!--<TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>-->
                             </StackPanel>
                         </DataTemplate>
 
@@ -625,7 +625,7 @@
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" Width="200" Margin="5,0"/>
-                                <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" Width="100"  Margin="5,0"/>
+                                <!--<TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Style="{StaticResource TextBoxBaseBaseStyle}" Width="100"  Margin="5,0"/>-->
                             </StackPanel>
                         </DataTemplate>
                     </ListView.Resources>
