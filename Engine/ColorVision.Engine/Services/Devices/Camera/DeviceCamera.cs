@@ -157,6 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
                 PhyCameraManager.GetInstance().LoadPhyCamera();
+                PhyCameraManager.GetInstance().RefreshEmptyCamera();
             };
         }
 
