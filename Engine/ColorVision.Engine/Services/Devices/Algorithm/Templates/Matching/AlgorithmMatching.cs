@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateFile", TemplateFile);
-            Params.Add("MatchParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = Param.Id, Name = Param.Name });
 
             MsgSend msg = new()
             {

@@ -94,15 +94,15 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord CallFunction(ModThirdPartyParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        public MsgRecord CallFunction(ModThirdPartyParam modparam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {
             serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
             
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = findDotsArrayParam.Id, Name = findDotsArrayParam.Name });
+            var Params = new Dictionary<string, object>() { { "InputParam", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = modparam.Id, Name = modparam.Name });
             MsgSend msg = new()
             {
-                EventName = findDotsArrayParam.ModThirdPartyAlgorithmsModel.Code,
+                EventName = modparam.ModThirdPartyAlgorithmsModel.Code,
                 SerialNumber = serialNumber,
                 Params = Params
             };
