@@ -17,13 +17,14 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Themes.Controls.Uploads;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     public class DeviceThirdPartyAlgorithms : DeviceService<ConfigThirdPartyAlgorithms>
     {
         public MQTTThirdPartyAlgorithms DService { get; set; }
-        public AlgorithmView View { get; set; }
+        public ThirdPartyAlgorithmsView View { get; set; }
         public RelayCommand UploadPluginCommand { get; set; }
         public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             DService = new MQTTThirdPartyAlgorithms(this, Config);
 
-            View = new AlgorithmView();
+            View = new ThirdPartyAlgorithmsView();
             View.View.Title = $"第三方算法视图 - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm", View.View);
 

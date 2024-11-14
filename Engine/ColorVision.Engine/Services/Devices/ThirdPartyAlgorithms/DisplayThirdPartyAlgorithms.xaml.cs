@@ -21,6 +21,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.IO;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -36,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public MQTTThirdPartyAlgorithms DService { get => Device.DService; }
 
 
-        public AlgorithmView View { get => Device.View; }
+        public ThirdPartyAlgorithmsView View { get => Device.View; }
 
         public string DisPlayName => Device.Config.Name;
 
