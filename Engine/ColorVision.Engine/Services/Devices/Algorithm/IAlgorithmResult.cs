@@ -26,13 +26,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public static ObservableCollection<T> ToSpecificViewResults<T>(this IEnumerable<IViewResult> source) where T : IViewResult
         {
-            var viewResults = new ObservableCollection<T>();
 
-            foreach (var item in source)
+            var viewResults = new ObservableCollection<T>();
+            if (source !=null)
             {
-                if (item is T t)
+                foreach (var item in source)
                 {
-                    viewResults.Add(t);
+                    if (item is T t)
+                    {
+                        viewResults.Add(t);
+                    }
                 }
             }
 

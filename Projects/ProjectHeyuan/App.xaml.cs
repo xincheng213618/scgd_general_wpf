@@ -7,6 +7,11 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
+using System.Collections.Generic;
+using System.Net;
+using System.Reflection;
+using System.Threading;
+using System;
 using System.Windows;
 
 namespace ColorVision.Projects.ProjectHeyuan
@@ -27,27 +32,41 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         }
 
-        private void Application_Startup(object s, StartupEventArgs e)
+
+        private async void Application_Startup(object s, StartupEventArgs e)
         {
             ConfigHandler.GetInstance();
-            Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
+            Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
 
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
 
-            MySqlControl.GetInstance().Connect();
-            MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
-            {
-                await MqttRCService.GetInstance().Connect();
-            };
-            Task.Run(() => MQTTControl.GetInstance().Connect());
-            ServiceManager.GetInstance().GenDeviceDisplayControl();
-            TemplateControl.GetInstance();
 
-            ProjectHeyuanWindow projectHeyuanWindow = new ProjectHeyuanWindow();
-            projectHeyuanWindow.Show();
+            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+
+            var _IComponentInitializers = new List<UI.IInitializer>();
+            MessageUpdater messageUpdater = new MessageUpdater();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type, messageUpdater) is IInitializer componentInitialize)
+                    {
+                        _IComponentInitializers.Add(componentInitialize);
+                    }
+                }
+            }
+            _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
+
+            foreach (var item in _IComponentInitializers)
+            {
+                await item.InitializeAsync();
+            }
+            ShiyuanProjectWindow window = new ShiyuanProjectWindow();
+            window.Show();
         }
     }
+}
 
 }
