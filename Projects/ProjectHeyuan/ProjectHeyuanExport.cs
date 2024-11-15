@@ -1,14 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
-
-
-
-    public class ProjectHeyuanExport : IMenuItem
+    public class ProjectHeyuanExport : IMenuItem, IProject
     {
         public string? OwnerGuid => "Tool";
 
@@ -23,9 +21,9 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         public RelayCommand Command => new(A => Execute());
 
-        private static void Execute()
+        public void Execute()
         {
-            new ProjectHeyuanWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new ProjectHeyuanWindow() {WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 }

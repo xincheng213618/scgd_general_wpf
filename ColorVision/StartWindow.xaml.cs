@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Shell;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -113,8 +114,34 @@ namespace ColorVision
             {
                 try
                 {
-                    MainWindow mainWindow = new();
-                    mainWindow.Show();
+                    var parser = ArgumentParser.GetInstance();
+                    parser.AddArgument("project", false, "e");
+                    parser.Parse();
+
+                    string project = parser.GetValue("project");
+                    if (project != null)
+                    {
+                        List<IProject> IProjects = new List<IProject>();
+                        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                        {
+                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                            {
+                                if (Activator.CreateInstance(type) is IProject projects)
+                                {
+                                    IProjects.Add(projects);
+                                }
+                            }
+                        }
+                        if (IProjects.Find(a => a.Header == project) is IProject project1)
+                        {
+                            project1.Execute();
+                        }
+                    }
+                    else
+                    {
+                        MainWindow mainWindow = new();
+                        mainWindow.Show();
+                    }
                     Close();
                 }
                 catch (Exception ex)

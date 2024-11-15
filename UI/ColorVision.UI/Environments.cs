@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.UI
 {
@@ -23,5 +24,17 @@ namespace ColorVision.UI
             var fileAppender = hierarchy.Root.Appenders.OfType<RollingFileAppender>().FirstOrDefault();
             return fileAppender?.File;
         }
+
+        public static string GetExecutablePath()
+        {
+#if NETCOREAPP
+            // For .NET Core
+            return Application.ResourceAssembly.Location.Replace(".dll", ".exe");
+#else
+        // For .NET Framework
+        return Assembly.GetExecutingAssembly().Location;
+#endif
+        }
+
     }
 }
