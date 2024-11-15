@@ -90,7 +90,10 @@
                     <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
                     <Button  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
                 </DockPanel>
-                <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Visibility="Collapsed" Click="Close_Click" />
+                <DockPanel x:Name="ButtonClose"  Visibility="Collapsed" >
+                    <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
+                    <Button Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
+                </DockPanel>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,3" >

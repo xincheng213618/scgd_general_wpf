@@ -19,7 +19,7 @@
         private static ArgumentParser _instance;
         private static readonly object _locker = new();
         public static ArgumentParser GetInstance() 
-        { lock (_locker) { return _instance ??= new ArgumentParser(); } }
+    { lock (_locker) { return _instance ??= new ArgumentParser(); } }
 
         private readonly List<Argument> _arguments = new List<Argument>();
         private readonly Dictionary<string, string> _parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
