@@ -56,6 +56,7 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     if (image.channels() != 1) {
         cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
     }
+
     if (image.depth() == CV_16U) {
 
         // 应用自适应直方图均衡化
@@ -63,16 +64,11 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
         clahe->setClipLimit(10.0); // 设置对比度限制
         clahe->apply(image, image);
 
-        // 转换为8位图像
-        double minVal, maxVal;
-        cv::minMaxLoc(image, &minVal, &maxVal); // 找到图像的最小和最大像素值
-        image.convertTo(image, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
-    }
-    else if (image.depth() == CV_8U) {
-        // 转换为8位图像
-        double minVal, maxVal;
-        cv::minMaxLoc(image, &minVal, &maxVal); // 找到图像的最小和最大像素值
-        image.convertTo(image, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+
+    if (image.depth() == CV_32F) {
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
 
     if (max1 < 255) {

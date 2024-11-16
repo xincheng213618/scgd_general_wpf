@@ -132,7 +132,6 @@
             <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
-
                 </ToolBar>
             </ToolBarTray>
 

@@ -46,6 +46,8 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         public PoiParam PoiParam { get; set; }
 
+        public PoiConfig PoiConfig => PoiParam.PoiConfig;
+
         public EditPoiParam(PoiParam poiParam) 
         {
             PoiParam = poiParam;
@@ -216,7 +218,15 @@ namespace ColorVision.Engine.Services.Templates.POI
                 if (PoiParam.PoiPoints.Count > 500)
                     PoiParam.PoiConfig.IsLayoutUpdated = false;
 
-                CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
+
+                if (File.Exists(PoiParam.PoiConfig.OpenFilePath))
+                {
+                }
+                else
+                {
+                    CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
+                }
+
                 WaitControlProgressBar.Value = 20;
                 RenderPoiConfig();
                 PoiParamToDrawingVisual(PoiParam);
@@ -306,6 +316,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     try
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        PoiConfig.OpenFilePath = filePath;
                     }
                     catch (Exception ex)
                     {
@@ -317,6 +328,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     ledPicData ??= new LedPicData();
                     ledPicData.picUrl = filePath;
                     OpenImage(filePath);
+                    PoiConfig.OpenFilePath = filePath;
                 }
             }
         }
@@ -324,6 +336,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         private void CreateImage_Click(object sender, RoutedEventArgs e)
         {
             CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
+
         }
 
         public void OpenImage(string? filePath)
@@ -444,6 +457,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 });
             });
             thread.Start();
+            PoiConfig.OpenFilePath = null;
         }
 
 
@@ -1677,6 +1691,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                        PoiConfig.OpenFilePath = model.FileUrl;
                     }
                     else
                     {
