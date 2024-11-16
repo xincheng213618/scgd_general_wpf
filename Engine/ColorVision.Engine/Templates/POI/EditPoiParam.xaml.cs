@@ -219,13 +219,10 @@ namespace ColorVision.Engine.Services.Templates.POI
                     PoiParam.PoiConfig.IsLayoutUpdated = false;
 
 
-                if (File.Exists(PoiParam.PoiConfig.OpenFilePath))
-                {
-                }
+                if (File.Exists(PoiParam.PoiConfig.BackgroundFilePath))
+                    OpenImage(PoiParam.PoiConfig.BackgroundFilePath);
                 else
-                {
                     CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
-                }
 
                 WaitControlProgressBar.Value = 20;
                 RenderPoiConfig();
@@ -264,6 +261,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
             };
         }
+
 
         public ImageEditViewMode ImageEditViewMode { get; set; }
 
@@ -316,7 +314,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     try
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
-                        PoiConfig.OpenFilePath = filePath;
+                        PoiConfig.BackgroundFilePath = filePath;
                     }
                     catch (Exception ex)
                     {
@@ -328,7 +326,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     ledPicData ??= new LedPicData();
                     ledPicData.picUrl = filePath;
                     OpenImage(filePath);
-                    PoiConfig.OpenFilePath = filePath;
+                    PoiConfig.BackgroundFilePath = filePath;
                 }
             }
         }
@@ -339,37 +337,16 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         }
 
-        public void OpenImage(string? filePath)
+        public void OpenImage(string filePath)
         {
-            if (filePath != null && File.Exists(filePath))
+            if (CVFileUtil.IsCIEFile(filePath))
             {
-                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-
-                if (ext == ".cvraw")
-                {
-                    if (CVFileUtil.ReadCVRaw(filePath, out CVCIEFile fileInfo))
-                    {
-                        OpenCvSharp.Mat src;
-                        if (fileInfo.bpp != 8)
-                        {
-                            OpenCvSharp.Mat temp = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                            src = new OpenCvSharp.Mat();
-                            temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
-                            temp.Dispose();
-                        }
-                        else
-                        {
-                             src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                        }
-
-                        SetImageSource(src.ToWriteableBitmap());
-                    }
-                }
-                else
-                {
-                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                    SetImageSource(bitmapImage.ToWriteableBitmap());
-                }
+                OpenImage(new NetFileUtil().OpenLocalCVFile(filePath));
+            }
+            else
+            {
+                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                SetImageSource(bitmapImage.ToWriteableBitmap());
             }
         }
 
@@ -457,7 +434,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 });
             });
             thread.Start();
-            PoiConfig.OpenFilePath = null;
+            PoiConfig.BackgroundFilePath = null;
         }
 
 
@@ -1619,6 +1596,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     if (measureImgResultModel.FileUrl != null)
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl));
+                        PoiConfig.BackgroundFilePath = measureImgResultModel.FileUrl;
                     }
                     else
                     {
@@ -1691,7 +1669,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
-                        PoiConfig.OpenFilePath = model.FileUrl;
+                        PoiConfig.BackgroundFilePath = model.FileUrl;
                     }
                     else
                     {
