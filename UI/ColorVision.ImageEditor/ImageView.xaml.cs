@@ -796,6 +796,10 @@ namespace ColorVision.ImageEditor
                         Config.AddProperties("Stride", hImage.stride);
                         Config.Channel = hImage.channels;
                         Config.Ochannel = Config.Channel;
+
+                        if (hImage.channels == 1)
+                            ToolBarLayers.Visibility = Visibility.Collapsed;
+
                     }
                 })));
             }
