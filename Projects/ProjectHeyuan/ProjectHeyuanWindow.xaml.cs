@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
+using ColorVision.UI;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;
@@ -510,6 +511,17 @@ namespace ColorVision.Projects.ProjectHeyuan
             {
                 comboBox.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE");
             }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
+            windowLog.Show();
+        }
+
+        private void Open_Click(object sender, RoutedEventArgs e)
+        {
+            Common.Utilities.PlatformHelper.OpenFolder(HYMesConfig.Instance.DataPath);
         }
     }
 }

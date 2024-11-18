@@ -64,8 +64,8 @@ namespace ColorVision
                 string shortcutName = item.Header;
                 string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 string arguments = $"-project {shortcutName}";
-
-                Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
+                if(shortcutName!=null)
+                    Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
             }
 
         }

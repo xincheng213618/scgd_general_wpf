@@ -211,7 +211,15 @@
                 <StackPanel  Margin="0,2">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="流程" Width="100"/>
-                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding Config.TemplateSelectedIndex}" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <Grid Width="30" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  Config.OpenTemplateCommand}"/>
+                        </Grid>
+                        <Grid  DockPanel.Dock="Right" Width="30" >
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                            <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding Config.OpenFlowEngineToolCommand}"/>
+                        </Grid>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2">
@@ -229,9 +237,12 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="数据存储路径" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.DataPath}" Width="200" HorizontalAlignment="Left"/>
-                        <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.DataPath}" Width="200" HorizontalAlignment="Left" Margin="0,0,5,0"/>
+                        <Button Content="..."   Click="SelectDataPath_Click" Margin="0,0,5,0" Height="30"  Width="30" VerticalAlignment="Center" />
+                        <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                     </StackPanel>
+                    <Button Content="查看日志" HorizontalAlignment="Left"  Click="Button_Click_3"/>
+
                 </StackPanel>
                 
                 <Border HorizontalAlignment="Right" Width="150" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">

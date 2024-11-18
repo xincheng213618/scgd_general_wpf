@@ -816,4 +816,7 @@
   <data name="IsEnable" xml:space="preserve">
     <value>IsEnable</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>Символ</value>
+  </data>
 </root>

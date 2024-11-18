@@ -1103,7 +1103,7 @@
         </trans-unit>
         <trans-unit id="DataLoading" translate="yes" xml:space="preserve">
           <source>数据加载中</source>
-          <target state="new">loading</target>
+          <target state="new">Loading</target>
         </trans-unit>
         <trans-unit id="Database" translate="yes" xml:space="preserve">
           <source>数据库名称</source>
@@ -1763,7 +1763,7 @@
         </trans-unit>
         <trans-unit id="Symbol" translate="yes" xml:space="preserve">
           <source>符号</source>
-          <target state="new"></target>
+          <target state="new">Symbol</target>
         </trans-unit>
         <trans-unit id="TbSettingsStartBoot" translate="yes" xml:space="preserve">
           <source>开机启动(可能会不成功)</source>

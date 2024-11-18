@@ -1759,7 +1759,7 @@
         </trans-unit>
         <trans-unit id="Symbol" translate="yes" xml:space="preserve">
           <source>符号</source>
-          <target state="new"></target>
+          <target state="new">Символ</target>
         </trans-unit>
         <trans-unit id="TbSettingsStartBoot" translate="yes" xml:space="preserve">
           <source>开机启动(可能会不成功)</source>

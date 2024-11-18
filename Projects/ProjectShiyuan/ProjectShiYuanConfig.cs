@@ -12,10 +12,12 @@ namespace ColorVision.Projects.ProjectShiYuan
     {
         public static ProjectShiYuanConfig Instance => ConfigService.Instance.GetRequiredService<ProjectShiYuanConfig>();
         public RelayCommand OpenTemplateCommand { get; set; }
+        public RelayCommand OpenFlowEngineToolCommand { get; set; }
 
         public ProjectShiYuanConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -23,6 +25,11 @@ namespace ColorVision.Projects.ProjectShiYuan
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public void OpenFlowEngineTool()
+        {
+            new FlowEngineToolWindow(FlowParam.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }

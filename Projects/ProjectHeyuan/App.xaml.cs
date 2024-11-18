@@ -1,17 +1,8 @@
-﻿using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
-using System.Collections.Generic;
-using System.Net;
 using System.Reflection;
-using System.Threading;
-using System;
 using System.Windows;
 
 namespace ColorVision.Projects.ProjectHeyuan
@@ -63,10 +54,9 @@ namespace ColorVision.Projects.ProjectHeyuan
             {
                 await item.InitializeAsync();
             }
-            ShiyuanProjectWindow window = new ShiyuanProjectWindow();
+            ProjectHeyuanWindow window = new ProjectHeyuanWindow();
             window.Show();
         }
     }
-}
 
 }

@@ -263,7 +263,7 @@ namespace ColorVision.UI
                 else
                 {
                     _textBox.AppendText(renderedMessage);
-                    if (LogConfig.Instance.AutoScrollToEnd)
+                    if (LogConfig.Instance.AutoScrollToEnd)  
                         _textBox.ScrollToEnd();
                 }
             });

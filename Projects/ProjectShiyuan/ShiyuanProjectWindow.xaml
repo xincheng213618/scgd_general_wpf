@@ -239,6 +239,10 @@
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                             <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
                         </Grid>
+                        <Grid  DockPanel.Dock="Right" Width="30" >
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                            <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
+                        </Grid>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>

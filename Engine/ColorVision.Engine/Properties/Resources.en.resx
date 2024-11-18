@@ -790,7 +790,7 @@
     <value>Managing Physical Cameras</value>
   </data>
   <data name="DataLoading" xml:space="preserve">
-    <value>loading</value>
+    <value>Loading</value>
   </data>
   <data name="OpenFile" xml:space="preserve">
     <value>OpenFile</value>
@@ -815,5 +815,8 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>IsEnable</value>
+  </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>Symbol</value>
   </data>
 </root>

@@ -1,4 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
@@ -11,6 +14,26 @@ namespace ColorVision.Projects.ProjectHeyuan
     {
         public static HYMesConfig Instance => ConfigService.Instance.GetRequiredService<HYMesConfig>();
 
+        public RelayCommand OpenTemplateCommand { get; set; }
+        public RelayCommand OpenFlowEngineToolCommand { get; set; }
+
+        public HYMesConfig()
+        {
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
+        }
+
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
+        public void OpenTemplate()
+        {
+            new TemplateEditorWindow(new TemplateFlow(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public void OpenFlowEngineTool()
+        {
+            new FlowEngineToolWindow(FlowParam.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;
 

@@ -816,4 +816,7 @@
   <data name="IsEnable" xml:space="preserve">
     <value>是否啟用</value>
   </data>
+  <data name="Symbol" xml:space="preserve">
+    <value>象徵</value>
+  </data>
 </root>
