@@ -16,20 +16,23 @@ namespace ColorVision.Themes
         /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
 
-        public static void ApplyCaption(this Window window)
+        public static void ApplyCaption(this Window window,bool Icon = true)
         {
             RoutedEventHandler routedEventHandler = null;  
             routedEventHandler = (s, e) =>
             {
                 IntPtr hwnd = new WindowInteropHelper(window).Handle;
 
-                ThemeManager.Current.CurrentThemeChanged += (theme) =>
+                if (Icon)
                 {
-                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
-                    ThemeManager.SetWindowTitleBarColor(hwnd, theme);
-                };
-                if (ThemeManager.Current.CurrentTheme == Theme.Dark)
-                    window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
+                    ThemeManager.Current.CurrentThemeChanged += (theme) =>
+                    {
+                        window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+                        ThemeManager.SetWindowTitleBarColor(hwnd, theme);
+                    };
+                    if (ThemeManager.Current.CurrentTheme == Theme.Dark)
+                        window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
+                }
 
                 ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
 
