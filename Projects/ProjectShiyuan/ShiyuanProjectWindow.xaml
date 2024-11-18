@@ -255,7 +255,7 @@
                         <Button Content="..."   Click="SelectDataPath_Click" Margin="0,0,5,0" Height="30"  Width="30" VerticalAlignment="Center" />
                         <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Button Content="查看日志" HorizontalAlignment="Left"  Click="Button_Click_3"/>
+                    <Button Content="查看日志" HorizontalAlignment="Left" Command="{Binding OpenLogCommand}" />
                 </StackPanel>
 
             </Grid>

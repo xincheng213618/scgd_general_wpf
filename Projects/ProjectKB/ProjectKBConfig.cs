@@ -1,25 +1,26 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.Engine.Services.Flow;
+using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 using System.Windows;
-using ColorVision.Common.Utilities;
 
-namespace ColorVision.Projects.ProjectShiYuan
+namespace ProjectKB
 {
-    public class ProjectShiYuanConfig: ViewModelBase, IConfig
+    public class ProjectKBConfig: ViewModelBase, IConfig
     {
-        public static ProjectShiYuanConfig Instance => ConfigService.Instance.GetRequiredService<ProjectShiYuanConfig>();
+        public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
 
-
-        public ProjectShiYuanConfig()
+        public ProjectKBConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
+            TemplateItemSource = FlowParam.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
         }
         public static void OpenLog()
@@ -27,6 +28,10 @@ namespace ColorVision.Projects.ProjectShiYuan
             WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
             windowLog.Show();
         }
+
+        [JsonIgnore]
+        public ObservableCollection<TemplateModel<FlowParam>> TemplateItemSource { get => _TemplateItemSource; set { _TemplateItemSource = value; NotifyPropertyChanged(); } }
+        private ObservableCollection<TemplateModel<FlowParam>> _TemplateItemSource;
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
@@ -43,29 +48,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
 
-
-        public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenConnect;
-
-        public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
-        private string _FlowName;
-
-        public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
-        private int _DeviceId;
-
-        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
-        private string _PortName;
-
-        public string TestName { get => _TestName; set { _TestName = value; NotifyPropertyChanged(); } }
-        private string _TestName = "WBROtest";
-
-        public string DataPath { get => _DataPath; set { _DataPath = value; NotifyPropertyChanged(); } }
-        private string _DataPath;
-
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
-
-
-
     }
 }

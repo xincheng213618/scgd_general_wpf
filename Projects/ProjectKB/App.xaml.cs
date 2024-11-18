@@ -5,7 +5,7 @@ using ColorVision.UI.Languages;
 using System.Reflection;
 using System.Windows;
 
-namespace ColorVision.Projects.ProjectShiYuan
+namespace ProjectKB
 {
     /// <summary>
     /// Interaction logic for App.xaml
@@ -27,11 +27,10 @@ namespace ColorVision.Projects.ProjectShiYuan
         {
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigHandler.GetInstance().GetRequiredService<Authorization>();
-            
+
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeManager.Current.AppsTheme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
-
 
             Assembly.LoadFrom("ColorVision.Engine.dll"); ;
 
@@ -53,7 +52,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 await item.InitializeAsync();
             }
-            ShiyuanProjectWindow window = new ShiyuanProjectWindow();
+            ProjectKBWindow window = new ProjectKBWindow();
             window.Show();
         }
     }

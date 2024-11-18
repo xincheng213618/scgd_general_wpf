@@ -493,14 +493,9 @@ namespace ColorVision.Projects.ProjectShiYuan
                 }
 
             }
-            
+           
         }
 
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            WindowLog windowLog = new WindowLog() {  Owner =Application.Current.GetActiveWindow() };
-            windowLog.Show();
-        }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
