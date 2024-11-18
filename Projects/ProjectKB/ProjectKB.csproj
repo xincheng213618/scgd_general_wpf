@@ -9,7 +9,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\ProjectKB.ico" />
+    <None Remove="Assets\ProjectKB.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\ProjectKB.ico" />
+    <Resource Include="Assets\ProjectKB.png" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

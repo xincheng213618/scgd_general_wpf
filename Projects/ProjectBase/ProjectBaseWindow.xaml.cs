@@ -3,24 +3,24 @@ using log4net;
 using System.Windows;
 using System.Linq;
 
-namespace ProjectKB
+namespace ProjectBase
 {
     /// <summary>
     /// Interaction logic for ProjectKBWindow.xaml
     /// </summary>
-    public partial class ProjectKBWindow : Window
+    public partial class ProjectBaseWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectBaseWindow));
 
-        public ProjectKBWindow()
+        public ProjectBaseWindow()
         {
             InitializeComponent();
-            this.ApplyCaption(false);
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ProjectKBConfig.Instance;
+            this.DataContext = ProjectBaseConfig.Instance;
         }
 
         private void TestClick(object sender, RoutedEventArgs e)
