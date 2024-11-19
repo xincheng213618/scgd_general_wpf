@@ -64,12 +64,16 @@ def copy_with_progress(src, dst):
 
         print()
 
-def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory):
+def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):  
     try:
         with open(latest_release_path, 'r') as file:
             current_version = file.read().strip()
     except FileNotFoundError:
         current_version = '0.0.0.0'
+    try:
+        shutil.copy2(changelog_src, changelog_dst)
+    except IOError as e:
+        print(f"Could not copy file to {changelog_dst}: {e}")
 
     if version_tuple(latest_version) >= version_tuple(current_version):
         with open(latest_release_path, 'w') as file:

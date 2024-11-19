@@ -13,7 +13,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel>
-            <Button Content="仓库" Command="{Binding }"/>
+            <Button Content="仓库" Command="{Binding OpenStoreCommand}"/>
         </StackPanel>
 
         <ListView x:Name="ListViewProjects" ItemsSource="{Binding Projects}" Grid.Row="1" Padding="2">

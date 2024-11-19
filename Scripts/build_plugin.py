@@ -24,22 +24,25 @@ def get_file_version(file_path):
     return version_info
 
 
-def compare_and_zip(src_dir, ref_dir, output_zip):
+def compare_and_zip(src_dir, ref_dir, output_zip,project_name):
     temp_dir = 'temp_dir'
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
     os.makedirs(temp_dir)
 
+    project_path = os.path.join(temp_dir, project_name)
+    os.makedirs(project_path)
+
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith('.pdb'):
-                continue  # 跳过 .pdb 文件
+                continue  # Skip .pdb files
             src_file_path = os.path.join(root, file)
             ref_file_path = os.path.join(ref_dir, os.path.relpath(src_file_path, src_dir))
 
             if not os.path.exists(ref_file_path):
                 relative_path = os.path.relpath(src_file_path, src_dir)
-                dest_path = os.path.join(temp_dir, relative_path)
+                dest_path = os.path.join(project_path, relative_path)
 
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 shutil.copy2(src_file_path, dest_path)
@@ -121,7 +124,7 @@ def build_project(project_name,type):
     output_zip = f'{project_name}-{version}.zip'
 
     # 执行比较和打包
-    compare_and_zip(src_dir, ref_dir, output_zip)
+    compare_and_zip(src_dir, ref_dir, output_zip,project_name)
 
     # 定义目标目录和版本文件路径
     project_target_dir = os.path.join(target_dir, project_name)
