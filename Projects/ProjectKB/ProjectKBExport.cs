@@ -16,7 +16,6 @@ namespace ProjectKB
         }
     }
 
-
     public class ProjectKBExport : IMenuItem
     {
         public string? OwnerGuid => "Tool";

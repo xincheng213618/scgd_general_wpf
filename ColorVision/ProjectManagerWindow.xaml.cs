@@ -22,8 +22,6 @@ namespace ColorVision
         public override int Order => 10000;
         public override string Header => "项目管理";
 
-        public override Visibility Visibility => ProjectManager.GetInstance().Projects.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
-
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
@@ -178,7 +176,7 @@ namespace ColorVision
         }
         public void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/");
+            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");
         }
 
         public void CreateShortCut()
