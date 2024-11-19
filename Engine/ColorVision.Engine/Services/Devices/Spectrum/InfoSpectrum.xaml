@@ -90,7 +90,6 @@
                                  <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="上传光谱仪文件" Margin="5" Height="100"   Width="180"  Command="{Binding UploadSpectrumCommand}" />
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
-                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>
