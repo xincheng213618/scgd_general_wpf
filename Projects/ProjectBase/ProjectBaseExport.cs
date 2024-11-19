@@ -6,7 +6,19 @@ using System.Windows;
 
 namespace ProjectBase
 {
-    public class ProjectBaseExport : MenuItemBase, IProject
+
+    public class ProjectBasePlugin : IProjectBase
+    {
+        public override string Header => "基础项目";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectBase";
+
+        public override void Execute()
+        {
+            new MainWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
+
+    public class ProjectBaseExport : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
 

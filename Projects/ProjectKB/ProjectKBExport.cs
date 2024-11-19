@@ -5,7 +5,19 @@ using System.Windows;
 
 namespace ProjectKB
 {
-    public class ProjectKBExport : IMenuItem,IProject
+    public class ProjectKBPlugin: IProjectBase
+    {
+        public  override string? Header => "键盘测试";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";
+
+        public override void Execute()
+        {
+            new ProjectKBWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
+
+
+    public class ProjectKBExport : IMenuItem
     {
         public string? OwnerGuid => "Tool";
 

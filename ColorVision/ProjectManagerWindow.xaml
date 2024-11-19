@@ -13,7 +13,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel>
-            <Button Content="创建快捷方式到桌面" Command="{Binding CreateShortCutCommand}"/>
+            <Button Content="仓库" Command="{Binding }"/>
         </StackPanel>
 
         <ListView x:Name="ListViewProjects" ItemsSource="{Binding Projects}" Grid.Row="1" Padding="2">
@@ -52,6 +52,9 @@
                                     <Button Content="Open" Command="{Binding OpenProjectCommand}" Margin="0,0,5,0"/>
                                     <Button Content="ShortCut" Command="{Binding CreateShortCutCommand}"  Margin="0,0,5,0"/>
                                     <Button Content="OpenInCmd" Command="{Binding OpenInCmdCommand}"  Margin="0,0,5,0"/>
+                                    <Button Content="Delete" Command="{Binding DeleteCommand}"  Margin="0,0,5,0"/>
+                                    <Button Content="Update" Command="{Binding UpdateCommand}"  Margin="0,0,5,0"/>
+
                                 </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

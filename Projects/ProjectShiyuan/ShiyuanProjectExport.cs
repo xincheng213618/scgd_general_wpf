@@ -6,7 +6,19 @@ using System.Windows;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
-    public class ShiyuanProjectExport : IMenuItem,IProject
+
+    public class ShiyuanProjectPlugin : IProjectBase
+    {
+        public override string? Header => "ProjectShiyuan";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectShiyuan";
+
+        public override void Execute()
+        {
+            new ShiyuanProjectWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
+
+    public class ShiyuanProjectExport : IMenuItem
     {
         public string? OwnerGuid => "Tool";
 
@@ -21,7 +33,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public RelayCommand Command => new(A => Execute());
 
-        public void Execute()
+        private static void Execute()
         {
             new ShiyuanProjectWindow() {WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }

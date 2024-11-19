@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision
 {
@@ -34,6 +35,8 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectInfo));
 
+        public ContextMenu ContextMenu { get; set; }
+
         public IProject Project { get; set; }
         public Version? AssemblyVersion { get; set; }
         public DateTime? AssemblyBuildDate { get; set; }
@@ -47,6 +50,9 @@ namespace ColorVision
         public RelayCommand OpenProjectCommand { get; set; }
         public RelayCommand CreateShortCutCommand { get; set; }
         public RelayCommand OpenInCmdCommand { get; set; }
+
+        public RelayCommand DeleteCommand { get; set; }
+        public RelayCommand UpdateCommand { get; set; }
 
         public ProjectInfo(IProject project, Assembly assembly)
         {
@@ -69,7 +75,21 @@ namespace ColorVision
             InkPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\" + Project.Header + ".lnk";
             CreateShortCutCommand = new RelayCommand(a => CreateShortCut());
             OpenInCmdCommand = new RelayCommand(a => OpenInCmd());
+            DeleteCommand = new RelayCommand(a => Delete());
+            UpdateCommand = new RelayCommand(a => Update());
+            ContextMenu = new ContextMenu();
         }
+
+        public void Update()
+        {
+            PlatformHelper.Open(Project.UpdateUrl);
+        }
+
+        public void Delete()
+        {
+            ProjectManager.GetInstance().Projects.Remove(this);
+        }
+
 
         public void OpenInCmd()
         {
@@ -131,7 +151,7 @@ namespace ColorVision
         public static ProjectManager GetInstance() { lock (_locker) { _instance ??= new ProjectManager(); return _instance; } }
         public ObservableCollection<ProjectInfo> Projects { get; private set; } = new ObservableCollection<ProjectInfo>();
 
-        public RelayCommand CreateShortCutCommand { get;  set; }
+        public RelayCommand OpenStoreCommand { get;  set; }
 
         public ProjectManager()
         {
@@ -153,7 +173,12 @@ namespace ColorVision
                     }
                 }
             }
-            CreateShortCutCommand = new RelayCommand(a => CreateShortCut());
+            OpenStoreCommand = new RelayCommand(a => OpenStore());
+
+        }
+        public void OpenStore()
+        {
+            PlatformHelper.Open("http://xc213618.ddns.me:9999/");
         }
 
         public void CreateShortCut()
