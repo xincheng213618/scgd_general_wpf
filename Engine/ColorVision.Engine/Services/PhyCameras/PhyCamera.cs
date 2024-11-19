@@ -59,6 +59,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand EditCameraCommand { get; set; }
         public RelayCommand EditCalibrationCommand { get; set; }
+        public RelayCommand OpenSettingDirectoryCommand { get; set; }
+
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -121,6 +123,16 @@ namespace ColorVision.Engine.Services.PhyCameras
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
+            OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
+        }
+
+        public void OpenSettingDirectory()
+        {
+            if (Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)))
+            {
+                Common.Utilities.PlatformHelper.OpenFolder(Path.Combine(Config.FileServerCfg.FileBasePath, Code));
+            }
+
         }
 
         public async Task UploadLicenseNet()

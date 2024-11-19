@@ -93,7 +93,6 @@ namespace ColorVision
                 // 跳过当前进程
                 if (process.Id == currentProcessId)
                     continue;
-                
                 try
                 {
                     log.Info("终止未响应的进程");

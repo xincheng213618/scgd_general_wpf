@@ -19,5 +19,7 @@ namespace ColorVision.Common.Utilities
         {
             return directoryInfo.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length);
         }
+
+
     }
 }

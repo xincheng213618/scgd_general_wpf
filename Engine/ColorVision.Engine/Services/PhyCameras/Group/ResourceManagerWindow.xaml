@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Manager}" Height="450" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Manager}" Height="450" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -24,6 +24,13 @@
             </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView>
+                    <GridViewColumn  Header="操作" Width="70">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:CalibrationResource}">
+                                <Button Content="选中文件" Command="{Binding OpenCommand}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                     <GridViewColumn  Header="序号" Width="50">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:CalibrationResource}">
@@ -66,13 +73,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="操作" Width="70">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:CalibrationResource}">
-                                <Button Content="保存" Command="{Binding SaveCommand}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
+
 
                 </GridView>
             </ListView.View>

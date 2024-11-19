@@ -6,11 +6,16 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Assets\ProjectKB.ico" />
     <None Remove="Assets\ProjectKB.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\ProjectKB.ico" />
   </ItemGroup>
 
   <ItemGroup>

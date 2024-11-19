@@ -24,12 +24,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public PhyCamera? PhyCamera { get; set; }
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
-
         public RelayCommand UploadCalibrationCommand { get; set; }
-
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
-
         public RelayCommand OpenCalibrationParamsCommand { get; set; }
 
 

@@ -1,9 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.IO;
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
@@ -31,13 +34,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 return list;
             return new CalibrationResource(sysResourceModel);
         }
+        public RelayCommand OpenCommand { get; set; }
+
+
 
         public CalibrationFileConfig Config { get; set; }
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
-            //Config = ServiceObjectBaseExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
+            OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
         }
+
+
+        public void Open()
+        {
+            if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+            {
+                if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+                {
+                    string path = SysResourceModel.Value;
+
+                    string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code,"cfg", path);
+
+                    PlatformHelper.OpenFolderAndSelectFile(filepath);
+                }
+            }
+        }
+
 
         public override void Save()
         {
