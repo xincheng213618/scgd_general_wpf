@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
+using log4net;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
@@ -12,6 +13,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {
+
         public static HYMesConfig Instance => ConfigService.Instance.GetRequiredService<HYMesConfig>();
 
         public RelayCommand OpenTemplateCommand { get; set; }
@@ -59,6 +61,8 @@ namespace ColorVision.Projects.ProjectHeyuan
 
     public class HYMesManager:ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(HYMesManager));
+
         private static HYMesManager _instance;
         private static readonly object _locker = new();
         public static HYMesManager GetInstance() 
@@ -224,12 +228,14 @@ namespace ColorVision.Projects.ProjectHeyuan
                 return;
             }
             string SendMsg = $"CSN,C,{Config.DeviceId},{SN}";
+            log.Info("UploadSN" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
         public void SendPost()
         {
             string SendMsg = $"CPT,C,{Config.DeviceId}";
+            log.Info("SendPost" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
@@ -238,11 +244,13 @@ namespace ColorVision.Projects.ProjectHeyuan
         public void UploadMes(ObservableCollection<TempResult> Results)
         {
             string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
+            log.Info("UploadMes" + SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }
         public void UploadNG(string Msg = "errorW") 
         {
             string SendMsg = $"CGI,C,{Config.DeviceId},Default,{Msg}";
+            log.Info("UploadNG"+ SendMsg);
             Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 

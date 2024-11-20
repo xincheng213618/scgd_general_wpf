@@ -276,6 +276,10 @@ namespace ColorVision.Projects.ProjectHeyuan
                                             {
                                                 tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
                                             }
+                                            if (item.Rule.RType == ValidateRuleType.Wave)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
                                         }
                                     }
                                     else
@@ -304,7 +308,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                                         if (result.Name.Contains("Orange"))
                                             ngstring.Add("errorO");
                                     }
-
+                                    log.Info(string.Join(",", ngstring));
                                     Results.Add(result);
                                 }
                                 record.White_x = Results[0].X.Value;
@@ -339,7 +343,11 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     ResultText.Text = "Fail";
                                     ResultText.Foreground = Brushes.Red;
                                     HYMesManager.GetInstance().Results = Results;
-                                    HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
+                                    if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否NG过站","Heyuan",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                                    {
+                                        log.Info("ng过站");
+                                        HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
+                                    }
                                 }
 
                                 if (Directory.Exists(HYMesManager.Config.DataPath))
@@ -497,7 +505,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                     {
                         tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }
-                    if (item.Model.Code == "CIE_dw")
+                    if (item.Model.Code == "Wave")
                     {
                         tempResult.Dw = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }

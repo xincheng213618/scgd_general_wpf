@@ -98,10 +98,10 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="dw(下限)">
+                            <GridViewColumn  Header="dw(上限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
+                                        <TextBox Text="{ Binding  Dw.ValMax}" Width="40" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
