@@ -5,6 +5,7 @@ using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using log4net;
+using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -139,7 +140,7 @@ namespace ColorVision
 
                                 // 创建批处理文件内容
                                 string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                                string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "/Plugins";
+                                string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
 
                                 string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
 
@@ -184,7 +185,55 @@ del ""%~f0"" & exit
 
         public void Delete()
         {
-            ProjectManager.GetInstance().Projects.Remove(this);
+            string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, true);
+            }
+
+            Directory.CreateDirectory(tempDirectory);
+            // 创建批处理文件内容
+            string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+            string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
+
+            string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
+
+            string? executableName = Path.GetFileName(Environment.ProcessPath);
+
+            string batchContent = $@"
+@echo off
+timeout /t 3
+setlocal
+
+rem 设置要删除的目录路径
+set targetDirectory=""{targetPluginDirectory}""
+
+rem 检查目录是否存在
+if exist %targetDirectory% (
+    echo 正在删除目录: %targetDirectory%
+    rd /s /q %targetDirectory%
+    echo 删除完成。
+) else (
+    echo 目录不存在: %targetDirectory%
+)
+
+endlocal
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+rd /s /q ""{tempDirectory}""
+del ""%~f0"" & exit
+";
+            File.WriteAllText(batchFilePath, batchContent);
+
+            // 设置批处理文件的启动信息
+            ProcessStartInfo startInfo = new()
+            {
+                FileName = batchFilePath,
+                UseShellExecute = true,
+                Verb = "runas" // 请求管理员权限
+            };
+            // 启动批处理文件并退出当前程序
+            Process.Start(startInfo);
+            Environment.Exit(0);
         }
 
 
@@ -249,6 +298,7 @@ del ""%~f0"" & exit
         public ObservableCollection<ProjectInfo> Projects { get; private set; } = new ObservableCollection<ProjectInfo>();
 
         public RelayCommand OpenStoreCommand { get;  set; }
+        public RelayCommand InstallPackageCommand { get; set; }
 
         public ProjectManager()
         {
@@ -271,8 +321,75 @@ del ""%~f0"" & exit
                 }
             }
             OpenStoreCommand = new RelayCommand(a => OpenStore());
+            InstallPackageCommand = new RelayCommand(a => InstallPackage());
 
         }
+
+        public void InstallPackage()
+        {
+            // 打开文件选择对话框
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "ZIP Files (*.zip)|*.zip",
+                Title = "Select a ZIP file"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string selectedZipPath = openFileDialog.FileName;
+                InstallFromZip(selectedZipPath);
+            }
+        }
+        private void InstallFromZip(string zipFilePath)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    // 解压缩 ZIP 文件到临时目录
+                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
+                    if (Directory.Exists(tempDirectory))
+                    {
+                        Directory.Delete(tempDirectory, true);
+                    }
+                    ZipFile.ExtractToDirectory(zipFilePath, tempDirectory);
+
+                    // 创建批处理文件内容
+                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+                    string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "/Plugins";
+
+                    string? executableName = Path.GetFileName(Environment.ProcessPath);
+
+                    string batchContent = $@"
+@echo off
+timeout /t 3
+xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+rd /s /q ""{tempDirectory}""
+del ""%~f0"" & exit
+";
+                    File.WriteAllText(batchFilePath, batchContent);
+
+                    // 设置批处理文件的启动信息
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = batchFilePath,
+                        UseShellExecute = true,
+                        Verb = "runas" // 请求管理员权限
+                    };
+                    // 启动批处理文件并退出当前程序
+                    Process.Start(startInfo);
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"更新失败: {ex.Message}");
+                }
+            });
+        }
+
+
+
         public void OpenStore()
         {
             PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");

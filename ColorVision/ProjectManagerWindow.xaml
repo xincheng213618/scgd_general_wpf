@@ -12,8 +12,9 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel>
+        <StackPanel Orientation="Horizontal">
             <Button Content="仓库" Command="{Binding OpenStoreCommand}"/>
+            <Button Content="安装包" Command="{Binding InstallPackageCommand}"/>
         </StackPanel>
 
         <ListView x:Name="ListViewProjects" ItemsSource="{Binding Projects}" Grid.Row="1" Padding="2">
