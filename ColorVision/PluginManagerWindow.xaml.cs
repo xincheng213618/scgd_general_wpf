@@ -12,7 +12,7 @@ namespace ColorVision
         public override string OwnerGuid => "Help";
         public override string GuidId => nameof(PluginManagerExport);
         public override int Order => 10000;
-        public override string Header => "PluginManager";
+        public override string Header => "插件管理";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
