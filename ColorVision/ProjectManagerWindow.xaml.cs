@@ -99,6 +99,10 @@ namespace ColorVision
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{Project.UpdateUrl}/{PackageName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    if (File.Exists(downloadPath))
+                    {
+                        File.Delete(downloadPath);
+                    }
                     if (!File.Exists(downloadPath))
                     {
                         windowUpdate.Show();
