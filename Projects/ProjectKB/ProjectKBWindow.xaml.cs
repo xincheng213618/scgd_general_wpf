@@ -34,9 +34,37 @@ namespace ProjectKB
                 outstr += $"{formattedString ,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
             }
             outputText.Text = outstr;
+
+            SNtextBox.Focus();
         }
 
-        private void Button_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+
+        private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+
+        }
+
+        private void Button_Click_Clear(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
 
         }

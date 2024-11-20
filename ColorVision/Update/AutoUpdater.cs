@@ -421,7 +421,7 @@ timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""
 rd /s /q ""{tempDirectory}""
-exit
+del ""%~f0"" & exit
 ";
 
                 File.WriteAllText(batchFilePath, batchContent);

@@ -90,8 +90,8 @@
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
-                <ListView.View >
-                    <GridView >
+                <ListView.View>
+                    <GridView>
                         <GridView.ColumnHeaderContainerStyle>
                             <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                                 <Setter Property="Visibility" Value="Visible"/>
