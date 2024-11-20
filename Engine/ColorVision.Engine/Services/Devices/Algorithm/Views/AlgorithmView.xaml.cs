@@ -29,6 +29,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -54,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
                 {

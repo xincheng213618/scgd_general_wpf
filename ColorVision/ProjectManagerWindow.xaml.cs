@@ -303,7 +303,7 @@ del ""%~f0"" & exit
         public ProjectManager()
         {
             log.Info("正在检索是否存在附加项目");
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
                 {

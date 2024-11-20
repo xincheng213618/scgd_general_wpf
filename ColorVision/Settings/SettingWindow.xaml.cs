@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
@@ -88,7 +89,7 @@ namespace ColorVision.Settings
             }
             var allSettings = new List<ConfigSettingMetadata>();
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {

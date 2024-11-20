@@ -82,7 +82,7 @@ namespace ColorVision.UI.Menus
                     iMenuItems.Remove(item);
                 }
             }
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
                 {

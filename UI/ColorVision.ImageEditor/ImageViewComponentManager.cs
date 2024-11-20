@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -17,7 +18,7 @@ namespace ColorVision.ImageEditor
         public ImageViewComponentManager()
         {
             IImageViewComponents = new ObservableCollection<IImageViewComponent>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IImageViewComponent).IsAssignableFrom(t) && !t.IsAbstract))
                 {
@@ -28,7 +29,7 @@ namespace ColorVision.ImageEditor
                 }
             }
             IImageViewOpens = new ObservableCollection<IImageViewOpen>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IImageViewOpen).IsAssignableFrom(t) && !t.IsAbstract))
                 {

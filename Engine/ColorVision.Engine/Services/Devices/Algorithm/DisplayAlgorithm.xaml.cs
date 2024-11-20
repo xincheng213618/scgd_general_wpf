@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             DataContext = Device;
             List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IDisplayAlgorithm).IsAssignableFrom(t) && !t.IsAbstract))
                 {

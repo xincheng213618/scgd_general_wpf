@@ -11,7 +11,7 @@
         public FileProcessorManager()
         {
             _fileProcessors = new List<IFileProcessor>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IFileProcessor).IsAssignableFrom(t) && !t.IsAbstract))
                 {

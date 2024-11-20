@@ -28,6 +28,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 {
@@ -53,7 +54,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
                 {

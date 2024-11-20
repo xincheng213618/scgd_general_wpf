@@ -47,7 +47,7 @@ namespace ColorVision
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
             _IComponentInitializers = new List<UI.IInitializer>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                 {
@@ -122,7 +122,7 @@ namespace ColorVision
                     if (project != null)
                     {
                         List<IProject> IProjects = new List<IProject>();
-                        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                        foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                         {
                             foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
                             {

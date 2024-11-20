@@ -38,7 +38,7 @@ namespace ProjectBase
 
             var _IComponentInitializers = new List<IInitializer>();
             MessageUpdater messageUpdater = new MessageUpdater();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                 {
