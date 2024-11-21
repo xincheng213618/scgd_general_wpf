@@ -394,6 +394,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                 MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
             }
         }
+        
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -409,7 +410,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
                     flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
-
+                    
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
                     flowControl.FlowData += (s, e) =>
@@ -422,6 +423,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                             });
                         }
                     };
+
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     flowControl.Start(sn);

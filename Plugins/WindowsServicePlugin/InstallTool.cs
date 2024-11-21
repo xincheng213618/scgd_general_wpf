@@ -153,7 +153,6 @@ namespace WindowsServicePlugin
             }
         }
 
-
         public async void Download()
         {
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);

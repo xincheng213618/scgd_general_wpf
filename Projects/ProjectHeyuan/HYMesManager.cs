@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using log4net;
+using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
@@ -219,6 +220,11 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
         private bool? _CMIResult;
+        public DateTime LastRunDateTime { get => _LastRunDateTime; set { _LastRunDateTime = value; NotifyPropertyChanged(); } }
+        private DateTime _LastRunDateTime;
+
+
+
 
         public void UploadSN()
         {
