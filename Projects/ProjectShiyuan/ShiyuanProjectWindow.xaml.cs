@@ -27,6 +27,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
+using System.Diagnostics;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -176,12 +177,16 @@ namespace ColorVision.Projects.ProjectShiYuan
         public STNodeEditor STNodeEditorMain { get; set; }
 
         private FlowEngineLib.FlowEngineControl flowEngine;
+
+        private Timer timer;
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
-
+            timer = new Timer(TimeRun, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
@@ -199,8 +204,49 @@ namespace ColorVision.Projects.ProjectShiYuan
             };
 
             this.DataContext = ProjectShiYuanConfig.Instance;
-
         }
+
+        private void TimeRun(object? state)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (handler != null)
+                    {
+                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+
+                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        string msg;
+
+                        if (ProjectShiYuanConfig.Instance.LastFlowTime == 0)
+                        {
+                            msg = $"已经执行：{elapsedTime}";
+                        }
+                        else
+                        {
+                            long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+
+                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                            msg = $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                        }
+
+                        handler.UpdateMessage(msg);
+                    }
+                }
+                catch
+                {
+
+                }
+
+            });
+        }
+
+
+
         private Engine.Services.Flow.FlowControl flowControl;
 
         private IPendingHandler handler;
@@ -213,12 +259,15 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
+                    stopwatch.Stop();
+                    timer.Change(Timeout.Infinite, 100); // 停止定时器
                     if (FlowControlData.EventName == "Completed")
                     {
                         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
                         bool sucess = true;
-
+                        ProjectShiYuanConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+                        log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
@@ -363,6 +412,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
+        Stopwatch stopwatch = new Stopwatch();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -374,7 +424,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
@@ -387,7 +436,10 @@ namespace ColorVision.Projects.ProjectShiYuan
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    stopwatch.Reset();
+                    stopwatch.Start();
                     flowControl.Start(sn);
+                    timer.Change(0, 100); // 启动定时器
                     string name = string.Empty;
                     BeginNewBatch(sn, name);
                 }

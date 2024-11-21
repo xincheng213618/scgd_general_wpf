@@ -5,6 +5,7 @@ using ColorVision.UI;
 using ColorVision.Engine.Services.Flow;
 using System.Windows;
 using ColorVision.Common.Utilities;
+using System;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -64,6 +65,9 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
+
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        private long _LastFlowTime;
 
 
 
