@@ -404,6 +404,13 @@ namespace ColorVision.Projects.ProjectHeyuan
                 return;
             }
 
+            if (!HYMesManager.Config.IsAutoUploadSn)
+            {
+                log.Info($"没有勾选自动上传，现在上传SN:{HYMesManager.GetInstance().SN}");
+                HYMesManager.GetInstance().UploadSN();
+            }
+
+
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
                 string startNode = flowEngine.GetStartNodeName();
