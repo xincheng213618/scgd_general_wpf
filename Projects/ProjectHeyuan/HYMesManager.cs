@@ -220,11 +220,8 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
         private bool? _CMIResult;
-        public DateTime LastRunDateTime { get => _LastRunDateTime; set { _LastRunDateTime = value; NotifyPropertyChanged(); } }
-        private DateTime _LastRunDateTime;
-
-
-
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        private long _LastFlowTime;
 
         public void UploadSN()
         {

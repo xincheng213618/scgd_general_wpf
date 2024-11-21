@@ -16,6 +16,7 @@ using log4net;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Ports;
@@ -158,21 +159,20 @@ namespace ColorVision.Projects.ProjectHeyuan
     public partial class ProjectHeyuanWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectHeyuanWindow));
+
+        public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
+        public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
+
+        private FlowEngineLib.FlowEngineControl flowEngine;
+        private Timer timer;
+        Stopwatch stopwatch = new Stopwatch();
+
         public ProjectHeyuanWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
 
-
-
-
-
-        public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
-        public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
-
-
-        private FlowEngineLib.FlowEngineControl flowEngine;
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
@@ -206,7 +206,50 @@ namespace ColorVision.Projects.ProjectHeyuan
             }
 
             this.DataContext = HYMesManager.GetInstance();
+
+            timer = new Timer(TimeRun, null, 0, 100);
         }
+
+
+        private void TimeRun(object? state)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (handler != null)
+                    {
+                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+
+                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        string msg;
+
+                        if (HYMesManager.GetInstance().LastFlowTime == 0)
+                        {
+                            msg = $"已经执行：{elapsedTime}";
+                        }
+                        else
+                        {
+                            long remainingMilliseconds = HYMesManager.GetInstance().LastFlowTime - elapsedMilliseconds;
+                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+
+                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                            msg = $"已经执行：{elapsedTime}, 上次执行：{HYMesManager.GetInstance().LastFlowTime} ms, 预计还需要：{remainingTime}";
+                        }
+
+                        handler.UpdateMessage(msg);
+                    }
+                }
+                catch
+                {
+
+                }
+
+            });
+        }
+
         private Engine.Services.Flow.FlowControl flowControl;
 
         private IPendingHandler handler;
@@ -219,8 +262,14 @@ namespace ColorVision.Projects.ProjectHeyuan
             {
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
+                    stopwatch.Stop();
+                    timer.Change(Timeout.Infinite, 100); // 停止定时器
+
                     if (FlowControlData.EventName == "Completed")
                     {
+                        HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
+                        log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
                         Results.Clear();
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
@@ -433,6 +482,10 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    stopwatch.Reset();
+                    stopwatch.Start();
+                    flowControl.Start(sn);
+                    timer.Change(0, 100); // 启动定时器
                     flowControl.Start(sn);
                     string name = string.Empty;
                     BeginNewBatch(sn, name);

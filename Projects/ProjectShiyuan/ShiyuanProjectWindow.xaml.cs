@@ -179,6 +179,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         private FlowEngineLib.FlowEngineControl flowEngine;
 
         private Timer timer;
+        Stopwatch stopwatch = new Stopwatch();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -412,7 +413,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
-        Stopwatch stopwatch = new Stopwatch();
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
