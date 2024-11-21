@@ -175,9 +175,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
 
         public STNodeEditor STNodeEditorMain { get; set; }
-
         private FlowEngineLib.FlowEngineControl flowEngine;
-
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
@@ -186,8 +184,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
-            timer = new Timer(TimeRun, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
@@ -205,6 +202,9 @@ namespace ColorVision.Projects.ProjectShiYuan
             };
 
             this.DataContext = ProjectShiYuanConfig.Instance;
+
+            timer = new Timer(TimeRun, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
         }
 
         private void TimeRun(object? state)
@@ -245,8 +245,6 @@ namespace ColorVision.Projects.ProjectShiYuan
 
             });
         }
-
-
 
         private Engine.Services.Flow.FlowControl flowControl;
 

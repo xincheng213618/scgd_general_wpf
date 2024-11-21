@@ -1,6 +1,8 @@
 ﻿using ColorVision.UI.Views;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Diagnostics;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -32,6 +34,7 @@ namespace ColorVision.Engine.Services.Flow
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
             flowEngine.AttachNodeEditor(STNodeEditorMain);
+
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
 
@@ -63,8 +66,9 @@ namespace ColorVision.Engine.Services.Flow
                     STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
                 }
             };
-
         }
+
+
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {

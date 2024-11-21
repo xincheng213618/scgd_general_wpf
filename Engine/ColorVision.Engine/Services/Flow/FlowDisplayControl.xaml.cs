@@ -5,11 +5,16 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using FlowEngineLib;
+using FlowEngineLib.Base;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -35,6 +40,8 @@ namespace ColorVision.Engine.Services.Flow
         public CVFlowView1 View { get; set; }
         public string DisPlayName => "Flow";
         public static FlowConfig Config => FlowConfig.Instance;
+
+        Stopwatch stopwatch = new Stopwatch();
 
         public FlowDisplayControl()
         {
@@ -90,7 +97,22 @@ namespace ColorVision.Engine.Services.Flow
                         else
                         {
                             var tokens = ServiceManager.GetInstance().ServiceTokens;
+
+                            foreach (var item in View.STNodeEditorMain.Nodes)
+                            {
+                                if (item is CVCommonNode algorithmNode)
+                                {
+                                    algorithmNode.nodeRunEvent -= UpdateMsg;
+                                }
+                            }
                             View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tokens);
+                            foreach (var item in View.STNodeEditorMain.Nodes)
+                            {
+                                if (item is CVCommonNode algorithmNode)
+                                {
+                                    algorithmNode.nodeRunEvent += UpdateMsg;
+                                }
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -124,6 +146,7 @@ namespace ColorVision.Engine.Services.Flow
 
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
+                    stopwatch.Stop();
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
@@ -152,6 +175,63 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
+        string Msg1;
+        private void UpdateMsg(object? sender)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (handler != null)
+                    {
+                        //long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                        //TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+
+                        //string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        string msg = Msg1 + Environment.NewLine + $"已经执行：{stopwatch.ElapsedMilliseconds}";
+
+                        //if (HYMesManager.GetInstance().LastFlowTime == 0)
+                        //{
+                        //    msg = $"已经执行：{elapsedTime}";
+                        //}
+                        //else
+                        //{
+                        //    long remainingMilliseconds = HYMesManager.GetInstance().LastFlowTime - elapsedMilliseconds;
+                        //    TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+
+                        //    string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                        //    msg = $"已经执行：{elapsedTime}, 上次执行：{HYMesManager.GetInstance().LastFlowTime} ms, 预计还需要：{remainingTime}";
+                        //}
+
+                        handler.UpdateMessage(msg);
+                    }
+                }
+                catch
+                {
+
+                }
+
+
+
+
+
+            });
+        }
+
+        private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
+        {
+            if (sender is CVCommonNode algorithmNode)
+            {
+                if (e != null)
+                {
+                    Msg1 = algorithmNode.Title;
+                    UpdateMsg(sender);
+                }
+            }
+        }
+
+
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
 
@@ -165,7 +245,7 @@ namespace ColorVision.Engine.Services.Flow
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
                 handler.Cancelling += Handler_Cancelling; ;
-
+               
                 flowControl.FlowData += (s, e) =>
                 {
                     if (s is FlowControlData msg)
@@ -176,10 +256,15 @@ namespace ColorVision.Engine.Services.Flow
                         });
                     }
                 };
+
+
+
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 ButtonRun.Visibility = Visibility.Collapsed;
                 ButtonStop.Visibility = Visibility.Visible;
+                stopwatch.Restart();
+                stopwatch.Start();
                 flowControl.Start(sn);
                 string name = string.Empty;
                 if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
@@ -190,6 +275,8 @@ namespace ColorVision.Engine.Services.Flow
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
             }
         }
+
+
 
         public static void BeginNewBatch(string sn, string name)
         {
