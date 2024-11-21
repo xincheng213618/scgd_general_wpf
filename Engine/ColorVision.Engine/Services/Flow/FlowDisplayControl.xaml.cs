@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -28,6 +29,8 @@ namespace ColorVision.Engine.Services.Flow
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        private long _LastFlowTime;
 
     }
 
@@ -41,7 +44,9 @@ namespace ColorVision.Engine.Services.Flow
         public string DisPlayName => "Flow";
         public static FlowConfig Config => FlowConfig.Instance;
 
+        private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
+
 
         public FlowDisplayControl()
         {
@@ -80,6 +85,10 @@ namespace ColorVision.Engine.Services.Flow
             }
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
+
+
+            timer = new Timer(UpdateMsg, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
         }
 
         private void FlowUpdate()
@@ -147,6 +156,8 @@ namespace ColorVision.Engine.Services.Flow
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     stopwatch.Stop();
+                    timer.Change(Timeout.Infinite, 100); // 停止定时器
+                    FlowDisplayConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
@@ -184,26 +195,22 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     if (handler != null)
                     {
-                        //long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        //TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        string msg;
+                        if (FlowDisplayConfig.Instance.LastFlowTime == 0 ||  FlowDisplayConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
+                        {
+                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                        }
+                        else
+                        {
+                            long remainingMilliseconds = FlowDisplayConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                        //string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg = Msg1 + Environment.NewLine + $"已经执行：{stopwatch.ElapsedMilliseconds}";
-
-                        //if (HYMesManager.GetInstance().LastFlowTime == 0)
-                        //{
-                        //    msg = $"已经执行：{elapsedTime}";
-                        //}
-                        //else
-                        //{
-                        //    long remainingMilliseconds = HYMesManager.GetInstance().LastFlowTime - elapsedMilliseconds;
-                        //    TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-
-                        //    string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                        //    msg = $"已经执行：{elapsedTime}, 上次执行：{HYMesManager.GetInstance().LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        //}
-
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowDisplayConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                        }
                         handler.UpdateMessage(msg);
                     }
                 }
@@ -265,6 +272,7 @@ namespace ColorVision.Engine.Services.Flow
                 ButtonStop.Visibility = Visibility.Visible;
                 stopwatch.Restart();
                 stopwatch.Start();
+                timer.Change(0, 100); // 启动定时器
                 flowControl.Start(sn);
                 string name = string.Empty;
                 if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
