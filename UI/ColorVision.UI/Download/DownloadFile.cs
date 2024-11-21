@@ -60,6 +60,10 @@ namespace ColorVision.UI
                 // You should also consider handling other potential issues here, such as network errors
                 versionString = await _httpClient.GetStringAsync(url);
             }
+            catch(Exception ex)
+            {
+                return new Version(versionString.Trim());
+            }
 
             // If versionString is still null, it means there was an issue with getting the version number
             if (versionString == null)
