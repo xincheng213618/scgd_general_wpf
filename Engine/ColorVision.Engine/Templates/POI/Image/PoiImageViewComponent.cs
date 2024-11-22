@@ -10,7 +10,6 @@ using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using System.Collections.ObjectModel;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
