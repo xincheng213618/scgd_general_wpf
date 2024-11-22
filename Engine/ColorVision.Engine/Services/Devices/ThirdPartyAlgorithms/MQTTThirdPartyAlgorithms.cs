@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         }
 
 
-        public MsgRecord CallFunction(ModThirdPartyParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType, PoiParam poiParam, CVOLEDCOLOR cOLOR)
+        public MsgRecord CallFunction(TemplateJsonParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType, PoiParam poiParam, CVOLEDCOLOR cOLOR)
         {
             serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
 
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord CallFunction(ModThirdPartyParam modparam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        public MsgRecord CallFunction(TemplateJsonParam modparam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {
             serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
             

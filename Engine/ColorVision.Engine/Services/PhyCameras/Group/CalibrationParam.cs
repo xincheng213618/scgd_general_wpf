@@ -44,8 +44,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public bool IsSelected { get { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) return GetValue(_IsSelected); else return GetValue(_IsSelected, propertyName + "IsSelected"); } set { if (string.IsNullOrWhiteSpace(propertyName + "IsSelected")) SetProperty(ref _IsSelected, value); else SetProperty(ref _IsSelected, value, propertyName + "IsSelected"); NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
-        public int? Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); NotifyPropertyChanged(); } }
-        private int? _Id;
+        public override int Id { get { if (string.IsNullOrWhiteSpace(propertyName + "Id")) return GetValue(_Id); else return GetValue(_Id, propertyName + "Id"); } set { if (string.IsNullOrWhiteSpace(propertyName + "Id")) SetProperty(ref _Id, value); else SetProperty(ref _Id, value, propertyName + "Id"); NotifyPropertyChanged(); } }
+        private int _Id;
     }
 
 

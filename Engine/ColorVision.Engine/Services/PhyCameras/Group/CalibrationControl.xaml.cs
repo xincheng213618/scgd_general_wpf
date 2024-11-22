@@ -160,25 +160,25 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
                     CalibrationParam.Normal.DarkNoise.FilePath = groupResource.DarkNoise?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DarkNoise.Id = groupResource.DarkNoise?.Id;
+                    CalibrationParam.Normal.DarkNoise.Id = groupResource.DarkNoise?.Id ??0;
                     CalibrationParam.Normal.DefectPoint.FilePath = groupResource.DefectPoint?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DefectPoint.Id = groupResource.DefectPoint?.Id;
+                    CalibrationParam.Normal.DefectPoint.Id = groupResource.DefectPoint?.Id ?? 0;
                     CalibrationParam.Normal.DSNU.FilePath = groupResource.DSNU?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DSNU.Id = groupResource.DSNU?.Id;
+                    CalibrationParam.Normal.DSNU.Id = groupResource.DSNU?.Id ?? 0;
                     CalibrationParam.Normal.Distortion.FilePath = groupResource.Distortion?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Distortion.Id = groupResource.Distortion?.Id;
+                    CalibrationParam.Normal.Distortion.Id = groupResource.Distortion?.Id ?? 0;
                     CalibrationParam.Normal.ColorShift.FilePath = groupResource.ColorShift?.Name ?? string.Empty;
-                    CalibrationParam.Normal.ColorShift.Id = groupResource.ColorShift?.Id;
+                    CalibrationParam.Normal.ColorShift.Id = groupResource.ColorShift?.Id ?? 0;
                     CalibrationParam.Normal.Uniformity.FilePath = groupResource.Uniformity?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Uniformity.Id = groupResource.Uniformity?.Id;
+                    CalibrationParam.Normal.Uniformity.Id = groupResource.Uniformity?.Id ?? 0;
                     CalibrationParam.Color.Luminance.FilePath = groupResource.Luminance?.Name ?? string.Empty;
-                    CalibrationParam.Color.Luminance.Id = groupResource.Luminance?.Id;
+                    CalibrationParam.Color.Luminance.Id = groupResource.Luminance?.Id ?? 0;
                     CalibrationParam.Color.LumFourColor.FilePath = groupResource.LumFourColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumFourColor.Id = groupResource.LumFourColor?.Id;
+                    CalibrationParam.Color.LumFourColor.Id = groupResource.LumFourColor?.Id ?? 0;
                     CalibrationParam.Color.LumMultiColor.FilePath = groupResource.LumMultiColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumMultiColor.Id = groupResource.LumMultiColor?.Id;
+                    CalibrationParam.Color.LumMultiColor.Id = groupResource.LumMultiColor?.Id ?? 0;
                     CalibrationParam.Color.LumOneColor.FilePath = groupResource.LumOneColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumOneColor.Id = groupResource.LumOneColor?.Id;
+                    CalibrationParam.Color.LumOneColor.Id = groupResource.LumOneColor?.Id ?? 0;
                 }
 
             }

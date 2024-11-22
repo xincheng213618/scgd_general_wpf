@@ -8,19 +8,25 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-
-    public class ModThirdPartyParam : ParamModBase
+    public interface IEditTemplateJson
     {
+        public RelayCommand ResetCommand { get; set; }
+        public string JsonValue { get; set; }
+    }
 
+
+    public class TemplateJsonParam : ParamModBase, IEditTemplateJson
+    {
         public RelayCommand ResetCommand { get; set; }
 
+        public ModThirdPartyAlgorithmsModel ModThirdPartyAlgorithmsModel { get; set; }
 
-        public ModThirdPartyParam() 
+        public TemplateJsonParam() 
         {
             ResetCommand = new RelayCommand((a)=> ResetValue());
         }
 
-        public ModThirdPartyParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
+        public TemplateJsonParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
         {
             ModThirdPartyAlgorithmsModel = modThirdPartyAlgorithmsModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
@@ -40,7 +46,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 
         public override int Id { get => ModThirdPartyAlgorithmsModel.Id; set { ModThirdPartyAlgorithmsModel.Id = value; NotifyPropertyChanged(); } }
         public override string Name { get => ModThirdPartyAlgorithmsModel.Name ?? string.Empty; set { ModThirdPartyAlgorithmsModel.Name = value; NotifyPropertyChanged(); } }
-        public ModThirdPartyAlgorithmsModel ModThirdPartyAlgorithmsModel { get; set; }
 
         public string JsonValue
         {

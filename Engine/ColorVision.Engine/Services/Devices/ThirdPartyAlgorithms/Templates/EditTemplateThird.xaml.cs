@@ -4,33 +4,31 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
 
-    public class EditTemplateThirdConfig :IConfig
+    public class EditTemplateJsonConfig :IConfig
     {
-        public static EditTemplateThirdConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateThirdConfig>();
+        public static EditTemplateJsonConfig Instance => ConfigService.Instance.GetRequiredService<EditTemplateJsonConfig>();
 
         public double Width { get; set; } = double.NaN;
-
-
     }
 
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditTemplateThird : UserControl
+    public partial class EditTemplateJson : UserControl
     {
-        public EditTemplateThird()
+        public EditTemplateJson()
         {
             InitializeComponent();
-            this.Width = EditTemplateThirdConfig.Instance.Width;
+            this.Width = EditTemplateJsonConfig.Instance.Width;
             this.SizeChanged += (s, e) =>
             {
-                EditTemplateThirdConfig.Instance.Width = this.ActualWidth;
+                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
             };
-
         }
-        public ModThirdPartyParam Param { get; set; }
 
-        public void SetParam(ModThirdPartyParam param)
+        public IEditTemplateJson Param { get; set; }
+
+        public void SetParam(IEditTemplateJson param)
         {
             Param = param;
             this.DataContext = Param;

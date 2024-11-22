@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
             if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择灯珠检测模板")) return;
             if (!AlgorithmHelper.IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
 
-            if (ComboxTemplate.SelectedValue is not ModThirdPartyParam param) return;
+            if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
             if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
 

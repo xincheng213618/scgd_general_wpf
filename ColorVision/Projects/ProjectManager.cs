@@ -18,7 +18,7 @@ namespace ColorVision.Projects
 {
     public class ProjectManager:ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectManager));
         private static ProjectManager _instance;
         private static readonly object _locker = new();
         public static ProjectManager GetInstance() { lock (_locker) { _instance ??= new ProjectManager(); return _instance; } }

@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(ModThirdPartyParam param, PoiParam poiParam, CVOLEDCOLOR cOLOR,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(TemplateJsonParam param, PoiParam poiParam, CVOLEDCOLOR cOLOR,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

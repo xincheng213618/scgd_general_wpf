@@ -36,11 +36,16 @@ namespace ColorVision.Engine.MySql.ORM
             return dao.GetAllByParam(new Dictionary<string, object>() { { "id", id } });
         }
 
-        public static T? GetById<T>(this BaseTableDao<T> dao, int id) where T : IPKModel, new()
+        public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : IPKModel, new()
         {
+            if (id == null) return default;
             return dao.GetByParam(new Dictionary<string, object> { { "id", id } });
         }
-
+        public static T? GetByCode<T>(this BaseTableDao<T> dao, string? code) where T : IPKModel, new()
+        {
+            if (code == null) return default;
+            return dao.GetByParam(new Dictionary<string, object> { { "code", code } });
+        }
     }
 
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()

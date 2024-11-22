@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 this.Height = 150;
-                //GridProperty.Children.Add(ITemplate.GetUserControl());
+                //GridProperty.Children.Add(ITemplateJson.GetUserControl());
             }
             else
             {

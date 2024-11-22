@@ -1,13 +1,28 @@
 ﻿using ColorVision.Common.MVVM;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ModelBase : ViewModelBase
+
+    public class ParamBase : ViewModelBase
+    {
+        [Browsable(false)]
+        public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
+        [Browsable(false)]
+        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+    }
+
+
+
+    public class ModelBase : ParamBase
     {
         private Dictionary<string, ModDetailModel> parameters;
 

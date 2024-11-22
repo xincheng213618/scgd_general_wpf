@@ -11,15 +11,6 @@ namespace ColorVision.Engine.Templates
 {
     public class ParamModBase : ModelBase
     {
-
-        [Browsable(false)]
-        public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
-        private int _Id;
-
-        [Browsable(false)]
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
         [Browsable(false)]
         [JsonIgnore]
         public virtual RelayCommand CreateCommand { get; set; }

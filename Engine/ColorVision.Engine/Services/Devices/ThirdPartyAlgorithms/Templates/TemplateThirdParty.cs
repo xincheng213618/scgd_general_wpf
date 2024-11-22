@@ -11,9 +11,9 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public class TemplateThirdParty : ITemplate<ModThirdPartyParam>
+    public class TemplateThirdParty : ITemplate<TemplateJsonParam>
     {
-        public static Dictionary<string, ObservableCollection<TemplateModel<ModThirdPartyParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ModThirdPartyParam>>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<TemplateJsonParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<TemplateJsonParam>>>();
 
         public ThirdPartyAlgorithmsModel ThirdPartyAlgorithmsModel { get; set; }
 
@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             }
             else
             {
-                templatesParams = new ObservableCollection<TemplateModel<ModThirdPartyParam>>();
+                templatesParams = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
                 TemplateParams = templatesParams;
                 Params.Add(Code, templatesParams);
             }
@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         {
             EditTemplateThird.SetParam(TemplateParams[index].Value);
         }
-        public EditTemplateThird EditTemplateThird { get; set; } = new EditTemplateThird();
+        public EditTemplateJson EditTemplateThird { get; set; } = new EditTemplateJson();
 
         public override UserControl GetUserControl()
         {
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 {
                     if (dbModel != null)
                     {
-                        if (Activator.CreateInstance(typeof(ModThirdPartyParam), [dbModel]) is ModThirdPartyParam t)
+                        if (Activator.CreateInstance(typeof(TemplateJsonParam), [dbModel]) is TemplateJsonParam t)
                         {
                             if (backup.TryGetValue(t.Id, out var model))
                             {
@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                             }
                             else
                             {
-                                var templateModel = new TemplateModel<ModThirdPartyParam>(dbModel.Name ?? "default", t);
+                                var templateModel = new TemplateModel<TemplateJsonParam>(dbModel.Name ?? "default", t);
                                 TemplateParams.Add(templateModel);
                             }
                         }
@@ -116,15 +116,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 }
             }
         }
-
-
         public override void Create(string templateName)
         {
             ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = ThirdPartyAlgorithmsModel.Id, Code = Code, Name = templateName, JsonVal = ThirdPartyAlgorithmsModel.DefaultCfg };
 
             ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
-            ModThirdPartyParam templateFindDotsArrayParam = new ModThirdPartyParam(thirdPartyAlgorithmsModel);
-            TemplateModel<ModThirdPartyParam> templateModel = new TemplateModel<ModThirdPartyParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
+            TemplateJsonParam templateFindDotsArrayParam = new TemplateJsonParam(thirdPartyAlgorithmsModel);
+            TemplateModel<TemplateJsonParam> templateModel = new TemplateModel<TemplateJsonParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
             TemplateParams.Add(templateModel);
         }
     }
