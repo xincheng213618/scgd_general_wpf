@@ -40,7 +40,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
-            Batch = measureImgResultModel.BatchCode ?? string.Empty;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileUrl = measureImgResultModel.FileUrl ?? string.Empty;
             FileType = (CameraFileType)(measureImgResultModel.FileType ?? 0);

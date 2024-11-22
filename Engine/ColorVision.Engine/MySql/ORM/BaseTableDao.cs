@@ -46,6 +46,12 @@ namespace ColorVision.Engine.MySql.ORM
             if (code == null) return default;
             return dao.GetByParam(new Dictionary<string, object> { { "code", code } });
         }
+
+        public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
+        {
+            return dao.GetAllByParam(new Dictionary<string, object> { { "batch_id", batchid } });
+        }
+
     }
 
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
@@ -169,6 +175,31 @@ namespace ColorVision.Engine.MySql.ORM
 
         public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
 
+
+        public T? GetLatestResult()
+        {
+            return GetByCreateDate(limit: 1).FirstOrDefault();
+        }
+
+        public List<T> GetByCreateDate(int limit = 1)
+        {
+            List<T> list = new();
+            string sql = $"select * from {TableName} ORDER BY create_date DESC LIMIT @Limit";
+            var parameters = new Dictionary<string, object>
+            {
+                {"@Limit", limit}
+            };
+            DataTable d_info = GetData(sql, parameters);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
 
         public int GetNextAvailableId()
         {

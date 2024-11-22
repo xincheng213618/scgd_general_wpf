@@ -13,7 +13,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public ViewResultCalibration(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
-            Batch = measureImgResultModel.BatchCode ?? string.Empty;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileType = (CameraFileType)(measureImgResultModel.FileType??0);
             ReqParams = measureImgResultModel.ReqParams ?? string.Empty;

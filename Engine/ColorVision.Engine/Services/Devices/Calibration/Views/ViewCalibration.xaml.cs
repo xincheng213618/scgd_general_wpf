@@ -24,6 +24,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.MySql.ORM;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -107,10 +108,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             if (model != null)
                                 resultMaster.Add(model);
                         }
-                        else
-                        {
-                            resultMaster = MeasureImgResultDao.Instance.GetAllByBatchCode(arg.SerialNumber);
-                        }
                         if (resultMaster != null)
                         {
                             foreach (MeasureImgResultModel result in resultMaster)
@@ -162,10 +159,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                             if (model != null)
                                 resultMaster.Add(model);
-                        }
-                        else
-                        {
-                            resultMaster = MeasureImgResultDao.Instance.GetAllByBatchCode(arg.SerialNumber);
                         }
                         if (resultMaster != null)
                         {
@@ -330,7 +323,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 ViewResults.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)

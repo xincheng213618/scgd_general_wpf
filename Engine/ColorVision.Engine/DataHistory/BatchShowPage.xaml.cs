@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Camera.Views;
@@ -43,7 +44,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResultCameras.Clear();
-            foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchid(ViewBatchResult.Id))
+            foreach (var item in MeasureImgResultDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
             {
                 ViewResultCameras.AddUnique(new ViewResultCamera(item));
             }

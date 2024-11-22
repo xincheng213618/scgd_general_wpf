@@ -36,6 +36,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
 using Microsoft.Win32;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
