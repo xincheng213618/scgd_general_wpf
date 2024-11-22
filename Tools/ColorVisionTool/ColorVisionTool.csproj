@@ -20,6 +20,10 @@
 	</Page>
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+	</ItemGroup>
+
   <ItemGroup>
     <None Update="log4net.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
