@@ -309,7 +309,7 @@ namespace ColorVision.Engine.MySql.ORM
         }
         public virtual DataTable GetDataTable(string? tableName = null)
         {
-            DataTable d_info = new(tableName);
+            DataTable d_info = new DataTable(tableName);
             CreateColumns(d_info);
             return d_info;
         }

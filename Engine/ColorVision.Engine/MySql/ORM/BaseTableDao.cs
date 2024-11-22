@@ -92,6 +92,83 @@ namespace ColorVision.Engine.MySql.ORM
             }
         }
 
+
+        public int UpdateByPid(int pid, List<T> datas)
+        {
+            string sql = $"select * from {TableName} where pid={pid}";
+            DataTable dataTable = GetData(sql);
+            dataTable.TableName = TableName;
+            foreach (var item in datas)
+            {
+                DataRow row = dataTable.GetRow(item);
+                Model2Row(item, row);
+            }
+            return Save(dataTable);
+        }
+
+        public int SaveByPid(int pid, List<T> datas)
+        {
+            DeleteAllByPid(pid, false);
+            DataTable dataTable = new DataTable(TableName);
+            CreateColumns(dataTable);
+            foreach (var item in datas)
+            {
+                DataRow row = dataTable.NewRow();
+                dataTable.Rows.Add(row);
+                Model2Row(item, row);
+                if (item.Id <= 0)
+                    row[PKField] = DBNull.Value;
+            }
+            return BulkInsertAsync(dataTable);
+        }
+
+        //如果检索代码看到了这里，应该是数据库的local_infile没有启用，这里设置即可  SET GLOBAL local_infile=1;
+        public int BulkInsertAsync(DataTable dataTable)
+        {
+            int count = -1;
+            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
+            dataTable.TableName = TableName;
+            using (connection)
+            {
+                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection)
+                {
+                    DestinationTableName = dataTable.TableName
+                };
+                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+                try
+                {
+
+                    MySqlConnector.MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
+                    count = result.RowsInserted;
+                    //check for problems
+                    //if (result.Warnings.Count != 0)
+                    //{
+                    //    /* handle potential Data loss warnings */
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            }
+
+            return count;
+        }
+
+        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        {
+            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new();
+            int i = 0;
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                colMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                i++;
+            }
+            return colMappings;
+        }
+
+
+
         public T? GetByParam(Dictionary<string, object> param) => GetAllByParam(param).FirstOrDefault();
 
         public List<T> GetAllByParam(Dictionary<string, object> param)
