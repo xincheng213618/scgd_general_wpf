@@ -90,7 +90,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
         }
 
-        private MeasureImgResultDao measureImgResultDao = new();
         string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
@@ -104,13 +103,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         if (masterId > 0)
                         {
                             resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                             if (model != null)
                                 resultMaster.Add(model);
                         }
                         else
                         {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                            resultMaster = MeasureImgResultDao.Instance.GetAllByBatchCode(arg.SerialNumber);
                         }
                         if (resultMaster != null)
                         {
@@ -160,13 +159,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         if (masterId > 0)
                         {
                             resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                             if (model != null)
                                 resultMaster.Add(model);
                         }
                         else
                         {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                            resultMaster = MeasureImgResultDao.Instance.GetAllByBatchCode(arg.SerialNumber);
                         }
                         if (resultMaster != null)
                         {
@@ -312,15 +311,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
-        MeasureImgResultDao MeasureImgResultDao = new();
-
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResults.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAllDevice(Device.Code);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
@@ -333,7 +330,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 ViewResults.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
