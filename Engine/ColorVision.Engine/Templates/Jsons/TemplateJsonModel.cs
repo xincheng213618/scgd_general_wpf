@@ -22,10 +22,6 @@ namespace ColorVision.Engine.Templates.Jsons
         public int? ResourceId { get => _ResourceId; set { _ResourceId = value; NotifyPropertyChanged(); } }
         private int? _ResourceId;
 
-        [Column("val_validate_temp_id")]
-        public int? ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
-        private int? _ValidateId;
-
         [Column("cfg_json")]
         public string? JsonVal { get => _JsonVal; set { _JsonVal = value; NotifyPropertyChanged(); } }
         private string? _JsonVal;
