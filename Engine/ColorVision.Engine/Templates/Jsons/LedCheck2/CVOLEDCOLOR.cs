@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2
+﻿namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public enum CVOLEDCOLOR
     {

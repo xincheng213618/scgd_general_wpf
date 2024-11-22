@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
+namespace ColorVision.Engine.Templates.Jsons
 {
 
     public class EditTemplateJsonConfig :IConfig

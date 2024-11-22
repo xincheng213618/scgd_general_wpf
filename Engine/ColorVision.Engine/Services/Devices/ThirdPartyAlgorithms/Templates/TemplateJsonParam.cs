@@ -1,18 +1,14 @@
 ﻿
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
-using ColorVision.Engine.Templates;
-using ColorVision.UI.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.UI.Utilities;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public interface IEditTemplateJson
-    {
-        public RelayCommand ResetCommand { get; set; }
-        public string JsonValue { get; set; }
-    }
 
 
     public class TemplateJsonParam : ParamModBase, IEditTemplateJson

@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
@@ -11,12 +11,13 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
+
+namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
-    public  class AlgorithmLedCheck3 : ViewModelBase
+    public class AlgorithmLedCheck2 : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "灯珠检测3";
-        public int Order { get; set; } = 22;
+        public string Name { get; set; } = "灯珠检测2";
+        public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
 
-        public AlgorithmLedCheck3(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmLedCheck2(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateThirdParty("LedCheck3"), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateLedCheck2(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
@@ -44,18 +45,28 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             new TemplateEditorWindow(new TemplatePoi(), TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+        public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get => _CVOLED_FDAType; set { _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
+        private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
+        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point1 = new PointFloat();
+        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point2 = new PointFloat();
+        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point3 = new PointFloat();
+        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointFloat _Point4 = new PointFloat();
 
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayLedCheck3(this);
+            UserControl ??= new DisplayLedCheck2(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(TemplateJsonParam param, PoiParam poiParam,string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, PoiParam poiParam, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -64,10 +75,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+            Params.Add("Color", cOLOR);
+            Params.Add("FDAType", CVOLEDFDAType);
+
+
+            PointFloat[] FixedLEDPoint = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            Params.Add("FixedLEDPoint", FixedLEDPoint);
 
             MsgSend msg = new()
             {
-                EventName = "OLED.FindLedPosition",
+                EventName = MQTTMessageLib.Algorithm.MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
                 SerialNumber = sn,
                 Params = Params
             };

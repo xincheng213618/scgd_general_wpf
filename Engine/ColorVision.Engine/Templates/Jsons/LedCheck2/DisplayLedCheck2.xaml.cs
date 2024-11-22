@@ -1,27 +1,26 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck2;
-using System.IO;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
+namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayLedCheck3 : UserControl
+    public partial class DisplayLedCheck2 : UserControl
     {
-        public AlgorithmLedCheck3 IAlgorithm { get; set; }
-        public DisplayLedCheck3(AlgorithmLedCheck3 iAlgorithm)
+        public AlgorithmLedCheck2 IAlgorithm { get; set; }
+        public DisplayLedCheck2(AlgorithmLedCheck2 iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -31,11 +30,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
         {
             DataContext = IAlgorithm;
             
-            ComboxTemplate.ItemsSource = TemplateThirdParty.Params.GetValue("LedCheck3");
+            ComboxTemplate.ItemsSource = TemplateLedCheck2.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
             ComboxPoiTemplate.SelectedIndex = 0;
+
+
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
+
+            ComboxFDAType.ItemsSource = from e1 in Enum.GetValues(typeof(FlowEngineLib.Algorithm.CVOLED_FDAType)).Cast<FlowEngineLib.Algorithm.CVOLED_FDAType>()
+                                        select new KeyValuePair<string, FlowEngineLib.Algorithm.CVOLED_FDAType>(e1.ToString(), e1);
+            ComboxFDAType.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -53,6 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
+            if (ComboxCVOLEDCOLOR.SelectedValue is not CVOLEDCOLOR color) return;
 
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
@@ -64,8 +73,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LedCheck3");
+                MsgRecord msg = IAlgorithm.SendCommand(param, poiParam, color, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "LedCheck2");
             }
         }
 
@@ -98,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck3
             }
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
 

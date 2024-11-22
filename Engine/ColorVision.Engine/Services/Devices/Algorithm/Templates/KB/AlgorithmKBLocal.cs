@@ -9,9 +9,9 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
 {
-    public class AlgorithmKBConfig : ViewModelBase, IConfig
+    public class AlgorithmKBLocalConfig : ViewModelBase, IConfig
     {
-        public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
+        public static AlgorithmKBLocalConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBLocalConfig>();
 
         public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
         private string _LuminFile;
@@ -22,9 +22,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
 
     }
 
-    public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmKBLocal : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "KB";
+        public string Name { get; set; } = "KBLocal";
         public int Order { get; set; } = 99;
 
         public DeviceAlgorithm Device { get; set; }
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
 
         
 
-        public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmKBLocal(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
-        public string LuminFile { get => AlgorithmKBConfig.Instance.LuminFile; set { AlgorithmKBConfig.Instance.LuminFile = value; NotifyPropertyChanged(); } }
+        public string LuminFile { get => AlgorithmKBLocalConfig.Instance.LuminFile; set { AlgorithmKBLocalConfig.Instance.LuminFile = value; NotifyPropertyChanged(); } }
 
         public void SelectLuminFile()
         {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
                 }
             }
         }
-        public string SaveFolderPath { get => AlgorithmKBConfig.Instance.SaveFolderPath; set { AlgorithmKBConfig.Instance.SaveFolderPath = value; NotifyPropertyChanged(); } }
+        public string SaveFolderPath { get => AlgorithmKBLocalConfig.Instance.SaveFolderPath; set { AlgorithmKBLocalConfig.Instance.SaveFolderPath = value; NotifyPropertyChanged(); } }
 
         public void SelcetSaveFilePath()
         {
@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayKB(this);
+            UserControl ??= new DisplayKBLocal(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }

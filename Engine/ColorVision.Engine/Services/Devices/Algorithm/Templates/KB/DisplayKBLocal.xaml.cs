@@ -16,10 +16,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayKB : UserControl
+    public partial class DisplayKBLocal : UserControl
     {
-        public AlgorithmKB IAlgorithm { get; set; }
-        public DisplayKB(AlgorithmKB iAlgorithm)
+        public AlgorithmKBLocal IAlgorithm { get; set; }
+        public DisplayKBLocal(AlgorithmKBLocal iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();

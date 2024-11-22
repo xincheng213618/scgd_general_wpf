@@ -3,6 +3,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public class TemplateThirdParty : ITemplate<TemplateJsonParam>
+    public class TemplateThirdParty : ITemplate<TemplateJsonParam> 
     {
         public static Dictionary<string, ObservableCollection<TemplateModel<TemplateJsonParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<TemplateJsonParam>>>();
 
