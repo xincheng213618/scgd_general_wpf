@@ -21,7 +21,6 @@ namespace ColorVision
         }
     }
 
-
     /// <summary>
     /// PluginManagerWindow.xaml 的交互逻辑
     /// </summary>

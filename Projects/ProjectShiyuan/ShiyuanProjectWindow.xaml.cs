@@ -4,30 +4,26 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
-using ColorVision.UI;
-using CVCommCore;
 using FlowEngineLib;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.IO.Ports;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
-using System.Diagnostics;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {

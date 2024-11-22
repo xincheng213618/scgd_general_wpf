@@ -2,38 +2,19 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
 using log4net;
-using Microsoft.Win32;
 using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision
+namespace ColorVision.Projects
 {
-    public class ExportProjectManager : MenuItemBase
-    {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => nameof(ExportProjectManager);
-        public override int Order => 10000;
-        public override string Header => "项目管理";
-
-        [RequiresPermission(PermissionMode.Administrator)]
-        public override void Execute()
-        {
-            new ProjectManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-    }
-
     public class ProjectInfo:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectInfo));
@@ -285,146 +266,6 @@ del ""%~f0"" & exit
                 MessageBox.Show(ex.Message);
             }
 
-        }
-    }
-
-
-    public class ProjectManager
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
-        private static ProjectManager _instance;
-        private static readonly object _locker = new();
-        public static ProjectManager GetInstance() { lock (_locker) { _instance ??= new ProjectManager(); return _instance; } }
-        public ObservableCollection<ProjectInfo> Projects { get; private set; } = new ObservableCollection<ProjectInfo>();
-
-        public RelayCommand OpenStoreCommand { get;  set; }
-        public RelayCommand InstallPackageCommand { get; set; }
-
-        public ProjectManager()
-        {
-            log.Info("正在检索是否存在附加项目");
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IProject project)
-                    {
-                        ProjectInfo info = new ProjectInfo(project, assembly);
-                        info.AssemblyVersion = assembly.GetName().Version;
-                        info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-
-                        Projects.Add(info);
-                        log.Info($"找到外加项目：{project} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
-                                 $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
-                                 $"公钥标记：{info.AssemblyPublicKeyToken}");
-                    }
-                }
-            }
-            OpenStoreCommand = new RelayCommand(a => OpenStore());
-            InstallPackageCommand = new RelayCommand(a => InstallPackage());
-
-        }
-
-        public void InstallPackage()
-        {
-            // 打开文件选择对话框
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Filter = "ZIP Files (*.zip)|*.zip",
-                Title = "Select a ZIP file"
-            };
-
-            if (openFileDialog.ShowDialog() == true)
-            {
-                string selectedZipPath = openFileDialog.FileName;
-                InstallFromZip(selectedZipPath);
-            }
-        }
-        private void InstallFromZip(string zipFilePath)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    // 解压缩 ZIP 文件到临时目录
-                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                    if (Directory.Exists(tempDirectory))
-                    {
-                        Directory.Delete(tempDirectory, true);
-                    }
-                    ZipFile.ExtractToDirectory(zipFilePath, tempDirectory);
-
-                    // 创建批处理文件内容
-                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                    string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "/Plugins";
-
-                    string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                    string batchContent = $@"
-@echo off
-timeout /t 3
-xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-                    File.WriteAllText(batchFilePath, batchContent);
-
-                    // 设置批处理文件的启动信息
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = batchFilePath,
-                        UseShellExecute = true,
-                        Verb = "runas" // 请求管理员权限
-                    };
-                    // 启动批处理文件并退出当前程序
-                    Process.Start(startInfo);
-                    Environment.Exit(0);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"更新失败: {ex.Message}");
-                }
-            });
-        }
-
-
-
-        public void OpenStore()
-        {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");
-        }
-
-        public void CreateShortCut()
-        {
-
-            foreach (var item in Projects)
-            {
-                string GetExecutablePath = Environments.GetExecutablePath();
-                string shortcutName = item.Project.Header;
-                string shortcutPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string arguments = $"-project {shortcutName}";
-                if(shortcutName!=null)
-                    Common.NativeMethods.ShortcutCreator.CreateShortcut(shortcutName, shortcutPath, GetExecutablePath, arguments);
-            }
-
-        }
-    }
-
-
-    /// <summary>
-    /// ProjectManagerWindow.xaml 的交互逻辑
-    /// </summary>
-    public partial class ProjectManagerWindow : Window
-    {
-        public ProjectManagerWindow()
-        {
-            InitializeComponent();
-        }
-
-        private void Window_Initialized(object sender, System.EventArgs e)
-        {
-            this.DataContext = new ProjectManager();
         }
     }
 }

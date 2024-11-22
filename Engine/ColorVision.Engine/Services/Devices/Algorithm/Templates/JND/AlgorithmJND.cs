@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
 
-        public AlgorithmJND(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmJND(DeviceAlgorithm deviceAlgorithm) 
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

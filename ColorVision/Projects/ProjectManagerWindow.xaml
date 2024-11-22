@@ -1,9 +1,9 @@
-﻿<Window x:Class="ColorVision.ProjectManagerWindow"
+﻿<Window x:Class="ColorVision.Projects.ProjectManagerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision"
+        xmlns:local="clr-namespace:ColorVision.Projects"
         d:DataContext="{d:DesignInstance local:ProjectManager}"
         mc:Ignorable="d"
         Title="ProjectManagerWindow" Height="450" Width="800" Initialized="Window_Initialized">
@@ -12,9 +12,11 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
-            <Button Content="仓库" Command="{Binding OpenStoreCommand}"/>
-            <Button Content="安装包" Command="{Binding InstallPackageCommand}"/>
+        <StackPanel Orientation="Horizontal" Margin="5">
+            <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
+            <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" Width="100" Margin="0,0,5,0"/>
+            <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
         </StackPanel>
 
         <ListView x:Name="ListViewProjects" ItemsSource="{Binding Projects}" Grid.Row="1" Padding="2">

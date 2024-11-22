@@ -47,18 +47,39 @@ namespace ColorVision.UI
             string versionString = null;
             try
             {
-                // First attempt to get the string without authentication
-                versionString = await _httpClient.GetStringAsync(url);
+
+                if (IsPassWorld)
+                {
+                    // If the request is unauthorized, add the authentication header and try again
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                    // You should also consider handling other potential issues here, such as network errors
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
+                else
+                {
+                    // First attempt to get the string without authentication
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
-                // If the request is unauthorized, add the authentication header and try again
-                var byteArray = Encoding.ASCII.GetBytes("1:1");
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                try
+                {
+                    IsPassWorld = true;
+                    // If the request is unauthorized, add the authentication header and try again
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-                // You should also consider handling other potential issues here, such as network errors
-                versionString = await _httpClient.GetStringAsync(url);
+                    // You should also consider handling other potential issues here, such as network errors
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
+                catch(Exception ex)
+                {
+                    return new Version();
+                }
+
             }
             catch(Exception ex)
             {
