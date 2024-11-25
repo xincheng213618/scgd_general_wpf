@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services"
         xmlns:type="clr-namespace:ColorVision.Engine.Services.Types"
-        xmlns:devices="clr-namespace:ColorVision.Engine.Services.Devices"
+        xmlns:devices="clr-namespace:ColorVision.Engine.Services"
         xmlns:core ="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:terminal ="clr-namespace:ColorVision.Engine.Services.Terminal"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"

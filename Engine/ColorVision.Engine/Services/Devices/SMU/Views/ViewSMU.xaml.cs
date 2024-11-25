@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
 
         bool MulComparison;
-        Scatter LastMulSelectComparsion;
+        Scatter? LastMulSelectComparsion;
 
         private void DrawPlot()
         {
@@ -149,21 +149,26 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
                 ToggleButtonChoice.IsChecked = ViewResultSMUs[listView1.SelectedIndex].IsSourceV;
 
-                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                if (LastMulSelectComparsion != null)
                 {
-                    wpfplot2.Plot.PlottableList.Add(temp);
-                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
-                    wpfplot2.Refresh();
+                    if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                    {
+                        wpfplot2.Plot.PlottableList.Add(temp);
+                        wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                        wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                        wpfplot2.Refresh();
+
+                    }
+                    else
+                    {
+                        wpfplot1.Plot.PlottableList.Add(temp);
+                        wpfplot1.Plot.Remove(LastMulSelectComparsion);
+                        wpfplot2.Plot.Remove(LastMulSelectComparsion);
+                        wpfplot1.Refresh();
+                    }
 
                 }
-                else
-                {
-                    wpfplot1.Plot.PlottableList.Add(temp);
-                    wpfplot1.Plot.Remove(LastMulSelectComparsion);
-                    wpfplot2.Plot.Remove(LastMulSelectComparsion);
-                    wpfplot1.Refresh();
-                }
+
 
                 LastMulSelectComparsion = temp;
 
