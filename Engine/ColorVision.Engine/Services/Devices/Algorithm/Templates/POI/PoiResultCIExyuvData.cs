@@ -26,6 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
             // 写入数据行
             foreach (var item in poiResultCIExyuvDatas)
             {
+                if (item.Name.Contains(',') || item.Name.Contains('"'))
+                {
+                    item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
+                }
                 List<string> values = new()
                 {
                     item.POIPoint.Id?.ToString(CultureInfo.InvariantCulture),

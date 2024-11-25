@@ -86,7 +86,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
         public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
-        public string Name { get { return POIPoint.Name; } }
+        public string Name { get => Point.Name;  set { Point.Name = value;NotifyPropertyChanged(); } }
+
         public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
 
         public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
