@@ -20,6 +20,10 @@
             </WindowsFormsHost>
         </Grid>
         <Grid Grid.Column="1"  x:Name="Grid2">
+            <Grid.RowDefinitions >
+                <RowDefinition Height="300"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
             <WindowsFormsHost x:Name="winf2" Width="300" Visibility="Collapsed" VerticalAlignment="Stretch">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>

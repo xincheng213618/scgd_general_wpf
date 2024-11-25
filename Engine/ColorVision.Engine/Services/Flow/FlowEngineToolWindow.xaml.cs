@@ -671,7 +671,8 @@ namespace ColorVision.Engine.Services.Flow
         void ApplyTreeLayout(STNode rootNode, int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
             int currentY = startY;
-            HashSet<STNode> MoreParens = new HashSet<STNode>();   
+            HashSet<STNode> MoreParens = new HashSet<STNode>();
+
             void LayoutNode(STNode node,int current)
             {
                 int depeth = GetMaxDepth(node);
@@ -729,20 +730,24 @@ namespace ColorVision.Engine.Services.Flow
 
                 node.Top = (minParentY + maxParentY) / 2;
 
-                SetCof( node,  verticalSpacing);
+                SetCof(node,  verticalSpacing);
                  int currenty = node.Top;
                 foreach (var child in children)
                 {
                     LayoutNode(child, currenty);
                     currenty += verticalSpacing;
                 }
+                MoreParens.Remove(node);
+            }
+            LayoutNode(rootNode, currentY);
+            while (MoreParens.Count > 0)
+            {
+                foreach (var item in MoreParens.Cast<STNode>().ToList())
+                {
+                    MoreParentsLayoutNode(item);
+                }
             }
 
-            LayoutNode(rootNode, currentY);
-            foreach (var item in MoreParens.Cast<STNode>().ToList())
-            {
-                MoreParentsLayoutNode(item);
-            }
         }
 
         public void SetCof(STNode node,int verticalSpacing)
@@ -837,7 +842,7 @@ namespace ColorVision.Engine.Services.Flow
             var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
             var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
             CanvasScale = Math.Min(scaleX, scaleY);
-
+            CanvasScale = CanvasScale > 1 ? 1 : CanvasScale;
             // Apply the scale
             STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
 

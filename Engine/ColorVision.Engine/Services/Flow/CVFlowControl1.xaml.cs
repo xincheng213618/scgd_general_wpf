@@ -81,9 +81,10 @@ namespace ColorVision.Engine.Services.Flow
             var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
             var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
             CanvasScale = Math.Min(scaleX, scaleY);
-
+            CanvasScale = CanvasScale>1?1:CanvasScale;
             // Apply the scale
             STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+            if (CanvasScale == 1) return;
 
             var validBoundsCenterX = STNodeEditorMain.CanvasValidBounds.Width / 2;
             var validBoundsCenterY = STNodeEditorMain.CanvasValidBounds.Height / 2;
