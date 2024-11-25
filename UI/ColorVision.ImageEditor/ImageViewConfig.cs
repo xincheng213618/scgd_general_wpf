@@ -67,9 +67,6 @@ namespace ColorVision.ImageEditor
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
         [JsonIgnore]
-        public bool ConvertXYZSetBuffer { get; set; } = false;
-
-        [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1));} }
         private int _Channel;
 
@@ -86,8 +83,6 @@ namespace ColorVision.ImageEditor
 
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
-
-
 
         public event EventHandler BalanceChanged;
 
