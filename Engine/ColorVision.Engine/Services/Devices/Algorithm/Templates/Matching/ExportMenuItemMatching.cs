@@ -1,7 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
-using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+﻿
+namespace ColorVision.Engine.Templates.Matching
 {
     public class ExportMenuItemMatching : ExportTemplateBase
     {

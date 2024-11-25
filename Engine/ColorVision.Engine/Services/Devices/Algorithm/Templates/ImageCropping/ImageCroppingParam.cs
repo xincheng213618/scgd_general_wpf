@@ -5,7 +5,7 @@ using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class PointFloat:ViewModelBase
     {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
+namespace ColorVision.Engine.Templates.FocusPoints
 {
     public class FocusPointsParam : ParamModBase
     {

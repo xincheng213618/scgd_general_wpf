@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
+namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     public class ExportLEDStripDetectionParam : ExportTemplateBase
     {

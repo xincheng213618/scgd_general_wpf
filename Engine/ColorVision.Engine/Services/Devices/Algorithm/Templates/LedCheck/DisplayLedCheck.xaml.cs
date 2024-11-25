@@ -1,5 +1,7 @@
 ﻿using ColorVision.Engine.Messages;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
@@ -8,7 +10,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
+namespace ColorVision.Engine.Templates.LedCheck
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑

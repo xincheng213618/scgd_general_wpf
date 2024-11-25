@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
@@ -7,9 +8,8 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Templates.JND
 {
     public class ViewRsultJND : PoiResultData, IViewResult
     {

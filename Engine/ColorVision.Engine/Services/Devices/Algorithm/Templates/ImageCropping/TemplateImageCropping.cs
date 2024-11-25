@@ -2,7 +2,7 @@
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class TemplateImageCropping : ITemplate<ImageCroppingParam>, IITemplateLoad
     {

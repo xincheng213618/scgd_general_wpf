@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Messages;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Algorithm;
@@ -8,23 +9,11 @@ using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
-
-    public static class EnumExtensions
-    {
-        public static IEnumerable<KeyValuePair<TEnum, string>> ToKeyValuePairs<TEnum>() where TEnum : Enum
-        {
-            return Enum.GetValues(typeof(TEnum)).Cast<TEnum>().Select(e => new KeyValuePair<TEnum, string>(e, e.ToString()));
-        }
-    }
-
-
-
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>

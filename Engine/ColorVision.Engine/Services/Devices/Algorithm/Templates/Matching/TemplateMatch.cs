@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+namespace ColorVision.Engine.Templates.Matching
 {
     public class TemplateMatch : ITemplate<MatchParam>, IITemplateLoad
     {

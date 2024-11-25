@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.KB
+namespace ColorVision.Engine.Templates.KB
 {
     public class AlgorithmKBLocalConfig : ViewModelBase, IConfig
     {

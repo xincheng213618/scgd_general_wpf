@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Templates.JND
 {
     public class ExportJNDParam : ExportTemplateBase
     {

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -10,7 +11,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Templates.ROI
 {
     public class AlgorithmRoi : ViewModelBase, IDisplayAlgorithm
     {

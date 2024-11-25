@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Templates.JND
 {
     public class MysqlJND : IMysqlCommand
     {

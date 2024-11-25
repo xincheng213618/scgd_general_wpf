@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
@@ -12,7 +13,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+namespace ColorVision.Engine.Templates.Matching
 {
     public class AlgorithmMatching : ViewModelBase, IDisplayAlgorithm
     {

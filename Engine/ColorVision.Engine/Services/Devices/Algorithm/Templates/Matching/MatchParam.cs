@@ -6,7 +6,7 @@ using OpenCvSharp;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+namespace ColorVision.Engine.Templates.Matching
 {
     public class MatchParam : ParamModBase
     {

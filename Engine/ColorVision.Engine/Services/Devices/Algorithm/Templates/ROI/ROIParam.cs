@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Templates.ROI
 {
 
     public class RoiParam : ParamModBase

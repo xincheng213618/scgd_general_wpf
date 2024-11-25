@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Templates.ROI
 {
     public class ExportRoi : ExportTemplateBase
     {

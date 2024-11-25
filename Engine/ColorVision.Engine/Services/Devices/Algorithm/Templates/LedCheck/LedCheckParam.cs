@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
+namespace ColorVision.Engine.Templates.LedCheck
 {
 
     public class LedCheckParam : ParamModBase

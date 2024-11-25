@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
+namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     public class TemplateLEDStripDetection : ITemplate<LEDStripDetectionParam>, IITemplateLoad
     {

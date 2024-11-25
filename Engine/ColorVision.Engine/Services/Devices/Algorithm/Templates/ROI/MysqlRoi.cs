@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Templates.ROI
 {
     public class MysqlRoi : IMysqlCommand
     {

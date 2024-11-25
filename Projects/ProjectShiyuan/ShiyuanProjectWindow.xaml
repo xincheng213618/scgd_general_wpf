@@ -7,7 +7,7 @@
         xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:poi ="clr-namespace:ColorVision.Engine.Templates.POI;assembly=ColorVision.Engine"
-        xmlns:compliance ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;assembly=ColorVision.Engine"
+        xmlns:compliance ="clr-namespace:ColorVision.Engine.Templates.Compliance;assembly=ColorVision.Engine"
         d:DataContext="{d:DesignInstance local:ProjectShiYuanConfig}"
         mc:Ignorable="d"
         Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">

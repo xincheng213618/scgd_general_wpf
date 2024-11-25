@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class ExportImageCropping : ExportTemplateBase
     {

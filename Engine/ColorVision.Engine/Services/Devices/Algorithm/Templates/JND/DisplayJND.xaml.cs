@@ -1,4 +1,7 @@
 ﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
@@ -7,7 +10,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.JND
+namespace ColorVision.Engine.Templates.JND
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑

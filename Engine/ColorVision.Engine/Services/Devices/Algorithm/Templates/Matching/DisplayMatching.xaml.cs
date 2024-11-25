@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Templates.POI;
+﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -6,7 +8,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+namespace ColorVision.Engine.Templates.Matching
 {
 
     /// <summary>

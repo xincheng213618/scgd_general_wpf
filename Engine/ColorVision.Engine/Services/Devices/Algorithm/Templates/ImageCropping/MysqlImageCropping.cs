@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class MysqlImageCropping : IMysqlCommand
     {

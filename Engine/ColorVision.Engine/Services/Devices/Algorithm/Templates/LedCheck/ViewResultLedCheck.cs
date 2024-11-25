@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
+namespace ColorVision.Engine.Templates.LedCheck
 {
     public class ViewResultLedCheck : ViewModelBase, IViewResult
     {

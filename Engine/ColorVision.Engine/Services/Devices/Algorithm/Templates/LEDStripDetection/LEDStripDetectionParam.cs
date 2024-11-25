@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
+namespace ColorVision.Engine.Templates.LEDStripDetection
 {
 
     public class LEDStripDetectionParam : ParamModBase

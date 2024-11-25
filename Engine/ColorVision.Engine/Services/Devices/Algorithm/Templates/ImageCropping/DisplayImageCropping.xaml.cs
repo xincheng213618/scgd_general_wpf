@@ -1,11 +1,14 @@
-﻿using ColorVision.Themes.Controls;
+﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ImageCropping
+namespace ColorVision.Engine.Templates.ImageCropping
 {
 
     /// <summary>

@@ -2,7 +2,7 @@
 using ColorVision.Engine.Templates.POI.Comply;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection
+namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     /// <summary>
     /// EditSFR.xaml 的交互逻辑

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Matching
+namespace ColorVision.Engine.Templates.Matching
 {
     [Table("t_scgd_algorithm_result_detail_aoi", PrimaryKey = "id")]
     public class AlgResultAoiModel : VPKModel, IViewResult

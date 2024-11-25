@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
+namespace ColorVision.Engine.Templates.LedCheck
 {
     public class TemplateLedCheck : ITemplate<LedCheckParam>, IITemplateLoad
     {

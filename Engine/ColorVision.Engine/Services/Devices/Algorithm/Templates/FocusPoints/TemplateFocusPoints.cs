@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
+namespace ColorVision.Engine.Templates.FocusPoints
 {
     public class TemplateFocusPoints : ITemplate<FocusPointsParam>, IITemplateLoad
     {

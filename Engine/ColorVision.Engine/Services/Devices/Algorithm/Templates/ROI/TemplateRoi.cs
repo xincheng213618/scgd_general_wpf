@@ -2,7 +2,7 @@
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI
+namespace ColorVision.Engine.Templates.ROI
 {
     public class TemplateRoi : ITemplate<RoiParam>, IITemplateLoad
     {    

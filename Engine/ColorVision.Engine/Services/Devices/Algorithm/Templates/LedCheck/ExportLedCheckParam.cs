@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
+namespace ColorVision.Engine.Templates.LedCheck
 {
     public class ExportLedCheckParam : ExportTemplateBase
     {
