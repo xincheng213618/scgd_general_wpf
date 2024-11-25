@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Templates.POI;
+﻿using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using System;

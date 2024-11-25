@@ -128,7 +128,7 @@
     <Compile Update="Templates\MTF\DisplayMTF.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\POI\DisplayPOI.xaml.cs">
+    <Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">

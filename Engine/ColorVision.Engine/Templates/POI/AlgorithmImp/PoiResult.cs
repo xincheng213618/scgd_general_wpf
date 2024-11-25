@@ -3,7 +3,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib.Algorithm;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class PoiResult : ViewModelBase, IViewResult
     {

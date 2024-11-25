@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Dao

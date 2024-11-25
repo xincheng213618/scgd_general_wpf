@@ -4,7 +4,6 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
@@ -24,6 +23,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {

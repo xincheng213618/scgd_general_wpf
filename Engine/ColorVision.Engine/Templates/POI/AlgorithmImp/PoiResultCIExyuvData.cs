@@ -11,7 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class PoiResultCIExyuvData : PoiResultData, IViewResult
     {
@@ -147,17 +147,20 @@ namespace ColorVision.Engine.Templates.POI
         private double _y;
 
 
-        public bool ValidateResult { get
-                {
+        public bool ValidateResult
+        {
+            get
+            {
                 if (ValidateSingles == null)
                     return false;
                 bool result = true;
                 foreach (var item in ValidateSingles)
                 {
-                    result= result && item.Result == ValidateRuleResultType.M;
+                    result = result && item.Result == ValidateRuleResultType.M;
                 }
                 return result;
-            } }
+            }
+        }
 
 
 

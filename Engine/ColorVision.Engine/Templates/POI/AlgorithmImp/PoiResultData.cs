@@ -11,7 +11,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class PoiResultCIEYData : PoiResultData, IViewResult
     {
@@ -67,8 +67,8 @@ namespace ColorVision.Engine.Templates.POI
         }
         public ObservableCollection<ValidateRuleResult>? ValidateSingles
         {
-            get 
-            { 
+            get
+            {
                 if (POIPointResultModel.ValidateResult == null) return null;
                 return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(POIPointResultModel.ValidateResult);
             }
@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
-        public string Name { get => Point.Name;  set { Point.Name = value;NotifyPropertyChanged(); } }
+        public string Name { get => Point.Name; set { Point.Name = value; NotifyPropertyChanged(); } }
 
         public string PixelPos { get { return string.Format("{0},{1}", POIPoint.PixelX, POIPoint.PixelY); } }
 

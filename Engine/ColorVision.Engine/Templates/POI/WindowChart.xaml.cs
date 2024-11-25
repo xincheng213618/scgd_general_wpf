@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Microsoft.Win32;
 using ScottPlot;
 using ScottPlot.DataSources;

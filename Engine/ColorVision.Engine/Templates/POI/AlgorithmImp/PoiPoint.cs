@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI.Sorts;
 using ColorVision.Engine.Templates.POI.Dao;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class PoiPoint : ISortID
     {

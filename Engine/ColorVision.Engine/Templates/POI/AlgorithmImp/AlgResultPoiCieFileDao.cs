@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
 
     [Table("t_scgd_algorithm_result_detail_poi_cie_file", PrimaryKey = "id")]
@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates.POI
             OpenFolderCommand = new RelayCommand(a => OpenFolder());
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.OpenFile, Command = OpenFileCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.OpenFolder, Command = OpenFileCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.OpenFolder, Command = OpenFileCommand });
         }
 
         public void OpenFolder()

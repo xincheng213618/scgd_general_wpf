@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class AlgorithmPoi : ViewModelBase, IDisplayAlgorithm
     {
@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public void OpenTemplatePOIFilter()
         {
-            new TemplateEditorWindow(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex -1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoiFilterParam(), TemplatePOIFilterSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public int TemplatePoiReviseSelectedIndex { get => _TemplatePoiReviseSelectedIndex; set { _TemplatePoiReviseSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public void OpenTemplatePoiOutput()
         {
-            new TemplateEditorWindow(new  TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public UserControl GetUserControl()

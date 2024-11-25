@@ -6,6 +6,7 @@ using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;

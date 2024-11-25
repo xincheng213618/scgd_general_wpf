@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8629
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi

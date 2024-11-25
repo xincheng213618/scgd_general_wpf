@@ -37,6 +37,7 @@ using Microsoft.Win32;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
