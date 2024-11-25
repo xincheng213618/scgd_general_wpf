@@ -11,8 +11,6 @@ using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Common.Utilities;
 
 namespace ColorVision.Engine.Templates.POI

@@ -4,7 +4,7 @@ using ColorVision.Themes.Controls;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services
 {
     public static class AlgorithmHelper
     {

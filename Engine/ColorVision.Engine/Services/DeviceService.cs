@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;
@@ -17,9 +18,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.Devices
+namespace ColorVision.Engine.Services
 {
-    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem,IIcon
+    public abstract class DeviceService : ServiceObjectBase, IDisposable, ITreeViewItem, IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -83,7 +84,7 @@ namespace ColorVision.Engine.Services.Devices
     }
 
 
-    public class DeviceService<T> : DeviceService where T :DeviceServiceConfig,new()
+    public class DeviceService<T> : DeviceService where T : DeviceServiceConfig, new()
     {
         public T Config { get; set; }
 
@@ -93,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices
         public override object GetConfig() => Config;
 
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
-        public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
+        public override string Name { get => SysResourceModel.Name ?? string.Empty; set { SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
@@ -101,23 +102,26 @@ namespace ColorVision.Engine.Services.Devices
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
 
-            ExportCommand = new RelayCommand(a => {
+            ExportCommand = new RelayCommand(a =>
+            {
                 System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";
                 ofd.FileName = Config?.Name;
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
-                MessageBox1.Show(WindowHelpers.GetActiveWindow(),"导出成功", "ColorVision"); 
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "导出成功", "ColorVision");
             });
 
-            CopyCommand = new RelayCommand(a => {
-                if (Config!=null)
+            CopyCommand = new RelayCommand(a =>
+            {
+                if (Config != null)
                 {
                     MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
-            ResetCommand = new RelayCommand(a => {
+            ResetCommand = new RelayCommand(a =>
+            {
                 MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
@@ -125,7 +129,8 @@ namespace ColorVision.Engine.Services.Devices
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => { });
 
-            ImportCommand = new RelayCommand(a => {
+            ImportCommand = new RelayCommand(a =>
+            {
                 System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";
                 ofd.RestoreDirectory = true;
@@ -140,12 +145,12 @@ namespace ColorVision.Engine.Services.Devices
                     Save();
                 }
                 else
-                    MessageBox.Show("导入异常","ColorVision");
+                    MessageBox.Show("导入异常", "ColorVision");
             });
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resources.Property };
+                Window window = new() { Width = 700, Height = 400, Icon = Icon, Title = Properties.Resources.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

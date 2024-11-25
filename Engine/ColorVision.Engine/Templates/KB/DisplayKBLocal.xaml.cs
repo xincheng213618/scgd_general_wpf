@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.Devices.Algorithm;
+﻿using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using cvColorVision;
