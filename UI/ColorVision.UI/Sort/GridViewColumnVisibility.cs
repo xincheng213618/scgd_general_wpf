@@ -7,6 +7,11 @@ using System.Windows.Data;
 
 namespace ColorVision.UI.Sorts
 {
+    /// <summary>
+    /// 2014.111.25 这个模块可以使用反射来做，效果和代码都会更简洁
+    /// </summary>
+
+
     public static class GridViewColumnVisibilityExtension
     {
         public static void AddGridViewColumn(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AddGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);

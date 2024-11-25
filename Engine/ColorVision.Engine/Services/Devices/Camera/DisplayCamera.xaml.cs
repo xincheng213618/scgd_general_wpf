@@ -1,14 +1,13 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Scheduler;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -16,44 +15,24 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
-using Quartz;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
-    public class CameraCaptureJob : IJob
+
+    public class DisplayCameraConfig:IConfig
     {
-        public Task Execute(IJobExecutionContext context)
-        {
-            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
-            schedulerInfo.RunCount++;
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                schedulerInfo.Status = SchedulerStatus.Running;
-            });
-            // 定时任务逻辑
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
-                DeviceCamera deviceCamera = lsit.FirstOrDefault();
-                deviceCamera?.DisplayCameraControlLazy.Value.GetData();
-
-
-                schedulerInfo.Status = SchedulerStatus.Ready;
-            });
-            return Task.CompletedTask;
-        }
+        public static DisplayCameraConfig Instance => ConfigService.Instance.GetRequiredService<DisplayCameraConfig>();
+        public double TakePictureDelay { get; set; }
     }
+
 
     /// <summary>
     /// 根据服务的MQTT相机
@@ -66,6 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
+        private DateTime _startTime;
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -73,10 +53,32 @@ namespace ColorVision.Engine.Services.Devices.Camera
             View = Device.View;
             InitializeComponent();
             _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(500);
-            _timer.Tick += Timer_Tick; 
+            _timer.Interval = TimeSpan.FromMilliseconds(100);
+            _timer.Tick += Timer_Tick;
+
+
+            TimerGetData = new DispatcherTimer();
+            TimerGetData.Interval = TimeSpan.FromMilliseconds(10); // 定时器间隔
+            TimerGetData.Tick += GetData_Tick;
         }
-       
+
+        double GetDataTime;
+
+
+        private void GetData_Tick(object? sender, EventArgs e)
+        {
+            var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
+            if (elapsed >= GetDataTime)
+            {
+                ProgressBar.Value = 99;
+            }
+            else
+            {
+                ProgressBar.Value = (elapsed / GetDataTime) * 100;
+            }
+        }
+        private DispatcherTimer TimerGetData;
+
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -235,44 +237,59 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GetData_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (sender is not Button button) return;
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+
+            TakePhotoButton.Visibility = Visibility.Hidden;
+            ProgressBar.Visibility = Visibility.Visible;
+            ProgressBar.Value = 1;
+
+            ProgressBar.Value = 0;
+            _startTime = DateTime.Now;
+            TimerGetData.Start();
+
+
+            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
-                if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
-
-                if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+                if (param.Id != -1)
                 {
-                    if (param.Id != -1)
+                    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
                     {
-                        if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
-                        {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
-                            return;
-                        }
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                        return;
                     }
-
-                    double[] expTime = null;
-                    if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-                    else expTime = new double[] { Device.Config.ExpTime };
-                    MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
-                    ServicesHelper.SendCommand(button,msgRecord);
                 }
-                else
-                {
-                    double[] expTime = null;
-                    if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-                    else expTime = new double[] { Device.Config.ExpTime };
-                    MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" }, autoExpTimeParam);
-                    ServicesHelper.SendCommand(button, msgRecord);
-                    msgRecord.MsgRecordStateChanged += (s) =>
-                    {
-                        if (s == MsgRecordState.Timeout)
-                        {
-                            MessageBox1.Show("取图失败,请检查是否为物理相机配置校正");
-                        }
-                    };
-                }  
-
             }
+            else
+            {
+                param = new CalibrationParam() { Id = -1, Name = "Empty" };
+            }
+
+
+            double[] expTime = null;
+            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+            else expTime = new double[] { Device.Config.ExpTime };
+            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
+
+            GetDataTime = Device.Config.ExpTime + DisplayCameraConfig.Instance.TakePictureDelay;
+            logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.Instance.TakePictureDelay}");
+
+            ServicesHelper.SendCommand(button, msgRecord);
+            msgRecord.MsgRecordStateChanged += (s) =>
+            {
+                TakePhotoButton.Visibility = Visibility.Visible;
+                ProgressBar.Visibility = Visibility.Collapsed;
+                ProgressBar.Value = 1;
+                TimerGetData.Stop();
+                var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
+                DisplayCameraConfig.Instance.TakePictureDelay = elapsed - Device.Config.ExpTime;
+
+                if (s == MsgRecordState.Timeout)
+                {
+                    MessageBox1.Show("取图失败,请检查是否为物理相机配置校正");
+                }
+            };
+
         }
 
 

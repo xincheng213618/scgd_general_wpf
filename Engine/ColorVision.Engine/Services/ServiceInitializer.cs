@@ -28,25 +28,24 @@ namespace ColorVision.Engine.Services
                     PhyCameraManager.GetInstance();
                     ServiceManager ServiceManager = ServiceManager.GetInstance();
                 });
-                if (!ServicesConfig.Instance.IsDefaultOpenService)
+                if (ServicesConfig.Instance.IsAutoConfig)
+                {
+                    _messageUpdater.Update("自动配置服务中");
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ServiceManager.GetInstance().GenDeviceDisplayControl();
+                    });
+                }
+                else
                 {
                     _messageUpdater.Update("初始化服务");
-                    await Task.Delay(10);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         ServiceManager.GetInstance().GenDeviceDisplayControl();
                         new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     });
                 }
-                else
-                {
-                    _messageUpdater.Update("自动配置服务中");
-                    await Task.Delay(10);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        ServiceManager.GetInstance().GenDeviceDisplayControl();
-                    });
-                }
+                await Task.Delay(10);
                 _messageUpdater.Update("服务初始化完成");
             }
             else

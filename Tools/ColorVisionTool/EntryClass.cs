@@ -25,8 +25,7 @@ namespace ColorVisionTool
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
-            ArgumentParser.GetInstance().CommandLineArgs = args;
-
+            ArgumentParser.GetInstance().Parse(args);
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             mutex = new Mutex(true, "ColorVision", out bool ret);

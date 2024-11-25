@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
-using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision
+namespace ColorVision.Plugins
 {
     public class PluginManagerExport : MenuItemBase
     {
@@ -18,23 +16,6 @@ namespace ColorVision
         public override void Execute()
         {
             new PluginManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-    }
-
-    /// <summary>
-    /// PluginManagerWindow.xaml 的交互逻辑
-    /// </summary>
-    public partial class PluginManagerWindow : Window
-    {
-        public PluginManagerWindow()
-        {
-            InitializeComponent();
-            this.ApplyCaption();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            PluginLoader.LoadPluginsUS("Plugins");
         }
     }
 }
