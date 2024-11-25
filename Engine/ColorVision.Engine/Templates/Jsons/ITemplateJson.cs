@@ -242,6 +242,7 @@ namespace ColorVision.Engine.Templates.Jsons
             {
                 var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
 
+                if (dictemplate == null) return null;
 
                 TemplateJsonModel templateJson = new TemplateJsonModel();
                 templateJson.Name = templateName;
