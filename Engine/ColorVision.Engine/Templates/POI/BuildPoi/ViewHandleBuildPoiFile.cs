@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
