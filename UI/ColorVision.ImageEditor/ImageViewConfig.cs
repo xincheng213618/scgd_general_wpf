@@ -25,6 +25,18 @@ namespace ColorVision.ImageEditor
             if (!Properties.TryAdd(Key, Value))
                 Properties[Key] = Value;
         }
+        public T? GetProperties<T>(string Key)
+        {
+            if (Properties.TryGetValue(Key, out var value))
+            {
+                if (value is T typedValue)
+                {
+                    return typedValue;
+                }
+            }
+            return default;
+        }
+
         public string GetPropertyString()
         {
             var sb = new StringBuilder();
@@ -34,8 +46,6 @@ namespace ColorVision.ImageEditor
             }
             return sb.ToString();
         }
-
-
         public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; NotifyPropertyChanged(); } }
         private double _MaxZoom = 10;
         public double MinZoom { get => _MinZoom; set { _MinZoom = value; NotifyPropertyChanged(); } }
@@ -58,7 +68,6 @@ namespace ColorVision.ImageEditor
 
         [JsonIgnore]
         public bool ConvertXYZSetBuffer { get; set; } = false;
-
 
         [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1));} }

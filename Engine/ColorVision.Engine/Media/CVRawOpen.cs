@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Media
             List<MenuItem> MenuItems = new List<MenuItem>();
             void export()
             {
-                if (imageView.Config.Properties.TryGetValue("FilePath",out object value) && value is string FilePath && File.Exists(FilePath))
+                if (imageView.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
                 {
                     new ExportCVCIE(FilePath).ShowDialog();
                 }
