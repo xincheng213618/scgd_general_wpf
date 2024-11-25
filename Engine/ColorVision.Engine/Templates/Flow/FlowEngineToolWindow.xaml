@@ -11,7 +11,7 @@
         mc:Ignorable="d"
         PreviewKeyDown="UserControl_PreviewKeyDown"
         d:DataContext="{d:DesignInstance local:FlowEngineToolWindow}"
-        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="600" Width="1000"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="700" Width="1000"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -66,8 +66,8 @@
             </Grid.ColumnDefinitions>
             <Grid >
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="6*"/>
-                    <RowDefinition Height="4*"/>
+                    <RowDefinition Height="300"/>
+                    <RowDefinition Height="200"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">

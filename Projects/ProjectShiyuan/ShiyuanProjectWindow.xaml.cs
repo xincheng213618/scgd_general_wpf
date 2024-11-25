@@ -415,7 +415,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                 string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
+                    flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     flowControl.FlowData += (s, e) =>
