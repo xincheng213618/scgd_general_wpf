@@ -21,9 +21,9 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Templates.Flow
 {
 
-    public class FlowDisplayConfig : ViewModelBase, IConfig
+    public class DisplayFlowConfig : ViewModelBase, IConfig
     {
-        public static FlowDisplayConfig Instance => ConfigService.Instance.GetRequiredService<FlowDisplayConfig>();
+        public static DisplayFlowConfig Instance => ConfigService.Instance.GetRequiredService<DisplayFlowConfig>();
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Flow
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
-        public CVFlowView1 View { get; set; }
+        public ViewFlow View { get; set; }
         public string DisPlayName => "Flow";
         public static FlowConfig Config => FlowConfig.Instance;
 
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.Flow
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
-            View = new CVFlowView1();
+            View = new ViewFlow();
 
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
@@ -69,7 +69,7 @@ namespace ColorVision.Engine.Templates.Flow
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
-                    FlowDisplayConfig.Instance.LastSelectFlow = flowParam.Id;
+                    DisplayFlowConfig.Instance.LastSelectFlow = flowParam.Id;
                 FlowUpdate();
             };
 
@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowDisplayConfig.Instance.LastSelectFlow);
+            var s = FlowParam.Params.FirstOrDefault(a => a.Id == DisplayFlowConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -164,7 +164,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     stopwatch.Stop();
                     timer.Change(Timeout.Infinite, 100); // 停止定时器
-                    FlowDisplayConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+                    DisplayFlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
@@ -206,17 +206,17 @@ namespace ColorVision.Engine.Templates.Flow
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (FlowDisplayConfig.Instance.LastFlowTime == 0 ||  FlowDisplayConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
+                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 ||  DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
                         {
                              msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = FlowDisplayConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowDisplayConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         handler.UpdateMessage(msg);
                     }

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Engine.Services.Flow
+namespace ColorVision.Engine.Templates.Flow
 {
     /// <summary>
     /// EditSpectrum.xaml 的交互逻辑

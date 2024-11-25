@@ -10,15 +10,15 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowView1 : UserControl,IView
+    public partial class ViewFlow : UserControl,IView
     {
-        private FlowEngineLib.FlowEngineControl flowEngine;
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } set { flowEngine = value; } }
+        private FlowEngineLib.FlowEngineControl _FlowEngineControl;
+        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return _FlowEngineControl; } set { _FlowEngineControl = value; } }
         public View View { get; set; }
 
-        public CVFlowView1()
+        public ViewFlow()
         {
-            flowEngine = new FlowEngineLib.FlowEngineControl(false);
+            _FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
         }
 
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Flow
                 winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
-            flowEngine.AttachNodeEditor(STNodeEditorMain);
+            _FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
