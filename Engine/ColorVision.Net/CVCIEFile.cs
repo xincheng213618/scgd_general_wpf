@@ -31,5 +31,7 @@ namespace ColorVision.Net
         public float[] exp;
         public string srcFileName;
         public byte[] data;
+
+        public string FilePath { get; set; }
     }
 }

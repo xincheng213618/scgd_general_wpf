@@ -7,7 +7,18 @@
         mc:Ignorable="d"
         Title="WindowCVCIE" Height="450" Width="800" Background="{DynamicResource GlobalBackground}">
     <Grid>
-        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Column="1" Initialized="listViewSide_Initialized">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <ToolBar>
+            <Button Click="Button_Click" Margin="2,0,0,0" >
+                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+            </Button>
+        </ToolBar>
+       
+        
+        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="1" Initialized="listViewSide_Initialized">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>

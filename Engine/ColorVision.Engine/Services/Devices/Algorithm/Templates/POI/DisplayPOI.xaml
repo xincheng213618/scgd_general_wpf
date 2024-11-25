@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:AlgorithmPoi}"
-             d:DesignHeight="400" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="400" d:DesignWidth="280" Initialized="UserControl_Initialized">
     <Grid>
         <Button  Content="{x:Static properties:Resources.Calculate}" VerticalAlignment="Top" Margin="5" Height="30" HorizontalAlignment="Right" Click="RunTemplate_Click" />
         <StackPanel>
@@ -82,11 +82,11 @@
 
                     <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
 
-                    <hc:ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.CIEImageFiles}" Width="180"/>
+                    <hc:ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.CIEImageFiles}" Width="160"/>
                 </DockPanel>
                 <DockPanel Margin="0,2">
                     <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="CIESrc" Width="70"/>
-                    <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="180"/>
+                    <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="160"/>
                 </DockPanel>
             </StackPanel>
         </StackPanel>

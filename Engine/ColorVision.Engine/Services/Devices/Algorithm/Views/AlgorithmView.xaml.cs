@@ -30,6 +30,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.UI;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -513,7 +514,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         internal void OpenImage(CVCIEFile fileInfo)
         {
-            ImageView.OpenImage(fileInfo.ToWriteableBitmap());
+            ImageView.OpenImage(fileInfo.FilePath);
         }
 
 

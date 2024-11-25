@@ -61,10 +61,6 @@ namespace ColorVision.ImageEditor
 
 
         [JsonIgnore]
-        public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); }  }
-        private bool _IsCVCIE;
-
-        [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1));} }
         private int _Channel;
 
