@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes.Controls;

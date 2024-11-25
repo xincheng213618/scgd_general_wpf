@@ -9,7 +9,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     /// <summary>
     /// WindowChart.xaml 的交互逻辑

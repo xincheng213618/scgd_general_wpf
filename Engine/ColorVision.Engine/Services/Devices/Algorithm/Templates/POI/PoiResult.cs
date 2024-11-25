@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib.Algorithm;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     public class PoiResult : ViewModelBase, IViewResult
     {

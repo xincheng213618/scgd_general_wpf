@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     [Table("t_scgd_algorithm_result_detail_light_area", PrimaryKey = "id")]
     public class AlgResultLightAreaModel : PKModel, IViewResult

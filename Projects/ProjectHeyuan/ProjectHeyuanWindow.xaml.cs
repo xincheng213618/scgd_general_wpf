@@ -4,7 +4,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;

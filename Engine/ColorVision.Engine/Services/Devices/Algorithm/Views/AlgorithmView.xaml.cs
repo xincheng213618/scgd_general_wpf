@@ -7,7 +7,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Net;
 using ColorVision.UI.Sorts;

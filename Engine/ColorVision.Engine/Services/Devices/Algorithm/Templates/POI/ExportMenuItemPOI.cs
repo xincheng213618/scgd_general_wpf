@@ -1,6 +1,6 @@
 ﻿using ColorVision.UI.Menus;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     public class ExportMenuItemPOI : MenuItemBase
     {

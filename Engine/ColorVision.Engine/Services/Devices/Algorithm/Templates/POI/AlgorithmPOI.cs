@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Messages;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.POI.POIFilters;
+using ColorVision.Engine.Templates.POI.POIOutput;
+using ColorVision.Engine.Templates.POI.POIRevise;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using System;
@@ -13,7 +12,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     public class AlgorithmPoi : ViewModelBase, IDisplayAlgorithm
     {

@@ -1,7 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIFilters;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
+﻿using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -10,8 +7,14 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Templates.POI.POIOutput;
+using ColorVision.Engine.Templates.POI.POIFilters;
+using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑

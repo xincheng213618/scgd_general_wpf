@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     public class PoiPointResultModel : PKModel
     {

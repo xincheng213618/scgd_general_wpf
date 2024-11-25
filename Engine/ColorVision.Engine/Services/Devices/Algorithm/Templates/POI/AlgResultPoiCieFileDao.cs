@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
 
     [Table("t_scgd_algorithm_result_detail_poi_cie_file", PrimaryKey = "id")]
