@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
                 var Params = new Dictionary<string, object>();
                 POILayoutTypes POILayoutReq;
-                if ((bool)CircleChecked.IsChecked)
+                if (CircleChecked.IsChecked  ==true)
                 {
                     PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
                     Params.Add("LayoutCenter", center);
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
                     POILayoutReq = POILayoutTypes.Circle;
                 }
-                else if ((bool)RectChecked.IsChecked)
+                else if (RectChecked.IsChecked == true)
                 {
                     PointInt center = new PointInt(Convert.ToInt32(rect_centerX.Text), Convert.ToInt32(rect_centerY.Text));
                     Params.Add("LayoutCenter", center);

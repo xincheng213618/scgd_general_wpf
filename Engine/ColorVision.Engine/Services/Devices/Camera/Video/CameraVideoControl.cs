@@ -38,11 +38,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         public void Close()
         {
             reader?.Close();
-            Task.Run(() =>
-            {
-                System.Threading.Thread.Sleep(500);
-                reader?.Dispose();
-            });
         }
     }
 }

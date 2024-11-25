@@ -231,6 +231,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 {
                     // 当有新项被添加时，向 SensorCommands 中添加相应的 SensorCommand
                     case NotifyCollectionChangedAction.Add:
+                        if (e.NewItems == null) return;
                         foreach (ModDetailModel newMod in e.NewItems)
                         {
                             SensorCommands.Add(new SensorCommand(newMod));
@@ -238,6 +239,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                         break;
                     // 当有项被移除时，移除对应的 SensorCommand
                     case NotifyCollectionChangedAction.Remove:
+                        if (e.OldItems == null) return;
                         foreach (ModDetailModel oldMod in e.OldItems)
                         {
                             var commandToRemove = SensorCommands.FirstOrDefault(c => c.Model == oldMod);
@@ -250,13 +252,15 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
                     // 当某项被替换时，更新对应的 SensorCommand
                     case NotifyCollectionChangedAction.Replace:
+                        if (e.NewItems == null) return;
+                        if (e.OldItems == null) return;
                         for (int i = 0; i < e.NewItems.Count; i++)
                         {
                             var oldMod = (ModDetailModel)e.OldItems[i];
                             var newMod = (ModDetailModel)e.NewItems[i];
 
                             var commandToReplace = SensorCommands.FirstOrDefault(c => c.Model == oldMod);
-                            if (commandToReplace != null)
+                            if (commandToReplace != null && newMod !=null)
                             {
                                 // 替换为新的 SensorCommand
                                 int index = SensorCommands.IndexOf(commandToReplace);

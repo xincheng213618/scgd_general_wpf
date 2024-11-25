@@ -1,9 +1,6 @@
 ﻿using ColorVision.UI.Views;
-using ScottPlot;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Diagnostics;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

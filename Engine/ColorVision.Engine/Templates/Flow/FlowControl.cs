@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Types;
 using FlowEngineLib;
 using log4net;
@@ -12,10 +13,10 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Flow
+namespace ColorVision.Engine.Templates.Flow
 {
 
-    public class FlowControl  :ViewModelBase
+    public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
 
@@ -40,12 +41,12 @@ namespace ColorVision.Engine.Services.Flow
             MQTTControl.ApplicationMessageReceivedAsync += MQTTControl_ApplicationMessageReceivedAsync;
         }
 
-        public FlowControl(MQTTControl mQTTControl, FlowEngineLib.FlowEngineControl flowEngine) : this(mQTTControl, flowEngine.GetStartNodeName())
+        public FlowControl(MQTTControl mQTTControl, FlowEngineControl flowEngine) : this(mQTTControl, flowEngine.GetStartNodeName())
         {
             this.flowEngine = flowEngine;
         }
 
-        public bool IsFlowRun { get => _IsFlowRun;set { _IsFlowRun = value; NotifyPropertyChanged(); } }
+        public bool IsFlowRun { get => _IsFlowRun; set { _IsFlowRun = value; NotifyPropertyChanged(); } }
         private bool _IsFlowRun;
 
         public void Stop()

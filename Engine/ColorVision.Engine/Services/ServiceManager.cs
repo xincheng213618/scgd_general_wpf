@@ -30,6 +30,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.Flow;
 
 namespace ColorVision.Engine.Services
 {
@@ -67,7 +68,7 @@ namespace ColorVision.Engine.Services
             var nameToIndexMap = DisPlayManagerConfig.Instance.PlayControls;
 
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowDisplayControl.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
@@ -138,7 +139,7 @@ namespace ColorVision.Engine.Services
 
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
-            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowDisplayControl.GetInstance());
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)

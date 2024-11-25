@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
@@ -42,7 +42,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.Flow
+namespace ColorVision.Engine.Templates.Flow
 {
     public class ExportFlowEngine : MenuItemBase
     {
@@ -199,7 +199,8 @@ namespace ColorVision.Engine.Services.Flow
             HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
             comboBox.ItemsSource = itemSource;
             var selectedItem = itemSource.FirstOrDefault(x => x.Key == tempName);
-            comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+            if (selectedItem !=null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
 
             comboBox.SelectionChanged += (s, e) =>
             {
@@ -231,7 +232,8 @@ namespace ColorVision.Engine.Services.Flow
             HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
             comboBox.ItemsSource = template.TemplateParams;
             var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
-            comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+            if (selectedItem!=null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
 
             comboBox.SelectionChanged += (s, e) =>
             {

@@ -42,7 +42,7 @@ namespace ColorVision.Engine.MySql
         public int ExecuteNonQuery(string sqlBatch)
         {
             // 将整个SQL批次按照分号拆分为单个SQL语句
-            var statements = sqlBatch.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var statements = sqlBatch.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             int totalCount = 0;
             foreach (var sql in statements)
             {
@@ -71,7 +71,7 @@ namespace ColorVision.Engine.MySql
             return totalCount;
         }
 
-
+        private static readonly char[] separator = new[] { ';' };
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

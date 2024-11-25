@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls;
+using ColorVision.Engine.Services.Flow;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -13,14 +13,12 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.Flow
+namespace ColorVision.Engine.Templates.Flow
 {
 
     public class FlowDisplayConfig : ViewModelBase, IConfig
@@ -34,11 +32,11 @@ namespace ColorVision.Engine.Services.Flow
 
     }
 
-    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
+    public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
-        private static FlowDisplayControl _instance;
+        private static DisplayFlow _instance;
         private static readonly object _locker = new();
-        public static FlowDisplayControl GetInstance() { lock (_locker) { return _instance ??= new FlowDisplayControl(); } }
+        public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
 
         public CVFlowView1 View { get; set; }
         public string DisPlayName => "Flow";
@@ -48,7 +46,7 @@ namespace ColorVision.Engine.Services.Flow
         Stopwatch stopwatch = new Stopwatch();
 
 
-        public FlowDisplayControl()
+        public DisplayFlow()
         {
             InitializeComponent();
         }
@@ -355,6 +353,12 @@ namespace ColorVision.Engine.Services.Flow
         {
             new FlowEngineToolWindow(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
             FlowUpdate();
+        }
+
+        public void Dispose()
+        {
+            timer.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

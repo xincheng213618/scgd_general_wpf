@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Engine.Services.Flow.Dao
+namespace ColorVision.Engine.Templates.Flow
 {
     public class ModFlowDetailModel : PKModel
     {

@@ -70,13 +70,13 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public bool IsPOIBuildCommon => POIBuildType == POIBuildType.Common;
 
         public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point1 = new PointFloat();
+        private PointFloat _Point1;
         public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point2 = new PointFloat();
+        private PointFloat _Point2;
         public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point3 = new PointFloat();
+        private PointFloat _Point3;
         public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point4 = new PointFloat();
+        private PointFloat _Point4;
 
         public string CADPosFileName { get => _CADPosFileName; set { _CADPosFileName = value; NotifyPropertyChanged(); } }
         private string _CADPosFileName = string.Empty;

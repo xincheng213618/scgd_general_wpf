@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Media
             fi.SetValue(obj, null);
         }
 
-        private static FieldInfo GetEventField(this Type type, string eventName)
+        private static FieldInfo? GetEventField(this Type type, string eventName)
         {
             FieldInfo field = null;
             while (type != null)
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Media
                     break;
 
                 /* Find events defined as property { add; remove; } */
-                field = type.GetField("EVENT_" + eventName.ToUpper(), BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
+                field = type.GetField("EVENT_" + eventName.ToUpper(System.Globalization.CultureInfo.CurrentCulture), BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
                 if (field != null)
                     break;
                 type = type.BaseType;
@@ -174,6 +174,7 @@ namespace ColorVision.Engine.Media
 
         public async void OpenImage(ImageView imageView, string? filePath)
         {
+            if (filePath == null) return;
             CVCIESetBuffer(imageView, filePath);
 
             try

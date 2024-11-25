@@ -28,6 +28,7 @@ namespace ColorVision.Engine.MySql
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
+        private static readonly char[] separator = new[] { ';' };
 
         public Task<bool> Connect()
         {
@@ -106,7 +107,7 @@ namespace ColorVision.Engine.MySql
         public int BatchExecuteNonQuery(string sqlBatch)
         {
             // 将整个SQL批次按照分号拆分为单个SQL语句
-            var statements = sqlBatch.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            var statements = sqlBatch.Split(separator, StringSplitOptions.RemoveEmptyEntries);
             int totalCount = 0;
             foreach (var sql in statements)
             {

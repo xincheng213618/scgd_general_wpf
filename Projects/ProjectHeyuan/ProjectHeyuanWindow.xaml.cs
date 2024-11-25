@@ -6,7 +6,6 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -24,6 +23,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Templates.Flow;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
@@ -250,7 +250,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             });
         }
 
-        private Engine.Services.Flow.FlowControl flowControl;
+        private FlowControl flowControl;
 
         private IPendingHandler handler;
 

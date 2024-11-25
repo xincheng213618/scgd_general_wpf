@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
                 {
-                    string path = SysResourceModel.Value;
+                    string path = SysResourceModel.Value ?? string.Empty;
 
                     string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code,"cfg", path);
 

@@ -3,9 +3,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Flow.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
-using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using CVCommCore;
 using System;
@@ -16,14 +14,14 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Flow
+namespace ColorVision.Engine.Templates.Flow
 {
-    public class ExportFlow :MenuItemBase
+    public class ExportFlow : MenuItemBase
     {
         public override string OwnerGuid => "Template";
         public override string GuidId => "FlowParam";
         public override int Order => 0;
-        public override  string Header => Properties.Resources.MenuFlow;
+        public override string Header => Properties.Resources.MenuFlow;
         public override void Execute()
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
@@ -235,7 +233,7 @@ namespace ColorVision.Engine.Services.Flow
         public static int Save(ModMasterModel modMaster)
         {
             int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(modMaster.Pcode ??string.Empty, modMaster.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(modMaster.Pcode ?? string.Empty, modMaster.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;
@@ -323,7 +321,7 @@ namespace ColorVision.Engine.Services.Flow
             {
                 ModDetailModel mod = new() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
                 modDetailModels.Add(mod);
-                dataBase64 = model.Value ??string.Empty;
+                dataBase64 = model.Value ?? string.Empty;
             }
             AddDetail(modDetailModels);
         }

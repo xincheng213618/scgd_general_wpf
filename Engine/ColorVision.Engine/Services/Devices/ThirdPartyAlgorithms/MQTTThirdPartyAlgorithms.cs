@@ -102,7 +102,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             Params.Add("TemplateParam", new CVTemplateParam() { ID = modparam.Id, Name = modparam.Name });
             MsgSend msg = new()
             {
-                EventName = modparam.ModThirdPartyAlgorithmsModel.Code,
+                EventName = modparam.ModThirdPartyAlgorithmsModel.Code ?? string.Empty,
                 SerialNumber = serialNumber,
                 Params = Params
             };
