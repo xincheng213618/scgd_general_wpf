@@ -74,8 +74,21 @@ namespace ColorVision.Engine.Services.Flow
                     FlowDisplayConfig.Instance.LastSelectFlow = flowParam.Id;
                 FlowUpdate();
             };
+
+
+            this.ApplyChangedSelectedColor(DisPlayBorder);
+
+
+            timer = new Timer(UpdateMsg, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+
+            this.Loaded += FlowDisplayControl_Loaded;
+        }
+
+        private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
+        {
             var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowDisplayConfig.Instance.LastSelectFlow);
-            if (s !=null)
+            if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
             }
@@ -83,12 +96,7 @@ namespace ColorVision.Engine.Services.Flow
             {
                 ComboBoxFlow.SelectedIndex = 0;
             }
-
-            this.ApplyChangedSelectedColor(DisPlayBorder);
-
-
-            timer = new Timer(UpdateMsg, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            this.Loaded -= FlowDisplayControl_Loaded;
         }
 
         private void FlowUpdate()
@@ -122,6 +130,7 @@ namespace ColorVision.Engine.Services.Flow
                                     algorithmNode.nodeRunEvent += UpdateMsg;
                                 }
                             }
+                            View.AutoSize();
                         }
                     }
                     catch (Exception ex)

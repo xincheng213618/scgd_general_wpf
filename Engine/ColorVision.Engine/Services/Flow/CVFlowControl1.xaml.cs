@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI.Views;
+using ScottPlot;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Diagnostics;
@@ -66,6 +67,35 @@ namespace ColorVision.Engine.Services.Flow
                     STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
                 }
             };
+        }
+
+        public float CanvasScale { get; set; }
+
+        public void AutoSize()
+        {
+            // Calculate the centers
+            var boundsCenterX = STNodeEditorMain.Bounds.Width / 2;
+            var boundsCenterY = STNodeEditorMain.Bounds.Height / 2;
+
+            // Calculate the scale factor to fit CanvasValidBounds within Bounds
+            var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
+            var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
+            CanvasScale = Math.Min(scaleX, scaleY);
+
+            // Apply the scale
+            STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+
+            var validBoundsCenterX = STNodeEditorMain.CanvasValidBounds.Width / 2;
+            var validBoundsCenterY = STNodeEditorMain.CanvasValidBounds.Height / 2;
+
+            // Calculate the offsets to move CanvasValidBounds to the center of Bounds
+            var offsetX = boundsCenterX - validBoundsCenterX * CanvasScale - 50 * CanvasScale;
+            var offsetY = boundsCenterY - validBoundsCenterY * CanvasScale - 50 * CanvasScale;
+
+
+            // Move the canvas
+            STNodeEditorMain.MoveCanvas(offsetX, STNodeEditorMain.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
+            STNodeEditorMain.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
         }
 
 
