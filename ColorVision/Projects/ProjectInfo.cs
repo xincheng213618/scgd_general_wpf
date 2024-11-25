@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -51,7 +52,7 @@ namespace ColorVision.Projects
                 AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
                 AssemblyPath = assembly.Location;
                 AssemblyCulture = assembly.GetName().CultureInfo?.Name ?? "neutral";
-                AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? new byte[0]);
+                AssemblyPublicKeyToken = BitConverter.ToString(assembly.GetName().GetPublicKeyToken() ?? Array.Empty<byte>());
                 PackageName = Path.GetFileNameWithoutExtension(assembly.Location);
             }
             catch (Exception ex)

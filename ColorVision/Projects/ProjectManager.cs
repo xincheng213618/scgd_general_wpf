@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -176,7 +177,7 @@ del ""%~f0"" & exit
                 InstallFromZip(selectedZipPath);
             }
         }
-        private void InstallFromZip(string zipFilePath)
+        private static void InstallFromZip(string zipFilePath)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -229,7 +230,7 @@ del ""%~f0"" & exit
 
 
 
-        public void OpenStore()
+        public static void OpenStore()
         {
             PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");
         }
