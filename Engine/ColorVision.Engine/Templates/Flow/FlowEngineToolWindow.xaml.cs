@@ -468,6 +468,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
             };
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
             this.DataContext = this;
             this.Closed += (s, e) =>
             {
