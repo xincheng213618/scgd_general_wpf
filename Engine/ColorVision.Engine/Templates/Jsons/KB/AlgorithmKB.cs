@@ -20,6 +20,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
     public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "KB服务测试";
+
         public int Order { get; set; } = 98;
 
         public DeviceAlgorithm Device { get; set; }

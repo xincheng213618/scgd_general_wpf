@@ -17,28 +17,24 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.PoiOutput;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.POIRevise;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.ROI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
-using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
-using ColorVision.Engine.Templates.POI.Comply.Dic;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
-using HandyControl.Tools.Extension;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using OpenTK.Graphics.OpenGL;
+using ScottPlot;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -46,7 +42,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using static OpenCvSharp.ML.DTrees;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -64,25 +59,31 @@ namespace ColorVision.Engine.Services.Flow
         }
     }
 
+
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class FlowEngineToolWindow : Window
+    public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public FlowEngineToolWindow()
         {
             InitializeComponent();
-            ButtonOpen.Visibility = Visibility.Collapsed;
-            ButtonNew.Visibility = Visibility.Collapsed;
             this.ApplyCaption();
         }
+
         FlowParam FlowParam { get; set; }
         public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
             FlowParam = flowParam;
             OpenFlowBase64(flowParam);
+            ButtonOpen.Visibility = Visibility.Collapsed;
         }
+
+        public float CanvasScale { get => STNodeEditorMain.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value , STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -90,32 +91,34 @@ namespace ColorVision.Engine.Services.Flow
             {
                 if (e.Key == Key.Left)
                 {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100*CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Right)
                 {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Up)
                 {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Down)
                 {
-                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Add)
                 {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
-                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
                     e.Handled = true;
                 }
             }
@@ -248,14 +251,14 @@ namespace ColorVision.Engine.Services.Flow
             {
                 Width = 20,
                 Margin = new Thickness(5, 0, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Left
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
             };
 
             // 创建 TextBlock
             TextBlock textBlock = new TextBlock
             {
                 Text = "\uE713",
-                HorizontalAlignment = HorizontalAlignment.Center,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
                 FontFamily = new FontFamily("Segoe MDL2 Assets"),
                 FontSize = 15,
                 Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
@@ -464,7 +467,7 @@ namespace ColorVision.Engine.Services.Flow
                 }
             };
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-
+            this.DataContext = this;
             this.Closed += (s, e) =>
             {
                 if (AutoSave())
@@ -668,7 +671,8 @@ namespace ColorVision.Engine.Services.Flow
         void ApplyTreeLayout(STNode rootNode, int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
             int currentY = startY;
-            HashSet<STNode> MoreParens = new HashSet<STNode>();   
+            HashSet<STNode> MoreParens = new HashSet<STNode>();
+
             void LayoutNode(STNode node,int current)
             {
                 int depeth = GetMaxDepth(node);
@@ -726,20 +730,24 @@ namespace ColorVision.Engine.Services.Flow
 
                 node.Top = (minParentY + maxParentY) / 2;
 
-                SetCof( node,  verticalSpacing);
+                SetCof(node,  verticalSpacing);
                  int currenty = node.Top;
                 foreach (var child in children)
                 {
                     LayoutNode(child, currenty);
                     currenty += verticalSpacing;
                 }
+                MoreParens.Remove(node);
+            }
+            LayoutNode(rootNode, currentY);
+            while (MoreParens.Count > 0)
+            {
+                foreach (var item in MoreParens.Cast<STNode>().ToList())
+                {
+                    MoreParentsLayoutNode(item);
+                }
             }
 
-            LayoutNode(rootNode, currentY);
-            foreach (var item in MoreParens.Cast<STNode>().ToList())
-            {
-                MoreParentsLayoutNode(item);
-            }
         }
 
         public void SetCof(STNode node,int verticalSpacing)
@@ -821,8 +829,34 @@ namespace ColorVision.Engine.Services.Flow
 
             STNode rootNode = GetRootNode();
             ApplyTreeLayout(rootNode, startX: 100, startY: 100, horizontalSpacing: 250, verticalSpacing: 200);
-            STNodeEditorMain.MoveCanvas(0, 0, bAnimation: true, CanvasMoveArgs.Left);
+            AutoSize();
+        }
 
+        public void AutoSize()
+        {
+            // Calculate the centers
+            var boundsCenterX = STNodeEditorMain.Bounds.Width / 2;
+            var boundsCenterY = STNodeEditorMain.Bounds.Height / 2;
+
+            // Calculate the scale factor to fit CanvasValidBounds within Bounds
+            var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
+            var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
+            CanvasScale = Math.Min(scaleX, scaleY);
+            CanvasScale = CanvasScale > 1 ? 1 : CanvasScale;
+            // Apply the scale
+            STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+
+            var validBoundsCenterX = STNodeEditorMain.CanvasValidBounds.Width / 2;
+            var validBoundsCenterY = STNodeEditorMain.CanvasValidBounds.Height / 2;
+
+            // Calculate the offsets to move CanvasValidBounds to the center of Bounds
+            var offsetX = boundsCenterX - validBoundsCenterX * CanvasScale - 50 * CanvasScale;
+            var offsetY = boundsCenterY - validBoundsCenterY * CanvasScale - 50 * CanvasScale;
+
+
+            // Move the canvas
+            STNodeEditorMain.MoveCanvas(offsetX, STNodeEditorMain.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
+            STNodeEditorMain.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
         }
     }
 }

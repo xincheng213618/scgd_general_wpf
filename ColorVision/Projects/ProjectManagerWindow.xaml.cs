@@ -14,7 +14,7 @@ namespace ColorVision.Projects
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = new ProjectManager();
+            this.DataContext = ProjectManager.GetInstance();
         }
     }
 }

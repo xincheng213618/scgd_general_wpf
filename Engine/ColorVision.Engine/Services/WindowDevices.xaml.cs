@@ -13,19 +13,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
-    public class ExportWindowDevices : MenuItemBase
-    {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "WindowDevices";
-        public override string Header => Properties.Resources.MenuDevice;
-        public override int Order => 3;
+    //public class ExportWindowDevices : MenuItemBase
+    //{
+    //    public override string OwnerGuid => "Tool";
+    //    public override string GuidId => "WindowDevices";
+    //    public override string Header => Properties.Resources.MenuDevice;
+    //    public override int Order => 3;
 
-        [RequiresPermission(PermissionMode.Guest)]
-        public override void Execute()
-        {
-            new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-    }
+    //    [RequiresPermission(PermissionMode.Guest)]
+    //    public override void Execute()
+    //    {
+    //        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+    //    }
+    //}
 
     /// <summary>
     /// WindowService.xaml 的交互逻辑

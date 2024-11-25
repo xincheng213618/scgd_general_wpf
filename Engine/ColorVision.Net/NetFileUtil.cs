@@ -179,6 +179,7 @@ namespace ColorVision.Net
                     {
                         CVFileUtil.Read(bytes, out fileInfo);
                         fileInfo.FileExtType = FileExtType.Raw;
+                        fileInfo.FilePath = fileName;
                     }
                 }
             }
@@ -426,12 +427,14 @@ namespace ColorVision.Net
         {
             int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
             if (startIndex < 0) return -1;
+            fileInfo.FilePath = fileName;
 
             if (!string.IsNullOrEmpty(fileInfo.srcFileName))
             {
                 if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
                     fileInfo = fileInf;
+                    fileInfo.FilePath = fileName;
                     return 0;
                 }
             }

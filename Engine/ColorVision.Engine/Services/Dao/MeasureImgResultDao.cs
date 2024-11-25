@@ -9,31 +9,44 @@ namespace ColorVision.Engine.Services.Dao
 {
     public class MeasureImgResultModel : PKModel
     {
+        [Column("batch_id")]
         public int BatchId { get; set; }
-        public string? BatchCode { get; set; }
+        [Column("params")]
         public string? ReqParams { get; set; }
+        [Column("raw_file")]
         public string? RawFile { get; set; }
+        [Column("file_url")]
         public string? ImgFrameInfo { get; set; }
+
+        [Column("file_type")]
         public sbyte? FileType { get; set; }
+        [Column("result_code")]
         public int ResultCode { get; set; }
+        [Column("total_time")]
         public int TotalTime { get; set; }
+        [Column("result")]
         public string? ResultMsg { get; set; }
 
+        [Column("file_data")]
         public string? FileData { get; set; }
+
+        [Column("device_code")]
         public string? FileUrl { get; set; }
 
+        [Column("device_code")]
         public string? DeviceCode { get; set; }
 
-        public System.DateTime? CreateDate { get; set; } = DateTime.Now;
+        [Column("create_date")]
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 
 
-    public class MeasureImgResultDao : BaseDaoMaster<MeasureImgResultModel>
+    public class MeasureImgResultDao : BaseTableDao<MeasureImgResultModel>
     {
 
         public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
 
-        public MeasureImgResultDao() : base("v_scgd_measure_result_img", "t_scgd_measure_result_img", "id", false)
+        public MeasureImgResultDao() : base("t_scgd_measure_result_img", "id")
         {
 
         }
@@ -44,7 +57,6 @@ namespace ColorVision.Engine.Services.Dao
             {
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int?>("batch_id") ?? -1,
-                BatchCode = item.Field<string?>("batch_code"),
                 RawFile = item.Field<string?>("raw_file"),
                 FileType = item.Field<sbyte?>("file_type"),
                 FileData = item.Field<string?>("file_data"),
@@ -63,11 +75,10 @@ namespace ColorVision.Engine.Services.Dao
         public List<MeasureImgResultModel> GetAllDevice(string devcode) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } });
 
 
-        public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
+        public List<MeasureImgResultModel> ConditionalQuery(string id, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);
-            keyValuePairs.Add("batch_code", batch_code);
             keyValuePairs.Add("raw_file", file_url);
             keyValuePairs.Add("device_code", device_code);
             keyValuePairs.Add(">create_date", dateTimeSTART);

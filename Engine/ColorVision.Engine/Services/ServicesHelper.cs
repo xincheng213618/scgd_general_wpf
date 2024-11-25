@@ -94,14 +94,9 @@ namespace ColorVision.Engine.Services
             button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
 
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-            msgRecordStateChangedHandler = async (e) =>
+            msgRecordStateChangedHandler = (e) =>
             {
-                button.Content = Properties.Resources.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
-                await Task.Delay(100);
-                if (e != MsgRecordState.Sended)
-                {
-                    button.Content = temp;
-                }
+                button.Content = temp;
                 msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
             };
             if (Reserve)

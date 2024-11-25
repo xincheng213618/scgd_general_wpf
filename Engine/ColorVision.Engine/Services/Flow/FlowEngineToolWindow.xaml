@@ -10,7 +10,8 @@
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         PreviewKeyDown="UserControl_PreviewKeyDown"
-        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        d:DataContext="{d:DesignInstance local:FlowEngineToolWindow}"
+        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="600" Width="1000"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -28,28 +29,32 @@
         <Grid Margin="5" Grid.Row="0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <UniformGrid Columns="10">
+            <StackPanel Orientation="Horizontal">
                 <Button x:Name="ButtonOpen"  Content="{x:Static properties:Resources.Loading}" Click="Button_Click_Open" Width="70" />
                 <Button x:Name="ButtonNew"  Content="{x:Static properties:Resources.New}" Click="Button_Click_New"  Width="70" />
                 <Button x:Name="ButtonClear"  Content="{x:Static properties:Resources.Clear}" Click="Button_Click_Clear"  Width="70"/>
                 <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
                 <Button  Content="自动对齐" Click="AutoAlignment_Click" Width="70"/>
-            </UniformGrid>
-            <Grid  x:Name="OperateGrid" Grid.Column="1" Margin="100,0,0,0" Visibility="Visible">
+            </StackPanel>
+            <Grid  x:Name="OperateGrid" Grid.Column="1" Visibility="Visible">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Grid.Column="2">
                     <Button x:Name="ButtonFlowPause" Content="暂停流程" Visibility="Collapsed" Click="Button_Click_5"/>
-                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Visibility="Collapsed" Click="Button_Click_4" />
+                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Visibility="Visible" Click="Button_Click_4" />
                 </StackPanel>
                 <StackPanel Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button Content="生成流水号" Click="Button_Click_3" Visibility="Collapsed" />
-                    <TextBox  x:Name="TextBoxsn"  Text="1" Width="250" Visibility="Collapsed" VerticalAlignment="Center"  />
+                    <Button Content="生成流水号" Click="Button_Click_3" />
+                    <TextBox  x:Name="TextBoxsn"  Text="1" Width="250" VerticalAlignment="Center"  />
                 </StackPanel>
+            </Grid>
+            <Grid Grid.Column="2">
+                <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding CanvasScale}" Maximum="3" Minimum="0.45" HorizontalAlignment="Right"/>
             </Grid>
         </Grid>
 
@@ -81,14 +86,9 @@
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
-
-            <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                <WindowsFormsHost >
-                    <st:STNodeEditor  x:Name="STNodeEditorMain"  />
-                </WindowsFormsHost>
-            </ScrollViewer>
-
-
+            <WindowsFormsHost Grid.Column="1" >
+                <st:STNodeEditor  x:Name="STNodeEditorMain"/>
+            </WindowsFormsHost>
         </Grid>
     </Grid>
 </Window>

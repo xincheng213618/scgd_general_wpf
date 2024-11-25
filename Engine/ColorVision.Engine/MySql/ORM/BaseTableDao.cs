@@ -46,6 +46,12 @@ namespace ColorVision.Engine.MySql.ORM
             if (code == null) return default;
             return dao.GetByParam(new Dictionary<string, object> { { "code", code } });
         }
+
+        public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
+        {
+            return dao.GetAllByParam(new Dictionary<string, object> { { "batch_id", batchid } });
+        }
+
     }
 
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
@@ -85,6 +91,83 @@ namespace ColorVision.Engine.MySql.ORM
                 return -1;
             }
         }
+
+
+        public int UpdateByPid(int pid, List<T> datas)
+        {
+            string sql = $"select * from {TableName} where pid={pid}";
+            DataTable dataTable = GetData(sql);
+            dataTable.TableName = TableName;
+            foreach (var item in datas)
+            {
+                DataRow row = dataTable.GetRow(item);
+                Model2Row(item, row);
+            }
+            return Save(dataTable);
+        }
+
+        public int SaveByPid(int pid, List<T> datas)
+        {
+            DeleteAllByPid(pid, false);
+            DataTable dataTable = new DataTable(TableName);
+            CreateColumns(dataTable);
+            foreach (var item in datas)
+            {
+                DataRow row = dataTable.NewRow();
+                dataTable.Rows.Add(row);
+                Model2Row(item, row);
+                if (item.Id <= 0)
+                    row[PKField] = DBNull.Value;
+            }
+            return BulkInsertAsync(dataTable);
+        }
+
+        //如果检索代码看到了这里，应该是数据库的local_infile没有启用，这里设置即可  SET GLOBAL local_infile=1;
+        public int BulkInsertAsync(DataTable dataTable)
+        {
+            int count = -1;
+            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
+            dataTable.TableName = TableName;
+            using (connection)
+            {
+                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection)
+                {
+                    DestinationTableName = dataTable.TableName
+                };
+                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+                try
+                {
+
+                    MySqlConnector.MySqlBulkCopyResult result = bulkCopy.WriteToServer(dataTable);
+                    count = result.RowsInserted;
+                    //check for problems
+                    //if (result.Warnings.Count != 0)
+                    //{
+                    //    /* handle potential Data loss warnings */
+                    //}
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            }
+
+            return count;
+        }
+
+        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
+        {
+            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new();
+            int i = 0;
+            foreach (DataColumn col in dataTable.Columns)
+            {
+                colMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                i++;
+            }
+            return colMappings;
+        }
+
+
 
         public T? GetByParam(Dictionary<string, object> param) => GetAllByParam(param).FirstOrDefault();
 
@@ -169,6 +252,31 @@ namespace ColorVision.Engine.MySql.ORM
 
         public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
 
+
+        public T? GetLatestResult()
+        {
+            return GetByCreateDate(limit: 1).FirstOrDefault();
+        }
+
+        public List<T> GetByCreateDate(int limit = 1)
+        {
+            List<T> list = new();
+            string sql = $"select * from {TableName} ORDER BY create_date DESC LIMIT @Limit";
+            var parameters = new Dictionary<string, object>
+            {
+                {"@Limit", limit}
+            };
+            DataTable d_info = GetData(sql, parameters);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
 
         public int GetNextAvailableId()
         {

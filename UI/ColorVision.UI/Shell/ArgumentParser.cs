@@ -18,8 +18,7 @@
     {
         private static ArgumentParser _instance;
         private static readonly object _locker = new();
-        public static ArgumentParser GetInstance() 
-    { lock (_locker) { return _instance ??= new ArgumentParser(); } }
+        public static ArgumentParser GetInstance()  { lock (_locker) { return _instance ??= new ArgumentParser(); } }
 
         private readonly List<Argument> _arguments = new List<Argument>();
         private readonly Dictionary<string, string> _parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -33,9 +32,11 @@
         {
             _arguments.Add(new Argument(name, isFlag, aliases));
         }
+
         public void Parse() => Parse(CommandLineArgs);
         public void Parse(string[] args)
         {
+            CommandLineArgs = args;
             if (args.Length == 1 && !args[0].StartsWith("-", StringComparison.CurrentCulture))
             {
                 // Handle the case where only a file path is provided

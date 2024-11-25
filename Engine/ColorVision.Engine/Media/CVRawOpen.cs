@@ -57,7 +57,6 @@ namespace ColorVision.Engine.Media
 
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
-            
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
                 float dXVal = 0;
@@ -134,7 +133,7 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
-                    imageView.Config.IsCVCIE = true;
+                    imageView.Config.AddProperties("IsCVCIE", true);
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");

@@ -9,13 +9,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             Id = dbModel.Id;
             Name = dbModel.Name ?? dbModel.Id.ToString();
-            PointType = dbModel.Type switch
-            {
-                0 => RiPointTypes.Circle,
-                1 => RiPointTypes.Rect,
-                2 => RiPointTypes.Mask,
-                _ => RiPointTypes.Circle,
-            };
+            PointType = dbModel.Type;
             PixX = dbModel.PixX ?? 0;
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;

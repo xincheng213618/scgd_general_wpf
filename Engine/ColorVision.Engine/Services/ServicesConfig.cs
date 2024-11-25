@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services
                     Description =  Properties.Resources.IsDefaultOpenService,
                     Order = 15,
                     Type = ConfigSettingType.Bool,
-                    BindingName =nameof(ServicesConfig.IsDefaultOpenService),
+                    BindingName =nameof(ServicesConfig.IsAutoConfig),
                     Source = ServicesConfig.Instance,
                 },
                 new ConfigSettingMetadata
@@ -40,8 +40,8 @@ namespace ColorVision.Engine.Services
 
         public int ShowType { get; set; }
 
-        public bool IsDefaultOpenService { get => _IsDefaultOpenService; set { _IsDefaultOpenService = value; NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService = true;
+        public bool IsAutoConfig { get => _IsAutoConfig; set { _IsAutoConfig = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoConfig = true;
 
         public bool IsRetorePlayControls { get => _IsRetorePlayControls; set { _IsRetorePlayControls = value; NotifyPropertyChanged(); } }
         private bool _IsRetorePlayControls = true;

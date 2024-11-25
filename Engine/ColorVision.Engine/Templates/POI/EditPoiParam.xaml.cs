@@ -36,6 +36,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
 using Microsoft.Win32;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -1585,11 +1586,9 @@ namespace ColorVision.Engine.Services.Templates.POI
             };
             windowFocusPointAd.ShowDialog();
         }
-
-        MeasureImgResultDao MeasureImgResultDao = new();
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
+            if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
                 {
@@ -1649,7 +1648,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
         {
             MeasureImgResultModels.Clear();
-            var imgs = MeasureImgResultDao.GetAll();
+            var imgs = MeasureImgResultDao.Instance.GetAll();
             imgs.Reverse();
             foreach (var item in imgs)
             {
