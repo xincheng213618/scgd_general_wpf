@@ -36,6 +36,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -481,6 +482,71 @@ namespace ColorVision.Engine.Templates.Flow
 
                 }
             };
+            AddContentMenu();
+        }
+
+        public void AddContentMenu()
+        {
+            STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+            Type STNodeTreeViewtype = STNodeTreeView1.GetType();
+
+            // 获取私有字段信息
+            FieldInfo fieldInfo = STNodeTreeViewtype.GetField("m_dic_all_type", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (fieldInfo != null)
+            {
+                // 获取字段的值
+                var value = fieldInfo.GetValue(STNodeTreeView1);
+                Dictionary<string, List<Type>> values = new Dictionary<string, List<Type>>();
+                if (value is Dictionary<Type, string> m_dic_all_type)
+                {
+                    foreach (var item in m_dic_all_type)
+                    {
+                        if (values.ContainsKey(item.Value))
+                        {
+                            values[item.Value].Add(item.Key);
+                        }
+                        else
+                        {
+                            values.Add(item.Value,new List<Type>() { item .Key});
+                        }
+                    }
+
+                    foreach (var nodetype in values)
+                    {
+                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(nodetype.Key.Replace("FlowEngineLib/",""));
+
+                        foreach (var type in nodetype.Value)
+                        {
+                            if (type.IsSubclassOf(typeof(STNode)))
+                            {
+                                if (Activator.CreateInstance(type) is STNode sTNode)
+                                {
+                                    toolStripItem.DropDownItems.Add(sTNode.Title, null, (s, e) =>
+                                    {
+                                        STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+                                        if (sTNode1 != null)
+                                        {
+                                            sTNode1.Create();
+                                            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
+                                            p = STNodeEditorMain.ControlToCanvas(p);
+                                            sTNode1.Left = p.X;
+                                            sTNode1.Top = p.Y;
+                                            STNodeEditorMain.Nodes.Add(sTNode1);
+                                        }
+                                    });
+                                }
+                            }
+
+                        }
+                        STNodeEditorMain.ContextMenuStrip.Items.Add(toolStripItem);
+
+                    }
+
+                }
+            }
+
+            STNodeEditorMain.ContextMenuStrip.Items.Add("保存", null, (s, e) => SaveFlow());
 
         }
 
@@ -859,6 +925,61 @@ namespace ColorVision.Engine.Templates.Flow
             // Move the canvas
             STNodeEditorMain.MoveCanvas(offsetX, STNodeEditorMain.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
             STNodeEditorMain.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
+        }
+
+        private bool IsMouseDown;
+        private System.Drawing.Point lastMousePosition;
+        private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (STNodeEditorMain.HoverNode == null && e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                IsMouseDown = true;
+                lastMousePosition = e.Location;
+
+            }
+        }
+
+        private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            IsMouseDown = false;
+        }
+
+        private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (IsMouseDown)
+            {        // 计算鼠标移动的距离
+                int deltaX = e.X - lastMousePosition.X;
+                int deltaY = e.Y - lastMousePosition.Y;
+
+                // 更新画布偏移
+                STNodeEditorMain.MoveCanvas(
+                    STNodeEditorMain.CanvasOffsetX + deltaX,
+                    STNodeEditorMain.CanvasOffsetY + deltaY,
+                    bAnimation: false,
+                    CanvasMoveArgs.All
+                );
+
+                // 更新最后的鼠标位置
+                lastMousePosition = e.Location;
+            }
+        }
+        
+
+        private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            var mousePosition = STNodeEditorMain.PointToClient(e.Location);
+
+            if (e.Delta < 0)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
+                NotifyPropertyChanged(nameof(CanvasScale));
+            }
+            else
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
+                NotifyPropertyChanged(nameof(CanvasScale));
+            }
+            ((System.Windows.Forms.HandledMouseEventArgs)e).Handled = true;
         }
     }
 }
