@@ -3,7 +3,8 @@ import os
 import re
 import shutil
 import time
-
+from tqdm import tqdm
+import requests
 
 def rebuild_project(msbuild_path, solution_path, advanced_installer_path, aip_path):
     try:
@@ -15,7 +16,6 @@ def rebuild_project(msbuild_path, solution_path, advanced_installer_path, aip_pa
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while rebuilding the project: {e}")
         return None
-
 
 def get_latest_file(directory, file_pattern):
     files = [os.path.join(directory, f) for f in os.listdir(directory) if re.match(file_pattern, f)]
@@ -64,6 +64,31 @@ def copy_with_progress(src, dst):
 
         print()
 
+def upload_file(file_path, folder_name):
+    file_size = os.path.getsize(file_path)
+    file_name = os.path.basename(file_path)
+    upload_url = f'http://xc213618.ddns.me:9998/upload/{folder_name}/{file_name}'
+
+    with open(file_path, 'rb') as f:
+        # Create a progress bar
+        with tqdm(total=file_size, unit='B', unit_scale=True, desc=file_name, ascii=True) as progress_bar:
+            # Define a custom iterable to update progress
+            def read_in_chunks(file_object, chunk_size=1024):
+                while True:
+                    data = file_object.read(chunk_size)
+                    if not data:
+                        break
+                    yield data
+                    progress_bar.update(len(data))
+
+            # Send the request using the custom iterable
+            response = requests.put(upload_url, data=read_in_chunks(f))
+
+    if response.status_code == 201:
+        print('File uploaded successfully')
+    else:
+        print('File upload failed:', response.text)
+
 def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):  
     try:
         with open(latest_release_path, 'r') as file:
@@ -80,7 +105,8 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             file.write(latest_version)
         print(f"Updated the release version to {latest_version}")
         try:
-            copy_with_progress(latest_file, target_directory)
+            # copy_with_progress(latest_file, target_directory)
+            upload_file(latest_file,"ColorVision")
             print(f"Copied {latest_file} to {target_directory}")
         except IOError as e:
             print(f"Could not copy file to {target_directory}: {e}")
