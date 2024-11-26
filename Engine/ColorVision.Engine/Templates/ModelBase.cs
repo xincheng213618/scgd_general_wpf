@@ -21,7 +21,6 @@ namespace ColorVision.Engine.Templates
     }
 
 
-
     public class ModelBase : ParamBase
     {
         private Dictionary<string, ModDetailModel> parameters;
