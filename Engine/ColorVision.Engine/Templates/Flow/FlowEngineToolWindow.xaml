@@ -39,20 +39,6 @@
                 <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
                 <Button  Content="自动对齐" Click="AutoAlignment_Click" Width="70"/>
             </StackPanel>
-            <Grid  x:Name="OperateGrid" Grid.Column="1" Visibility="Visible">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Grid.Column="2">
-                    <Button x:Name="ButtonFlowPause" Content="暂停流程" Visibility="Collapsed" Click="Button_Click_5"/>
-                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Visibility="Visible" Click="Button_Click_4" />
-                </StackPanel>
-                <StackPanel Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button Content="生成流水号" Click="Button_Click_3" />
-                    <TextBox  x:Name="TextBoxsn"  Text="1" Width="250" VerticalAlignment="Center"  />
-                </StackPanel>
-            </Grid>
             <Grid Grid.Column="2">
                 <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding CanvasScale}" Maximum="3" Minimum="0.45" HorizontalAlignment="Right"/>
             </Grid>

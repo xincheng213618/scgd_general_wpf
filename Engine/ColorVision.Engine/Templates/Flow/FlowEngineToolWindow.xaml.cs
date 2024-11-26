@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -26,9 +25,7 @@ using ColorVision.Engine.Templates.SFR;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using FlowEngineLib.Base;
 using FlowEngineLib.Start;
-using Newtonsoft.Json;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -467,8 +464,6 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                 }
             };
-            TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-
             this.DataContext = this;
             this.Closed += (s, e) =>
             {
@@ -518,10 +513,6 @@ namespace ColorVision.Engine.Templates.Flow
                 STNodeEditorMain.Nodes.Clear();
         }
 
-        string FileName { get; set; }
-
-        private string svrName;
-
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
             System.Windows.Forms.OpenFileDialog ofd = new();
@@ -536,27 +527,13 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void OpenFlow(string flowName)
         {
-            FileName = flowName;
             STNodeEditorMain.Nodes.Clear();
             STNodeEditorMain.LoadCanvas(flowName);
-            svrName = "";
-            if (nodeStart != null)
-            {
-                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
-                flowControl.FlowCompleted += (s, e) =>
-                {
-                    ButtonFlowOpen.Content = "开始流程";
-                    ButtonFlowPause.IsEnabled = false;
-                    ButtonFlowPause.Visibility = Visibility.Collapsed;
-                };
-            }
-            OperateGrid.Visibility = Visibility.Visible;
             Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }
 
         public void OpenFlowBase64(FlowParam flowParam)
         {
-            FileName = flowParam.Name;
             STNodeEditorMain.Nodes.Clear();
             if (!string.IsNullOrEmpty(flowParam.DataBase64))
             {
@@ -570,21 +547,6 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                 }
             }
-            svrName = "";
-            if (nodeStart != null)
-            {
-                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
-                flowControl.FlowCompleted += (s, e) =>
-                {
-                    ButtonFlowOpen.Content = "开始流程";
-                    ButtonFlowPause.IsEnabled = false;
-                    ButtonFlowPause.Visibility = Visibility.Collapsed;
-                };
-            }
-            else
-            {
-            }
-            OperateGrid.Visibility = Visibility.Visible;
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
 
@@ -610,63 +572,6 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             MessageBox.Show("保存成功");
-        }
-
-        private string GetTopic()
-        {
-            return "FLOW/CMD/" + nodeStart?.NodeName;
-        }
-
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-        }
-
-        private async void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (button.Content.ToString() == "开始流程")
-                {
-                    svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    CVBaseDataFlow baseEvent = new(svrName, "Start", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
-                    
-                    button.Content = "停止流程";
-                    ButtonFlowPause.Visibility = Visibility.Visible;
-                    ButtonFlowPause.Content = "暂停流程";
-                }
-                else
-                {
-                    CVBaseDataFlow baseEvent = new(svrName, "Stop", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
-                    button.Content = "开始流程";
-                    ButtonFlowPause.Visibility = Visibility.Collapsed;
-
-                }
-
-            }
-
-        }
-
-        private async void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (button.Content.ToString() == "暂停流程")
-                {
-                    CVBaseDataFlow baseEvent = new(svrName, "Pause", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
-                    button.Content = "恢复流程";
-                }
-                else
-                {
-                    CVBaseDataFlow baseEvent = new(svrName, "Start", TextBoxsn.Text);
-                    await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
-                    button.Content = "暂停流程";
-                }
-            }
         }
 
 

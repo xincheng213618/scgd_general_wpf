@@ -238,8 +238,8 @@
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
-                    <Button x:Name="Button1931"  x:FieldModifier="public" Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                    <Button x:Name="Button1931"  x:FieldModifier="public" Margin="0,0,0,2">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>

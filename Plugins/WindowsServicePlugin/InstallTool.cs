@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -25,8 +26,9 @@ namespace WindowsServicePlugin
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
     }
 
-    public class InstallTool : MenuItemBase, IWizardStep
+    public class InstallTool : MenuItemBase, IWizardStep, IMainWindowInitialized
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(InstallTool));
 
 
         public override string OwnerGuid => "ServiceLog";
@@ -53,10 +55,13 @@ namespace WindowsServicePlugin
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载服务管理工具";
-            Task.Run(() => GetLatestReleaseVersion());
+        }
+        public async Task Initialize()
+        {
+            await GetLatestReleaseVersion();
         }
 
-        public async void GetLatestReleaseVersion()
+        public async Task GetLatestReleaseVersion()
         {
             try
             {
@@ -149,7 +154,7 @@ namespace WindowsServicePlugin
                 }
             }catch(Exception ex)
             {
-                
+                log.Error(ex);
             }
         }
 
@@ -255,6 +260,7 @@ namespace WindowsServicePlugin
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
         }
+
 
     }
 }
