@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Projects;
+using ColorVision.Themes;
 using ColorVision.UI;
 using System.Windows;
 
@@ -22,7 +23,15 @@ namespace ColorVision.Plugins
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-      
+            this.DataContext = PluginManager.GetInstance();
+        }
+
+        private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (ListViewPlugins.SelectedIndex > -1)
+            {
+                BorderContent.DataContext = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+            }
         }
     }
 }

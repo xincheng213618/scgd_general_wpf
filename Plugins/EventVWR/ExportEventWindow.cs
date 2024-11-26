@@ -5,6 +5,7 @@ using System.Windows;
 
 namespace EventVWR
 {
+
     public class ExportEventWindow : MenuItemBase
     {
         public override string OwnerGuid => "Help";
