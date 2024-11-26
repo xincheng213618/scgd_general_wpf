@@ -73,7 +73,7 @@
                 </ScrollViewer>
             </Grid>
             <WindowsFormsHost Grid.Column="1" >
-                <st:STNodeEditor  x:Name="STNodeEditorMain"/>
+                <st:STNodeEditor  x:Name="STNodeEditorMain"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel"/>
             </WindowsFormsHost>
         </Grid>
     </Grid>
