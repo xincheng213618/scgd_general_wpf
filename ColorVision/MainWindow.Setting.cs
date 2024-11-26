@@ -2,6 +2,8 @@
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -51,12 +53,27 @@ namespace ColorVision
                             {
                                 SolutionManager.GetInstance().OpenSolution(s);
                             }
+                            string project = parser.GetValue("project");
 
+                            List<IProject> IProjects = new List<IProject>();
+                            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                            {
+                                foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                                {
+                                    if (Activator.CreateInstance(type) is IProject projects)
+                                    {
+                                        IProjects.Add(projects);
+                                    }
+                                }
+                            }
+                            if (IProjects.Find(a => a.Header == project) is IProject project1)
+                            {
+                                project1.Execute();
+                            }
                         }
                     }
                     catch (Exception ex) 
                     { 
-                        MessageBox.Show(ex.Message, "ColorVision");
                     }
                 }
                 return IntPtr.Zero;
