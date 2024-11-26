@@ -26,7 +26,7 @@ namespace ColorVision.Plugins
             this.DataContext = PluginManager.GetInstance();
         }
 
-        private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (ListViewPlugins.SelectedIndex > -1)
             {

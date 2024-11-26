@@ -458,14 +458,6 @@ namespace ColorVision.Projects.ProjectShiYuan
             BatchResultMasterDao.Instance.Save(batch);
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            HYMesManager.GetInstance().UploadSN();
-        }
 
         private void SelectDataPath_Click(object sender, RoutedEventArgs e)
         {
@@ -485,7 +477,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private void UploadSN(object sender, RoutedEventArgs e)
         {
-            HYMesManager.GetInstance().UploadSN();
+
         }
 
         private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

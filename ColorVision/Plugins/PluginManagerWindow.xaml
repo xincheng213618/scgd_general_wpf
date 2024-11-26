@@ -23,7 +23,7 @@
                 <ColumnDefinition Width="385"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" Margin="5,0,5,5"  SelectionChanged="ListViewProjects_SelectionChanged" Grid.Row="1" Padding="2">
+            <ListView x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
