@@ -72,6 +72,7 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
             this.ApplyCaption();
         }
+
         FlowParam FlowParam { get; set; }
         public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
@@ -79,6 +80,7 @@ namespace ColorVision.Engine.Templates.Flow
             OpenFlowBase64(flowParam);
             ButtonOpen.Visibility = Visibility.Collapsed;
         }
+
 
         public float CanvasScale { get => STNodeEditorMain.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value , STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
 
@@ -403,12 +405,52 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             STNodeEditorMain.ContextMenuStrip.Items.Add("保存", null, (s, e) => SaveFlow());
+            STNodeEditorMain.ContextMenuStrip.Items.Add("另存为", null, (s, e) => SaveToFile());
             STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
             {
                 if (IsHover()) e.Cancel = true;
             };
         }
-        
+
+        public void SaveToFile()
+        {
+            // 创建并配置 SaveFileDialog
+            using System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            saveFileDialog.Filter = "CVFlow files (*.cvflow)|*.cvflow";
+            saveFileDialog.DefaultExt = "cvflow";
+            saveFileDialog.AddExtension = true;
+            saveFileDialog.Title = "Save As";
+            if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                SaveToFile(saveFileDialog.FileName);
+            }
+        }
+
+        public void SaveToFile(string filePath)
+        {
+            // 获取画布数据
+            byte[] data = STNodeEditorMain.GetCanvasData();
+
+            // 检查数据是否为空
+            if (data == null || data.Length == 0)
+            {
+                Console.WriteLine("No data to save.");
+                return;
+            }
+
+            try
+            {
+                // 将数据写入指定文件路径
+                File.WriteAllBytes(filePath, data);
+                Console.WriteLine("File saved successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while saving the file: {ex.Message}");
+            }
+
+        }
+
         public bool IsHover()
         {
             lastMousePosition = System.Windows.Forms.Cursor.Position;
@@ -470,10 +512,10 @@ namespace ColorVision.Engine.Templates.Flow
             ButtonSave.Visibility = Visibility.Visible;
             OpenFlow(ofd.FileName);
         }
-        FlowControl flowControl;
-
+        string FileFlow;
         public void OpenFlow(string flowName)
         {
+            FileFlow = flowName;
             STNodeEditorMain.Nodes.Clear();
             STNodeEditorMain.LoadCanvas(flowName);
             Title = "流程编辑器 - " + new FileInfo(flowName).Name;
@@ -509,15 +551,20 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void SaveFlow()
         {
-            if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
-            var data = STNodeEditorMain.GetCanvasData();
-
-            if (FlowParam != null)
+            if (File.Exists(FileFlow))
             {
+                MessageBox.Show("保存成功");
+                SaveToFile(FileFlow);
+                return;
+            }
+            else if (FlowParam !=null)
+            {
+                if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
+                var data = STNodeEditorMain.GetCanvasData();
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 FlowParam.Save2DB(FlowParam);
+                MessageBox.Show("保存成功");
             }
-            MessageBox.Show("保存成功");
         }
 
 

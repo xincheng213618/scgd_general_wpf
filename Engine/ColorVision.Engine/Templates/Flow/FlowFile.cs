@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Flow
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
 
-        public string Extension { get => ".stn"; }
+        public string Extension { get => ".stn" ; }
         public FlowFile() { }
 
         public FlowFile(FileInfo fileInfo)
