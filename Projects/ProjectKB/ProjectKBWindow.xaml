@@ -63,6 +63,63 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
+
+                                <GridViewColumn Header="Id" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding Id}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Name" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding Name}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="SN">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding SN}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Exposure" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding Exposure}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Avg Lv">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding AvgLv}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Avg C1">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding AvgC1}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Avg C2">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItem}">
+                                            <TextBlock Text="{Binding AvgC2}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Min Lv">
+                                    <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:KBItem}">
+                                        <TextBlock Text="{Binding  MinLv}" />
+                                    </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
 

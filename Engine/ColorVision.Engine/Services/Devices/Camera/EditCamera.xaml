@@ -92,8 +92,8 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-                    <Button Content="Add" Command="{Binding AddROIParamsCommand}" />
-                    <GroupBox Header="小窗口">
+                    <Button Content="Add" Command="{Binding AddROIParamsCommand}" Visibility="Collapsed"/>
+                    <GroupBox Header="小窗口" Visibility="Collapsed">
                         <ListView  x:Name="listView1" Height="200" Background="Transparent" ItemsSource="{Binding ROIParams}" Grid.Row="1"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">

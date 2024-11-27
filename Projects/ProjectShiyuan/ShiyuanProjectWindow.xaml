@@ -193,6 +193,7 @@
                         </GridView>
                     </ListView.View>
                 </ListView>
+               
                 <ListView x:Name="ListViewValue" Grid.Column="1" >
                     <ListView.Resources >
                     </ListView.Resources>

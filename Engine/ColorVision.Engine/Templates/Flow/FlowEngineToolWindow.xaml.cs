@@ -25,6 +25,7 @@ using ColorVision.Engine.Templates.ROI;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Start;
 using LiveChartsCore.Kernel;
@@ -417,13 +418,12 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     AddStackPanel(name => OLEDImageCroppingNode.TempName = name, OLEDImageCroppingNode.TempName, "参数模板", new TemplateImageCropping());
                 }
-
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.POINode poinode)
                 {
                     AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => poinode.FilterTemplateName = name, poinode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
                     AddStackPanel(name => poinode.ReviseTemplateName = name, poinode.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
-                    AddStackPanel(name => poinode.OutputTemplateName = name, poinode.OutputTemplateName, "文件输出模板",  new TemplatePoiOutputParam());
+                    AddStackPanel(name => poinode.OutputTemplateName = name, poinode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
                 }
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)

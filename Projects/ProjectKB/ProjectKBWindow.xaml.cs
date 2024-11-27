@@ -2,9 +2,36 @@
 using log4net;
 using System.Windows;
 using System.Linq;
+using ColorVision.Common.MVVM;
 
 namespace ProjectKB
 {
+    public class KBItem : ViewModelBase
+    {
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+
+        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        private string _SN;
+
+        public double Exposure { get => _Exposure; set { _Exposure = value; NotifyPropertyChanged(); } }
+        private double _Exposure;
+
+        public double AvgLv { get => _AvgLv; set { _AvgLv = value; NotifyPropertyChanged(); } }
+        private double _AvgLv;
+
+        public double AvgC1 { get => _AvgC1; set { _AvgC1 = value; NotifyPropertyChanged(); } }
+        private double _AvgC1;
+
+        public double AvgC2 { get => _AvgC2; set { _AvgC2 = value; NotifyPropertyChanged(); } }
+        private double _AvgC2;
+
+        public double MinLv { get => _MinLv; set { _MinLv = value; NotifyPropertyChanged(); } }
+        private double _MinLv;
+    }
+
     /// <summary>
     /// Interaction logic for ProjectKBWindow.xaml
     /// </summary>
