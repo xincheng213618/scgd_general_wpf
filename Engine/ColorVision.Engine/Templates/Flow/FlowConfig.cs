@@ -16,7 +16,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             EditCommand = new RelayCommand(a => new EditFlowConfig() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-
+        public bool IsAutoSize { get => _IsAutoSize; set { _IsAutoSize = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoSize = true;
 
         public bool ShowWarning { get => _ShowWarning; set { _ShowWarning = value; NotifyPropertyChanged(); } }
         private bool _ShowWarning = true;

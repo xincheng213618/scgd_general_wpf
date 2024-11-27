@@ -9,7 +9,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:FlowConfig}"
              mc:Ignorable="d" 
-             Title="设置" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="150" Width="400" Initialized="UserControl_Initialized">
+             Title="设置" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="250" Width="400" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -31,9 +31,13 @@
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
                 <StackPanel>
                     <DockPanel Margin="0,0,0,5">
+                        <TextBlock Text="自动适配" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding IsAutoSize}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,5">
                         <TextBlock Text="硬盘警告" Width="120"/>
                         <ui:ToggleSwitch IsChecked="{Binding ShowWarning}" />
-                    </DockPanel>
+                    </DockPanel> 
                     <DockPanel Margin="0,0,0,5">
                         <TextBlock Text="配置警告限制" Width="120"/>
                         <TextBox Text="{Binding CapacityInput}" />

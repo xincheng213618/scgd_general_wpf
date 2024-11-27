@@ -53,24 +53,20 @@
             <Grid >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="300"/>
-                    <RowDefinition Height="200"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
                     <WindowsFormsHost Grid.Row="0">
                         <st:STNodeTreeView x:Name="STNodeTreeView1"  />
                     </WindowsFormsHost>
                 </ScrollViewer>
+                <StackPanel x:Name="SignStackPannel" Grid.Row="1" Orientation="Vertical" Margin="3" >
+                </StackPanel>
+                <WindowsFormsHost Grid.Row="2">
+                    <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+                </WindowsFormsHost>
 
-                <ScrollViewer Grid.Row="1"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <WindowsFormsHost>
-                        <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-                    </WindowsFormsHost>
-                </ScrollViewer>
-                <ScrollViewer Grid.Row="2" Height="150" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="SignStackPannel" Orientation="Vertical" Margin="3" >
-                    </StackPanel>
-                </ScrollViewer>
             </Grid>
             <WindowsFormsHost Grid.Column="1" >
                 <st:STNodeEditor  x:Name="STNodeEditorMain"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel"/>

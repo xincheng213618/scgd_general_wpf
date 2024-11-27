@@ -7,6 +7,7 @@
              xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
+             xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"  
              d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized" >
     <Grid Margin="0,0.5,0,0">
         <Grid.ColumnDefinitions >
@@ -16,7 +17,7 @@
 
         <Grid Grid.Column="0" Grid.ColumnSpan="2" x:Name="Grid1">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
-                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"   Height="50" Width="50" EnableEdit="False" />
+                <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"   EnableEdit="False"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
         </Grid>
         <Grid Grid.Column="1"  x:Name="Grid2">

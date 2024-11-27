@@ -140,5 +140,55 @@ namespace ColorVision.Engine.Services.Flow
             }
         }
 
+        private bool IsMouseDown;
+        private System.Drawing.Point lastMousePosition;
+        private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            lastMousePosition = e.Location;
+            if (STNodeEditorMain.HoverNode == null && e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                IsMouseDown = true;
+            }
+        }
+
+        private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            IsMouseDown = false;
+        }
+
+        private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            if (IsMouseDown)
+            {        // 计算鼠标移动的距离
+                int deltaX = e.X - lastMousePosition.X;
+                int deltaY = e.Y - lastMousePosition.Y;
+
+                // 更新画布偏移
+                STNodeEditorMain.MoveCanvas(
+                    STNodeEditorMain.CanvasOffsetX + deltaX,
+                    STNodeEditorMain.CanvasOffsetY + deltaY,
+                    bAnimation: false,
+                    CanvasMoveArgs.All
+                );
+
+                // 更新最后的鼠标位置
+                lastMousePosition = e.Location;
+            }
+        }
+
+
+        private void STNodeEditorMain_MouseWheel(object sender, System.Windows.Forms.MouseEventArgs e)
+        {
+            var mousePosition = STNodeEditorMain.PointToClient(e.Location);
+
+            if (e.Delta < 0)
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
+            }
+            else
+            {
+                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
+            }
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
@@ -26,6 +27,7 @@ using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Start;
+using LiveChartsCore.Kernel;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -121,67 +123,68 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
-                if (STNodeEditorMain.ActiveNode != null)
-                {
-                    if (e.Key == Key.Left)
-                    {
-                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X -10, STNodeEditorMain.ActiveNode.Location.Y);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Right)
-                    {
-                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X +10, STNodeEditorMain.ActiveNode.Location.Y);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Up)
-                    {
-                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X, STNodeEditorMain.ActiveNode.Location.Y -10);
-                        e.Handled = true;
-                    }
-                    else if (e.Key == Key.Down)
-                    {
-                        STNodeEditorMain.ActiveNode.Location = new System.Drawing.Point(STNodeEditorMain.ActiveNode.Location.X, STNodeEditorMain.ActiveNode.Location.Y +10);
-                        e.Handled = true;
-                    }
-                    if (e.Key == Key.Delete)
-                    {
-                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
-                    }
-                }
-
 
                 foreach (var item in STNodeEditorMain.GetSelectedNode())
                 {
                     if (e.Key == Key.Left)
                     {
                         item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
-                        e.Handled = true;
                     }
                     else if (e.Key == Key.Right)
                     {
                         item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
-                        e.Handled = true;
                     }
                     else if (e.Key == Key.Up)
                     {
                         item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
-                        e.Handled = true;
                     }
                     else if (e.Key == Key.Down)
                     {
                         item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
-                        e.Handled = true;
                     }
                     if (e.Key == Key.Delete)
                     {
                         STNodeEditorMain.Nodes.Remove(item);
                     }
-                }
-
+                }   
             }
 
-
         }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                DisplayMemberPath = "Code",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            var selectedItem = itemSource.FirstOrDefault(x => x.Code == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Code;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
@@ -303,19 +306,25 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
                 {
+                    AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
+                    AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+
+
                     // Usage
                     AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateCameraExposureParam());
                     AddStackPanel(name => commCaeraNode.POITempName = name, commCaeraNode.POITempName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                     AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName ,"POI修正", new TemplatePoiReviseParam());
-                    List<DeviceCamera> cameras = ServiceManager.GetInstance()
-                        .DeviceServices
-                        .OfType<DeviceCamera>()
-                        .ToList();
-                    if (cameras!=null&& cameras.Count>0&& cameras[0].PhyCamera != null)
-                    {
-                        AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", cameras[0].PhyCamera.CalibrationParams);
-                    }
+
+
+                }
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
+                {
+                    AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
+
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
+                    AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", reuslt.PhyCamera.CalibrationParams);
                 }
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
@@ -371,33 +380,28 @@ namespace ColorVision.Engine.Templates.Flow
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.CVCameraNode cvCameraNode)
                 {
+                    AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
+                    AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+
                     AddStackPanel(name => cvCameraNode.POITempName = name, cvCameraNode.POITempName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => cvCameraNode.POIFilterTempName = name, cvCameraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                     AddStackPanel(name => cvCameraNode.POIReviseTempName = name, cvCameraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
-                    List<DeviceCamera> cameras = ServiceManager.GetInstance()
-                        .DeviceServices
-                        .OfType<DeviceCamera>()
-                        .ToList();
-                    if (cameras != null && cameras.Count > 0 && cameras[0].PhyCamera != null)
-                    {
-                        AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", cameras[0].PhyCamera.CalibrationParams);
-                    }
+
                 }
 
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.LVCameraNode lcCameranode)
                 {
+                    AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
+                    AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+
                     AddStackPanel(name => lcCameranode.POITempName = name, lcCameranode.POITempName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                     AddStackPanel(name => lcCameranode.POIReviseTempName = name, lcCameranode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
-                    List<DeviceCamera> cameras = ServiceManager.GetInstance()
-                        .DeviceServices
-                        .OfType<DeviceCamera>()
-                        .ToList();
-                    if (cameras != null && cameras.Count > 0 && cameras[0].PhyCamera != null)
-                    {
-                        AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", cameras[0].PhyCamera.CalibrationParams);
-                    }
+
                 }
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
@@ -905,7 +909,6 @@ namespace ColorVision.Engine.Templates.Flow
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
                 NotifyPropertyChanged(nameof(CanvasScale));
             }
-            ((System.Windows.Forms.HandledMouseEventArgs)e).Handled = true;
         }
     }
 }

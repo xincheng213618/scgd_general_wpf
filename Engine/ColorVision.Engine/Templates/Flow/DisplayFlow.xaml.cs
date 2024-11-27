@@ -128,7 +128,8 @@ namespace ColorVision.Engine.Templates.Flow
                                     algorithmNode.nodeRunEvent += UpdateMsg;
                                 }
                             }
-                            View.AutoSize();
+                            if(Config.IsAutoSize)
+                                View.AutoSize();
                         }
                     }
                     catch (Exception ex)
