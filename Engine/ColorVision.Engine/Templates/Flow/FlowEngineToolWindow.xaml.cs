@@ -25,10 +25,8 @@ using ColorVision.Engine.Templates.ROI;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Start;
-using LiveChartsCore.Kernel;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -74,7 +72,6 @@ namespace ColorVision.Engine.Templates.Flow
             InitializeComponent();
             this.ApplyCaption();
         }
-
         FlowParam FlowParam { get; set; }
         public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
@@ -152,148 +149,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         }
 
-        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
-        {
-            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName });
-
-            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-            {
-                DisplayMemberPath = "Code",
-                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
-            };
-
-            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-            comboBox.ItemsSource = itemSource;
-            var selectedItem = itemSource.FirstOrDefault(x => x.Code == tempName);
-            if (selectedItem != null)
-                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                string selectedName = string.Empty;
-
-                if (comboBox.SelectedValue is T templateModel)
-                {
-                    selectedName = templateModel.Code;
-                }
-                updateStorageAction(selectedName);
-                STNodePropertyGrid1.Refresh();
-            };
-
-            dockPanel.Children.Add(comboBox);
-            SignStackPannel.Children.Add(dockPanel);
-        }
-
-
-        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
-        {
-            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName });
-
-            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-            {
-                SelectedValuePath = "Value",
-                DisplayMemberPath = "Key",
-                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
-            };
-
-            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-            comboBox.ItemsSource = itemSource;
-            var selectedItem = itemSource.FirstOrDefault(x => x.Key == tempName);
-            if (selectedItem !=null)
-                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                string selectedName = string.Empty;
-
-                if (comboBox.SelectedValue is T templateModel)
-                {
-                    selectedName = templateModel.Name;
-                }
-                updateStorageAction(selectedName);
-                STNodePropertyGrid1.Refresh();
-            };
-
-            dockPanel.Children.Add(comboBox);
-            SignStackPannel.Children.Add(dockPanel);
-        }
-
-        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase,new ()
-        {
-            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName ,Width =50 });
-            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
-            {
-                SelectedValuePath = "Value",
-                DisplayMemberPath = "Key",
-                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
-                Width =120
-            };
-            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
-            comboBox.ItemsSource = template.TemplateParams;
-            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
-            if (selectedItem!=null)
-                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
-
-            comboBox.SelectionChanged += (s, e) =>
-            {
-                string selectedName = string.Empty;
-
-                if (comboBox.SelectedValue is T templateModel)
-                {
-                    selectedName = templateModel.Name;
-                }
-                updateStorageAction(selectedName);
-                STNodePropertyGrid1.Refresh();
-            };
-
-
-            Grid grid = new Grid
-            {
-                Width = 20,
-                Margin = new Thickness(5, 0, 0, 0),
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
-            };
-
-            // 创建 TextBlock
-            TextBlock textBlock = new TextBlock
-            {
-                Text = "\uE713",
-                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
-                FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                FontSize = 15,
-                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
-            };
-
-            // 创建 Button
-            Button button = new Button
-            {
-                Width = 20,
-                BorderBrush = Brushes.Transparent,
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-            };
-
-            button.Click += (s, e) =>
-            {
-                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            };
-
-            // 将控件添加到 Grid
-            grid.Children.Add(textBlock);
-            grid.Children.Add(button);
-
-
-            dockPanel.Children.Add(comboBox);
-            dockPanel.Children.Add(grid);
-            SignStackPannel.Children.Add(dockPanel);
-        }
-
-
-
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             STNodePropertyGrid1.Text = "属性";
@@ -309,7 +164,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                     var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
-                    AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+                    AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
 
 
                     // Usage
@@ -325,7 +180,7 @@ namespace ColorVision.Engine.Templates.Flow
                     AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
                     var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
-                    AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", reuslt.PhyCamera.CalibrationParams);
+                    AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
                 }
 
                 if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
@@ -384,7 +239,7 @@ namespace ColorVision.Engine.Templates.Flow
                     AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
                     var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
-                    AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+                    AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
 
                     AddStackPanel(name => cvCameraNode.POITempName = name, cvCameraNode.POITempName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => cvCameraNode.POIFilterTempName = name, cvCameraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
@@ -397,7 +252,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                     var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
-                    AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", reuslt.PhyCamera.CalibrationParams);
+                    AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
 
                     AddStackPanel(name => lcCameranode.POITempName = name, lcCameranode.POITempName, "POI模板", new TemplatePoi());
                     AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
@@ -662,7 +517,6 @@ namespace ColorVision.Engine.Templates.Flow
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 FlowParam.Save2DB(FlowParam);
             }
-
             MessageBox.Show("保存成功");
         }
 
@@ -910,5 +764,146 @@ namespace ColorVision.Engine.Templates.Flow
                 NotifyPropertyChanged(nameof(CanvasScale));
             }
         }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                DisplayMemberPath = "Code",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            var selectedItem = itemSource.FirstOrDefault(x => x.Code == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Code;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            var selectedItem = itemSource.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50 });
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
+                Width = 120
+            };
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = template.TemplateParams;
+            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                Margin = new Thickness(5, 0, 0, 0),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
+            };
+
+            // 创建 TextBlock
+            TextBlock textBlock = new TextBlock
+            {
+                Text = "\uE713",
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // 创建 Button
+            Button button = new Button
+            {
+                Width = 20,
+                BorderBrush = Brushes.Transparent,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+
+            button.Click += (s, e) =>
+            {
+                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            };
+
+            // 将控件添加到 Grid
+            grid.Children.Add(textBlock);
+            grid.Children.Add(button);
+
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(grid);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
     }
 }
