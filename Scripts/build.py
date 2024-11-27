@@ -89,7 +89,7 @@ def upload_file(file_path, folder_name):
     else:
         print('File upload failed:', response.text)
 
-def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):  
+def compare_and_write_version(latest_version, latest_release_path, latest_file, changelog_src, changelog_dst):
     try:
         with open(latest_release_path, 'r') as file:
             current_version = file.read().strip()
@@ -107,9 +107,9 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         try:
             # copy_with_progress(latest_file, target_directory)
             upload_file(latest_file,"ColorVision")
-            print(f"Copied {latest_file} to {target_directory}")
+            print(f"Upload {latest_file} ")
         except IOError as e:
-            print(f"Could not copy file to {target_directory}: {e}")
+            print(f"Upload {latest_file}: {e}")
     else:
         print(f"The current version ({current_version}) is up to date.")   
 
@@ -122,10 +122,10 @@ if __name__ == "__main__":
             'advanced_installer_path': r'C:\Users\17917\Desktop\AdvancedInstaller v19.7.1\App\ProgramFiles\bin\x86\AdvancedInstaller.com',
             'aip_path': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip",
             'setup_files_dir': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\Setup Files",
-            'latest_release_path': r"H:\LATEST_RELEASE",
+            'latest_release_path': r"H:\ColorVision\LATEST_RELEASE",
             'target_directory': r"H:\ColorVision",
             'changelog_src': r"C:\Users\17917\Desktop\scgd_general_wpf\CHANGELOG.md",
-            'changelog_dst': r"H:\CHANGELOG.md",
+            'changelog_dst': r"H:\ColorVision\CHANGELOG.md",
             'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe'
         }
     }
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     if latest_file:
         latest_version = extract_version_from_filename(latest_file)
         if latest_version:
-            compare_and_write_version(latest_version, project['latest_release_path'], latest_file, project['target_directory'], project['changelog_src'], project['changelog_dst'])
+            compare_and_write_version(latest_version, project['latest_release_path'], latest_file, project['changelog_src'], project['changelog_dst'])
         else:
             print("Could not extract the version from the filename.")
     else:

@@ -92,12 +92,6 @@
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">
                                 <StackPanel x:Name="UniversalStackPanel" Margin="5">
-                                    <DockPanel  >
-                                        <Button DockPanel.Dock="Right" Content="打开"  Margin="0,0,5,0" />
-                                        <Button DockPanel.Dock="Right" Content="..." Margin="0,0,5,0"/>
-                                        <TextBlock Text="下载路径" Width="100" Margin="5,0,0,0"/>
-                                        <TextBox Text="" Margin="0,0,5,0"/>
-                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </ScrollViewer>
