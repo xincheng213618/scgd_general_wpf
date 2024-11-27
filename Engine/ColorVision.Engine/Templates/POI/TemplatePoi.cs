@@ -3,6 +3,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;

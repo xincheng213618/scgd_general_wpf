@@ -17,12 +17,12 @@ namespace ColorVision.UI
             {
                 if (Activator.CreateInstance(type) is T plugin)
                 {
-                    plugin.Execute();
                     plugins.Add(plugin);
                 }
             }
             return plugins;
         }
+
         public static PluginLoadContext? loadContext { get; set; }
 
         public static void LoadPluginsUS(string path)

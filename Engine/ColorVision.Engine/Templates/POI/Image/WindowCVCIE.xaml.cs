@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+﻿using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using System;
@@ -44,6 +44,16 @@ namespace ColorVision.Engine.Media
         {
             if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count == 0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "CSV files (*.csv) | *.csv";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
         }
     }
 }

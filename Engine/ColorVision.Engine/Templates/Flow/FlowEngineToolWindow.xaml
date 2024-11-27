@@ -1,0 +1,80 @@
+﻿<Window x:Class="ColorVision.Engine.Templates.Flow.FlowEngineToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Templates.Flow"
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        mc:Ignorable="d"
+        PreviewKeyDown="UserControl_PreviewKeyDown"
+        d:DataContext="{d:DesignInstance local:FlowEngineToolWindow}"
+        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="700" Width="1000"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
+    </Window.Resources>
+    <Grid  x:Name="Grid1">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="5" Grid.Row="0" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="ButtonOpen"  Content="{x:Static properties:Resources.Loading}" Click="Button_Click_Open" Width="70" />
+                <Button x:Name="ButtonNew"  Content="{x:Static properties:Resources.New}" Click="Button_Click_New"  Width="70" />
+                <Button x:Name="ButtonClear"  Content="{x:Static properties:Resources.Clear}" Click="Button_Click_Clear"  Width="70"/>
+                <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
+                <Button  Content="自动对齐" Click="AutoAlignment_Click" Width="70"/>
+            </StackPanel>
+            <Grid Grid.Column="2">
+                <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding CanvasScale}" Maximum="3" Minimum="0.45" HorizontalAlignment="Right"/>
+            </Grid>
+        </Grid>
+
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions >
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="300"/>
+                    <RowDefinition Height="200"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <ScrollViewer Grid.Row="0"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <WindowsFormsHost Grid.Row="0">
+                        <st:STNodeTreeView x:Name="STNodeTreeView1"  />
+                    </WindowsFormsHost>
+                </ScrollViewer>
+
+                <ScrollViewer Grid.Row="1"  HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <WindowsFormsHost>
+                        <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+                    </WindowsFormsHost>
+                </ScrollViewer>
+                <ScrollViewer Grid.Row="2" Height="150" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="SignStackPannel" Orientation="Vertical" Margin="3" >
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+            <WindowsFormsHost Grid.Column="1" >
+                <st:STNodeEditor  x:Name="STNodeEditorMain"/>
+            </WindowsFormsHost>
+        </Grid>
+    </Grid>
+</Window>

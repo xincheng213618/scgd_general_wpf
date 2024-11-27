@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     {
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId)
         {
-            ModDetailDao detailDao = new();
             CalibrationParamModes.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
@@ -62,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");

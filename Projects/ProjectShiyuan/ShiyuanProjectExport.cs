@@ -12,6 +12,7 @@ namespace ColorVision.Projects.ProjectShiYuan
         public override string? Header => "ProjectShiyuan";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectShiyuan";
 
+        public override string Description { get; set; } = "视源项目";
         public override void Execute()
         {
             new ShiyuanProjectWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

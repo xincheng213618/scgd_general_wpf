@@ -2,9 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.BuildPoi;
 using MQTTMessageLib;
+using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
@@ -49,13 +50,13 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
         public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point1 = new PointFloat();
+        private PointFloat _Point1;
         public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point2 = new PointFloat();
+        private PointFloat _Point2;
         public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point3 = new PointFloat();
+        private PointFloat _Point3;
         public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point4 = new PointFloat();
+        private PointFloat _Point4;
 
 
         public UserControl GetUserControl()

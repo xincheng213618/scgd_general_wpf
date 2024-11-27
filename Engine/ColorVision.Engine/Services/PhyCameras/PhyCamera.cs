@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
-        public string? Code => SysResourceModel.Code;
+        public string Code => SysResourceModel.Code ?? string.Empty;
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             this.SetIconResource("DrawingImageCamera");
@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
-            OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code)));
+            OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
         }
 
         public void OpenSettingDirectory()

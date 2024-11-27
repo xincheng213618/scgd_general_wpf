@@ -40,8 +40,7 @@ namespace ColorVision
                             char separator = '\u0001';
                             string[] parsedArgs = receivedString.Split(separator);
                             var parser = ArgumentParser.GetInstance();
-                            parser.CommandLineArgs = parsedArgs;
-                            parser.Parse();
+                            parser.Parse(parsedArgs);
                             string inputFile = parser.GetValue("input");
                             if (inputFile != null)
                             {

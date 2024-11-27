@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Media
             fi.SetValue(obj, null);
         }
 
-        private static FieldInfo GetEventField(this Type type, string eventName)
+        private static FieldInfo? GetEventField(this Type type, string eventName)
         {
             FieldInfo field = null;
             while (type != null)
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Media
                     break;
 
                 /* Find events defined as property { add; remove; } */
-                field = type.GetField("EVENT_" + eventName.ToUpper(), BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
+                field = type.GetField("EVENT_" + eventName.ToUpper(System.Globalization.CultureInfo.CurrentCulture), BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic);
                 if (field != null)
                     break;
                 type = type.BaseType;
@@ -57,7 +57,6 @@ namespace ColorVision.Engine.Media
 
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
-            
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
                 float dXVal = 0;
@@ -134,7 +133,7 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
-                    imageView.Config.IsCVCIE = true;
+                    imageView.Config.AddProperties("IsCVCIE", true);
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
@@ -158,7 +157,7 @@ namespace ColorVision.Engine.Media
             List<MenuItem> MenuItems = new List<MenuItem>();
             void export()
             {
-                if (imageView.Config.Properties.TryGetValue("FilePath",out object value) && value is string FilePath && File.Exists(FilePath))
+                if (imageView.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
                 {
                     new ExportCVCIE(FilePath).ShowDialog();
                 }
@@ -175,6 +174,7 @@ namespace ColorVision.Engine.Media
 
         public async void OpenImage(ImageView imageView, string? filePath)
         {
+            if (filePath == null) return;
             CVCIESetBuffer(imageView, filePath);
 
             try

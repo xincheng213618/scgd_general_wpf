@@ -714,7 +714,6 @@ namespace ColorVision.ImageEditor
             Config.AddProperties("FilePath", filePath);
 
             ClearSelectionChangedHandlers();
-            Config.IsCVCIE = false;
             Config.FilePath = filePath;
             if (filePath != null && File.Exists(filePath))
             {

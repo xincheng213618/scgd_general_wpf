@@ -221,8 +221,6 @@ namespace ColorVision.Update
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
-        bool IsPassWorld;
-
 
         public async Task<string?> GetChangeLog(string url)
         {
@@ -230,12 +228,17 @@ namespace ColorVision.Update
             string versionString = null;
             try
             {
+                if (DownloadFileConfig.Instance.IsPassWorld)
+                {
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                }
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
+                DownloadFileConfig.Instance.IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
                 var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
@@ -261,18 +264,29 @@ namespace ColorVision.Update
             string versionString = null;
             try
             {
+                if (DownloadFileConfig.Instance.IsPassWorld)
+                {
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                }
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
+                DownloadFileConfig.Instance.IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
                 var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
                 versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                DownloadFileConfig.Instance.IsPassWorld = false;
+                return new Version();
             }
 
             // If versionString is still null, it means there was an issue with getting the version number
@@ -313,7 +327,7 @@ namespace ColorVision.Update
             // 指定下载路径
             using (var client = new HttpClient())
             {
-                if (IsPassWorld)
+                if (DownloadFileConfig.Instance.IsPassWorld)
                 {
                     string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);

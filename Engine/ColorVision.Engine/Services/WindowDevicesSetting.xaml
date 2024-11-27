@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        xmlns:device="clr-namespace:ColorVision.Engine.Services.Devices" 
+        xmlns:device="clr-namespace:ColorVision.Engine.Services" 
         xmlns:terminal="clr-namespace:ColorVision.Engine.Services.Terminal" 
         xmlns:type="clr-namespace:ColorVision.Engine.Services.Types" 
 

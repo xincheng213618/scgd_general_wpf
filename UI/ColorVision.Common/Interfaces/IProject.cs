@@ -4,6 +4,7 @@
     {
         public string? Header { get; }
         public string? UpdateUrl { get; }
+        public string Description { get; }
 
         public void Execute();
     }
@@ -12,6 +13,7 @@
     {
         public virtual string? Header { get; set; }
         public virtual string? UpdateUrl { get; set; }
+        public virtual string Description { get; set; }
 
         public virtual void Execute()
         {

@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Templates.POI.Dao
 {
     public class PoiMasterModel : PKModel
     {
-        public PoiMasterModel() : this("", 0)
+        public PoiMasterModel()
         {
         }
 

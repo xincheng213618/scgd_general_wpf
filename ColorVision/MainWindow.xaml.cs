@@ -1,5 +1,4 @@
-﻿using ColorVision.Adorners;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Rbac;
 using ColorVision.FloatingBall;
 using ColorVision.Scheduler;
@@ -10,15 +9,12 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
-using LiveChartsCore.VisualElements;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,7 +26,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using YamlDotNet.Core;
 
 namespace ColorVision
 {

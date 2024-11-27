@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes.Controls;

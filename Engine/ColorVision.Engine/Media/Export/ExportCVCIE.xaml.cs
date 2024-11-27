@@ -16,12 +16,12 @@ namespace ColorVision.Engine.Media
     public partial class ExportCVCIE : Window
     {
 
-        public string CIEFilePath { get; set; }
+        public string FilePath { get; set; }
         public VExportCIE VExportCIE { get; set; }
 
-        public ExportCVCIE(string cIEFilePath)
+        public ExportCVCIE(string filePath)
         {
-            VExportCIE = new VExportCIE(cIEFilePath);
+            VExportCIE = new VExportCIE(filePath);
             InitializeComponent();
         }
 

@@ -95,6 +95,7 @@ namespace ColorVision.Net
             cvcie.cols = br.ReadInt32();
             cvcie.bpp = br.ReadInt32();
 
+            cvcie.FilePath = filePath;
             return (int)fs.Position;
         }
 

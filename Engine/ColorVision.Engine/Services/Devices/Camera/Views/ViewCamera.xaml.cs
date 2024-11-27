@@ -21,6 +21,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -107,12 +108,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 handler?.Close();
             }
         }
-
-        private MeasureImgResultDao measureImgResultDao = new();
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.DeviceCode != Device.Config.Code) return;
-            
+
             if (arg.Code == 0)
             {
                 switch (arg.EventName)
@@ -123,13 +122,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         if (masterId > 0)
                         {
                             resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                             if (model != null)
                                 resultMaster.Add(model);
-                        }
-                        else
-                        {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
                         }
                         if (resultMaster != null)
                         {
@@ -141,8 +136,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                                 });
                             }
                         }
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
@@ -178,13 +171,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         if (masterId > 0)
                         {
                             resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
                             if (model != null)
                                 resultMaster.Add(model);
-                        }
-                        else
-                        {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
                         }
                         if (resultMaster != null)
                         {
@@ -200,12 +189,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox1.Show("文件下载失败");
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), "文件下载失败", "ColorVision");
                         });
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_GetChannel:
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
                         break;
                 }
             }
@@ -355,14 +340,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
 
 
-        MeasureImgResultDao MeasureImgResultDao = new();
-
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResultCameras.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll();
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
@@ -375,7 +358,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             else
             {
                 ViewResultCameras.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)

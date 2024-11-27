@@ -4,11 +4,9 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using FlowEngineLib;
@@ -24,6 +22,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -242,7 +242,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             });
         }
 
-        private Engine.Services.Flow.FlowControl flowControl;
+        private FlowControl flowControl;
 
         private IPendingHandler handler;
 
@@ -415,7 +415,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                 string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
+                    flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     flowControl.FlowData += (s, e) =>
@@ -458,14 +458,6 @@ namespace ColorVision.Projects.ProjectShiYuan
             BatchResultMasterDao.Instance.Save(batch);
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            HYMesManager.GetInstance().UploadSN();
-        }
 
         private void SelectDataPath_Click(object sender, RoutedEventArgs e)
         {
@@ -485,7 +477,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         private void UploadSN(object sender, RoutedEventArgs e)
         {
-            HYMesManager.GetInstance().UploadSN();
+
         }
 
         private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

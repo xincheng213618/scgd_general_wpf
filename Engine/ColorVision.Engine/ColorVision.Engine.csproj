@@ -116,31 +116,31 @@
     <Compile Update="PropertyEditor\PropertyEditorWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\ImageCropping\DisplayImageCropping.xaml.cs">
+    <Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
+    <Compile Update="Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\Matching\DisplayMatching.xaml.cs">
+    <Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\MTF\DisplayMTF.xaml.cs">
+    <Compile Update="Templates\MTF\DisplayMTF.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POI\DisplayPOI.xaml.cs">
+    <Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
+    <Compile Update="Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
+    <Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\SFR\DisplaySFR.xaml.cs">
+    <Compile Update="Templates\SFR\DisplaySFR.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\SFR\EditSFR.xaml.cs">
+    <Compile Update="Templates\SFR\EditSFR.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
@@ -152,7 +152,7 @@
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\Devices\Algorithm\Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
+    <Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\View\EditViewThirdPartyAlgorithmsConfig.xaml.cs">

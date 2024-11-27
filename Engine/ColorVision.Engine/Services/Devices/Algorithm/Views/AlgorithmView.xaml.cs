@@ -1,15 +1,17 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.JND;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
+using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.JND;
+using ColorVision.Engine.Templates.LedCheck;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.SFR;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
@@ -29,7 +31,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -513,7 +514,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         internal void OpenImage(CVCIEFile fileInfo)
         {
-            ImageView.OpenImage(fileInfo.ToWriteableBitmap());
+            ImageView.OpenImage(fileInfo.FilePath);
         }
 
 

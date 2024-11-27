@@ -4,9 +4,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -24,6 +22,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
@@ -250,7 +250,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             });
         }
 
-        private Engine.Services.Flow.FlowControl flowControl;
+        private FlowControl flowControl;
 
         private IPendingHandler handler;
 
@@ -469,7 +469,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                 string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
+                    flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
                     
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
