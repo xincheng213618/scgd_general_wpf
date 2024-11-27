@@ -509,7 +509,9 @@ namespace ColorVision.Engine.Templates.Flow
 
                     foreach (var nodetype in values)
                     {
-                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(nodetype.Key.Replace("FlowEngineLib/",""));
+                        string header = nodetype.Key.Replace("FlowEngineLib/", "");
+                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
+
 
                         foreach (var type in nodetype.Value)
                         {
@@ -523,7 +525,7 @@ namespace ColorVision.Engine.Templates.Flow
                                         if (sTNode1 != null)
                                         {
                                             sTNode1.Create();
-                                            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
+                                            var p = STNodeEditorMain.PointToClient(lastMousePosition);
                                             p = STNodeEditorMain.ControlToCanvas(p);
                                             sTNode1.Left = p.X;
                                             sTNode1.Top = p.Y;
@@ -542,7 +544,27 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
             STNodeEditorMain.ContextMenuStrip.Items.Add("保存", null, (s, e) => SaveFlow());
-
+            STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
+            {
+                if (IsHover()) e.Cancel = true;
+            };
+        }
+        
+        public bool IsHover()
+        {
+            lastMousePosition = System.Windows.Forms.Cursor.Position;
+            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
+            p = STNodeEditorMain.ControlToCanvas(p);
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is STNode sTNode)
+                {
+                    bool result = sTNode.Rectangle.Contains(p);
+                    if (result)
+                        return true;
+                }
+            }
+            return false;
         }
 
         //private string startNodeName;
@@ -836,11 +858,10 @@ namespace ColorVision.Engine.Templates.Flow
         private System.Drawing.Point lastMousePosition;
         private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
         {
+            lastMousePosition = e.Location;
             if (STNodeEditorMain.HoverNode == null && e.Button == System.Windows.Forms.MouseButtons.Left)
             {
                 IsMouseDown = true;
-                lastMousePosition = e.Location;
-
             }
         }
 
