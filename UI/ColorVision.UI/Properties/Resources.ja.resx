@@ -234,4 +234,7 @@
   <data name="CurrentSpeed" xml:space="preserve">
     <value>現在の速度:</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>開く (_O)</value>
+  </data>
 </root>

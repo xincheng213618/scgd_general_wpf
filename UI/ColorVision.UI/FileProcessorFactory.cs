@@ -1,25 +1,46 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Menus;
+using ColorVision.UI.Properties;
 using System.IO;
 using System.Windows;
 
 namespace ColorVision.UI
 {
+    public class MenuOpen : IMenuItem
+    {
+        public string? OwnerGuid => MenuItemConstants.File;
+
+        public string? GuidId => nameof(MenuOpen);
+
+        public int Order => 1;
+
+        public string? Header => Resources.MenuOpen;
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand? Command => null;
+
+        public Visibility Visibility => Visibility.Visible;
+    }
+
     public class MenuFileOpen : MenuItemBase
     {
 
         public override int Order => 1;
 
-        public override string Header => "打开文件";
+        public override string Header => "文件(_F)...";
 
-        public override string OwnerGuid => "Open";
+        public override string OwnerGuid => "MenuOpen";
 
         public override string GuidId => nameof(MenuFileOpen);
 
         public override void Execute()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = FileProcessorFactory.GetInstance().GetCombinedExtensions();
-
+            openFileDialog.Filter = FileProcessorFactory.GetInstance().GetCombinedExtensions() + "|所有文件 (*.*)|*.*";
+            openFileDialog.FilterIndex = openFileDialog.Filter.Split('|').Length / 2; ;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string selectedFilePath = openFileDialog.FileName;

@@ -214,4 +214,7 @@
   <data name="CurrentSpeed" xml:space="preserve">
     <value>当前速度：</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>打开(_O)</value>
+  </data>
 </root>

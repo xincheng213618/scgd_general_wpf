@@ -15,16 +15,15 @@ using ColorVision.Themes.Controls;
 namespace ColorVision.Solution
 {
 
-
-    public class HotKeyOpenSolution : IHotKey,IMenuItem
+    public class OpenSolution : IHotKey,IMenuItem
     {
-        public string? OwnerGuid => "File";
+        public string? OwnerGuid => "MenuOpen";
 
         public string? GuidId => "OpenSolution";
 
         public int Order => 1;
 
-        public string? Header => Resources.MenuOpen;
+        public string? Header => "项目/解决方案(_P)...";
 
         public string? InputGestureText => "Ctrl + O";
 
