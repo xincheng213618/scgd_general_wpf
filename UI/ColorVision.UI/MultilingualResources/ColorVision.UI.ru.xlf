@@ -255,7 +255,7 @@
         </trans-unit>
         <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
           <source>打开(_O)</source>
-          <target state="new">Открыть(О)</target>
+          <target state="new"></target>
         </trans-unit>
         <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
           <source>选项(_O)</source>

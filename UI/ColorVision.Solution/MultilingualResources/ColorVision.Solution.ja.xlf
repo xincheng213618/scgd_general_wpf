@@ -229,6 +229,10 @@
           <source>新建(_N)</source>
           <target state="new">新規作成 (_N)</target>
         </trans-unit>
+        <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
+          <source></source>
+          <target state="new"></target>
+        </trans-unit>
         <trans-unit id="MenuOpenContainingFolder" translate="yes" xml:space="preserve">
           <source>打开所在的文件夹(_O)</source>
           <target state="new">フォルダを開く(O)</target>
