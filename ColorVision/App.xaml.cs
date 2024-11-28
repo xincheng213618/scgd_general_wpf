@@ -84,14 +84,22 @@ namespace ColorVision
             if (inputFile != null)
             {
                 bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
-                if (isok) return;
+                if (isok)
+                {
+                    ConfigHandler.GetInstance().IsAutoSave = false;
+                    return;
+                }
             }
 
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
                 bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
-                if (isok) return;
+                if (isok)
+                {
+                    ConfigHandler.GetInstance().IsAutoSave = false;
+                    return;
+                }
             }
 
             //杀死僵尸进程
