@@ -35,6 +35,15 @@ using System.Net.Http.Json;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
+    public enum LicenseState
+    {
+        Unlicensed,
+        Licensed,
+        Expired,
+        Invalid
+    }
+
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, ICalibrationService<ServiceObjectBase>, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
@@ -362,8 +371,39 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); } }
+        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); NotifyPropertyChanged(nameof(LicenseSolidColorBrush)); } }
         private CameraLicenseModel? _CameraLicenseModel;
+
+        public LicenseState LicenseState { get 
+            {
+                if (CameraLicenseModel == null || CameraLicenseModel.ColorVisionLicense == null) return LicenseState.Unlicensed;
+                if (CameraLicenseModel.ColorVisionLicense.ExpiryDateTime >DateTime.Now) return LicenseState.Licensed;
+                if (CameraLicenseModel.ColorVisionLicense.ExpiryDateTime < DateTime.Now) return LicenseState.Expired;
+                return LicenseState.Invalid;
+            }
+        }
+
+
+        public SolidColorBrush LicenseSolidColorBrush
+        {
+            get
+            {
+                switch (LicenseState)
+                {
+                    case LicenseState.Unlicensed:
+                        return new SolidColorBrush(Colors.Red);
+                    case LicenseState.Licensed:
+                        return new SolidColorBrush(Colors.Green);
+                    case LicenseState.Expired:
+                        return new SolidColorBrush(Colors.Yellow);
+                    case LicenseState.Invalid:
+                        return new SolidColorBrush(Colors.Gray);
+                    default:
+                        return new SolidColorBrush(Colors.Gray);
+                }
+            }
+        }
+
 
         public bool IsLicensed { get => CameraLicenseModel != null;  }
 

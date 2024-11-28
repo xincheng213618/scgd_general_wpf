@@ -44,6 +44,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
             CreateDate = DateTime.Now;
             ExpiryDate = DateTime.Now;
         }
+
         [Column("res_dev_cam_pid")]
         public int? DevCameraId { get; set; }
         [Column("res_dev_cali_pid")]
