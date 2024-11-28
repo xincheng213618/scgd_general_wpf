@@ -167,11 +167,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     if (response.Content.Headers.ContentType?.MediaType == "application/json")
                     {
                         string errorContent = await response.Content.ReadAsStringAsync();
-#pragma warning disable CA2201 // 不要引发保留的异常类型
-                        throw new Exception($"请求数据失败. 返回的不是文件：{response.Content.Headers.ContentType.MediaType} => {errorContent}");
-#pragma warning restore CA2201 // 不要引发保留的异常类型
                     }
-
                     // 获取文件名
                     fileName = "license.zip"; // 默认文件名
                     if (response.Content.Headers.ContentDisposition != null)
@@ -187,7 +183,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error: {ex.Message}");
+                    log.Error(ex);
                 }
             }
         }
