@@ -31,6 +31,10 @@
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
                 <StackPanel>
                     <DockPanel Margin="0,0,0,5">
+                        <TextBlock Text="修改保存提示" Width="120"/>
+                        <ui:ToggleSwitch IsChecked="{Binding IsAutoEditSave}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,5">
                         <TextBlock Text="自动适配" Width="120"/>
                         <ui:ToggleSwitch IsChecked="{Binding IsAutoSize}" />
                     </DockPanel>

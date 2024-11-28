@@ -329,14 +329,17 @@ namespace ColorVision.Engine.Templates.Flow
             this.DataContext = this;
             this.Closed += (s, e) =>
             {
-                if (AutoSave())
+                if (FlowConfig.Instance.IsAutoEditSave)
                 {
-                    if (MessageBox.Show("是否保存修改", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    if (AutoSave())
                     {
-                        SaveFlow();
+                        if (MessageBox.Show("是否保存修改", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                        {
+                            SaveFlow();
+                        }
                     }
-
                 }
+
             };
             AddContentMenu();
         }
