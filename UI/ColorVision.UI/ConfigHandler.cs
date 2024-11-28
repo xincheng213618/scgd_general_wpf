@@ -31,9 +31,7 @@ namespace ColorVision.UI
 
 
     }
-    
-
-        public class ConfigHandler: IConfigService
+    public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         private static ConfigHandler _instance;
@@ -66,15 +64,17 @@ namespace ColorVision.UI
             }
 
             LoadConfigs(ConfigFilePath);
-            Application.Current.SessionEnding += (s, e) =>
-            {
-                SaveConfigs(ConfigFilePath);
-            };
+            //Application.Current.SessionEnding += (s, e) =>
+            //{
+            //    SaveConfigs(ConfigFilePath);
+            //};
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                SaveConfigs(ConfigFilePath);
+                if (IsAutoSave)
+                    SaveConfigs(ConfigFilePath);
             };
         }
+        public bool IsAutoSave { get; set; } = true;
 
         public void Reload()
         {
