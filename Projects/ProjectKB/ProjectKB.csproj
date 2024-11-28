@@ -13,10 +13,17 @@
   <ItemGroup>
     <None Remove="Assets\ProjectKB.ico" />
     <None Remove="Assets\ProjectKB.png" />
+    <None Remove="CHANGELOG.md" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\ProjectKB.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -45,12 +52,6 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="CHANGELOG.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

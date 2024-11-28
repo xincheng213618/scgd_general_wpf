@@ -166,7 +166,7 @@
                 <Button Content="Modbus配置" Command="{Binding OpenModbusCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
-                <Button Content="更新记录" Command="{Binding OpenModbusCommand}"/>
+                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
         </StatusBar>
 

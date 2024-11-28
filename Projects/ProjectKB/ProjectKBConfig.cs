@@ -6,6 +6,8 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Reflection;
 using System.Windows;
 
 namespace ProjectKB
@@ -32,7 +34,30 @@ namespace ProjectKB
 
         public static void OpenChangeLog()
         {
-            PlatformHelper.OpenUrl("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB/ChangeLog");
+            // 获取当前执行的程序集
+            Assembly assembly = Assembly.GetExecutingAssembly();
+
+            // 资源文件的完整名称
+            string resourceName = "ProjectKB.CHANGELOG.md";
+
+            // 确保资源名称正确
+            string[] resourceNames = assembly.GetManifestResourceNames();
+
+            // 读取资源文件内容
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                {
+                    Console.WriteLine("资源文件未找到。请检查资源名称。");
+                    return;
+                }
+
+                using (StreamReader reader = new StreamReader(stream))
+                {
+                    string content = reader.ReadToEnd();
+                    MessageBox.Show(content);
+                }
+            }
         }
 
         public static void OpenModbus()
