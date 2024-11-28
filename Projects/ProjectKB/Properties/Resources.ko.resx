@@ -120,4 +120,31 @@
   <data name="MenuFile" xml:space="preserve">
     <value>파일 (_F)</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>연결 테스트</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>연결 이름</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>주인</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>새 구성 파일 만들기</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>구성 파일 복사</value>
+  </data>
 </root>

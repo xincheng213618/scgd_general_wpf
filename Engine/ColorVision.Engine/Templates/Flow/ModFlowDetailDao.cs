@@ -22,8 +22,6 @@ namespace ColorVision.Engine.Templates.Flow
         public bool? IsDelete { get; set; } = false;
     }
 
-
-
     public class ModFlowDetailDao : BaseDaoMaster<ModFlowDetailModel>
     {
         public static ModFlowDetailDao Instance { get; set; } = new ModFlowDetailDao();

@@ -120,4 +120,31 @@
   <data name="MenuFile" xml:space="preserve">
     <value>Файл(Ф)</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Удалить</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Конечно</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>тестовое соединение</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>название соединения</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Хозяин</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>порт</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Создать новый файл конфигурации</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Скопировать файл конфигурации</value>
+  </data>
 </root>

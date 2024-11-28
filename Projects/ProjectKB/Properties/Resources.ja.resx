@@ -120,4 +120,31 @@
   <data name="MenuFile" xml:space="preserve">
     <value>ファイル (_F)</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>消去</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>テスト接続</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>接続名</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>ホスト</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>ポート</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>新しい設定ファイルを作成する</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>設定ファイルをコピーする</value>
+  </data>
 </root>

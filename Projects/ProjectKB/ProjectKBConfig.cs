@@ -16,6 +16,7 @@ namespace ProjectKB
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
+        public RelayCommand OpenModbusCommand { get; set; }
 
         public ProjectKBConfig()
         {
@@ -23,7 +24,15 @@ namespace ProjectKB
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = FlowParam.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
+            OpenModbusCommand = new RelayCommand(a => OpenModbus());
         }
+
+        public static void OpenModbus()
+        {
+            ModbusConnect modbusConnect = new ModbusConnect() { Owner = Application.Current.GetActiveWindow() };
+            modbusConnect.ShowDialog();
+        }
+
         public static void OpenLog()
         {
             WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };

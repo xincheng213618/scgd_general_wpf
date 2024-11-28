@@ -162,6 +162,9 @@
             <StatusBarItem>
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Modbus配置" Command="{Binding OpenModbusCommand}"/>
+            </StatusBarItem>
         </StatusBar>
 
     </Grid>

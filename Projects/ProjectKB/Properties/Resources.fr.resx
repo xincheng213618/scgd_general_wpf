@@ -120,4 +120,31 @@
   <data name="MenuFile" xml:space="preserve">
     <value>Fichier(F)</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>supprimer</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bien sûr</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>tester la connexion</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>nom de connexion</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Hôte</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>port</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Créer un nouveau fichier de configuration</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Copier le fichier de configuration</value>
+  </data>
 </root>

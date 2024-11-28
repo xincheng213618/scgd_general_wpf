@@ -61,11 +61,92 @@ namespace ProjectKB.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        internal static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 连接名 的本地化字符串。
+        /// </summary>
+        internal static string ConnectionName {
+            get {
+                return ResourceManager.GetString("ConnectionName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制配置文件 的本地化字符串。
+        /// </summary>
+        internal static string CopyConfigurationFile {
+            get {
+                return ResourceManager.GetString("CopyConfigurationFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建配置文件 的本地化字符串。
+        /// </summary>
+        internal static string CreateNewConfigurationFile {
+            get {
+                return ResourceManager.GetString("CreateNewConfigurationFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        internal static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主机 的本地化字符串。
+        /// </summary>
+        internal static string Host {
+            get {
+                return ResourceManager.GetString("Host", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         internal static string MenuFile {
             get {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确定 的本地化字符串。
+        /// </summary>
+        internal static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 端口 的本地化字符串。
+        /// </summary>
+        internal static string Port {
+            get {
+                return ResourceManager.GetString("Port", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测试连接 的本地化字符串。
+        /// </summary>
+        internal static string TesConnection {
+            get {
+                return ResourceManager.GetString("TesConnection", resourceCulture);
             }
         }
     }
