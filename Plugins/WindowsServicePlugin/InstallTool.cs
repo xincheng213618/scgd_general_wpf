@@ -1,18 +1,24 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using log4net;
+using log4net.Util;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows;
+
 
 namespace WindowsServicePlugin
 {
-    public class CVWinSMSConfig : ViewModelBase, IConfig   
+    public class CVWinSMSConfig : ViewModelBase, IConfig,IConfigSettingProvider   
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
@@ -24,7 +30,27 @@ namespace WindowsServicePlugin
 
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata>()
+            {
+                new ConfigSettingMetadata()
+                {
+                    Name = "CVWinSMSPath",
+                    Description = "CVWinSMSPath",
+                    Type = ConfigSettingType.Text,
+                    BindingName = nameof(CVWinSMSPath),
+                    Source =Instance
+                },
+            };
+
+        }
     }
+
+
+
+
 
     public class InstallTool : MenuItemBase, IWizardStep, IMainWindowInitialized
     {
@@ -234,6 +260,26 @@ namespace WindowsServicePlugin
         {
             if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
+                Process[] processes = Process.GetProcessesByName("CVWinSMS");
+                if (processes.Length == 1)
+                {
+                    foreach (Process process in processes)
+                    {
+                        try
+                        {
+                            // 获取进程的主模块文件路径
+                            CVWinSMSConfig.Instance.CVWinSMSPath = process.MainModule.FileName;
+                            //string filePath = process.MainModule.FileName;
+                            log.Info($"进程ID: {process.Id}, 文件路径: {CVWinSMSConfig.Instance.CVWinSMSPath}");
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Debug($"无法获取进程的文件路径: {ex.Message}");
+                        }
+                    }
+                }
+
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到管理工具，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Task.Run(() => Download());
@@ -260,7 +306,5 @@ namespace WindowsServicePlugin
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
         }
-
-
     }
 }

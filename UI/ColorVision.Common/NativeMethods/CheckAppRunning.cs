@@ -45,6 +45,29 @@ namespace ColorVision.Common.NativeMethods
         private const uint FLASHW_ALL = 0x03;
         private const uint FLASHW_TIMERNOFG = 0x0C;
 
+        /// <summary>
+        /// 置顶
+        /// </summary>
+        /// <param name="hwnd"></param>
+        public static void SetForeground(IntPtr hwnd)
+        {
+            if (IsIconic(hwnd))
+            {
+                ShowWindowAsync(hwnd, SW_RESTORE);
+            }
+
+            SetForegroundWindow(hwnd);
+            FLASHWINFO fLASHWINFO = new()
+            {
+                cbSize = Convert.ToUInt32(Marshal.SizeOf(typeof(FLASHWINFO))),
+                dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG,
+                hwnd = hwnd,
+                uCount = UInt32.MaxValue,
+                dwTimeout = 0
+            };
+            FlashWindowEx(ref fLASHWINFO);
+
+        }
 
 
         public static IntPtr Check(string WindowTitle)
