@@ -9,6 +9,8 @@ namespace ColorVision.Engine.Impl.CommonImage
 {
     public class FileProcessorImage : IFileProcessor
     {
+        public string GetExtension() => "图像文件 (*.jpg;*.png;*.jpeg;*.tif;*.bmp)|*.jpg;*.png;*.jpeg;*.tif;*.bmp"; // "cvcie
+
         public int Order => 3;
 
         public bool CanProcess(string filePath)

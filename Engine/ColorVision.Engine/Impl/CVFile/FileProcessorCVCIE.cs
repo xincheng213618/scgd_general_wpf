@@ -10,6 +10,8 @@ namespace ColorVision.Engine.Impl.FileProcessor
 {
     public class FileProcessorCVCIE : IFileProcessor
     {
+        public string GetExtension() => "cvcie|*.cvcie"; // "cvcie
+
         public int Order => 2;
 
         public bool CanProcess(string filePath)
@@ -44,6 +46,8 @@ namespace ColorVision.Engine.Impl.FileProcessor
         {
             new ExportCVCIE(filePath).Show();
         }
+
+
     }
 
 

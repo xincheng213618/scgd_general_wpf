@@ -11,9 +11,11 @@ namespace ColorVision.ImageEditor.Tif
 {
     public class Opentif : IImageViewOpen, IFileProcessor
     {
+        public string GetExtension() => "图像文件 (*.tif)|*.tif";
+
         public List<string> Extension => new List<string>() { ".tif", ".tiff" };
 
-        public int Order => 10;
+        public int Order => -1;
 
         public bool CanExport(string filePath)
         {
@@ -85,6 +87,8 @@ namespace ColorVision.ImageEditor.Tif
         {
             return new List<MenuItem>();
         }
+
+
     }
 
 }

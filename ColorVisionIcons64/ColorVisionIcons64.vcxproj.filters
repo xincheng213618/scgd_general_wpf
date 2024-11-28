@@ -51,5 +51,8 @@
     <Image Include="cie.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="flow.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

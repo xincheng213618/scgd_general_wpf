@@ -15,6 +15,7 @@ using ColorVision.Themes.Controls;
 namespace ColorVision.Solution
 {
 
+
     public class HotKeyOpenSolution : IHotKey,IMenuItem
     {
         public string? OwnerGuid => "File";

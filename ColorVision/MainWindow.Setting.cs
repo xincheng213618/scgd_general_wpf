@@ -46,7 +46,7 @@ namespace ColorVision
                             string inputFile = parser.GetValue("input");
                             if (inputFile != null)
                             {
-                                FileProcessorManager.GetInstance().HandleFile(inputFile);
+                                FileProcessorFactory.GetInstance().HandleFile(inputFile);
                             }
                             string s = parser.GetValue("solutionpath");
                             if (s != null)

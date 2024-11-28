@@ -83,14 +83,14 @@ namespace ColorVision
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
-                bool isok = FileProcessorManager.GetInstance().HandleFile(inputFile);
+                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
                 if (isok) return;
             }
 
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
-                bool isok = FileProcessorManager.GetInstance().ExportFile(exportFile);
+                bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
                 if (isok) return;
             }
 

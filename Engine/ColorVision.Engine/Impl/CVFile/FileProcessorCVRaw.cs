@@ -9,6 +9,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 {
     public class FileProcessorCVRaw : IFileProcessor
     {
+        public string GetExtension() => "cvraw|*.cvraw"; // "cvcie
         public int Order => 1;
 
         public bool CanProcess(string filePath)
