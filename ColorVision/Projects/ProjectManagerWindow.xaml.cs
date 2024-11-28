@@ -18,6 +18,8 @@ namespace ColorVision.Projects
             this.DataContext = ProjectManager.GetInstance();
         }
 
+
+
         private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (ListViewProjects.SelectedIndex > -1)
