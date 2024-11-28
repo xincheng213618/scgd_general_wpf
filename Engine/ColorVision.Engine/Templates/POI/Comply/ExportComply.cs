@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             List<MenuItemMetadata> items = new List<MenuItemMetadata>();
 
-            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 } });
+            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 } ,{ "is_delete",false} });
 
             foreach (var item in mods)
             {
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
             }
-            var mod1s = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 111 } });
+            var mod1s = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 111 }, { "is_delete", false } });
             foreach (var item in mod1s)
             {
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);
             }
-            var jjnds = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 120 } });
+            var jjnds = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 120 }, { "is_delete", false } });
             foreach (var item in jjnds)
             {
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();

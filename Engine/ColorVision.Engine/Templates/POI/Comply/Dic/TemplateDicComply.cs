@@ -2,6 +2,7 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,10 +39,10 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
             {
                 void Add(int mod_type)
                 {
-                    var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type } });
+                    var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type }, { "is_delete", false } });
                     foreach (var model in models)
                     {
-                        var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id);
+                        var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id,isDelete:false);
                         var t = new DicComplyParam(model, list);
                         if (backup.TryGetValue(t.Id, out var template))
                         {
@@ -61,6 +62,30 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
             }
         }
 
+        public override void Delete(int index)
+        {
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            void DeleteSingle(int id)
+            {
+                SysDictionaryModItemValidateDao.Instance.DeleteAllByPid(id);
+                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id);
+                TemplateParams.RemoveAt(index);
+            }
+            if (selectedCount <= 1)
+            {
+                int id = TemplateParams[index].Value.Id;
+                DeleteSingle(id);
+            }
+            else
+            {
+                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
+                {
+                    DeleteSingle(item.Id);
+                }
+            }
+        }
 
         public override void Save()
         {
