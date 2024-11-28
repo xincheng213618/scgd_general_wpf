@@ -17,6 +17,7 @@ namespace ProjectKB
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
         public RelayCommand OpenModbusCommand { get; set; }
+        public RelayCommand OpenChangeLogCommand { get; set; }
 
         public ProjectKBConfig()
         {
@@ -25,6 +26,13 @@ namespace ProjectKB
             TemplateItemSource = FlowParam.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
+            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
+
+        }
+
+        public static void OpenChangeLog()
+        {
+            PlatformHelper.OpenUrl("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB/ChangeLog");
         }
 
         public static void OpenModbus()

@@ -22,7 +22,7 @@ namespace ProjectKB.Properties {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace ProjectKB.Properties {
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ProjectKB.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace ProjectKB.Properties {
         ///   使用此强类型资源类的所有资源查找执行重写。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
-        internal static string Cancel {
+        public static string Cancel {
             get {
                 return ResourceManager.GetString("Cancel", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 连接名 的本地化字符串。
         /// </summary>
-        internal static string ConnectionName {
+        public static string ConnectionName {
             get {
                 return ResourceManager.GetString("ConnectionName", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 复制配置文件 的本地化字符串。
         /// </summary>
-        internal static string CopyConfigurationFile {
+        public static string CopyConfigurationFile {
             get {
                 return ResourceManager.GetString("CopyConfigurationFile", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 新建配置文件 的本地化字符串。
         /// </summary>
-        internal static string CreateNewConfigurationFile {
+        public static string CreateNewConfigurationFile {
             get {
                 return ResourceManager.GetString("CreateNewConfigurationFile", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 删除 的本地化字符串。
         /// </summary>
-        internal static string Delete {
+        public static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
             }
@@ -108,7 +108,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 主机 的本地化字符串。
         /// </summary>
-        internal static string Host {
+        public static string Host {
             get {
                 return ResourceManager.GetString("Host", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
-        internal static string MenuFile {
+        public static string MenuFile {
             get {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 确定 的本地化字符串。
         /// </summary>
-        internal static string OK {
+        public static string OK {
             get {
                 return ResourceManager.GetString("OK", resourceCulture);
             }
@@ -135,7 +135,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 端口 的本地化字符串。
         /// </summary>
-        internal static string Port {
+        public static string Port {
             get {
                 return ResourceManager.GetString("Port", resourceCulture);
             }
@@ -144,7 +144,7 @@ namespace ProjectKB.Properties {
         /// <summary>
         ///   查找类似 测试连接 的本地化字符串。
         /// </summary>
-        internal static string TesConnection {
+        public static string TesConnection {
             get {
                 return ResourceManager.GetString("TesConnection", resourceCulture);
             }
