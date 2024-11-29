@@ -36,7 +36,7 @@
         </Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <TextBlock Text="ColorVision"  FontSize="40" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" />
-            <TextBlock Text="版本 2024.6"  FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" />
+            <TextBlock Text="版本 2024.12"  FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" />
         </StackPanel>
         <StackPanel  VerticalAlignment="Bottom">
             <Grid>
