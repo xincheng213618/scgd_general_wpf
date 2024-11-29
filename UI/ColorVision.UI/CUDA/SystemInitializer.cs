@@ -22,7 +22,6 @@
             _messageUpdater.Update("Memory Info: " + SystemHelper.GetMemoryInfo());
             _messageUpdater.Update("System Language: " + SystemHelper.GetSystemLanguage());
             _messageUpdater.Update("Screen Resolution: " + SystemHelper.GetScreenResolution());
-            await Task.Delay(1);
 
         }
 

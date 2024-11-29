@@ -45,7 +45,6 @@ namespace ColorVision.Engine.Services
                         new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     });
                 }
-                await Task.Delay(10);
                 _messageUpdater.Update("服务初始化完成");
             }
             else

@@ -21,7 +21,6 @@ namespace ColorVision.Engine.MQTT
             if (!MQTTSetting.Instance.IsUseMQTT)
             {
                 _messageUpdater.Update("已经跳过MQTT服务器连接");
-                await Task.Delay(10);
                 return;
             }
             _messageUpdater.Update("正在检测MQTT服务器连接情况");

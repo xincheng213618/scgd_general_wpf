@@ -37,7 +37,6 @@ namespace ColorVision.Engine.MySql
             else
             {
                 _messageUpdater.Update("已经跳过数据库连接");
-                await Task.Delay(10);
             }
         }
     }

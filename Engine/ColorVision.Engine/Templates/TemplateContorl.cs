@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Templates
         public async Task InitializeAsync()
         {
             _messageUpdater.Update("正在加载模板");
-            await Task.Delay(0);
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
         }
     }

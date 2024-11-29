@@ -69,7 +69,6 @@ namespace ColorVision.UI.CUDA
                         _messageUpdater.Update($"  Compute Capability: {Config.ComputeCapabilities[i].Major}.{Config.ComputeCapabilities[i].Minor}");
                         _messageUpdater.Update($"  Total Memory: {Config.TotalMemories[i] / (1024.0 * 1024.0 * 1024.0):F0} GB");
                     }
-                    await Task.Delay(1);
                 }
             }
             else

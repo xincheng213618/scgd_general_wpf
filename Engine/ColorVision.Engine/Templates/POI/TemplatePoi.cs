@@ -60,8 +60,11 @@ namespace ColorVision.Engine.Templates.POI
             if (SaveIndex.Count == 0) return;
             foreach (var index in SaveIndex)
             {
-                var item = TemplateParams[index];
-                PoiMasterDao.Instance.Save(new PoiMasterModel(item.Value));
+                if (index > -1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+                    PoiMasterDao.Instance.Save(new PoiMasterModel(item.Value));
+                }
             }
             SaveIndex.Clear();
         }

@@ -12,7 +12,7 @@ namespace ColorVision.Update.Export
 
         public override void Execute()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision");
+            PlatformHelper.Open("http://xc213618.ddns.me:9998/upload/ColorVision/");
         }
     }
 }
