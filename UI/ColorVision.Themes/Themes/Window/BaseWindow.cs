@@ -32,7 +32,7 @@ namespace ColorVision.Themes.Controls
             }
             else
             {
-                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Util;component/Themes/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
+                ResourceDictionary dictionary1 = Application.LoadComponent(new Uri("/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml", UriKind.Relative)) as ResourceDictionary;
                 Application.Current.Resources.MergedDictionaries.Add(dictionary1);
                 return Application.Current.FindResource(typeof(BaseWindow)) as Style ?? null;
             }

@@ -109,6 +109,8 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         print(f"The current version ({current_version}) is up to date.")
 
 
+
+
 def build_project(project_name,type):
     print(f"Building project: {project_name}")
     src_dir = rf'C:\Users\17917\Desktop\scgd_general_wpf\{type}\{project_name}\bin\x64\Release\net8.0-windows'

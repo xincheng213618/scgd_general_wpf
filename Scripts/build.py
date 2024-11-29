@@ -111,7 +111,30 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         except IOError as e:
             print(f"Upload {latest_file}: {e}")
     else:
-        print(f"The current version ({current_version}) is up to date.")   
+        print(f"The current version ({current_version}) is up to date.")
+
+def compare_and_write_version_weixin(latest_version, latest_release_path, latest_file,target_directory ,changelog_src, changelog_dst):
+    try:
+        with open(latest_release_path, 'r') as file:
+            current_version = file.read().strip()
+    except FileNotFoundError:
+        current_version = '0.0.0.0'
+    try:
+        shutil.copy2(changelog_src, changelog_dst)
+    except IOError as e:
+        print(f"Could not copy file to {changelog_dst}: {e}")
+
+    if version_tuple(latest_version) >= version_tuple(current_version):
+        with open(latest_release_path, 'w') as file:
+            file.write(latest_version)
+        print(f"Updated the release version to {latest_version}")
+        try:
+            shutil.copy(latest_file, target_directory)
+            print(f"Upload {latest_file} ")
+        except IOError as e:
+            print(f"Upload {latest_file}: {e}")
+    else:
+        print(f"The current version ({current_version}) is up to date.")
 
 
 if __name__ == "__main__":
@@ -126,9 +149,12 @@ if __name__ == "__main__":
             'target_directory': r"H:\ColorVision",
             'changelog_src': r"C:\Users\17917\Desktop\scgd_general_wpf\CHANGELOG.md",
             'changelog_dst': r"H:\ColorVision\CHANGELOG.md",
-            'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe'
-        }
+            'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe',
+            'wechat_target_directory': r"C:\Users\17917\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision",
+            'baidu_target_directory':r"D:\BaiduSyncdisk\ColorVision"
     }
+    }
+
 
     project_name = 'ColorVision'  # 或 'Microscope'
     project = projects[project_name]
@@ -139,6 +165,8 @@ if __name__ == "__main__":
     if latest_file:
         latest_version = extract_version_from_filename(latest_file)
         if latest_version:
+            compare_and_write_version_weixin(latest_version, project['wechat_target_directory'] +"\LATEST_RELEASE", latest_file, project['wechat_target_directory'], project['changelog_src'] , project['wechat_target_directory']+"\CHANGELOG.md")
+            compare_and_write_version_weixin(latest_version, project['baidu_target_directory'] +"\LATEST_RELEASE", latest_file, project['baidu_target_directory'], project['changelog_src'] , project['baidu_target_directory']+"\CHANGELOG.md")
             compare_and_write_version(latest_version, project['latest_release_path'], latest_file, project['changelog_src'], project['changelog_dst'])
         else:
             print("Could not extract the version from the filename.")
