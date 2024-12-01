@@ -49,12 +49,18 @@ namespace ColorVision
             _IComponentInitializers = new List<UI.IInitializer>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type,this) is IInitializer componentInitialize)
+                try {
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        _IComponentInitializers.Add(componentInitialize);
+                        if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
+                        {
+                            _IComponentInitializers.Add(componentInitialize);
+                        }
                     }
+                }
+                catch
+                {
+                    AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }
             _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
