@@ -20,6 +20,8 @@ namespace ProjectKB
         public RelayCommand OpenLogCommand { get; set; }
         public RelayCommand OpenModbusCommand { get; set; }
         public RelayCommand OpenChangeLogCommand { get; set; }
+        public RelayCommand OpenConfigCommand { get; set; }
+
 
         public ProjectKBConfig()
         {
@@ -29,7 +31,13 @@ namespace ProjectKB
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
+            OpenConfigCommand = new RelayCommand(a => OpenConfig());
+        }
 
+        public static void OpenConfig()
+        {
+            EditProjectKBConfig editProjectKBConfig = new EditProjectKBConfig() { Owner = Application.Current.GetActiveWindow() };
+            editProjectKBConfig.ShowDialog();
         }
 
         public static void OpenChangeLog()
@@ -88,8 +96,23 @@ namespace ProjectKB
             new FlowEngineToolWindow(FlowParam.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        [JsonIgnore]
+        public string SN { get => _SN; set
+            {
+                if (value.Length > SNMax)
+                {
+                    // 移除最前面的字符，使其长度为 14
+                    _SN = value.Substring(value.Length - SNMax);
+                }
+                else
+                {
+                    _SN = value;
+                }
+                NotifyPropertyChanged(); } }
         private string _SN;
+
+        public int SNMax { get => _SMMax; set { _SMMax = value; NotifyPropertyChanged(); } }
+        private int _SMMax = 17;
 
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
