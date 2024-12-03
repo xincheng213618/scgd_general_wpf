@@ -1,23 +1,21 @@
-﻿using System.Windows.Controls;
+﻿using ColorVision.Common.MVVM;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.POI.POIOutput
 {
-    /// <summary>
-    /// EditSFR.xaml 的交互逻辑
-    /// </summary>
-    public partial class EditPoiOutput : UserControl
+
+
+    public partial class EditPoiOutput : UserControl, ITemplateUserControl
     {
         public EditPoiOutput()
         {
             InitializeComponent();
         }
-        public PoiOutputParam Param { get; set; }
 
-        public void SetParam(PoiOutputParam param)
+        public void SetParam(object param)
         {
-            Param = param;
-            this.DataContext = Param;
+            this.DataContext = param;
         }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)

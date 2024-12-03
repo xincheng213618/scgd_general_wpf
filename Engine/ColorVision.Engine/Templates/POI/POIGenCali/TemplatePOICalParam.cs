@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -26,6 +27,7 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         {
             return EditPoiGenCali;
         }
+        public override UserControl CreateUserControl() => new EditPoiGenCali();
 
         public override IMysqlCommand? GetMysqlCommand()
         {

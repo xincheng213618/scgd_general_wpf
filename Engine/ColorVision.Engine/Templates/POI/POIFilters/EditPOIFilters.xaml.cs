@@ -9,18 +9,15 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditPoiFilters : UserControl
+    public partial class EditPoiFilters : UserControl, ITemplateUserControl
     {
         public EditPoiFilters()
         {
             InitializeComponent();
         }
-        public PoiFilterParam Param { get; set; }
-
-        public void SetParam(PoiFilterParam param)
+        public void SetParam(object param)
         {
-            Param = param;
-            this.DataContext = Param;
+            this.DataContext = param;
         }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)

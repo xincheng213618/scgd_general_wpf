@@ -25,6 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             return EditTemplateJson;
         }
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 

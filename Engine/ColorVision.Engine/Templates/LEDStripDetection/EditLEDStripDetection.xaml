@@ -7,7 +7,7 @@
              xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:LEDStripDetectionParam}"
-             d:DesignHeight="450" d:DesignWidth="400" Initialized="UserControl_Initialized">
+             d:DesignHeight="200" d:DesignWidth="400" Width="400" Height="200" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

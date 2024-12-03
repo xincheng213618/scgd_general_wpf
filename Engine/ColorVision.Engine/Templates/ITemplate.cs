@@ -126,9 +126,14 @@ namespace ColorVision.Engine.Templates
 
         public bool IsUserControl { get; set; }
 
+
         public virtual UserControl GetUserControl()
         {
             throw new NotImplementedException();
+        }
+        public virtual UserControl CreateUserControl()
+        {
+            return new UserControl();
         }
 
         public virtual void SetUserControlDataContext(int index)

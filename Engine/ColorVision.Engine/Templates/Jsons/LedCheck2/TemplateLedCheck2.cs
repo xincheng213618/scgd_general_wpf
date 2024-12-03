@@ -26,6 +26,8 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             return EditTemplateJson;
         }
 
+        public override UserControl CreateUserControl() => new EditTemplateJson();
+
     }
 
 

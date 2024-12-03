@@ -11,10 +11,7 @@ namespace ColorVision.Engine.Templates.Jsons
         public double Width { get; set; } = double.NaN;
     }
 
-    /// <summary>
-    /// EditSFR.xaml 的交互逻辑
-    /// </summary>
-    public partial class EditTemplateJson : UserControl
+    public partial class EditTemplateJson : UserControl, ITemplateUserControl
     {
         public EditTemplateJson()
         {
@@ -26,12 +23,9 @@ namespace ColorVision.Engine.Templates.Jsons
             };
         }
 
-        public IEditTemplateJson Param { get; set; }
-
-        public void SetParam(IEditTemplateJson param)
+        public void SetParam(object param)
         {
-            Param = param;
-            this.DataContext = Param;
+            this.DataContext = param;
         }
     }
 }

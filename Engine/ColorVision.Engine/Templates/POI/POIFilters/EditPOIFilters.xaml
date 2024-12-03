@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI.POIFilters"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:PoiFilterParam}"
-             d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="175" d:DesignWidth="300" Width="300" Height="175" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

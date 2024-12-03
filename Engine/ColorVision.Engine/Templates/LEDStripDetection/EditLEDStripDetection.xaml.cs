@@ -1,24 +1,20 @@
-﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.Comply;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditLEDStripDetection : UserControl
+    public partial class EditLEDStripDetection : UserControl,ITemplateUserControl
     {
         public EditLEDStripDetection()
         {
             InitializeComponent();
         }
-        public LEDStripDetectionParam Param { get; set; }
 
-        public void SetParam(LEDStripDetectionParam param)
+        public void SetParam(object param)
         {
-            Param = param;
-            this.DataContext = Param;
+            this.DataContext = param;
         }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
