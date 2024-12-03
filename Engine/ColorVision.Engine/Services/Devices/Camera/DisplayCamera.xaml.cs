@@ -286,7 +286,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
                 if (s == MsgRecordState.Timeout)
                 {
-                    MessageBox1.Show("取图失败,请检查是否为物理相机配置校正");
+                    MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
                 }
             };
 

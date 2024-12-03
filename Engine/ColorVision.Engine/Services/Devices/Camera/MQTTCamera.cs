@@ -296,11 +296,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
             }
 
-
             Params.Add("ScaleFactor", Config.ScaleFactor);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
-            return PublishAsyncClient(msg, timeout + 10000);
+            return PublishAsyncClient(msg, timeout + 20000);
         }  
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
