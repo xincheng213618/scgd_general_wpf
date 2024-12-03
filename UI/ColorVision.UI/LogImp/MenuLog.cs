@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.UI.Menus;
 using log4net;
 using System.Diagnostics;
 using System.IO;
 
-namespace ColorVision.UI.Menus
+namespace ColorVision.UI.LogImp
 {
     public class MenuLog : MenuItemBase
     {
@@ -22,6 +23,10 @@ namespace ColorVision.UI.Menus
         public override string Header => Properties.Resources.OpenConfigFile;
         public override void Execute()
         {
+            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
+            bool result = Tool.HasDefaultProgram(fileName);
+            if (!result)
+                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
             Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
         }
     }
@@ -35,10 +40,7 @@ namespace ColorVision.UI.Menus
         public override string Header => Properties.Resources.OpenConfigFolder;
         public override void Execute()
         {
-            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
-            bool result = Tool.HasDefaultProgram(fileName);
-            if (!result)
-                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
         }
     }
 

@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             else
             {
                 DService.GetAllCameraID();
-            }
+            }  
             PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }
