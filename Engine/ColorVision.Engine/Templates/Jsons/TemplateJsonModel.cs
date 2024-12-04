@@ -26,7 +26,6 @@ namespace ColorVision.Engine.Templates.Jsons
         public string? JsonVal { get => _JsonVal; set { _JsonVal = value; NotifyPropertyChanged(); } }
         private string? _JsonVal;
 
-
         [Column("is_enable")]
         public bool IsEnable { get => _IsEnable; set { _IsEnable = value; NotifyPropertyChanged(); } }
         private bool _IsEnable =true;
