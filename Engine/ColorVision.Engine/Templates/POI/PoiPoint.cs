@@ -2,6 +2,7 @@
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using ColorVision.Engine.Services.Templates.POI;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -22,7 +23,28 @@ namespace ColorVision.Engine.Templates.POI
 
         public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
         private int _KeyOutMOVE = 35;
+
+        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetX;
+        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetY;
+
+        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetX;
+
+        public int HaloSize { get => _HaloSize; set { _HaloSize = value; NotifyPropertyChanged(); } }
+        private int _HaloSize;
+
+
+        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetY;
+
+
+
     }
+
+
+
 
 
 
@@ -38,13 +60,17 @@ namespace ColorVision.Engine.Templates.POI
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
             ValidateTId = dbModel.ValidateTId;
-            try
+
+            if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
             {
-                Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
-            }
-            catch
-            {
-                Param = new PoiPointParam();
+                try
+                {
+                    Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
+                }
+                catch
+                {
+                    Param = new PoiPointParam();
+                }
             }
         }
 

@@ -42,15 +42,51 @@ using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
 using ColorVision.UI;
 using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.UI.Configs;
+using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
-    public class EditPoiParamConfig : ViewModelBase,IConfig
+    public enum PoiPointParamType
     {
-        public static EditPoiParamConfig Instance =>ConfigService.Instance.GetRequiredService<EditPoiParamConfig>();
+         Empty,
+         KBParam
+    }
+
+
+    public class EditPoiParamConfig : ViewModelBase, IConfig, IConfigSettingProvider
+    {
+        public static EditPoiParamConfig Instance => ConfigService.Instance.GetRequiredService<EditPoiParamConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        public PoiPointParamType PoiPointParamType { get => _PoiPointParamType; set { _PoiPointParamType = value; NotifyPropertyChanged(); } }
+        private PoiPointParamType _PoiPointParamType = PoiPointParamType.Empty;
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            ComboBox cmtype = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
+            cmtype.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(EditPoiParamConfig.PoiPointParamType)));
+
+            cmtype.ItemsSource = from e1 in Enum.GetValues(typeof(PoiPointParamType)).Cast<PoiPointParamType>()
+                                 select new KeyValuePair<PoiPointParamType, string>(e1, e1.ToString());
+
+            //cmtype.SelectionChanged += (s, e) => Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
+            cmtype.DataContext = EditPoiParamConfig.Instance;
+
+            return new List<ConfigSettingMetadata>
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = "POIPointType",
+                    Description =  "POIPointType",
+                    Type = ConfigSettingType.ComboBox,
+                    BindingName = nameof(PoiPointParamType),
+                    Source = EditPoiParamConfig.Instance,
+                    ComboBox = cmtype
+                },
+            };
+        }
     }
 
 
@@ -538,7 +574,10 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                             Circle.Attribute.Name = item.Id.ToString();
                             Circle.Attribute.Tag = item.ValidateTId;
-                            Circle.Attribute.Param =item.Param;
+
+                            if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
+                                Circle.Attribute.Param = item.Param;
+
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             DBIndex.Add(Circle,item.Id);
@@ -554,7 +593,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Rectangle.Attribute.Name = item.Id.ToString();
 
                             Rectangle.Attribute.Tag = item.ValidateTId;
-                            Rectangle.Attribute.Param = item.Param;
+                            if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
+                                Rectangle.Attribute.Param = item.Param;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
@@ -1397,11 +1437,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                         ValidateTId = circle.Tag,
                         Name = circle.Text
                     };
-
-                    if (circle.Param is PoiPointParam param)
+                    if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
                     {
-                        poiParamData.Param = param;
+                        if (circle.Param is PoiPointParam param)
+                        {
+                            poiParamData.Param = param;
+                        }
                     }
+
 
 
                     PoiParam.PoiPoints.Add(poiParamData);
@@ -1419,9 +1462,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PixHeight = rectangle.Rect.Height,
                         ValidateTId = rectangle.Tag,
                     };
-                    if (rectangle.Param is PoiPointParam param)
+                    if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
                     {
-                        poiParamData.Param = param;
+                        if (rectangle.Param is PoiPointParam param)
+                        {
+                            poiParamData.Param = param;
+                        }
                     }
                     PoiParam.PoiPoints.Add(poiParamData);
                 }

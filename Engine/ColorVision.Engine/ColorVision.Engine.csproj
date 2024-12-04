@@ -119,6 +119,9 @@
     <Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Templates\Jsons\KB\EditTemplateJson.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
       <SubType>Code</SubType>
     </Compile>

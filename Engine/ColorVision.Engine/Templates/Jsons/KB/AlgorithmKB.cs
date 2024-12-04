@@ -11,7 +11,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
-
     public class AlgorithmKBConfig : ViewModelBase, IConfig
     {
         public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
