@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-            //if (sender is MenuItem menuItem && menuItem.Tag is SysDictionaryModItemValidateModel model)
+            //if (sender is MenuItem menuItem && menuItem.ValidateTId is SysDictionaryModItemValidateModel model)
             //{
             //    ValidateTemplateDetailDao.Instance.DeleteById(validateSingle.Model.Id ,false);
             //    DicComplyParam.ModDetaiModels.Remove(validateSingle.Model);

@@ -26,18 +26,6 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
         }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
         private void ImageShow_Initialized(object sender, EventArgs e)
         {
             ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;

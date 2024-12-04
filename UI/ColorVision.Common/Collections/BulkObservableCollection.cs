@@ -5,6 +5,27 @@ using System.Collections.Specialized;
 
 namespace ColorVision.Common.Collections
 {
+    public static class BulkObservableCollectionExtension
+    {
+        public static void UpdateCollection<T>(this BulkObservableCollection<T> collection, List<T> sortedItems)
+        {
+            if (collection == null) return;
+
+            for (int i = 0; i < sortedItems.Count; i++)
+            {
+                var item = sortedItems[i];
+                var currentIndex = collection.IndexOf(item);
+
+                if (currentIndex != i)
+                {
+                    collection.Move(currentIndex, i);
+                }
+            }
+        }
+    }
+    
+
+
     public class BulkObservableCollection<T> : ObservableCollection<T>
     {
         private bool updatesEnabled = true;

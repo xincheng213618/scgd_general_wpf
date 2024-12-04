@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using Newtonsoft.Json;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Dao
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Templates.POI.Dao
         public string? Remark { get; set; }
 
         [Column("val_validate_temp_id")]
-        public int? ValidateId { get; set; }
+        public int? ValidateTId { get; set; }
 
         public PoiDetailModel()
         {
@@ -41,7 +42,8 @@ namespace ColorVision.Engine.Templates.POI.Dao
             PixY = (int)data.PixY;
             PixWidth = (int)data.PixWidth;
             PixHeight = (int)data.PixHeight;
-            ValidateId = data.Tag;
+            ValidateTId = data.ValidateTId;
+            Remark = JsonConvert.SerializeObject(data.Param);
         }
     }
 

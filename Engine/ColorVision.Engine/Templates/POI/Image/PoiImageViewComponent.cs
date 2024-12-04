@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = circle.Center.Y,
                             PixWidth = circle.Radius * 2,
                             PixHeight = circle.Radius * 2,
-                            Tag = circle.Tag,
+                            ValidateTId = circle.Tag,
                             Name = circle.Text
                         };
                         poiParams.PoiPoints.Add(poiParamData);
@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = circleProperties.Center.Y,
                             PixWidth = circleProperties.Radius * 2,
                             PixHeight = circleProperties.Radius * 2,
-                            Tag = circleProperties.Tag,
+                            ValidateTId = circleProperties.Tag,
                             Name = circleProperties.Id.ToString()
                         };
                         poiParams.PoiPoints.Add(poiParamData);
@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
                             PixWidth = rectangle.Rect.Width,
                             PixHeight = rectangle.Rect.Height,
-                            Tag = rectangle.Tag,
+                            ValidateTId = rectangle.Tag,
                         };
                         poiParams.PoiPoints.Add(poiParamData);
                     }
@@ -169,7 +169,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2,
                             PixWidth = rectangleProperties.Rect.Width,
                             PixHeight = rectangleProperties.Rect.Height,
-                            Tag = rectangleProperties.Tag,
+                            ValidateTId = rectangleProperties.Tag,
                         };
                         poiParams.PoiPoints.Add(poiParamData);
                     }
@@ -299,7 +299,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = circle.Center.Y,
                             PixWidth = circle.Radius * 2,
                             PixHeight = circle.Radius * 2,
-                            Tag = circle.Tag,
+                            ValidateTId = circle.Tag,
                             Name = circle.Text
                         };
                         poiParams.PoiPoints.Add(poiParamData);
@@ -313,7 +313,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = circleProperties.Center.Y,
                             PixWidth = circleProperties.Radius * 2,
                             PixHeight = circleProperties.Radius * 2,
-                            Tag = circleProperties.Tag,
+                            ValidateTId = circleProperties.Tag,
                             Name = circleProperties.Id.ToString()
                         };
                         poiParams.PoiPoints.Add(poiParamData);
@@ -328,7 +328,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
                             PixWidth = rectangle.Rect.Width,
                             PixHeight = rectangle.Rect.Height,
-                            Tag = rectangle.Tag,
+                            ValidateTId = rectangle.Tag,
                         };
                         poiParams.PoiPoints.Add(poiParamData);
                     }
@@ -341,7 +341,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             PixY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2,
                             PixWidth = rectangleProperties.Rect.Width,
                             PixHeight = rectangleProperties.Rect.Height,
-                            Tag = rectangleProperties.Tag,
+                            ValidateTId = rectangleProperties.Tag,
                         };
                         poiParams.PoiPoints.Add(poiParamData);
                     }

@@ -27,11 +27,10 @@ namespace ColorVision.Engine.Templates.POI
             PoiMasterModel poiMasterModel = new(poiParam);
             PoiMasterDao.Instance.Save(poiMasterModel);
 
-            List<PoiDetailModel> poiDetails = new();
+            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
             foreach (PoiPoint pt in poiParam.PoiPoints)
             {
-                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
-                poiDetails.Add(poiDetail);
+                poiDetails.Add(new PoiDetailModel(poiParam.Id, pt));
             }
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }

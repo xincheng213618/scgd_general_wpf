@@ -38,9 +38,22 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Sorts;
+using ColorVision.UI;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
+    public class EditPoiParamConfig : ViewModelBase,IConfig
+    {
+        public static EditPoiParamConfig Instance =>ConfigService.Instance.GetRequiredService<EditPoiParamConfig>();
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+    }
+
+
     public partial class EditPoiParam : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
@@ -82,6 +95,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ListView1.ItemsSource = DrawingVisualLists;
             ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
+            listViewDragDropManager.ShowDragAdorner = false;
             listViewDragDropManager.EventHandler += (s, e) =>
             {
                 if (!DBIndex.ContainsKey(e[0]))
@@ -96,6 +110,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 DBIndex[e[1]] = old;
                 e[1].BaseAttribute.Name = old.ToString();
             };
+
             ImageShow.Focus();
 
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
@@ -262,6 +277,42 @@ namespace ColorVision.Engine.Services.Templates.POI
                     SavePoiParam();
                 }
             };
+
+            if (ListView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                EditPoiParamConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                EditPoiParamConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+        }
+
+        private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        string Name = item.ColumnName.ToString();
+                        if (Name == Properties.Resources.SerialNumber1)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            var sortedItems = DrawingVisualLists.ToList();
+                            sortedItems.Sort((x, y) => item.IsSortD ? y.BaseAttribute.Id.CompareTo(x.BaseAttribute.Id) : x.BaseAttribute.Id.CompareTo(y.BaseAttribute.Id));
+                            DrawingVisualLists.UpdateCollection(sortedItems);
+                        }
+                    }
+                }
+            }
         }
 
 
@@ -486,7 +537,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Circle.Attribute.Text = item.Name;
 
                             Circle.Attribute.Name = item.Id.ToString();
-                            Circle.Attribute.Tag = item.Tag;
+                            Circle.Attribute.Tag = item.ValidateTId;
+                            Circle.Attribute.Param =item.Param;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             DBIndex.Add(Circle,item.Id);
@@ -501,7 +553,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Rectangle.Attribute.Text = item.Name;
                             Rectangle.Attribute.Name = item.Id.ToString();
 
-                            Rectangle.Attribute.Tag = item.Tag;
+                            Rectangle.Attribute.Tag = item.ValidateTId;
+                            Rectangle.Attribute.Param = item.Param;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
@@ -1341,9 +1394,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
                         PixHeight = circle.Radius * 2,
-                        Tag = circle.Tag,
+                        ValidateTId = circle.Tag,
                         Name = circle.Text
                     };
+
+                    if (circle.Param is PoiPointParam param)
+                    {
+                        poiParamData.Param = param;
+                    }
 
 
                     PoiParam.PoiPoints.Add(poiParamData);
@@ -1359,8 +1417,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height/2,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
-                        Tag = rectangle.Tag,
+                        ValidateTId = rectangle.Tag,
                     };
+                    if (rectangle.Param is PoiPointParam param)
+                    {
+                        poiParamData.Param = param;
+                    }
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
             }
@@ -1369,7 +1431,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             WaitControlText.Text = "数据正在保存";
             Thread thread = new(() =>
             {
-                PoiParam.Save2DB(PoiParam);
+                PoiParam.Save2DB();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     WaitControl.Visibility = Visibility.Collapsed;

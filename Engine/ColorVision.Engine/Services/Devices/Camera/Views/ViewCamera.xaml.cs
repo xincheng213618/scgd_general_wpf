@@ -203,6 +203,40 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0&& listView1.View is GridView gridView)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        string Name = item.ColumnName.ToString();
+                        if (Name == Properties.Resources.SerialNumber1)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByID(item.IsSortD);
+                        }
+                        else if (Name == Properties.Resources.CreateTime)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByCreateTime(item.IsSortD);
+                        }
+                        else if (Name == Properties.Resources.BatchNumber)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByBatch(item.IsSortD);
+                        }
+                        else if (Name == Properties.Resources.File)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByFilePath(item.IsSortD);
+                        }
+                    }
+                }
+            }
+        }
+
 
         private void Button_Click_ShowResultGrid(object sender, RoutedEventArgs e)
         {
@@ -381,39 +415,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             TbDeviceCode.Text = string.Empty;
         }
 
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
-            {
-                foreach (var item in GridViewColumnVisibilitys)
-                {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
-                    {
-                        string Name = item.ColumnName.ToString();
-                        if (Name == Properties.Resources.SerialNumber1)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResultCameras.SortByID(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.CreateTime)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResultCameras.SortByCreateTime(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.BatchNumber)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResultCameras.SortByBatch(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.File)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResultCameras.SortByFilePath(item.IsSortD);
-                        }
-                    }
-                }
-            }
-        }
 
 
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
