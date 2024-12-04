@@ -3,7 +3,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
-    public class TemplateKB : ITemplateJson<TemplateJsonParam>
+    public class TemplateKB : ITemplateJson<TemplateJsonParam>,IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
 
@@ -25,6 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             return EditTemplateJson;
         }
+        public override UserControl CreateUserControl() => new EditTemplateJson();
 
     }
 

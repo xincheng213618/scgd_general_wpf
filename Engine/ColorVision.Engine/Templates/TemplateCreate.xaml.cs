@@ -1,13 +1,18 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates
 {
-    /// <summary>
-    /// EditTerminal.xaml 的交互逻辑
-    /// </summary>
+
+    public interface ITemplateUserControl
+    {
+        public void SetParam(object param);
+    }
+
     public partial class TemplateCreate : Window
     {
         public ITemplate ITemplate { get; set; }
@@ -31,12 +36,26 @@ namespace ColorVision.Engine.Templates
 
             CreateCode.ItemsSource = list;
             CreateCode.SelectedIndex = 0;
-            if (ITemplate.IsUserControl || ITemplate.IsSideHide)
+            if (ITemplate.IsSideHide)
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 this.Height = 150;
-                //GridProperty.Children.Add(ITemplateJson.GetUserControl());
+
+            }
+            else if (ITemplate.IsUserControl)
+            {
+                GridProperty.Children.Clear();
+                GridProperty.Margin = new Thickness(5, 5, 5, 5);
+                this.Height = 150;
+                UserControl userControl = ITemplate.CreateUserControl();
+                if (userControl is ITemplateUserControl templateUserControl)
+                {
+                    GridProperty.Children.Add(userControl);
+                    templateUserControl.SetParam(ITemplate.CreateDefault());
+                    this.Height = userControl.Height +150;
+                    this.Width = userControl.Width +40;
+                }
             }
             else
             {

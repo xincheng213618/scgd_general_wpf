@@ -3,6 +3,7 @@ using log4net;
 using System.Windows;
 using System.Linq;
 using ColorVision.Common.MVVM;
+using System.Windows.Input;
 
 namespace ProjectKB
 {
@@ -94,6 +95,19 @@ namespace ProjectKB
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void SNtextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+
+        }
+
+        private void SNtextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                e.Handled = true;
+            }
         }
     }
 }

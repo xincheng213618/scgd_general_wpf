@@ -12,18 +12,16 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditPoiGenCali : UserControl
+    public partial class EditPoiGenCali : UserControl, ITemplateUserControl
     {
         public EditPoiGenCali()
         {
             InitializeComponent();
         }
-        public PoiGenCaliParam Param { get; set; }
 
-        public void SetParam(PoiGenCaliParam param)
+        public void SetParam(object param)
         {
-            Param = param;
-            this.DataContext = Param;
+            this.DataContext = param;
         }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)

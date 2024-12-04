@@ -148,7 +148,7 @@
                             </Grid>
                             <DockPanel DockPanel.Dock="Right" Margin="20,0,0,0">
                                 <TextBlock Text="Serial Number" Margin="0,0,5,0"/>
-                                <TextBox x:Name="SNtextBox" Text="{Binding SN}"/>
+                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
 
                         </DockPanel>
@@ -164,6 +164,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="Modbus配置" Command="{Binding OpenModbusCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>

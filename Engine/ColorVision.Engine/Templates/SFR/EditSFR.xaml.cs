@@ -1,7 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.Comply;
-using CVCommCore.CVAlgorithm;
+﻿using ColorVision.Engine.Templates.POI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,7 +8,7 @@ namespace ColorVision.Engine.Templates.SFR
     /// <summary>
     /// EditSFR.xaml 的交互逻辑
     /// </summary>
-    public partial class EditSFR : UserControl
+    public partial class EditSFR : UserControl,ITemplateUserControl
     {
         public EditSFR()
         {
@@ -19,9 +16,12 @@ namespace ColorVision.Engine.Templates.SFR
         }
         public SFRParam Param { get; set; }
 
-        public void SetParam(SFRParam param)
+        public void SetParam(object param)
         {
-            Param = param;
+            if (param is SFRParam sFRParam)
+            {
+                Param = sFRParam;
+            }
             this.DataContext = Param;
         }
 

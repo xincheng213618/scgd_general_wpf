@@ -12,6 +12,8 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
+
+
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
@@ -61,6 +63,10 @@ namespace ColorVision.Engine.Templates
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 UserControl userControl = ITemplate.GetUserControl();
                 GridProperty.Children.Add(userControl);
+                if (!double.IsNaN(userControl.Height))
+                {
+                    userControl.Height = double.NaN;
+                }
                 if (!double.IsNaN(userControl.Width))
                 {
                     Width = userControl.Width + 300;

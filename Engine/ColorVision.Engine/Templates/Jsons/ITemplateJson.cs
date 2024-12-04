@@ -52,12 +52,7 @@ namespace ColorVision.Engine.Templates.Jsons
             templateJson.DicCode = dictemplate.Code;
             templateJson.DicId = dictemplate.Id;
             templateJson.JsonVal = dictemplate.JsonVal;
-
-            TemplateJsonDao.Instance.Save(templateJson);
-            if (templateJson.Id > 0)
-            {
-                CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
-            }
+            CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
 
             if (ExportTemp != null)
                 CreateTemp?.CopyFrom(ExportTemp);
@@ -243,13 +238,18 @@ namespace ColorVision.Engine.Templates.Jsons
                 var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
 
                 if (dictemplate == null) return null;
-
                 TemplateJsonModel templateJson = new TemplateJsonModel();
-                templateJson.Name = templateName;
-                templateJson.DicCode = dictemplate.Code;
-                templateJson.DicId = dictemplate.Id;
-                templateJson.JsonVal = dictemplate.JsonVal;
-
+                if (CreateTemp != null)
+                {
+                    templateJson.CopyFrom(CreateTemp.TemplateJsonModel);
+                }
+                else
+                {
+                    templateJson.Name = templateName;
+                    templateJson.DicCode = dictemplate.Code;
+                    templateJson.DicId = dictemplate.Id;
+                    templateJson.JsonVal = dictemplate.JsonVal;
+                }
                 TemplateJsonDao.Instance.Save(templateJson);
                 if (templateJson.Id > 0)
                 {

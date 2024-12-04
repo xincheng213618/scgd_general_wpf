@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             else
             {
                 DService.GetAllCameraID();
-            }
+            }  
             PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }
@@ -152,7 +152,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord =  DService.GetAllCameraID();
             msgRecord.MsgSucessed += (e) =>
             {
-                MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+
+                MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess" + Environment.NewLine + msgRecord.MsgReturn.Data);
                 PhyCameraManager.GetInstance().LoadPhyCamera();
                 PhyCameraManager.GetInstance().RefreshEmptyCamera();
             };
