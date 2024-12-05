@@ -596,7 +596,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                    <ListView  x:Name="ListView1"  Style="{StaticResource ListView.Small}" ScrollViewer.HorizontalScrollBarVisibility="Visible" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                         <ListView.Resources>
                             <ContextMenu x:Key="ContextMenuItem">
                                 <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
@@ -612,13 +612,13 @@
                             <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
                                 <StackPanel  Orientation="Horizontal">
                                     <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
-                                    <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}"  Width="130"  Margin="5,0"/>
-                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}"   Width="60"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Width="60"  Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
                                 <StackPanel  Orientation="Horizontal">
-                                    <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="170"  Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DVRectangleText}">
