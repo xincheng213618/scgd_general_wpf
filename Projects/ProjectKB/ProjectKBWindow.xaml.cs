@@ -275,7 +275,7 @@ namespace ProjectKB
 
                         foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id))
                         {
-                            if (item.TName == "KB2")
+                            if (item.ImgFileType == AlgorithmResultType.KB|| item.ImgFileType == AlgorithmResultType.KB_Raw)
                             {
                                 KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(item.Params);
                                 if (kBJson != null)
