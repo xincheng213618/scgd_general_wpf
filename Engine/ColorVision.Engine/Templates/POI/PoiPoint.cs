@@ -68,7 +68,6 @@ namespace ColorVision.Engine.Templates.POI
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
-            ValidateTId = dbModel.ValidateTId;
 
             if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
             {

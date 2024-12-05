@@ -25,9 +25,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
         [Column("remark")]
         public string? Remark { get; set; }
 
-        [Column("val_validate_temp_id")]
-        public int? ValidateTId { get; set; }
-
         public PoiDetailModel()
         {
 
@@ -43,7 +40,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
             PixY = (int)data.PixY;
             PixWidth = (int)data.PixWidth;
             PixHeight = (int)data.PixHeight;
-            ValidateTId = data.ValidateTId;
             if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
             {
                 Remark = JsonConvert.SerializeObject(data.Param);

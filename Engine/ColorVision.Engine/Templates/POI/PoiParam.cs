@@ -70,7 +70,6 @@ namespace ColorVision.Engine.Templates.POI
             PoiConfig.CenterX = (PoiConfig.X2X - PoiConfig.X1X) / 2;
             PoiConfig.CenterY = (PoiConfig.X4Y - PoiConfig.X1Y) / 2;
             CfgJson = dbModel.CfgJson ?? string.Empty;
-            ValidateId = dbModel.ValidateId ?? -1;
             PoiConfig.IsPoiCIEFile = dbModel.IsDynamics ??false;
         }
 

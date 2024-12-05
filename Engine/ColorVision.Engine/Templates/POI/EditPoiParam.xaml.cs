@@ -44,6 +44,7 @@ using ColorVision.UI;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Configs;
 using System.Windows.Data;
+using Panuon.WPF;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -2002,6 +2003,11 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
                 PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            new EidtPoiDataGridForm((ObservableCollection<IDrawingVisual>)DrawingVisualLists).Show();           
         }
     }
 
