@@ -2,16 +2,23 @@
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
+using ColorVision.Engine.Services.Templates.POI;
 
 namespace ColorVision.Engine.Templates.POI
 {
     public class PoiPointParam : ViewModelBase
     {
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
         public double KeyScale { get => _KeyScale; set { _KeyScale = value; NotifyPropertyChanged(); } }
         private double _KeyScale = 1;
-
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
         public double HaloScale { get => _HaloScale; set { _HaloScale = value; NotifyPropertyChanged(); } }
         private double _HaloScale = 1;
+
         public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; NotifyPropertyChanged(); } }
         private int _HaloThreadV = 500;
 
@@ -23,7 +30,32 @@ namespace ColorVision.Engine.Templates.POI
 
         public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
         private int _KeyOutMOVE = 35;
+
+        public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetX;
+        public int KeyOffsetY { get => _KeyOffsetY; set { _KeyOffsetY = value; NotifyPropertyChanged(); } }
+        private int _KeyOffsetY;
+
+        public int HaloOffsetX { get => _HaloOffsetX; set { _HaloOffsetX = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetX;
+
+        public int HaloSize { get => _HaloSize; set { _HaloSize = value; NotifyPropertyChanged(); } }
+        private int _HaloSize;
+
+
+        public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; NotifyPropertyChanged(); } }
+        private int _HaloOffsetY;
+
+        /// <summary>
+        /// 面积
+        /// </summary>
+        public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
+        private double _Area;
     }
+
+
+
+
 
 
     public class PoiPoint : ISortID
@@ -37,14 +69,17 @@ namespace ColorVision.Engine.Templates.POI
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
-            ValidateTId = dbModel.ValidateTId;
-            try
+
+            if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
             {
-                Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
-            }
-            catch
-            {
-                Param = new PoiPointParam();
+                try
+                {
+                    Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
+                }
+                catch
+                {
+                    Param = new PoiPointParam();
+                }
             }
         }
 

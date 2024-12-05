@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -91,10 +92,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
                         if (model!=null)
                             resultMaster.Add(model);
-                    }
-                    else
-                    {
-                        resultMaster = AlgResultMasterDao.Instance.GetAllByBatchCode(msg.SerialNumber);
                     }
                     foreach (AlgResultMasterModel result in resultMaster)
                     {

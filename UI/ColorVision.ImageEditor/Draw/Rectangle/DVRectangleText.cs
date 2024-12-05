@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class RectangleTextProperties : RectangleProperties
+    public class RectangleTextProperties : RectangleProperties, ITextProperties
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();

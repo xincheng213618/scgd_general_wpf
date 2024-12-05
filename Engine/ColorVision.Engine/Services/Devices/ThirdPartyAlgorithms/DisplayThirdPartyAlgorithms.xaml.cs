@@ -22,6 +22,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -122,10 +123,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                         int MasterId = arg.Data.MasterId;
                         AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
                         resultMaster.Add(model);
-                    }
-                    else
-                    {
-                        resultMaster = AlgResultMasterDao.Instance.GetAllByBatchCode(arg.SerialNumber);
                     }
                     foreach (AlgResultMasterModel result in resultMaster)
                     {

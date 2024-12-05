@@ -45,6 +45,7 @@ namespace ColorVision.Engine.Templates.Flow
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
 
+        IPendingHandler handler { get; set; }
 
         public DisplayFlow()
         {
@@ -174,7 +175,6 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
-        IPendingHandler handler { get; set; }
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 

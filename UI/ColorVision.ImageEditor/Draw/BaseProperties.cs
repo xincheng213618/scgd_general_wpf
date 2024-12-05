@@ -3,6 +3,7 @@
 namespace ColorVision.ImageEditor.Draw
 {
 
+
     public class BaseProperties : BaseMode
     {
         [Category("Attribute"), DisplayName("序号")]
