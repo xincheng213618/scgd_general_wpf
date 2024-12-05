@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.KB
 
     public class AlgorithmKBLocal : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "KBLocal";
+        public string Name { get; set; } = "KB调试";
         public int Order { get; set; } = 99;
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand SelectLuminFileCommand { get; set; }

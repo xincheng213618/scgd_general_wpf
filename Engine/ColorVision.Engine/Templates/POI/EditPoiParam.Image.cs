@@ -186,6 +186,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
                     DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
+
                     drawCanvas.AddVisual(DrawCircleCache);
 
                     if (ImageEditViewMode.SelectDrawingVisuals != null)
@@ -211,6 +212,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
+
                     drawCanvas.AddVisual(DrawingRectangleCache);
 
                     if (ImageEditViewMode.SelectDrawingVisuals != null)

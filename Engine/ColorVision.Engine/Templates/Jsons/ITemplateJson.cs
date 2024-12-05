@@ -46,7 +46,8 @@ namespace ColorVision.Engine.Templates.Jsons
         public override object CreateDefault()
         {
             var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
-
+            if (dictemplate ==null)
+                return new T();
 
             TemplateJsonModel templateJson = new TemplateJsonModel();
             templateJson.DicCode = dictemplate.Code;

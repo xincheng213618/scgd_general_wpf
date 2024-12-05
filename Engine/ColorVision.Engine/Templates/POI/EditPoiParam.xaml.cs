@@ -45,6 +45,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Configs;
 using System.Windows.Data;
 using Panuon.WPF;
+using ColorVision.Engine.Templates.KB;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -192,6 +193,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                 {
                     if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
+                        if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
+                            visual.BaseAttribute.Param = new PoiPointParam();
+
                         DrawingVisualLists.Add(visual);
                         visual.BaseAttribute.PropertyChanged += (s1, e1) =>
                         {
@@ -321,6 +325,12 @@ namespace ColorVision.Engine.Services.Templates.POI
                 EditPoiParamConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
                 EditPoiParamConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+
+            if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
+            {
+                AlgorithmKBLocal loacl = new AlgorithmKBLocal();
+                FunctionStackpanel.Children.Add(loacl.GetUserControl());
             }
         }
 

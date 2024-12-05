@@ -89,6 +89,8 @@
                     </StackPanel>
                 </TabItem>
             </TabControl>
+
+            <Button Content="生成KB模板" Click="GenTemplateKB_Click"/>
         </StackPanel>
     </Grid>
 </UserControl>

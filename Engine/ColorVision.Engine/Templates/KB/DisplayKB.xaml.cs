@@ -1,8 +1,11 @@
 ﻿using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using MQTTMessageLib.FileServer;
+using NPOI.SS.Formula.Eval;
 using OpenCvSharp;
 using System;
 using System.IO;
@@ -160,6 +163,11 @@ namespace ColorVision.Engine.Templates.KB
 
         private void Open_Raw_File(object sender, RoutedEventArgs e)
         {
+        }
+
+        private void GenTemplateKB_Click(object sender, RoutedEventArgs e)
+        {
+            new TemplateKB().OpenCreate();
         }
     }
 }
