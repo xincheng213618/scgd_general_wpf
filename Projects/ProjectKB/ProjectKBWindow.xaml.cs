@@ -53,6 +53,29 @@ namespace ProjectKB
 
         public double MinLv { get => _MinLv; set { _MinLv = value; NotifyPropertyChanged(); } }
         private double _MinLv;
+
+        public double MaxLv { get => _MaxLv; set { _MaxLv = value; NotifyPropertyChanged(); } }
+        private double _MaxLv;
+
+        public string DrakestKey { get => _DrakestKey; set { _DrakestKey = value; NotifyPropertyChanged(); } }
+        private string _DrakestKey;
+
+        public string BrightestKey { get => _BrightestKey; set { _BrightestKey = value; NotifyPropertyChanged(); } }
+        private string _BrightestKey;
+
+        public int NbrFailPoints { get => _NbrFailPoints; set { _NbrFailPoints = value; NotifyPropertyChanged(); } }
+        private int _NbrFailPoints;
+
+
+        public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; NotifyPropertyChanged(); } }
+        private double _LvUniformity;
+
+        public double ColorUniformity { get => _ColorUniformity; set { _ColorUniformity = value; NotifyPropertyChanged(); } }
+        private double _ColorUniformity;
+
+        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        private bool _Result;
+
     }
 
     /// <summary>
@@ -61,6 +84,8 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
+        public ObservableCollection<KBItem> ViewResluts { get; set; } = new ObservableCollection<KBItem>();
+
 
         public ProjectKBWindow()
         {
@@ -75,6 +100,8 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectKBConfig.Instance;
+            listView1.ItemsSource = ViewResluts;
+
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -101,7 +128,7 @@ namespace ProjectKB
                     {
                         if (item is CVCommonNode algorithmNode)
                         {
-                            algorithmNode.nodeRunEvent -= UpdateMsg;
+                            algorithmNode.nodeRunEvent += UpdateMsg;
                         }
                     }
                 }
@@ -273,7 +300,12 @@ namespace ProjectKB
                         ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                         log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                        GenoutputText();
+                        KBItem kBItem = new KBItem();
+                        kBItem.Id = Batch.Id;
+                        kBItem.SN = Batch.Code;
+                        kBItem.AvgC1 = 1;
+                        ViewResluts.Add(kBItem);
+                        GenoutputText(kBItem);
                         foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                         {
                             if (item.ImgFileType == AlgorithmResultType.KB|| item.ImgFileType == AlgorithmResultType.KB_Raw)
@@ -309,18 +341,52 @@ namespace ProjectKB
             }
         }
 
-        public void GenoutputText()
+        public void GenoutputText(KBItem kBItem)
         {
+            string outtext = string.Empty;
+            outtext += $"Model:{FlowTemplate.Text}" + Environment.NewLine; 
+            outtext += $"SN:{SNtextBox.Text}" + Environment.NewLine;
+            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+            outtext += Environment.NewLine;
+            string title1 = "PT";
+            string title2 = "Lv";
+            string title3 = "Cx";
+            string title4 = "Cy";
+            string title5 = "Lv";
+
+            outtext += $"{title1,-20}   {title2,10}   {title3,10}   {title5,10}" + Environment.NewLine;
+
             Random random = new Random();
-            string outstr = string.Empty;
             foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
             {
                 string formattedString = $"[{item}]";
 
-                outstr += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
             }
-            outputText.Text = outstr;
 
+            outtext += Environment.NewLine;
+            outtext += $"Min Lv= {kBItem.MinLv} cd/m2" + Environment.NewLine;
+            outtext += $"Max Lv= {kBItem.MaxLv} cd/m2" + Environment.NewLine;
+            outtext += $"Darkest Key= {kBItem.DrakestKey}" + Environment.NewLine;
+            outtext += $"Brightest Key= {kBItem.BrightestKey} cd/m2" + Environment.NewLine;
+            outtext += $"Avg Cx= {kBItem.AvgC1}" + Environment.NewLine;
+            outtext += $"Avg Cy= {kBItem.AvgC2}" + Environment.NewLine;
+
+            outtext += Environment.NewLine;
+            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
+            outtext += $"NbrFail Points={kBItem.NbrFailPoints}" + Environment.NewLine;
+            outtext += $"Avg Lv={kBItem.AvgLv}" + Environment.NewLine;
+            outtext += $"Lv Uniformity={kBItem.LvUniformity}" + Environment.NewLine;
+            outtext += $"Color Uniformity={kBItem.LvUniformity}" + Environment.NewLine;
+
+            outtext += kBItem.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+
+
+
+
+            outputText.Text = outtext;
             SNtextBox.Focus();
         }
 
