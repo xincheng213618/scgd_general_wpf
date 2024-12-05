@@ -243,6 +243,9 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (CreateTemp != null)
                 {
                     templateJson.CopyFrom(CreateTemp.TemplateJsonModel);
+                    templateJson.Name = templateName;
+                    templateJson.DicCode = dictemplate.Code;
+                    templateJson.DicId = dictemplate.Id;
                 }
                 else
                 {

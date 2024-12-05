@@ -32,6 +32,7 @@ namespace ColorVision.Engine.Templates.KB
         {
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplatePoi.Params;
+            ComboxKBTemplate.ItemsSource = TemplateKB.Params;
         }
 
 

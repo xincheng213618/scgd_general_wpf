@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using System;
@@ -29,9 +30,14 @@ namespace ColorVision.Engine.Templates.KB
         public RelayCommand SelectLuminFileCommand { get; set; }
         public RelayCommand SelcetSaveFilePathCommand { get; set; }
 
+        public RelayCommand OpenTemplatePoiCommand { get; set; }
+
+
         public AlgorithmKBLocal()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
+
             SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
             SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
         }
@@ -42,10 +48,17 @@ namespace ColorVision.Engine.Templates.KB
             SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
             SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
         }
-
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateKB(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplatePoiSelectedIndex;
+        public void OpenTemplatePoi()
+        {
+            new TemplateEditorWindow(new TemplatePoi(), TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 
@@ -53,8 +66,6 @@ namespace ColorVision.Engine.Templates.KB
         private int _HaloThreadV = 500;
         public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; NotifyPropertyChanged(); } }
         private int _KeyThreadV = 3000;
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
 
         public string LuminFile { get => AlgorithmKBLocalConfig.Instance.LuminFile; set { AlgorithmKBLocalConfig.Instance.LuminFile = value; NotifyPropertyChanged(); } }
 
