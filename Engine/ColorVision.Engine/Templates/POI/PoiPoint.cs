@@ -8,11 +8,17 @@ namespace ColorVision.Engine.Templates.POI
 {
     public class PoiPointParam : ViewModelBase
     {
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
         public double KeyScale { get => _KeyScale; set { _KeyScale = value; NotifyPropertyChanged(); } }
         private double _KeyScale = 1;
-
+        /// <summary>
+        /// 结果缩放
+        /// </summary>
         public double HaloScale { get => _HaloScale; set { _HaloScale = value; NotifyPropertyChanged(); } }
         private double _HaloScale = 1;
+
         public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; NotifyPropertyChanged(); } }
         private int _HaloThreadV = 500;
         public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; NotifyPropertyChanged(); } }
@@ -39,8 +45,11 @@ namespace ColorVision.Engine.Templates.POI
         public int HaloOffsetY { get => _HaloOffsetY; set { _HaloOffsetY = value; NotifyPropertyChanged(); } }
         private int _HaloOffsetY;
 
-
-
+        /// <summary>
+        /// 面积
+        /// </summary>
+        public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
+        private double _Area;
     }
 
 

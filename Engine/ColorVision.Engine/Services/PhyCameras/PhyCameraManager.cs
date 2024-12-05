@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
+
             RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }

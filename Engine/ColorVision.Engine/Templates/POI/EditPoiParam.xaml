@@ -596,8 +596,8 @@
                         <ContextMenu x:Key="ContextMenuItem">
                             <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
                         </ContextMenu>
-                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                        </ContextMenu>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
+
                         <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Margin="5,0"/>
@@ -636,6 +636,7 @@
                                 <TextBox Width="40" Text="{Binding KeyOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                 <TextBox Width="40" Text="{Binding KeyThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                 <TextBox Width="40" Text="{Binding KeyScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                <TextBox Width="40" Text="{Binding Area}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.Resources>

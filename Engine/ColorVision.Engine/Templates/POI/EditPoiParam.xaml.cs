@@ -351,7 +351,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             }
         }
 
-
         public ImageEditViewMode ImageEditViewMode { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
@@ -383,7 +382,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
             }
         }
-
 
 
         private LedPicData ledPicData;
