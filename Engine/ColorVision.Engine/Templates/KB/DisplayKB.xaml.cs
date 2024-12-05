@@ -160,10 +160,6 @@ namespace ColorVision.Engine.Templates.KB
 
         private void Open_Raw_File(object sender, RoutedEventArgs e)
         {
-            if (File.Exists(ImageFile.Text))
-            {
-                IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-            }
         }
     }
 }
