@@ -16,7 +16,6 @@ namespace ColorVision.Engine.Templates.KB
         public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
         private string _LuminFile;
 
-
         public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
         private string _SaveFolderPath;
 
@@ -26,23 +25,24 @@ namespace ColorVision.Engine.Templates.KB
     {
         public string Name { get; set; } = "KBLocal";
         public int Order { get; set; } = 99;
-
-        public DeviceAlgorithm Device { get; set; }
-        public MQTTAlgorithm DService { get => Device.DService; }
-
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand SelectLuminFileCommand { get; set; }
         public RelayCommand SelcetSaveFilePathCommand { get; set; }
 
-        
-
-        public AlgorithmKBLocal(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmKBLocal()
         {
-            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
             SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
         }
+
+        public AlgorithmKBLocal(DeviceAlgorithm deviceAlgorithm)
+        {
+            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
+            SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
+        }
+
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplatePoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -87,12 +87,17 @@ namespace ColorVision.Engine.Templates.KB
             }
         }
 
+        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
+        private int _saveProcessData = 1;
+
+        public int Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
+        private int _Exp = 100;
 
 
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayKBLocal(this);
+            UserControl ??= new DisplayKB(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }

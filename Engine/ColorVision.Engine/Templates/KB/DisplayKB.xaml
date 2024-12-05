@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Engine.Templates.KB.DisplayKBLocal"
+﻿<UserControl x:Class="ColorVision.Engine.Templates.KB.DisplayKB"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:AlgorithmKBLocal}"
-             d:DesignHeight="150" d:DesignWidth="280" Initialized="UserControl_Initialized">
+             d:DesignHeight="250" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
@@ -35,12 +35,12 @@
                 <CheckBox x:Name="CB_CalculateKey" Content="CM_CalculateKey" IsChecked="True" />
             </UniformGrid>
             <StackPanel Orientation="Horizontal" Margin="0,2">
-                <TextBlock Text="HaloThreadV" Width="100"/>
-                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding HaloThreadV}"/>
+                <TextBlock Text="SaveProcessData" Width="100"/>
+                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding SaveProcessData}"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,2">
-                <TextBlock Text="KeyThreadV" Width="100"/>
-                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding KeyThreadV}"/>
+                <TextBlock Text="Exp" Width="100"/>
+                <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding Exp}"/>
             </StackPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}"  IsSelected="True">

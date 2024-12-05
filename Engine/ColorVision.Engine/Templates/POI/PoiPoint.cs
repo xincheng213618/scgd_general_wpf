@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Templates.POI
         private double _HaloScale = 1;
         public int HaloThreadV { get => _HaloThreadV; set { _HaloThreadV = value; NotifyPropertyChanged(); } }
         private int _HaloThreadV = 500;
+
         public int KeyThreadV { get => _KeyThreadV; set { _KeyThreadV = value; NotifyPropertyChanged(); } }
         private int _KeyThreadV = 3000;
 
@@ -23,7 +24,6 @@ namespace ColorVision.Engine.Templates.POI
         public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
         private int _KeyOutMOVE = 35;
     }
-
 
 
     public class PoiPoint : ISortID
