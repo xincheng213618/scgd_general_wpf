@@ -25,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using ColorVision.Engine.Templates.Jsons.KB;
 using Newtonsoft.Json;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ProjectKB
 {
@@ -272,33 +273,23 @@ namespace ProjectKB
                         ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                         log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-
-                        foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id))
+                        GenoutputText();
+                        foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                         {
                             if (item.ImgFileType == AlgorithmResultType.KB|| item.ImgFileType == AlgorithmResultType.KB_Raw)
                             {
                                 KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(item.Params);
                                 if (kBJson != null)
                                 {
-                                    if (File.Exists(item.ImgFile))
+                                    if (File.Exists(item.ResultImagFile))
                                     {
-                                        ImageView.OpenImage(item.ImgFile);
+                                        ImageView.OpenImage(item.ResultImagFile);
                                     }
                                 }
                             }
 
                         }
-                        Random random = new Random();
-                        string outstr = string.Empty;
-                        foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
-                        {
-                            string formattedString = $"[{item}]";
 
-                            outstr += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
-                        }
-                        outputText.Text = outstr;
-
-                        SNtextBox.Focus();
 
                     }
                     else
@@ -316,6 +307,21 @@ namespace ProjectKB
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
+        }
+
+        public void GenoutputText()
+        {
+            Random random = new Random();
+            string outstr = string.Empty;
+            foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
+            {
+                string formattedString = $"[{item}]";
+
+                outstr += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
+            }
+            outputText.Text = outstr;
+
+            SNtextBox.Focus();
         }
 
 

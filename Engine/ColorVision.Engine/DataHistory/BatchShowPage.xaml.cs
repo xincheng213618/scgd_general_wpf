@@ -51,7 +51,7 @@ namespace ColorVision.Engine.DataHistory.Dao
             if (ViewResultCameras.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
 
             AlgorithmResults.Clear();
-            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchid(ViewBatchResult.Id))
+            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(ViewBatchResult.Id))
             {
                 AlgorithmResults.AddUnique(new AlgorithmResult(item));
             }

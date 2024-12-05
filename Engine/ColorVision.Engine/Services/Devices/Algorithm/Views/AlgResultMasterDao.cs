@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.DAO;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
@@ -24,45 +25,51 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             CreateDate = DateTime.Now;
         }
 
+        [Column("tid")]
         public int? TId { get; set; }
+
+        [Column("tname")]
         public string TName { get; set; }
+
+        [Column("img_file")]
         public string ImgFile { get; set; }
 
+        [Column("img_file_type")]
         public AlgorithmResultType ImgFileType { get; set; }
+
+        [Column("batch_id")]
         public int? BatchId { get; set; }
-        public string BatchCode { get; set; }
+
+        public string BatchCode { get => BatchResultMasterDao.Instance.GetById(BatchId)?.Code; }
+
+        [Column("params")]
         public string Params { get; set; }
+
+        [Column("result_code")]
         public int? ResultCode { get; set; }
+
+        [Column("result")]
         public string Result { get; set; }
+
+        [Column("img_result")]
+        public string ResultImagFile { get; set; }
+
+        [Column("total_time")]
         public long TotalTime { get; set; }
+        [Column("create_date")]
         public DateTime? CreateDate { get; set; }
+
     }
 
 
-    public class AlgResultMasterDao : BaseDaoMaster<AlgResultMasterModel>
+    public class AlgResultMasterDao : BaseTableDao<AlgResultMasterModel>
     {
         public static AlgResultMasterDao Instance { get; set; } = new AlgResultMasterDao();
 
-        public AlgResultMasterDao() : base("v_scgd_algorithm_result_master", "t_scgd_algorithm_result_master", "id", false)
+        public AlgResultMasterDao() : base("t_scgd_algorithm_result_master", "id")
         {
         }
 
-        public override DataTable CreateColumns(DataTable dInfo)
-        {
-            dInfo.Columns.Add("id", typeof(int));
-            dInfo.Columns.Add("tid", typeof(int));
-            dInfo.Columns.Add("img_file", typeof(string));
-            dInfo.Columns.Add("tname", typeof(string));
-            dInfo.Columns.Add("img_file_type", typeof(sbyte));
-            dInfo.Columns.Add("result_code", typeof(int));
-            dInfo.Columns.Add("result", typeof(string));
-            dInfo.Columns.Add("params", typeof(string));
-
-            dInfo.Columns.Add("total_time", typeof(int));
-            dInfo.Columns.Add("batch_id", typeof(int));
-            dInfo.Columns.Add("create_date", typeof(DateTime));
-            return dInfo;
-        }
 
         public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName, DateTime? dateTimeStart, DateTime? dateTimeEnd)
         {
@@ -79,45 +86,5 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-        public override DataRow Model2Row(AlgResultMasterModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                row["tid"] = item.TId;
-                if (item.ImgFile != null) row["img_file"] = item.ImgFile;
-                if (item.TName != null) row["tname"] = item.TName;
-                if (item.Result != null) row["result"] = item.Result;
-                if (item.Params != null) row["params"] = item.Params;
-                row["batch_id"] = item.BatchId;
-                row["result_code"] = item.ResultCode;
-                row["total_time"] = item.TotalTime;
-                row["img_file_type"] = item.ImgFileType;
-                row["create_date"] = item.CreateDate;
-            }
-            return row;
-        }
-
-
-        public override AlgResultMasterModel GetModelFromDataRow(DataRow item)
-        {
-            AlgResultMasterModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                BatchId = item.Field<int?>("batch_id"),
-                BatchCode = item.Field<string>("batch_code"),
-                TId = item.Field<int?>("tid"),
-                ImgFile = item.Field<string>("img_file"),
-                ImgFileType = (AlgorithmResultType)item.Field<sbyte>("img_file_type"),
-                TName = item.Field<string>("tname"),
-                ResultCode = item.Field<int>("result_code"),
-                TotalTime = item.Field<int>("total_time"),
-                Result = item.Field<string>("result"),
-                Params = item.Field<string>("params"),
-                CreateDate = item.Field<DateTime>("create_date"),
-            };
-
-            return model;
-        }
     }
 }
