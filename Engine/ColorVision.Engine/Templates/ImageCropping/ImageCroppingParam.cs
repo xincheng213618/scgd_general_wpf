@@ -27,5 +27,10 @@ namespace ColorVision.Engine.Templates.ImageCropping
         private int _UnEgde = 1;
 
 
+        [Category("O_Index"), Description("O_Index")]
+        public string O_Index { get => GetValue(_O_Index); set { SetProperty(ref _O_Index, value); } }
+        private string _O_Index;
+
+
     }
 }
