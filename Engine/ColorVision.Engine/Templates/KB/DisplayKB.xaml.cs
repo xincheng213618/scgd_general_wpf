@@ -1,12 +1,13 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using MQTTMessageLib.FileServer;
 using NPOI.SS.Formula.Eval;
-using OpenCvSharp;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -50,7 +51,7 @@ namespace ColorVision.Engine.Templates.KB
             float exposure = 1.0f;
             string luminFile = IAlgorithm.LuminFile;
 
-            Mat image = Cv2.ImRead(imgFileName, ImreadModes.Unchanged);
+            OpenCvSharp.Mat image = OpenCvSharp.Cv2.ImRead(imgFileName, OpenCvSharp.ImreadModes.Unchanged);
             int width = image.Width;
             int height = image.Height;
             int channels = image.Channels();
@@ -100,9 +101,27 @@ namespace ColorVision.Engine.Templates.KB
             int rw = 0; int rh = 0; int rBpp = 0;int rChannel = 0; ;
             byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * 16];
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
-            Mat mat = Mat.FromPixelData( rh,rw ,MatType.CV_16UC3, pDst1);
+            OpenCvSharp.Mat mat = OpenCvSharp.Mat.FromPixelData( rh,rw , OpenCvSharp.MatType.CV_16UC3, pDst1);
             string Imageresult = $"{IAlgorithm.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{poiParam.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
             mat.SaveImage(Imageresult);
+
+            ImageView imageView = new();
+            Window window = new() { Title = Properties.Resources.QuickPreview };
+            if (Application.Current.MainWindow != window)
+            {
+                window.Owner = Application.Current.GetActiveWindow();
+            }
+            window.Content = imageView;
+            imageView.OpenImage(Imageresult);
+            window.Show();
+            if (Application.Current.MainWindow != window)
+            {
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
+                    imageView.ImageEditViewMode.ClearImage();
+                }));
+            }
+
         }
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
