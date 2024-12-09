@@ -3,6 +3,11 @@ using System;
 
 namespace ColorVision.Engine.Services.Configs
 {
+    public interface IFileServerCfg
+    {
+        public FileServerCfg FileServerCfg { get; set; }
+    }
+
     public class FileServerCfg : ViewModelBase
     {
         /// <summary>

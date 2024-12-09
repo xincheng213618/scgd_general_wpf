@@ -25,6 +25,35 @@ namespace ColorVision.Common.MVVM
             return target;
         }
 
+        public static bool EqualMax<T>(this T source, T target) where T : ViewModelBase, new()
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(target);
+
+            Type type = source.GetType();
+
+            // 可能需要检查source和target是否是同一个类型或者target是否是source的子类。
+            if (!type.IsAssignableFrom(target.GetType()))
+            {
+                return false;
+            }
+
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                  .Where(p => p.CanRead && p.CanWrite);
+
+            foreach (var property in properties)
+            {
+                var value1 = property.GetValue(source);
+                var value2 = property.GetValue(target);
+
+                if (!object.Equals(value1, value2))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public static void Reset<T>(this T source) where T : ViewModelBase, new()
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -45,6 +74,8 @@ namespace ColorVision.Common.MVVM
                 }
             }
         }
+
+
 
         public static T DeepCopy<T>(this T source) where T : ViewModelBase, new()
         {

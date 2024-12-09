@@ -4,7 +4,7 @@ using ColorVision.Engine.Services.Core;
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
 
-    public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig
+    public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig, IFileServerCfg
     {
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
         private bool _IsAutoOpen;

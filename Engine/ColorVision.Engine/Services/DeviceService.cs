@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -10,6 +11,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
+using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using System;
@@ -45,6 +47,7 @@ namespace ColorVision.Engine.Services
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
+        public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
@@ -168,7 +171,25 @@ namespace ColorVision.Engine.Services
 
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
+            UpdateFilecfgCommand = new RelayCommand(a => UpdateFilecfg(), a=> Config is IFileServerCfg);
+        }
 
+        public void UpdateFilecfg()
+        {
+            if (Config is IFileServerCfg fileServerCfg)
+            {
+                var oldvalue = fileServerCfg.FileServerCfg.Clone();
+
+                var window = new PropertyEditorWindow(fileServerCfg.FileServerCfg, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.Closed += (s, e) =>
+                {
+                    if (!fileServerCfg.FileServerCfg.EqualMax(oldvalue))
+                    {
+                        Save();
+                    }
+                };
+                window.ShowDialog();
+            }
         }
 
         public override string SendTopic { get => Config.SendTopic; set { Config.SendTopic = value; NotifyPropertyChanged(); } }

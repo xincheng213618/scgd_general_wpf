@@ -91,6 +91,7 @@
                                 <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="刷新设备列表" Margin="5" Height="100" Width="180"  Command="{Binding RefreshDeviceIdCommand}" />
                                 <Button Content="管理物理相机"  Margin="5" Height="100" Width="180" Command="{Binding OpenPhyCameraMangerCommand}"  />
+                                <Button Content="更新文件保存地址" Margin="5" Height="100" Width="180" Command="{Binding UpdateFilecfgCommand}"/>
                                 <Button Content="清理服务缓存" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ServiceClearCommand }"/>
                             </UniformGrid>
                         </ScrollViewer>

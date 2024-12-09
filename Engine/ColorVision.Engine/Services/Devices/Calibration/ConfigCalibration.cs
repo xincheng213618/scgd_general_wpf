@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
-    public class ConfigCalibration: DeviceServiceConfig
+    public class ConfigCalibration: DeviceServiceConfig, IFileServerCfg
     {
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged(); } }
         private string? _CameraCode;

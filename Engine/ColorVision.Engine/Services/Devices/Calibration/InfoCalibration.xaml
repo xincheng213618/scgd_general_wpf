@@ -87,6 +87,8 @@
                                 <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
                                 <Button Content="{x:Static properties:Resources.RefreshService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="{x:Static properties:Resources.ManagePhysicalCamera}" Margin="5" Height="100" Width="180" Command="{Binding OpenPhyCameraMangerCommand}"  />
+                                <Button Content="更新文件保存地址" Margin="5" Height="100" Width="180" Command="{Binding UpdateFilecfgCommand}"/>
+
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

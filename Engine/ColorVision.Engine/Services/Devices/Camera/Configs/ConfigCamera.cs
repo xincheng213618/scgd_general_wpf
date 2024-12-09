@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// <summary>
     /// 相机配置
     /// </summary>
-    public class ConfigCamera : DeviceServiceConfig
+    public class ConfigCamera : DeviceServiceConfig, IFileServerCfg
     {
         public ConfigCamera()
         {
