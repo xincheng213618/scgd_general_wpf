@@ -56,6 +56,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 Y = pOIDataCIEY.Y >= 0 ? pOIDataCIEY.Y : 0.001;
             }
         }
+        public PoiResultCIEYData() : base()
+        {
+        }
 
     }
 

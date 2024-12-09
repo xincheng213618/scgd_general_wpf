@@ -67,12 +67,10 @@ namespace ColorVision.Util.Draw.Special
 
 
 
-        public void DrawImageCVCIE(ImageInfo imageInfo,double XVal,double YVal, double ZVal,double x,double y,double u,double v)
+        public void DrawImage(ImageInfo imageInfo,string text1,string text2 )
         {
             Point actPoint = imageInfo.ActPoint;
             Point disPoint = imageInfo.BitmapPoint;
-
-
 
             if (Image.Source is BitmapSource bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
             {
@@ -122,10 +120,10 @@ namespace ColorVision.Util.Draw.Special
                 FormattedText formattedTex3 = new($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
 
-                FormattedText formattedTex4 = new($"X:{XVal:F1},Y:{YVal:F1},Z:{ZVal:F1}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedTex4 = new(text1, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 44));
 
-                FormattedText formattedTex5 = new($"x:{x:F2},y:{y:F2},u:{u:F2},v:{v:F2}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedTex5 = new(text2, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedTex5, new Point(x1 + 5, y1 + height + 57));
 
                 dc.Pop();

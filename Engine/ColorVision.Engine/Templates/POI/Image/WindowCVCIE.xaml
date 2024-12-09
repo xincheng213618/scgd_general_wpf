@@ -18,7 +18,7 @@
         </ToolBar>
        
         
-        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="1" Initialized="listViewSide_Initialized">
+        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Row="1">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>

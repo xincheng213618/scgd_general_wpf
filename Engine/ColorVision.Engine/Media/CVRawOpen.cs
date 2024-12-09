@@ -5,6 +5,8 @@ using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
+using NPOI.SS.Formula.Eval;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +14,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
 {
@@ -67,17 +70,46 @@ namespace ColorVision.Engine.Media
                 switch (imageView.Config.CVCIETYpe)
                 {
                     case CVCIETYpe.Circle:
-                        _ = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum);
-                        imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+                        if (exp.Length == 1)
+                        {
+                            int ret = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal,imageView.Config.CVCIENum);
+                            string text1 = $"Y:{dYVal:F1}";
+                            string text2 = $"";
+                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                        }
+                        else
+                        {
+                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum);
+                            string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+                            string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
+                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                        }
+
                         break;
                     case CVCIETYpe.Rect:
-                        _ = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
-                        imageView.ImageEditViewMode.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+                        if (exp.Length == 1)
+                        {
+                            int ret = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            string text1 = $"Y:{dYVal:F1}";
+                            string text2 = $"";
+                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                        }
+                        else
+                        {
+                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+                            string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
+                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                        }
+
                         break;
                     default:
                         break;
                 }
+
+
             }
+
             imageView.ImageEditViewMode.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 
             imageView.ImageEditViewMode.ClearImageEventHandler += (s, e) =>
@@ -134,6 +166,8 @@ namespace ColorVision.Engine.Media
                 if (meta.FileExtType == FileExtType.CIE)
                 {
                     imageView.Config.AddProperties("IsCVCIE", true);
+                    imageView.Config.AddProperties("Exp", meta.exp);
+                    exp = meta.exp;
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
@@ -151,6 +185,7 @@ namespace ColorVision.Engine.Media
             }
 
         }
+        public float[] exp { get; set; }
 
         public List<MenuItem> GetContextMenuItems(ImageView imageView)
         {

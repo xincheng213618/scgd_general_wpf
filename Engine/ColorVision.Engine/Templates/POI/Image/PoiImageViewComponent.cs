@@ -109,7 +109,6 @@ namespace ColorVision.Engine.Templates.POI.Image
                 }
 
 
-                ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
                 int result = ConvertXYZ.CM_SetFilter(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.Enable, poiParams.PoiConfig.Filter.Threshold);
                 result = ConvertXYZ.CM_SetFilterNoArea(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.NoAreaEnable, poiParams.PoiConfig.Filter.Threshold);
                 result = ConvertXYZ.CM_SetFilterXYZ(imageView.Config.ConvertXYZhandle, poiParams.PoiConfig.Filter.XYZEnable, (int)poiParams.PoiConfig.Filter.XYZType, poiParams.PoiConfig.Filter.Threshold);
@@ -175,18 +174,62 @@ namespace ColorVision.Engine.Templates.POI.Image
                     }
                 }
 
-
-
-                foreach (var item in poiParams.PoiPoints)
+                if (imageView.Config.GetProperties<float[]>("Exp") is float[] exp && exp.Length == 1)
                 {
-                    POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
-                    var sss = GetCVCIE(pOIPoint);
-                    PoiResultCIExyuvDatas.Add(sss);
+                    ObservableCollection<PoiResultCIEYData> PoiResultCIEYData = new ObservableCollection<PoiResultCIEYData>();
+
+                    foreach (var item in poiParams.PoiPoints)
+                    {
+                        POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
+                        var sss = GetCVCIEY(pOIPoint);
+                        PoiResultCIEYData.Add(sss);
+                    }
+                    new WindowCVCIE(PoiResultCIEYData) { Owner = Application.Current.GetActiveWindow() }.Show();
+                }
+                else
+                {
+                    ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+
+
+                    foreach (var item in poiParams.PoiPoints)
+                    {
+                        POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
+                        var sss = GetCVCIE(pOIPoint);
+                        PoiResultCIExyuvDatas.Add(sss);
+                    }
+                    new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() }.Show();
+
                 }
 
+            }
 
-                WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
-                windowCIE.Show();
+            PoiResultCIEYData GetCVCIEY(POIPoint poiPoint)
+            {
+                int x = poiPoint.PixelX; int y = poiPoint.PixelY; int rect = poiPoint.Width; int rect2 = poiPoint.Height;
+                PoiResultCIEYData PoiResultCIEYData = new PoiResultCIEYData();
+                PoiResultCIEYData.Point = poiPoint;
+                float dYVal = 0;
+
+                float Wave = 0;
+
+                switch (poiPoint.PointType)
+                {
+                    case POIPointTypes.None:
+                        break;
+                    case POIPointTypes.SolidPoint:
+                        _ = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, x, y, ref dYVal, 1);
+                        break;
+                    case POIPointTypes.Circle:
+                        _ = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, x, y, ref dYVal, rect / 2);
+                        break;
+                    case POIPointTypes.Rect:
+                        _ = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, x, y, ref dYVal, rect, rect2);
+                        break;
+                    default:
+                        break;
+                }
+                PoiResultCIEYData.Y = dYVal;
+                return PoiResultCIEYData;
             }
 
 
@@ -236,6 +279,8 @@ namespace ColorVision.Engine.Templates.POI.Image
 
                 return poiResultCIExyuvData;
             }
+
+
             WindowCIE windowCIE = null;
 
             void ButtonCIE1931_Click(object sender, RoutedEventArgs e)

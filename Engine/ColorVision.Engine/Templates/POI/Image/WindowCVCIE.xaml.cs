@@ -21,14 +21,9 @@ namespace ColorVision.Engine.Media
             PoiResultCIExyuvDatas = poiResultCIExyuvDatas;  
             InitializeComponent();
             this.ApplyCaption();
-        }
 
-        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        private void listViewSide_Initialized(object sender, EventArgs e)
-        {
-            var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u'", "v'", "x", "y", "Validate" };
+            var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u'", "v'", "x", "y" };
 
             if (listViewSide.View is GridView gridViewPOI_XY_UV)
             {
@@ -39,6 +34,27 @@ namespace ColorVision.Engine.Media
             }
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
         }
+
+        public WindowCVCIE(ObservableCollection<PoiResultCIEYData> poiResultCIEYDatas)
+        {
+            InitializeComponent();
+            this.ApplyCaption();
+
+            var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y"};
+            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "Y" };
+
+            if (listViewSide.View is GridView gridViewPOI_XY_UV)
+            {
+                LeftGridViewColumnVisibilitys.Clear();
+                gridViewPOI_XY_UV.Columns.Clear();
+                for (int i = 0; i < cieHeader.Count; i++)
+                    gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+            }
+            listViewSide.ItemsSource = poiResultCIEYDatas;
+        }
+
+        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
 
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
         {
