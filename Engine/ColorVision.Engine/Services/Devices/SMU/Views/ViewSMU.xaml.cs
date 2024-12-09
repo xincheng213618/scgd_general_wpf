@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = ViewSMUConfig.Instance;
             TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
@@ -59,8 +61,14 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             wpfplot2.Plot.Axes.Title.Label.FontName = Fonts.Detect(title);
             wpfplot2.Plot.Axes.Left.Label.FontName = Fonts.Detect(title);
             wpfplot2.Plot.Axes.Bottom.Label.FontName = Fonts.Detect(title);
+
             if (listView1.View is GridView gridView)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)

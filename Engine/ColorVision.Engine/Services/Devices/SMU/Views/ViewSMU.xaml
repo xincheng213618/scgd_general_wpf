@@ -8,6 +8,7 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:ViewSMUConfig}"
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}"  Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
