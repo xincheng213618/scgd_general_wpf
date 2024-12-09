@@ -17,6 +17,27 @@ namespace ColorVision.Common.MVVM
             return target;
         }
 
+        public static void Reset<T>(this T source) where T : ViewModelBase, new()
+        {
+            ArgumentNullException.ThrowIfNull(source);
+
+            Type type = source.GetType();
+
+            // Create a new instance of the same type as source
+            if (Activator.CreateInstance(type) is T newInstance)
+            {
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                      .Where(p => p.CanRead && p.CanWrite);
+
+                foreach (var property in properties)
+                {
+                    // Copy properties from the new instance to the source
+                    var value = property.GetValue(newInstance);
+                    property.SetValue(source, value);
+                }
+            }
+        }
+
         public static T DeepCopy<T>(this T source) where T : ViewModelBase, new()
         {
             #pragma warning disable SYSLIB0011

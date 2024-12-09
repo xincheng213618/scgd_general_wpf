@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             InitializeComponent();
             this.ApplyCaption();
         }
-             private void Window_Initialized(object sender, System.EventArgs e)
+        private void Window_Initialized(object sender, System.EventArgs e)
         {
             DataContext = Device;
             EditConfig = Device.Config.Clone();

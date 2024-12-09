@@ -20,8 +20,13 @@ namespace ColorVision.UI.PropertyEditor
     public partial class PropertyEditorWindow : Window
     {
         public ViewModelBase Config { get; set; }
-        public PropertyEditorWindow(ViewModelBase config)
+        public ViewModelBase EditConfig { get; set; }
+
+        public bool IsEdit { get; set; } = true;
+
+        public PropertyEditorWindow(ViewModelBase config ,bool isEdit = true)
         {
+            IsEdit = isEdit;
             Config = config;
             InitializeComponent();
             this.ApplyCaption();
@@ -163,21 +168,28 @@ namespace ColorVision.UI.PropertyEditor
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            DisplayProperties(Config);
+            if (IsEdit)
+            {
+                DisplayProperties(Config);
+
+            }
+            else
+            {
+                EditConfig = Config.Clone();
+                DisplayProperties(EditConfig);
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            if (!IsEdit)
+                EditConfig.CopyTo(Config);
             this.Close();
         }
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            Type type = Config.GetType();
-            if (Activator.CreateInstance(type) is ViewModelBase defaultConfig)
-            {
-                ViewModeBaseExtensions.CopyToSimple(defaultConfig, Config);
-            }
+            Config.Reset();
         }
     }
 }
