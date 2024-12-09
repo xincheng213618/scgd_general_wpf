@@ -11,6 +11,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
 
 namespace ColorVision.UI.PropertyEditor
 {
@@ -33,14 +34,16 @@ namespace ColorVision.UI.PropertyEditor
         }
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
-        public void GenCategoryGroups(ViewModelBase source ,string category)
+        public void GenCategoryGroups(ViewModelBase source)
         {
             Type type = source.GetType();
-            PropertyInfo[] properties = type.GetProperties();
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                  .Where(p => p.CanRead && p.CanWrite);
+
             foreach (PropertyInfo property in properties)
             {
                 var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-                category = categoryAttr?.Category ?? category;
+                string category = categoryAttr?.Category ?? "default";
                 if (!categoryGroups.TryGetValue(category, out List<PropertyInfo>? value))
                 {
                     categoryGroups.Add(category, new List<PropertyInfo>() { property });
@@ -49,28 +52,30 @@ namespace ColorVision.UI.PropertyEditor
                 {
                     value.Add(property);
                 }
-                if (property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
-                {
-                    var fieldValue = property.GetValue(source);
 
-                    if (fieldValue is ViewModelBase viewModelBase)
+                //子类型如果查找不到则设置为空
+                var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
+                if (browsableAttr?.Browsable ?? false)
+                {
+                    if (property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
                     {
-                        Type type1 = fieldValue.GetType();
-                        GenCategoryGroups(viewModelBase, type1.Name);
+                        var fieldValue = property.GetValue(source);
+
+                        if (fieldValue is ViewModelBase viewModelBase)
+                        {
+                            Type type1 = fieldValue.GetType();
+                            GenCategoryGroups(viewModelBase);
+                        }
                     }
                 }
+
             }
         }
 
 
         public void DisplayProperties(ViewModelBase obj)
         {
-            Type type = obj.GetType();
-            PropertyInfo[] properties = type.GetProperties();
-
-            GenCategoryGroups(obj, type.Name);
-
-
+            GenCategoryGroups(obj);
             foreach (var categoryGroup in categoryGroups)
             {
                 var border = new Border
