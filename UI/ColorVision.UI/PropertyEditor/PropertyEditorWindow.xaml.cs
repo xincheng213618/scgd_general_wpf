@@ -33,14 +33,14 @@ namespace ColorVision.UI.PropertyEditor
         }
         public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
-        public void DisplayProperties(ViewModelBase obj)
+        public void GenCategoryGroups(ViewModelBase source ,string category)
         {
-            Type type = obj.GetType();
+            Type type = source.GetType();
             PropertyInfo[] properties = type.GetProperties();
             foreach (PropertyInfo property in properties)
             {
                 var categoryAttr = property.GetCustomAttribute<CategoryAttribute>();
-                string category = categoryAttr?.Category ?? "Default";
+                category = categoryAttr?.Category ?? category;
                 if (!categoryGroups.TryGetValue(category, out List<PropertyInfo>? value))
                 {
                     categoryGroups.Add(category, new List<PropertyInfo>() { property });
@@ -49,7 +49,27 @@ namespace ColorVision.UI.PropertyEditor
                 {
                     value.Add(property);
                 }
+                if (property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
+                {
+                    var fieldValue = property.GetValue(source);
+
+                    if (fieldValue is ViewModelBase viewModelBase)
+                    {
+                        Type type1 = fieldValue.GetType();
+                        GenCategoryGroups(viewModelBase, type1.Name);
+                    }
+                }
             }
+        }
+
+
+        public void DisplayProperties(ViewModelBase obj)
+        {
+            Type type = obj.GetType();
+            PropertyInfo[] properties = type.GetProperties();
+
+            GenCategoryGroups(obj, type.Name);
+
 
             foreach (var categoryGroup in categoryGroups)
             {
@@ -189,7 +209,14 @@ namespace ColorVision.UI.PropertyEditor
 
         private void Reset_Click(object sender, RoutedEventArgs e)
         {
-            Config.Reset();
+            if (!IsEdit)
+            {
+                EditConfig.Reset();
+            }
+            else
+            {
+                Config.Reset();
+            }
         }
     }
 }
