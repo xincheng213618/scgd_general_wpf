@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.MTF
         {
         }
 
-        [Category("MTF"), Description("MTF dRatio")]
+        [Category("MTF"), Description("MTF dRatio"),DisplayName]
         public double MTF_dRatio { get => GetValue(_MTF_dRatio); set { SetProperty(ref _MTF_dRatio, value); } }
         private double _MTF_dRatio = 0.01;
 

@@ -98,6 +98,7 @@ namespace ColorVision.Engine.Templates.KB
                 }
             }
             IntPtr pData = Marshal.AllocHGlobal(width * height * channels);
+
             int rw = 0; int rh = 0; int rBpp = 0;int rChannel = 0; ;
             byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * 16];
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);

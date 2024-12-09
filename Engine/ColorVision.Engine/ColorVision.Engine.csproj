@@ -113,9 +113,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Update="PropertyEditor\PropertyEditorWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -144,9 +141,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\SFR\EditSFR.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Services\Devices\Algorithm\Views\EditViewAlgorithmConfig.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\Spectrum\Views\EditViewSpectrumConfig.xaml.cs">
