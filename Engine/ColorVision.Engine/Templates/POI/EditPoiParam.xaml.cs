@@ -46,6 +46,7 @@ using ColorVision.UI.Configs;
 using System.Windows.Data;
 using Panuon.WPF;
 using ColorVision.Engine.Templates.KB;
+using ColorVision.ImageEditor.Tif;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -441,7 +442,11 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 OpenImage(new NetFileUtil().OpenLocalCVFile(filePath));
             }
-            else
+            else if (Path.GetExtension(filePath).Contains(".tif"))
+            {
+                SetImageSource(TiffReader.ReadTiff(filePath));
+            }
+            else 
             {
                 BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                 SetImageSource(bitmapImage.ToWriteableBitmap());
@@ -450,7 +455,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
 
 
-        public void SetImageSource(WriteableBitmap imageSource)
+        public void SetImageSource(BitmapSource imageSource)
         {
             ImageShow.Source = imageSource;
 

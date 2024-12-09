@@ -39,13 +39,20 @@ namespace ColorVision.Net
         public static bool IsCIEFile(string? filePath)
         {
             if (!File.Exists(filePath)) return false;
+            try
+            {
+                using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
+                if (fs.Length < HeaderSize) return false;
 
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
-            if (fs.Length < HeaderSize) return false;
+                using BinaryReader br = new(fs);
+                string fileHeader = new(br.ReadChars(HeaderSize));
+                return fileHeader == MagicHeader;
 
-            using BinaryReader br = new(fs);
-            string fileHeader = new(br.ReadChars(HeaderSize));
-            return fileHeader == MagicHeader;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         public static bool IsCIEFile(byte[] fileData)
