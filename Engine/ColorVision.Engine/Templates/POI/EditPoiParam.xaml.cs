@@ -2024,6 +2024,11 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             new EidtPoiDataGridForm((ObservableCollection<IDrawingVisual>)DrawingVisualLists).Show();           
         }
+
+        private void Setting(object sender, RoutedEventArgs e)
+        {
+            
+        }
     }
 
 }

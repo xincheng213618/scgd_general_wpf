@@ -695,6 +695,9 @@
                     </ListView>
                     <Grid Grid.Column="1">
                         <StackPanel>
+                            <Button  Click="Setting" >
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </Button>
                             <Button Content="编辑" Click="Button_Click_1"/>
                         </StackPanel>
                         

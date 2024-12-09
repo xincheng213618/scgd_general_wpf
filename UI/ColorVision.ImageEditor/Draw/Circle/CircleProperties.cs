@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class CircleProperties : BaseProperties
+    public class CircleProperties : BaseProperties,ICircle
     {
         [Browsable(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }

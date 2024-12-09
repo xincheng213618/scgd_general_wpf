@@ -2,7 +2,6 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
-      "commandLineArgs": "-i \"C:\\Users\\17917\\Desktop\\2024-12-09\\20241209T173118.1201844_F_5.6W.cvcie\"",
       "nativeDebugging": true
     }
   }
