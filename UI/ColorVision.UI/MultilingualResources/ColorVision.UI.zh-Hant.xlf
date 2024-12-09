@@ -185,6 +185,10 @@
           <source>清除</source>
           <target state="new">清除</target>
         </trans-unit>
+        <trans-unit id="Close" translate="yes" xml:space="preserve">
+          <source>关闭</source>
+          <target state="new">關閉</target>
+        </trans-unit>
         <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
           <source>当前速度：</source>
           <target state="new">目前速度：</target>
@@ -280,6 +284,10 @@
         <trans-unit id="OpenLogFolder" translate="yes" xml:space="preserve">
           <source>打开日志文件夹</source>
           <target state="new">打開日誌資料夾</target>
+        </trans-unit>
+        <trans-unit id="Reset" translate="yes" xml:space="preserve">
+          <source>重置</source>
+          <target state="new">重置</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>

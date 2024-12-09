@@ -185,6 +185,10 @@
           <source>清除</source>
           <target state="new">Прозрачный</target>
         </trans-unit>
+        <trans-unit id="Close" translate="yes" xml:space="preserve">
+          <source>关闭</source>
+          <target state="new">закрытие</target>
+        </trans-unit>
         <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
           <source>当前速度：</source>
           <target state="new">Текущая скорость:</target>
@@ -255,7 +259,7 @@
         </trans-unit>
         <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
           <source>打开(_O)</source>
-          <target state="new"></target>
+          <target state="new">_Открыть</target>
         </trans-unit>
         <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
           <source>选项(_O)</source>
@@ -280,6 +284,10 @@
         <trans-unit id="OpenLogFolder" translate="yes" xml:space="preserve">
           <source>打开日志文件夹</source>
           <target state="new">OpenLogFolder</target>
+        </trans-unit>
+        <trans-unit id="Reset" translate="yes" xml:space="preserve">
+          <source>重置</source>
+          <target state="new">перезагрузить</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>

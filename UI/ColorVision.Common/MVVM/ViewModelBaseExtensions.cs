@@ -28,6 +28,67 @@ namespace ColorVision.Common.MVVM
             #pragma warning restore SYSLIB0011
         }
 
+        public static void CopyToSimple<T>(this T source, T target) where T : ViewModelBase
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(target);
+
+            Type type = source.GetType();
+
+            // 可能需要检查source和target是否是同一个类型或者target是否是source的子类。
+            if (!type.IsAssignableFrom(target.GetType()))
+            {
+                throw new ArgumentException("Target must be the same type or a subtype of the source.");
+            }
+
+            // Copy fields and properties from the type and all its base types
+            while (type != null && type != typeof(object))
+            {
+                // Copy fields
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    if (!field.IsInitOnly) // Ignore readonly fields
+                    {
+                        try
+                        {
+                            var fieldValue = field.GetValue(source);
+                            if (!field.FieldType.IsClass)
+                                field.SetValue(target, fieldValue);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Handle or log the exception
+                            Console.WriteLine($"Error copying field {field.Name}: {ex.Message}");
+                        }
+                    }
+                }
+
+                // Copy properties
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                     .Where(p => p.CanRead && p.CanWrite);
+                foreach (var property in properties)
+                {
+                    try
+                    {
+                        var propertyValue = property.GetValue(source);
+                        if (!property.PropertyType.IsClass)
+                            property.SetValue(target, propertyValue);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle or log the exception
+                        Console.WriteLine($"Error copying property {property.Name}: {ex.Message}");
+                    }
+                }
+
+                // Move to the base type
+                type = type.BaseType;
+            }
+        }
+
+
+
         public static void CopyFrom<T>(this T source, T target) where T : ViewModelBase => target.CopyTo(source);
         public static void CopyTo<T>(this T source, T target) where T : ViewModelBase
         {

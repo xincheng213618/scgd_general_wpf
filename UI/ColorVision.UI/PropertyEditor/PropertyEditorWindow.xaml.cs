@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.UI.PropertyEditor
@@ -140,7 +141,7 @@ namespace ColorVision.UI.PropertyEditor
                 Margin = new Thickness(5, 0, 0, 0),
                 Style = (Style)FindResource("TextBox.Small")
             };
-
+            textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
             var binding = new Binding(property.Name)
             {
                 Source = obj,
@@ -150,12 +151,33 @@ namespace ColorVision.UI.PropertyEditor
             dockPanel.Children.Add(textbox);
             return dockPanel;
         }
-
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Common.NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
             DisplayProperties(Config);
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            Type type = Config.GetType();
+            if (Activator.CreateInstance(type) is ViewModelBase defaultConfig)
+            {
+                ViewModeBaseExtensions.CopyToSimple(defaultConfig, Config);
+            }
         }
     }
 }

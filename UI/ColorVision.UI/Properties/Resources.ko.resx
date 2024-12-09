@@ -237,4 +237,10 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>열기 (_O)</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>다시 놓기</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>폐쇄</value>
+  </data>
 </root>

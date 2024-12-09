@@ -237,4 +237,10 @@
   <data name="MenuOpen" xml:space="preserve">
     <value>Ouvert(O)</value>
   </data>
+  <data name="Reset" xml:space="preserve">
+    <value>réinitialiser</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>fermeture</value>
+  </data>
 </root>
