@@ -2,6 +2,8 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
+using cvColorVision;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -46,6 +48,9 @@ namespace ColorVision.Engine.Services
                     });
                 }
                 _messageUpdater.Update("服务初始化完成");
+
+                cvCameraCSLib.InitResource(IntPtr.Zero, IntPtr.Zero);
+                _messageUpdater.Update("初始化日志");
             }
             else
             {

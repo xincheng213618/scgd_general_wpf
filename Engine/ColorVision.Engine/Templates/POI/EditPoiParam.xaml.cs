@@ -155,9 +155,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE.AVG")?.CreateEmpty();
-            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE")?.CreateEmpty();
-
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -587,7 +584,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Circle.Attribute.Text = item.Name;
 
                             Circle.Attribute.Name = item.Id.ToString();
-                            Circle.Attribute.Tag = item.ValidateTId;
 
                             if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
                                 Circle.Attribute.Param = item.Param;
@@ -606,7 +602,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                             Rectangle.Attribute.Text = item.Name;
                             Rectangle.Attribute.Name = item.Id.ToString();
 
-                            Rectangle.Attribute.Tag = item.ValidateTId;
                             if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
                                 Rectangle.Attribute.Param = item.Param;
                             Rectangle.Render();
@@ -1448,7 +1443,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
                         PixHeight = circle.Radius * 2,
-                        ValidateTId = circle.Tag,
                         Name = circle.Text
                     };
                     if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
@@ -1474,7 +1468,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height/2,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
-                        ValidateTId = rectangle.Tag,
                     };
                     if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
                     {
@@ -1879,22 +1872,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             {
                 PoiParam.PoiConfig.Polygons.Remove(polygonPoint);
                 RenderPoiConfig();
-            }
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in DrawingVisualLists)
-            {
-                item.BaseAttribute.Tag = PoiParam.PoiConfig.DeafultValidateCIEId;
-            }
-        }
-
-        private void ComboBoxValidateCIE_Initialized(object sender, EventArgs e)
-        {
-            if (sender is ComboBox comboBox)
-            {
-                comboBox.ItemsSource = TemplateComplyParam.CIEParams.GetValue("Comply.CIE");
             }
         }
 

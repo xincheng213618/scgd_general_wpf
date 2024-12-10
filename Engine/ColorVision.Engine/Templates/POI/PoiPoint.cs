@@ -95,9 +95,6 @@ namespace ColorVision.Engine.Templates.POI
         public double PixY { set; get; }
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
-
-        public int? ValidateTId { set; get; }
-
         public PoiPointParam Param { get;set; }
     }
 

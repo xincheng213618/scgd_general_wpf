@@ -404,7 +404,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     }
                     RenderPoiConfig();
                 }
-
+ 
                 if (ImageEditViewMode.SelectDrawingVisuals !=null)
                 {
                     foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
