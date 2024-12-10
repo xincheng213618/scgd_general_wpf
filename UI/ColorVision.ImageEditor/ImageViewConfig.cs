@@ -53,6 +53,8 @@ namespace ColorVision.ImageEditor
 
         public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
         private int _CVCIENum = 1;
+        public double PoiCircleRadius { get => _PoiCircleRadius; set { _PoiCircleRadius = value; NotifyPropertyChanged(); } }
+        private double _PoiCircleRadius = 1;
 
         public CVCIETYpe CVCIETYpe { get => _CVCIETYpe; set { _CVCIETYpe = value; NotifyPropertyChanged(); } }
         public CVCIETYpe _CVCIETYpe;
