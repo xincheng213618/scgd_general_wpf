@@ -152,8 +152,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord =  DService.GetAllCameraID();
             msgRecord.MsgSucessed += (e) =>
             {
-
-                MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                MessageBox.Show(Application.Current.GetActiveWindow(),"当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
                 PhyCameraManager.GetInstance().LoadPhyCamera();
                 PhyCameraManager.GetInstance().RefreshEmptyCamera();
             };
