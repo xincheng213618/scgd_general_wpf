@@ -9,6 +9,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
+
     public class TemplateJsonKBParam : TemplateJsonParam
     {
         private static ILog log = LogManager.GetLogger(nameof(TemplateJsonKBParam));

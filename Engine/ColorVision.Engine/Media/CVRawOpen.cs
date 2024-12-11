@@ -5,6 +5,7 @@ using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
 using NPOI.SS.Formula.Eval;
 using NPOI.SS.Formula.Functions;
 using System;
@@ -166,6 +167,7 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
+                    log.Info(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
                     imageView.Config.AddProperties("Exp", meta.exp);
                     exp = meta.exp;

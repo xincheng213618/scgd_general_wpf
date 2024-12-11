@@ -50,7 +50,6 @@
                         </ListView.Resources>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
                         <ListView.View>
@@ -170,6 +169,9 @@
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="Test" Click="Button_Click"/>
             </StatusBarItem>
         </StatusBar>
 

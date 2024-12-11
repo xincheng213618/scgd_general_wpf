@@ -111,7 +111,6 @@ namespace ColorVision.Engine.Templates.KB
                         {
                             MessageBox.Show(ex.Message);
                         }
-
                     }
                 }
             }

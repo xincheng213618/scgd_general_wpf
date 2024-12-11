@@ -108,7 +108,7 @@
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
                     <Button Content="{x:Static properties:Resources.OK}" Width="80"  Click="Button_Click"/>
-                    <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="Button_Click_2"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="Button_Click" />
                 </UniformGrid>
             </StackPanel>
 

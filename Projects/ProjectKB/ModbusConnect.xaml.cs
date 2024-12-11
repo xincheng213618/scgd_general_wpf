@@ -93,6 +93,7 @@ namespace ProjectKB
                 ModbusConfig.Name = ModbusConfig.Host +"_" +ModbusConfig.Port;
             }
             ModbusConfigs.Remove(ModbusConfig);
+            ModbusControl.GetInstance().Connect();
             Close();
         }
 
