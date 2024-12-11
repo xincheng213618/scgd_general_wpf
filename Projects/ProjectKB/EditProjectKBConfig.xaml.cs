@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -27,6 +28,16 @@ namespace ProjectKB
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectKBConfig.Instance;
+        }
+
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            ProjectKBConfig.Instance.Reset();
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
         }
     }
 }

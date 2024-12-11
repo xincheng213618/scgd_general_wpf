@@ -99,7 +99,7 @@ namespace ProjectKB
         [JsonIgnore]
         public string SN { get => _SN; set
             {
-                if (value.Length > SNMax)
+                if (!string.IsNullOrEmpty(value) && value.Length > SNMax)
                 {
                     // 移除最前面的字符，使其长度为 14
                     _SN = value.Substring(value.Length - SNMax);
@@ -119,5 +119,8 @@ namespace ProjectKB
 
         public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
         private long _LastFlowTime;
+       
+        public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
+        private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
     }
 }

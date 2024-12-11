@@ -88,7 +88,10 @@
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
                             </DockPanel>
-
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="寄存器地址" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="寄存器地址"  VerticalAlignment="Center"  Text="{Binding RegisterAddress}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
+                            </DockPanel>
                         </StackPanel>
                     </Grid>
                 </Border>

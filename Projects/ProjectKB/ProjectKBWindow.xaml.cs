@@ -26,19 +26,35 @@ using System.IO;
 using ColorVision.Engine.Templates.Jsons.KB;
 using Newtonsoft.Json;
 using ColorVision.Engine.MySql.ORM;
+using Org.BouncyCastle.Asn1.BC;
 
 namespace ProjectKB
 {
     public class KBItem : ViewModelBase
     {
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
-        private int _Id;
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
+        public double Lv { get => _Lv; set { _Lv = value; NotifyPropertyChanged(); } }
+        private double _Lv;
+        public double Cx { get => _Cx; set { _Cx = value; NotifyPropertyChanged(); } }
+        private double _Cx;
+        public double Cy { get => _Cy; set { _Cy = value; NotifyPropertyChanged(); } }
+        private double _Cy;
+        public double Lc { get => _Lc; set { _Lc = value; NotifyPropertyChanged(); } }
+        private double _Lc;
+    }
+
+
+    public class KBItemMaster : ViewModelBase
+    {
+        public ObservableCollection<KBItem> Items { get; set; } = new ObservableCollection<KBItem>();
+
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
-
         public double Exposure { get => _Exposure; set { _Exposure = value; NotifyPropertyChanged(); } }
         private double _Exposure;
 
@@ -75,8 +91,11 @@ namespace ProjectKB
 
         public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
         private bool _Result;
-
     }
+
+
+
+
 
     /// <summary>
     /// Interaction logic for ProjectKBWindow.xaml
@@ -84,7 +103,7 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public ObservableCollection<KBItem> ViewResluts { get; set; } = new ObservableCollection<KBItem>();
+        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
 
 
         public ProjectKBWindow()
@@ -101,7 +120,6 @@ namespace ProjectKB
         {
             this.DataContext = ProjectKBConfig.Instance;
             listView1.ItemsSource = ViewResluts;
-
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -136,8 +154,8 @@ namespace ProjectKB
 
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
-
         }
+
 
         private void TimeRun(object? state)
         {
@@ -300,7 +318,7 @@ namespace ProjectKB
                         ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                         log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                        KBItem kBItem = new KBItem();
+                        KBItemMaster kBItem = new KBItemMaster();
                         kBItem.Id = Batch.Id;
                         kBItem.SN = Batch.Code;
                         kBItem.AvgC1 = 1;
@@ -313,16 +331,24 @@ namespace ProjectKB
                                 KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(item.Params);
                                 if (kBJson != null)
                                 {
-                                    if (File.Exists(item.ResultImagFile))
+                                    Task.Run(() =>
                                     {
-                                        ImageView.OpenImage(item.ResultImagFile);
-                                    }
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            if (File.Exists(item.ResultImagFile))
+                                            {
+                                                ImageView.OpenImage(item.ResultImagFile);
+                                            }
+
+                                        });
+                                    });
                                 }
                             }
 
                         }
 
-
+                        //还原Modbus状态；
+                        ModbusControl.GetInstance().SetRegisterValue(1);
                     }
                     else
                     {
@@ -341,7 +367,8 @@ namespace ProjectKB
             }
         }
 
-        public void GenoutputText(KBItem kBItem)
+
+        public void GenoutputText(KBItemMaster kmitemmaster)
         {
             string outtext = string.Empty;
             outtext += $"Model:{FlowTemplate.Text}" + Environment.NewLine; 
@@ -354,36 +381,37 @@ namespace ProjectKB
             string title3 = "Cx";
             string title4 = "Cy";
             string title5 = "Lv";
-
             outtext += $"{title1,-20}   {title2,10}   {title3,10}   {title5,10}" + Environment.NewLine;
 
-            Random random = new Random();
-            foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
+            foreach (var item in kmitemmaster.Items)
             {
-                string formattedString = $"[{item}]";
+                string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {item.Lv:F4}   {item.Cx:F4}   {item.Lc * 100:F2}%" + Environment.NewLine;
             }
+            //Random random = new Random();
+            //foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
+            //{
+            //    string formattedString = $"[{item}]";
+            //    outtext += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
+            //}
 
             outtext += Environment.NewLine;
-            outtext += $"Min Lv= {kBItem.MinLv} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kBItem.MaxLv} cd/m2" + Environment.NewLine;
-            outtext += $"Darkest Key= {kBItem.DrakestKey}" + Environment.NewLine;
-            outtext += $"Brightest Key= {kBItem.BrightestKey} cd/m2" + Environment.NewLine;
-            outtext += $"Avg Cx= {kBItem.AvgC1}" + Environment.NewLine;
-            outtext += $"Avg Cy= {kBItem.AvgC2}" + Environment.NewLine;
+            outtext += $"Min Lv= {kmitemmaster.MinLv} cd/m2" + Environment.NewLine;
+            outtext += $"Max Lv= {kmitemmaster.MaxLv} cd/m2" + Environment.NewLine;
+            outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
+            outtext += $"Brightest Key= {kmitemmaster.BrightestKey} cd/m2" + Environment.NewLine;
+            outtext += $"Avg Cx= {kmitemmaster.AvgC1}" + Environment.NewLine;
+            outtext += $"Avg Cy= {kmitemmaster.AvgC2}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += $"NbrFail Points={kBItem.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kBItem.AvgLv}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kBItem.LvUniformity}" + Environment.NewLine;
-            outtext += $"Color Uniformity={kBItem.LvUniformity}" + Environment.NewLine;
+            outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
+            outtext += $"Avg Lv={kmitemmaster.AvgLv}" + Environment.NewLine;
+            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
+            outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
 
-            outtext += kBItem.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-
-
+            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
 
 
             outputText.Text = outtext;

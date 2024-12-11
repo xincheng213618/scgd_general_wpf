@@ -7,7 +7,7 @@
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectKBConfig}"
-        Title="EditProjectKBConfig" Height="450" Width="800" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="KB配置编辑窗口" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -17,18 +17,32 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" Grid.RowSpan="2" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
         <ScrollViewer>
             <StackPanel x:Name="StackPanelContent" Margin="5">
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
                     <StackPanel Margin="10,5">
-                        <DockPanel >
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="序列号位数"  MinWidth="120"  />
-                            <TextBox Text="{Binding   SNMax}"/>
-                        </DockPanel>
+                            <TextBox Text="{Binding  SNMax}" Width="200"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="数据保存路径" MinWidth="120"  />
+                            <TextBox Text="{Binding  ResultSavePath}" Width="400"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
         </ScrollViewer>
+        <Grid Grid.Row="1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                <Button Content="重置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0"/>
+                <Button Content="关闭" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Close_Click" Margin="5,0,0,0"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>

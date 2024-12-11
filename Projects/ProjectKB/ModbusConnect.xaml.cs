@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Themes;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -37,7 +39,7 @@ namespace ProjectKB
                 NotifyPropertyChanged();
             }
         }
-        private int _Port = 3306;
+        private int _Port = 502;
 
         /// <summary>
         /// 账号
@@ -51,12 +53,8 @@ namespace ProjectKB
         public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
         private string _UserPwd = string.Empty;
 
-        /// <summary>
-        /// 数据库
-        /// </summary>
-        public string Database { get => _Database; set { _Database = value; NotifyPropertyChanged(); } }
-        private string _Database = string.Empty;
-
+        public ushort RegisterAddress{ get => _RegisterAddress; set { _RegisterAddress = value; NotifyPropertyChanged(); } }
+        private ushort _RegisterAddress = 0xD0;
     }
 
 
@@ -133,7 +131,8 @@ namespace ProjectKB
         {
             Task.Run(() =>
             {
-                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(true ? "成功" : "失败")}", "ColorVision"));
+                bool IsConnect = ModbusControl.TestConnect(ModbusConfig);
+                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
             });
         }
 
