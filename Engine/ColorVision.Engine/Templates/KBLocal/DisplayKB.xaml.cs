@@ -1,13 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
-using ColorVision.Themes.Controls;
+using ColorVision.Net;
 using cvColorVision;
-using MQTTMessageLib.FileServer;
-using NPOI.SS.Formula.Eval;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -39,26 +35,46 @@ namespace ColorVision.Engine.Templates.KB
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择关注点模板")) return;
             if (ComboxTemplate.SelectedValue is not PoiParam poiParam) return;
-            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
-
             if (!File.Exists(IAlgorithm.LuminFile))
             {
                 MessageBox.Show("请先选择标定文件");
                 return;
             }
-            float exposure = 1.0f;
-            string luminFile = IAlgorithm.LuminFile;
+            string imgFileName = ImageFile.Text;
+            if (!File.Exists(imgFileName))
+            {
+                MessageBox.Show("图像文件不存在");
+                return;
+            }
 
-            OpenCvSharp.Mat image = OpenCvSharp.Cv2.ImRead(imgFileName, OpenCvSharp.ImreadModes.Unchanged);
+            string luminFile = IAlgorithm.LuminFile;
+            OpenCvSharp.Mat image;
+            if (CVFileUtil.IsCIEFile(imgFileName))
+            {
+                int index = CVFileUtil.ReadCIEFileHeader(imgFileName,out CVCIEFile cvcie);
+                if (index > 0)
+                {
+                    CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
+                    image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                 image = OpenCvSharp.Cv2.ImRead(imgFileName, OpenCvSharp.ImreadModes.Unchanged);
+            }
+
             int width = image.Width;
             int height = image.Height;
             int channels = image.Channels();
             int bpp = image.ElemSize() * 8;
             IntPtr imgData = image.Data;
-
             KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, IAlgorithm.SaveProcessData, IAlgorithm.Exp, luminFile);
+
 
             PoiParam.LoadPoiDetailFromDB(poiParam);
 
@@ -99,12 +115,13 @@ namespace ColorVision.Engine.Templates.KB
                     }
                 }
             }
+
             IntPtr pData = Marshal.AllocHGlobal(width * height * channels);
 
             int rw = 0; int rh = 0; int rBpp = 0;int rChannel = 0; ;
             byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * 16];
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
-            OpenCvSharp.Mat mat = OpenCvSharp.Mat.FromPixelData( rh,rw , OpenCvSharp.MatType.CV_16UC3, pDst1);
+            OpenCvSharp.Mat mat = OpenCvSharp.Mat.FromPixelData( rh,rw , OpenCvSharp.MatType.CV_16UC1, pDst1);
             string Imageresult = $"{IAlgorithm.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{poiParam.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
             mat.SaveImage(Imageresult);
 
@@ -127,45 +144,10 @@ namespace ColorVision.Engine.Templates.KB
 
         }
 
-        private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
-        {
-            sn = string.Empty;
-            fileExtType = FileExtType.Tif;
-            imgFileName = string.Empty;
-
-            bool? isSN = AlgBatchSelect.IsSelected;
-            bool? isRaw = AlgRawSelect.IsSelected;
-
-            if (isSN == true)
-            {
-                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
-                    return false;
-                }
-                sn = AlgBatchCode.Text;
-            }
-            else if (isRaw == true)
-            {
-                imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
-            }
-            else
-            {
-                imgFileName = ImageFile.Text;
-            }
-            if (string.IsNullOrWhiteSpace(imgFileName))
-            {
-                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
-                return false;
-            }
-            return true;
-        }
-
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.tiff|All files (*.*)|*.*";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

@@ -47,44 +47,6 @@
                         <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
-                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Open_Raw_File" />
-                    </StackPanel>
-                </TabItem>
-                <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" >
-                    <StackPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0" Width="40"/>
-                            <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" HorizontalAlignment="Left" SelectedValuePath="Code"  DisplayMemberPath="Name" />
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <Button Click="Button_Click_RawRefresh" Background="Transparent"  BorderThickness="0" Margin="-5,0,15,0" Width="40">
-                                <Button.Triggers>
-                                    <EventTrigger RoutedEvent="Button.Click">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="rotateTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Button.Triggers>
-                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
-                                    <TextBlock.RenderTransform>
-                                        <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
-                                    </TextBlock.RenderTransform>
-                                </TextBlock>
-                            </Button>
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
-                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.RawImageFiles}" Width="150" HorizontalAlignment="Left" />
-                        </DockPanel>
-                    </StackPanel>
-
-                </TabItem>
-                <TabItem  Background="Transparent" Header="批次号" x:Name="AlgBatchSelect" >
-                    <StackPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock Text="批次号" Margin="0,0,10,0" Width="40"/>
-                            <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
-                        </DockPanel>
                     </StackPanel>
                 </TabItem>
             </TabControl>
