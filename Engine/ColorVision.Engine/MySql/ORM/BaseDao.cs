@@ -90,7 +90,7 @@ namespace ColorVision.Engine.MySql.ORM
             }
             catch (Exception ex)
             {
-                log.Error(ex);
+                log.Error($"sql{sql} +{ex}");
             }
             return dt;
         }

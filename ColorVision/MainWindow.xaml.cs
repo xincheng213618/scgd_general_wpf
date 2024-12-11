@@ -90,7 +90,7 @@ namespace ColorVision
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            Task.Run(CheckCertificate);
+            //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
             PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
@@ -124,66 +124,6 @@ namespace ColorVision
                 }
             }
         }
-
-
-        public async Task CheckCertificate()
-        {
-            await Task.Delay(100);
-
-            Application.Current?.Dispatcher.Invoke(() =>
-            {
-                X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
-                if (x509Certificate2 != null)
-                {
-                    MenuItem menuItem = new() { Header = Properties.Resources.InstallCertificate };
-                    menuItem.Click += (s, e) =>
-                    {
-                        InstallCertificate(x509Certificate2);
-                    };
-                    MenuHelp.Items.Insert(5, menuItem);
-                }
-            });
-        }
-
-        public static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
-        {
-            if (!File.Exists(fileName)) return null;
-            X509Certificate2 certificate = null;
-            try
-            {
-                X509Certificate signer = X509Certificate.CreateFromSignedFile(fileName);
-                certificate = new X509Certificate2(signer);
-            }
-            catch (Exception ex)
-            {
-                log.Warn(ex.Message);
-            }
-            return certificate;
-        }
-
-        public static void InstallCertificate(X509Certificate2 cert)
-        {
-            try
-            {
-                X509Store store = new(StoreName.Root, StoreLocation.CurrentUser);
-                store.Open(OpenFlags.ReadWrite);
-                store.Add(cert);
-                store.Close();
-
-                // 显示一个UI来提示用户安装证书
-                X509Certificate2UI.DisplayCertificate(cert);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred while installing the certificate: {ex.Message}");
-            } 
-        }
-
-
-
-
-
-
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)

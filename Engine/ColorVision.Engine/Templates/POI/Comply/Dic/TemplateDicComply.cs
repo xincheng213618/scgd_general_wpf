@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
                     var models = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", mod_type }, { "is_delete", false } });
                     foreach (var model in models)
                     {
-                        var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id,isDelete:false);
+                        var list = SysDictionaryModItemValidateDao.Instance.GetAllByPid(model.Id);
                         var t = new DicComplyParam(model, list);
                         if (backup.TryGetValue(t.Id, out var template))
                         {
@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
             void DeleteSingle(int id)
             {
                 SysDictionaryModItemValidateDao.Instance.DeleteAllByPid(id);
-                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id);
+                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id,false);
                 TemplateParams.RemoveAt(index);
             }
             if (selectedCount <= 1)
