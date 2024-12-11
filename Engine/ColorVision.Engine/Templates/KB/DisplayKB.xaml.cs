@@ -57,7 +57,9 @@ namespace ColorVision.Engine.Templates.KB
             int channels = image.Channels();
             int bpp = image.ElemSize() * 8;
             IntPtr imgData = image.Data;
+
             KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, IAlgorithm.SaveProcessData, IAlgorithm.Exp, luminFile);
+
             PoiParam.LoadPoiDetailFromDB(poiParam);
 
             string csvFilePath = IAlgorithm.SaveFolderPath + "\\output.csv";

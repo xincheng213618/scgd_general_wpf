@@ -31,6 +31,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         public static DisplayCameraConfig Instance => ConfigService.Instance.GetRequiredService<DisplayCameraConfig>();
         public double TakePictureDelay { get; set; }
+
+        public int CalibrationTemplateIndex { get; set; }
+        public int ExpTimeParamTemplateIndex { get; set; }
+        public int ExpTimeParamTemplate1Index { get; set; }
+
+
     }
 
 
@@ -93,14 +99,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
+
+            ComboxCalibrationTemplate.DataContext = DisplayCameraConfig.Instance;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
             ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
+            ComboxAutoExpTimeParamTemplate.DataContext = DisplayCameraConfig.Instance;
 
             ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
-
-
+            ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig.Instance;
 
 
             void UpdateUI(DeviceStatusType status)

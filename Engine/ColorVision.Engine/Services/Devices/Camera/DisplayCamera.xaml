@@ -147,7 +147,7 @@
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
                                 </Grid>
-                                <ComboBox x:Name="ComboxAutoExpTimeParamTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <ComboBox x:Name="ComboxAutoExpTimeParamTemplate"   d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding ExpTimeParamTemplateIndex}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                             </DockPanel>
                         </StackPanel>
 
@@ -165,7 +165,7 @@
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime1"/>
                                         </Grid>
                                         <TextBlock Text="曝光"  Margin="0,0,5,0"/>
-                                        <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" />
+                                        <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"  d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding ExpTimeParamTemplate1Index}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxAutoExpTimeParamTemplate1_SelectionChanged" />
                                     </DockPanel>
                                     <DockPanel Margin="0,0">
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
@@ -173,7 +173,7 @@
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
                                         </Grid>
                                         <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
-                                        <ComboBox x:Name="ComboxCalibrationTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <ComboBox x:Name="ComboxCalibrationTemplate" d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding CalibrationTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                                     </DockPanel>
                                 </StackPanel>
                                 <ProgressBar Grid.Column="1" Name="ProgressBar" Background="Transparent" Value="10" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=TakePhotoButton,Path=Content}"  FontSize="15" FontWeight="Bold" Height="42" Visibility="Collapsed"/>
