@@ -1,19 +1,26 @@
 ﻿#pragma warning disable CS8625
-using ColorVision.Common.Collections;
-using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor.Draw;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Common.Adorners.ListViewAdorners;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.Comply;
+using ColorVision.Common.Collections;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.KB;
+using ColorVision.Engine.Templates.POI.BuildPoi;
+using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.ImageEditor.Tif;
 using ColorVision.Net;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Configs;
+using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
+using Microsoft.Win32;
 using MQTTMessageLib.FileServer;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
@@ -29,26 +36,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using DrawingPOIPosition = ColorVision.Engine.Templates.POI.DrawingPOIPosition;
-using Microsoft.Win32;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.POI.BuildPoi;
-using ColorVision.Engine.Templates.POI.POIGenCali;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
-using ColorVision.UI;
-using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.UI.Configs;
-using System.Windows.Data;
-using Panuon.WPF;
-using ColorVision.Engine.Templates.KB;
-using ColorVision.ImageEditor.Tif;
 
-namespace ColorVision.Engine.Services.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     public enum PoiPointParamType
     {

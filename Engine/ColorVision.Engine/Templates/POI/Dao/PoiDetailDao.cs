@@ -1,8 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Templates.POI;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using Newtonsoft.Json;
-using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {

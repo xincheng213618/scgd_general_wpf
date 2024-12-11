@@ -2,7 +2,6 @@
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
-using ColorVision.Engine.Services.Templates.POI;
 
 namespace ColorVision.Engine.Templates.POI
 {

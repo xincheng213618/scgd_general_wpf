@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Templates.POI;
 using ColorVision.Engine.Templates.POI;
 using log4net;
 using Newtonsoft.Json;

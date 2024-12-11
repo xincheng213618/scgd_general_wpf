@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.Services.Templates.POI.EditPoiParam"
+﻿<Window x:Class=" ColorVision.Engine.Templates.POI.EditPoiParam"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -10,11 +10,13 @@
         xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
     <Window.Resources>
+        <local:RadiusValidationRule x:Key="RadiusConverter"/>
+
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -586,14 +588,14 @@
                             <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
                                 <StackPanel  Orientation="Horizontal">
                                     <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Margin="5,0"/>
-                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1}}" Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
                                 <StackPanel  Orientation="Horizontal">
                                     <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
-                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F0}}" Width="60"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1}}" Width="60"  Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
