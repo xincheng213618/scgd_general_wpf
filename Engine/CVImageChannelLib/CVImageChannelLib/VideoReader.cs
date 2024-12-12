@@ -27,8 +27,8 @@ public class VideoReader : CVImageReaderProxy
 	{
 		if (isLocal)
 		{
-			reader = new MMFReader(name);
-			OpenVideo = true;
+			reader = new (name);
+            OpenVideo = true;
 			Task.Run(async delegate
 			{
 				await StartupAsync();

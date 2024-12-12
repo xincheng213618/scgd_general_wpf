@@ -296,6 +296,7 @@
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
+    <Folder Include="Services\PhySpectrums\" />
   </ItemGroup>
 
 </Project>
