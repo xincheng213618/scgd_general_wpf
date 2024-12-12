@@ -3,7 +3,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates.SysDictionary;
-using ColorVision.Engine.Templates.Validate.Dao;
+using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Validate.Dic;
 using System;
 using System.Collections.Generic;

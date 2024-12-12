@@ -297,6 +297,7 @@
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
     <Folder Include="Templates\POI\Comply\" />
+    <Folder Include="Templates\Validate\Dao\" />
   </ItemGroup>
 
 </Project>

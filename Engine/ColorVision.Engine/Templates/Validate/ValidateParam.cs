@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Validate.Dao;
+using ColorVision.Engine.Templates.Validate;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 

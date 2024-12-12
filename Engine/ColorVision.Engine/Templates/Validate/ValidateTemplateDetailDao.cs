@@ -2,11 +2,10 @@
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Engine.Templates.Validate.Dao
+namespace ColorVision.Engine.Templates.Validate
 {
     public class ValidateTemplateDetailModel : PKModel
-    {
-        public int DicPid { get; set; }
+    {        public int DicPid { get; set; }
 
         public int Pid { get; set; }
 
