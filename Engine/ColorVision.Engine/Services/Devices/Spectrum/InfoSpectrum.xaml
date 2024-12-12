@@ -90,6 +90,9 @@
                                  <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
                                 <Button Content="上传光谱仪文件" Margin="5" Height="100"   Width="180"  Command="{Binding UploadSpectrumCommand}" />
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
+                                <hc:Badge Value="{Binding Count}"   Margin="5" BadgeMargin="0,-14,-10,0"  Style="{StaticResource BadgeDanger}" >
+                                    <Button Content="刷新设备"  HorizontalAlignment="Stretch" VerticalAlignment="Top"  Height="100"  Command="{Binding RefreshEmptySpectrumCommand}" />
+                                </hc:Badge>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

@@ -10,8 +10,10 @@ using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,11 +23,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>, IUploadMsg
     {
         public MQTTSpectrum DService { get; set; }
-
         public ViewSpectrum View { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
         public RelayCommand UploadSpectrumCommand { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
+        public RelayCommand RefreshEmptySpectrumCommand { get; set; }
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -56,7 +58,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 windowTemplate.Owner = Application.Current.GetActiveWindow();
                 windowTemplate.ShowDialog();
             });
+            RefreshEmptySpectrumCommand = new RelayCommand(a => RefreshEmptySpectrum());
         }
+
+        public void RefreshEmptySpectrum()
+        {
+             Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
+        }
+
+        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        private int _Count;
+
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
         public ObservableCollection<FileUploadInfo> UploadList { get; set; }
         private string _Msg;

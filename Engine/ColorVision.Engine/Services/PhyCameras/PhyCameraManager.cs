@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             Count = SysResourceDao.Instance.GetAllEmptyCameraId().Count;
         }
 
+
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
         private int _Count;
 
