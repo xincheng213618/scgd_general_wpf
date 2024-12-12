@@ -1,11 +1,51 @@
-﻿using ColorVision.Engine.Services.Configs;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.Core;
+using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig, IFileServerCfg
     {
+        [JsonIgnore]
+        public RelayCommand SetWavelengthFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetMaguideFileCommand { get; set; }
+        public ConfigSpectrum()
+        {
+            SetWavelengthFileCommand = new RelayCommand(a => SetWavelengthFile());
+            SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
+        }
+        public void SetWavelengthFile()
+        {
+            using (var dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    WavelengthFile = dialog.FileName;
+                }
+            }
+        }
+
+        public void SetMaguideFile()
+        {
+            using (var dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    MaguideFile = dialog.FileName;
+                }
+            }
+        }
+
+        public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; NotifyPropertyChanged(); } }
+        private string _WavelengthFile;
+        public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; NotifyPropertyChanged(); } }
+        private string _MaguideFile;
+
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
         private bool _IsAutoOpen;
 

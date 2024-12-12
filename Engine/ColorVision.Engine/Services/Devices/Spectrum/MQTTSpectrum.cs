@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return true;
         }
 
-        public MsgRecord Open(SpectrumResourceParam spectrumResourceParam)
+        public MsgRecord Open()
         {
             var Params = new Dictionary<string, object>() { };
 
@@ -139,14 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 ServiceName = Config.Code,
                 Params = Params
             };
-            if (spectrumResourceParam.Id == -1)
-            {
-                Params.Add("TemplateParam", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = string.Empty });
-            }
-            else
-            {
-                Params.Add("TemplateParam", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = spectrumResourceParam.Name });
-            }
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = -1, Name = string.Empty });
             return PublishAsyncClient(msg);
         }
 

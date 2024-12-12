@@ -52,14 +52,6 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,0,0,2">
-                        <DockPanel x:Name="TemplateChoice" Margin="0,2">
-                            <TextBlock Text="模板:"  MinWidth="60"/>
-                            <ComboBox x:Name="ComboxResourceTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                            <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SpectrumResourceParam"  Click="MenuItem_Template"/>
-                            </Grid>
-                        </DockPanel>
                         <Button x:Name="btn_connect" Margin="0,0,0,2" Content="打开" Click="Button_Click_Open"/>
                     </DockPanel>
                     <StackPanel x:Name="StackPanelOpen">

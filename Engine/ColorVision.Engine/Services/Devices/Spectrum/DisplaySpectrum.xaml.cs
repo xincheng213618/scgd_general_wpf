@@ -52,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(StackPanelContent, Visibility.Collapsed);
-                    SetVisibility(TemplateChoice, Visibility.Collapsed);
                     SetVisibility(StackPanelOpen, Visibility.Collapsed);
                     SetVisibility(TextBlockOffLine, Visibility.Collapsed);
                 }
@@ -73,12 +72,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         break;
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(StackPanelContent, Visibility.Visible);
-                        SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.Opened:
@@ -99,8 +96,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             UpdateUI(SpectrumService.DeviceStatus);
             SpectrumService.DeviceStatusChanged += UpdateUI;
 
-            ComboxResourceTemplate.ItemsSource = DeviceSpectrum.SpectrumResourceParams.CreateEmpty();
-            ComboxResourceTemplate.SelectedIndex = 0;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -139,15 +134,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (!btnTitle.Equals("关闭", StringComparison.Ordinal))
                 {
-                     if (ComboxResourceTemplate.SelectedValue is SpectrumResourceParam param)
-                    {
-                        btn_connect.Content = "打开中";
-                        SpectrumService.Open(param);
-                    }
-                    else
-                    {
-                        MessageBox.Show("请先选择校正文件");
-                    }
+                    btn_connect.Content = "打开中";
+                    SpectrumService.Open();
                 }
                 else
                 {
@@ -289,31 +277,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Shutter_Doclose(object sender, RoutedEventArgs e)
         {
             SpectrumService.ShutterDoclose();
-        }
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-            if (sender is Control menuItem)
-            {
-                TemplateEditorWindow windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
-                    return;
-                }
-                switch (menuItem.Tag?.ToString() ?? string.Empty)
-                {
-                    case "SpectrumResourceParam":
-                        SpectrumResourceControl calibration = DeviceSpectrum.SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(DeviceSpectrum) : new SpectrumResourceControl(DeviceSpectrum, DeviceSpectrum.SpectrumResourceParams[0].Value);
-                        var  ITemplate = new TemplateSpectrumResourceParam() { Device = DeviceSpectrum, TemplateParams = DeviceSpectrum.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
-
-
-                        windowTemplate = new TemplateEditorWindow(ITemplate);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                }
-            }
         }
     }
 }

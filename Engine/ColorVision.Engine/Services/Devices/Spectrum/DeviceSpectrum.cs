@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshEmptySpectrumCommand { get; set; }
 
+
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);

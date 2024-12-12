@@ -44,9 +44,19 @@
                                 <TextBlock Text="SN" Width="120"/>
                                 <hc:ComboBox  x:Name="ComboBoxSn" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
-                            <DockPanel >
+                            <DockPanel Margin="0,0,0,5" >
                                 <TextBlock Text="设备自动连接" Width="120"/>
                                 <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5" >
+                                <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetWavelengthFileCommand}"/>
+                                <TextBlock Text="波长文件" Width="120"/>
+                                <TextBox Text="{Binding WavelengthFile}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <Button DockPanel.Dock="Right" Content="..." Style="{StaticResource ButtonDefault.Small}" Margin="5,0,0,0" Command="{Binding SetMaguideFileCommand}"/>
+                                <TextBlock Text="幅值文件" Width="120"/>
+                                <TextBox Text="{Binding MaguideFile}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
