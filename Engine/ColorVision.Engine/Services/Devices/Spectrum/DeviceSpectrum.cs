@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
@@ -20,14 +21,12 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
-    public class DeviceSpectrum : DeviceService<ConfigSpectrum>, IUploadMsg
+    public class DeviceSpectrum : DeviceService<ConfigSpectrum>
     {
         public MQTTSpectrum DService { get; set; }
         public ViewSpectrum View { get; set; }
-        public RelayCommand ResourceManagerCommand { get; set; }
-        public RelayCommand UploadSpectrumCommand { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
-        public RelayCommand RefreshEmptySpectrumCommand { get; set; }
+        public RelayCommand RefreshDeviceIdCommand { get; set; }
 
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
@@ -37,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             View.View.Title = $"光谱仪视图 - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
 
-            UploadSpectrumCommand = new RelayCommand(UploadResource);
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
 
             EditCommand = new RelayCommand(a =>
@@ -50,18 +48,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
 
-            ResourceManagerCommand = new RelayCommand(a =>
-            {
-                SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
-                var ITemplate = new TemplateSpectrumResourceParam() {  Device =this,TemplateParams = this.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
-
-                TemplateEditorWindow windowTemplate = new(ITemplate);
-                windowTemplate.Owner = Application.Current.GetActiveWindow();
-                windowTemplate.ShowDialog();
-            });
-            RefreshEmptySpectrumCommand = new RelayCommand(a => RefreshEmptySpectrum());
+            RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
         }
 
+        public void RefreshDeviceId()
+        {
+            MsgRecord msgRecord = DService.GetAllCameraID();
+            msgRecord.MsgSucessed += (e) =>
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                RefreshEmptySpectrum();
+            };
+        }
         public void RefreshEmptySpectrum()
         {
              Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
@@ -69,48 +67,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
         private int _Count;
-
-        public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
-        public ObservableCollection<FileUploadInfo> UploadList { get; set; }
-        private string _Msg;
-        public event EventHandler UploadClosed;
-
-        public void UploadResource(object sender)
-        {
-            UploadWindow uploadwindow = new() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
-            uploadwindow.OnUpload += (s, e) =>
-            {
-                UploadMsg uploadMsg = new(this);
-                uploadMsg.Show();
-                string name = e.UploadFileName;
-                string path = e.UploadFilePath;
-                Task.Run(() => UploadData(name, path));
-            };
-            uploadwindow.ShowDialog();
-        }
-        public async void UploadData(string UploadFileName, string UploadFilePath)
-        {
-            Msg = "正在解压文件：" + " 请稍后...";
-            await Task.Delay(10);
-
-            string md5 = Tool.CalculateMD5(UploadFilePath);
-            var msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Code, UploadFileName, UploadFilePath, 201);
-            SysResourceModel sysResourceModel = new();
-            sysResourceModel.Name = UploadFileName;
-            sysResourceModel.Code = md5;
-            sysResourceModel.Type = 201;
-            sysResourceModel.Pid = SysResourceModel.Id;
-            sysResourceModel.Value = Path.GetFileName(UploadFilePath);
-            SysResourceDao.Instance.Save(sysResourceModel);
-            if (sysResourceModel != null)
-            {
-                ServiceFileBase calibrationResource = new(sysResourceModel);
-                AddChild(calibrationResource);
-            }
-
-            Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
-        }
-
 
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 

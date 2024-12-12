@@ -144,22 +144,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             }
         }
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            //DService.SetParam();
-        }
-
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
             SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
         }
 
-        private void Button_Click_Close(object sender, RoutedEventArgs e)
-        {
-            SpectrumService.Close();
-            //DService.UnInit();
-        }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {
             string btnTitle = btn_autoTest.Content.ToString();
@@ -216,38 +205,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 return false;
             }
             return true;
-        }
-
-
-
-        private async void SpectrumIni(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (button.Content.ToString() == "连接光谱仪")
-                {
-                    if (await Task.Run(() => ConnectSpectrum()))
-                        button.Content = "断开光谱仪";
-                }
-                else
-                {
-                    if (await Task.Run(() => DisconnectSpectrum()))
-                        button.Content = "连接光谱仪";
-                }
-            }
-        }
-        private void Spectrum0(object sender, RoutedEventArgs e)
-        {
-            float fIntTime = 100;
-            int iAveNum = 1;
-            if (CVInitDark(fIntTime, iAveNum) == 0)
-                MessageBox.Show("校零成功");
-            else
-                MessageBox.Show("校零失败");
-        }
-        private void SpectrumSingleTest(object sender, RoutedEventArgs e)
-        {
-            CVOneTest(SpectrumData, (float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, false, false);
         }
 
         public void TestResult(ref ColorParam data, float intTime, int resultCode)
