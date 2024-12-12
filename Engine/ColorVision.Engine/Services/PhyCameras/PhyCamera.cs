@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
     public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, ICalibrationService<ServiceObjectBase>, IIcon
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
+        private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
         public ConfigPhyCamera Config { get; set; }
 

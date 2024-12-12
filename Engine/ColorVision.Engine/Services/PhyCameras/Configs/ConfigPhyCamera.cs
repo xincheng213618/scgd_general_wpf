@@ -148,7 +148,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
             }
             return false;
         }
-
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
@@ -178,7 +177,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private FileSeviceConfig _FileServerCfg = new FileSeviceConfig();
     }
 
-    public  class FileSeviceConfig :ViewModelBase
+    public class FileSeviceConfig :ViewModelBase
     {
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; NotifyPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";

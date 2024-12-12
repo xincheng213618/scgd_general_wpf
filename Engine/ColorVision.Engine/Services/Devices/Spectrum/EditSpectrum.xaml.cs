@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
@@ -44,8 +45,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
 
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.DisplayMemberPath = "Code";
+            ComboBoxSn.ItemsSource = CameraLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type",1} });
+            ComboBoxSn.DisplayMemberPath = "MacAddress";
         }
 
 
