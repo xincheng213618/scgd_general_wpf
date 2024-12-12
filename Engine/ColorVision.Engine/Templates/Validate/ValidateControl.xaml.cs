@@ -1,11 +1,10 @@
-﻿using ColorVision.Engine.Templates.POI.Comply.Dao;
-using ColorVision.UI.Sorts;
+﻿using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Templates.POI.Comply
+namespace ColorVision.Engine.Templates.Validate
 {
     /// <summary>
     /// ValidateControl.xaml 的交互逻辑

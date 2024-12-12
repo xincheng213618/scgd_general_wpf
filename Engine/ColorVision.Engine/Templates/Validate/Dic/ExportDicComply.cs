@@ -4,7 +4,7 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dic
+namespace ColorVision.Engine.Templates.Validate.Dic
 {
     public class ExportDicComply : MenuItemBase
     {

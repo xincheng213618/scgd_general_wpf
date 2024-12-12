@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dic
+namespace ColorVision.Engine.Templates.Validate.Dic
 {
     [Table("t_scgd_sys_dictionary_mod_item_validate")]
     public class SysDictionaryModItemValidateModel : VPKModel

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dic
+namespace ColorVision.Engine.Templates.Validate.Dic
 {
     public class DicComplyParam : ParamModBase
     {

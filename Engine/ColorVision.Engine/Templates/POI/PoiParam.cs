@@ -1,13 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.POI.Comply;
+﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -106,16 +101,6 @@ namespace ColorVision.Engine.Templates.POI
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
 
-        public int ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
-        private int _ValidateId;
-
-
-
-        public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
-        {
-            var Template = new TemplateComplyParam("Comply.CIE.AVG");
-            new TemplateEditorWindow(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
 
         /// <summary>
         /// 关注点列表

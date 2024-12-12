@@ -3,16 +3,16 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates.SysDictionary;
-using ColorVision.Engine.Templates.POI.Comply.Dao;
-using ColorVision.Engine.Templates.POI.Comply.Dic;
+using ColorVision.Engine.Templates.Validate.Dao;
+using ColorVision.Engine.Templates.Validate.Dic;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System;
 
-namespace ColorVision.Engine.Templates.POI.Comply
+namespace ColorVision.Engine.Templates.Validate
 {
 
     public class TemplateComplyParam : ITemplate<ValidateParam>
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> JNDParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
 
 
-        public TemplateComplyParam(string code,int type =0)
+        public TemplateComplyParam(string code, int type = 0)
         {
             Code = code;
             if (CIEParams.TryGetValue(Code, out var templatesParams))
@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
             return false;
         }
 
-        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
+        public override string Title { get => Code + Properties.Resources.Edit; set { } }
 
         public ValidateControl ValidateControl { get; set; }
 
@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 modMaster.DId = mod.Id;
                 int ret = ValidateTemplateMasterDao.Instance.Save(modMaster);
 
-                var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", mod.Id },{ "is_enable",true} });
+                var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", mod.Id }, { "is_enable", true } });
                 foreach (var item in sysDic)
                 {
                     var ss = new ValidateTemplateDetailModel() { Code = item.Code, DicPid = mod.Id, Pid = modMaster.Id, ValMax = item.ValMax, ValEqual = item.ValEqual, ValMin = item.ValMin, ValRadix = item.ValRadix, ValType = item.ValType };

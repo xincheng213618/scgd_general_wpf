@@ -1,10 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.Comply;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
@@ -70,18 +66,6 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         [Category("LEDStripDetection"), Description("存图路径")]
         public string? SaveName { get => GetValue(_SaveName); set { SetProperty(ref _SaveName, value); } }
         private string? _SaveName = "binim.tif";
-
-        public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
-        {
-            var Template = new TemplateComplyParam("Comply.CIE.AVG");
-            new TemplateEditorWindow(Template, Template.FindIndex(ValidateCIEAVGId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
-
-        public RelayCommand ValidateCIECommand => new RelayCommand(a =>
-        {
-            var Template = new TemplateComplyParam("Comply.CIE");
-            new TemplateEditorWindow(Template, Template.FindIndex(ValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
 
     }
 }

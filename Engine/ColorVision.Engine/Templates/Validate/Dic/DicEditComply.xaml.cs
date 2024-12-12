@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dic
+namespace ColorVision.Engine.Templates.Validate.Dic
 {
     public class DicEditComplyConfig : IConfig
     {

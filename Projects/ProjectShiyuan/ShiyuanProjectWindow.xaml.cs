@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.Compliance;
-using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using FlowEngineLib;
 using log4net;
@@ -24,6 +23,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.Validate;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {

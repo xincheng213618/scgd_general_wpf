@@ -5,7 +5,7 @@ using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Comply
+namespace ColorVision.Engine.Templates.Validate
 {
     public class ExportComply : MenuItemBase
     {
@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             List<MenuItemMetadata> items = new List<MenuItemMetadata>();
 
-            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 } ,{ "is_delete",false} });
+            var mods = SysDictionaryModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 110 }, { "is_delete", false } });
 
             foreach (var item in mods)
             {
@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
                 menuItemMetadata.OwnerGuid = "Comply";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new TemplateEditorWindow(new TemplateComplyParam(item.Code,1)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new TemplateEditorWindow(new TemplateComplyParam(item.Code, 1)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 new TemplateComplyParam(item.Code).Load();
                 items.Add(menuItemMetadata);

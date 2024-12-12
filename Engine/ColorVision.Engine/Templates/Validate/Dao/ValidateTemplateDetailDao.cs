@@ -2,7 +2,7 @@
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dao
+namespace ColorVision.Engine.Templates.Validate.Dao
 {
     public class ValidateTemplateDetailModel : PKModel
     {

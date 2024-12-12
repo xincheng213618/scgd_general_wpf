@@ -2,7 +2,6 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,7 +9,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dic
+namespace ColorVision.Engine.Templates.Validate.Dic
 {
     public class TemplateDicComply : ITemplate<DicComplyParam>, IITemplateLoad
     {
@@ -70,7 +69,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
             void DeleteSingle(int id)
             {
                 SysDictionaryModItemValidateDao.Instance.DeleteAllByPid(id);
-                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id,false);
+                int ret = SysDictionaryModMasterDao.Instance.DeleteById(id, false);
                 TemplateParams.RemoveAt(index);
             }
             if (selectedCount <= 1)

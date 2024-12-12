@@ -5,7 +5,6 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore;
@@ -24,6 +23,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.Validate;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
