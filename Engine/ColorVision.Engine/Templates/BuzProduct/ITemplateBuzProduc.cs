@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.BuzProduct
         public virtual void Save(TemplateModel<T> item)
         {
             BuzProductMasterDao.Instance.Save(item.Value.BuzProductMasterModel);
-        }
+        }  
 
         public override void Save()
         {
