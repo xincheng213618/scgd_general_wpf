@@ -235,15 +235,14 @@ namespace ColorVision.Engine.Templates
             }
         }
 
-        public override void Load() => LoadModParam(Code);
-        public void LoadModParam(string ModeType)
-        {
+        public override void Load()
+        { 
             SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                ModMasterDao masterDao = new ModMasterDao(ModeType);
+                ModMasterDao masterDao = new ModMasterDao(Code);
 
                 List<ModMasterModel> smus = masterDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in smus)

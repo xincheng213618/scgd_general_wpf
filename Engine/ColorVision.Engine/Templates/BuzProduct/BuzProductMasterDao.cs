@@ -3,7 +3,7 @@ using System;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
-    public class BuzProductMasterModel : PKModel
+    public class BuzProductMasterModel : VPKModel
     {
         [Column("code")]
         public string Code { get; set; }

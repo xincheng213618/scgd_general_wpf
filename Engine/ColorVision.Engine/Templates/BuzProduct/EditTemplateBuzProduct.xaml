@@ -1,0 +1,98 @@
+﻿<UserControl x:Class="ColorVision.Engine.Templates.BuzProduct.EditTemplateBuzProduct"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.BuzProduct"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:TemplateBuzProductParam}"
+             d:DesignHeight="450" d:DesignWidth="800" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Create" Command="{Binding CreateBuzProductDetailCommamd}"/>
+            </StackPanel>
+        </Grid>
+        <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding  BuzProductDetailModels}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                            <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn  Header="Id">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBlock Text="{Binding Id}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="Code">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding  Code}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="Name">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding  Name}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="CfgJson">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding CfgJson}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="PoiId">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding  PoiId}" Width="40" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="PoiId">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding  PoiId}" Width="40" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValRuleTempId">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <ComboBox Initialized="ComboBoxValidateCIE_Initialized" Width="100" SelectedValue="{Binding ValRuleTempId}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="OrderIndex">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:BuzProductDetailModel}">
+                                <TextBox Text="{ Binding  OrderIndex}" Width="40" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</UserControl>

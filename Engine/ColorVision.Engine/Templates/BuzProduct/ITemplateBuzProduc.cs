@@ -2,8 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Rbac;
-using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
@@ -16,9 +14,9 @@ using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.Jsons
+namespace ColorVision.Engine.Templates.BuzProduct
 {
-    public class ITemplateJson<T> : ITemplate where T: TemplateJsonParam,new()
+    public class ITemplateBuzProduc<T> : ITemplate where T: TemplateBuzProductParam, new()
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate));
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
@@ -45,15 +43,9 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
-            var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
-            if (dictemplate ==null)
-                return new T();
 
-            TemplateJsonModel templateJson = new TemplateJsonModel();
-            templateJson.DicCode = dictemplate.Code;
-            templateJson.DicId = dictemplate.Id;
-            templateJson.JsonVal = dictemplate.JsonVal;
-            CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
+            BuzProductMasterModel model = new BuzProductMasterModel();
+            CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { model });
 
             if (ExportTemp != null)
                 CreateTemp?.CopyFrom(ExportTemp);
@@ -72,7 +64,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public virtual void Save(TemplateModel<T> item)
         {
-            TemplateJsonDao.Instance.Save(item.Value.TemplateJsonModel);
+            BuzProductMasterDao.Instance.Save(item.Value.BuzProductMasterModel);
         }
 
         public override void Save()
@@ -84,7 +76,9 @@ namespace ColorVision.Engine.Templates.Jsons
                 if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
-                    TemplateJsonDao.Instance.Save(item.Value.TemplateJsonModel);
+                    BuzProductMasterDao.Instance.Save(item.Value.BuzProductMasterModel);
+                    BuzProductDetailDao.Instance.SaveByPid(item.Value.BuzProductMasterModel.Id,item.Value.BuzProductDetailModels);
+
                 }
             }
         }
@@ -96,22 +90,28 @@ namespace ColorVision.Engine.Templates.Jsons
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var templates =  TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "code", Code } });
+
+                var templates = BuzProductMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "is_delete", 0 } });
                 foreach (var template in templates)
                 {
-                    if (Activator.CreateInstance(typeof(T), [template]) is T t)
+                    if (backup.TryGetValue(template.Id, out var model))
                     {
-                        if (backup.TryGetValue(t.Id, out var model))
+                    }
+                    else
+                    {
+                        if (Activator.CreateInstance(typeof(T), [template]) is T t)
                         {
-                            model.Value = t;
-                            model.Key = t.Name;
-                        }
-                        else
-                        {
+                            t.BuzProductDetailModels.Clear();
+                            foreach (var item in BuzProductDetailDao.Instance.GetAllByPid(t.Id))
+                            {
+                                t.BuzProductDetailModels.Add(item);
+                            }
                             var templateModel = new TemplateModel<T>(template.Name ?? "default", t);
                             TemplateParams.Add(templateModel);
                         }
+
                     }
+
                 }
             }
         }
@@ -123,7 +123,8 @@ namespace ColorVision.Engine.Templates.Jsons
             if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
             void DeleteSingle(int id)
             {
-                int ret = TemplateJsonDao.Instance.DeleteById(id,false);
+                int ret = BuzProductDetailDao.Instance.DeleteById(id, false);
+                BuzProductDetailDao.Instance.DeleteAllByPid(id, false);
                 log.Info($"Delete Tempate：{TemplateParams[index].Key},ret{ret}");
                 TemplateParams.RemoveAt(index);
             }
@@ -236,28 +237,20 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             T? AddParamMode()
             {
-                var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
-
-                if (dictemplate == null) return null;
-                TemplateJsonModel templateJson = new TemplateJsonModel();
+                BuzProductMasterModel buzProductMasterModel = new BuzProductMasterModel();
                 if (CreateTemp != null)
                 {
-                    templateJson.CopyFrom(CreateTemp.TemplateJsonModel);
-                    templateJson.Name = templateName;
-                    templateJson.DicCode = dictemplate.Code;
-                    templateJson.DicId = dictemplate.Id;
+                    buzProductMasterModel.CopyFrom(CreateTemp.BuzProductMasterModel);
+                    buzProductMasterModel.Name = templateName;
                 }
                 else
                 {
-                    templateJson.Name = templateName;
-                    templateJson.DicCode = dictemplate.Code;
-                    templateJson.DicId = dictemplate.Id;
-                    templateJson.JsonVal = dictemplate.JsonVal;
+                    buzProductMasterModel.Name = templateName;
                 }
-                TemplateJsonDao.Instance.Save(templateJson);
-                if (templateJson.Id > 0)
+                BuzProductMasterDao.Instance.Save(buzProductMasterModel);
+                if (buzProductMasterModel.Id > 0)
                 {
-                    return (T)Activator.CreateInstance(typeof(T), new object[] { templateJson });
+                    return (T)Activator.CreateInstance(typeof(T), new object[] { buzProductMasterModel });
                 }
                 return null;
             }
@@ -280,8 +273,9 @@ namespace ColorVision.Engine.Templates.Jsons
                 }
             }
         }
+
+
+
     }
-
-
 
 }

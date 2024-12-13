@@ -106,7 +106,7 @@ namespace ColorVision.Engine.MySql.ORM
             return Save(dataTable);
         }
 
-        public int SaveByPid(int pid, List<T> datas)
+        public int SaveByPid(int pid, IEnumerable<T> datas)
         {
             DeleteAllByPid(pid, false);
             DataTable dataTable = new DataTable(TableName);
