@@ -36,6 +36,24 @@ namespace ColorVision.Update
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
                     Source = AutoUpdateConfig.Instance,
+                },
+                 new ConfigSettingMetadata
+                {
+                    Name = Properties.Resources.CheckUpdatesOnStartup,
+                    Description =  Properties.Resources.CheckUpdatesOnStartup,
+                    Order = 999,
+                    Type = ConfigSettingType.Text,
+                    BindingName =nameof(AutoUpdateConfig.UpdatePath),
+                    Source = AutoUpdateConfig.Instance,
+                },
+                 new ConfigSettingMetadata
+                {
+                    Name ="更新使用CDN",
+                    Description =  "更新使用CDN",
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(AutoUpdateConfig.IsUseCDN),
+                    Source = AutoUpdateConfig.Instance,
                 }
             };
         }
@@ -46,14 +64,20 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
-        public string ColorVisionUpdatePath { get => _ColorVisionUpdatePath;set { _ColorVisionUpdatePath = value; NotifyPropertyChanged(); } }
-        private string _ColorVisionUpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
+        public string UpdatePath { get => IsUseCDN ? _CDnUpdatePath: _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
+
+        private string _CDnUpdatePath = "http://cdn.xincheng213618.cn/upload/ColorVision";
+        public bool IsUseCDN { get => _IsUseCDN; set { _IsUseCDN = value; NotifyPropertyChanged(); } }
+        private bool _IsUseCDN;
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
+
+
     }
 
 
@@ -65,10 +89,10 @@ namespace ColorVision.Update
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
         
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = AutoUpdateConfig.Instance.ColorVisionUpdatePath + "/LATEST_RELEASE";
+        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
         public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
-        private string _CHANGELOG = AutoUpdateConfig.Instance.ColorVisionUpdatePath + "/CHANGELOG.md";
+        private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -315,12 +339,12 @@ namespace ColorVision.Update
         private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath, CancellationToken cancellationToken, bool IsIncrement = false)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
-            string downloadUrl = $"{AutoUpdateConfig.Instance.ColorVisionUpdatePath}/ColorVision-{latestVersion}.exe";
+            string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
             string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
 
             if (IsIncrement)
             {
-                downloadUrl = $"{AutoUpdateConfig.Instance.ColorVisionUpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
                 downloadPath = Path.Combine(DownloadPath, $"ColorVision-Update-[{latestVersion}].zip");
             }
 
