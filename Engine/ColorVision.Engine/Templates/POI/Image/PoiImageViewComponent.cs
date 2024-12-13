@@ -288,7 +288,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                     windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
                     void mouseMoveColorHandler(object s, ImageInfo e)
                     {
-                        if (!imageView.Config.Properties.TryGetValue("IsCVCIE", out object obj) || obj is not bool iscvice || !iscvice)
+                        if (imageView.Config.Properties.TryGetValue("IsCVCIE", out object obj)&& obj is  bool iscvice &&iscvice)
                         {
                             int xx = e.X;
                             int yy = e.Y;
