@@ -117,9 +117,7 @@
                         <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                     </Grid.Resources>
                     <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewKeyDown="ListView1_PreviewKeyDown"  SelectionChanged="ListView1_SelectionChanged" >
-
                     </ListView>
-
                 </Grid>
             </DockPanel>
         </Grid>

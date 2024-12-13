@@ -15,7 +15,7 @@
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
     <Window.Resources>
-        <local:RadiusValidationRule x:Key="RadiusConverter"/>
+        <local:RoundToNearestHalfConverter x:Key="RoundToNearestHalfConverter"/>
 
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="BorderThickness" Value="0,0,0,1" />
@@ -595,7 +595,7 @@
                                 <StackPanel  Orientation="Horizontal">
                                     <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
-                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1}}" Width="60"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" Width="60"  Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
