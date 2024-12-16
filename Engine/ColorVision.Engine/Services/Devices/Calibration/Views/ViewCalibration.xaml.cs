@@ -25,6 +25,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Camera;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -337,13 +338,20 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            SearchTimeSart.SelectedDateTime = DateTime.MinValue;
-            SearchTimeEnd.SelectedDateTime = DateTime.Now;
+            AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            advanceSearch.Closed += (s, e) =>
+            {
+                if (Config.InsertAtBeginning)
+                    advanceSearch.SearchResults.Reverse();
+                ViewResults.Clear();
 
-            SerchPopup.IsOpen = true;
-            TextBoxId.Text = string.Empty;
-            TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
+                foreach (var item in advanceSearch.SearchResults)
+                {
+                    ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
+                    ViewResults.AddUnique(algorithmResult);
+                }
+            };
+            advanceSearch.Show();
         }
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)

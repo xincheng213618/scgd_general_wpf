@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Services.Dao
         public List<MeasureImgResultModel> GetAllDevice(string devcode) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } });
 
 
-        public List<MeasureImgResultModel> ConditionalQuery(string id, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
+        public List<MeasureImgResultModel> ConditionalQuery(string id, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd, int limit =-1)
         {
             Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);
@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Services.Dao
             keyValuePairs.Add("<create_date", dateTimeEnd);
             //业务要求，取图失败的时候的记录不显示
             //keyValuePairs.Add("result_code", "0");
-            return ConditionalQuery(keyValuePairs);
+            return ConditionalQuery(keyValuePairs, limit);
         }
     }
 }

@@ -105,6 +105,7 @@ namespace ColorVision.ImageEditor
 
 
         private void ImageShow_Initialized(object sender, System.EventArgs e)
+
         {
 
         }

@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        OpenImage(arg.FileData);
+                        ImageView.OpenImage(arg.FileData.ToWriteableBitmap());
                     });
                 }
                 handler?.Close();
@@ -271,7 +271,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCameras.Clear();
         }
 
-
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex > -1)
@@ -356,10 +355,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 ViewResultCameras.RemoveAt(temp);
             }
         }
-        public void OpenImage(CVCIEFile fileData)
-        {
-            ImageView.OpenImage(fileData.ToWriteableBitmap());
-        }
 
         public void ShowResult(MeasureImgResultModel model)
         {
@@ -372,47 +367,35 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 listView1.ScrollIntoView(listView1.SelectedItem);
             }
         }
-
-
-        private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
+        private void Search_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
+            ViewResultCameras.Clear();
+            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
+            if (Config.InsertAtBeginning)
+                algResults.Reverse();
+            foreach (var item in algResults)
             {
-                ViewResultCameras.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll();
-                if (Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    ViewResultCamera algorithmResult = new(item);
-                    ViewResultCameras.AddUnique(algorithmResult);
-                }
-                return;
-            }
-            else
-            {
-                ViewResultCameras.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
-                if (Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    ViewResultCamera algorithmResult = new(item);
-                    ViewResultCameras.AddUnique(algorithmResult);
-                }
+                ViewResultCamera algorithmResult = new(item);
+                ViewResultCameras.AddUnique(algorithmResult);
             }
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
-            SearchTimeSart.SelectedDateTime = DateTime.MinValue;
-            SearchTimeEnd.SelectedDateTime = DateTime.Now;
+            AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            advanceSearch.Closed +=(s,e) =>
+            {
+                if (Config.InsertAtBeginning)
+                    advanceSearch.SearchResults.Reverse();
+                ViewResultCameras.Clear();
 
-            SerchPopup.IsOpen = true;
-            TextBoxId.Text = string.Empty;
-            TextBoxBatch.Text = string.Empty;
-            TextBoxFile.Text = string.Empty;
-            TbDeviceCode.Text = string.Empty;
+                foreach (var item in advanceSearch.SearchResults)
+                {
+                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
+                    ViewResultCameras.AddUnique(algorithmResult);
+                }
+            };
+            advanceSearch.Show();
         }
 
 
@@ -423,5 +406,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             MainGridRow1.Height = new GridLength(1, GridUnitType.Star);
             MainGridRow2.Height = GridLength.Auto;
         }
+
+
     }
 }

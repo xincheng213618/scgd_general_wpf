@@ -36,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public RelayCommand OpenCVCIECommand { get; set; }
         public RelayCommand CopyToCommand { get; set; }
 
-
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
             Id = measureImgResultModel.Id;
@@ -57,8 +56,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "导出" ,Command = ExportCVCIECommand });
         }
-
-
 
         public void CopyTo()
         {
@@ -117,7 +114,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-
         public void Export()
         {
             ExportCVCIE exportCVCIE = new(FileUrl);
@@ -125,7 +121,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             exportCVCIE.ShowDialog();
         }
-
 
 
         public void Open()
@@ -146,7 +141,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
             }
         }
-
 
         
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }

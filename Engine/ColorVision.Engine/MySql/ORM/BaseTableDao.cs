@@ -7,53 +7,6 @@ using System.Linq;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-
-    public static class BaseTableDaoExtensions
-    {
-        public static List<T> GetAll<T>(this BaseTableDao<T> dao) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>());
-        }
-
-        public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
-        }
-
-        public static List<T> GetAllByPid<T>(this BaseTableDao<T> dao, int pid,bool isEnable = true,bool isDelete = false) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>() { { "pid", pid }, { "is_enable", isEnable }, { "is_delete", isDelete } });
-        }
-
-        public static List<T> GetAllByTenantId<T>(this BaseTableDao<T> dao, int tenantId) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", tenantId } });
-        }
-
-
-        public static List<T> GetAllById<T>(this BaseTableDao<T> dao, int id) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object>() { { "id", id } });
-        }
-
-        public static T? GetById<T>(this BaseTableDao<T> dao, int? id) where T : IPKModel, new()
-        {
-            if (id == null) return default;
-            return dao.GetByParam(new Dictionary<string, object> { { "id", id } });
-        }
-        public static T? GetByCode<T>(this BaseTableDao<T> dao, string? code) where T : IPKModel, new()
-        {
-            if (code == null) return default;
-            return dao.GetByParam(new Dictionary<string, object> { { "code", code } });
-        }
-
-        public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
-        {
-            return dao.GetAllByParam(new Dictionary<string, object> { { "batch_id", batchid } });
-        }
-
-    }
-
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
@@ -171,12 +124,15 @@ namespace ColorVision.Engine.MySql.ORM
 
         public T? GetByParam(Dictionary<string, object> param) => GetAllByParam(param).FirstOrDefault();
 
-        public List<T> GetAllByParam(Dictionary<string, object> param)
+        public List<T> GetAllByParam(Dictionary<string, object> param,int limit = -1)
         {
             string whereClause = string.Empty;
             if (param != null && param.Count > 0)
                 whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+
             string sql = $"SELECT * FROM {TableName} {whereClause}";
+            if (limit >= 1)
+                sql += $" LIMIT {limit}";
             DataTable d_info = GetData(sql, param);
 
             List<T> list = new List<T>(d_info.Rows.Count);
@@ -200,7 +156,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         }
 
-        public List<T> ConditionalQuery(Dictionary<string, object> param)
+        public List<T> ConditionalQuery(Dictionary<string, object> param, int limit = -1)
         {
             string sql = $"select * from {TableName} where 1=1";
             // 遍历字典，为每个键值对构建查询条件
@@ -225,6 +181,10 @@ namespace ColorVision.Engine.MySql.ORM
                         sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
                     }
                 }
+            }
+            if (limit >= 1)
+            {
+                sql += $" LIMIT {limit}";
             }
             DataTable d_info = GetData(sql, param);
             List<T> list = new List<T>(d_info.Rows.Count);
