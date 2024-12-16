@@ -13,6 +13,8 @@ namespace ColorVision.UI.Configs
         /// </summary>
         public int Order { get; set; } = 999;
 
+        public string Group { get; set; } = "Deafult";
+
         public ConfigSettingType Type { get; set; }
 
         /// <summary>

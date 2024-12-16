@@ -90,10 +90,13 @@
                             <TextBlock Text="{x:Static properties:Resources.General}" FontSize="20"/>
                         </GroupBox.Header>
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                            <Border Style="{StaticResource BorderModuleArea}">
-                                <StackPanel x:Name="UniversalStackPanel" Margin="5">
-                                </StackPanel>
-                            </Border>
+                            <StackPanel x:Name="UniversalPanel">
+                                <Border Style="{StaticResource BorderModuleArea}">
+                                    <StackPanel x:Name="UniversalStackPanel" Margin="5">
+
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
                         </ScrollViewer>
                     </GroupBox>
                 </Grid>

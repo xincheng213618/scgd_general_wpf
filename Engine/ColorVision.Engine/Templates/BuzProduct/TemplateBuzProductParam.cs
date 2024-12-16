@@ -5,6 +5,9 @@ using System.ComponentModel;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
+
+    
+
     public class TemplateBuzProductParam : ParamBase
     {
         [Browsable(false)]
@@ -17,6 +20,8 @@ namespace ColorVision.Engine.Templates.BuzProduct
         {
             BuzProductMasterModel = new BuzProductMasterModel();
             CreateBuzProductDetailCommamd = new RelayCommand(a => CreateBuzProductDetail());
+
+
         }
 
         public TemplateBuzProductParam(BuzProductMasterModel templateJsonModel)

@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Templates.Jsons.KB;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates.Jsons.KB;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -28,6 +29,11 @@ namespace ColorVision.Engine.Templates.BuzProduct
         }
 
         public override UserControl CreateUserControl() => new EditTemplateBuzProduct();
+
+        public override IMysqlCommand? GetMysqlCommand()
+        {
+            return new MysqlBuzProduct();
+        }
     }
 
 }
