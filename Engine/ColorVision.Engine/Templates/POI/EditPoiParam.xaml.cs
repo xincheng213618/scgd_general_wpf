@@ -329,6 +329,15 @@ namespace ColorVision.Engine.Templates.POI
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        private void ListViewAdd_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+        private void ListViewSub_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)

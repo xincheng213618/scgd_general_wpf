@@ -610,7 +610,7 @@
                                             <MenuItem Header="{x:Static properties:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                         </ContextMenu>
                                     </StackPanel.ContextMenu>
-                                    <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Text}" Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -677,6 +677,9 @@
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </Button>
                             <Button Content="编辑" Click="Button_Click_1"/>
+                            <Button Content="+" Click="ListViewAdd_Click"/>
+                            <Button Content="-" Click="ListViewSub_Click"/>
+
                         </StackPanel>
                         
                     </Grid>
