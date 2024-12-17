@@ -21,6 +21,7 @@ namespace ProjectKB
         public RelayCommand OpenModbusCommand { get; set; }
         public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenConfigCommand { get; set; }
+        public RelayCommand OpenReadMeCommand { get; set; }
 
 
         public ProjectKBConfig()
@@ -30,8 +31,9 @@ namespace ProjectKB
             TemplateItemSource = FlowParam.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
-            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
+            OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
+            OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
         }
 
         public static void OpenConfig()
@@ -40,13 +42,12 @@ namespace ProjectKB
             editProjectKBConfig.ShowDialog();
         }
 
-        public static void OpenChangeLog()
+        public static void OpenResourceName(string title, string resourceName)
         {
             // 获取当前执行的程序集
             Assembly assembly = Assembly.GetExecutingAssembly();
 
             // 资源文件的完整名称
-            string resourceName = "ProjectKB.CHANGELOG.md";
 
             // 确保资源名称正确
             string[] resourceNames = assembly.GetManifestResourceNames();
@@ -63,9 +64,46 @@ namespace ProjectKB
                 using (StreamReader reader = new StreamReader(stream))
                 {
                     string content = reader.ReadToEnd();
-                    MessageBox.Show(content);
+                    ShowChangeLogWindow(title,content);
                 }
             }
+        }
+
+        public static void OpenChangeLog()
+        {
+            // 资源文件的完整名称
+            string resourceName = "ProjectKB.CHANGELOG.md";
+            OpenResourceName("CHANGELOG", resourceName);
+        }
+        public static void OpenReadMe()
+        {
+            // 资源文件的完整名称
+            string resourceName = "ProjectKB.README.md";
+            OpenResourceName("README",resourceName);
+        }
+
+
+        private static void ShowChangeLogWindow(string title,string content)
+        {
+            // 创建一个新的窗口
+            Window window = new Window
+            {
+                Title = title,
+                Width = 600,
+                Height = 400,
+                Content = new System.Windows.Controls.TextBox
+                {
+                    Text = content,
+                    IsReadOnly = true,
+                    TextWrapping = System.Windows.TextWrapping.Wrap,
+                    VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
+                    BorderThickness = new Thickness(0),
+                    Margin = new Thickness(5)
+                }
+            };
+
+            // 显示窗口
+            window.ShowDialog();
         }
 
         public static void OpenModbus()

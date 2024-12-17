@@ -7,13 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-    <VersionPrefix>1.0.1.10</VersionPrefix>
+    <VersionPrefix>1.0.1.11</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Assets\ProjectKB.ico" />
     <None Remove="Assets\ProjectKB.png" />
     <None Remove="CHANGELOG.md" />
+    <None Remove="README.md" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +23,9 @@
 
   <ItemGroup>
     <EmbeddedResource Include="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="README.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
@@ -64,12 +68,6 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="README.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

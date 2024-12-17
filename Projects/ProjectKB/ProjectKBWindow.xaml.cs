@@ -459,6 +459,11 @@ namespace ProjectKB
                         ViewResluts.Add(kBItem);
                         GenoutputText(kBItem);
 
+                        string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.csv";
+                        string result = $"{kBItem.SN},{(kBItem.Result? "Pass":"Fail")}, ,";
+                        log.Info($"结果正在写入{resultPath},result:{result}");
+                        File.WriteAllText(resultPath,result);
+
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             string csvpath = ProjectKBConfig.Instance.ResultSavePath + "\\output.csv";

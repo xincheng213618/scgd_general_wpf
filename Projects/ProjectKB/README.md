@@ -1,3 +1,4 @@
+
 扫码枪
 
 Gryphon GFS4470
@@ -6,6 +7,5 @@ Gryphon GFS4470
 
 序列号格式
 DF241202D1MMD4J9F
-
 DF241202D1MMD4J9K
 

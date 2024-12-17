@@ -171,6 +171,9 @@
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button Content="Test" Click="Button_Click"/>
             </StatusBarItem>
         </StatusBar>
