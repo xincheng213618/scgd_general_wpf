@@ -184,7 +184,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
-                        if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
+                        if (visual.BaseAttribute.Param ==null && EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
                             visual.BaseAttribute.Param = new PoiPointParam();
 
                         DrawingVisualLists.Add(visual);
