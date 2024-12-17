@@ -34,7 +34,10 @@ namespace ColorVision.Plugins
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
         DownloadFile DownloadFile { get; set; }
+        public PluginInfo()
+        {
 
+        }
         public PluginInfo(IPlugin plugin, Assembly assembly)
         {
             Plugin = plugin;

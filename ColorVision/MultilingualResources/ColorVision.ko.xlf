@@ -227,10 +227,6 @@
           <source>确定</source>
           <target state="new">OK</target>
         </trans-unit>
-        <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
-          <source>性能检测</source>
-          <target state="new">성능 시험</target>
-        </trans-unit>
         <trans-unit id="Pin" translate="yes" xml:space="preserve">
           <source>置顶</source>
           <target state="new">상단 고정</target>
@@ -298,10 +294,6 @@
         <trans-unit id="Update" translate="yes" xml:space="preserve">
           <source>更新</source>
           <target state="new">고쳐 쓰다</target>
-        </trans-unit>
-        <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
-          <source>更新速度</source>
-          <target state="new">업데이트 속도</target>
         </trans-unit>
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>

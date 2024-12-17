@@ -308,31 +308,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
+            ViewResults.Clear();
+            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
+            if (Config.InsertAtBeginning)
+                algResults.Reverse();
+            foreach (var item in algResults)
             {
-                ViewResults.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
-                if (Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    ViewResultCalibration algorithmResult = new(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-                return;
-            }
-            else
-            {
-                ViewResults.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
-                if (Config.InsertAtBeginning)
-                    algResults.Reverse();
-                foreach (var item in algResults)
-                {
-                    ViewResultCalibration algorithmResult = new(item);
-                    ViewResults.AddUnique(algorithmResult);
-                }
-
+                ViewResultCalibration algorithmResult = new(item);
+                ViewResults.AddUnique(algorithmResult);
             }
         }
 

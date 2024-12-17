@@ -1,6 +1,6 @@
 ﻿using ColorVision.UI;
 
-namespace EventVWR
+namespace ScreenRecorder
 {
     public class ScreenRecorderPlugins : IPluginBase
     {

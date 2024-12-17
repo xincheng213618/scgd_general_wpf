@@ -79,7 +79,6 @@
                             </Border>
                         </Popup>
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
-                        <Button x:Name="ButtonChart" Content="{x:Static properties:Resources.Chart}" Click="ButtonChart_Click"/>
                     </ToolBar>
                 </ToolBarTray>
                 <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">

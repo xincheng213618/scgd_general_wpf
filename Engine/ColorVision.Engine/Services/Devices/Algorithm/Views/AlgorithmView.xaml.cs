@@ -53,7 +53,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
         public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
 
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -198,6 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning? 0: listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
+
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -735,38 +735,5 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 MessageBox.Show("您需要先选择数据");
             }
         }
-
-        private void ButtonChart_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex > -1)
-            {
-                if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
-                {
-                    if (result.ResultType == AlgorithmResultType.POI_XYZ)
-                    {
-                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                        if (PoiResultCIExyuvDatas.Count !=0)
-                        {
-                            WindowChart windowChart = new(PoiResultCIExyuvDatas);
-                            windowChart.Show();
-                        }
-                        else
-                        {
-                            MessageBox.Show("结果为空");
-                        }
-                    }
-                    else
-                    {
-                        MessageBox.Show("暂不支持其他");
-                    }
-                }
-            }
-            else
-            {
-                MessageBox.Show("没有选择条目");
-            }
-        }
-
-
     }
 }

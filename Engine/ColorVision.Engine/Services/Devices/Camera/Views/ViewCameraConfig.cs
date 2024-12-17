@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private int _ViewImageReadDelay = 1000;
 
         public int SearchLimit { get => _SearchLimit; set { _SearchLimit = value; NotifyPropertyChanged(); } }
-        private int _SearchLimit = 50;
+        private int _SearchLimit = -1;
 
 
     }

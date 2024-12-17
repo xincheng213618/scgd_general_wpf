@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using SystemMonitor.Properties;
 
 namespace ColorVision.Settings
 {
@@ -15,11 +16,11 @@ namespace ColorVision.Settings
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resources.PerformanceTest,
-                                Description = Properties.Resources.PerformanceTest,
+                                Name = Resources.PerformanceTest,
+                                Description = Resources.PerformanceTest,
                                 Order =10,
                                 Type = ConfigSettingType.TabItem,
-                                Source = SystemMonitor.GetInstance(),
+                                Source = SystemMonitors.GetInstance(),
                                 UserControl = new SystemMonitorControl(),
 
                             }
@@ -34,10 +35,10 @@ namespace ColorVision.Settings
                 {
                     OwnerGuid ="Tool",
                     GuidId ="SystemMonitor",
-                    Header =Properties.Resources.PerformanceTest,
+                    Header =Resources.PerformanceTest,
                     Order=500,
                     Command = new Common.MVVM.RelayCommand(A =>{ 
-                        Window window = new Window(){ Title =Properties.Resources.PerformanceTest , Owner =Application.Current.GetActiveWindow()};
+                        Window window = new Window(){ Title =Resources.PerformanceTest , Owner =Application.Current.GetActiveWindow()};
                         window.Content = new SystemMonitorControl();
                         window.Show();
                     }  )
@@ -54,22 +55,22 @@ namespace ColorVision.Settings
                 new StatusBarIconMetadata()
                 {
                     Name = "Time",
-                    Description = Properties.Resources.PerformanceTest,
+                    Description = Resources.PerformanceTest,
                     Order =12,
                     Type =StatusBarType.Text,
-                    BindingName  = nameof(SystemMonitor.Time),
+                    BindingName  = nameof(SystemMonitors.Time),
                     VisibilityBindingName ="Config.IsShowTime",
-                    Source = SystemMonitor.GetInstance()
+                    Source = SystemMonitors.GetInstance()
                 },
                 new StatusBarIconMetadata()
                 {
                     Name = "RAM",
-                    Description = Properties.Resources.PerformanceTest,
+                    Description = Resources.PerformanceTest,
                     Order =10,
                     Type =StatusBarType.Text,
-                    BindingName  = nameof(SystemMonitor.MemoryThis),
+                    BindingName  = nameof(SystemMonitors.MemoryThis),
                     VisibilityBindingName ="Config.IsShowRAM",
-                    Source = SystemMonitor.GetInstance()
+                    Source = SystemMonitors.GetInstance()
                 }
             };
         }
@@ -89,7 +90,7 @@ namespace ColorVision.Settings
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SystemMonitor.GetInstance();
+            this.DataContext = SystemMonitors.GetInstance();
         }
     }
 }

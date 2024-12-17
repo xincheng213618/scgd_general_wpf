@@ -1,8 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
+
 namespace ColorVision.UI.Configs
 {
     public class SystemMonitorSetting : ViewModelBase, IConfig
@@ -21,11 +25,11 @@ namespace ColorVision.UI.Configs
 
     }
 
-    public class SystemMonitor : ViewModelBase, IDisposable
+    public class SystemMonitors : ViewModelBase, IDisposable
     {
-        private static SystemMonitor _instance;
+        private static SystemMonitors _instance;
         private static readonly object _locker = new();
-        public static SystemMonitor GetInstance() { lock (_locker) { return _instance ??= new SystemMonitor(); } }
+        public static SystemMonitors GetInstance() { lock (_locker) { return _instance ??= new SystemMonitors(); } }
 
 
         public RelayCommand ClearCacheCommand { get; set; }
@@ -93,7 +97,7 @@ namespace ColorVision.UI.Configs
         public SystemMonitorSetting Config { get; set; }
 
 
-        public SystemMonitor()
+        public SystemMonitors()
         {
             Config = ConfigService.Instance.GetRequiredService<SystemMonitorSetting>();
             Task.Run(() =>

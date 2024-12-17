@@ -225,9 +225,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>Test de performance</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>Réglages généraux</value>
   </data>
@@ -326,9 +323,6 @@
   </data>
   <data name="Duration" xml:space="preserve">
     <value>coût du temps</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>Vitesse de mise à jour</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>renouveler</value>
