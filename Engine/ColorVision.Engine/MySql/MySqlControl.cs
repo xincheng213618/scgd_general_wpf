@@ -68,6 +68,25 @@ namespace ColorVision.Engine.MySql
                 log.Info($"Test数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
                 MySqlConnection.Open();
+                // Query to check if the database exists
+                string query = $"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{MySqlConfig.Database}'";
+                using (var command = new MySqlCommand(query, MySqlConnection))
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            log.Info("Database exists.");
+                            return true;
+                        }
+                        else
+                        {
+                            MessageBox.Show("Database does not exist.");
+                            log.Warn("Database does not exist.");
+                            return false;
+                        }
+                    }
+                }
                 return true;
             }
             catch (Exception ex)

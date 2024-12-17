@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates.KB
             int channels = image.Channels();
             int bpp = image.ElemSize() * 8;
             IntPtr imgData = image.Data;
-            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, IAlgorithm.SaveProcessData, IAlgorithm.Exp, luminFile);
+            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, IAlgorithm.SaveProcessData, IAlgorithm.SaveFolderPath, IAlgorithm.Exp, luminFile,1);
 
 
             PoiParam.LoadPoiDetailFromDB(poiParam);
@@ -86,41 +86,48 @@ namespace ColorVision.Engine.Templates.KB
                 {
                     if (item.PointType == RiPointTypes.Rect)
                     {
-                        try
+                        IRECT rect = new IRECT((int)(item.PixX - (int)item.PixWidth / 2), (int)(item.PixY - (int)item.PixHeight / 2), (int)item.PixWidth, (int)item.PixHeight);
+                        float haloGray = -1;
+                        if (CB_CalculateHalo.IsChecked == true)
                         {
-                            IRECT rect = new IRECT((int)(item.PixX - (int)item.PixWidth / 2), (int)(item.PixY - (int)item.PixHeight / 2), (int)item.PixWidth, (int)item.PixHeight);
-                            float haloGray = -1;
-                            if (CB_CalculateHalo.IsChecked == true)
-                            {
-                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, item.Param.HaloOutMOVE, item.Param.HaloThreadV, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
-                                 haloGray = (float)(haloGray * item.Param.HaloScale);
-                            }
-                            float keyGray = -1;
-                            if (CB_CalculateKey.IsChecked == true)
-                            {
-                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, item.Param.KeyOutMOVE, item.Param.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}");
-                                 keyGray = (float)(keyGray * item.Param.KeyScale);
-                            }
-                            if (item.Name.Contains(",") || item.Name.Contains("\""))
-                            {
-                                item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
-                            }
-                            writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
+                            uint gray = 0;
+                            haloGray = KeyBoardDLL.CM_CalculateHalo(rect, item.Param.HaloOutMOVE, item.Param.HaloThreadV, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref gray);
+                            haloGray = (float)(haloGray * item.Param.HaloScale);
                         }
-                        catch (Exception ex)
+                        float keyGray = -1;
+                        if (CB_CalculateKey.IsChecked == true)
                         {
-                            MessageBox.Show(ex.Message);
+                            uint gray = 0;
+                            keyGray = KeyBoardDLL.CM_CalculateKey(rect, item.Param.KeyOutMOVE, item.Param.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref gray);
+                            keyGray = (float)(keyGray * item.Param.KeyScale);
                         }
+                        if (item.Name.Contains(",") || item.Name.Contains("\""))
+                        {
+                            item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
+                        }
+                        writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
                     }
                 }
             }
 
             IntPtr pData = Marshal.AllocHGlobal(width * height * channels);
 
-            int rw = 0; int rh = 0; int rBpp = 0;int rChannel = 0; ;
-            byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * 16];
+            int rw = 0; int rh = 0; int rBpp = 0;int rChannel = 0; 
+
+            byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * bpp];
+
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
-            OpenCvSharp.Mat mat = OpenCvSharp.Mat.FromPixelData( rh,rw , OpenCvSharp.MatType.CV_16UC1, pDst1);
+            OpenCvSharp.Mat mat;
+            if (rBpp == 8)
+            {
+               mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_8UC(rChannel), pDst1);
+
+            }
+            else
+            {
+                 mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_16UC(rChannel), pDst1);
+            }
+
             string Imageresult = $"{IAlgorithm.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{poiParam.Name}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
             mat.SaveImage(Imageresult);
 

@@ -20,6 +20,9 @@ namespace ColorVision.Engine.Templates.KB
         public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
         private string _SaveFolderPath;
 
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        private string _FilePath;
+
     }
 
     public class AlgorithmKBLocal : ViewModelBase, IDisplayAlgorithm
@@ -83,7 +86,7 @@ namespace ColorVision.Engine.Templates.KB
             }
         }
         public string SaveFolderPath { get => AlgorithmKBLocalConfig.Instance.SaveFolderPath; set { AlgorithmKBLocalConfig.Instance.SaveFolderPath = value; NotifyPropertyChanged(); } }
-
+        public string FilePath { get => AlgorithmKBLocalConfig.Instance.FilePath; set { AlgorithmKBLocalConfig.Instance.FilePath = value; NotifyPropertyChanged(); } }
         public void SelcetSaveFilePath()
         {
             using (System.Windows.Forms.FolderBrowserDialog folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog())

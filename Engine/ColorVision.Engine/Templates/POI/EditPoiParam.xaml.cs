@@ -320,8 +320,10 @@ namespace ColorVision.Engine.Templates.POI
 
             if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
             {
-                AlgorithmKBLocal loacl = new AlgorithmKBLocal();
-                FunctionStackpanel.Children.Add(loacl.GetUserControl());
+                AlgorithmKBLocal local = new AlgorithmKBLocal();
+                local.FilePath = PoiParam.PoiConfig.BackgroundFilePath;
+                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a=>a.Value == PoiParam));
+                FunctionStackpanel.Children.Add(local.GetUserControl());
             }
         }
 
