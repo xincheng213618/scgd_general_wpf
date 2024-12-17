@@ -35,6 +35,8 @@ using ColorVision.Net;
 using System.Globalization;
 using System.Text;
 using Org.BouncyCastle.Bcpg.OpenPgp;
+using static NPOI.HSSF.Util.HSSFColor;
+using System.Windows.Media;
 
 namespace ProjectKB
 {
@@ -513,7 +515,7 @@ namespace ProjectKB
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv:F4}   {item.Cx:F4}   {item.Lc * 100:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Lc * 100,10:F2}%" + Environment.NewLine;
             }
             //Random random = new Random();
             //foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
@@ -538,8 +540,7 @@ namespace ProjectKB
             outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
 
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Text = outtext;
             SNtextBox.Focus();
         }

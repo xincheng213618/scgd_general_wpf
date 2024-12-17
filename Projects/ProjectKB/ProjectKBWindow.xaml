@@ -154,7 +154,7 @@
                         <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
-                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="#00FF00" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">
