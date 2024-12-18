@@ -189,11 +189,10 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <DockPanel DockPanel.Dock="Right" Margin="20,0,0,0">
-                                <TextBlock Text="Serial Number" Margin="0,0,5,0"/>
-                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
+                            <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
+                                <TextBlock Text="SN" Margin="0,0,5,0"/>
+                                <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
-
                         </DockPanel>
                         <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>

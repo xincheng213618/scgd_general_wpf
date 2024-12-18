@@ -56,7 +56,16 @@ namespace ColorVision.Engine.Templates.KB
                 if (index > 0)
                 {
                     CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
-                    image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+                    if (cvcie.bpp == 16)
+                    {
+                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_16UC(cvcie.channels), cvcie.data);
+
+                    }
+                    else
+                    {
+                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+
+                    }
                 }
                 else
                 {

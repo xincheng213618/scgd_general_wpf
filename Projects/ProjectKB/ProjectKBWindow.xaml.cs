@@ -458,6 +458,14 @@ namespace ProjectKB
 
                             }
                         }
+
+                        var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
+                        var minLKey = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
+                        kBItem.MaxLv = maxKeyItem.Lv;
+                        kBItem.BrightestKey = maxKeyItem.Name;
+
+                        kBItem.MinLv = minLKey.Lv;
+                        kBItem.DrakestKey = minLKey.Name;
                         ViewResluts.Add(kBItem);
                         GenoutputText(kBItem);
 
