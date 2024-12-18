@@ -164,6 +164,11 @@ namespace ProjectKB
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
 
+        public static ModbusControl ModbusControl => ModbusControl.GetInstance();
+        public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
+        private bool _AutoModbusConnect = true;
+
+
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
     }
@@ -221,6 +226,7 @@ namespace ProjectKB
         /// </summary>
         public double DefectiveProductRate { get => _DefectiveProductRate; set { _DefectiveProductRate = value; NotifyPropertyChanged(); } }
         private double _DefectiveProductRate;
+
 
 
     }

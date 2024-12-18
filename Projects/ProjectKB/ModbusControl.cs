@@ -24,13 +24,16 @@ namespace ProjectKB
         ushort previousValue;
         public ModbusControl()
         {
-
+            Task.Run(() =>
+            {
+                CheckUpdate();
+            });
         }
 
         public event EventHandler StatusChanged;
 
-        public bool Status { get => _Status; set { if (value == _Status) return; _Status = value; NotifyPropertyChanged(); StatusChanged?.Invoke(this,new EventArgs()); } }
-        private bool _Status ;
+        public ushort CurrentValue { get => _CurrentValue; set { if (value == _CurrentValue) return; _CurrentValue = value; NotifyPropertyChanged(); StatusChanged?.Invoke(this,new EventArgs()); } }
+        private ushort _CurrentValue ;
 
         public static bool TestConnect(ModbusConfig Config)
         {
@@ -75,7 +78,7 @@ namespace ProjectKB
                     log.Info($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Status = currentValue == 0;
+                        this.CurrentValue = currentValue;
                         if (currentValue != previousValue)
                         {
                             previousValue = currentValue;
@@ -83,10 +86,7 @@ namespace ProjectKB
                     });
                     IsConnect = true;
 
-                    Task.Run(() =>
-                    {
-                        CheckUpdate();
-                    });
+
 
                 }
             }
@@ -104,38 +104,45 @@ namespace ProjectKB
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
+        bool IsRun = false;
 
         public void CheckUpdate()
         {
-            while (IsConnect)
+            while (true)
             {
-                try
+                if (IsConnect)
                 {
-
-                    using (var client = new TcpClient(Config.Host, Config.Port))
+                    try
                     {
-                        var factory = new ModbusFactory();
-                        var master = factory.CreateMaster(client);
-                        // 读取从站1的寄存器地址100的值
-                        ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
-                        ushort currentValue = registers[0];
-                        log.Info($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (!IsRun)
                         {
-                            Status = currentValue == 0;
-                            if (currentValue != previousValue)
+                            using (var client = new TcpClient(Config.Host, Config.Port))
                             {
-                                previousValue = currentValue;
+                                var factory = new ModbusFactory();
+                                var master = factory.CreateMaster(client);
+                                // 读取从站1的寄存器地址100的值
+                                ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
+                                ushort currentValue = registers[0];
+                                log.Info($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    this.CurrentValue = currentValue;
+                                    if (currentValue != previousValue)
+                                    {
+                                        previousValue = currentValue;
+                                    }
+                                });
+                                IsConnect = true;
                             }
-                        });
-                        IsConnect = true;
+
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    log.Info($"{DateTime.Now} Error: {ex.Message}");
-                    IsConnect = false;
-                    break;
+                    catch (Exception ex)
+                    {
+                        log.Info($"{DateTime.Now} Error: {ex.Message}");
+                        IsConnect = false;
+                        break;
+                    }
                 }
                 Thread.Sleep(1000); // 每秒检查一次
             }
@@ -145,18 +152,20 @@ namespace ProjectKB
         {
             try
             {
+                IsRun = true;
                 using (var client = new TcpClient(Config.Host, Config.Port))
                 {
                     var factory = new ModbusFactory();
                     var master = factory.CreateMaster(client);
-
                     master.WriteSingleRegister(1, registerAddress, value);
                     Console.WriteLine($"Register value set to: {value}");
-                    return true;
                 }
+                IsRun = false;
+                return true;
             }
             catch (Exception ex)
             {
+                IsRun = false;
                 Console.WriteLine($"Error: {ex.Message}");
                 return false;
             }

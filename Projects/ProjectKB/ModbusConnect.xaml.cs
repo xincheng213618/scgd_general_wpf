@@ -59,7 +59,7 @@ namespace ProjectKB
 
 
     /// <summary>
-    /// ModbusConnect.xaml 的交互逻辑
+    /// AutoModbusConnect.xaml 的交互逻辑
     /// </summary>
     public partial class ModbusConnect : Window
     {

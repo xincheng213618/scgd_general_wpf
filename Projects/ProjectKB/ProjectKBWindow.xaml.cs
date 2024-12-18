@@ -37,6 +37,7 @@ using System.Text;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using static NPOI.HSSF.Util.HSSFColor;
 using System.Windows.Media;
+using Org.BouncyCastle.Pqc.Crypto.Crystals.Kyber;
 
 namespace ProjectKB
 {
@@ -47,6 +48,8 @@ namespace ProjectKB
 
     public class KBItem : ViewModelBase
     {
+        public KBKeyRect KBKeyRect { get; set; }
+
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
@@ -243,6 +246,28 @@ namespace ProjectKB
 
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
+
+            if (ProjectKBConfig.Instance.AutoModbusConnect)
+            {
+                bool con = ModbusControl.GetInstance().Connect();
+                if (con)
+                {
+                    log.Info("初始化寄存器设置为0");
+                    ModbusControl.GetInstance().SetRegisterValue(0);
+                }
+
+                ModbusControl.GetInstance().StatusChanged += (s, e) =>
+                {
+                    if (ModbusControl.GetInstance().CurrentValue ==1)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            log.Info("触发拍照，执行流程");
+                            RunTemplate();
+                        });
+                    }
+                };
+            }
         }
 
 
@@ -350,7 +375,7 @@ namespace ProjectKB
                 {
                     flowControl ??= new ColorVision.Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
@@ -425,9 +450,10 @@ namespace ProjectKB
                                     {
                                         KBItem kItem = new KBItem();
                                         kItem.Name = keyRect.Name;
+                                        kItem.KBKeyRect = keyRect;
                                         kBItem.Items.Add(kItem);
                                     }
-                                    Task.Run(() =>
+                                    Task.Run(async() =>
                                     {
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
@@ -452,7 +478,13 @@ namespace ProjectKB
                                     foreach (var poi in pois)
                                     {
                                         var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
-                                        kBItem.Items.First(a => a.Name == poi.PoiName).Lv = list.Y;
+                                        var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
+                                        if (key != null)
+                                        {
+                                            key.Lv = list.Y;
+                                            key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                        }
+
                                     }
                                 }
 
@@ -468,7 +500,8 @@ namespace ProjectKB
                         kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                         kBItem.SN = SNtextBox.Text;
                         kBItem.Exposure = "50";
-                        ViewResluts.Add(kBItem);
+                        kBItem.Result = true;
+                        ViewResluts.Insert(0,kBItem);
                         GenoutputText(kBItem);
 
                         string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
@@ -478,13 +511,13 @@ namespace ProjectKB
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.csv";
+                            string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMddHHmm}.csv";
                             KBItemMaster.SaveCsv(ViewResluts, csvpath);
                             log.Info($"writecsv:{csvpath}");
                         });
-                        //还原Modbus状态；
-                        Task.Run(() =>
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
+                            log.Info("流程执行结束，设置寄存器为0，触发移动");
                             ModbusControl.GetInstance().SetRegisterValue(0);
                         });
                     }
@@ -518,21 +551,21 @@ namespace ProjectKB
             string title2 = "Lv";
             string title3 = "Cx";
             string title4 = "Cy";
-            string title5 = "Lv";
-            outtext += $"{title1,-20}   {title2,10}   {title3,10}   {title5,10}" + Environment.NewLine;
+            string title5 = "Lc";
+            outtext += $"{title1,-20}   {title2,-10} {title3,10} {title4,10}" + Environment.NewLine;
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Lc * 100,10:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Cy,10:F4}" + Environment.NewLine;
             }
 
             outtext += Environment.NewLine;
             outtext += $"Min Lv= {kmitemmaster.MinLv} cd/m2" + Environment.NewLine;
             outtext += $"Max Lv= {kmitemmaster.MaxLv} cd/m2" + Environment.NewLine;
             outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            outtext += $"Brightest Key= {kmitemmaster.BrightestKey} cd/m2" + Environment.NewLine;
+            outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
             outtext += $"Avg Cx= {kmitemmaster.AvgC1}" + Environment.NewLine;
             outtext += $"Avg Cy= {kmitemmaster.AvgC2}" + Environment.NewLine;
 
