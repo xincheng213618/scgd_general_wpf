@@ -89,23 +89,20 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     foreach (var item in licFiles)
                     {
                         string Code = Path.GetFileNameWithoutExtension(item.FullName);
-                        if (Code == SysResourceModel.Code)
-                        {
-                            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
-                            if (CameraLicenseModel == null)
-                                CameraLicenseModel = new CameraLicenseModel();
-                            CameraLicenseModel.DevCameraId = SysResourceModel.Id;
-                            CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
-                            using var stream = item.Open();
-                            using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
-                            CameraLicenseModel.LicenseValue = reader.ReadToEnd();
+                        CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                        if (CameraLicenseModel == null)
+                            CameraLicenseModel = new CameraLicenseModel();
+                        CameraLicenseModel.DevCameraId = SysResourceModel.Id;
+                        CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+                        using var stream = item.Open();
+                        using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                        CameraLicenseModel.LicenseValue = reader.ReadToEnd();
 
-                            CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
-                            CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
-                            CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
-                            int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                        }
+                        CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                        CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                        CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+                        int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
                     }
                 }
                 catch (Exception ex)
@@ -116,24 +113,17 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             else if (Path.GetExtension(filepath) == ".lic")
             {
                 string Code = Path.GetFileNameWithoutExtension(filepath);
-                if (Code == SysResourceModel.Code)
-                {
-                    CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
-                    if (CameraLicenseModel == null)
-                        CameraLicenseModel = new CameraLicenseModel();
-                    CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
-                    CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
-                    CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
-                    CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
-                    CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+                CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                if (CameraLicenseModel == null)
+                    CameraLicenseModel = new CameraLicenseModel();
+                CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
+                CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
+                CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
 
-                    int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
-                }
-                else
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "该光谱仪不支持此许可证", "ColorVision");
-                }
+                int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
             }
             else
             {
