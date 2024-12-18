@@ -593,5 +593,11 @@ namespace ProjectKB
         {
             new TestWindow().Show();
         }
+
+        private void GridSplitter_DragCompleted1(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+        {
+            ProjectKBConfig.Instance.SummaryInfo.Width = col1.ActualWidth;
+            col1.Width = GridLength.Auto;
+        }
     }
 }

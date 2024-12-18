@@ -25,7 +25,25 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <im:ImageView Grid.Row="0" x:Name="ImageView" ></im:ImageView>
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="col1" Width="Auto"/>
+                        <ColumnDefinition x:Name="col2"   Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryInfo.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryInfo.Width}">
+                        <StackPanel>
+                            <TextBlock Text="Summary" FontSize="20" FontWeight="Bold" Margin="5"/>
+                            <TextBlock Text="工号: 0" Margin="5"/>
+                            <TextBlock Text="目标产量: 0" Margin="5"/>
+                            <TextBlock Text="良品数量: 0" Margin="5"/>
+                            <TextBlock Text="不良品数量: 0" Margin="5"/>
+                            <TextBlock Text="良品率: 0%" Margin="5"/>
+                            <TextBlock Text="不良频率: 0%" Margin="5"/>
+                        </StackPanel>
+                    </Grid>
+                    <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
+                    <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
+                </Grid>
                 <Grid x:Name="Grid1" Grid.Row="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>

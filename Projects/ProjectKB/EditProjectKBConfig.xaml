@@ -31,6 +31,11 @@
                             <TextBox Text="{Binding  SNMax}" Width="200"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="显示概述信息"  MinWidth="120" />
+                            <ui:ToggleSwitch IsChecked="{Binding SummaryInfo.IsShowSummary}" Margin="0,0,5,0"/>
+                            <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="数据保存路径" MinWidth="120"  />
                             <TextBox Text="{Binding  ResultSavePath}" Width="350" Margin="0,0,5,0"/>
                             <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath_Click" />

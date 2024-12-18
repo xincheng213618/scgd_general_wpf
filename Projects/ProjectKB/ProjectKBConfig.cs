@@ -160,5 +160,18 @@ namespace ProjectKB
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+        public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
+        private SummaryInfo _SummaryInfo = new SummaryInfo();
+    }
+
+    public class SummaryInfo : ViewModelBase
+    {
+        public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; NotifyPropertyChanged(); } }
+        private bool _IsShowSummary;
+
+        public double Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private double _Width = 300;
+
     }
 }
