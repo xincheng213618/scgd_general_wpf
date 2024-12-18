@@ -576,7 +576,7 @@ namespace ProjectKB
             outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
 
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : new SolidColorBrush(Color.FromArgb(22,255,0,0));
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
             outputText.Text = outtext;
             SNtextBox.Focus();
         }
