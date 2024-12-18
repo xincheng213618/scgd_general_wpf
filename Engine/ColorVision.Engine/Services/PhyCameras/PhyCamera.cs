@@ -507,7 +507,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
             }
-
         }
 
 
