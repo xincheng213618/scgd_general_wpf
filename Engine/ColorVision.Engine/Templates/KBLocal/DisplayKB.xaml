@@ -55,7 +55,7 @@
                 <ComboBox x:Name="ComboxKBTemplate"  Width="130"  SelectedIndex="{Binding TemplateSelectedIndex}" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
+                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}" Click="Button_Click"/>
                 </Grid>
                 <Button Content="生成KB模板" Click="GenTemplateKB_Click"/>
             </DockPanel>

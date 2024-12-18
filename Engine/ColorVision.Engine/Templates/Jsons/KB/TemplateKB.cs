@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -9,23 +10,30 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
+    public class TemplateJsonKBParamCoveretConfig:IConfig
+    {
+        public static TemplateJsonKBParamCoveretConfig Instance => ConfigService.Instance.GetRequiredService<TemplateJsonKBParamCoveretConfig>();
+        public bool DoKey { get; set; } = true;
+        public bool DoHalo { get; set; } = true;
+
+    }
 
     public class TemplateJsonKBParam : TemplateJsonParam
     {
         private static ILog log = LogManager.GetLogger(nameof(TemplateJsonKBParam));
-        public RelayCommand InportFormPoiCommand { get; set; }
+        public RelayCommand ImportFormPoiCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
 
 
         public TemplateJsonKBParam() : base()
         {
-            InportFormPoiCommand = new RelayCommand(a => InportFormPoi());
+            ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
-            InportFormPoiCommand = new RelayCommand(a => InportFormPoi());
+            ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
@@ -39,7 +47,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
 
-        public void InportFormPoi()
+        public void ImportFormPoi()
         {
             if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.KBParam)
             {
@@ -58,7 +66,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                     if (item.PointType == RiPointTypes.Rect)
                     {
                         KBKeyRect kBKeyRect = new KBKeyRect();
-
+                        kBKeyRect.DoHalo = TemplateJsonKBParamCoveretConfig.Instance.DoHalo;
+                        kBKeyRect.DoKeyY = TemplateJsonKBParamCoveretConfig.Instance.DoKey;
                         KBHalo kBHalo = new KBHalo();
                         kBHalo.HaloScale = item.Param.HaloScale;
                         kBHalo.OffsetX = item.Param.HaloOffsetX;
@@ -66,7 +75,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                         kBHalo.HaloSize = item.Param.HaloSize;
                         kBHalo.ThresholdV = item.Param.HaloThreadV;
                         kBHalo.Move = item.Param.HaloOutMOVE; ;
-
                         kBKeyRect.KBHalo = kBHalo;
 
                         KBKey kBKey = new KBKey();
@@ -83,6 +91,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                         kBKeyRect.Y = (int)(item.PixY - item.PixHeight / 2);
                         kBKeyRect.Name = item.Name;
 
+                        kBKeyRect.DoKeyY = true;
                         kBJson.KBKeyRects.Add(kBKeyRect);
                     }
                     else

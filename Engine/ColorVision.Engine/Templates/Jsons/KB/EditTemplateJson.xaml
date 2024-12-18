@@ -27,7 +27,7 @@
         <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
             <TextBlock Text="POI" Width="30"/>
             <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" ItemsSource="{Binding PoiParams}" SelectedIndex="{Binding TemplatePoiSelectedIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-            <Button Content="生成到Json" Command="{Binding InportFormPoiCommand}"/>
+            <Button Content="生成到Json" Command="{Binding ImportFormPoiCommand}"/>
             <Button Content="校验Json" Margin="0,0,5,0" />
             <Button Content="重置" Command="{Binding ResetCommand}" />
         </StackPanel>

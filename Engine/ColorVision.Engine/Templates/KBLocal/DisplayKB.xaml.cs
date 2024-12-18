@@ -178,7 +178,15 @@ namespace ColorVision.Engine.Templates.KB
 
         private void GenTemplateKB_Click(object sender, RoutedEventArgs e)
         {
+            TemplateJsonKBParamCoveretConfig.Instance.DoHalo = CB_CalculateHalo.IsChecked == true;
+            TemplateJsonKBParamCoveretConfig.Instance.DoKey = CB_CalculateKey.IsChecked == true;
             new TemplateKB().OpenCreate();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            TemplateJsonKBParamCoveretConfig.Instance.DoHalo = CB_CalculateHalo.IsChecked == true;
+            TemplateJsonKBParamCoveretConfig.Instance.DoKey = CB_CalculateKey.IsChecked == true;
         }
     }
 }
