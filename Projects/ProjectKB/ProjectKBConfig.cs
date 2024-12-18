@@ -173,5 +173,52 @@ namespace ProjectKB
         public double Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
         private double _Width = 300;
 
+        /// <summary>
+        /// 线别
+        /// </summary>
+        public string LineNumber { get => _LineNumber; set { _LineNumber = value; NotifyPropertyChanged(); } }
+        private string _LineNumber;
+
+        /// <summary>
+        /// 工号
+        /// </summary>
+        public string WorkerNumber { get => _WorkerNumber; set { _WorkerNumber = value; NotifyPropertyChanged(); } }
+        private string _WorkerNumber;
+
+        /// <summary>
+        /// 目标生产
+        /// </summary>
+        public int TargetProduction { get => _TargetProduction; set { _TargetProduction = value; NotifyPropertyChanged(); } }
+        private int _TargetProduction;
+
+        /// <summary>
+        /// 已生产
+        /// </summary>
+        public int ActualProduction { get => _ActualProduction; set { _ActualProduction = value; NotifyPropertyChanged(); } }
+        private int _ActualProduction;
+        /// <summary>
+        /// 良品数量
+        /// </summary>
+        public int GoodProductCount { get => _GoodProductCount; set { _GoodProductCount = value; NotifyPropertyChanged(); } }
+        private int _GoodProductCount;
+
+        /// <summary>
+        /// 不良品数量
+        /// </summary>
+        public int DefectiveProductCount { get => _DefectiveProductCount; set { _DefectiveProductCount = value; NotifyPropertyChanged(); } }
+        private int _DefectiveProductCount;
+        /// <summary>
+        /// 良品率
+        /// </summary>
+        public double GoodProductRate { get => _GoodProductRate; set { _GoodProductRate = value; NotifyPropertyChanged(); } }
+        private double _GoodProductRate;
+
+        /// <summary>
+        /// 不良率
+        /// </summary>
+        public double DefectiveProductRate { get => _DefectiveProductRate; set { _DefectiveProductRate = value; NotifyPropertyChanged(); } }
+        private double _DefectiveProductRate;
+
+
     }
 }
