@@ -117,7 +117,7 @@
                                 <GridViewColumn Header="Name" >
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding Name}" />
+                                            <TextBlock Text="{Binding Model}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>

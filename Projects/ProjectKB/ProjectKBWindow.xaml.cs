@@ -460,12 +460,13 @@ namespace ProjectKB
                         }
 
                         var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
-                        var minLKey = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
+                        var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
                         kBItem.MaxLv = maxKeyItem.Lv;
                         kBItem.BrightestKey = maxKeyItem.Name;
-
                         kBItem.MinLv = minLKey.Lv;
                         kBItem.DrakestKey = minLKey.Name;
+                        kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
+                        kBItem.SN = SNtextBox.Text;
                         ViewResluts.Add(kBItem);
                         GenoutputText(kBItem);
 
