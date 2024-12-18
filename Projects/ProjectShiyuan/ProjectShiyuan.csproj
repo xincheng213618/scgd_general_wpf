@@ -6,8 +6,22 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <VersionPrefix>1.0.1.1</VersionPrefix>
+    <VersionPrefix>1.0.1.3</VersionPrefix>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="CHANGELOG.md" />
+    <None Remove="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />

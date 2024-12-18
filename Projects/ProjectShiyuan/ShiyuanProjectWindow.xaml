@@ -4,7 +4,6 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Projects.ProjectShiYuan"
-        xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Comply;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:poi ="clr-namespace:ColorVision.Engine.Templates.POI.AlgorithmImp;assembly=ColorVision.Engine"
         xmlns:compliance ="clr-namespace:ColorVision.Engine.Templates.Compliance;assembly=ColorVision.Engine"
@@ -15,12 +14,12 @@
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
-    <Grid Margin="5">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto"/>
-        </Grid.ColumnDefinitions>
-        <Grid>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Margin="5">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto"/>
                 <RowDefinition Height="Auto"/>
@@ -256,11 +255,21 @@
                         <Button Content="..."   Click="SelectDataPath_Click" Margin="0,0,5,0" Height="30"  Width="30" VerticalAlignment="Center" />
                         <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Button Content="查看日志" HorizontalAlignment="Left" Command="{Binding OpenLogCommand}" />
                 </StackPanel>
-
             </Grid>
 
         </Grid>
+
+        <StatusBar Grid.Row="1">
+            <StatusBarItem>
+                <Button Content="查看日志" HorizontalAlignment="Left" Command="{Binding OpenLogCommand}" />
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
+                <Button Content="自述文件" Command="{Binding OpenReadMeCommand}"/>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

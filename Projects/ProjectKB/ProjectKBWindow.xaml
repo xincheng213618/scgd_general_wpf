@@ -22,8 +22,8 @@
             </Grid.ColumnDefinitions>
             <Grid Grid.Column="0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition x:Name="row1" Height="*"/>
+                    <RowDefinition x:Name="row2" Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
@@ -70,7 +70,7 @@
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
                     <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
                 </Grid>
-                <Grid x:Name="Grid1" Grid.Row="1">
+                <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="32"/>
                         <RowDefinition Height="*"/>
@@ -197,7 +197,7 @@
                         <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
-                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="Red" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">

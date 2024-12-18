@@ -19,8 +19,9 @@ namespace ProjectKB
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
         public RelayCommand OpenModbusCommand { get; set; }
-        public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenConfigCommand { get; set; }
+
+        public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenReadMeCommand { get; set; }
 
 
@@ -160,6 +161,8 @@ namespace ProjectKB
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private double _Height = 300;
 
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();

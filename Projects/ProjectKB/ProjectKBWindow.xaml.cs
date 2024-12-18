@@ -467,17 +467,18 @@ namespace ProjectKB
                         kBItem.DrakestKey = minLKey.Name;
                         kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                         kBItem.SN = SNtextBox.Text;
+                        kBItem.Exposure = "50";
                         ViewResluts.Add(kBItem);
                         GenoutputText(kBItem);
 
-                        string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.csv";
+                        string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
                         string result = $"{kBItem.SN},{(kBItem.Result? "Pass":"Fail")}, ,";
                         log.Info($"结果正在写入{resultPath},result:{result}");
                         File.WriteAllText(resultPath,result);
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            string csvpath = ProjectKBConfig.Instance.ResultSavePath + "\\output.csv";
+                            string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.csv";
                             KBItemMaster.SaveCsv(ViewResluts, csvpath);
                             log.Info($"writecsv:{csvpath}");
                         });
@@ -526,12 +527,6 @@ namespace ProjectKB
 
                 outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Lc * 100,10:F2}%" + Environment.NewLine;
             }
-            //Random random = new Random();
-            //foreach (var item in Enum.GetValues(typeof(System.Windows.Input.Key)).Cast<System.Windows.Input.Key>())
-            //{
-            //    string formattedString = $"[{item}]";
-            //    outtext += $"{formattedString,-20}   {random.NextDouble():F4}   {random.NextDouble():F4}   {random.NextDouble() * 100:F2}%" + Environment.NewLine;
-            //}
 
             outtext += Environment.NewLine;
             outtext += $"Min Lv= {kmitemmaster.MinLv} cd/m2" + Environment.NewLine;
@@ -549,7 +544,7 @@ namespace ProjectKB
             outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
 
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : new SolidColorBrush(Color.FromArgb(22,255,0,0));
             outputText.Text = outtext;
             SNtextBox.Focus();
         }
@@ -557,7 +552,8 @@ namespace ProjectKB
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-
+            ProjectKBConfig.Instance.Height = row2.ActualHeight;
+            row2.Height = GridLength.Auto;
         }
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)

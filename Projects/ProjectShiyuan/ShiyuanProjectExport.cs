@@ -27,7 +27,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public int Order => 100;
         public Visibility Visibility => Visibility.Visible;
-        public string? Header => "ProjectShiyuan";
+        public string? Header => "视源项目";
         public string? InputGestureText => null;
 
         public object? Icon => null;

@@ -24,6 +24,7 @@ using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
+using FlowEngineLib.Base;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -193,7 +194,21 @@ namespace ColorVision.Projects.ProjectShiYuan
                 if (FlowTemplate.SelectedIndex > -1)
                 {
                     var tokens = ServiceManager.GetInstance().ServiceTokens;
+                    foreach (var item in STNodeEditorMain.Nodes)
+                    {
+                        if (item is CVCommonNode algorithmNode)
+                        {
+                            algorithmNode.nodeRunEvent -= UpdateMsg;
+                        }
+                    }
                     flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
+                    foreach (var item in STNodeEditorMain.Nodes)
+                    {
+                        if (item is CVCommonNode algorithmNode)
+                        {
+                            algorithmNode.nodeRunEvent += UpdateMsg;
+                        }
+                    }
                 }
             };
 
@@ -219,7 +234,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                         if (ProjectShiYuanConfig.Instance.LastFlowTime == 0)
                         {
-                            msg = $"已经执行：{elapsedTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
@@ -228,7 +243,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
 
                         handler.UpdateMessage(msg);
@@ -241,6 +256,55 @@ namespace ColorVision.Projects.ProjectShiYuan
 
             });
         }
+
+
+        string Msg1;
+        private void UpdateMsg(object? sender)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (handler != null)
+                    {
+                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        string msg;
+                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 || DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        {
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                        }
+                        else
+                        {
+                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                        }
+                        handler.UpdateMessage(msg);
+                    }
+                }
+                catch
+                {
+
+                }
+            });
+        }
+
+        private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
+        {
+            if (sender is CVCommonNode algorithmNode)
+            {
+                if (e != null)
+                {
+                    Msg1 = algorithmNode.Title;
+                    UpdateMsg(sender);
+                }
+            }
+        }
+
 
         private FlowControl flowControl;
 
@@ -266,7 +330,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
-                            var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
+                            var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                             foreach (var item in resultMaster)
                             {
                                 if (item.ImgFileType == AlgorithmResultType.Compliance_Math_JND)
@@ -281,8 +345,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                                     }
                                 }
                             }
-
-
 
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in resultMaster)
