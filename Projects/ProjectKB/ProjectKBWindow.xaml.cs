@@ -38,6 +38,7 @@ using Org.BouncyCastle.Bcpg.OpenPgp;
 using static NPOI.HSSF.Util.HSSFColor;
 using System.Windows.Media;
 using Org.BouncyCastle.Pqc.Crypto.Crystals.Kyber;
+using System.Windows.Controls;
 
 namespace ProjectKB
 {
@@ -143,6 +144,9 @@ namespace ProjectKB
 
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
+
+        public string ResultImagFile { get => _ResultImagFile; set { _ResultImagFile = value; NotifyPropertyChanged(); } }
+        private string _ResultImagFile = string.Empty;
 
         public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
         private string _Model =string.Empty;
@@ -427,99 +431,94 @@ namespace ProjectKB
                     timer.Change(Timeout.Infinite, 100); // 停止定时器
                     if (FlowControlData.EventName == "Completed")
                     {
-                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                        bool sucess = true;
-                        ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-                        log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-                        var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-                        KBItemMaster kBItem = new KBItemMaster();
-                        kBItem.Model = FlowTemplate.Text;
-                        kBItem.Id = Batch.Id;
-                        kBItem.SN = SNtextBox.Text;
-                        foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
+                        try
                         {
-                            if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
+                            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                            bool sucess = true;
+                            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+                            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+                            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                            KBItemMaster kBItem = new KBItemMaster();
+                            kBItem.Model = FlowTemplate.Text;
+                            kBItem.Id = Batch.Id;
+                            kBItem.SN = SNtextBox.Text;
+                            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                             {
-                                var mod = TemplateJsonDao.Instance.GetByParam(new Dictionary<string, object>() { { "name", item.TName }, { "mm_id", 150 } });
+                                if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
+                                {
+                                    var mod = TemplateJsonDao.Instance.GetByParam(new Dictionary<string, object>() { { "name", item.TName }, { "mm_id", 150 } });
 
-                                KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
-                                log.Info(JsonConvert.SerializeObject(kBJson));
-                                if (kBJson != null)
-                                {
-                                    foreach (var keyRect in kBJson.KBKeyRects)
+                                    KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
+                                    log.Info(JsonConvert.SerializeObject(kBJson));
+                                    if (kBJson != null)
                                     {
-                                        KBItem kItem = new KBItem();
-                                        kItem.Name = keyRect.Name;
-                                        kItem.KBKeyRect = keyRect;
-                                        kBItem.Items.Add(kItem);
-                                    }
-                                    Task.Run(async() =>
-                                    {
-                                        Application.Current.Dispatcher.Invoke(() =>
+                                        foreach (var keyRect in kBJson.KBKeyRects)
                                         {
-                                            if (File.Exists(item.ResultImagFile))
-                                            {
-                                                if (CVFileUtil.IsCIEFile(item.ResultImagFile))
-                                                {
-                                                    CVFileUtil.ReadCIEFileHeader(item.ResultImagFile, out CVCIEFile cVCIEFile);
-                                                    kBItem.Exposure = JsonConvert.SerializeObject(cVCIEFile.exp);
-                                                }
-                                                ImageView.OpenImage(item.ResultImagFile);
-                                            }
-                                        });
-                                    });
-                                }
-                            }
-                            if (item.ImgFileType == AlgorithmResultType.POI_Y)
-                            {
-                                var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                                if (pois != null)
-                                {
-                                    foreach (var poi in pois)
-                                    {
-                                        var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
-                                        var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
-                                        if (key != null)
-                                        {
-                                            key.Lv = list.Y;
-                                            key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                            KBItem kItem = new KBItem();
+                                            kItem.Name = keyRect.Name;
+                                            kItem.KBKeyRect = keyRect;
+                                            kBItem.Items.Add(kItem);
+                                            
                                         }
+                                        kBItem.ResultImagFile = item.ResultImagFile;
 
                                     }
                                 }
+                                if (item.ImgFileType == AlgorithmResultType.POI_Y)
+                                {
+                                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                                    if (pois != null)
+                                    {
+                                        foreach (var poi in pois)
+                                        {
+                                            var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
+                                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
+                                            if (key != null)
+                                            {
+                                                key.Lv = list.Y;
+                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                            }
 
+                                        }
+                                    }
+
+                                }
                             }
+
+                            var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
+                            var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
+                            kBItem.MaxLv = maxKeyItem.Lv;
+                            kBItem.BrightestKey = maxKeyItem.Name;
+                            kBItem.MinLv = minLKey.Lv;
+                            kBItem.DrakestKey = minLKey.Name;
+                            kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
+                            kBItem.SN = SNtextBox.Text;
+                            kBItem.Exposure = "50";
+                            kBItem.Result = true;
+                            ViewResluts.Insert(0, kBItem);
+                            listView1.SelectedIndex = 0;
+                            string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
+                            string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
+                            log.Info($"结果正在写入{resultPath},result:{result}");
+                            File.WriteAllText(resultPath, result);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMddHHmm}.csv";
+                                KBItemMaster.SaveCsv(ViewResluts, csvpath);
+                                log.Info($"writecsv:{csvpath}");
+                            });
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                log.Info("流程执行结束，设置寄存器为0，触发移动");
+                                ModbusControl.GetInstance().SetRegisterValue(0);
+                            });
+                        }
+                        catch(Exception ex)
+                        {
+                            MessageBox.Show(ex.Message);
                         }
 
-                        var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
-                        var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
-                        kBItem.MaxLv = maxKeyItem.Lv;
-                        kBItem.BrightestKey = maxKeyItem.Name;
-                        kBItem.MinLv = minLKey.Lv;
-                        kBItem.DrakestKey = minLKey.Name;
-                        kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
-                        kBItem.SN = SNtextBox.Text;
-                        kBItem.Exposure = "50";
-                        kBItem.Result = true;
-                        ViewResluts.Insert(0,kBItem);
-                        GenoutputText(kBItem);
-
-                        string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
-                        string result = $"{kBItem.SN},{(kBItem.Result? "Pass":"Fail")}, ,";
-                        log.Info($"结果正在写入{resultPath},result:{result}");
-                        File.WriteAllText(resultPath,result);
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMddHHmm}.csv";
-                            KBItemMaster.SaveCsv(ViewResluts, csvpath);
-                            log.Info($"writecsv:{csvpath}");
-                        });
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            log.Info("流程执行结束，设置寄存器为0，触发移动");
-                            ModbusControl.GetInstance().SetRegisterValue(0);
-                        });
                     }
                     else
                     {
@@ -596,7 +595,21 @@ namespace ProjectKB
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-
+            if (sender is ListView listView && listView.SelectedIndex >-1)
+            {
+                var kBItem = ViewResluts[listView.SelectedIndex];
+                GenoutputText(kBItem);
+                Task.Run(() =>
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (File.Exists(kBItem.ResultImagFile))
+                        {
+                            ImageView.OpenImage(kBItem.ResultImagFile);
+                        }
+                    });
+                });
+            }
         }
 
         private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)

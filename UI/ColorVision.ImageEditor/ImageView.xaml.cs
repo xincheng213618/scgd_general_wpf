@@ -710,9 +710,7 @@ namespace ColorVision.ImageEditor
         public async void OpenImage(string? filePath)
         {
             log.Info($"OpenImageFile :{filePath}");
-
             Config.AddProperties("FilePath", filePath);
-
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
             if (filePath != null && File.Exists(filePath))
