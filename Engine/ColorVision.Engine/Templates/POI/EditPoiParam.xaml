@@ -11,6 +11,7 @@
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -492,45 +493,54 @@
             <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01">
                 <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
-            <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-            <StackPanel Grid.Row="0" Grid.RowSpan="2" >
-                <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
-                    <ToolBar.Resources>
-                        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
-                    </ToolBar.Resources>
-                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
-                    </ToggleButton>
-                    <Button Command="{Binding ZoomUniform}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImage1_1}"/>
+            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                    <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_in}" />
+                    <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
-                    <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}"/>
-                    </Button>
-                    <Button Command="{Binding ZoomNone}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
-                    </Button>
-                    <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
-                    </ToggleButton>
-                    <TextBox   BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
-                    </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
-                    </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
-                    </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawPolygon}" Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagePolygon}"/>
-                    </ToggleButton>
                 </ToolBar>
-            </StackPanel>
+            </ToolBarTray>
+            <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <ToolBar x:Name="ToolBar1" Grid.Row="0"  d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
+                <ToolBar.Resources>
+                    <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
+                </ToolBar.Resources>
+                <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
+                </ToggleButton>
+                <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImage1_1}"/>
+                </Button>
+                <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_in}" />
+                </Button>
+                <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagezoom_out}"/>
+                </Button>
+                <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                    <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
+                </Button>
+                <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
+                    <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
+                </ToggleButton>
+                <TextBox   BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>
+                </ToggleButton>
+                <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageCircle}"/>
+                </ToggleButton>
+                <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
+                </ToggleButton>
+                <ToggleButton IsChecked="{Binding DrawPolygon}" Margin="1,0">
+                    <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagePolygon}"/>
+                </ToggleButton>
+            </ToolBar>
+
             <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>

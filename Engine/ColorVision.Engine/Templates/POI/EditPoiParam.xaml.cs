@@ -146,6 +146,7 @@ namespace ColorVision.Engine.Templates.POI
 
             ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageEditViewMode;
+            ToolBarRight.DataContext = ImageEditViewMode;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
@@ -314,14 +315,12 @@ namespace ColorVision.Engine.Templates.POI
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        private void ListViewAdd_Click(object sender, RoutedEventArgs e)
+
+        public void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
 
         }
-        private void ListViewSub_Click(object sender, RoutedEventArgs e)
-        {
 
-        }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
