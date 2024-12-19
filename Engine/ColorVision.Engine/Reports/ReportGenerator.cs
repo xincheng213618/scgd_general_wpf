@@ -80,7 +80,7 @@
 //            document.Add(table);
 
 //            // 关闭文档
-//            document.Close();
+//            document.DelayClose();
 //        }
 //    }
 //}

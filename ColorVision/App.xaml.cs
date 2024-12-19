@@ -160,7 +160,7 @@ namespace ColorVision
 
 
         /// <summary>
-        /// Application Close
+        /// Application DelayClose
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {

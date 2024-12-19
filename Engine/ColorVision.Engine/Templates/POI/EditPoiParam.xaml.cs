@@ -100,14 +100,12 @@ namespace ColorVision.Engine.Templates.POI
             PoiParam = poiParam;
             InitializeComponent();
             this.ApplyCaption();
-
-            Task.Run(() => Test());
+            Task.Run(() => DelayClose());
         }
 
-        public async void Test()
+        public async void DelayClose()
         {
             await Task.Delay(100);
-
             Application.Current.Dispatcher.Invoke(() =>
             {
                 this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
