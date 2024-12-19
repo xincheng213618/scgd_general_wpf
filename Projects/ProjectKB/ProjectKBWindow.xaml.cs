@@ -504,7 +504,7 @@ namespace ProjectKB
                                                 if(list!=null && list.Count == 2)
                                                 {
                                                     key.Lv = list[0].Y;
-                                                    key.Cx = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
                                                 }
                                             }
                                         }
