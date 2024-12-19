@@ -259,7 +259,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                             var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                             if (Batch != null)
                             {
-                                var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
+                                var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                                 List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                                 foreach (var item in resultMaster)
                                 {

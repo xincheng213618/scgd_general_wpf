@@ -9,6 +9,10 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawCanvas : Image
     {
+        public DrawCanvas()
+        {
+            this.Focusable = true;
+        }
 
         private List<Visual> visuals = new();
 

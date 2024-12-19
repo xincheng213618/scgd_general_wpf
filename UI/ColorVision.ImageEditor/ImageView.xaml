@@ -38,7 +38,6 @@
         <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
     </UserControl.Resources>
     <Grid x:Name="ImageContentGrid" >
-        <TextBox x:Name="FocusText" Visibility="Visible"/>
         <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -94,7 +93,7 @@
         </Grid>
         <Grid x:Name="ZoomGrid" Background="#c3c3c3">
             <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
-                <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
+                <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
 
@@ -149,8 +148,8 @@
             </Border>
 
 
-            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  Orientation="Horizontal" HorizontalAlignment="Center">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
+            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                     </ToggleButton>

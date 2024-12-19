@@ -127,7 +127,7 @@ namespace ColorVision.Engine.Templates.POI
 
             ListView1.ItemsSource = DrawingVisualLists;
             ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
-            listViewDragDropManager.ShowDragAdorner = false;
+            listViewDragDropManager.ShowDragAdorner = true;
             listViewDragDropManager.EventHandler += (s, e) =>
             {
                 if (!DBIndex.ContainsKey(e[0]))
@@ -142,8 +142,6 @@ namespace ColorVision.Engine.Templates.POI
                 DBIndex[e[1]] = old;
                 e[1].BaseAttribute.Name = old.ToString();
             };
-
-            ImageShow.Focus();
 
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
@@ -2004,11 +2002,6 @@ namespace ColorVision.Engine.Templates.POI
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             new EidtPoiDataGridForm((ObservableCollection<IDrawingVisual>)DrawingVisualLists).Show();           
-        }
-
-        private void Setting(object sender, RoutedEventArgs e)
-        {
-            
         }
     }
 

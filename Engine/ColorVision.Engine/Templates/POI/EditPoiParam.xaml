@@ -593,7 +593,7 @@
                             </DataTemplate>
                             <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
                                 <StackPanel  Orientation="Horizontal">
-                                    <TextBox Text="{Binding Attribute.Text,StringFormat={}{0:F0}}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
+                                    <TextBox Text="{Binding Attribute.Text}"  HorizontalContentAlignment="Center" Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Center,StringFormat={}{0:F0}}" Width="100"  Margin="5,0"/>
                                     <TextBox Text="{Binding Attribute.Radius,StringFormat={}{0:F1},Converter={StaticResource RoundToNearestHalfConverter}}" Width="60"  Margin="5,0"/>
                                 </StackPanel>
@@ -677,9 +677,6 @@
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
                             </Button>
                             <Button Content="编辑" Click="Button_Click_1"/>
-                            <Button Content="+" Click="ListViewAdd_Click"/>
-                            <Button Content="-" Click="ListViewSub_Click"/>
-
                         </StackPanel>
                         
                     </Grid>

@@ -108,9 +108,7 @@ namespace ColorVision.ImageEditor
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
-            this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
-
         }
 
         public void Clear(object? sender, EventArgs e)
@@ -1184,7 +1182,5 @@ namespace ColorVision.ImageEditor
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-
-
     }
 }
