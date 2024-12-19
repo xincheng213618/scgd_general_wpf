@@ -127,7 +127,7 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="SN">
+                                <GridViewColumn Header="SN" Width="140">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
                                             <TextBlock Text="{Binding SN}" />

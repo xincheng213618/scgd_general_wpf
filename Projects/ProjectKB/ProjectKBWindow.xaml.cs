@@ -56,7 +56,7 @@ namespace ProjectKB
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(KBItemMaster));
 
-        public static void SaveCsv(ObservableCollection<KBItemMaster> KBItems, string FileName)
+        public static void SaveCsv(KBItemMaster KBItems, string FileName)
         {
              var csvBuilder = new StringBuilder();
             List<string> properties = new()
@@ -84,22 +84,41 @@ namespace ProjectKB
         "MinInterKeyColorUniformity"
             };
 
-            for (int i = 0; i < KBItems[0].Items.Count; i++)
+            for (int i = 0; i < KBItems.Items.Count; i++)
             {
-                properties.Add($",{KBItems[0].Items[i].Name}");
+                string name = KBItems.Items[i].Name;
+                if (name.Contains(",") || name.Contains("\""))
+                {
+                    name = $"\"{name.Replace("\"", "\"\"")}\"";
+                }
+                properties.Add(name);
+            }
+            properties.AddRange(properyties1);
+
+            string newHeaders = string.Join(",", properties);
+
+            bool appendData = false;
+
+            if (File.Exists(FileName))
+            {
+                using var reader = new StreamReader(FileName);
+                string existingHeaders = reader.ReadLine();
+                if (existingHeaders == newHeaders)
+                {
+                    appendData = true;
+                }
             }
 
-            // 写入列头
-            csvBuilder.AppendLine(string.Join(",", properties));
-
-            // 写入数据行
-            foreach (var item in KBItems)
+            if (!appendData)
             {
-                if (item.SN.Contains(',') || item.SN.Contains('"'))
-                {
-                    item.SN = $"\"{item.SN.Replace("\"", "\"\"")}\"";
-                }
-                List<string> values = new()
+                csvBuilder.AppendLine(newHeaders);
+            }
+            var item = KBItems;
+            if (item.SN.Contains(',') || item.SN.Contains('"'))
+            {
+                item.SN = $"\"{item.SN.Replace("\"", "\"\"")}\"";
+            }
+            List<string> values = new()
                 {
                     item.Id.ToString(),
                     item.Model,
@@ -124,19 +143,25 @@ namespace ProjectKB
                     item.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),
                 };
 
-                for (int i = 0; i < KBItems[0].Items.Count; i++)
-                {
-                    values.Add($",{KBItems[0].Items[i].Lv}");
-                }
-                csvBuilder.AppendLine(string.Join(",", values));
+            for (int i = 0; i < item.Items.Count; i++)
+            {
+                values.Add(item.Items[i].Lv.ToString());
             }
+            values.Add("");
+            values.Add(item.MaxLv.ToString());
+            values.Add(item.MinLv.ToString());
 
+            csvBuilder.AppendLine(string.Join(",", values));
 
             log.Info(csvBuilder.ToString());
-
-
-            File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
-            
+            if (appendData)
+            {
+                File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+            }
+            else
+            {
+                File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+            }
         }
 
         public KBItemMaster()
@@ -521,6 +546,9 @@ namespace ProjectKB
                             kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                             kBItem.SN = SNtextBox.Text;
                             kBItem.Exposure = "50";
+
+                            ProjectKBConfig.Instance.SummaryInfo.ActualProduction += 1;
+                            ProjectKBConfig.Instance.SummaryInfo.GoodProductCount += 1;
                             kBItem.Result = true;
                             ViewResluts.Insert(0, kBItem);
                             listView1.SelectedIndex = 0;
@@ -529,10 +557,11 @@ namespace ProjectKB
                             log.Info($"结果正在写入{resultPath},result:{result}");
                             File.WriteAllText(resultPath, result);
 
+
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMddHHmm}.csv";
-                                KBItemMaster.SaveCsv(ViewResluts, csvpath);
+                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMdd}.csv";
+                                KBItemMaster.SaveCsv(kBItem, csvpath);
                                 log.Info($"writecsv:{csvpath}");
                             });
                             Application.Current.Dispatcher.Invoke(() =>
@@ -568,8 +597,8 @@ namespace ProjectKB
         public void GenoutputText(KBItemMaster kmitemmaster)
         {
             string outtext = string.Empty;
-            outtext += $"Model:{FlowTemplate.Text}" + Environment.NewLine; 
-            outtext += $"SN:{SNtextBox.Text}" + Environment.NewLine;
+            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine; 
+            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
             outtext += $"Poiints of Interest: " + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
             outtext += Environment.NewLine;

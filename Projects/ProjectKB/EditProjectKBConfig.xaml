@@ -41,6 +41,39 @@
                             <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath_Click" />
                             <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                         </StackPanel>
+
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="线别: " Width="120"/>
+                            <TextBox Width="200"  Text="{Binding SummaryInfo.LineNumber}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="工号: " Width="120"/>
+                            <TextBox Width="200" Text="{Binding SummaryInfo.WorkerNumber}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="目标产量: " Width="120"/>
+                            <TextBox Width="200"  Text="{Binding SummaryInfo.TargetProduction}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="已经生产产量: " Width="120"/>
+                            <TextBox Width="200"  Text="{Binding SummaryInfo.ActualProduction}"/>
+                        </StackPanel>
+                            <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                                <TextBlock Text="良品数量: " Width="120"/>
+                            <TextBox Width="200" Text="{Binding SummaryInfo.GoodProductCount}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="不良品数量:"  Width="120"/>
+                            <TextBox Width="200" Text="{Binding SummaryInfo.DefectiveProductCount}"/>
+                        </StackPanel>
+                            <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="良品率: " Width="120"/>
+                            <TextBox Text="{Binding SummaryInfo.GoodProductRate}" Width="200"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="不良频率: " Width="120"/>
+                            <TextBox Text="{Binding SummaryInfo.DefectiveProductRate}" Width="200"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
