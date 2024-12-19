@@ -48,6 +48,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public double KeyScale { get => _KeyScale; set { _KeyScale = value; NotifyPropertyChanged(); } }
         private double _KeyScale = 1;
 
+
+        public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
+        private double _Area;
+
         [JsonProperty("move")]
         public int Move { get => _Move; set { _Move = value; NotifyPropertyChanged(); } }
         private int _Move = 20;

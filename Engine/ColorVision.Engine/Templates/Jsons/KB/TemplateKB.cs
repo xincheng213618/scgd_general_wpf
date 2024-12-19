@@ -83,6 +83,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                         kBKey.OffsetY = item.Param.KeyOffsetY;
                         kBKey.ThresholdV = item.Param.KeyThreadV;
                         kBKey.Move = item.Param.KeyOutMOVE;
+                        kBKey.Area = item.Param.Area;
                         kBKeyRect.KBKey = kBKey;
 
                         kBKeyRect.Height = (int)item.PixHeight;

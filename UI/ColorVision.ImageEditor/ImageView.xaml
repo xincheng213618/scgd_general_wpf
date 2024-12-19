@@ -39,7 +39,7 @@
     </UserControl.Resources>
     <Grid x:Name="ImageContentGrid" >
         <TextBox x:Name="FocusText" Visibility="Visible"/>
-        <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Visible">
+        <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="300"/>

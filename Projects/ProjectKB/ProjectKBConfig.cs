@@ -174,6 +174,9 @@ namespace ProjectKB
 
         public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
 
+        public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
+        private SPECConfig _SPECConfig = new SPECConfig();
+
     }
 
     public class SummaryInfo : ViewModelBase
@@ -221,13 +224,13 @@ namespace ProjectKB
         /// <summary>
         /// 良品率
         /// </summary>
-        public double GoodProductRate { get => _GoodProductRate; set { _GoodProductRate = value; NotifyPropertyChanged(); } }
+        public double GoodProductRate { get => GoodProductCount / ActualProduction; set { _GoodProductRate = value; NotifyPropertyChanged(); } }
         private double _GoodProductRate;
 
         /// <summary>
         /// 不良率
         /// </summary>
-        public double DefectiveProductRate { get => _DefectiveProductRate; set { _DefectiveProductRate = value; NotifyPropertyChanged(); } }
+        public double DefectiveProductRate { get => DefectiveProductCount / ActualProduction; set { _DefectiveProductRate = value; NotifyPropertyChanged(); } }
         private double _DefectiveProductRate;
 
 

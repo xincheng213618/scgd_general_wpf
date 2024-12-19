@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
@@ -10,7 +9,6 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
-using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -20,9 +18,7 @@ using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -33,238 +29,6 @@ namespace ProjectKB
     class KBvalue
     {
         public double Y { get; set; }
-    }
-
-    public class KBItem : ViewModelBase
-    {
-        public KBKeyRect KBKeyRect { get; set; }
-
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
-        public double Lv { get => _Lv; set { _Lv = value; NotifyPropertyChanged(); } }
-        private double _Lv;
-        public double Cx { get => _Cx; set { _Cx = value; NotifyPropertyChanged(); } }
-        private double _Cx;
-        public double Cy { get => _Cy; set { _Cy = value; NotifyPropertyChanged(); } }
-        private double _Cy;
-        public double Lc { get => _Lc; set { _Lc = value; NotifyPropertyChanged(); } }
-        private double _Lc;
-    }
-
-
-    public class KBItemMaster : ViewModelBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(KBItemMaster));
-
-        public static void SaveCsv(KBItemMaster KBItems, string FileName)
-        {
-             var csvBuilder = new StringBuilder();
-            List<string> properties = new()
-    {
-        "Id","Model", "SerialNumber", "POISet", "AvgLv", "MinLv", "MaxLv", "LvUniformity",
-        "DarkestKey", "BrightestKey", "ColorDifference", "NbrFailedPts", "LvFailures",
-        "LocalContrastFailures", "DarkKeyLocalContrast", "BrightKeyLocalContrast",
-        "LocalDarkestKey", "LocalBrightestKey", "StrayLight", "Result", "DateTime"
-    };
-
-        //    "ESC", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
-        //"HOME", "END", "DELETE", "calculator", "(", ")", "MOON", "~", "1", "2", "3", "4",
-        //"5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "Num lock", "NUM /",
-        //"NUM *", "NUM -", "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[",
-        //"]", "\\", "Num 7", "Num 8", "Num 9", "Num +", "Capslk", "A", "S", "D", "F", "G",
-        //"H", "J", "K", "L", ";", "R68", "Enter", "Num 4", "Num 5", "Num 6", "L-Shift",
-        //"Z", "X", "C", "V", "B", "N", "M", "comma", ".", "/", "R-Shift", "Num 1", "Num 2",
-        //"Num 3", "Num enter", "L-ctrl", "Fn", "Win", "L-alt", "Space", "R-alt", "R-ctrl",
-        //"Pgup", "Up", "Pgdn", "Num 0", "Num .", "LEFT", "DN", "RIGHT",
-            List<string> properyties1 = new List<string>()
-            { "LimitProfile",
-        "MinKeyLv", "MaxKeyLv", "MinAvgLv", "MaxAvgLv", "MinLvUniformity",
-        "MaxDarkLocalContrast", "MaxBrightLocalContrast", "MaxNbrFailedPoints",
-        "MaxColorDifference", "MaxStrayLight", "MinInterKeyUniformity",
-        "MinInterKeyColorUniformity"
-            };
-
-            for (int i = 0; i < KBItems.Items.Count; i++)
-            {
-                string name = KBItems.Items[i].Name;
-                if (name.Contains(",") || name.Contains("\""))
-                {
-                    name = $"\"{name.Replace("\"", "\"\"")}\"";
-                }
-                properties.Add(name);
-            }
-            properties.AddRange(properyties1);
-
-            string newHeaders = string.Join(",", properties);
-
-            bool appendData = false;
-
-            if (File.Exists(FileName))
-            {
-                using var reader = new StreamReader(FileName);
-                string existingHeaders = reader.ReadLine();
-                if (existingHeaders == newHeaders)
-                {
-                    appendData = true;
-                }
-            }
-
-            if (!appendData)
-            {
-                csvBuilder.AppendLine(newHeaders);
-            }
-            var item = KBItems;
-            if (item.SN.Contains(',') || item.SN.Contains('"'))
-            {
-                item.SN = $"\"{item.SN.Replace("\"", "\"\"")}\"";
-            }
-            List<string> values = new()
-                {
-                    item.Id.ToString(),
-                    item.Model,
-                    item.SN,
-                    "",
-                    item.AvgLv.ToString(CultureInfo.InvariantCulture),
-                    item.MinLv.ToString(CultureInfo.InvariantCulture),
-                    item.MaxLv.ToString(CultureInfo.InvariantCulture),
-                    item.LvUniformity.ToString(CultureInfo.InvariantCulture),
-                    item.DrakestKey.ToString(CultureInfo.InvariantCulture),
-                    item.BrightestKey.ToString(CultureInfo.InvariantCulture),
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    item.Result.ToString(),
-                    item.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                };
-
-            for (int i = 0; i < item.Items.Count; i++)
-            {
-                values.Add(item.Items[i].Lv.ToString());
-            }
-            values.Add("");
-            values.Add(item.MaxLv.ToString());
-            values.Add(item.MinLv.ToString());
-
-            csvBuilder.AppendLine(string.Join(",", values));
-
-            log.Info(csvBuilder.ToString());
-            if (appendData)
-            {
-                File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
-            }
-            else
-            {
-                File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
-            }
-        }
-
-        public KBItemMaster()
-        {
-            DateTime = DateTime.Now;
-        }
-
-
-        public ObservableCollection<KBItem> Items { get; set; } = new ObservableCollection<KBItem>();
-
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
-        private int _Id;
-
-        public string ResultImagFile { get => _ResultImagFile; set { _ResultImagFile = value; NotifyPropertyChanged(); } }
-        private string _ResultImagFile = string.Empty;
-
-        public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
-        private string _Model =string.Empty;
-
-        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
-        private string _SN;
-        public string Exposure { get => _Exposure; set { _Exposure = value; NotifyPropertyChanged(); } }
-        private string _Exposure;
-
-        public double AvgLv { get => _AvgLv; set { _AvgLv = value; NotifyPropertyChanged(); } }
-        private double _AvgLv;
-
-        public double AvgC1 { get => _AvgC1; set { _AvgC1 = value; NotifyPropertyChanged(); } }
-        private double _AvgC1;
-
-        public double AvgC2 { get => _AvgC2; set { _AvgC2 = value; NotifyPropertyChanged(); } }
-        private double _AvgC2;
-
-        public double MinLv { get => _MinLv; set { _MinLv = value; NotifyPropertyChanged(); } }
-        private double _MinLv;
-
-        public double MaxLv { get => _MaxLv; set { _MaxLv = value; NotifyPropertyChanged(); } }
-        private double _MaxLv;
-
-        public string DrakestKey { get => _DrakestKey; set { _DrakestKey = value; NotifyPropertyChanged(); } }
-        private string _DrakestKey = string.Empty;
-
-        public string BrightestKey { get => _BrightestKey; set { _BrightestKey = value; NotifyPropertyChanged(); } }
-        private string _BrightestKey = string.Empty;
-
-        public int NbrFailPoints { get => _NbrFailPoints; set { _NbrFailPoints = value; NotifyPropertyChanged(); } }
-        private int _NbrFailPoints;
-
-        public double LvUniformity { get => _LvUniformity; set { _LvUniformity = value; NotifyPropertyChanged(); } }
-        private double _LvUniformity;
-
-        public double ColorUniformity { get => _ColorUniformity; set { _ColorUniformity = value; NotifyPropertyChanged(); } }
-        private double _ColorUniformity;
-
-        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
-        private bool _Result;
-
-        public DateTime DateTime { get => __DateTime; set { __DateTime = value; NotifyPropertyChanged(); } }
-        private DateTime __DateTime = DateTime.Now;
-    }
-
-    public class ProjectKBWindowConfig : IConfig
-    {
-        public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
-
-        public bool IsRestoreWindow { get; set; } = true;
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-
-
-        public void SetWindow(Window window)
-        {
-            if (IsRestoreWindow && Height != 0 && Width != 0)
-            {
-                window.Top = Top;
-                window.Left = Left;
-                window.Height = Height;
-                window.Width = Width;
-                window.WindowState = (WindowState)WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    window.Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    window.Height = SystemParameters.WorkArea.Height;
-                }
-            }
-        }
-        public void SetConfig(Window window)
-        {
-            Top = window.Top;
-            Left = window.Left;
-            Height = window.Height;
-            Width = window.Width;
-            WindowState = (int)window.WindowState;
-        }
     }
 
     /// <summary>
@@ -557,7 +321,12 @@ namespace ProjectKB
                                             if (key != null)
                                             {
                                                 key.Lv = list.Y;
+                                                if (key.KBKeyRect.KBKey.Area != 0)
+                                                {
+                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
+                                                }
                                                 key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+
                                             }
                                         }
                                     }
@@ -576,6 +345,10 @@ namespace ProjectKB
                                                 if(list!=null && list.Count == 2)
                                                 {
                                                     key.Lv = list[0].Y;
+                                                    if (key.KBKeyRect.KBKey.Area != 0)
+                                                    {
+                                                        key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
+                                                    }
                                                     key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
                                                 }
                                             }
@@ -591,12 +364,55 @@ namespace ProjectKB
                             kBItem.MinLv = minLKey.Lv;
                             kBItem.DrakestKey = minLKey.Name;
                             kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
+                            kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
                             kBItem.SN = SNtextBox.Text;
+
+                            kBItem.Result = true;
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MinLv!= 0)
+                            {
+                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinLv;
+                            }
+                            else
+                            {
+                                log.Info("跳过minLv检测");
+                            }
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxLv != 0)
+                            {
+                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxLv;
+                            }
+                            else
+                            {
+                                log.Info("跳过MaxLv检测");
+                            }
+                            if (ProjectKBConfig.Instance.SPECConfig.AvgLv != 0)
+                            {
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.AvgLv;
+                            }
+                            else
+                            {
+                                log.Info("跳过AvgLv检测");
+                            }
+                            if (ProjectKBConfig.Instance.SPECConfig.Uniformity != 0)
+                            {
+                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.Uniformity;
+                            }
+                            else
+                            {
+                                log.Info("跳过Uniformity检测");
+                            }
+
                             kBItem.Exposure = "50";
 
                             ProjectKBConfig.Instance.SummaryInfo.ActualProduction += 1;
-                            ProjectKBConfig.Instance.SummaryInfo.GoodProductCount += 1;
-                            kBItem.Result = true;
+                            if (kBItem.Result)
+                            {
+                                ProjectKBConfig.Instance.SummaryInfo.GoodProductCount += 1;
+                            }
+                            else
+                            {
+                                ProjectKBConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
+                            }
                             ViewResluts.Insert(0, kBItem);
                             listView1.SelectedIndex = 0;
                             string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
@@ -693,7 +509,10 @@ namespace ProjectKB
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-
+            ViewResluts.Clear();
+            ImageView.Clear();
+            outputText.Text = string.Empty;
+            outputText.Background = Brushes.White;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

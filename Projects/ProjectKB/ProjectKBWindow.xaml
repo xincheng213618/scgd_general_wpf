@@ -78,7 +78,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Grid Visibility="Collapsed" Height="32">
+                    <Grid Visibility="Visible" Height="32">
                         <ToolBarTray  Grid.Row="0" IsLocked="True"  Background="Transparent">
                             <ToolBar Band="0" BandIndex="0" Padding="3,2" >
 
