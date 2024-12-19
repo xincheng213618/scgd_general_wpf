@@ -475,40 +475,6 @@
                                     <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
                                 </StackPanel>
                             </TabItem>
-                            <TabItem Header="灯珠抓取">
-                                <StackPanel Margin="5">
-                                    <GroupBox x:Name="GridMark" Header="灯珠像素边长" Margin="5" >
-                                        <StackPanel>
-                                            <StackPanel  x:Name="StackPanelLedLen" d:DataContext="{d:DesignInstance local:PoiParam}" Margin="5">
-                                                <UniformGrid Columns="2">
-                                                    <DockPanel  Margin="2">
-                                                        <TextBlock Text="上边长:" />
-                                                        <TextBox  Text="{Binding PoiConfig.LedLen1}" />
-                                                    </DockPanel>
-                                                    <DockPanel Margin="2" >
-                                                        <TextBlock Text="下边长:" />
-                                                        <TextBox   Text="{Binding PoiConfig.LedLen2}" />
-                                                    </DockPanel>
-                                                    <DockPanel  Margin="2">
-                                                        <TextBlock Text="左边长:" />
-                                                        <TextBox  Text="{Binding PoiConfig.LedLen3}" />
-                                                    </DockPanel>
-                                                    <DockPanel Margin="2" >
-                                                        <TextBlock Text="右边长:" />
-                                                        <TextBox   Text="{Binding PoiConfig.LedLen4}" />
-                                                    </DockPanel>
-                                                </UniformGrid>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </GroupBox>
-                                    <Button Margin="2" Content="抓取" Click="Light_Draw_Click"/>
-                                    <Button  Content="导入配置文件" Click="Button_Click_2"  Margin="1"/>
-                                    <Button  Content="保存配置文件" Click="Button_Click_3"  Margin="1"/>
-                                    <WindowsFormsHost Height="300" >
-                                        <winf:PropertyGrid  x:Name="PropertyGridAutoFocus" />
-                                    </WindowsFormsHost>
-                                </StackPanel>
-                            </TabItem>
                             <TabItem Header="导入布点">
                                 <Button Margin="2" Content="导入" Click="Import_Draw_Click"/>
                             </TabItem>
@@ -673,9 +639,6 @@
                     </ListView>
                     <Grid Grid.Column="1">
                         <StackPanel>
-                            <Button  Click="Setting" >
-                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </Button>
                             <Button Content="编辑" Click="Button_Click_1"/>
                         </StackPanel>
                         

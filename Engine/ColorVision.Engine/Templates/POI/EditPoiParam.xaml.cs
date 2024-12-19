@@ -17,12 +17,9 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
-using cvColorVision;
-using cvColorVision.Util;
 using log4net;
 using Microsoft.Win32;
 using MQTTMessageLib.FileServer;
-using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
@@ -30,7 +27,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,13 +39,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public enum PoiPointParamType
-    {
-         Empty,
-         KBParam
-    }
-
-
     public class EditPoiParamConfig : ViewModelBase, IConfig, IConfigSettingProvider
     {
         public static EditPoiParamConfig Instance => ConfigService.Instance.GetRequiredService<EditPoiParamConfig>();
@@ -1498,62 +1487,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             SavePoiParam();
         }
-
-        public LedCheckCfg ledCheckCfg { get; set; } = new LedCheckCfg();
-
-
-        private void RadioButtonMode2_Checked(object sender, RoutedEventArgs e)
-        {
-            PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
-          
-        }
-
-
-        //读取本地的灯珠检测配置文件
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "LedCfg files (*.cfg) | *.cfg";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                var Cfg = CfgFile.Load<LedCheckCfg>(filePath);
-                if (Cfg == null)
-                {
-                    MessageBox.Show("读取配置文件失败", "ColorVision");
-                    ledCheckCfg = new LedCheckCfg();
-                }
-                else
-                {
-                    ledCheckCfg = Cfg;
-                }
-                PropertyGridAutoFocus.SelectedObject = ledCheckCfg;
-            }
-        }
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "LedCfg files (*.cfg) | *.cfg";
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                string filePath = openFileDialog.FileName;
-                bool result=CfgFile.Save(filePath, ledCheckCfg);
-                if (result)
-                {
-                    MessageBox.Show("保存成功", "ColorVision");
-                }
-                else
-                {
-                    MessageBox.Show("保存失败", "ColorVision");
-                }
-            }
-
-        }
-
-
         private void PoiConfigImport_Click(object sender, RoutedEventArgs e)
         {
             PoiParam.PoiConfig.Polygon1X = PoiParam.PoiConfig.X1X;
@@ -1570,128 +1503,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             SettingPopup.IsOpen = true;
         }
-
-        private void Light_Draw_Click(object sender, RoutedEventArgs e)
-        {
-                byte[] pdata;
-                OpenCvSharp.Mat mat;
-                if (ledPicData == null)
-                {
-                    MessageBox.Show("请先载入图片", "ColorVision");
-                    return;
-                }
-                else
-                {
-                    try
-                    {
-                        mat = OpenCvSharp.Cv2.ImRead(ledPicData.picUrl, OpenCvSharp.ImreadModes.Unchanged);
-
-                        pdata = new byte[(ulong)mat.DataEnd - (ulong)mat.DataStart];
-                        Marshal.Copy(mat.Data, pdata, 0, pdata.Length);
-                    }
-                    catch (Exception)
-                    {
-
-                        throw;
-                    }
-                }
-
-                double[] LengthResult = new double[4];
-                int testdata = 0;
-
-                int channelType = ledCheckCfg.计算图像格式 % 10;
-
-                testdata = ledCheckCfg.灯珠宽方向数量 * ledCheckCfg.灯珠高方向数量;
-
-                double[] banjin = new double[testdata * channelType];
-                double[] mianji = new double[testdata * channelType];
-                double[] xiangsuhe = new double[testdata * channelType];
-                double[] xiangsupingjun = new double[testdata * channelType];
-
-                int[] zuobiaoX = new int[testdata * channelType];
-                int[] zuobiaoY = new int[testdata * channelType];
-
-                //////////////////
-                float[] localRDMark = new float[8];
-                string[] RDdata = new string[1];//RD编号
-                double[] PointX = new double[1];//坐标X
-                double[] PointY = new double[1];//坐标Y
-                if (ledCheckCfg.是否使用本地点位信息计算)
-                {
-                    try
-                    {
-                        //读取本地的点位数据
-                        IWorkbook workbook = WorkbookFactory.Create("cfg\\" + ledCheckCfg.本地点位信息坐标);
-                        ISheet sheet = workbook.GetSheetAt(0);//获取第一个工作薄
-                        testdata = sheet.LastRowNum;
-                        //MessageBox.IsShow(testdata.ToString());
-                        IRow row;
-                        RDdata = new string[testdata];
-                        PointX = new double[testdata];
-                        PointY = new double[testdata];
-
-                        banjin = new double[testdata];
-                        mianji = new double[testdata];
-                        xiangsuhe = new double[testdata * channelType];
-                        xiangsupingjun = new double[testdata * channelType];
-
-                        zuobiaoX = new int[testdata];
-                        zuobiaoY = new int[testdata];
-
-                        for (int m = 0; m < testdata; m++)
-                        {
-                            row = (IRow)sheet.GetRow(m + 1);
-                            RDdata[m] = row.GetCell(2).ToString() ?? string.Empty;
-                            _ = double.TryParse(row.GetCell(3).ToString(), out PointX[m]);
-                            _ = double.TryParse(row.GetCell(4).ToString(), out PointY[m]);
-                        }
-                        for (int m = 0; m < 4; m++)
-                        {
-                            _ = float.TryParse(sheet.GetRow(m + 1).GetCell(6).ToString(), out localRDMark[2 * m + 0]);
-                            _ = float.TryParse(sheet.GetRow(m + 1).GetCell(7).ToString(), out localRDMark[2 * m + 1]);
-                        }
-                        workbook.Close();
-                    }
-                    catch (Exception)
-                    {
-                        MessageBox.Show("本地点位数据文件读取失败，请检查设置与文件！", "ColorVision");
-                        return;
-                    }
-                }
-                /////////////
-
-                double calresult = cvCameraCSLib.LedCheckYaQi(ledCheckCfg.isdebug, ledCheckCfg.灯珠抓取通道, (uint)mat.Cols, (uint)mat.Rows, (uint)(int)(mat.Step(1) * 8 / mat.Channels()), (uint)mat.Channels(), pdata
-                    , ledCheckCfg.是否启用固定半径计算, ledCheckCfg.灯珠固定半径, ledCheckCfg.轮廓最小面积,
-                    testdata, ledCheckCfg.轮廓范围系数, ledCheckCfg.图像二值化补正,
-                    banjin, zuobiaoX, zuobiaoY,
-                    ledCheckCfg.灯珠宽方向数量, ledCheckCfg.灯珠高方向数量, ledCheckCfg.关注范围, ledCheckCfg.关注区域二值化, ledCheckCfg.boundry,
-                    ledCheckCfg.LengthCheck, ledCheckCfg.LengthRange, LengthResult, ledCheckCfg.是否使用本地点位信息计算, localRDMark, PointX, PointY);
-
-                PoiParam.PoiConfig.LedLen1 = Math.Round(LengthResult[0], 2);
-                PoiParam.PoiConfig.LedLen2 = Math.Round(LengthResult[1], 2);
-                PoiParam.PoiConfig.LedLen3 = Math.Round(LengthResult[2], 2);
-                PoiParam.PoiConfig.LedLen4 = Math.Round(LengthResult[3], 2);
-                if (calresult != 3)
-                {
-                    MessageBox.Show("灯珠抓取异常，请检查参数设置", "ColorVision");
-                    return;
-                }
-
-                for (int i = 0; i < testdata; i++)
-                {
-                    DVCircleText Circle = new();
-                    Circle.Attribute.Center = new Point(zuobiaoX[i], zuobiaoY[i]);
-                    Circle.Attribute.Radius = banjin[i];
-                    Circle.Attribute.Brush = Brushes.Transparent;
-                    Circle.Attribute.Pen = new Pen(Brushes.Red, (double)banjin[i] / 30);
-                    Circle.Attribute.Id = i + 1;
-                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
-                    Circle.Render();
-                    ImageShow.AddVisual(Circle);
-                }
-
-        }
-
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
             EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
