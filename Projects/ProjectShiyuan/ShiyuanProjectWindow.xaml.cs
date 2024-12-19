@@ -166,8 +166,6 @@ namespace ColorVision.Projects.ProjectShiYuan
             this.ApplyCaption();
         }
 
-
-
         public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
 

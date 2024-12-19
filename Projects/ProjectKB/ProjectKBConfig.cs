@@ -171,6 +171,9 @@ namespace ProjectKB
 
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
+
+        public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
+
     }
 
     public class SummaryInfo : ViewModelBase

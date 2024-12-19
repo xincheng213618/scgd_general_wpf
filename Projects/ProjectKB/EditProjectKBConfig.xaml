@@ -31,6 +31,10 @@
                             <TextBox Text="{Binding  SNMax}" Width="200"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="恢复窗口"  MinWidth="120"  />
+                            <ui:ToggleSwitch IsChecked="{Binding ProjectKBWindowConfig.IsRestoreWindow}" Margin="0,0,5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                             <TextBlock Text="显示概述信息"  MinWidth="120" />
                             <ui:ToggleSwitch IsChecked="{Binding SummaryInfo.IsShowSummary}" Margin="0,0,5,0"/>
                             <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>

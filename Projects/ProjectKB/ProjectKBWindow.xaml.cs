@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
+using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -223,19 +224,65 @@ namespace ProjectKB
         private DateTime __DateTime = DateTime.Now;
     }
 
+    public class ProjectKBWindowConfig : IConfig
+    {
+        public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
+        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
+
+        public bool IsRestoreWindow { get; set; } = true;
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public int WindowState { get; set; }
+
+
+        public void SetWindow(Window window)
+        {
+            if (IsRestoreWindow && Height != 0 && Width != 0)
+            {
+                window.Top = Top;
+                window.Left = Left;
+                window.Height = Height;
+                window.Width = Width;
+                window.WindowState = (WindowState)WindowState;
+
+                if (Width > SystemParameters.WorkArea.Width)
+                {
+                    window.Width = SystemParameters.WorkArea.Width;
+                }
+                if (Height > SystemParameters.WorkArea.Height)
+                {
+                    window.Height = SystemParameters.WorkArea.Height;
+                }
+            }
+        }
+        public void SetConfig(Window window)
+        {
+            Top = window.Top;
+            Left = window.Left;
+            Height = window.Height;
+            Width = window.Width;
+            WindowState = (int)window.WindowState;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for ProjectKBWindow.xaml
     /// </summary>
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
+        public static  ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
 
+        public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
         public ProjectKBWindow()
         {
             InitializeComponent();
             this.ApplyCaption(false);
+            Config.SetWindow(this);
+            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
         public STNodeEditor STNodeEditorMain { get; set; }
