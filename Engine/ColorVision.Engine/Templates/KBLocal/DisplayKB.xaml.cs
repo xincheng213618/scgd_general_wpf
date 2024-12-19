@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.KB
                     CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
                     if (cvcie.bpp == 16)
                     {
-                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_16UC(cvcie.channels), cvcie.data);
 
                     }
                     else
@@ -90,31 +90,40 @@ namespace ColorVision.Engine.Templates.KB
             string csvFilePath = IAlgorithm.SaveFolderPath + "\\output.csv";
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
             {
-                writer.WriteLine("Name,HaloGray,KeyGray");
+                writer.WriteLine("Name,rect,HaloGray,haloGray1,KeyGray,KeyGray1");
                 foreach (var item in poiParam.PoiPoints)
                 {
                     if (item.PointType == RiPointTypes.Rect)
                     {
-                        IRECT rect = new IRECT((int)(item.PixX - (int)item.PixWidth / 2), (int)(item.PixY - (int)item.PixHeight / 2), (int)item.PixWidth, (int)item.PixHeight);
-                        float haloGray = -1;
-                        if (CB_CalculateHalo.IsChecked == true)
+                        try
                         {
-                            uint gray = 0;
-                            haloGray = KeyBoardDLL.CM_CalculateHalo(rect, item.Param.HaloOutMOVE, item.Param.HaloThreadV, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref gray);
-                            haloGray = (float)(haloGray * item.Param.HaloScale);
+                            IRECT rect = new IRECT((int)(item.PixX - (int)item.PixWidth / 2), (int)(item.PixY - (int)item.PixHeight / 2), (int)item.PixWidth, (int)item.PixHeight);
+                            float haloGray = -1;
+                            uint haloGray1 = 0;
+                            uint Keygray1 = 0;
+                            if (CB_CalculateHalo.IsChecked == true)
+                            {
+                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, item.Param.HaloOutMOVE, item.Param.HaloThreadV, 15, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref haloGray1);
+                                haloGray = (float)(haloGray * item.Param.HaloScale);
+                            }
+                            float keyGray = -1;
+                            if (CB_CalculateKey.IsChecked == true)
+                            {
+                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, item.Param.KeyOutMOVE, item.Param.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref Keygray1);
+                                keyGray = (float)(keyGray * item.Param.KeyScale);
+                            }
+                            if (item.Name.Contains(",") || item.Name.Contains("\""))
+                            {
+                                item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
+                            }
+                            writer.WriteLine($"{item.Name},{rect},{haloGray},{haloGray1},{keyGray},{Keygray1}");
+
                         }
-                        float keyGray = -1;
-                        if (CB_CalculateKey.IsChecked == true)
+                        catch(Exception ex)
                         {
-                            uint gray = 0;
-                            keyGray = KeyBoardDLL.CM_CalculateKey(rect, item.Param.KeyOutMOVE, item.Param.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref gray);
-                            keyGray = (float)(keyGray * item.Param.KeyScale);
+
                         }
-                        if (item.Name.Contains(",") || item.Name.Contains("\""))
-                        {
-                            item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
-                        }
-                        writer.WriteLine($"{item.Name},{haloGray},{keyGray}");
+
                     }
                 }
             }

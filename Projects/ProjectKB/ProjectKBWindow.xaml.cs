@@ -1,44 +1,31 @@
-﻿using ColorVision.Themes;
-using log4net;
-using System.Windows;
-using System.Linq;
-using ColorVision.Common.MVVM;
-using System.Windows.Input;
-using ColorVision.Engine.MQTT;
-using System.Diagnostics;
-using ST.Library.UI.NodeEditor;
-using FlowEngineLib;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.Flow;
-using FlowEngineLib.Base;
-using Panuon.WPF.UI;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using System.Reflection.Emit;
-using ColorVision;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Compliance;
-using ColorVision.Engine.Templates.JND;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using MQTTMessageLib.Algorithm;
-using System.Collections.ObjectModel;
-using System.IO;
-using ColorVision.Engine.Templates.Jsons.KB;
-using Newtonsoft.Json;
-using ColorVision.Engine.MySql.ORM;
-using Org.BouncyCastle.Asn1.BC;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
-using LiveChartsCore.Kernel;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Net;
+using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Themes;
+using FlowEngineLib;
+using FlowEngineLib.Base;
+using log4net;
+using MQTTMessageLib.Algorithm;
+using Newtonsoft.Json;
+using Panuon.WPF.UI;
+using ST.Library.UI.NodeEditor;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text;
-using Org.BouncyCastle.Bcpg.OpenPgp;
-using static NPOI.HSSF.Util.HSSFColor;
-using System.Windows.Media;
-using Org.BouncyCastle.Pqc.Crypto.Crystals.Kyber;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ProjectKB
 {
@@ -77,21 +64,30 @@ namespace ProjectKB
         "Id","Model", "SerialNumber", "POISet", "AvgLv", "MinLv", "MaxLv", "LvUniformity",
         "DarkestKey", "BrightestKey", "ColorDifference", "NbrFailedPts", "LvFailures",
         "LocalContrastFailures", "DarkKeyLocalContrast", "BrightKeyLocalContrast",
-        "LocalDarkestKey", "LocalBrightestKey", "StrayLight", "Result", "DateTime",
-        "ESC", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
-        "HOME", "END", "DELETE", "calculator", "(", ")", "MOON", "~", "1", "2", "3", "4",
-        "5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "Num lock", "NUM /",
-        "NUM *", "NUM -", "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[",
-        "]", "\\", "Num 7", "Num 8", "Num 9", "Num +", "Capslk", "A", "S", "D", "F", "G",
-        "H", "J", "K", "L", ";", "R68", "Enter", "Num 4", "Num 5", "Num 6", "L-Shift",
-        "Z", "X", "C", "V", "B", "N", "M", "comma", ".", "/", "R-Shift", "Num 1", "Num 2",
-        "Num 3", "Num enter", "L-ctrl", "Fn", "Win", "L-alt", "Space", "R-alt", "R-ctrl",
-        "Pgup", "Up", "Pgdn", "Num 0", "Num .", "LEFT", "DN", "RIGHT", "LimitProfile",
+        "LocalDarkestKey", "LocalBrightestKey", "StrayLight", "Result", "DateTime"
+    };
+
+        //    "ESC", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+        //"HOME", "END", "DELETE", "calculator", "(", ")", "MOON", "~", "1", "2", "3", "4",
+        //"5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "Num lock", "NUM /",
+        //"NUM *", "NUM -", "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[",
+        //"]", "\\", "Num 7", "Num 8", "Num 9", "Num +", "Capslk", "A", "S", "D", "F", "G",
+        //"H", "J", "K", "L", ";", "R68", "Enter", "Num 4", "Num 5", "Num 6", "L-Shift",
+        //"Z", "X", "C", "V", "B", "N", "M", "comma", ".", "/", "R-Shift", "Num 1", "Num 2",
+        //"Num 3", "Num enter", "L-ctrl", "Fn", "Win", "L-alt", "Space", "R-alt", "R-ctrl",
+        //"Pgup", "Up", "Pgdn", "Num 0", "Num .", "LEFT", "DN", "RIGHT",
+            List<string> properyties1 = new List<string>()
+            { "LimitProfile",
         "MinKeyLv", "MaxKeyLv", "MinAvgLv", "MaxAvgLv", "MinLvUniformity",
         "MaxDarkLocalContrast", "MaxBrightLocalContrast", "MaxNbrFailedPoints",
         "MaxColorDifference", "MaxStrayLight", "MinInterKeyUniformity",
         "MinInterKeyColorUniformity"
-    };
+            };
+
+            for (int i = 0; i < KBItems[0].Items.Count; i++)
+            {
+                properties.Add($",{KBItems[0].Items[i].Name}");
+            }
 
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
@@ -127,9 +123,18 @@ namespace ProjectKB
                     item.Result.ToString(),
                     item.DateTime.ToString("yyyy-MM-dd HH:mm:ss"),
                 };
+
+                for (int i = 0; i < KBItems[0].Items.Count; i++)
+                {
+                    values.Add($",{KBItems[0].Items[i].Lv}");
+                }
                 csvBuilder.AppendLine(string.Join(",", values));
             }
+
+
             log.Info(csvBuilder.ToString());
+
+
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
             
         }
@@ -251,27 +256,31 @@ namespace ProjectKB
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
-            if (ProjectKBConfig.Instance.AutoModbusConnect)
+            Task.Run(() =>
             {
-                bool con = ModbusControl.GetInstance().Connect();
-                if (con)
+                if (ProjectKBConfig.Instance.AutoModbusConnect)
                 {
-                    log.Info("初始化寄存器设置为0");
-                    ModbusControl.GetInstance().SetRegisterValue(0);
-                }
-
-                ModbusControl.GetInstance().StatusChanged += (s, e) =>
-                {
-                    if (ModbusControl.GetInstance().CurrentValue ==1)
+                    bool con = ModbusControl.GetInstance().Connect();
+                    if (con)
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            log.Info("触发拍照，执行流程");
-                            RunTemplate();
-                        });
+                        log.Info("初始化寄存器设置为0");
+                        ModbusControl.GetInstance().SetRegisterValue(0);
                     }
-                };
-            }
+
+                    ModbusControl.GetInstance().StatusChanged += (s, e) =>
+                    {
+                        if (ModbusControl.GetInstance().CurrentValue == 1)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                log.Info("触发拍照，执行流程");
+                                RunTemplate();
+                            });
+                        }
+                    };
+                }
+            });
+
         }
 
 

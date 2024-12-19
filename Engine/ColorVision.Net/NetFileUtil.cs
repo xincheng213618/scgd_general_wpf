@@ -376,7 +376,7 @@ namespace ColorVision.Net
         private int ReadLocalFile(string fileName, FileExtType extType, out CVCIEFile fileInfo)
         {
             fileInfo = new CVCIEFile();
-            int code;
+            int code;   
             if (!File.Exists(fileName)) return -1;
             if (extType == FileExtType.CIE) code = ReadCVCIE(fileName, out fileInfo);
 
