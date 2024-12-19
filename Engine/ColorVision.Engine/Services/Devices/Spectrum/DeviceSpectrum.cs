@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 }
             }
         }
-        public  CameraLicenseModel CameraLicenseModel { get; set; }
+        public  LicenseModel CameraLicenseModel { get; set; }
         public void SetLicense(string filepath)
         {
             if (!File.Exists(filepath)) return;
@@ -91,13 +91,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         string Code = Path.GetFileNameWithoutExtension(item.FullName);
                         CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
                         if (CameraLicenseModel == null)
-                            CameraLicenseModel = new CameraLicenseModel();
+                            CameraLicenseModel = new LicenseModel();
                         CameraLicenseModel.DevCameraId = SysResourceModel.Id;
+                        CameraLicenseModel.LiceType = 1;
                         CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
                         using var stream = item.Open();
                         using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
                         CameraLicenseModel.LicenseValue = reader.ReadToEnd();
-
                         CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
                         CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
                         CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
@@ -115,8 +115,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 string Code = Path.GetFileNameWithoutExtension(filepath);
                 CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
                 if (CameraLicenseModel == null)
-                    CameraLicenseModel = new CameraLicenseModel();
+                    CameraLicenseModel = new LicenseModel();
                 CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
+                CameraLicenseModel.LiceType = 1;
                 CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
                 CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
                 CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;

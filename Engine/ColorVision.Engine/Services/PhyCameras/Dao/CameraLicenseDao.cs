@@ -35,11 +35,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string LicenseeSignature { get; set; }
     }
 
-    public class CameraLicenseModel : ViewModelBase,IPKModel, ISortID
+    public class LicenseModel : ViewModelBase,IPKModel, ISortID
     {
         [Column("id")]
         public int Id { get; set; }
-        public CameraLicenseModel()
+        public LicenseModel()
         {
             CreateDate = DateTime.Now;
             ExpiryDate = DateTime.Now;
@@ -49,6 +49,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public int? DevCameraId { get; set; }
         [Column("res_dev_cali_pid")]
         public int? DevCaliId { get; set; }
+
+        [Column("lic_type")]
+        public int LiceType { get; set; } = 0;
 
         [Column("value")]
         public string? LicenseValue { get; set; }
@@ -69,7 +72,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public DateTime? CreateDate { get; set; }
     }
 
-    public class CameraLicenseDao : BaseTableDao<CameraLicenseModel>
+    public class CameraLicenseDao : BaseTableDao<LicenseModel>
     {
         public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
 
@@ -78,7 +81,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
 
         }
 
-        public CameraLicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
+        public LicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
     
     }
 

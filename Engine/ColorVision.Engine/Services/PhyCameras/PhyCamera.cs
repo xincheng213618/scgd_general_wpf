@@ -371,8 +371,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         #region License
 
-        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); NotifyPropertyChanged(nameof(LicenseSolidColorBrush)); } }
-        private CameraLicenseModel? _CameraLicenseModel;
+        public LicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLicensed)); NotifyPropertyChanged(nameof(LicenseSolidColorBrush)); } }
+        private LicenseModel? _CameraLicenseModel;
 
         public LicenseState LicenseState { get 
             {
@@ -454,8 +454,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                         {
                             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                             if (CameraLicenseModel == null)
-                                CameraLicenseModel = new CameraLicenseModel();
+                                CameraLicenseModel = new LicenseModel();
                             CameraLicenseModel.DevCameraId = SysResourceModel.Id;
+                            CameraLicenseModel.LiceType = 0;
                             CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
                             using var stream = item.Open();
                             using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
@@ -485,7 +486,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                     if (CameraLicenseModel == null)
-                        CameraLicenseModel = new CameraLicenseModel();
+                        CameraLicenseModel = new LicenseModel();
+                    CameraLicenseModel.LiceType = 0;
                     CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
                     CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
                     CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;

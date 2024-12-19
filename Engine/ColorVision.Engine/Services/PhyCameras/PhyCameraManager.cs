@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             LoadPhyCamera();
         }
 
-        private static void ProcessZipFile(string file, List<CameraLicenseModel> licenses)
+        private static void ProcessZipFile(string file, List<LicenseModel> licenses)
         {
             using ZipArchive archive = ZipFile.OpenRead(file);
             var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -136,7 +136,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        private static void ProcessLicFile(string file, List<CameraLicenseModel> licenses)
+        private static void ProcessLicFile(string file, List<LicenseModel> licenses)
         {
             var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(file), licenses);
             licenseModel.LicenseValue = File.ReadAllText(file);
@@ -144,13 +144,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             UpdateLicenseModel(licenseModel);
         }
 
-        private static CameraLicenseModel GetOrCreateLicenseModel(string macAddress, List<CameraLicenseModel> licenses)
+        private static LicenseModel GetOrCreateLicenseModel(string macAddress, List<LicenseModel> licenses)
         {
-            var licenseModel = licenses.Find(a => a.MacAddress == macAddress) ?? new CameraLicenseModel { MacAddress = macAddress };
+            var licenseModel = licenses.Find(a => a.MacAddress == macAddress) ?? new LicenseModel { MacAddress = macAddress };
             return licenseModel;
         }
 
-        private static void UpdateLicenseModel(CameraLicenseModel licenseModel)
+        private static void UpdateLicenseModel(LicenseModel licenseModel)
         {
             licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
             licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
@@ -161,7 +161,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             UpdateSysResource(licenseModel);
         }
 
-        private static void UpdateSysResource(CameraLicenseModel licenseModel)
+        private static void UpdateSysResource(LicenseModel licenseModel)
         {
             var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == licenseModel.MacAddress);
             if (sysDictionaryModel == null)

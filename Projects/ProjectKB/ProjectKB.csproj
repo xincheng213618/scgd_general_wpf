@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-    <VersionPrefix>1.0.1.30</VersionPrefix>
+    <VersionPrefix>1.0.1.34</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>

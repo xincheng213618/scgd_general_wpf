@@ -487,10 +487,28 @@ namespace ProjectKB
                                                 key.Lv = list.Y;
                                                 key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
                                             }
-
                                         }
                                     }
-
+                                }
+                                if (item.ImgFileType == AlgorithmResultType.POI_Y_V2)
+                                {
+                                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                                    if (pois != null)
+                                    {
+                                        foreach (var poi in pois)
+                                        {
+                                            var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
+                                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
+                                            if (key != null)
+                                            {
+                                                if(list!=null && list.Count == 2)
+                                                {
+                                                    key.Lv = list[0].Y;
+                                                    key.Cx = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
