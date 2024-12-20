@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;
@@ -68,6 +69,10 @@ namespace ColorVision.Engine.MySql
                 log.Info($"Test数据库连接信息:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
                 MySqlConnection.Open();
+                if (string.IsNullOrEmpty(MySqlConfig.Database))
+                {
+                    return false;
+                }
                 // Query to check if the database exists
                 string query = $"SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '{MySqlConfig.Database}'";
                 using (var command = new MySqlCommand(query, MySqlConnection))
@@ -81,7 +86,7 @@ namespace ColorVision.Engine.MySql
                         }
                         else
                         {
-                            MessageBox.Show("Database does not exist.");
+                            MessageBox.Show(Application.Current.GetActiveWindow(),"Database does not exist.");
                             log.Warn("Database does not exist.");
                             return false;
                         }
