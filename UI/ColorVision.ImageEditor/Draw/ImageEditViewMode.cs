@@ -382,12 +382,12 @@ namespace ColorVision.ImageEditor.Draw
             }
             if (_ImageEditMode == false)
             {
-                if (e.Key == Key.Add)
+                if (e.Key == Key.Add && e.Key ==Key.I)
                 {
                     ZoomIncrease.RaiseExecute(e);
                     e.Handled = true;
                 }
-                if (e.Key == Key.Subtract)
+                if (e.Key == Key.Subtract && e.Key == Key.O)
                 {
                     ZoomDecrease.RaiseExecute(e);
                     e.Handled = true;
@@ -408,7 +408,7 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X -10, OldRect.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
@@ -427,7 +427,7 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X +10, OldRect.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
@@ -446,7 +446,7 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -10, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -2, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
@@ -465,7 +465,7 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +10, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +2, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
@@ -475,7 +475,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Add)
+                else if (e.Key == Key.Add && e.Key == Key.I)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -494,7 +494,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Subtract)
+                else if (e.Key == Key.Subtract && e.Key ==Key.O)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -573,25 +573,6 @@ namespace ColorVision.ImageEditor.Draw
                     e.Handled = true;
                 }
             }
-
-            //if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            //{
-            //    // 确保imageControl已经加载了内容
-            //    if (Image.Source == null)
-            //    {
-            //        return;
-            //    }
-            //    if (Image.Source is BitmapSource bitmapSource)
-            //    {
-            //        Clipboard.Clear();
-            //        Clipboard.SetImage(bitmapSource);
-            //    }
-            //    // 可选：强制垃圾回收
-            //    // GC.Collect();
-            //    // GC.WaitForPendingFinalizers();
-            //    // 将图像复制到剪贴板
-            //    MessageBox.Show("图像已经复制到粘贴板中,该操作目前存在内存泄露");
-            //}
         }
 
         public bool ScaleRulerShow
