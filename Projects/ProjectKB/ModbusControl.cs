@@ -39,11 +39,11 @@ namespace ProjectKB
         {
             try
             {
-                log.Info($"TestConnet: ModbusConfig:{Config}");
+                log.Debug($"TestConnet: ModbusConfig:{Config}");
 
                 using (var client = new TcpClient(Config.Host, Config.Port))
                 {
-                    log.Info($"TestConnet: TcpConnect");
+                    log.Debug($"TestConnet: TcpConnect");
 
                     var factory = new ModbusFactory();
                     var master = factory.CreateMaster(client);
@@ -51,14 +51,14 @@ namespace ProjectKB
                     // 读取从站1的寄存器地址100的值
                     ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
                     ushort currentValue = registers[0];
-                    log.Info($"TestConnet: currentValue:{currentValue}");
+                    log.Debug($"TestConnet: currentValue:{currentValue}");
                     return true;
                 }
 
             }
             catch (Exception ex)
             {
-                log.Info($"TestConnet: Error: {ex.Message}");
+                log.Error($"TestConnet: Error: {ex.Message}");
                 return false;
             }
         }
@@ -75,7 +75,7 @@ namespace ProjectKB
                     // 读取从站1的寄存器地址100的值
                     ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
                     ushort currentValue = registers[0];
-                    log.Info($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
+                    log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         this.CurrentValue = currentValue;
@@ -92,7 +92,7 @@ namespace ProjectKB
             }
             catch (Exception ex)
             {
-                log.Info($"{DateTime.Now} Error: {ex.Message}");
+                log.Error($"{DateTime.Now} Error: {ex.Message}");
                 IsConnect = false;
             }
 
@@ -123,7 +123,7 @@ namespace ProjectKB
                                 // 读取从站1的寄存器地址100的值
                                 ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
                                 ushort currentValue = registers[0];
-                                log.Info($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
+                                log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     this.CurrentValue = currentValue;
@@ -139,7 +139,7 @@ namespace ProjectKB
                     }
                     catch (Exception ex)
                     {
-                        log.Info($"{DateTime.Now} Error: {ex.Message}");
+                        log.Error($"{DateTime.Now} Error: {ex.Message}");
                         IsConnect = false;
                         break;
                     }

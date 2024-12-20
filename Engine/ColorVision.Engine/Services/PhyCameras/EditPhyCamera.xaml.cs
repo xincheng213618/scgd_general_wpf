@@ -47,8 +47,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             EditConfig = PhyCamera.Config.Clone();
             EditContent.DataContext = EditConfig;
 
-            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
-                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
 
             ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
                                             select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
@@ -81,35 +79,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                   select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
-
-            };
-
-
-            ComboxCameraType.SelectionChanged += (s, e) =>
-            {
-                if (ComboxCameraType.SelectedValue is CameraType type)
-                {
-                    if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          where e1 != ImageChannel.Three
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                        ComboxCameraChannel.SelectedValue = ImageChannel.One;
-                    }
-                    else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          where e1 != ImageChannel.One
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                        ComboxCameraChannel.SelectedValue = ImageChannel.Three;
-                    }
-
-                    else
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                    };
-                }
 
             };
 

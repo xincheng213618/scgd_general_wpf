@@ -108,7 +108,7 @@ namespace ProjectKB
 
             csvBuilder.AppendLine(string.Join(",", values));
 
-            log.Info(csvBuilder.ToString());
+            log.Debug(csvBuilder.ToString());
             if (appendData)
             {
                 File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);

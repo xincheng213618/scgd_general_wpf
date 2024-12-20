@@ -167,7 +167,7 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == FileExtType.CIE)
                 {
-                    log.Info(JsonConvert.SerializeObject(meta));
+                    log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
                     imageView.Config.AddProperties("Exp", meta.exp);
                     exp = meta.exp;

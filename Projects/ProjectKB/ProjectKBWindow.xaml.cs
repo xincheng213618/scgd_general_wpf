@@ -99,7 +99,7 @@ namespace ProjectKB
                     bool con = ModbusControl.GetInstance().Connect();
                     if (con)
                     {
-                        log.Info("初始化寄存器设置为0");
+                        log.Debug("初始化寄存器设置为0");
                         ModbusControl.GetInstance().SetRegisterValue(0);
                     }
 
@@ -375,7 +375,7 @@ namespace ProjectKB
                             }
                             else
                             {
-                                log.Info("跳过minLv检测");
+                                log.Debug("跳过minLv检测");
                             }
                             if (ProjectKBConfig.Instance.SPECConfig.MaxLv != 0)
                             {
@@ -383,7 +383,7 @@ namespace ProjectKB
                             }
                             else
                             {
-                                log.Info("跳过MaxLv检测");
+                                log.Debug("跳过MaxLv检测");
                             }
                             if (ProjectKBConfig.Instance.SPECConfig.AvgLv != 0)
                             {
@@ -391,7 +391,7 @@ namespace ProjectKB
                             }
                             else
                             {
-                                log.Info("跳过AvgLv检测");
+                                log.Debug("跳过AvgLv检测");
                             }
                             if (ProjectKBConfig.Instance.SPECConfig.Uniformity != 0)
                             {
@@ -399,7 +399,7 @@ namespace ProjectKB
                             }
                             else
                             {
-                                log.Info("跳过Uniformity检测");
+                                log.Debug("跳过Uniformity检测");
                             }
 
                             kBItem.Exposure = "50";
@@ -417,7 +417,7 @@ namespace ProjectKB
                             listView1.SelectedIndex = 0;
                             string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
                             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
-                            log.Info($"结果正在写入{resultPath},result:{result}");
+                            log.Debug($"结果正在写入{resultPath},result:{result}");
                             File.WriteAllText(resultPath, result);
 
 
@@ -425,11 +425,11 @@ namespace ProjectKB
                             {
                                 string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMdd}.csv";
                                 KBItemMaster.SaveCsv(kBItem, csvpath);
-                                log.Info($"writecsv:{csvpath}");
+                                log.Debug($"writecsv:{csvpath}");
                             });
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                log.Info("流程执行结束，设置寄存器为0，触发移动");
+                                log.Debug("流程执行结束，设置寄存器为0，触发移动");
                                 ModbusControl.GetInstance().SetRegisterValue(0);
                             });
                         }
