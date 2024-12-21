@@ -29,6 +29,7 @@ namespace ProjectKB
     class KBvalue
     {
         public double Y { get; set; }
+        public int PixNumber { get; set; } = 1;
     }
 
     /// <summary>
@@ -345,6 +346,7 @@ namespace ProjectKB
                                                 if(list!=null && list.Count == 2)
                                                 {
                                                     key.Lv = list[0].Y;
+                                                    key.Lv = key.Lv  * list[0].PixNumber;
                                                     if (key.KBKeyRect.KBKey.Area != 0)
                                                     {
                                                         key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
@@ -432,6 +434,7 @@ namespace ProjectKB
                                 log.Debug("流程执行结束，设置寄存器为0，触发移动");
                                 ModbusControl.GetInstance().SetRegisterValue(0);
                             });
+                            SNtextBox.Text = string.Empty;
                         }
                         catch(Exception ex)
                         {
@@ -521,8 +524,9 @@ namespace ProjectKB
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
                 GenoutputText(kBItem);
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
+                    await Task.Delay(30);
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (File.Exists(kBItem.ResultImagFile))
