@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Services.RC
                                 MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                                 if (respQurey != null)
                                 {
-                                    Application.Current.Dispatcher.Invoke((Action)delegate {
+                                    Application.Current?.Dispatcher.Invoke((Action)delegate {
                                         UpdateServices(respQurey.Data);
                                     });
                                 }
