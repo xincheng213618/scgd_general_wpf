@@ -132,7 +132,6 @@ namespace WindowsServicePlugin
                                     Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
                                     log.Info("正在关闭CVWinSMS");
                                     await Task.Delay(3000);
-
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         try

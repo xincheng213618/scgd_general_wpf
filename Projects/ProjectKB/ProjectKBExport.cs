@@ -5,6 +5,11 @@ using System.Windows;
 
 namespace ProjectKB
 {
+    public class KBInstance
+    {
+        public static ProjectKBWindow WindowInstance { get; set; }
+    }
+
     public class ProjectKBPlugin: IProjectBase
     {
         public  override string? Header => "键盘测试";
@@ -12,7 +17,19 @@ namespace ProjectKB
 
         public override void Execute()
         {
-            new ProjectKBWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (KBInstance.WindowInstance == null)
+            {
+                KBInstance.WindowInstance = new ProjectKBWindow
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                KBInstance.WindowInstance.Closed += (s, e) => KBInstance.WindowInstance = null;
+                KBInstance.WindowInstance.Show();
+            }
+            else
+            {
+                KBInstance.WindowInstance.Activate();
+            }
         }
     }
 
@@ -33,7 +50,19 @@ namespace ProjectKB
 
         public void Execute()
         {
-            new ProjectKBWindow() {WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (KBInstance.WindowInstance == null)
+            {
+                KBInstance.WindowInstance = new ProjectKBWindow
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                KBInstance.WindowInstance.Closed += (s, e) => KBInstance.WindowInstance = null;
+                KBInstance.WindowInstance.Show();
+            }
+            else
+            {
+                KBInstance.WindowInstance.Activate();
+            }
         }
     }
 }

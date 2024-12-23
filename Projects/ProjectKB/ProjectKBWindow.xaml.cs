@@ -8,6 +8,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -19,6 +20,7 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection.Emit;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -33,7 +35,7 @@ namespace ProjectKB
     }
 
     /// <summary>
-    /// Interaction logic for ProjectKBWindow.xaml
+    /// Interaction logic for _windowInstance.xaml
     /// </summary>
     public partial class ProjectKBWindow : Window
     {
@@ -62,7 +64,7 @@ namespace ProjectKB
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
-
+            ImageView.Config.IsLayoutUpdated = false;
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
@@ -71,22 +73,7 @@ namespace ProjectKB
             {
                 if (FlowTemplate.SelectedIndex > -1)
                 {
-                    var tokens = ServiceManager.GetInstance().ServiceTokens;
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is CVCommonNode algorithmNode)
-                        {
-                            algorithmNode.nodeRunEvent -= UpdateMsg;
-                        }
-                    }
-                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is CVCommonNode algorithmNode)
-                        {
-                            algorithmNode.nodeRunEvent += UpdateMsg;
-                        }
-                    }
+                    Refresh();
                 }
             };
 
@@ -118,6 +105,27 @@ namespace ProjectKB
                 }
             });
 
+        }
+
+        public void Refresh()
+        {
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is CVCommonNode algorithmNode)
+                {
+                    algorithmNode.nodeRunEvent -= UpdateMsg;
+                }
+            }
+            var tokens = ServiceManager.GetInstance().ServiceTokens;
+            log.Info($"tokenscount{tokens.Count}");
+            flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is CVCommonNode algorithmNode)
+                {
+                    algorithmNode.nodeRunEvent += UpdateMsg;
+                }
+            }
         }
 
 
@@ -218,6 +226,8 @@ namespace ProjectKB
 
         public void RunTemplate()
         {
+            if (handler!=null) return;
+
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
                 string startNode = flowEngine.GetStartNodeName();
@@ -235,6 +245,15 @@ namespace ProjectKB
                                 handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
                             });
                         }
+                    };
+                    handler.Cancelling += (s, e) =>
+                    {
+                        flowControl.Stop();
+                        stopwatch.Stop();
+                        timer.Change(Timeout.Infinite, 100); // 停止定时器
+                        flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+                        handler?.Close();
+                        handler = null;
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -262,6 +281,10 @@ namespace ProjectKB
             }
         }
 
+        private void Handler_Cancelling(object? sender, System.ComponentModel.CancelEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
 
         private ColorVision.Engine.Templates.Flow.FlowControl flowControl;
 
@@ -269,6 +292,7 @@ namespace ProjectKB
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
+            handler = null;
             if (sender is FlowControlData FlowControlData)
             {
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
@@ -340,6 +364,7 @@ namespace ProjectKB
                                         foreach (var poi in pois)
                                         {
                                             var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
+
                                             var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
                                             if (key != null)
                                             {
@@ -450,12 +475,14 @@ namespace ProjectKB
                 else
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                    Refresh();
                 }
 
             }
             else
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+                Refresh();
             }
         }
 
@@ -532,11 +559,37 @@ namespace ProjectKB
                         if (File.Exists(kBItem.ResultImagFile))
                         {
                             ImageView.OpenImage(kBItem.ResultImagFile);
+                            ImageView.ImageShow.Clear();
+                            foreach (var item in kBItem.Items)
+                            {
+                                DVRectangle Rectangle = new();
+                                Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+
+                                if (item.Name == kBItem.DrakestKey)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
+                                }
+                                else if (item.Name == kBItem.BrightestKey)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
+                                }
+                                else
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                }
+
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Id = -1;
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                            }
                         }
                     });
                 });
             }
         }
+
+
 
         private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
