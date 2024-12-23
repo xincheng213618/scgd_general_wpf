@@ -1,8 +1,19 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
+    /// <summary>
+    /// 专门位鬼影设计的类
+    /// </summary>
+    public sealed class Point1
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+
     [Table("t_scgd_algorithm_result_detail_ghost", PrimaryKey ="id")]
     public class AlgResultGhostModel : VPKModel, IViewResult
     {
@@ -33,6 +44,12 @@ namespace ColorVision.Engine.Templates.Ghost
         public string SingleGhostPixelNum { get; set; }
         [Column("ghost_pixels", Comment = "所有鬼影轮廓的坐标集")]
         public string GhostPixels { get; set; }
+
+        public List<List<Point1>> GhostPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
+
+        public List<List<Point1>> LedPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(LEDPixels);
+
+
     }
 
 

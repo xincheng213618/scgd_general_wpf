@@ -76,6 +76,14 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+
+                        <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
+                                    <TextBlock Text="{ Binding  ResultMsg}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}" Width="160">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
@@ -86,14 +94,7 @@
                         <GridViewColumn  Header="{x:Static properties:Resources.File}" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding   FilePath}"/>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.Parameter}" >
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding   ReqParams}"/>
+                                    <TextBlock Text="{ Binding  FilePath}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -104,10 +105,10 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.Info}" Width="50">
+                        <GridViewColumn  Header="{x:Static properties:Resources.ImageInfo}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding  ResultMsg}" />
+                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -118,13 +119,15 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resources.ImageInfo}" >
+                        <GridViewColumn  Header="{x:Static properties:Resources.Parameter}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
+                                    <TextBlock Text="{ Binding   ReqParams}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+
+
                     </GridView>
                 </ListView.View>
 

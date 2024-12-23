@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -20,14 +21,7 @@ namespace ColorVision.Engine.Templates.Ghost
     public class ViewHandleGhost : IResultHandle
     {
         public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
-        /// <summary>
-        /// 专门位鬼影设计的类
-        /// </summary>
-        sealed class Point1
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-        }
+
         public static void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
             if (filePath == null)
@@ -42,6 +36,36 @@ namespace ColorVision.Engine.Templates.Ghost
             });
         }
 
+        public static void SaveCsv(IList<AlgResultGhostModel> algResultGhostModels,string FileName)
+        {
+            var csvBuilder = new StringBuilder();
+            List<string> headers = new List<string>();
+            headers.Add("id");
+            headers.Add("质心坐标");
+            headers.Add("光斑灰度");
+            headers.Add("鬼影灰度");
+            csvBuilder.AppendLine(string.Join(",", headers));
+
+            foreach (var item in algResultGhostModels)
+            {
+                List<string> content = new List<string>();
+                content.Add(item.Id.ToString());
+                content.Add(item.LEDCenters);
+                content.Add(item.LEDBlobGray);
+                content.Add(item.GhostAverageGray);
+                csvBuilder.AppendLine(string.Join(",", content));
+            }
+            csvBuilder.AppendLine();
+            csvBuilder.AppendLine();
+
+
+
+
+            File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
+
+
         public void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
@@ -51,11 +75,8 @@ namespace ColorVision.Engine.Templates.Ghost
                     view.ImageView.OpenImage(result.FilePath);
                 return;
             }
-
-
             if (result.ViewResults == null)
             {
-
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultGhostModels)
@@ -67,12 +88,10 @@ namespace ColorVision.Engine.Templates.Ghost
             {
                 try
                 {
-                    string GhostPixels = viewResultGhost.GhostPixels;
-                    List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
                     int[] Ghost_pixel_X;
                     int[] Ghost_pixel_Y;
                     List<Point1> Points = new();
-                    foreach (var item in GhostPixel)
+                    foreach (var item in viewResultGhost.GhostPixel)
                         foreach (var item1 in item)
                             Points.Add(item1);
 
@@ -92,13 +111,11 @@ namespace ColorVision.Engine.Templates.Ghost
                         Ghost_pixel_Y = new int[1] { 1 };
                     }
 
-                    string LedPixels = viewResultGhost.LEDPixels;
-                    List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
                     int[] LED_pixel_X;
                     int[] LED_pixel_Y;
 
                     Points.Clear();
-                    foreach (var item in LedPixel)
+                    foreach (var item in viewResultGhost.LedPixel)
                         foreach (var item1 in item)
                             Points.Add(item1);
 

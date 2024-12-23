@@ -3,6 +3,7 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI;
@@ -659,7 +660,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public  void SideSave(AlgorithmResult result,string selectedPath)
+        public void SideSave(AlgorithmResult result,string selectedPath)
         {
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
@@ -691,6 +692,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.MTF:
                         break;
                     case AlgorithmResultType.Ghost:
+                        var ViewResultGhosts = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
+                        ViewHandleGhost.SaveCsv(ViewResultGhosts, fileName);
                         break;
                     case AlgorithmResultType.LedCheck:
                         break;

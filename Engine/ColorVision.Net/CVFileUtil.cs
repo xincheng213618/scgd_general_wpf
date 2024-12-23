@@ -354,7 +354,6 @@ namespace ColorVision.Net
             CVCIEFile data = new();
             switch (channelType)
             {
-                case CVImageChannelType.SRC:
                 case CVImageChannelType.CIE_XYZ_X:
                 case CVImageChannelType.RGB_R:
                     channel = 0;

@@ -35,6 +35,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string LicenseeSignature { get; set; }
     }
 
+
     public class LicenseModel : ViewModelBase,IPKModel, ISortID
     {
         [Column("id")]

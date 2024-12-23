@@ -118,6 +118,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="ResultDesc" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  ResultDesc}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.BatchNumber}" Width="160">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
@@ -139,7 +146,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-
+                            <GridViewColumn  Header="{x:Static properties:Resources.Result}" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  Result}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="{x:Static properties:Resources.CreateTime}" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
@@ -154,13 +167,8 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resources.Result}" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
-                                        <TextBlock Text="{ Binding  Result}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
+
+                            
                         </GridView>
                     </ListView.View>
                 </ListView>
