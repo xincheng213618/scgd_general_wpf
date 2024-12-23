@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
+
 namespace ColorVision.UI.Menus
 {
     public class MenuManager
@@ -18,8 +19,9 @@ namespace ColorVision.UI.Menus
 
         }
 
-        public void LoadMenuItemFromAssembly(bool IsClear = true)
+        public void LoadMenuItemFromAssembly(bool IsClear = false)
         {
+
             var menuItems = new Dictionary<string, MenuItem>();
             foreach (var item in Menu.Items.OfType<MenuItem>())
             {
@@ -122,23 +124,6 @@ namespace ColorVision.UI.Menus
                 };
                 Menu.Items.Add(menuItem);
             }
-        }
-
-        public void AddMenuItem(MenuItem menuItem, int index = -1)
-        {
-            if (index < 0 || index > Menu.Items.Count)
-            {
-                Menu.Items.Add(menuItem);
-            }
-            else
-            {
-                Menu.Items.Insert(index, menuItem);
-            }
-        }
-
-        public void RemoveMenuItem(MenuItem menuItem)
-        {
-            Menu.Items.Remove(menuItem);
         }
     }
 }
