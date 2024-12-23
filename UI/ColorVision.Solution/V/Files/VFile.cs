@@ -17,6 +17,7 @@ namespace ColorVision.Solution.V.Files
 
         public FileInfo FileInfo { get; set; }
 
+
         public VFile(IFileMeta fileMeta)
         {
             FileMeta = fileMeta;
@@ -24,7 +25,7 @@ namespace ColorVision.Solution.V.Files
             ToolTip = fileMeta.ToolTip;
             Icon = fileMeta.Icon;
             FileInfo = fileMeta.FileInfo;
-
+            FullPath = fileMeta.FullName;
             AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileMeta.FullName), a => true);
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileInfo.FullName}"), a=> FileInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);

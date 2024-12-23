@@ -100,7 +100,7 @@ namespace ColorVision.Solution.V
 
             if (DirectoryInfo !=null && DirectoryInfo.Exists)
             {
-                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName) {IncludeSubdirectories =true };
+                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
                 FileSystemWatcher.Created += (s, e) =>
                 {
                     if (File.Exists(e.FullPath))
@@ -113,26 +113,17 @@ namespace ColorVision.Solution.V
                     }
                     if (Directory.Exists(e.FullPath))
                     {
-                        Application.Current?.Dispatcher.Invoke(() =>
+                        Application.Current?.Dispatcher.Invoke(async () =>
                         {
-                            var parentDirectory = Directory.GetParent(e.FullPath)?.FullName;
-                            foreach (var item in VisualChildren.SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren()))
-                            {
-                                if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
-                                {
-                                    Application.Current?.Dispatcher.Invoke(() =>
-                                    {
-                                        CreateFile(item, new FileInfo(e.FullPath));
-                                    });
-                                }
-                            }
-                        });
+                            await CreateDir(this, new DirectoryInfo(e.FullPath));
+                        }); ;
                         return;
                     }
                 };
                 FileSystemWatcher.Deleted += (s, e) => {
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
+                        VisualChildren.Remove(VisualChildren.First(a => a.FullPath == e.FullPath));
                         VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                     });
                 };
@@ -142,7 +133,10 @@ namespace ColorVision.Solution.V
                         VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                     });
                 };
-                FileSystemWatcher.Renamed += (s, e) => { };
+                FileSystemWatcher.Renamed += (s, e) =>
+                {
+
+                };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
 
@@ -198,20 +192,38 @@ namespace ColorVision.Solution.V
 
         public DriveInfo DriveInfo { get; set; }
         public RelayCommand EditCommand { get; set; }
+        public RelayCommand AddDirCommand { get; set; }
 
         public void GeneralContextMenu()
         {
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ClearCacheCommand = new RelayCommand(a => { DirectoryInfo.Delete(true); VisualChildren.Clear(); });
-
+            AddDirCommand = new RelayCommand(a => AddDir());
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
             ContextMenu.Items.Add(menuItem);
             MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
             ContextMenu.Items.Add(menuItem2);
+            MenuItem menuItem3 = new() { Header = "添加" };
+            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
+            menuItem3.Items.Add(menuItem4);
+            ContextMenu.Items.Add(menuItem3);
             EditCommand = new RelayCommand(a => new EditSolutionConfig(this).ShowDialog());
             ContextMenu.Items.Add( new MenuItem (){ Header = "编辑", Command = EditCommand });
         }
+
+        public void AddDir()
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(DirectoryInfo.FullName + "\\NewFolder");
+            ManagerObject.Add(directoryInfo.FullName);
+            VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
+            VisualChildren.Add(vFolder);
+            directoryInfo.Create();
+            vFolder.IsExpanded = true;
+            vFolder.IsEditMode = true;
+            vFolder.IsSelected = true;
+        }
+
 
 
         public Dictionary<string, Type> FileTypes { get; set; }
@@ -295,6 +307,28 @@ namespace ColorVision.Solution.V
         }
 
         int i;
+        public async Task CreateDir(VObject vObject, DirectoryInfo directoryInfo)
+        {
+            if (ManagerObject.Contains(directoryInfo.FullName))
+                return;
+            ManagerObject.Add(directoryInfo.FullName);
+            BaseFolder folder = new(directoryInfo);
+            var vFolder = new VFolder(folder);
+            vObject.AddChild(vFolder);
+            await GeneralChild(vFolder, directoryInfo);
+
+            foreach (var item in directoryInfo.GetFiles())
+            {
+                i++;
+                if (i == 5)
+                {
+                    await Task.Delay(100);
+                    i = 0;
+                }
+                CreateFile(vObject, item);
+            }
+        }
+
         public async Task GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())

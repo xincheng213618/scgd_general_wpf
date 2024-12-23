@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.V.Files;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -21,6 +22,7 @@ namespace ColorVision.Solution.V.Folders
             Name = folder.Name;
             ToolTip = folder.ToolTip;
             DirectoryInfo = folder.DirectoryInfo;
+            FullPath = folder.DirectoryInfo.FullName;
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ContextMenu = new ContextMenu();

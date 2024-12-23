@@ -17,6 +17,7 @@ namespace ColorVision.Solution.V
         public VObject Parent { get; set; }
 
         public virtual ObservableCollection<VObject> VisualChildren { get; set; }
+
         public event EventHandler AddChildEventHandler;
 
         public virtual void AddChild(VObject vObject)
@@ -39,6 +40,9 @@ namespace ColorVision.Solution.V
 
         public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name = string.Empty;
+
+        public virtual string FullPath { get => _FullPath; set { _FullPath = value; NotifyPropertyChanged(); } }
+        private string _FullPath = string.Empty;
 
         public virtual bool IsEditMode
         {
