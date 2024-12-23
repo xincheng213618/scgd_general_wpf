@@ -4,15 +4,18 @@ using ColorVision.UI;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
     public class Opentif : IImageViewOpen, IFileProcessor
     {
+        public string GetExtension() => "图像文件 (*.tif)|*.tif";
+
         public List<string> Extension => new List<string>() { ".tif", ".tiff" };
 
-        public int Order => 10;
+        public int Order => -1;
 
         public bool CanExport(string filePath)
         {
@@ -78,6 +81,11 @@ namespace ColorVision.ImageEditor.Tif
                 imageView.UpdateZoomAndScale();
             };
 
+        }
+
+        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        {
+            return new List<MenuItem>();
         }
 
 

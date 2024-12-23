@@ -565,15 +565,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 性能检测 的本地化字符串。
-        /// </summary>
-        public static string PerformanceTest {
-            get {
-                return ResourceManager.GetString("PerformanceTest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 置顶 的本地化字符串。
         /// </summary>
         public static string Pin {
@@ -723,15 +714,6 @@ namespace ColorVision.Properties {
         public static string Update {
             get {
                 return ResourceManager.GetString("Update", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 更新速度 的本地化字符串。
-        /// </summary>
-        public static string UpdateSpeed {
-            get {
-                return ResourceManager.GetString("UpdateSpeed", resourceCulture);
             }
         }
         

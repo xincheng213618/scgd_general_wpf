@@ -18,8 +18,7 @@ namespace ColorVision.UI.Menus
 
         }
 
-
-        public void LoadMenuItemFromAssembly()
+        public void LoadMenuItemFromAssembly(bool IsClear = true)
         {
             var menuItems = new Dictionary<string, MenuItem>();
             foreach (var item in Menu.Items.OfType<MenuItem>())
@@ -34,6 +33,8 @@ namespace ColorVision.UI.Menus
                     menuItems.Add("Help", item);
                 if (item.Name == "MenuView")
                     menuItems.Add("View", item);
+                if (IsClear)
+                    item.Items.Clear();
             }
 
             List<IMenuItem> iMenuItems = new();
@@ -82,7 +83,7 @@ namespace ColorVision.UI.Menus
                     iMenuItems.Remove(item);
                 }
             }
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
                 {

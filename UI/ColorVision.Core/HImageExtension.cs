@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
@@ -38,15 +39,33 @@ namespace ColorVision
         {
             if (imageSource is not WriteableBitmap writeableBitmap) return false;
 
-            if (writeableBitmap.Format == PixelFormats.Gray8 && hImage.channels != 1) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgr24 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Rgb24 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgr32 && hImage.channels != 3) return false;
-            if (writeableBitmap.Format == PixelFormats.Bgra32 && hImage.channels != 3) return false;
 
-            if (writeableBitmap.PixelHeight == hImage.rows && writeableBitmap.PixelWidth == hImage.cols)
+            // Validate format, channel, and depth consistency
+            var formatInfoMap = new Dictionary<PixelFormat, (int channels, int depth)>
             {
-                writeableBitmap.Lock();
+                { PixelFormats.Gray8, (1, 8) },
+                { PixelFormats.Gray16, (1, 16) },
+                { PixelFormats.Bgr24, (3, 8) },
+                { PixelFormats.Rgb24, (3, 8) },
+                { PixelFormats.Bgr32, (3, 8) },
+                { PixelFormats.Bgra32, (4, 8) }
+            };
+
+            if (!formatInfoMap.TryGetValue(writeableBitmap.Format, out var formatInfo) ||
+                hImage.channels != formatInfo.channels ||
+                hImage.depth != formatInfo.depth)
+            {
+                return false;
+            }
+
+            // Check if dimensions match
+            if (writeableBitmap.PixelHeight != hImage.rows || writeableBitmap.PixelWidth != hImage.cols)
+                return false;
+
+            // Update the WriteableBitmap
+            writeableBitmap.Lock();
+            try
+            {
                 unsafe
                 {
                     byte* src = (byte*)hImage.pData;
@@ -61,13 +80,15 @@ namespace ColorVision
                 }
 
                 writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, hImage.cols, hImage.rows));
-                writeableBitmap.Unlock();
-
-                OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
-                hImage.pData = IntPtr.Zero;
-                return true;
             }
-            return false;
+            finally
+            {
+                writeableBitmap.Unlock();
+            }
+
+            OpenCVMediaHelper.M_FreeHImageData(hImage.pData);
+            hImage.pData = IntPtr.Zero;
+            return true;
         }
 
         public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
@@ -120,6 +141,10 @@ namespace ColorVision
                 case "Rgb24":
                     channels = 3; // RGB format has 3 channels
                     depth = 8; // 8 bits per channel
+                    break;
+                case "Indexed8":
+                    depth = 8; // 8 bits per channel
+                    channels = 1;
                     break;
                 case "Rgb48":
                     channels = 3; // RGB format has 3 channels

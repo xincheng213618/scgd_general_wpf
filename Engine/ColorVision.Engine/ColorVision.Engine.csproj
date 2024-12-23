@@ -1,0 +1,302 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>True</UseWindowsForms>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controls\**" />
+    <Compile Remove="libs\**" />
+    <EmbeddedResource Remove="Controls\**" />
+    <EmbeddedResource Remove="libs\**" />
+    <None Remove="Controls\**" />
+    <None Remove="libs\**" />
+    <Page Remove="Controls\**" />
+    <Page Remove="libs\**" />
+  </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="CsvHelper" Version="33.0.1" />
+		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
+		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
+		<PackageReference Include="MySql.Data" Version="9.1.0" />
+		<PackageReference Include="MySqlConnector" Version="2.3.7" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
+		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
+		<PackageReference Include="ScottPlot.WPF" Version="5.0.44" />
+		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+		<PackageReference Include="YamlDotNet" Version="16.2.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="CVCommCore">
+			<HintPath>..\..\DLL\CVCommCore.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="FlowEngineLib">
+			<HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="MQTTMessageLib">
+			<HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="OpenH264Lib">
+			<HintPath>..\..\DLL\OpenH264Lib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="ST.Library.UI">
+			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+	</ItemGroup>
+	
+
+  <ItemGroup>
+    <None Remove="Assets\Image\CIE1931xy.ico" />
+    <None Remove="Assets\Image\CIE1931xy.png" />
+    <None Remove="Assets\Image\CIE1931xy1.png" />
+    <None Remove="Assets\Image\ColorVision.ico" />
+    <None Remove="Assets\Image\ColorVision.png" />
+    <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\connect.png" />
+    <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <None Remove="Assets\Image\pictureBox1.Image.png" />
+    <None Remove="Assets\png\PowerToy.png" />
+    <None Remove="Assets\Sounds\error.wav" />
+    <None Remove="Assets\Sounds\success.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
+    <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+    <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.Solution\ColorVision.Solution.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Image\CIE1931xy.ico" />
+    <Resource Include="Assets\Image\CIE1931xy.png" />
+    <Resource Include="Assets\Image\CIE1931xy1.png" />
+    <Resource Include="Assets\Image\ColorVision.ico" />
+    <Resource Include="Assets\Image\ColorVision.png" />
+    <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\connect.png" />
+    <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <Resource Include="Assets\Image\pictureBox1.Image.png" />
+    <Resource Include="Assets\png\PowerToy.png" />
+    <Resource Include="Assets\Sounds\error.wav" />
+    <Resource Include="Assets\Sounds\success.wav" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="Templates\ImageCropping\DisplayImageCropping.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\Jsons\KB\EditTemplateJson.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\LEDStripDetection\EditLEDStripDetection.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\MTF\DisplayMTF.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\POI\POIGenCali\EditPoiGenCali.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\SFR\DisplaySFR.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\SFR\EditSFR.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\POI\POIFilters\EditPOIFilters.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Templates\TemplateSettingEdit.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Catalog\Catalog-all product.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-15100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-2000.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-2000AR.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-2000_EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-2600.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-BV-6100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CP系列.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-2000.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-2000E.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-2000S.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-2000_EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-2600.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-6100-VR140.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-CV-6100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-2000.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-2000FWND.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-2000_EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-2000_能源之星.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-2600.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-LV-6100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-MA-5.pdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-Micro-LED模组校正检测机台 .pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SP-100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SP-100_EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SP-200-TR.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SV-15100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SV-2000.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SV-2000_EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-SV-6100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-VID-100.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-宣传册EN.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog-微显示Micro-LED晶圆探针台.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Catalog\Catalog宣传册.pdf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Properties\Settings.settings">
+      <Generator>PublicSettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="MQTT\MQTTConnect.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="MQTT\MQTTToolWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Services\PhyCameras\CreateWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Services\PhyCameras\EditPhyCamera.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Services\PhyCameras\InfoPhyCamera.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Services\PhyCameras\PhyCameraManagerWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Rbac\Users\" />
+    <Folder Include="Rbac\Roles\" />
+    <Folder Include="Rbac\Tenants\" />
+    <Folder Include="Rbac\Account\" />
+    <Folder Include="Templates\POI\Comply\" />
+  </ItemGroup>
+
+</Project>

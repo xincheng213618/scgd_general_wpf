@@ -1,0 +1,78 @@
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Services.Core;
+using Newtonsoft.Json;
+
+namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
+{
+
+    public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig, IFileServerCfg
+    {
+        [JsonIgnore]
+        public RelayCommand SetWavelengthFileCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand SetMaguideFileCommand { get; set; }
+        public ConfigSpectrum()
+        {
+            SetWavelengthFileCommand = new RelayCommand(a => SetWavelengthFile());
+            SetMaguideFileCommand = new RelayCommand(a => SetMaguideFile());
+        }
+        public void SetWavelengthFile()
+        {
+            using (var dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    WavelengthFile = dialog.FileName;
+                }
+            }
+        }
+
+        public void SetMaguideFile()
+        {
+            using (var dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Filter = "All Files|*.*"; // Optionally set a filter for file types
+                if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    MaguideFile = dialog.FileName;
+                }
+            }
+        }
+
+        public string WavelengthFile { get => _WavelengthFile; set { _WavelengthFile = value; NotifyPropertyChanged(); } }
+        private string _WavelengthFile;
+        public string MaguideFile { get => _MaguideFile; set { _MaguideFile = value; NotifyPropertyChanged(); } }
+        private string _MaguideFile;
+
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoOpen;
+
+        /// <summary>
+        /// 最大积分时间
+        /// </summary>
+        public int MaxIntegralTime { get => _TimeLimit; set { _TimeLimit = value; NotifyPropertyChanged(); } }
+        private int _TimeLimit = 60000;
+
+        /// <summary>
+        /// 自动测试间隔
+        /// </summary>
+        public int AutoTestTime { get => _AutoTestTime; set { _AutoTestTime = value; NotifyPropertyChanged(); } }
+        private int _AutoTestTime = 100;
+        /// <summary>
+        /// 起始积分时间
+        /// </summary>
+        public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; NotifyPropertyChanged(); } }
+        private float _TimeFrom = 10;
+
+        public bool IsShutterEnable { get => _IsShutter; set { _IsShutter = value; NotifyPropertyChanged(); } } 
+        private bool _IsShutter;
+
+        public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; NotifyPropertyChanged(); } }
+        private ShutterConfig _ShutterCfg;
+
+        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
+
+    }
+}

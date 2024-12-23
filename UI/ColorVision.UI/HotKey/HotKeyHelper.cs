@@ -12,7 +12,7 @@ namespace ColorVision.UI.HotKey
     {
         public static void LoadHotKeyFromAssembly(this Window This)
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IHotKey).IsAssignableFrom(t) && !t.IsAbstract))
                 {

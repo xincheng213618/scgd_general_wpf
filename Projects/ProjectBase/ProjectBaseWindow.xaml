@@ -1,0 +1,58 @@
+﻿<Window x:Class="ProjectBase.ProjectBaseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectBase"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:ProjectBaseConfig}"
+        Title="键盘测试" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="600"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+            </Grid>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="5">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <ComboBox  x:Name="FlowTemplate" Height="10" SelectedIndex="{Binding TemplateSelectedIndex}" ItemsSource="{Binding TemplateItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                            <Grid Width="30" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateCommand}"/>
+                            </Grid>
+                            <Grid  DockPanel.Dock="Right" Width="30" >
+                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                                <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
+                            </Grid>
+                        </StackPanel>
+                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick"  KeyDown="Button_KeyDown"/>
+                    </StackPanel>
+                </Grid>
+                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="#00FF00" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="222222222" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            </Grid>
+        </Grid>
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <Button Content="日志" Command="{Binding OpenLogCommand}"/>
+            </StatusBarItem>
+        </StatusBar>
+
+    </Grid>
+</Window>

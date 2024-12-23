@@ -227,10 +227,6 @@
           <source>确定</source>
           <target state="new">Конечно</target>
         </trans-unit>
-        <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
-          <source>性能检测</source>
-          <target state="new">Тестирование производительности</target>
-        </trans-unit>
         <trans-unit id="Pin" translate="yes" xml:space="preserve">
           <source>置顶</source>
           <target state="new">прикрепить сверху</target>
@@ -298,10 +294,6 @@
         <trans-unit id="Update" translate="yes" xml:space="preserve">
           <source>更新</source>
           <target state="new">возобновлять</target>
-        </trans-unit>
-        <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
-          <source>更新速度</source>
-          <target state="new">Обновить скорость</target>
         </trans-unit>
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>

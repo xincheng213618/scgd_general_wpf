@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;
@@ -86,7 +87,7 @@ namespace ColorVision.Scheduler
             Scheduler.ListenerManager.AddJobListener(Listener);
 
             Jobs = new Dictionary<string, Type>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {

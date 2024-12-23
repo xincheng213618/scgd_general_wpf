@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.UI;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -16,7 +17,7 @@ namespace ColorVision.Solution.Searches
         public SolutionPageManager()
         {
             Pages = new Dictionary<string, Type>(); 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {

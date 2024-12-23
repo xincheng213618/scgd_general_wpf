@@ -222,9 +222,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>Wizard</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>Performance testing</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>General settings</value>
   </data>
@@ -326,9 +323,6 @@
   </data>
   <data name="Duration" xml:space="preserve">
     <value>Duration</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>Update Speed</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>Update</value>

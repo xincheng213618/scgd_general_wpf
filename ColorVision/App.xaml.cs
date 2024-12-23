@@ -83,19 +83,31 @@ namespace ColorVision
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
-                bool isok = FileProcessorManager.GetInstance().HandleFile(inputFile);
-                if (isok) return;
+                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
+                if (isok)
+                {
+                    ConfigHandler.GetInstance().IsAutoSave = false;
+                    return;
+                }
             }
 
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
-                bool isok = FileProcessorManager.GetInstance().ExportFile(exportFile);
-                if (isok) return;
+                bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
+                if (isok)
+                {
+                    ConfigHandler.GetInstance().IsAutoSave = false;
+                    return;
+                }
             }
 
-            //杀死僵尸进程
-            KillZombieProcesses();
+            if (!Debugger.IsAttached)
+            {
+                //杀死僵尸进程
+                KillZombieProcesses();
+            }
+
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
@@ -120,7 +132,7 @@ namespace ColorVision
             {
                 var _IComponentInitializers = new List<UI.IInitializer>();
                 MessageUpdater messageUpdater = new MessageUpdater();
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                 {
                     foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                     {
@@ -148,7 +160,7 @@ namespace ColorVision
 
 
         /// <summary>
-        /// Application Close
+        /// Application DelayClose
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {

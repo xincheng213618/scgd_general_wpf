@@ -44,7 +44,7 @@ namespace ColorVision.Update
                     AutoUpdater.GetInstance().Update(Version, Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
                 }
             });
-            DownLoadCommand = new RelayCommand(a => PlatformHelper.Open($"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/ColorVision-{Version}.exe"));
+            DownLoadCommand = new RelayCommand(a => PlatformHelper.Open($"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{Version}.exe"));
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "更新", Command = UpdateCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "从浏览器中下载", Command = DownLoadCommand });

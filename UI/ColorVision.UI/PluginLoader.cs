@@ -17,12 +17,12 @@ namespace ColorVision.UI
             {
                 if (Activator.CreateInstance(type) is T plugin)
                 {
-                    plugin.Execute();
                     plugins.Add(plugin);
                 }
             }
             return plugins;
         }
+
         public static PluginLoadContext? loadContext { get; set; }
 
         public static void LoadPluginsUS(string path)
@@ -91,15 +91,21 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    Assembly assembly = Assembly.LoadFrom(file); ;
-                    foreach (var type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
+                    using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
                     {
-                        if (Activator.CreateInstance(type) is IPlugin plugin)
+                        byte[] assemblyData = new byte[fs.Length];
+                        fs.Read(assemblyData, 0, assemblyData.Length);
+                        Assembly assembly = Assembly.Load(assemblyData);
+                        foreach (var type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
+                        {
+                            if (Activator.CreateInstance(type) is IPlugin plugin)
                             {
                                 plugin.Execute();
                                 plugins.Add(plugin);
                             }
+                        }
                     }
+
                 }catch(Exception ex)
                 {
                     log.Error(ex);

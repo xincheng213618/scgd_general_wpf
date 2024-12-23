@@ -18,7 +18,7 @@ namespace ColorVisionSetup
 
 
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
+        private string _UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/LATEST_RELEASE";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -47,7 +47,7 @@ namespace ColorVisionSetup
             }
         }
 
-        private bool IsPassWorld;
+        private bool IsPassWorld =true;
 
         private async Task<Version>  GetLatestVersionNumber(string url)
         {
@@ -56,17 +56,18 @@ namespace ColorVisionSetup
                 string versionString = null;
                 try
                 {
-                    // First attempt to get the string without authentication
-                    versionString = await _httpClient.GetStringAsync(url);
-                }
-                catch (HttpRequestException)
-                {
-                    IsPassWorld = true;
                     // If the request is unauthorized, add the authentication header and try again
                     var byteArray = Encoding.ASCII.GetBytes("1:1");
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                     // You should also consider handling other potential issues here, such as network errors
+                    versionString = await _httpClient.GetStringAsync(url);
+
+                }
+                catch (HttpRequestException)
+                {
+                    IsPassWorld = false;
+                    // First attempt to get the string without authentication
                     versionString = await _httpClient.GetStringAsync(url);
                 }
 

@@ -24,7 +24,6 @@ namespace ColorVision.Solution
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
             var solutionpath = parser.GetValue("solutionpath");
-            await Task.Delay(0);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 var solutionManager = SolutionManager.GetInstance();

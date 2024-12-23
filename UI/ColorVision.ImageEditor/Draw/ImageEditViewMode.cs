@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
@@ -90,11 +91,26 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-
+        public List<MenuItem> GetContextMenus() 
+        {
+            return GenContextMenu();
+        }
 
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;
+            drawCanvas.PreviewMouseDown += (s, e) =>
+            {
+                Keyboard.ClearFocus(); // 清除当前焦点
+                drawCanvas.Focus();
+            };
+            drawCanvas.PreviewKeyDown += (s, e) =>
+            {
+                Keyboard.ClearFocus(); // 清除当前焦点
+                drawCanvas.Focus();
+            };
+
+
             ZoomboxSub = zoombox ?? throw new ArgumentNullException(nameof(zoombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
@@ -103,21 +119,7 @@ namespace ColorVision.ImageEditor.Draw
             Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
-
-            ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.ActualLength))
-                {
-
-                }
-                else if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.PhysicalUnit))
-                {
-
-                }
-
-            };
             ToolConcentricCircle = new ToolReferenceLine(zoombox, drawCanvas);
-
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
@@ -126,7 +128,7 @@ namespace ColorVision.ImageEditor.Draw
 
             FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image != null && Image.Source != null);
             FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image != null && Image.Source != null);
-            this.Parent.PreviewKeyDown += PreviewKeyDown;
+            drawCanvas.PreviewKeyDown += PreviewKeyDown;
             zoombox.Cursor = Cursors.Arrow;
             SaveImageCommand = new RelayCommand(a => Save(),a=> Image!=null && Image.Source!=null);
 
@@ -137,19 +139,6 @@ namespace ColorVision.ImageEditor.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
-
-            EditModeChanged += (s, e) =>
-            {
-                if (e.IsEditMode)
-                {
-                    ZoomboxSub.ContextMenu = null;
-                }
-                else
-                {
-                    AddContextMenu();
-                }
-            };
-            AddContextMenu();
         }
 
 
@@ -172,34 +161,25 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-        public void AddContextMenu()
+        public List<MenuItem> GenContextMenu()
         {
-            ContextMenu contextMenu = new();
+            List<MenuItem> ContextMenus = new List<MenuItem>();
             MenuItem menuItemZoom = new() { Header = "缩放工具", Command = SaveImageCommand };
             menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
             menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
 
-            contextMenu.Items.Add(menuItemZoom);
-
-
-            contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
-            contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
-
-            contextMenu.Items.Add(new MenuItem() { Header = "水平翻转", Command = FlipHorizontalCommand });
-            contextMenu.Items.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
-
-            contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
-            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-
-            contextMenu.Items.Add(new Separator());
-            contextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = SaveImageCommand });
-            contextMenu.Items.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
-
-            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-
-            ZoomboxSub.ContextMenu = contextMenu;
+            ContextMenus.Add(menuItemZoom);
+            ContextMenus.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
+            ContextMenus.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
+            ContextMenus.Add(new MenuItem() { Header = "水平翻转", Command = FlipHorizontalCommand });
+            ContextMenus.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
+            ContextMenus.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
+            ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });
+            ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
+            return ContextMenus;
         }
 
         public void FlipHorizontal()
@@ -371,6 +351,11 @@ namespace ColorVision.ImageEditor.Draw
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            Save(dialog.FileName);
+        }
+
+        public void Save(string FileName)
+        {
 
             RenderTargetBitmap renderTargetBitmap = new((int)Image.ActualWidth, (int)Image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(Image);
@@ -380,9 +365,11 @@ namespace ColorVision.ImageEditor.Draw
             pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             // 将PNG内容保存到文件
-            using FileStream fileStream = new(dialog.FileName, FileMode.Create);
+            using FileStream fileStream = new(FileName, FileMode.Create);
             pngEncoder.Save(fileStream);
         }
+
+
 
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
@@ -391,21 +378,28 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (!IsMax)
                     MaxImage();
+                e.Handled = true;
             }
-            if (e.Key == Key.Add)
+            if (_ImageEditMode == false)
             {
-                ZoomIncrease.RaiseExecute(e);
+                if (e.Key == Key.Add || e.Key ==Key.I)
+                {
+                    ZoomIncrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
+                if (e.Key == Key.Subtract || e.Key == Key.O)
+                {
+                    ZoomDecrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
             }
-            if (e.Key == Key.Subtract)
-            {
-                ZoomDecrease.RaiseExecute(e);
-            }
+
 
 
             if (_ImageEditMode ==true)
             {
 
-                if (e.Key == Key.Left)
+                if (e.Key == Key.Left || e.Key == Key.W)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -414,16 +408,17 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X -10, OldRect.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
-                                Circl.Center += new Vector(-10, 0);
+                                Circl.Center += new Vector(-2, 0);
                             }
                         }
                     }
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Right)
+                else if (e.Key == Key.Right || e.Key == Key.D)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -432,16 +427,17 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X +10, OldRect.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
-                                Circl.Center += new Vector(10, 0);
+                                Circl.Center += new Vector(2, 0);
                             }
                         }
                     }
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Up)
+                else if (e.Key == Key.Up || e.Key == Key.W)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -450,16 +446,17 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -10, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -2, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
-                                Circl.Center += new Vector(0, -10);
+                                Circl.Center += new Vector(0, -2);
                             }
                         }
                     }
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Down)
+                else if (e.Key == Key.Down || e.Key == Key.S)
                 {
                     if (SelectDrawingVisuals != null)
                     {
@@ -468,80 +465,114 @@ namespace ColorVision.ImageEditor.Draw
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +10, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +2, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
-                                Circl.Center += new Vector(0, 10);
+                                Circl.Center += new Vector(0, 2);
                             }
                         }
                     }
+                    e.Handled = true;
                 }
+                else if (e.Key == Key.Add || e.Key == Key.I)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X -1, OldRect.Y - 1, OldRect.Width +1, OldRect.Height +1);
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                Circl.Radius += 2;
+                            }
+                        }
+                    }
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Subtract || e.Key ==Key.O)
+                {
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            if (item is IRectangle rectangle)
+                            {
+                                var OldRect = rectangle.Rect;
+
+                                if (OldRect.Width > 1 && OldRect.Height >1)
+                                {
+                                    rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1, OldRect.Height - 1);
+                                }
+                            }
+                            else if (item is ICircle Circl)
+                            {
+                                if (Circl.Radius > 2)
+                                {
+                                    Circl.Radius -= 2;
+                                }
+                            }
+                        }
+                    }
+                    e.Handled = true;
+                }
+
             }
 
 
             if (_ImageEditMode == false)
             {
-                if (e.Key == Key.Left)
+                if (e.Key == Key.Left || e.Key == Key.W)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(-10, 0);
                     translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Right)
+                else if (e.Key == Key.Right || e.Key == Key.D)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(10, 0);
                     translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Up)
+                else if (e.Key == Key.Up || e.Key == Key.W)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(0, -10);
                     translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Down)
+                else if (e.Key == Key.Down || e.Key == Key.S)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(0, 10);
                     translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Add)
+                else if (e.Key == Key.Add || e.Key == Key.I)
                 {
                     ZoomboxSub.Zoom(1.1);
+                    e.Handled = true;
                 }
-                else if (e.Key == Key.Subtract)
+                else if (e.Key == Key.Subtract || e.Key ==Key.O)
                 {
                     ZoomboxSub.Zoom(0.9);
+                    e.Handled = true;
                 }
             }
-
-            //if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-            //{
-            //    // 确保imageControl已经加载了内容
-            //    if (Image.Source == null)
-            //    {
-            //        return;
-            //    }
-            //    if (Image.Source is BitmapSource bitmapSource)
-            //    {
-            //        Clipboard.Clear();
-            //        Clipboard.SetImage(bitmapSource);
-            //    }
-            //    // 可选：强制垃圾回收
-            //    // GC.Collect();
-            //    // GC.WaitForPendingFinalizers();
-            //    // 将图像复制到剪贴板
-            //    MessageBox.Show("图像已经复制到粘贴板中,该操作目前存在内存泄露");
-            //}
         }
 
         public bool ScaleRulerShow

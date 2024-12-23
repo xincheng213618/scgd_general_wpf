@@ -5,7 +5,7 @@ namespace ColorVision.Common.NativeMethods
 {
     public static class ShortcutCreator
     {
-        public static void CreateShortcut(string shortcutName, string shortcutPath, string targetFileLocation)
+        public static void CreateShortcut(string shortcutName, string shortcutPath, string targetFileLocation,string arguments ="")
         {
             // Create a new WshShell object to access WSH functionality
             WshShell shell = new();
@@ -19,7 +19,7 @@ namespace ColorVision.Common.NativeMethods
             shortcut.TargetPath = targetFileLocation; // The path of the file that will launch when the shortcut is run
             shortcut.WorkingDirectory = Path.GetDirectoryName(targetFileLocation); // The working directory for the shortcut
             shortcut.WindowStyle = 1; // Normal window
-            shortcut.Arguments = ""; // No additional arguments
+            shortcut.Arguments = arguments; // No additional arguments
 
             // Save the shortcut
             shortcut.Save();

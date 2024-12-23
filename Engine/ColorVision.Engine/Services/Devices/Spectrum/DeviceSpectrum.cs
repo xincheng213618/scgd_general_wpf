@@ -1,0 +1,161 @@
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls.Uploads;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace ColorVision.Engine.Services.Devices.Spectrum
+{
+    public class DeviceSpectrum : DeviceService<ConfigSpectrum>
+    {
+        public MQTTSpectrum DService { get; set; }
+        public ViewSpectrum View { get; set; }
+        public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
+        public RelayCommand RefreshDeviceIdCommand { get; set; }
+        public RelayCommand UploadLincenseCommand { get; set; }
+
+
+        public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
+        {
+            DService = new MQTTSpectrum(this);
+            View = new ViewSpectrum(this);
+            View.View.Title = $"光谱仪视图 - {Config.Code}";
+            this.SetIconResource("DISpectrumIcon", View.View);
+
+            SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id);
+
+            EditCommand = new RelayCommand(a =>
+            {
+                EditSpectrum window = new(this);
+                window.Owner = Application.Current.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+
+            DisplayLazy = new Lazy<DisplaySpectrum>(() => new DisplaySpectrum(this));
+
+            RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            UploadLincenseCommand = new RelayCommand(a => UploadLincense());
+        }
+
+        public void UploadLincense()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.Multiselect = true; // 允许多选
+            openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
+            openFileDialog.Title = "请选择许可证文件 " + SysResourceModel.Code;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string[] selectedFiles = openFileDialog.FileNames;
+
+                foreach (string file in selectedFiles)
+                {
+                    SetLicense(file);
+                }
+            }
+        }
+        public  LicenseModel CameraLicenseModel { get; set; }
+        public void SetLicense(string filepath)
+        {
+            if (!File.Exists(filepath)) return;
+            if (Path.GetExtension(filepath) == ".zip")
+            {
+                try
+                {
+                    using ZipArchive archive = ZipFile.OpenRead(filepath);
+                    var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+                    foreach (var item in licFiles)
+                    {
+                        string Code = Path.GetFileNameWithoutExtension(item.FullName);
+                        CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                        if (CameraLicenseModel == null)
+                            CameraLicenseModel = new LicenseModel();
+                        CameraLicenseModel.DevCameraId = SysResourceModel.Id;
+                        CameraLicenseModel.LiceType = 1;
+                        CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+                        using var stream = item.Open();
+                        using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                        CameraLicenseModel.LicenseValue = reader.ReadToEnd();
+                        CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                        CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                        CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+                        int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                }
+            }
+            else if (Path.GetExtension(filepath) == ".lic")
+            {
+                string Code = Path.GetFileNameWithoutExtension(filepath);
+                CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(Code);
+                if (CameraLicenseModel == null)
+                    CameraLicenseModel = new LicenseModel();
+                CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(filepath);
+                CameraLicenseModel.LiceType = 1;
+                CameraLicenseModel.LicenseValue = File.ReadAllText(filepath);
+                CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLicense.Licensee;
+                CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLicense.DeviceMode;
+                CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLicense.ExpiryDateTime;
+
+                int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+            }
+        }
+
+        public void RefreshDeviceId()
+        {
+            MsgRecord msgRecord = DService.GetAllCameraID();
+            msgRecord.MsgSucessed += (e) =>
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                RefreshEmptySpectrum();
+            };
+        }
+        public void RefreshEmptySpectrum()
+        {
+             Count = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }).Where(a => string.IsNullOrWhiteSpace(a.Value)).ToList().Count;
+        }
+
+        public int Count { get => _Count; set { _Count = value; NotifyPropertyChanged(); } }
+        private int _Count;
+
+        public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
+
+        readonly Lazy<DisplaySpectrum> DisplayLazy;
+        public override UserControl GetDisplayControl() => DisplayLazy.Value;
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DService;
+        }
+    }
+}

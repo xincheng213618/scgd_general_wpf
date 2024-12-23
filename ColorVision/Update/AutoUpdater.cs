@@ -36,6 +36,24 @@ namespace ColorVision.Update
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
                     Source = AutoUpdateConfig.Instance,
+                },
+                 new ConfigSettingMetadata
+                {
+                    Name = Properties.Resources.CheckUpdatesOnStartup,
+                    Description =  Properties.Resources.CheckUpdatesOnStartup,
+                    Order = 999,
+                    Type = ConfigSettingType.Text,
+                    BindingName =nameof(AutoUpdateConfig.UpdatePath),
+                    Source = AutoUpdateConfig.Instance,
+                },
+                 new ConfigSettingMetadata
+                {
+                    Name ="更新使用CDN",
+                    Description =  "更新使用CDN",
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(AutoUpdateConfig.IsUseCDN),
+                    Source = AutoUpdateConfig.Instance,
                 }
             };
         }
@@ -46,14 +64,20 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
-        public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
-        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
+        public string UpdatePath { get => IsUseCDN ? _CDnUpdatePath: _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
+
+        private string _CDnUpdatePath = "http://cdn.xincheng213618.cn/upload/ColorVision";
+        public bool IsUseCDN { get => _IsUseCDN; set { _IsUseCDN = value; NotifyPropertyChanged(); } }
+        private bool _IsUseCDN;
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
+
+
     }
 
 
@@ -221,8 +245,6 @@ namespace ColorVision.Update
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
-        bool IsPassWorld;
-
 
         public async Task<string?> GetChangeLog(string url)
         {
@@ -230,12 +252,17 @@ namespace ColorVision.Update
             string versionString = null;
             try
             {
+                if (DownloadFileConfig.Instance.IsPassWorld)
+                {
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                }
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
+                DownloadFileConfig.Instance.IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
                 var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
@@ -261,18 +288,29 @@ namespace ColorVision.Update
             string versionString = null;
             try
             {
+                if (DownloadFileConfig.Instance.IsPassWorld)
+                {
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                }
                 // First attempt to get the string without authentication
                 versionString = await _httpClient.GetStringAsync(url);
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
+                DownloadFileConfig.Instance.IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
                 var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
                 versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                DownloadFileConfig.Instance.IsPassWorld = false;
+                return new Version();
             }
 
             // If versionString is still null, it means there was an issue with getting the version number
@@ -301,19 +339,19 @@ namespace ColorVision.Update
         private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath, CancellationToken cancellationToken, bool IsIncrement = false)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
-            string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
+            string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
             string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
 
             if (IsIncrement)
             {
-                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/Update/ColorVision-Update-[{latestVersion}].zip";
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
                 downloadPath = Path.Combine(DownloadPath, $"ColorVision-Update-[{latestVersion}].zip");
             }
 
             // 指定下载路径
             using (var client = new HttpClient())
             {
-                if (IsPassWorld)
+                if (DownloadFileConfig.Instance.IsPassWorld)
                 {
                     string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
@@ -421,7 +459,7 @@ timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""
 rd /s /q ""{tempDirectory}""
-exit
+del ""%~f0"" & exit
 ";
 
                 File.WriteAllText(batchFilePath, batchContent);

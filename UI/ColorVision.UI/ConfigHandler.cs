@@ -7,6 +7,30 @@ using System.Windows;
 namespace ColorVision.UI
 {
 
+
+    public class AssemblyHandler
+    {
+        private static ILog log = LogManager.GetLogger(typeof(AssemblyHandler));
+        private static AssemblyHandler _instance;
+        private static readonly object _locker = new();
+        public static AssemblyHandler GetInstance()
+        {
+            lock (_locker)
+            {
+                _instance ??= new AssemblyHandler();
+                return _instance;
+            }
+        }
+
+        public Assembly[] GetAssemblies()
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            return assemblies.Where(a => !RemoveAssemblies.Contains(a)).ToArray();
+        }
+        public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
+
+
+    }
     public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
@@ -40,15 +64,17 @@ namespace ColorVision.UI
             }
 
             LoadConfigs(ConfigFilePath);
-            Application.Current.SessionEnding += (s, e) =>
-            {
-                SaveConfigs(ConfigFilePath);
-            };
+            //Application.Current.SessionEnding += (s, e) =>
+            //{
+            //    SaveConfigs(ConfigFilePath);
+            //};
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                SaveConfigs(ConfigFilePath);
+                if (IsAutoSave)
+                    SaveConfigs(ConfigFilePath);
             };
         }
+        public bool IsAutoSave { get; set; } = true;
 
         public void Reload()
         {
@@ -140,7 +166,7 @@ namespace ColorVision.UI
 
         public void LoadDefaultConfigs()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try
                 {
@@ -156,12 +182,10 @@ namespace ColorVision.UI
                 {
 
                 }
-
             }
         }
 
         public void LoadConfigs() => LoadConfigs(ConfigFilePath);
-
         private JObject jsonObject;
 
         public void LoadConfigs(string fileName)
@@ -174,47 +198,58 @@ namespace ColorVision.UI
                     string json = File.ReadAllText(fileName);
                     jsonObject = JObject.Parse(json);
 
-                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        foreach (var type in assembly.GetTypes())
-                        {
-                            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
-                            {
-                                var configName = type.Name;
-                                try
-                                {
-                                    if (jsonObject.TryGetValue(configName, out JToken configToken))
-                                    {
-                                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                                        if (config is IConfigSecure configSecure)
-                                        {
-                                            configSecure.Decrypt();
-                                            Configs[type] = configSecure;
-                                        }
-                                        else if (config is IConfig configInstance)
-                                        {
-                                            Configs[type] = configInstance;
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                                        {
-                                            Configs[type] = defaultConfig;
-                                        }
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    log.Warn(ex);
-                                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                                    {
-                                        Configs[type] = defaultConfig;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    //foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                    //{
+                    //    try
+                    //    {
+                    //        foreach (var type in assembly.GetTypes())
+                    //        {
+                    //            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
+                    //            {
+                    //                var configName = type.Name;
+                    //                try
+                    //                {
+                    //                    if (jsonObject.TryGetValue(configName, out JToken configToken))
+                    //                    {
+                    //                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                    //                        if (config is IConfigSecure configSecure)
+                    //                        {
+                    //                            configSecure.Decrypt();
+                    //                            Configs[type] = configSecure;
+                    //                        }
+                    //                        else if (config is IConfig configInstance)
+                    //                        {
+                    //                            Configs[type] = configInstance;
+                    //                        }
+                    //                    }
+                    //                    else
+                    //                    {
+                    //                        if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                    //                        {
+                    //                            Configs[type] = defaultConfig;
+                    //                        }
+                    //                    }
+                    //                }
+                    //                catch (Exception ex)
+                    //                {
+                    //                    log.Warn(ex);
+                    //                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                    //                    {
+                    //                        Configs[type] = defaultConfig;
+                    //                    }
+                    //                }
+                    //            }
+                    //        }
+                    //    }
+                    //    catch (Exception ex)
+                    //    {
+                    //        AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
+                    //        MessageBox.Show("程序集加载失败，现在跳过该程序集，如果您不想要该弹窗提示，您需要移除插件：" + assembly);
+                    //        log.Warn(ex);
+                    //    }
+                    //}
+
+
                 }
                 catch(Exception ex)
                 {

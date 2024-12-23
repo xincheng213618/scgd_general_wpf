@@ -5,7 +5,8 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class CircleTextProperties: CircleProperties
+
+    public class CircleTextProperties: CircleProperties,ITextProperties
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();

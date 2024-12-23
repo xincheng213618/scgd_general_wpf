@@ -1,11 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
+    public class ProjectHeyuanPlugin : IProjectBase
+    {
+        public override string? Header => "河源精电";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectHeyuan";
 
+        public override void Execute()
+        {
+            new ProjectHeyuanWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
 
 
     public class ProjectHeyuanExport : IMenuItem
@@ -23,9 +33,9 @@ namespace ColorVision.Projects.ProjectHeyuan
 
         public RelayCommand Command => new(A => Execute());
 
-        private static void Execute()
+        public void Execute()
         {
-            new ProjectHeyuanWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new ProjectHeyuanWindow() {WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 }

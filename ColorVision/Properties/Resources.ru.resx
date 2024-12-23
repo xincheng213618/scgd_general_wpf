@@ -222,9 +222,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>Тестирование производительности</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>Общие настройки</value>
   </data>
@@ -326,9 +323,6 @@
   </data>
   <data name="Duration" xml:space="preserve">
     <value>затраты времени</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>Обновить скорость</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>возобновлять</value>

@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class RectangleProperties : BaseProperties
+    public class RectangleProperties : BaseProperties ,IRectangle
     {
 
         [Category("RectangleAttribute"), DisplayName("笔刷")]

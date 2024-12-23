@@ -1,0 +1,37 @@
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.KB.EditKBTemplateJson"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.KB"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:TemplateJsonKBParam}"
+             d:DesignHeight="450" d:DesignWidth="800" Height="450" Width="800">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+
+        <Border Grid.Row="0" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <TextBox  Grid.Row="0"  Text="{Binding JsonValue}" TextWrapping="Wrap" Margin="5" Padding="5" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top"/>
+        <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
+            <TextBlock Text="POI" Width="30"/>
+            <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" ItemsSource="{Binding PoiParams}" SelectedIndex="{Binding TemplatePoiSelectedIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+            <Button Content="生成到Json" Command="{Binding ImportFormPoiCommand}"/>
+            <Button Content="校验Json" Margin="0,0,5,0" />
+            <Button Content="重置" Command="{Binding ResetCommand}" />
+        </StackPanel>
+        
+
+    </Grid>
+</UserControl>

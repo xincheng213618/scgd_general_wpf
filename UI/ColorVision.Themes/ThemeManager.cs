@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows;
 using Wpf.Ui.Appearance;
 
@@ -16,6 +17,22 @@ namespace ColorVision.Themes
 
         public ThemeManager()
         {
+            DelayedInitialize();
+            AppsThemeChanged += (e) =>
+            {
+                if (CurrentTheme == Theme.UseSystem)
+                {
+                    ApplyActTheme(Application.Current,e);
+                }
+            };
+        }
+        /// <summary>
+        /// 这里加载需要500ms，放在启动时太浪费时间，所以延迟加载
+        /// </summary>
+        private async void DelayedInitialize()
+        {
+            // 延迟 1 秒（根据需要调整时间）
+            await Task.Delay(10000);
             SystemEvents.UserPreferenceChanged += (s, e) =>
             {
                 AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
@@ -26,15 +43,9 @@ namespace ColorVision.Themes
                 AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
                 SystemTheme = SystemUsesLightTheme() ? Theme.Light : Theme.Dark;
             };
+        }
 
-            AppsThemeChanged += (e) =>
-            {
-                if (CurrentTheme == Theme.UseSystem)
-                {
-                    ApplyActTheme(Application.Current,e);
-                }
-            };
-        }   
+
 
         public void ApplyTheme(Application app, Theme theme) 
         {
@@ -169,11 +180,11 @@ namespace ColorVision.Themes
                 if (_CurrentTheme != null)
                     CurrentThemeChanged?.Invoke((Theme)_CurrentTheme); 
             } }
-        private Theme? _CurrentTheme;
+        private Theme? _CurrentTheme = Theme.Light;
 
         //这里是两种
         public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
-        private Theme _CurrentUITheme;
+        private Theme _CurrentUITheme = Theme.Light;
 
 
         public event ThemeChangedHandler? CurrentThemeChanged;

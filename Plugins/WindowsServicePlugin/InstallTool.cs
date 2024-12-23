@@ -1,22 +1,24 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
+using log4net;
+using log4net.Util;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Net.Http.Headers;
-using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
-using System.Threading;
-using cvColorVision;
+
 
 namespace WindowsServicePlugin
 {
-    public class CVWinSMSConfig : ViewModelBase, IConfig   
+    public class CVWinSMSConfig : ViewModelBase, IConfig,IConfigSettingProvider   
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
@@ -28,10 +30,31 @@ namespace WindowsServicePlugin
 
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata>()
+            {
+                new ConfigSettingMetadata()
+                {
+                    Name = "CVWinSMSPath",
+                    Description = "CVWinSMSPath",
+                    Type = ConfigSettingType.Text,
+                    BindingName = nameof(CVWinSMSPath),
+                    Source =Instance
+                },
+            };
+
+        }
     }
 
-    public class InstallTool : MenuItemBase, IWizardStep
+
+
+
+
+    public class InstallTool : MenuItemBase, IWizardStep, IMainWindowInitialized
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(InstallTool));
 
 
         public override string OwnerGuid => "ServiceLog";
@@ -58,104 +81,108 @@ namespace WindowsServicePlugin
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载服务管理工具";
-            Task.Run(() => GetLatestReleaseVersion());
+        }
+        public async Task Initialize()
+        {
+            await GetLatestReleaseVersion();
         }
 
-        public async void GetLatestReleaseVersion()
+        public async Task GetLatestReleaseVersion()
         {
-            if (!File.Exists(Config.CVWinSMSPath))
-                return;
-            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(Config.CVWinSMSPath);
-            Version CurrentVerision = new Version(versionInfo.FileVersion);
-
-            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
-            if(version> CurrentVerision)
+            try
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                if (!File.Exists(Config.CVWinSMSPath))
+                    return;
+                FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(Config.CVWinSMSPath);
+                Version CurrentVerision = new Version(versionInfo.FileVersion);
+
+                Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+                if (version > CurrentVerision)
                 {
-                    if (MessageBox.Show(Application.Current.GetActiveWindow(), "服务管理工具:找到新版本，是否更新", "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\InstallTool[{version}].zip";
-                        url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
-                        WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
-                        if (!File.Exists(downloadPath))
+                        if (MessageBox.Show(Application.Current.GetActiveWindow(), "服务管理工具:找到新版本，是否更新", "CVWinSMS", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
-                            windowUpdate.Show();
-                        }
-                        Task.Run(async () =>
-                        {
+                            downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\InstallTool[{version}].zip";
+                            url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool/InstallTool[{version}].zip";
+                            WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
                             if (!File.Exists(downloadPath))
                             {
-                                await DownloadFile.GetIsPassWorld();
-                                CancellationTokenSource _cancellationTokenSource = new();
+                                windowUpdate.Show();
+                            }
+                            Task.Run(async () =>
+                            {
+                                if (!File.Exists(downloadPath))
+                                {
+                                    await DownloadFile.GetIsPassWorld();
+                                    CancellationTokenSource _cancellationTokenSource = new();
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        windowUpdate.Show();
+                                    });
+                                    await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
+                                }
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    windowUpdate.Show();
+                                    windowUpdate.Close();
                                 });
-                                await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                            }
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                windowUpdate.Close();
-                            });
 
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
-
-                                try
+                                Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    string? folderBrowser = Directory.GetParent(Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName)?.FullName;
-                                    if (folderBrowser != null)
+                                    Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
+
+                                    try
                                     {
-                                        ZipFile.ExtractToDirectory(downloadPath, folderBrowser, true);
+                                        string? folderBrowser = Directory.GetParent(Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName)?.FullName;
+                                        if (folderBrowser != null)
+                                        {
+                                            ZipFile.ExtractToDirectory(downloadPath, folderBrowser, true);
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show("更新失败， 找不到更新所在的文件夹");
+                                        }
                                     }
-                                    else
+                                    catch (Exception ex)
                                     {
-                                        MessageBox.Show("更新失败， 找不到更新所在的文件夹");
+                                        MessageBox.Show("更新失败，" + ex.Message);
+
                                     }
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show("更新失败，" + ex.Message);
 
-                                }
+                                    // 启动新的实例
+                                    ProcessStartInfo startInfo = new();
+                                    startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+                                    startInfo.WorkingDirectory = Environment.CurrentDirectory;
+                                    startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
+                                    startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
+                                                              // 如果需要静默安装，添加静默安装参数
+                                                              //quiet 没法自启，桌面图标也是空                       
+                                                              //startInfo.Arguments = "/quiet";
 
-                                // 启动新的实例
-                                ProcessStartInfo startInfo = new();
-                                startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                                startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                                startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
-                                startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                                          // 如果需要静默安装，添加静默安装参数
-                                                          //quiet 没法自启，桌面图标也是空                       
-                                                          //startInfo.Arguments = "/quiet";
+                                    try
+                                    {
+                                        Process p = Process.Start(startInfo);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        MessageBox.Show(ex.ToString());
+                                        File.Delete(downloadPath);
+                                    }
 
-                                try
-                                {
-                                    Process p = Process.Start(startInfo);
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(ex.ToString());
-                                    File.Delete(downloadPath);
-                                }
+                                });
 
                             });
 
-                        });
+                        };
 
-                    };
+                    });
 
-                });
-
+                }
+            }catch(Exception ex)
+            {
+                log.Error(ex);
             }
         }
-
-
-
-
-
 
         public async void Download()
         {
@@ -233,6 +260,26 @@ namespace WindowsServicePlugin
         {
             if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {
+                Process[] processes = Process.GetProcessesByName("CVWinSMS");
+                if (processes.Length == 1)
+                {
+                    foreach (Process process in processes)
+                    {
+                        try
+                        {
+                            // 获取进程的主模块文件路径
+                            CVWinSMSConfig.Instance.CVWinSMSPath = process.MainModule.FileName;
+                            //string filePath = process.MainModule.FileName;
+                            log.Info($"进程ID: {process.Id}, 文件路径: {CVWinSMSConfig.Instance.CVWinSMSPath}");
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Debug($"无法获取进程的文件路径: {ex.Message}");
+                        }
+                    }
+                }
+
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "找不到管理工具，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     Task.Run(() => Download());
@@ -259,9 +306,5 @@ namespace WindowsServicePlugin
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
         }
-
     }
-
-
-
 }

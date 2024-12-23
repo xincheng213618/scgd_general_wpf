@@ -171,9 +171,6 @@
   <data name="Reset" xml:space="preserve">
     <value>réinitialiser</value>
   </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>Ouvert(O)</value>
-  </data>
   <data name="ProjectSettings" xml:space="preserve">
     <value>Paramètres du projet</value>
   </data>

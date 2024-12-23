@@ -222,9 +222,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>嚮導</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>效能檢測</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用設定</value>
   </data>
@@ -326,9 +323,6 @@
   </data>
   <data name="Duration" xml:space="preserve">
     <value>用時</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>更新速度</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>更新</value>

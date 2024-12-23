@@ -234,4 +234,13 @@
   <data name="CurrentSpeed" xml:space="preserve">
     <value>Current Speed:</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>_Open</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+  </data>
 </root>

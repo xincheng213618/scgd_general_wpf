@@ -106,6 +106,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Close {
+            get {
+                return ResourceManager.GetString("Close", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前速度： 的本地化字符串。
         /// </summary>
         public static string CurrentSpeed {
@@ -295,6 +304,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打开(_O) 的本地化字符串。
+        /// </summary>
+        public static string MenuOpen {
+            get {
+                return ResourceManager.GetString("MenuOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 选项(_O) 的本地化字符串。
         /// </summary>
         public static string MenuOptions {
@@ -345,6 +363,15 @@ namespace ColorVision.UI.Properties {
         public static string OpenLogFolder {
             get {
                 return ResourceManager.GetString("OpenLogFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重置 的本地化字符串。
+        /// </summary>
+        public static string Reset {
+            get {
+                return ResourceManager.GetString("Reset", resourceCulture);
             }
         }
         

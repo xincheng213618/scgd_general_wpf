@@ -27,6 +27,18 @@ public static class PlatformHelper
             Process.Start("xdg-open", $"\"{folder}\"");
         }
     }
+    public static void OpenFolderAndSelectFile(string filePath)
+    {
+        var psi = new ProcessStartInfo
+        {
+            FileName = "explorer.exe",
+            Arguments = $"/select,{filePath}",
+            UseShellExecute = true
+        };
+        Process.Start(psi);
+
+    }
+
 
     /// <summary>
     /// 打开各种 (文件、url)

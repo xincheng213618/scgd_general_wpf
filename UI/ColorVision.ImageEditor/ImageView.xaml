@@ -38,101 +38,68 @@
         <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
     </UserControl.Resources>
     <Grid x:Name="ImageContentGrid" >
-        <TextBox x:Name="FocusText" Visibility="Visible"/>
         <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="200"/>
+                <RowDefinition Height="300"/>
             </Grid.RowDefinitions>
-            <WindowsFormsHost x:Name="WindowsFormsHost1" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"   Grid.Row="1" Visibility="Visible"  >
-                <winf:PropertyGrid x:Name="PropertyGrid2" Height="200"   >
+            <WindowsFormsHost x:Name="WindowsFormsHost1"  Grid.Row="1"  UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"  Visibility="Visible"  >
+                <winf:PropertyGrid x:Name="PropertyGrid2" Height="300"   >
                 </winf:PropertyGrid>
             </WindowsFormsHost>
-            <DockPanel Grid.Row="0"  >
-                <Grid DockPanel.Dock="Top">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="100*"/>
-                        <ColumnDefinition Width="50*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid x:Name="GridListHeader0" Grid.Column="0">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="形状" Margin="10,0,0,0"/>
-                    </Grid>
-                    <Grid x:Name="GridListHeader1" Grid.Column="1">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="序号" Margin="10,0,0,0"/>
-                    </Grid>
-                    <GridSplitter Grid.Column="0" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader2" Grid.Column="2">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="选中" Margin="10,0,0,0" />
-                    </Grid>
-                    <GridSplitter Grid.Column="1" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader3" Grid.Column="3">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="位置"  Margin="10,0,0,0"/>
-                    </Grid>
-                    <GridSplitter Grid.Column="2" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader4" Grid.Column="4">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="角度"  Margin="10,0,0,0" />
-                    </Grid>
-                </Grid>
-                <Grid>
-                    <Grid.Resources>
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
+            <Grid Grid.Row="0">
+                <Grid.Resources>
+                    <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
+                        <StackPanel  Orientation="Horizontal">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
+                            <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
+                            <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
+                            <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
+                            <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
-                            </StackPanel>
-                        </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                                <TextBlock>
+                            </TextBlock>
+                            <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
+                        </StackPanel>
+                    </DataTemplate>
+                    <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
+                        <StackPanel  Orientation="Horizontal">
+                            <StackPanel.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                </ContextMenu>
+                            </StackPanel.ContextMenu>
+                            <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
+                            <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
+                            <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
+                            <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
-                        <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
-                    </Grid.Resources>
-                    <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewKeyDown="ListView1_PreviewKeyDown"  SelectionChanged="ListView1_SelectionChanged" >
-
-                    </ListView>
-
-                </Grid>
-            </DockPanel>
+                            </TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                    <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
+                </Grid.Resources>
+                <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewKeyDown="ListView1_PreviewKeyDown"  SelectionChanged="ListView1_SelectionChanged" >
+                </ListView>
+            </Grid>
         </Grid>
         <Grid x:Name="ZoomGrid" Background="#c3c3c3">
-            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" Grid.Row="1" Grid.RowSpan="2">
-                <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
+            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
+                <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
 
             <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
-
                 </ToolBar>
             </ToolBarTray>
 
@@ -181,8 +148,8 @@
             </Border>
 
 
-            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  Orientation="Horizontal" HorizontalAlignment="Center">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
+            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                     </ToggleButton>
@@ -239,8 +206,8 @@
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
-                    <Button x:Name="Button1931"  x:FieldModifier="public" Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                    <Button x:Name="Button1931"  x:FieldModifier="public" Margin="0,0,0,2">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
                     <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>

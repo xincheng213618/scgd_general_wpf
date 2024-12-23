@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Shell;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -46,14 +47,20 @@ namespace ColorVision
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
             _IComponentInitializers = new List<UI.IInitializer>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type,this) is IInitializer componentInitialize)
+                try {
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        _IComponentInitializers.Add(componentInitialize);
+                        if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
+                        {
+                            _IComponentInitializers.Add(componentInitialize);
+                        }
                     }
+                }
+                catch
+                {
+                    AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }
             _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
@@ -113,8 +120,34 @@ namespace ColorVision
             {
                 try
                 {
-                    MainWindow mainWindow = new();
-                    mainWindow.Show();
+                    var parser = ArgumentParser.GetInstance();
+                    parser.AddArgument("project", false, "e");
+                    parser.Parse();
+
+                    string project = parser.GetValue("project");
+                    if (project != null)
+                    {
+                        List<IProject> IProjects = new List<IProject>();
+                        foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                        {
+                            foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                            {
+                                if (Activator.CreateInstance(type) is IProject projects)
+                                {
+                                    IProjects.Add(projects);
+                                }
+                            }
+                        }
+                        if (IProjects.Find(a => a.Header == project) is IProject project1)
+                        {
+                            project1.Execute();
+                        }
+                    }
+                    else
+                    {
+                        MainWindow mainWindow = new();
+                        mainWindow.Show();
+                    }
                     Close();
                 }
                 catch (Exception ex)

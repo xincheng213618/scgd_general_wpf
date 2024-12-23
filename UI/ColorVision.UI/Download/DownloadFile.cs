@@ -1,6 +1,7 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
+using log4net;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -10,8 +11,17 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
+    public class DownloadFileConfig : IConfig
+    {
+        public static DownloadFileConfig Instance => ConfigService.Instance.GetRequiredService<DownloadFileConfig>();
+        public bool IsPassWorld { get; set; }
+    }
+
     public class DownloadFile:ViewModelBase, IUpdate
     {
+
+        private static ILog log = log4net.LogManager.GetLogger(nameof(DownloadFile));
+
         public string DownloadTile { get; set; }
 
         public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
@@ -23,11 +33,10 @@ namespace ColorVision.UI
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
-        static bool IsPassWorld;
 
         public async Task GetIsPassWorld()
         {
-            if (IsPassWorld)
+            if (DownloadFileConfig.Instance.IsPassWorld)
                 return;
             string url = "http://xc213618.ddns.me:9999/D%3A/LATEST_RELEASE";
             using HttpClient _httpClient = new();
@@ -38,7 +47,7 @@ namespace ColorVision.UI
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
+                DownloadFileConfig.Instance.IsPassWorld = true;
             }
         }
         public async Task<Version> GetLatestVersionNumber(string url)
@@ -47,18 +56,46 @@ namespace ColorVision.UI
             string versionString = null;
             try
             {
-                // First attempt to get the string without authentication
-                versionString = await _httpClient.GetStringAsync(url);
+
+                if (DownloadFileConfig.Instance.IsPassWorld)
+                {
+                    // If the request is unauthorized, add the authentication header and try again
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                    // You should also consider handling other potential issues here, such as network errors
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
+                else
+                {
+                    // First attempt to get the string without authentication
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
             }
             catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                IsPassWorld = true;
-                // If the request is unauthorized, add the authentication header and try again
-                var byteArray = Encoding.ASCII.GetBytes("1:1");
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+                try
+                {
+                    DownloadFileConfig.Instance.IsPassWorld = true;
+                    // If the request is unauthorized, add the authentication header and try again
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
+                    _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
-                // You should also consider handling other potential issues here, such as network errors
-                versionString = await _httpClient.GetStringAsync(url);
+                    // You should also consider handling other potential issues here, such as network errors
+                    versionString = await _httpClient.GetStringAsync(url);
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                    return new Version();
+                }
+
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+                DownloadFileConfig.Instance.IsPassWorld = false;
+                return new Version();
             }
 
             // If versionString is still null, it means there was an issue with getting the version number
@@ -74,7 +111,7 @@ namespace ColorVision.UI
         {
             using (var client = new HttpClient())
             {
-                if (IsPassWorld)
+                if (DownloadFileConfig.Instance.IsPassWorld)
                 {
                     string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);

@@ -3,7 +3,33 @@ import filecmp
 import zipfile
 import pefile
 import time
+import requests
+from tqdm import tqdm
 
+def upload_file(file_path, folder_name):
+    file_size = os.path.getsize(file_path)
+    file_name = os.path.basename(file_path)
+    upload_url = f'http://xc213618.ddns.me:9998/upload/{folder_name}/{file_name}'
+
+    with open(file_path, 'rb') as f:
+        # Create a progress bar
+        with tqdm(total=file_size, unit='B', unit_scale=True, desc=file_name, ascii=True) as progress_bar:
+            # Define a custom iterable to update progress
+            def read_in_chunks(file_object, chunk_size=1024):
+                while True:
+                    data = file_object.read(chunk_size)
+                    if not data:
+                        break
+                    yield data
+                    progress_bar.update(len(data))
+
+            # Send the request using the custom iterable
+            response = requests.put(upload_url, data=read_in_chunks(f))
+
+    if response.status_code == 201:
+        print('File uploaded successfully')
+    else:
+        print('File upload failed:', response.text)
 
 def copy_with_progress(src, dst):
     if os.path.isdir(dst):
@@ -137,9 +163,10 @@ incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].zip'
 
 
 if old_zip:
-    print(f"创建增量包: {old_zip}")
+    print(f"创建增量包: {incremental_zip}")
     make_incremental_zip(old_zip, new_version_dir, incremental_zip)
-    copy_with_progress(incremental_zip,"H:\\ColorVision\\Update");
+    upload_file(incremental_zip,r"ColorVision\Update");
+    # copy_with_progress(incremental_zip,"H:\\ColorVision\\Update");
 
 print("创建全量包")
 old_zip = os.path.join(history_dir, f'ColorVision-[{version}].zip')

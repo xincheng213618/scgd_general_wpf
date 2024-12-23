@@ -2,6 +2,7 @@
 
 namespace ColorVision.UI
 {
+
     public interface IIcon
     {
         public ImageSource Icon { get; set; }

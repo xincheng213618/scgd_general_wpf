@@ -57,7 +57,10 @@ namespace ColorVision.ImageEditor
             foreach (var item in ImageViewComponentManager.GetInstance().IImageViewComponents)
                 item.Execute(this);
         }
+        private void Zoombox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
+        {
 
+        }
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             if (Config != null)
@@ -65,7 +68,6 @@ namespace ColorVision.ImageEditor
             Config = imageViewConfig;
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
-
             ImageEditViewMode.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
             var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
@@ -91,13 +93,22 @@ namespace ColorVision.ImageEditor
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
             ImageEditViewMode.ClearImageEventHandler += Clear;
+            ImageEditViewMode.EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    Zoombox1.ContextMenu.Items.Clear();
+                }
+                else
+                {
+                    RenderContextMenu();
+                }
+            };
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
-            this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
-
         }
 
         public void Clear(object? sender, EventArgs e)
@@ -220,7 +231,7 @@ namespace ColorVision.ImageEditor
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = "" };
+                MenuItem menuIte2 = new() { Header = "删除" };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -437,9 +448,8 @@ namespace ColorVision.ImageEditor
             }
         }
 
+
         Point LastMouseMove;
-
-
         private void ImageShow_MouseMove(object sender, MouseEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
@@ -693,15 +703,12 @@ namespace ColorVision.ImageEditor
             _handlers.Clear();
         }
 
+        public IImageViewOpen? IImageViewOpen { get; set; }
 
         public async void OpenImage(string? filePath)
         {
-            log.Info($"OpenImageFile :{filePath}");
-
             Config.AddProperties("FilePath", filePath);
-
             ClearSelectionChangedHandlers();
-            Config.IsCVCIE = false;
             Config.FilePath = filePath;
             if (filePath != null && File.Exists(filePath))
             {
@@ -711,11 +718,11 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                var ImageViewOpen = ImageViewComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (ImageViewOpen != null)
+                IImageViewOpen = ImageViewComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
+                if (IImageViewOpen != null)
                 {
-                    Config.AddProperties("ImageViewOpen", ImageViewOpen);
-                    ImageViewOpen.OpenImage(this, filePath);
+                    Config.AddProperties("ImageViewOpen", IImageViewOpen);
+                    IImageViewOpen.OpenImage(this, filePath);
                     return;
                 }
 
@@ -792,7 +799,28 @@ namespace ColorVision.ImageEditor
 
             ImageShow.ImageInitialize();
             ImageEditViewMode.ToolBarScaleRuler.IsShow = true;
+
+            RenderContextMenu();
         }
+        public void RenderContextMenu()
+        {
+            Zoombox1.ContextMenu ??= new ContextMenu();
+
+            Zoombox1.ContextMenu.Items.Clear();
+            foreach (var item in ImageEditViewMode.GetContextMenus())
+            {
+                Zoombox1.ContextMenu.Items.Add(item);
+            }
+            if (IImageViewOpen != null)
+            {
+                foreach (var item in IImageViewOpen.GetContextMenuItems(this))
+                {
+                    Zoombox1.ContextMenu.Items.Add(item);
+                }
+            }
+        }
+
+
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
@@ -1149,7 +1177,5 @@ namespace ColorVision.ImageEditor
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-
-
     }
 }

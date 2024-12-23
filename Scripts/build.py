@@ -3,7 +3,8 @@ import os
 import re
 import shutil
 import time
-
+from tqdm import tqdm
+import requests
 
 def rebuild_project(msbuild_path, solution_path, advanced_installer_path, aip_path):
     try:
@@ -15,7 +16,6 @@ def rebuild_project(msbuild_path, solution_path, advanced_installer_path, aip_pa
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while rebuilding the project: {e}")
         return None
-
 
 def get_latest_file(directory, file_pattern):
     files = [os.path.join(directory, f) for f in os.listdir(directory) if re.match(file_pattern, f)]
@@ -64,13 +64,37 @@ def copy_with_progress(src, dst):
 
         print()
 
-def compare_and_write_version(latest_version, latest_release_path, latest_file, target_directory, changelog_src, changelog_dst):
+def upload_file(file_path, folder_name):
+    file_size = os.path.getsize(file_path)
+    file_name = os.path.basename(file_path)
+    upload_url = f'http://xc213618.ddns.me:9998/upload/{folder_name}/{file_name}'
+
+    with open(file_path, 'rb') as f:
+        # Create a progress bar
+        with tqdm(total=file_size, unit='B', unit_scale=True, desc=file_name, ascii=True) as progress_bar:
+            # Define a custom iterable to update progress
+            def read_in_chunks(file_object, chunk_size=1024):
+                while True:
+                    data = file_object.read(chunk_size)
+                    if not data:
+                        break
+                    yield data
+                    progress_bar.update(len(data))
+
+            # Send the request using the custom iterable
+            response = requests.put(upload_url, data=read_in_chunks(f))
+
+    if response.status_code == 201:
+        print('File uploaded successfully')
+    else:
+        print('File upload failed:', response.text)
+
+def compare_and_write_version(latest_version, latest_release_path, latest_file, changelog_src, changelog_dst):
     try:
         with open(latest_release_path, 'r') as file:
             current_version = file.read().strip()
     except FileNotFoundError:
         current_version = '0.0.0.0'
-
     try:
         shutil.copy2(changelog_src, changelog_dst)
     except IOError as e:
@@ -81,12 +105,36 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             file.write(latest_version)
         print(f"Updated the release version to {latest_version}")
         try:
-            copy_with_progress(latest_file, target_directory)
-            print(f"Copied {latest_file} to {target_directory}")
+            # copy_with_progress(latest_file, target_directory)
+            upload_file(latest_file,"ColorVision")
+            print(f"Upload {latest_file} ")
         except IOError as e:
-            print(f"Could not copy file to {target_directory}: {e}")
+            print(f"Upload {latest_file}: {e}")
     else:
-        print(f"The current version ({current_version}) is up to date.")   
+        print(f"The current version ({current_version}) is up to date.")
+
+def compare_and_write_version_weixin(latest_version, latest_release_path, latest_file,target_directory ,changelog_src, changelog_dst):
+    try:
+        with open(latest_release_path, 'r') as file:
+            current_version = file.read().strip()
+    except FileNotFoundError:
+        current_version = '0.0.0.0'
+    try:
+        shutil.copy2(changelog_src, changelog_dst)
+    except IOError as e:
+        print(f"Could not copy file to {changelog_dst}: {e}")
+
+    if version_tuple(latest_version) >= version_tuple(current_version):
+        with open(latest_release_path, 'w') as file:
+            file.write(latest_version)
+        print(f"Updated the release version to {latest_version}")
+        try:
+            shutil.copy(latest_file, target_directory)
+            print(f"Upload {latest_file} ")
+        except IOError as e:
+            print(f"Upload {latest_file}: {e}")
+    else:
+        print(f"The current version ({current_version}) is up to date.")
 
 
 if __name__ == "__main__":
@@ -97,13 +145,16 @@ if __name__ == "__main__":
             'advanced_installer_path': r'C:\Users\17917\Desktop\AdvancedInstaller v19.7.1\App\ProgramFiles\bin\x86\AdvancedInstaller.com',
             'aip_path': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip",
             'setup_files_dir': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\Setup Files",
-            'latest_release_path': r"H:\LATEST_RELEASE",
+            'latest_release_path': r"H:\ColorVision\LATEST_RELEASE",
             'target_directory': r"H:\ColorVision",
             'changelog_src': r"C:\Users\17917\Desktop\scgd_general_wpf\CHANGELOG.md",
-            'changelog_dst': r"H:\CHANGELOG.md",
-            'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe'
-        }
+            'changelog_dst': r"H:\ColorVision\CHANGELOG.md",
+            'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe',
+            'wechat_target_directory': r"C:\Users\17917\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision",
+            'baidu_target_directory':r"D:\BaiduSyncdisk\ColorVision"
     }
+    }
+
 
     project_name = 'ColorVision'  # 或 'Microscope'
     project = projects[project_name]
@@ -114,7 +165,9 @@ if __name__ == "__main__":
     if latest_file:
         latest_version = extract_version_from_filename(latest_file)
         if latest_version:
-            compare_and_write_version(latest_version, project['latest_release_path'], latest_file, project['target_directory'], project['changelog_src'], project['changelog_dst'])
+            compare_and_write_version_weixin(latest_version, project['wechat_target_directory'] +"\LATEST_RELEASE", latest_file, project['wechat_target_directory'], project['changelog_src'] , project['wechat_target_directory']+"\CHANGELOG.md")
+            compare_and_write_version_weixin(latest_version, project['baidu_target_directory'] +"\LATEST_RELEASE", latest_file, project['baidu_target_directory'], project['changelog_src'] , project['baidu_target_directory']+"\CHANGELOG.md")
+            compare_and_write_version(latest_version, project['latest_release_path'], latest_file, project['changelog_src'], project['changelog_dst'])
         else:
             print("Could not extract the version from the filename.")
     else:

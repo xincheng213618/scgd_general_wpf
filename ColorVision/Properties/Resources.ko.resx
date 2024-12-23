@@ -222,9 +222,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>성능 시험</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>일반 설정</value>
   </data>
@@ -326,9 +323,6 @@
   </data>
   <data name="Duration" xml:space="preserve">
     <value>시간 비용</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>업데이트 속도</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>

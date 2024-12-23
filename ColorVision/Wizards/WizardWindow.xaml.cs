@@ -45,7 +45,7 @@ namespace ColorVision.Wizards
             this.DataContext = WizardConfig.Instance;
 
             var IWizardSteps = new List<IWizardStep>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
                 {

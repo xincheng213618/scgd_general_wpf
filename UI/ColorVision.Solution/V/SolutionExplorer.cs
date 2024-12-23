@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Solution.V;
 using Newtonsoft.Json;
@@ -203,7 +204,7 @@ namespace ColorVision.Solution.V
         public void GeneraFileTypes()
         {
             FileTypes = new Dictionary<string, Type>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes())
                 {

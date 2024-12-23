@@ -1,5 +1,6 @@
 ﻿using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
@@ -85,10 +86,21 @@ namespace ColorVision.Settings
                     tabItem.Content = grid;
                     TabControlSetting.Items.Add(tabItem);
                 }
+                else if (configSetting.Type == ConfigSettingType.Text)
+                {
+                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                    TextBox textBox = new TextBox() { ToolTip = configSetting.Description ,MaxWidth =250};
+                    textBox.SetBinding(TextBox.TextProperty, new Binding(configSetting.BindingName));
+                    textBox.DataContext = configSetting.Source;
+                    DockPanel.SetDock(textBox, Dock.Right);
+                    dockPanel.Children.Add(textBox);
+                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                    UniversalStackPanel.Children.Add(dockPanel);
+                }
             }
             var allSettings = new List<ConfigSettingMetadata>();
 
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
