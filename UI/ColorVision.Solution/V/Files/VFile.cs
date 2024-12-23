@@ -5,6 +5,7 @@ using ColorVision.Solution.Properties;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.UI;
 
 namespace ColorVision.Solution.V.Files
 {
