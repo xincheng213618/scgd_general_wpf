@@ -26,17 +26,35 @@ namespace ColorVision.UI.Menus
             foreach (var item in Menu.Items.OfType<MenuItem>())
             {
                 if (item.Name == "MenuFile")
+                {
                     menuItems.Add("File", item);
+                    if (IsClear)
+                        item.Items.Clear();
+                }
                 if (item.Name == "MenuTool")
+                {
                     menuItems.Add("Tool", item);
+                    if (IsClear)
+                        item.Items.Clear();
+                }
                 if (item.Name == "MenuTemplate")
+                {
                     menuItems.Add("Template", item);
+                    if (IsClear)
+                        item.Items.Clear();
+                }
                 if (item.Name == "MenuHelp")
+                {
                     menuItems.Add("Help", item);
+                    if (IsClear)
+                        item.Items.Clear();
+                }
                 if (item.Name == "MenuView")
+                {
                     menuItems.Add("View", item);
-                if (IsClear)
-                    item.Items.Clear();
+                    if (IsClear)
+                        item.Items.Clear();
+                }
             }
 
             List<IMenuItem> iMenuItems = new();
@@ -85,6 +103,7 @@ namespace ColorVision.UI.Menus
                     iMenuItems.Remove(item);
                 }
             }
+         
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))

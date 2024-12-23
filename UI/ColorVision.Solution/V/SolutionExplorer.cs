@@ -100,19 +100,34 @@ namespace ColorVision.Solution.V
 
             if (DirectoryInfo !=null && DirectoryInfo.Exists)
             {
-                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName) {IncludeSubdirectories =true ,NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite };
+                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName) {IncludeSubdirectories =true };
                 FileSystemWatcher.Created += (s, e) =>
                 {
-                    var parentDirectory = Directory.GetParent(e.FullPath)?.FullName;
-                    foreach (var item in VisualChildren.SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren()))
+                    if (File.Exists(e.FullPath))
                     {
-                        if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
+                        Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            Application.Current?.Dispatcher.Invoke(() =>
+                            CreateFile(this, new FileInfo(e.FullPath));
+                        });
+                        return;
+                    }
+                    if (Directory.Exists(e.FullPath))
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            var parentDirectory = Directory.GetParent(e.FullPath)?.FullName;
+                            foreach (var item in VisualChildren.SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren()))
                             {
-                                CreateFile(item, new FileInfo(e.FullPath));
-                            });
-                        }
+                                if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
+                                {
+                                    Application.Current?.Dispatcher.Invoke(() =>
+                                    {
+                                        CreateFile(item, new FileInfo(e.FullPath));
+                                    });
+                                }
+                            }
+                        });
+                        return;
                     }
                 };
                 FileSystemWatcher.Deleted += (s, e) => {
@@ -224,9 +239,16 @@ namespace ColorVision.Solution.V
             return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
         }
 
+        public List<string> ManagerObject { get; set; } = new List<string>();
+
         public void CreateFile(VObject vObject ,FileInfo fileInfo)
         {
             if (fileInfo.Extension.Contains("cvsln")) return;
+            if (ManagerObject.Contains(fileInfo.FullName))
+            {
+                return;
+            }
+            ManagerObject.Add(fileInfo.FullName);
 
             string extension = fileInfo.Extension;
             if (fileInfo.Extension.Contains("lnk"))

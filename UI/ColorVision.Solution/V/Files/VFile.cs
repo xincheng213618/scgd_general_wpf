@@ -35,7 +35,7 @@ namespace ColorVision.Solution.V.Files
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
 
-            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter =this });
+            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter = this });
 
             ContextMenu.Items.Add(new Separator());
             if (fileMeta is IContextMenuProvider menuItemProvider)

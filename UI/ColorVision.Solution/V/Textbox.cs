@@ -14,7 +14,7 @@ namespace ColorVision.Solution.V
                 baseObject.IsEditMode = false;
         }
 
-        private void TextBox_KeyUp(object sender, KeyEventArgs e)
+        private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (sender is TextBox tb && tb.Tag is VObject baseObject)
             {
@@ -22,6 +22,7 @@ namespace ColorVision.Solution.V
                 if (e.Key == Key.Escape || e.Key == Key.Enter)
                 {
                     baseObject.IsEditMode = false;
+                    e.Handled = true;
                 }
             }
         }

@@ -8,6 +8,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:cm ="clr-namespace:ColorVision.Solution;assembly=ColorVision.Solution"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -27,6 +28,7 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuCut}" Command="ApplicationCommands.Cut" />
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
                         <MenuItem Header="{x:Static properties:Resources.MenuPaste}" Command="ApplicationCommands.Paste" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static cm:Commands.ReName}" />
                     </MenuItem>
                     <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
                     <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
