@@ -176,7 +176,7 @@
                                         <ComboBox x:Name="ComboxCalibrationTemplate" d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding CalibrationTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                                     </DockPanel>
                                 </StackPanel>
-                                <ProgressBar Grid.Column="1" Name="ProgressBar" Background="Transparent" Value="10" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=TakePhotoButton,Path=Content}"  FontSize="15" FontWeight="Bold" Height="42" Visibility="Collapsed"/>
+                                <ProgressBar Grid.Column="1" Name="ProgressBar" Background="Transparent" Value="10" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=TakePhotoButton,Path=Content}"  FontSize="15" FontWeight="Bold" Height="42"  MaxWidth="100" Visibility="Collapsed"/>
                                 <Button x:Name="TakePhotoButton" Grid.Column="1" Content="{x:Static properties:Resources.Capture}" FontSize="15" FontWeight="Bold" Click="GetData_Click" />
                             </Grid>
                         </StackPanel>
