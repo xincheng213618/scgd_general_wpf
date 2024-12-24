@@ -15,10 +15,10 @@ namespace WindowsServicePlugin
 {
     public partial class SetServiceConfigStep : IWizardStep
     {
-        public int Order => 8;
+        public int Order => 9;
 
         public string Header => "更新服务配置";
-        public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
+        public string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
 
         public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
 
