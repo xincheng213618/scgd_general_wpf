@@ -62,6 +62,8 @@ namespace ColorVision.Solution.V
             VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
             vObject.VisualChildren.Add(vFolder);
             directoryInfo.Create();
+            if (!vObject.IsExpanded)
+                vObject.IsExpanded = true;
             vFolder.IsExpanded = true;
             vFolder.IsEditMode = true;
             vFolder.IsSelected = true;

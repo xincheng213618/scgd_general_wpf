@@ -7,8 +7,6 @@ namespace ColorVision.Solution.V.Files
     {
         string Name { get; set; }
 
-        string FullName { get; set; }
-
         public FileInfo FileInfo {get;set;}
 
         string ToolTip { get; set; }

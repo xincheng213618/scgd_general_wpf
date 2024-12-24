@@ -18,14 +18,12 @@ namespace ColorVision.Solution.V.Files
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
-            FullName = FileInfo.FullName;
             var icon = FileIcon.GetFileIcon(fileInfo.FullName);
             if (icon != null)
                 Icon = icon.ToImageSource();
         }
 
         public string Name { get; set; }
-        public string FullName { get; set; }
         public string ToolTip { get; set; }
         public ImageSource Icon { get; set; }
 
@@ -42,7 +40,7 @@ namespace ColorVision.Solution.V.Files
         {
             try
             {
-                File.Delete(FullName);
+                File.Delete(FileInfo.FullName);
             }
             catch(Exception ex)
             {
@@ -52,7 +50,7 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            PlatformHelper.Open(FullName);
+            PlatformHelper.Open(FileInfo.FullName);
         }
 
         public void ReName()

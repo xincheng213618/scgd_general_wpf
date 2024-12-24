@@ -26,6 +26,14 @@ namespace ColorVision.Solution.V
                 }
             }
         }
+        private void TextBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                textBox.SelectAll();
+                textBox.Focus(); // 可选，确保焦点在 TextBox 上
+            }
+        }
         private void TreeViewItem_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel && stackPanel.Parent is Grid grid)

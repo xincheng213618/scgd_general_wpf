@@ -47,7 +47,8 @@
             </Grid.ColumnDefinitions>
             <Border  x:Name="LeftMainContent"  Grid.Row="0" Panel.ZIndex="101" Margin="-2,-1,0,0"  Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" >
                 <Grid >
-                    <TabControl Style="{StaticResource TabControlBaseStyle}" Background="{DynamicResource GlobalBackground}"  TabStripPlacement="Bottom"  Width="303">
+                    <TabControl x:Name="LeftTabControl" Style="{StaticResource TabControlBaseStyle}" Background="{DynamicResource GlobalBackground}" SelectedIndex="{Binding LeftTabControlSelectedIndex}"  TabStripPlacement="Bottom"  Width="303">
+                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Background="{DynamicResource GlobalBackground}"  Width="150" />
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Background="{DynamicResource GlobalBackground}"  Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
@@ -57,7 +58,6 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
-                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Background="{DynamicResource GlobalBackground}"  Width="150" />
                     </TabControl>
                 </Grid>
             </Border>

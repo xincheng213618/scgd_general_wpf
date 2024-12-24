@@ -7,6 +7,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
+using System.Windows;
+using System.IO;
 
 namespace ColorVision.Solution.V
 {
@@ -38,7 +40,16 @@ namespace ColorVision.Solution.V
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set
+            { 
+                if (_Name == value) return; 
+                if (!IsEditMode || ReName(value))
+                {
+                    _Name = value;
+                }
+                NotifyPropertyChanged();  
+            } 
+        }
         private string _Name = string.Empty;
 
         public virtual string FullPath { get => _FullPath; set { _FullPath = value; NotifyPropertyChanged(); } }
@@ -109,7 +120,7 @@ namespace ColorVision.Solution.V
             throw new NotImplementedException();
         }
 
-        public virtual void ReName()
+        public virtual bool ReName(string name)
         {
             throw new NotImplementedException();
         }
