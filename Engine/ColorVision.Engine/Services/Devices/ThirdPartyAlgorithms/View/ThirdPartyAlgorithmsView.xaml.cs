@@ -318,8 +318,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
             if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
-                if (Config.InsertAtBeginning)
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll(Config.SearchLimit);
+                if (!Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
                 {
@@ -335,7 +335,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
                 ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime,Config.SearchLimit);
                 if (Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)

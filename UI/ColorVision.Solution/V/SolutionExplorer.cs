@@ -46,6 +46,163 @@ namespace ColorVision.Solution.V
 
     }
 
+    public class VMCreate
+    {
+        public static VMCreate Instance { get; set; } = new VMCreate();
+
+        public VMCreate()
+        {
+            GeneraFileTypes();
+        }
+
+        public void AddDir(VObject vObject,string FullName)
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(FullName + "\\NewFolder");
+            VMCreate.Instance.ManagerObject.Add(directoryInfo.FullName);
+            VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
+            vObject.VisualChildren.Add(vFolder);
+            directoryInfo.Create();
+            vFolder.IsExpanded = true;
+            vFolder.IsEditMode = true;
+            vFolder.IsSelected = true;
+        }
+
+        public List<string> ManagerObject { get; set; } = new List<string>();
+
+
+        public  async Task GeneralChild(VObject vObject, DirectoryInfo directoryInfo)
+        {
+            foreach (var item in directoryInfo.GetDirectories())
+            {
+                if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                {
+                    continue;
+                }
+                BaseFolder folder = new(item);
+                var vFolder = new VFolder(folder);
+                vObject.AddChild(vFolder);
+                await GeneralChild(vFolder, item);
+            }
+
+            foreach (var item in directoryInfo.GetFiles())
+            {
+                i++;
+                if (i == 5)
+                {
+                    await Task.Delay(100);
+                    i = 0;
+                }
+                CreateFile(vObject, item);
+            }
+        }
+
+        int i;
+        public async Task CreateDir(VObject vObject, DirectoryInfo directoryInfo)
+        {
+            if (VMCreate.Instance.ManagerObject.Contains(directoryInfo.FullName))
+                return;
+            VMCreate.Instance.ManagerObject.Add(directoryInfo.FullName);
+            BaseFolder folder = new(directoryInfo);
+            var vFolder = new VFolder(folder);
+            vObject.AddChild(vFolder);
+            await GeneralChild(vFolder, directoryInfo);
+
+            foreach (var item in directoryInfo.GetFiles())
+            {
+                i++;
+                if (i == 5)
+                {
+                    await Task.Delay(100);
+                    i = 0;
+                }
+                CreateFile(vObject, item);
+            }
+        }
+
+
+        public Dictionary<string, Type> FileTypes { get; set; }
+
+        public void GeneraFileTypes()
+        {
+            FileTypes = new Dictionary<string, Type>();
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface)
+                    {
+                        if (Activator.CreateInstance(type) is IFileMeta page)
+                        {
+                            FileTypes.Add(page.Extension, type);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static Regex WildcardToRegex(string pattern)
+        {
+            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
+        }
+
+
+        public void CreateFile(VObject vObject, FileInfo fileInfo)
+        {
+            if (fileInfo.Extension.Contains("cvsln")) return;
+            if (VMCreate.Instance.ManagerObject.Contains(fileInfo.FullName))
+            {
+                return;
+            }
+            VMCreate.Instance.ManagerObject.Add(fileInfo.FullName);
+
+            string extension = fileInfo.Extension;
+            if (fileInfo.Extension.Contains("lnk"))
+            {
+                string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(fileInfo.FullName);
+                extension = Path.GetExtension(targetPath);
+                fileInfo = new FileInfo(targetPath);
+            }
+            List<Type> matchingTypes = new List<Type>();
+            if (FileTypes.TryGetValue(extension, out Type specificTypes))
+            {
+                matchingTypes.Add(specificTypes);
+            }
+            foreach (var key in FileTypes.Keys)
+            {
+                if (key.Contains(extension))
+                    matchingTypes.Add(FileTypes[key]);
+            }
+            foreach (var key in FileTypes.Keys)
+            {
+                var subKeys = key.Split('|');
+                foreach (var subKey in subKeys)
+                {
+                    if (WildcardToRegex(subKey).IsMatch(extension))
+                    {
+                        matchingTypes.Add(FileTypes[key]);
+                        break;
+                    }
+                }
+            }
+            if (matchingTypes.Count > 0)
+            {
+                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        VFile vFile = new VFile(file);
+                        vObject.AddChild(vFile);
+                    });
+                }
+
+            }
+
+        }
+
+
+
+    }
+
     public class SolutionExplorer: VObject
     {
         public DirectoryInfo DirectoryInfo { get; set; }
@@ -93,7 +250,6 @@ namespace ColorVision.Solution.V
                 DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
 
-            GeneraFileTypes();
             GeneralContextMenu();
             IsExpanded = true;
             DriveMonitor();
@@ -107,7 +263,7 @@ namespace ColorVision.Solution.V
                     {
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            CreateFile(this, new FileInfo(e.FullPath));
+                            VMCreate.Instance.CreateFile(this, new FileInfo(e.FullPath));
                         });
                         return;
                     }
@@ -115,7 +271,7 @@ namespace ColorVision.Solution.V
                     {
                         Application.Current?.Dispatcher.Invoke(async () =>
                         {
-                            await CreateDir(this, new DirectoryInfo(e.FullPath));
+                            await VMCreate.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
                         }); ;
                         return;
                     }
@@ -147,7 +303,7 @@ namespace ColorVision.Solution.V
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                         _= GeneralChild(this, DirectoryInfo);
+                         _= VMCreate.Instance.GeneralChild(this, DirectoryInfo);
                     });
                 }
             });
@@ -198,7 +354,7 @@ namespace ColorVision.Solution.V
         {
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ClearCacheCommand = new RelayCommand(a => { DirectoryInfo.Delete(true); VisualChildren.Clear(); });
-            AddDirCommand = new RelayCommand(a => AddDir());
+            AddDirCommand = new RelayCommand(a => VMCreate.Instance.AddDir(this, DirectoryInfo.FullName));
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
             ContextMenu.Items.Add(menuItem);
@@ -212,147 +368,8 @@ namespace ColorVision.Solution.V
             ContextMenu.Items.Add( new MenuItem (){ Header = "编辑", Command = EditCommand });
         }
 
-        public void AddDir()
-        {
-            DirectoryInfo directoryInfo = new DirectoryInfo(DirectoryInfo.FullName + "\\NewFolder");
-            ManagerObject.Add(directoryInfo.FullName);
-            VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
-            VisualChildren.Add(vFolder);
-            directoryInfo.Create();
-            vFolder.IsExpanded = true;
-            vFolder.IsEditMode = true;
-            vFolder.IsSelected = true;
-        }
 
 
-
-        public Dictionary<string, Type> FileTypes { get; set; }
-
-        public void GeneraFileTypes()
-        {
-            FileTypes = new Dictionary<string, Type>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface)
-                    {
-                        if (Activator.CreateInstance(type) is IFileMeta page)
-                        {
-                            FileTypes.Add(page.Extension, type);
-                        }
-                    }
-                }
-            }
-        }
-
-        private static Regex WildcardToRegex(string pattern)
-        {
-            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
-        }
-
-        public List<string> ManagerObject { get; set; } = new List<string>();
-
-        public void CreateFile(VObject vObject ,FileInfo fileInfo)
-        {
-            if (fileInfo.Extension.Contains("cvsln")) return;
-            if (ManagerObject.Contains(fileInfo.FullName))
-            {
-                return;
-            }
-            ManagerObject.Add(fileInfo.FullName);
-
-            string extension = fileInfo.Extension;
-            if (fileInfo.Extension.Contains("lnk"))
-            {
-                string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(fileInfo.FullName);
-                extension = Path.GetExtension(targetPath);
-                fileInfo = new FileInfo(targetPath);
-            }
-            List<Type> matchingTypes = new List<Type>();
-            if (FileTypes.TryGetValue(extension, out Type specificTypes))
-            {
-                matchingTypes.Add(specificTypes);
-            }
-            foreach (var key in FileTypes.Keys)
-            {
-                if (key.Contains(extension))
-                    matchingTypes.Add(FileTypes[key]);
-            }
-            foreach (var key in FileTypes.Keys)
-            {
-                var subKeys = key.Split('|');
-                foreach (var subKey in subKeys)
-                {
-                    if (WildcardToRegex(subKey).IsMatch(extension))
-                    {
-                        matchingTypes.Add(FileTypes[key]);
-                        break;
-                    }
-                }
-            }
-            if (matchingTypes.Count > 0)
-            {
-                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        VFile vFile = new VFile(file);
-                        vObject.AddChild(vFile);
-                    });
-                }
-
-            }
-
-        }
-
-        int i;
-        public async Task CreateDir(VObject vObject, DirectoryInfo directoryInfo)
-        {
-            if (ManagerObject.Contains(directoryInfo.FullName))
-                return;
-            ManagerObject.Add(directoryInfo.FullName);
-            BaseFolder folder = new(directoryInfo);
-            var vFolder = new VFolder(folder);
-            vObject.AddChild(vFolder);
-            await GeneralChild(vFolder, directoryInfo);
-
-            foreach (var item in directoryInfo.GetFiles())
-            {
-                i++;
-                if (i == 5)
-                {
-                    await Task.Delay(100);
-                    i = 0;
-                }
-                CreateFile(vObject, item);
-            }
-        }
-
-        public async Task GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
-        {
-            foreach (var item in directoryInfo.GetDirectories())
-            {
-                if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
-                {
-                    continue;
-                }
-                BaseFolder folder = new(item);
-                var vFolder = new VFolder(folder);
-                vObject.AddChild(vFolder);
-                await GeneralChild(vFolder, item);
-            }
-
-            foreach (var item in directoryInfo.GetFiles())
-            {
-                i++;
-                if (i == 5)
-                {
-                    await Task.Delay(100);
-                    i = 0;
-                }
-                CreateFile(vObject, item);
-            }
-        }
+    
     }
 }

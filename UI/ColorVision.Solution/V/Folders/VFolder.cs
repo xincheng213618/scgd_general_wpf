@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
@@ -15,6 +16,9 @@ namespace ColorVision.Solution.V.Folders
 
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
+        public RelayCommand AddDirCommand { get; set; }
+
+        FileSystemWatcher FileSystemWatcher { get; set; }
 
         public VFolder(IFolder folder)
         {
@@ -30,9 +34,59 @@ namespace ColorVision.Solution.V.Folders
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
 
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
+            AddDirCommand = new RelayCommand(a => VMCreate.Instance.AddDir(this, DirectoryInfo.FullName));
+            MenuItem menuItem3 = new() { Header = "添加" };
+            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
+            menuItem3.Items.Add(menuItem4);
+            ContextMenu.Items.Add(menuItem3);
             ContextMenu.Items.Add(new Separator());
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
+
+
+            if (DirectoryInfo != null && DirectoryInfo.Exists)
+            {
+                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
+                FileSystemWatcher.Created += (s, e) =>
+                {
+                    if (File.Exists(e.FullPath))
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            VMCreate.Instance.CreateFile(this, new FileInfo(e.FullPath));
+                        });
+                        return;
+                    }
+                    if (Directory.Exists(e.FullPath))
+                    {
+                        Application.Current?.Dispatcher.Invoke(async () =>
+                        {
+                            await VMCreate.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
+                        }); ;
+                        return;
+                    }
+                };
+                FileSystemWatcher.Deleted += (s, e) =>
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        VisualChildren.Remove(VisualChildren.First(a => a.FullPath == e.FullPath));
+                    });
+                };
+                FileSystemWatcher.Changed += (s, e) =>
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                    });
+                };
+                FileSystemWatcher.Renamed += (s, e) =>
+                {
+
+                };
+                FileSystemWatcher.EnableRaisingEvents = true;
+
+            }
         }
+
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
 

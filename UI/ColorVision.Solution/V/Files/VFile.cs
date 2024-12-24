@@ -39,7 +39,6 @@ namespace ColorVision.Solution.V.Files
 
             ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter = this });
 
-            ContextMenu.Items.Add(new Separator());
             if (fileMeta is IContextMenuProvider menuItemProvider)
             {
                 var iMenuItems = new List<MenuItemMetadata>();

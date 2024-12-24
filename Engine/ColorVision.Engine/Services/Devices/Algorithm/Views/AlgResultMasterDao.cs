@@ -71,7 +71,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
 
-        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName, DateTime? dateTimeStart, DateTime? dateTimeEnd)
+        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName, DateTime? dateTimeStart, DateTime? dateTimeEnd,int limit)
         {
             Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);
@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             keyValuePairs.Add(">create_date", dateTimeStart);
             keyValuePairs.Add("<create_date", dateTimeEnd);
 #pragma warning restore CS8604 // 引用类型参数可能为 null。
-            return ConditionalQuery(keyValuePairs);
+            return ConditionalQuery(keyValuePairs,limit);
         }
 
 

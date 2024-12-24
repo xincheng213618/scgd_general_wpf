@@ -371,7 +371,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             ViewResultCameras.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAll(Config.SearchLimit);
-            if (Config.InsertAtBeginning)
+            if (!Config.InsertAtBeginning)
                 algResults.Reverse();
             foreach (var item in algResults)
             {
@@ -385,7 +385,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             advanceSearch.Closed +=(s,e) =>
             {
-                if (Config.InsertAtBeginning)
+                if (!Config.InsertAtBeginning)
                     advanceSearch.SearchResults.Reverse();
                 ViewResultCameras.Clear();
 

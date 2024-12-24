@@ -310,7 +310,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             ViewResults.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
-            if (Config.InsertAtBeginning)
+            if (!Config.InsertAtBeginning)
                 algResults.Reverse();
             foreach (var item in algResults)
             {
@@ -321,10 +321,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
+            AdvanceSearchConfig.Instance.Limit = Config.SearchLimit;
             AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             advanceSearch.Closed += (s, e) =>
             {
-                if (Config.InsertAtBeginning)
+                if (!Config.InsertAtBeginning)
                     advanceSearch.SearchResults.Reverse();
                 ViewResults.Clear();
 

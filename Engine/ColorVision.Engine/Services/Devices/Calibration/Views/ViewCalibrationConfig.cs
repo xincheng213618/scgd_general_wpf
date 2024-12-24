@@ -43,5 +43,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
+        [DisplayName("搜索条数限制")]
+        public int SearchLimit { get => _SearchLimit; set { _SearchLimit = value; NotifyPropertyChanged(); } }
+        private int _SearchLimit = -1;
+
     }
 }
