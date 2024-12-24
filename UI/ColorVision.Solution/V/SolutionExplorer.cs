@@ -355,7 +355,7 @@ namespace ColorVision.Solution.V
         public void GeneralContextMenu()
         {
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            ClearCacheCommand = new RelayCommand(a => { DirectoryInfo.Delete(true); VisualChildren.Clear(); });
+            ClearCacheCommand = new RelayCommand(a => { VisualChildren.Clear(); });
             AddDirCommand = new RelayCommand(a => VMCreate.Instance.AddDir(this, DirectoryInfo.FullName));
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
