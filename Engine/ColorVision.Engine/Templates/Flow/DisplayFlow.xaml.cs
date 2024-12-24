@@ -263,13 +263,21 @@ namespace ColorVision.Engine.Templates.Flow
                
                 flowControl.FlowData += (s, e) =>
                 {
-                    if (s is FlowControlData msg)
+                    try
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        if (s is FlowControlData msg)
                         {
-                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                        });
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
+                        }
                     }
+                    catch(Exception ex)
+                    {
+
+                    }
+
                 };
 
 

@@ -1,11 +1,12 @@
 ﻿using ColorVision.UI;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
 
-    public class MySqlInitializer : IInitializer
+    public class MySqlInitializer : InitializerBase
     {
         private readonly IMessageUpdater _messageUpdater;
 
@@ -13,10 +14,10 @@ namespace ColorVision.Engine.MySql
         {
             _messageUpdater = messageUpdater;
         }
+        public override string Name => nameof(MySqlInitializer);
+        public override int Order => 1;
 
-        public int Order => 1;
-
-        public async Task InitializeAsync()
+        public override async Task InitializeAsync()
         {
             if (MySqlSetting.Instance.IsUseMySql)
             {

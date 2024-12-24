@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using CVCommCore;
+using FlowEngineLib;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
@@ -51,6 +52,8 @@ namespace ColorVision.Engine.Services.RC
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
         private ServiceNodeStatus _RegStatus;
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
+
+        public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
 
         public MqttRCService():base()
         {
@@ -230,7 +233,7 @@ namespace ColorVision.Engine.Services.RC
 
         private static void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            var tokens = ServiceManager.GetInstance().ServiceTokens;
+            var tokens = MqttRCService.GetInstance().ServiceTokens;
             tokens.Clear();
             foreach (var itemService in services.Values)
             {

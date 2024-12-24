@@ -30,6 +30,7 @@ using System.Data;
 using System.Linq;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services
 {
@@ -50,12 +51,10 @@ namespace ColorVision.Engine.Services
         public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
-        public List<MQTTServiceInfo> ServiceTokens { get; set; }
+        public List<MQTTServiceInfo> ServiceTokens => MqttRCService.GetInstance().ServiceTokens;
 
         public ServiceManager()
         {
-            svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
-            ServiceTokens = new List<MQTTServiceInfo>();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadServices();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();

@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
@@ -116,7 +117,7 @@ namespace ProjectKB
                     algorithmNode.nodeRunEvent -= UpdateMsg;
                 }
             }
-            var tokens = ServiceManager.GetInstance().ServiceTokens;
+            var tokens = MqttRCService.GetInstance().ServiceTokens;
             log.Info($"tokenscount{tokens.Count}");
             flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
             foreach (var item in STNodeEditorMain.Nodes)

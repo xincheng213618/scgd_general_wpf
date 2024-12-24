@@ -1,15 +1,17 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CS1998
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.UI;
 using cvColorVision;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services
 {
-    public class ServiceInitializer : IInitializer
+    public class ServiceInitializer : InitializerBase
     {
         private readonly IMessageUpdater _messageUpdater;
 
@@ -18,9 +20,12 @@ namespace ColorVision.Engine.Services
             _messageUpdater = messageUpdater;
         }
 
-        public int Order => 5;
+        public override int Order => 5;
 
-        public async Task InitializeAsync()
+        public override string Name => nameof(ServiceInitializer);
+        public override IEnumerable<string> Dependencies => new List<string> { "MySqlInitializer", "TemplateInitializer" };
+
+        public override async Task InitializeAsync()
         {
             if (MySqlControl.GetInstance().IsConnect)
             {

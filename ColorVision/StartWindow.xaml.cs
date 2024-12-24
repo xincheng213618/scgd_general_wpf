@@ -47,6 +47,10 @@ namespace ColorVision
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
             _IComponentInitializers = new List<UI.IInitializer>();
+            var parser = ArgumentParser.GetInstance();
+            parser.AddArgument("skip", false, "skip");
+            parser.Parse();
+            string skipname = parser.GetValue("skip");
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try {
@@ -54,7 +58,10 @@ namespace ColorVision
                     {
                         if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
                         {
-                            _IComponentInitializers.Add(componentInitialize);
+                            if (componentInitialize.Name != skipname)
+                            {
+                                _IComponentInitializers.Add(componentInitialize);
+                            }
                         }
                     }
                 }
@@ -63,6 +70,8 @@ namespace ColorVision
                     AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }
+
+
             _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
             Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();

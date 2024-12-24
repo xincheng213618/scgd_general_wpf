@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -6,7 +7,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class MqttInitializer : IInitializer
+    public class MqttInitializer : InitializerBase
     {
         private readonly IMessageUpdater _messageUpdater;
 
@@ -14,9 +15,9 @@ namespace ColorVision.Engine.MQTT
         {
             _messageUpdater = messageUpdater;
         }
-
-        public int Order => 2;
-        public async Task InitializeAsync()
+        public override string Name => nameof(MqttInitializer);
+        public override int Order => 2;
+        public override async Task InitializeAsync()
         {
             if (!MQTTSetting.Instance.IsUseMQTT)
             {

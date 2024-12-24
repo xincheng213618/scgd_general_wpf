@@ -92,7 +92,6 @@ namespace ColorVision.Engine.MySql
                         }
                     }
                 }
-                return true;
             }
             catch (Exception ex)
             {

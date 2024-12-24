@@ -5,7 +5,7 @@ using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution
 {
-    public class SolutionManagerInitializer : IInitializer
+    public class SolutionManagerInitializer : InitializerBase
     {
         private readonly IMessageUpdater log;
 
@@ -14,9 +14,11 @@ namespace ColorVision.Solution
             log = messageUpdater;
         }
 
-        public int Order => 1;
+        public override string Name => nameof(SolutionManagerInitializer);
 
-        public async Task InitializeAsync()
+        public override int Order => 1;
+
+        public override async Task InitializeAsync()
         {
             // 解析命令行参数
             bool su = false;
