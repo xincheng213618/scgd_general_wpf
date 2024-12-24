@@ -370,7 +370,7 @@
     <value>Vue(V)</value>
   </data>
   <data name="MenuValidue" xml:space="preserve">
-    <value>Paramètres du modèle de vérification concerné (B)</value>
+    <value>modèle de vérification concerné (B)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>Vérifier les mises à jour (_U)</value>

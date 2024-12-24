@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Validate.Dic
 {
     public class ExportDicComply : MenuItemBase
     {
-        public override string OwnerGuid => "Comply";
+        public override string OwnerGuid => "Validate";
 
         public override string GuidId => "ComplyEdit";
         public override int Order => 999;

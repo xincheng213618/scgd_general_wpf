@@ -1486,8 +1486,8 @@
           <target state="new">Проверить наличие обновлений(U)</target>
         </trans-unit>
         <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">Настройки шаблона проверки проблем (B)</target>
+          <source>校验模板设置(_B)</source>
+          <target state="new">шаблона проверки проблем (B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

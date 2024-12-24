@@ -370,7 +370,7 @@
     <value>Посмотреть(В)</value>
   </data>
   <data name="MenuValidue" xml:space="preserve">
-    <value>Настройки шаблона проверки проблем (B)</value>
+    <value>шаблона проверки проблем (B)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>Проверить наличие обновлений(U)</value>

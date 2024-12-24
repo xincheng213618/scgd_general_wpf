@@ -1490,8 +1490,8 @@
           <target state="new">檢查更新(_U)</target>
         </trans-unit>
         <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">關注點校驗範本設定(B)</target>
+          <source>校验模板设置(_B)</source>
+          <target state="new">校驗範本設定(B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

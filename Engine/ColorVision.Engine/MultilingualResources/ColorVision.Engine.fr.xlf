@@ -1486,8 +1486,8 @@
           <target state="new">Vérifier les mises à jour (_U)</target>
         </trans-unit>
         <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">Paramètres du modèle de vérification concerné (B)</target>
+          <source>校验模板设置(_B)</source>
+          <target state="new">modèle de vérification concerné (B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

@@ -350,7 +350,7 @@
     <value>视图(_V)</value>
   </data>
   <data name="MenuValidue" xml:space="preserve">
-    <value>关注点校验模板设置(_B)</value>
+    <value>校验模板设置(_B)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>检查更新(_U)</value>
