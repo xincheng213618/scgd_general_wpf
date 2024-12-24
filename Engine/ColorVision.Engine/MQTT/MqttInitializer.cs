@@ -45,8 +45,8 @@ namespace ColorVision.Engine.MQTT
                             isConnect = await MQTTControl.GetInstance().Connect();
                             if (isConnect) return;
                         }
-                        //if (!Common.Utilities.Tool.IsAdministrator())
-                        //    Tool.RestartAsAdmin();
+                        if (!Common.Utilities.Tool.IsAdministrator())
+                            Tool.RestartAsAdmin();
                         //ServiceController.Start();
                     }
                 }

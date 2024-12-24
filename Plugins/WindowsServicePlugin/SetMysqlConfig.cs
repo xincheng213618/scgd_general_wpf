@@ -4,118 +4,14 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using K4os.Compression.LZ4;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;
 
 namespace WindowsServicePlugin
 {
-    public class SetServiceConfig : IWizardStep
+    public partial class SetServiceConfig
     {
-        public int Order => 8;
-
-        public string Header => "更新服务配置";
-        public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
-
-        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
-
-        Dictionary<string, string> dic = new Dictionary<string, string>();
-        public void Execute()
-        {
-            if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
-            {
-                MessageBox.Show("请先配置服务管理工具");
-                return;
-            }
-            string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
-            if (!File.Exists(filePath))
-            {
-                MessageBox.Show("找不到App.config,请先运行服务管理工具");
-                return;
-            }
-            XDocument config = XDocument.Load(filePath);
-            var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
-            if (appSettings != null)
-            {
-                foreach (var setting in appSettings)
-                {
-                    string key = setting.Attribute("key")?.Value;
-                    string value = setting.Attribute("value")?.Value;
-                    if (key != null && value != null)
-                    {
-                        if (!dic.TryAdd(key, value))
-                        {
-                            dic[key] = value;
-                        }
-                    }
-                }
-
-                MySqlSetting.Instance.MySqlConfig.UserName = dic["MysqlUser"];
-                MySqlSetting.Instance.MySqlConfig.UserPwd = dic["MysqlPwd"];
-                MySqlSetting.Instance.MySqlConfig.Database = dic["MysqlDatabase"];
-
-                string DirPath = dic["BaseLocation"];
-
-                SetServiceCfg("RegWindowsService");
-                SetServiceCfg("CVMainWindowsService_x86");
-                SetServiceCfg("CVMainWindowsService_x64");
-                SetServiceCfg("TPAWindowsService");
-                SetServiceCfg("TPAWindowsService32");
-                SetServiceCfg("CVFlowWindowsService");
-                SetServiceCfg("CVMainWindowsService_dev");
-
-                void SetServiceCfg(string ServiceName)
-                {
-                    string RegWindowsServiceDir = Path.Combine(DirPath, ServiceName);
-                    if (!Directory.Exists(RegWindowsServiceDir)) return;
-                    string mysqlConfgPath = Path.Combine(RegWindowsServiceDir, "cfg", "MySql.config");
-                    if (!File.Exists(mysqlConfgPath)) return;
-                    SetMysqlCfg(mysqlConfgPath);
-                }
-
-                void SetMysqlCfg(string mysqlConfgPath)
-                {
-                    XDocument mysqlConfigxml = XDocument.Load(mysqlConfgPath);
-                    var mysqlappSettings = mysqlConfigxml.Element("configuration")?.Element("appSettings")?.Elements("add");
-
-                    if (mysqlappSettings != null)
-                    {
-                        foreach (var setting in mysqlappSettings)
-                        {
-                            string key = setting.Attribute("key")?.Value;
-                            string value = setting.Attribute("value")?.Value;
-                            if (key == "Host")
-                            {
-                                setting.Attribute("value").SetValue(MySqlSetting.Instance.MySqlConfig.Host);
-                            }
-                            if (key == "Port")
-                            {
-                                setting.Attribute("value").SetValue(MySqlSetting.Instance.MySqlConfig.Port);
-                            }
-                            if (key == "User")
-                            {
-                                setting.Attribute("value").SetValue(MySqlSetting.Instance.MySqlConfig.UserName);
-                            }
-                            if (key == "Password")
-                            {
-                                setting.Attribute("value").SetValue(MySqlSetting.Instance.MySqlConfig.UserPwd);
-                            }
-                            if (key == "Database")
-                            {
-                                setting.Attribute("value").SetValue(MySqlSetting.Instance.MySqlConfig.Database);
-                            }
-                        }
-                    }
-
-                    mysqlConfigxml.Save(mysqlConfgPath);
-                }
-                MessageBox.Show("CFG配置成功，请手动重启服务");
-            }
-
-        }
-
-
         public class SetMysqlConfig : IWizardStep
         {
             public int Order => 8;
