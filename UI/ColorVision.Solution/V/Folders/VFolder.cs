@@ -130,13 +130,17 @@ namespace ColorVision.Solution.V.Folders
                     foreach (var item in VisualChildren)
                     {
                         if (item is VFolder vFolder)
+                        {
                             vFolder.FileSystemWatcher.EnableRaisingEvents = false;
+                        }
 
                     }
                     string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
 
+                    this.VisualChildren.Clear();
+                    VMCreate.Instance.GeneralChild(this,this.DirectoryInfo);
                     FileSystemWatcher.Path = DirectoryInfo.FullName;
                     FileSystemWatcher.EnableRaisingEvents = true;
                     return true;
@@ -149,6 +153,8 @@ namespace ColorVision.Solution.V.Folders
                 return false;
             }
         }
+
+
 
         public override void Delete()
         {
