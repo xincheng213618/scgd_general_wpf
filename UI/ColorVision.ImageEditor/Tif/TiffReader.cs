@@ -15,6 +15,7 @@ namespace ColorVision.ImageEditor.Tif
             using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
                 TiffBitmapDecoder decoder = new TiffBitmapDecoder(stream, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.OnLoad);
+             
                 BitmapSource bitmapSource = decoder.Frames[0];
                 // 确保图像数据已加载
                 bitmapSource.Freeze();

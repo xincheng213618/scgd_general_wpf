@@ -1,10 +1,12 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
@@ -52,15 +54,47 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
+        public int GetChannelCount(BitmapSource source)
+        {
+            PixelFormat format = source.Format;
+
+            if (format == PixelFormats.Bgr24)
+            {
+                return 3; // BGR
+            }
+            else if (format == PixelFormats.Bgr32 || format == PixelFormats.Bgra32)
+            {
+                return 4; // BGRA
+            }
+            else if (format == PixelFormats.Gray8)
+            {
+                return 1; // 灰度
+            }
+            else if (format == PixelFormats.Gray16)
+            {
+                return 1; // 灰度
+            }
+            else if (format == PixelFormats.Rgb24)
+            {
+                return 3; // RGB
+            }
+            else if (format == PixelFormats.Rgb48)
+            {
+                return 3; // RGB
+            }
+            else if (format == PixelFormats.Rgba64)
+            {
+                return 4; // RGBA 16位
+            }
+            else
+            {
+                throw new NotSupportedException("Unsupported pixel format");
+            }
+        }
         public async void OpenImage(ImageView imageView, string? filePath)
         {
             if (imageView.Config.IsShowLoadImage)
             {
-
-                imageView.ComboBoxLayers.SelectedIndex = 0;
-                imageView.ComboBoxLayers.ItemsSource = imageView.ComboBoxLayerItems;
-                imageView.AddSelectionChangedHandler(imageView.ComboBoxLayers_SelectionChanged);
-
                 imageView.WaitControl.Visibility = Visibility.Visible;
                 await Task.Delay(30);
                 await Task.Run(() =>
@@ -68,6 +102,21 @@ namespace ColorVision.ImageEditor.Tif
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         var data = TiffReader.ReadTiff(filePath);
+                        int channel = GetChannelCount(data);
+                        if (channel == 1)
+                        {
+                            imageView.ComboBoxLayers.SelectedIndex = 0;
+                            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src" };
+                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayers_SelectionChanged);
+                        }
+                        else
+                        {
+                            imageView.ComboBoxLayers.SelectedIndex = 0;
+                            imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
+                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayers_SelectionChanged);
+                        }
+
+
                         imageView.SetImageSource(new WriteableBitmap(data));
                         imageView.UpdateZoomAndScale();
                         imageView.WaitControl.Visibility = Visibility.Collapsed;

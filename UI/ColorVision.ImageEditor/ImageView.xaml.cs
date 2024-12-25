@@ -948,11 +948,12 @@ namespace ColorVision.ImageEditor
 
                     uint min = (uint)PseudoSlider.ValueStart;
                     uint max = (uint)PseudoSlider.ValueEnd;
+                    int channel = ComboBoxLayers.SelectedIndex - 1;
 
                     log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
+                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
@@ -1066,7 +1067,6 @@ namespace ColorVision.ImageEditor
             if (HImageCache != null)
             {
                 int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
-
                 if (ret == 0)
                 {
                     if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
