@@ -132,7 +132,7 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "R")
                     {
-                        imageView.ExtractChannel(2);
+                        imageView.ExtractChannel(0);
                     }
                     if (layer == "G")
                     {
@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "B")
                     {
-                        imageView.ExtractChannel(0);
+                        imageView.ExtractChannel(2);
                     }
                     if (layer == "X")
                     {
@@ -161,8 +161,6 @@ namespace ColorVision.Engine.Media
                         imageView.Config.Channel = 1;
                     }
                 }
-
-
             }
 
 
@@ -181,6 +179,9 @@ namespace ColorVision.Engine.Media
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                     imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+
+                    if (!File.Exists(meta.srcFileName))
+                        meta.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.srcFileName);
 
                     if (meta.channels ==3)
                     {
