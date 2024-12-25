@@ -312,7 +312,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
                         switch (data.FileType)
                         {
@@ -328,16 +327,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
-                        {
-                            ImageView.Config.FilePath = localName;
-                            MsgRecord msgRecord = Device.DService.DownloadFile(data.FilePath, fileExt);
-                        }
-                        else
-                        {
-                            ImageView.Config.FilePath = localName;
-                            ImageView.OpenImage(ImageView.Config.FilePath);
-                        }
+                        MsgRecord msgRecord = Device.DService.DownloadFile(data.FilePath, fileExt);
                     }
                 }
             }

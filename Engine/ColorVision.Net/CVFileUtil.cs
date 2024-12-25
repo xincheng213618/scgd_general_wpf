@@ -1,14 +1,9 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
-using CVCommCore.CVImage;
 using MQTTMessageLib.FileServer;
-using OpenCvSharp;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
-using static System.Net.Mime.MediaTypeNames;
 
 
 namespace ColorVision.Net
@@ -317,15 +312,6 @@ namespace ColorVision.Net
 
         public static bool ReadCVRaw(string fileName, out CVCIEFile fileInfo) => Read(fileName, out fileInfo);
 
-        public static int ReadCVRawChannel(string fileName, int channel, out CVCIEFile fileInfo)
-        {
-            if (ReadCVRaw(fileName, out CVCIEFile fileIn))
-            {
-                return ReadCVChannel(channel, fileIn, out fileInfo);
-            }
-            fileInfo = new CVCIEFile();
-            return -1;
-        }
         public static CVCIEFile OpenLocalFileChannel(string fileName, CVImageChannelType channelType)
         {
             string ext = Path.GetExtension(fileName)?.ToLower(CultureInfo.CurrentCulture);
@@ -333,6 +319,24 @@ namespace ColorVision.Net
             return OpenLocalFileChannel(fileName, fileExtType, channelType);
         }
 
+        public static bool ReadCVCIE(string fileName, out CVCIEFile fileInfo)
+        {
+            int startIndex = CVFileUtil.ReadCIEFileHeader(fileName, out fileInfo);
+            if (startIndex < 0) return false;
+            fileInfo.FilePath = fileName;
+
+            if (!string.IsNullOrEmpty(fileInfo.srcFileName))
+            {
+                if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
+                {
+                    fileInfo = fileInf;
+                    fileInfo.FilePath = fileName;
+                    return true;
+                }
+            }
+
+            return ReadCIEFileData(fileName, ref fileInfo, startIndex);
+        }
 
 
         public static CVCIEFile OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
@@ -341,12 +345,12 @@ namespace ColorVision.Net
             {
                 if (extType == FileExtType.Raw)
                 {
-                    if (CVFileUtil.ReadCVRaw(fileName, out CVCIEFile meta))
+                    if (ReadCVRaw(fileName, out CVCIEFile meta))
                         return meta;
                 }
                 if (extType == FileExtType.CIE)
                 {
-                    if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile meta))
+                    if (ReadCVCIE(fileName, out CVCIEFile meta))
                         return meta;
                 }
             }
@@ -355,15 +359,12 @@ namespace ColorVision.Net
             switch (channelType)
             {
                 case CVImageChannelType.CIE_XYZ_X:
-                case CVImageChannelType.RGB_R:
                     channel = 0;
                     break;
                 case CVImageChannelType.CIE_XYZ_Y:
-                case CVImageChannelType.RGB_G:
                     channel = 1;
                     break;
                 case CVImageChannelType.CIE_XYZ_Z:
-                case CVImageChannelType.RGB_B:
                     channel = 2;
                     break;
                 default:
@@ -371,12 +372,7 @@ namespace ColorVision.Net
             }
             if (channel >= 0)
             {
-
-                if (extType == FileExtType.Raw)
-                {
-                    CVFileUtil.ReadCVRawChannel(fileName, channel, out data);
-                }
-                else if (extType == FileExtType.CIE)
+                if (extType == FileExtType.CIE)
                 {
                     CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
                 }
@@ -396,7 +392,7 @@ namespace ColorVision.Net
 
             if (File.Exists(cvcie.srcFileName))
             {
-                if (cvcie.srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
+                if (IsCIEFile(cvcie.srcFileName))
                 {
                     fileOut.FileExtType = FileExtType.Raw;
                     return Read(cvcie.srcFileName, out fileOut);
@@ -429,35 +425,6 @@ namespace ColorVision.Net
             }
             return null;
         }
-        public static List<float[]> ReadCVCIE(string FileName)
-        {
-            List<float[]> bytes = new();
-            CVCIEFile fileInfo = new();
-            int index = ReadCIEFileHeader(FileName, out fileInfo);
-            if (index < 0) return bytes;
-            ReadCIEFileData(FileName, ref fileInfo, index);
-
-            if (fileInfo.channels == 3)
-            {
-                int singleChannelLength = fileInfo.cols * fileInfo.rows * (fileInfo.bpp / 8);
-                int singleChannel = fileInfo.cols * fileInfo.rows;
-
-                float[] channel1Data = new float[singleChannel];
-                float[] channel2Data = new float[singleChannel];
-                float[] channel3Data = new float[singleChannel];
-                Buffer.BlockCopy(fileInfo.data, 0, channel1Data, 0, singleChannelLength);
-                Buffer.BlockCopy(fileInfo.data, singleChannelLength, channel2Data, 0, singleChannelLength);
-                Buffer.BlockCopy(fileInfo.data, 2 * singleChannelLength, channel3Data, 0, singleChannelLength);
-
-                bytes.Add(channel1Data);
-                bytes.Add(channel2Data);
-                bytes.Add(channel3Data);
-
-                return bytes;
-            }
-            return bytes;
-
-        }
 
 
         public static int ReadCVCIEXYZ(string FileName, int channel, out CVCIEFile fileOut)
@@ -477,38 +444,6 @@ namespace ColorVision.Net
                 return 0;
             }
             return  -2;
-        }
-
-
-
-        public static int ReadCVChannel(int channel, CVCIEFile fileIn, out CVCIEFile fileOut)
-        {
-            fileOut = new CVCIEFile();
-            if (fileIn.data == null || fileIn.data.Length == 0) return -1;
-            if (fileIn.FileExtType != FileExtType.Raw) return -1;
-            if (fileIn.channels > channel)
-            {
-                fileOut.exp = fileIn.exp;
-                fileOut.rows = fileIn.rows;
-                fileOut.cols = fileIn.cols;
-                fileOut.bpp = fileIn.bpp;
-                fileOut.channels = 1;
-                if (fileIn.channels > 1)
-                {
-                    Mat src = Mat.FromPixelData(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
-                    Mat[] srces = src.Split();
-                    int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
-                    fileOut.data = new byte[len];
-                    Marshal.Copy(srces[channel].Data, fileOut.data, 0, len);
-                }
-                else
-                {
-                    fileOut.data = fileIn.data;
-                }
-                return 0;
-            }
-
-            return -2;
         }
     }
 }

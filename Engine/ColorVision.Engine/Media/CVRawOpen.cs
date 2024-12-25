@@ -6,8 +6,6 @@ using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Eval;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +13,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
 {
@@ -135,27 +132,33 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "R")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                        imageView.ExtractChannel(2);
                     }
                     if (layer == "G")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                        imageView.ExtractChannel(1);
                     }
                     if (layer == "B")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                        imageView.ExtractChannel(0);
                     }
                     if (layer == "X")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap();
+                        imageView.ImageShow.Source = imageView.PseudoImage;
+                        imageView.Config.Channel = 1;
                     }
                     if (layer == "Y")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap();
+                        imageView.ImageShow.Source = imageView.PseudoImage;
+                        imageView.Config.Channel = 1;
                     }
                     if (layer == "Z")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap();
+                        imageView.ImageShow.Source = imageView.PseudoImage;
+                        imageView.Config.Channel = 1;
                     }
                 }
 

@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             DeviceFileServer = deviceFileServer;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil(string.Empty);
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
 
             DeviceFileServer.DService.OnImageData += Service_OnImageData;

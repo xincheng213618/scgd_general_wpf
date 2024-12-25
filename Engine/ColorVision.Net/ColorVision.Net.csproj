@@ -6,16 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="log4net" Version="3.0.3" />
-    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
-    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
-    <PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="CVCommCore">
-      <HintPath>..\..\DLL\CVCommCore.dll</HintPath>
-    </Reference>
     <Reference Include="MQTTMessageLib">
       <HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
     </Reference>

@@ -255,9 +255,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        ImageView.Config.FilePath = data.FilePath;
-
-                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
                         switch (data.FileType)
                         {
@@ -273,15 +270,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
-                        {
-                            DeviceService.Open(data.FilePath, fileExt);
-                        }
-                        else
-                        {
-                            ImageView.Config.FilePath = localName;
-                            ImageView.OpenImage(ImageView.Config.FilePath);
-                        }
+                        DeviceService.Open(data.FilePath, fileExt);
                     }
                 }
             }

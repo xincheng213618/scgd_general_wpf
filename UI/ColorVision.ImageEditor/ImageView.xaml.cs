@@ -1000,16 +1000,16 @@ namespace ColorVision.ImageEditor
             if (ComboBoxLayers.SelectedIndex < 0) return;
 
             if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "Src")
-                CM_ExtractChannel(-1);
+                ExtractChannel(-1);
             if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "R")
-                CM_ExtractChannel(2);
+                ExtractChannel(2);
             if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "G")
-                CM_ExtractChannel(1);
+                ExtractChannel(1);
             if (ComboBoxLayerItems[ComboBoxLayers.SelectedIndex] == "B")
-                CM_ExtractChannel(0);
+                ExtractChannel(0);
         }
 
-        private void CM_ExtractChannel(int channel)
+        public void ExtractChannel(int channel)
         {
             if (ViewBitmapSource == null) return;
 
