@@ -401,121 +401,169 @@ namespace ColorVision.ImageEditor.Draw
 
                 if (e.Key == Key.Left || e.Key == Key.W)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X - 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            Circl.Center += new Vector(-2, 0);
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Center += new Vector(-2, 0);
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Right || e.Key == Key.D)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X + 2, OldRect.Y, OldRect.Width, OldRect.Height);
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            Circl.Center += new Vector(2, 0);
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Center += new Vector(2, 0);
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Up || e.Key == Key.W)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            Circl.Center += new Vector(0, -2);
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y -2, OldRect.Width, OldRect.Height);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Center += new Vector(0, -2);
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Down || e.Key == Key.S)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            Circl.Center += new Vector(0, 2);
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X, OldRect.Y +2, OldRect.Width, OldRect.Height);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Center += new Vector(0, 2);
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Add || e.Key == Key.I)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+                            rectangle.Rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 1, OldRect.Height + 1);
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            Circl.Radius += 2;
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X -1, OldRect.Y - 1, OldRect.Width +1, OldRect.Height +1);
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                Circl.Radius += 2;
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract || e.Key ==Key.O)
                 {
+                    void Move(DrawingVisual item)
+                    {
+                        if (item is IRectangle rectangle)
+                        {
+                            var OldRect = rectangle.Rect;
+
+                            if (OldRect.Width > 1 && OldRect.Height > 1)
+                            {
+                                rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1, OldRect.Height - 1);
+                            }
+                        }
+                        else if (item is ICircle Circl)
+                        {
+                            if (Circl.Radius > 2)
+                            {
+                                Circl.Radius -= 2;
+                            }
+                        }
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
                     if (SelectDrawingVisuals != null)
                     {
                         foreach (var item in SelectDrawingVisuals)
                         {
-                            if (item is IRectangle rectangle)
-                            {
-                                var OldRect = rectangle.Rect;
-
-                                if (OldRect.Width > 1 && OldRect.Height >1)
-                                {
-                                    rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1, OldRect.Height - 1);
-                                }
-                            }
-                            else if (item is ICircle Circl)
-                            {
-                                if (Circl.Radius > 2)
-                                {
-                                    Circl.Radius -= 2;
-                                }
-                            }
+                            Move(item);
                         }
                     }
                     e.Handled = true;
@@ -730,15 +778,18 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private bool _ConcentricCircle;
 
         public bool ConcentricCircle
         {
-            get => _ConcentricCircle;
+            get => ToolConcentricCircle.IsShow;
             set
             {
-                if (_ConcentricCircle == value) return;
-                _ConcentricCircle = value;
+                if (ToolConcentricCircle.IsShow == value) return;
+                if (value)
+                {
+                    ImageEditMode = true;
+                    LastChoice = nameof(ConcentricCircle);
+                }
                 ToolConcentricCircle.IsShow = value;
                 NotifyPropertyChanged();
             }
@@ -759,9 +810,9 @@ namespace ColorVision.ImageEditor.Draw
                     property?.SetValue(this, false);
                 }
                 _LastChoice = value;
-
             }
         }
+
         private string _LastChoice { get; set; }
 
         private bool _EraseVisual;
