@@ -2,8 +2,6 @@
 using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
-using NetMQ;
-using NetMQ.Sockets;
 using OpenCvSharp;
 using System;
 using System.Collections.Generic;
@@ -65,7 +63,6 @@ namespace ColorVision.Net
            Task t = new(() =>
             {
                 if (isLocal) OpenLocalFile(fileName, extType);
-                else if (!string.IsNullOrWhiteSpace(serverEndpoint)) DownloadFile(serverEndpoint, fileName, extType);
             });
             t.Start();
         }
@@ -74,163 +71,9 @@ namespace ColorVision.Net
             Task t = new(() =>
             {
                 if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType, (CVImageChannelType)param.ChannelType);
-                else if (!string.IsNullOrWhiteSpace(param.ServerEndpoint)) DownloadFileChannel(param.ServerEndpoint, param.FileURL, param.FileExtType, ((CVImageChannelType)(param.ChannelType)));
             });
             t.Start();
         }
-        public void TaskStartUploadFile(bool isLocal, string serverEndpoint, string fileName)
-        {
-            if (isLocal)
-            {
-                //本地直接Copy
-                //handler?.Invoke(this, new NetFileEvent(0, fileName));
-            }
-            else if (!string.IsNullOrWhiteSpace(serverEndpoint))
-            {
-                Task t = new(() => { UploadFile(serverEndpoint, fileName); });
-                t.Start();
-            }
-        }
-
-        private void DownloadFileChannel(string serverEndpoint, string fileName, FileExtType extType, CVImageChannelType channelType)
-        {
-            int code = DoDownloadFile(serverEndpoint, fileName, extType ,out CVCIEFile fileInfo);
-            if (code == 0)
-            {
-                int channel = -1;
-                switch (channelType)
-                {
-                    case CVImageChannelType.SRC:
-                        break;
-                    case CVImageChannelType.CIE_XYZ_X:
-                    case CVImageChannelType.RGB_R:
-                        channel = 0;
-                        break;
-                    case CVImageChannelType.CIE_XYZ_Y:
-                    case CVImageChannelType.RGB_G:
-                        channel = 1;
-                        break;
-                    case CVImageChannelType.CIE_XYZ_Z:
-                    case CVImageChannelType.RGB_B:
-                        channel = 2;
-                        break;
-                    case CVImageChannelType.CIE_Lv:
-                        break;
-                    case CVImageChannelType.CIE_x:
-                        break;
-                    case CVImageChannelType.CIE_y:
-                        break;
-                    case CVImageChannelType.CIE_u:
-                        break;
-                    case CVImageChannelType.CIE_v:
-                        break;
-                    default:
-                        break;
-                }
-                if (channel >= 0)
-                {
-                    code = CVFileUtil.ReadCVChannel(channel, fileInfo, out fileInfo);
-                }
-            }
-            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
-        }
-
-
-        private int DoDownloadFile(string serverEndpoint, string fileName, FileExtType extType, out CVCIEFile fileInfo)
-        {
-            fileInfo = new CVCIEFile();
-            int code = -1;
-            DealerSocket client = null;
-            byte[] bytes = null;
-            try
-            {
-                client = new DealerSocket(serverEndpoint);
-                List<byte[]> data = new();
-                bool? ret = client?.TryReceiveMultipartBytes(TimeSpan.FromSeconds(5),ref data,1);
-                if (data != null && data.Count == 1)
-                {
-                    client?.SendFrame(fileName);
-                    bytes = data[0];
-                    if (!string.IsNullOrEmpty(FileCachePath))
-                    {
-                        string fullFileName = FileCachePath + Path.DirectorySeparatorChar + fileName;
-                        WriteLocalBinaryFile(fullFileName, bytes);
-                    }
-                }
-                client?.Close();
-                client?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-                client?.Close();
-                client?.Dispose();
-            }
-            finally
-            {
-                if (bytes != null)
-                {
-                    if (extType == FileExtType.Tif)
-                    {
-                        fileInfo.data = bytes;
-                        fileInfo.FileExtType = extType;
-                    }
-                    else if (extType == FileExtType.Raw || extType == FileExtType.CIE)
-                    {
-                        CVFileUtil.Read(bytes, out fileInfo);
-                        fileInfo.FileExtType = FileExtType.Raw;
-                        fileInfo.FilePath = fileName;
-                    }
-                }
-            }
-            if (fileInfo.data != null && fileInfo.data.Length > 0) code = 0;
-            return code;
-        }
-        private void DownloadFile(string serverEndpoint, string fileName, FileExtType extType)
-        {
-            int code = DoDownloadFile(serverEndpoint, fileName, extType, out CVCIEFile fileInfo);
-            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
-        }
-
-        private void UploadFile(string serverEndpoint, string fileName)
-        {
-            DealerSocket client = null;
-            var message = new List<byte[]>();
-            CVCIEFile fileData = new();
-            int code = ReadLocalBinaryFile(fileName, out fileData);
-            bool? sendResult = false;
-            string signRecv;
-            if (fileData.data != null)
-            {
-                message.Add(fileData.data);
-                try
-                {
-                    log.Debug("Begin TrySendMultipartBytes ......");
-                    client = new DealerSocket(serverEndpoint);
-                    client?.SendMultipartBytes(message);
-                    sendResult = client?.TryReceiveFrameString(TimeSpan.FromSeconds(30), out signRecv);
-                    code = 0;
-                    log.Debug("End TrySendMultipartBytes.");
-                    client?.Close();
-                    client?.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    client?.Close();
-                    client?.Dispose();
-                }
-                finally
-                {
-                    handler?.Invoke(this, new NetFileEvent(FileEvent.FileUpload, code, fileName));
-                }
-            }
-            else
-            {
-                handler?.Invoke(this, new NetFileEvent(FileEvent.FileUpload, code, fileName));
-            }
-        }
-
         public static int ReadLocalBinaryFile(string path,out CVCIEFile fileInfo)
         {
             fileInfo = new CVCIEFile();

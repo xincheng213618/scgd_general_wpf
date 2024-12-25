@@ -5,9 +5,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using K4os.Compression.LZ4;
 using System.IO;
-using System.Security;
 using System.Windows;
 using System.Xml.Linq;
 

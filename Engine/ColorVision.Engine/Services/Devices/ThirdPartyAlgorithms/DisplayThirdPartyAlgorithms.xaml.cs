@@ -104,10 +104,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                             break;
                     }
                     break;
-                case MQTTFileServerEventEnum.Event_File_Upload:
-                    DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
-                    break;
                 case MQTTFileServerEventEnum.Event_File_Download:
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     if (pm_dl != null)
