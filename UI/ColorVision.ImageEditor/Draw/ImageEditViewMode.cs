@@ -396,7 +396,7 @@ namespace ColorVision.ImageEditor.Draw
 
 
 
-            if (_ImageEditMode ==true)
+            if (_ImageEditMode == true)
             {
 
                 if (e.Key == Key.Left || e.Key == Key.W)
@@ -534,7 +534,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Subtract || e.Key ==Key.O)
+                else if (e.Key == Key.Subtract || e.Key == Key.O)
                 {
                     void Move(DrawingVisual item)
                     {
@@ -568,11 +568,31 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
+                else if (e.Key == Key.Delete)
+                {
+                    void Move(DrawingVisual item)
+                    {
+                        Image.RemoveVisual(item);
+                    }
+                    if (SelectDrawingVisual != null)
+                    {
+                        Move(SelectDrawingVisual);
+                    }
+                    if (SelectDrawingVisuals != null)
+                    {
+                        foreach (var item in SelectDrawingVisuals)
+                        {
+                            Move(item);
+                        }
+                    }
 
+                    e.Handled = true;
+
+                }
             }
 
 
-            if (_ImageEditMode == false)
+                if (_ImageEditMode == false)
             {
                 if (e.Key == Key.Left || e.Key == Key.W)
                 {
