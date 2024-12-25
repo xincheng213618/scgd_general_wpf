@@ -1,5 +1,4 @@
 #pragma warning disable CS8601,CA1822
-using MQTTMessageLib.FileServer;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -12,7 +11,7 @@ namespace ColorVision.Net
         public NetFileUtil()
         {
         }
-        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, FileExtType extType)
+        public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, CVType extType)
         {
            Task t = new(() =>
             {
@@ -20,16 +19,16 @@ namespace ColorVision.Net
             });
             t.Start();
         }
-        public void TaskStartDownloadFile(DeviceGetChannelResult param)
+        public void TaskStartDownloadFile(bool isLocal, string fileName, CVType extType)
         {
             Task t = new(() =>
             {
-                if (param.IsLocal) OpenLocalFileChannel(param.FileURL, param.FileExtType);
+                if (isLocal) OpenLocalFileChannel(fileName, extType);
             });
             t.Start();
         }
 
-        public void OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType =CVImageChannelType.SRC)
+        public void OpenLocalFileChannel(string fileName, CVType extType, CVImageChannelType channelType =CVImageChannelType.SRC)
         {
             int code = -1;
             int channel = -1;
@@ -37,13 +36,13 @@ namespace ColorVision.Net
             switch (channelType)
             {
                 case CVImageChannelType.SRC:
-                    if (extType == FileExtType.Raw)
+                    if (extType == CVType.Raw)
                     {
                         if (CVFileUtil.ReadCVRaw(fileName, out data))
                             code = 0;
 
                     }
-                    else if (extType == FileExtType.CIE)
+                    else if (extType == CVType.CIE)
                     {
                         if (CVFileUtil.ReadCVCIE(fileName, out data))
                             code = 0;
@@ -76,7 +75,7 @@ namespace ColorVision.Net
             }
             if (channel >= 0)
             {
-                 if (extType == FileExtType.CIE)
+                 if (extType == CVType.CIE)
                 {
                     CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
                     code = 0;
@@ -86,45 +85,45 @@ namespace ColorVision.Net
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, data));
         }
 
-        public void OpenLocalFile(string fileName, FileExtType extType)
+        public void OpenLocalFile(string fileName, CVType extType)
         {
             int code = ReadLocalFile(fileName, extType, out CVCIEFile fileInfo);
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
         public CVCIEFile OpenLocalCVFile(string fileName)
         {
-            FileExtType extType = FileExtType.Src;
+            CVType extType = CVType.Src;
             if (Path.GetExtension(fileName).Contains("cvraw"))
             {
-                extType = FileExtType.Raw;
+                extType = CVType.Raw;
             }
             else if (Path.GetExtension(fileName).Contains("cvcie"))
             {
-                extType = FileExtType.CIE;
+                extType = CVType.CIE;
             }
             return OpenLocalCVFile(fileName, extType);
         }
 
-        public CVCIEFile OpenLocalCVFile(string fileName, FileExtType extType)
+        public CVCIEFile OpenLocalCVFile(string fileName, CVType extType)
         {
             ReadLocalFile(fileName, extType, out CVCIEFile fileInfo);
             return fileInfo;
         }
 
-        private int ReadLocalFile(string fileName, FileExtType extType, out CVCIEFile fileInfo)
+        private int ReadLocalFile(string fileName, CVType extType, out CVCIEFile fileInfo)
         {
             fileInfo = new CVCIEFile();
-            if (extType == FileExtType.CIE)
+            if (extType == CVType.CIE)
             {
                CVFileUtil.ReadCVCIE(fileName, out fileInfo);
                 return 0;
             }
-            else if (extType == FileExtType.Raw)
+            else if (extType == CVType.Raw)
             {
                 CVFileUtil.ReadCVRaw(fileName, out fileInfo);
                 return 0;
             }
-            else if (extType == FileExtType.Src)
+            else if (extType == CVType.Src)
             {
                 CVFileUtil.ReadCVRaw(fileName, out fileInfo);
                 return 0;

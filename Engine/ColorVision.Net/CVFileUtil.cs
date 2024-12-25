@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
-using MQTTMessageLib.FileServer;
 using System;
 using System.Globalization;
 using System.IO;
@@ -69,7 +68,7 @@ namespace ColorVision.Net
             string fileHeader = new(br.ReadChars(HeaderSize));
             if (fileHeader != MagicHeader) return -1;
 
-            cvcie.FileExtType = filePath.Contains(".cvraw") ? FileExtType.Raw : filePath.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
             uint ver = br.ReadUInt32();
             cvcie.version = ver;
@@ -315,7 +314,7 @@ namespace ColorVision.Net
         public static CVCIEFile OpenLocalFileChannel(string fileName, CVImageChannelType channelType)
         {
             string ext = Path.GetExtension(fileName)?.ToLower(CultureInfo.CurrentCulture);
-            FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            CVType fileExtType = ext.Contains(".cvraw") ? CVType.Raw : ext.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
             return OpenLocalFileChannel(fileName, fileExtType, channelType);
         }
 
@@ -339,16 +338,16 @@ namespace ColorVision.Net
         }
 
 
-        public static CVCIEFile OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
+        public static CVCIEFile OpenLocalFileChannel(string fileName, CVType extType, CVImageChannelType channelType)
         {
             if (channelType == CVImageChannelType.SRC)
             {
-                if (extType == FileExtType.Raw)
+                if (extType == CVType.Raw)
                 {
                     if (ReadCVRaw(fileName, out CVCIEFile meta))
                         return meta;
                 }
-                if (extType == FileExtType.CIE)
+                if (extType == CVType.CIE)
                 {
                     if (ReadCVCIE(fileName, out CVCIEFile meta))
                         return meta;
@@ -372,7 +371,7 @@ namespace ColorVision.Net
             }
             if (channel >= 0)
             {
-                if (extType == FileExtType.CIE)
+                if (extType == CVType.CIE)
                 {
                     CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
                 }
@@ -394,7 +393,7 @@ namespace ColorVision.Net
             {
                 if (IsCIEFile(cvcie.srcFileName))
                 {
-                    fileOut.FileExtType = FileExtType.Raw;
+                    fileOut.FileExtType = CVType.Raw;
                     return Read(cvcie.srcFileName, out fileOut);
                 }
                 else
@@ -402,7 +401,7 @@ namespace ColorVision.Net
                     if (cvcie.srcFileName!=null)
                     {
                         fileOut.data = ReadFile(cvcie.srcFileName);
-                        fileOut.FileExtType = FileExtType.Tif;
+                        fileOut.FileExtType = CVType.Tif;
                         return true;
                     }
                 }
@@ -435,7 +434,7 @@ namespace ColorVision.Net
 
             if (fileOut.channels > 1)
             {
-                fileOut.FileExtType = FileExtType.Raw;
+                fileOut.FileExtType = CVType.Raw;
                 fileOut.channels = 1;
                 int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
                 byte[] data = new byte[len];

@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Media
 
                 int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
                 if (index <= 0) return;
-                if (meta.FileExtType == FileExtType.CIE)
+                if (meta.FileExtType == CVType.CIE)
                 {
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
@@ -184,11 +184,25 @@ namespace ColorVision.Engine.Media
 
                     if (meta.channels ==3)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+                        }
+                        else
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "X", "Y", "Z" };
+                        }
                     }
                     else if (meta.channels == 1)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "G","Y" };
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "Y" };
+                        }
+                        else
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src" };
+                        }
                     }
                     else
                     {
@@ -206,7 +220,7 @@ namespace ColorVision.Engine.Media
                     }
                     else if (meta.channels == 1)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "G" };
+                        ComboBoxLayerItems = new List<string>() { "Src"};
                     }
                     else
                     {

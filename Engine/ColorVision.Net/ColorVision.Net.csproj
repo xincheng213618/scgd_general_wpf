@@ -2,13 +2,6 @@
 
   <PropertyGroup>
     <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="MQTTMessageLib">
-      <HintPath>..\..\DLL\MQTTMessageLib.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 
 </Project>

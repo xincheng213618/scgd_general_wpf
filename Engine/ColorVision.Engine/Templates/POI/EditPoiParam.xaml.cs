@@ -397,7 +397,7 @@ namespace ColorVision.Engine.Templates.POI
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, (CVType)fileExtType));
                         PoiConfig.BackgroundFilePath = filePath;
                     }
                     catch (Exception ex)
@@ -1542,7 +1542,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == FileExtType.Src)
+            if (fileInfo.FileExtType == CVType.Src)
             {
                 if (fileInfo.data != null)
                 {
@@ -1550,7 +1550,7 @@ namespace ColorVision.Engine.Templates.POI
                     SetImageSource(src.ToWriteableBitmap());
                 }
             }
-            else if (fileInfo.FileExtType == FileExtType.Raw)
+            else if (fileInfo.FileExtType == CVType.Raw)
             {
                 OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = null;
@@ -1593,7 +1593,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, CVType.Raw));
                         PoiConfig.BackgroundFilePath = model.FileUrl;
                     }
                     else
