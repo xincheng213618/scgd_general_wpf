@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.GetActiveWindow(), "校准失败"));
+                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Appli`2cation.Current.GetActiveWindow(), "校准失败"));
                         break;
                     default:
                         break;

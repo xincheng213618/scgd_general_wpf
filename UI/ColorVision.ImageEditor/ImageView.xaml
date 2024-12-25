@@ -185,6 +185,7 @@
                     <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                     </ToggleButton>
+
                 </ToolBar>
             </ToolBarTray>
             <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
