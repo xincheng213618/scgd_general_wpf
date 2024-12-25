@@ -63,7 +63,7 @@ namespace ColorVision.Engine.Impl.CVFile
         {
             int index = CVFileUtil.ReadCIEFileHeader(FullName, out CVCIEFile cvcie);
             if (index < 0) return;
-            cvcie.FileExtType = FullName.Contains(".cvraw") ? FileExtType.Raw : FullName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            cvcie.FileExtType = FullName.Contains(".cvraw") ? CVType.Raw : FullName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
             CVFileUtil.ReadCIEFileData(FullName, ref cvcie, index);
             var src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);

@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             DeviceFileServer = deviceFileServer;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil(string.Empty);
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
 
             DeviceFileServer.DService.OnImageData += Service_OnImageData;
@@ -85,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         private void FileDownload(DeviceFileUpdownParam param)
         {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.Src);
+            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, (CVType)FileExtType.Src);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

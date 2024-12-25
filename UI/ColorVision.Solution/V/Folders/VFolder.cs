@@ -74,7 +74,8 @@ namespace ColorVision.Solution.V.Folders
                 {
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        VisualChildren.Remove(VisualChildren.First(a => a.FullPath == e.FullPath));
+                        var a = VisualChildren.First(a => a.FullPath == e.FullPath);
+                        VisualChildren.Remove(a);
                     });
                 };
                 FileSystemWatcher.Changed += (s, e) =>

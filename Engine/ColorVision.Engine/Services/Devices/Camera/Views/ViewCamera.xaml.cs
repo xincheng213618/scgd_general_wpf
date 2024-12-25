@@ -139,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL,(CVType)pm_dl_ch.FileExtType);
                         break;
                 }
             }
@@ -149,11 +149,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, (CVType)pm_dl.FileExtType);
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL, (CVType)pm_dl_ch.FileExtType);
                         break;
                 }
             }
@@ -312,7 +312,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
                         switch (data.FileType)
                         {
@@ -328,16 +327,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
-                        {
-                            ImageView.Config.FilePath = localName;
-                            MsgRecord msgRecord = Device.DService.DownloadFile(data.FilePath, fileExt);
-                        }
-                        else
-                        {
-                            ImageView.Config.FilePath = localName;
-                            ImageView.OpenImage(ImageView.Config.FilePath);
-                        }
+                        MsgRecord msgRecord = Device.DService.DownloadFile(data.FilePath, fileExt);
                     }
                 }
             }
