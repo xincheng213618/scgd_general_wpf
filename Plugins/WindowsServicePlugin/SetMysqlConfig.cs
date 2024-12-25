@@ -1,7 +1,6 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System.IO;
@@ -67,7 +66,6 @@ namespace WindowsServicePlugin
                     MySqlSetting.Instance.MySqlConfigs.Add(rootConfig);
 
                     CVWinSMSConfig.Instance.Version = dic["Version"];
-                    RCSetting.Instance.Config.RCName = dic["RCName"];
                     MessageBox.Show("配置成功");
                 }
                 else
