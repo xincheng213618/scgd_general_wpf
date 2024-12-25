@@ -72,6 +72,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             break;
                     }
                     break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
+                    if (pm_dl != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
+                    }
+                    break;
                 default:
                     List<AlgResultMasterModel> resultMaster = null;
                     if (msg.Data.MasterId > 0)
