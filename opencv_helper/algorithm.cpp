@@ -31,8 +31,9 @@ int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
 {
     if (input.empty())
         return -1;
-    if (channel < 0 || input.channels() < channel)
+    if (channel < 0 || input.channels() <= channel)
         return -2;
+
     // ²ð·ÖÍ¨µÀ
 
     std::vector<cv::Mat> channels;

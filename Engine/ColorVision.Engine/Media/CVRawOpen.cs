@@ -144,21 +144,16 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "X")
                     {
-                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap();
-                        imageView.ImageShow.Source = imageView.PseudoImage;
-                        imageView.Config.Channel = 1;
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
                     }
                     if (layer == "Y")
                     {
-                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap();
-                        imageView.ImageShow.Source = imageView.PseudoImage;
-                        imageView.Config.Channel = 1;
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
                     }
                     if (layer == "Z")
                     {
-                        imageView.PseudoImage = CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap();
-                        imageView.ImageShow.Source = imageView.PseudoImage;
-                        imageView.Config.Channel = 1;
+                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+
                     }
                 }
             }
