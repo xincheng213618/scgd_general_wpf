@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
@@ -13,28 +12,16 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Dao
 {
-    public delegate void ImgCurSelectionChanged(ViewResultCamera data);
-
-
-    public enum ImageLayer
-    {
-        Src,
-        R,
-        G,
-        B,
-        X,
-        Y,
-        Z
-    }
-
-    public class ViewResultCamera : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
+    public class ViewResultCamera : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }
         public RelayCommand OpenCVCIECommand { get; set; }
         public RelayCommand CopyToCommand { get; set; }
+
+        public RelayCommand OpenContainingFolderCommand { get; set; }
 
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
@@ -50,11 +37,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
 
-            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl) );
+            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl));
             OpenCVCIECommand = new RelayCommand(a => Open(), a => File.Exists(FileUrl));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "导出" ,Command = ExportCVCIECommand });
+            OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl));
+            ContextMenu.Items.Add(new MenuItem() { Header = "在文件夹中选中文件", Command = OpenContainingFolderCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
         }
 
         public void CopyTo()
@@ -132,7 +121,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 window.Content = imageView;
                 imageView.OpenImage(FileUrl);
                 window.Show();
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
                     imageView.ImageEditViewMode.ClearImage();
                 }));
             }
@@ -142,7 +132,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-        
+
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
@@ -162,7 +152,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public string ImgFrameInfo { get => _ImgFrameInfo; set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
         private string _ImgFrameInfo;
 
-        public DateTime? CreateTime { get => _RecvTime;  set { _RecvTime = value; NotifyPropertyChanged(); } }
+        public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
 
         public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }

@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604
 
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;

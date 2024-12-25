@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public View View { get; set; }
 
-        public ObservableCollection<ViewResultCalibration> ViewResults { get; set; } = new ObservableCollection<ViewResultCalibration>();
+        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
 
@@ -189,7 +189,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void ShowResult(MeasureImgResultModel model)
         {
-            ViewResultCalibration result = new(model);
+            ViewResultCamera result = new(model);
             ViewResults.AddUnique(result);
             if (Config.AutoRefreshView)
             {
@@ -309,12 +309,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
+            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code, Config.SearchLimit);
             if (!Config.InsertAtBeginning)
                 algResults.Reverse();
             foreach (var item in algResults)
             {
-                ViewResultCalibration algorithmResult = new(item);
+                ViewResultCamera algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
             }
         }
@@ -325,13 +325,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             advanceSearch.Closed += (s, e) =>
             {
-                if (!Config.InsertAtBeginning)
+                if (Config.InsertAtBeginning)
                     advanceSearch.SearchResults.Reverse();
                 ViewResults.Clear();
 
                 foreach (var item in advanceSearch.SearchResults)
                 {
-                    ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
+                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
                     ViewResults.AddUnique(algorithmResult);
                 }
             };
@@ -340,7 +340,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCalibration viewResult)
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
             {
                 ViewResults.Remove(viewResult);
                 ImageView.Clear();
@@ -352,7 +352,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
             {
-
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())

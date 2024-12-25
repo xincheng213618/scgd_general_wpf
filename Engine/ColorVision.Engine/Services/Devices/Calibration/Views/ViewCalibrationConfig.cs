@@ -16,7 +16,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
-
         public RelayCommand EditCommand { get; set; }
 
         public ViewCalibrationConfig()
