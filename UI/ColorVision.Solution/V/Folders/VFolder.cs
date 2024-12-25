@@ -25,7 +25,6 @@ namespace ColorVision.Solution.V.Folders
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
-            DirectoryInfo = folder.DirectoryInfo;
             FullPath = folder.DirectoryInfo.FullName;
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
@@ -74,8 +73,11 @@ namespace ColorVision.Solution.V.Folders
                 {
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        var a = VisualChildren.First(a => a.FullPath == e.FullPath);
-                        VisualChildren.Remove(a);
+                        var a = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
+                        if (a != null)
+                        {
+                            VisualChildren.Remove(a);
+                        }
                     });
                 };
                 FileSystemWatcher.Changed += (s, e) =>
@@ -126,7 +128,8 @@ namespace ColorVision.Solution.V.Folders
             {
                 if (DirectoryInfo.Parent != null)
                 {
-                    FileSystemWatcher.EnableRaisingEvents = false;
+                    if (FileSystemWatcher!=null)
+                        FileSystemWatcher.EnableRaisingEvents = false;
 
                     foreach (var item in VisualChildren)
                     {
@@ -142,8 +145,11 @@ namespace ColorVision.Solution.V.Folders
 
                     this.VisualChildren.Clear();
                     VMCreate.Instance.GeneralChild(this,this.DirectoryInfo);
-                    FileSystemWatcher.Path = DirectoryInfo.FullName;
-                    FileSystemWatcher.EnableRaisingEvents = true;
+                    if (FileSystemWatcher != null)
+                    {
+                        FileSystemWatcher.Path = DirectoryInfo.FullName;
+                        FileSystemWatcher.EnableRaisingEvents = true;
+                    }
                     return true;
                 }
                 return false;

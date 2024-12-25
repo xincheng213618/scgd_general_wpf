@@ -67,8 +67,8 @@ namespace ColorVision.Solution.V
 
         public virtual ImageSource Icon { get; set; }
 
-        public RelayCommand AddChildren { get; set; }
-        public RelayCommand RemoveChildren { get; set; }
+        public RelayCommand AddChildrenCommand { get; set; }
+        public RelayCommand RemoveChildrenCommand { get; set; }
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
 
@@ -86,7 +86,7 @@ namespace ColorVision.Solution.V
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
-            OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
+            OpenCommand = new RelayCommand((s) => Open());
             DeleteCommand = new RelayCommand(s =>Delete());
         }
 
@@ -96,7 +96,6 @@ namespace ColorVision.Solution.V
                 return;
             Parent.RemoveChild(this);
         }
-
 
         public virtual bool CanReName { get; set; } = true;
         public virtual bool CanDelete { get; set; } = true;

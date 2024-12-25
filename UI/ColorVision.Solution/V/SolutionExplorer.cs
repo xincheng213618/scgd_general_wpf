@@ -57,16 +57,26 @@ namespace ColorVision.Solution.V
 
         public void AddDir(VObject vObject,string FullName)
         {
-            DirectoryInfo directoryInfo = new DirectoryInfo(FullName + "\\NewFolder");
-            VMCreate.Instance.ManagerObject.Add(directoryInfo.FullName);
-            VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
-            vObject.VisualChildren.Add(vFolder);
-            directoryInfo.Create();
-            if (!vObject.IsExpanded)
-                vObject.IsExpanded = true;
-            vFolder.IsExpanded = true;
-            vFolder.IsEditMode = true;
-            vFolder.IsSelected = true;
+            try
+            {
+                string name = Path.Combine(FullName, "NewFolder");
+                Directory.CreateDirectory(name);
+                DirectoryInfo directoryInfo = new DirectoryInfo(name);
+                VMCreate.Instance.ManagerObject.Add(directoryInfo.FullName);
+                VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
+                vObject.AddChild(vFolder);
+                if (!vObject.IsExpanded)
+                    vObject.IsExpanded = true;
+                vFolder.IsExpanded = true;
+                vFolder.IsEditMode = true;
+                vFolder.IsSelected = true;
+
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
         }
 
         public List<string> ManagerObject { get; set; } = new List<string>();
@@ -281,7 +291,11 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.Deleted += (s, e) => {
                     Application.Current?.Dispatcher.Invoke(() =>
                     {
-                        VisualChildren.Remove(VisualChildren.First(a => a.FullPath == e.FullPath));
+                        var a = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
+                        if (a != null)
+                        {
+                            VisualChildren.Remove(a);
+                        }
                         VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                     });
                 };
