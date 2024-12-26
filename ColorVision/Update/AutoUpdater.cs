@@ -367,8 +367,8 @@ namespace ColorVision.Update
                     return;
                 }
 
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var totalReadBytes = 0L;
+                double totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                double totalReadBytes = 0L;
                 var readBytes = 0;
                 var buffer = new byte[8192];
                 var isMoreToRead = true;
