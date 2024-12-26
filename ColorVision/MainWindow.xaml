@@ -51,10 +51,7 @@
                         <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Background="{DynamicResource GlobalBackground}"  Width="150" />
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Background="{DynamicResource GlobalBackground}"  Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
-                                <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
-                                    <behaviors:Interaction.Behaviors>
-                                        <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
-                                    </behaviors:Interaction.Behaviors>
+                                <StackPanel x:Name="StackPanelSPD">
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>

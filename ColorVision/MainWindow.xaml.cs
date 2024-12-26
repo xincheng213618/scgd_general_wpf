@@ -10,6 +10,7 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using LiveChartsCore.VisualElements;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -18,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -96,9 +98,24 @@ namespace ColorVision
 
             QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
-            LoadIMainWindowInitialized();
+            Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    LoadIMainWindowInitialized();
+
+                    FluidMoveBehavior fluidMoveBehavior = new()
+                    {
+                        AppliesTo = FluidMoveScope.Children,
+                        Duration = TimeSpan.FromSeconds(0.1)
+                    };
+                    Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
+                });
+            });
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
+
+
         }
 
         public static async void LoadIMainWindowInitialized() 
@@ -120,19 +137,6 @@ namespace ColorVision
                     }
                 }
             }
-        }
-        private void StackPanelSPD_Initialized(object sender, EventArgs e)
-        {
-            if (sender is StackPanel stackPanel1)
-            {
-                FluidMoveBehavior fluidMoveBehavior = new()
-                {
-                    AppliesTo = FluidMoveScope.Children,
-                    Duration = TimeSpan.FromSeconds(0.1)
-                };
-                Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
-            }
-
         }
 
 
