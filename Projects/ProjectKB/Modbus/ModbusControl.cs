@@ -5,12 +5,12 @@ using NModbus;
 using System.Net.Sockets;
 using System.Windows;
 
-namespace ProjectKB
+namespace ProjectKB.Modbus
 {
 
 
 
-    public class ModbusControl:ViewModelBase
+    public class ModbusControl : ViewModelBase
     {
         private static ILog log = LogManager.GetLogger(typeof(ModbusControl));
         private static ModbusControl _instance;
@@ -18,7 +18,7 @@ namespace ProjectKB
         public static ModbusControl GetInstance() { lock (_locker) { return _instance ??= new ModbusControl(); } }
 
 
-        public static ModbusConfig Config =>ModbusSetting.Instance.ModbusConfig;
+        public static ModbusConfig Config => ModbusSetting.Instance.ModbusConfig;
 
         static ushort registerAddress => Config.RegisterAddress; // 需要监控的寄存器地址
         ushort previousValue;
@@ -32,8 +32,8 @@ namespace ProjectKB
 
         public event EventHandler StatusChanged;
 
-        public ushort CurrentValue { get => _CurrentValue; set { if (value == _CurrentValue) return; _CurrentValue = value; NotifyPropertyChanged(); StatusChanged?.Invoke(this,new EventArgs()); } }
-        private ushort _CurrentValue ;
+        public ushort CurrentValue { get => _CurrentValue; set { if (value == _CurrentValue) return; _CurrentValue = value; NotifyPropertyChanged(); StatusChanged?.Invoke(this, new EventArgs()); } }
+        private ushort _CurrentValue;
 
         public static bool TestConnect(ModbusConfig Config)
         {
@@ -78,7 +78,7 @@ namespace ProjectKB
                     log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        this.CurrentValue = currentValue;
+                        CurrentValue = currentValue;
                         if (currentValue != previousValue)
                         {
                             previousValue = currentValue;
@@ -126,7 +126,7 @@ namespace ProjectKB
                                 log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    this.CurrentValue = currentValue;
+                                    CurrentValue = currentValue;
                                     if (currentValue != previousValue)
                                     {
                                         previousValue = currentValue;

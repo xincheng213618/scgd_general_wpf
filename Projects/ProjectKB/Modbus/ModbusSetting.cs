@@ -3,11 +3,11 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 
-namespace ProjectKB
+namespace ProjectKB.Modbus
 {
-    public class ModbusSetting : ViewModelBase , IConfigSecure
+    public class ModbusSetting : ViewModelBase, IConfigSecure
     {
-        public static ModbusSetting Instance  => ConfigService.Instance.GetRequiredService<ModbusSetting>();
+        public static ModbusSetting Instance => ConfigService.Instance.GetRequiredService<ModbusSetting>();
 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); } }
         private bool _IsUseMySql = true;

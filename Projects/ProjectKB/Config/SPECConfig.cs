@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ProjectKB
+namespace ProjectKB.Config
 {
-    public class SPECConfig:ViewModelBase
+    public class SPECConfig : ViewModelBase
     {
         public double MinLv { get => _MinLv; set { _MinLv = value; NotifyPropertyChanged(); } }
         private double _MinLv;
