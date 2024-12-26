@@ -847,8 +847,6 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
-
-
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
@@ -866,6 +864,58 @@ namespace ColorVision.ImageEditor
             ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
             RenderPseudo();
         }
+        private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
+        {
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
+            {
+                RenderPseudo();
+            }, e.NewValue);
+        }
+        public void RenderPseudo()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (Pseudo.IsChecked == false)
+                {
+                    ImageShow.Source = ViewBitmapSource;
+                    PseudoImage = null;
+                    return;
+                }
+
+                if (HImageCache != null)
+                {
+                    // 首先获取滑动条的值，这需要在UI线程中执行
+
+                    uint min = (uint)PseudoSlider.ValueStart;
+                    uint max = (uint)PseudoSlider.ValueEnd;
+                    int channel = ComboBoxLayers.SelectedIndex - 1;
+
+                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+                    Task.Run(() =>
+                    {
+                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (ret == 0)
+                            {
+                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+                                    PseudoImage = image;
+                                }
+                                if (Pseudo.IsChecked == true)
+                                {
+                                    ImageShow.Source = PseudoImage;
+                                }
+                            }
+                        });
+                    });
+                };
+            });
+        }
+
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
@@ -917,63 +967,8 @@ namespace ColorVision.ImageEditor
         {
             if (sender is Button button && button.Tag is string tag)
             {
-                int i = int.Parse(tag);
-                if (i == -1)
-                {
-                    ImageEditViewMode.ToolConcentricCircle.IsShow = false;
-                }
-                else 
-                {
-                    ImageEditViewMode.ConcentricCircle = true;
-                    ImageEditViewMode.ToolConcentricCircle.Mode = i;
-                }
                 menuPop1.IsOpen = false;
             }
-        }
-
-        public void RenderPseudo()
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (Pseudo.IsChecked == false)
-                {
-                    ImageShow.Source = ViewBitmapSource;
-                    PseudoImage = null;
-                    return;
-                }
-
-                if (HImageCache != null)
-                {
-                    // 首先获取滑动条的值，这需要在UI线程中执行
-
-                    uint min = (uint)PseudoSlider.ValueStart;
-                    uint max = (uint)PseudoSlider.ValueEnd;
-                    int channel = ComboBoxLayers.SelectedIndex - 1;
-
-                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
-                    Task.Run(() =>
-                    {
-                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes, channel);
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (ret == 0)
-                            {
-                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage , hImageProcessed))
-                                {
-                                    var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
-                                    PseudoImage = image;
-                                }
-                                if (Pseudo.IsChecked == true)
-                                {
-                                    ImageShow.Source = PseudoImage;
-                                }
-                            }
-                        });
-                    });
-                };
-            });
         }
 
 
@@ -1165,13 +1160,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
-        {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
-            {
-                RenderPseudo();
-            }, e.NewValue);
-        }
+
 
         private void Button_3D_Click(object sender, RoutedEventArgs e)
         {

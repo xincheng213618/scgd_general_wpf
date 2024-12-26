@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.POI
             var Point = Mouse.GetPosition(ImageShow);
             var DrawingVisual = ImageShow.GetVisual(Point);
 
-            if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
+            if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
 
@@ -141,6 +141,8 @@ namespace ColorVision.Engine.Templates.POI
         {
 
         }
+        bool IsRightButtonDown = false;
+
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (PoiParam.PoiConfig.IsUserDraw)
@@ -188,13 +190,48 @@ namespace ColorVision.Engine.Templates.POI
                 DrawingPolygonCache.Render();
                 DrawingPolygonCache = null;
             }
+            IsRightButtonDown = true;
         }
 
+
+        public void SelectDrawingVisualsClear()
+        {
+            if (ImageEditViewMode.SelectDrawingVisuals != null)
+            {
+                foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                {
+                    if (item is IDrawingVisual id)
+                    {
+                        id.Pen.Brush = Brushes.Red;
+                        id.Render();
+                    }
+                }
+                ImageEditViewMode.SelectDrawingVisuals = null;
+            }
+        }
+
+        public void SelectDrawingVisualClear()
+        {
+            if (ImageEditViewMode.SelectDrawingVisual != null)
+            {
+                if (ImageEditViewMode.SelectDrawingVisual is IDrawingVisual id)
+                {
+                    id.Pen.Brush = Brushes.Red;
+                    id.Render();
+                }
+                ImageEditViewMode.SelectDrawingVisual = null;
+            }
+        }
 
         private void ImageShow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
+                if (ImageEditViewMode.Gridline.IsShow == true)
+                    return;
+                if (ImageEditViewMode.ConcentricCircle == true)
+                    return;
+
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
                 drawCanvas.CaptureMouse();
@@ -219,18 +256,8 @@ namespace ColorVision.Engine.Templates.POI
                     ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual id)
-                            {
-                                id.Pen.Brush = Brushes.Red;
-                                id.Render();
-                            }
-                        }
-                        ImageEditViewMode.SelectDrawingVisuals = null;
-                    }
+                    SelectDrawingVisualsClear();
+                    SelectDrawingVisualClear();
                     return;
                 }
 
@@ -246,18 +273,9 @@ namespace ColorVision.Engine.Templates.POI
 
                     drawCanvas.AddVisual(DrawCircleCache);
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual id)
-                            {
-                                id.Pen.Brush = Brushes.Red;
-                                id.Render();
-                            }
-                        }
-                        ImageEditViewMode.SelectDrawingVisuals = null;
-                    }
+
+                    SelectDrawingVisualsClear();
+                    SelectDrawingVisualClear();
                     return;
                 }
                 if (ImageEditViewMode.DrawRect)
@@ -272,18 +290,9 @@ namespace ColorVision.Engine.Templates.POI
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual id)
-                            {
-                                id.Pen.Brush = Brushes.Red;
-                                id.Render();
-                            }
-                        }
-                        ImageEditViewMode.SelectDrawingVisuals = null;
-                    }
+
+                    SelectDrawingVisualsClear();
+                    SelectDrawingVisualClear();
                     return;
                 }
                 if (ImageEditViewMode.DrawPolygon)
@@ -295,19 +304,9 @@ namespace ColorVision.Engine.Templates.POI
                         drawCanvas.AddVisual(DrawingPolygonCache);
                     }
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
-                    {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                        {
-                            if (item is IDrawingVisual id)
-                            {
-                                id.Pen.Brush = Brushes.Red;
-                                id.Render();
-                            }
-                        }
-                        ImageEditViewMode.SelectDrawingVisuals = null;
-                    }
 
+                    SelectDrawingVisualsClear();
+                    SelectDrawingVisualClear();
                     return;
                 }
 
@@ -321,10 +320,20 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (ImageEditViewMode.ImageEditMode == true)
                     {
-                        if (ImageEditViewMode.SelectDrawingVisuals != null)
+                        if (ImageEditViewMode.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageEditViewMode.SelectDrawingVisuals.Contains(visual1))
                             return;
+
                         if (drawingVisual is DrawingVisual visual)
                         {
+                            if (ImageEditViewMode.SelectDrawingVisual != visual)
+                            {
+                                if (ImageEditViewMode.SelectDrawingVisual is IDrawingVisual id)
+                                {
+                                    id.Pen.Brush = Brushes.Red;
+                                    id.Render();
+                                }
+                                ImageEditViewMode.SelectDrawingVisual = null;
+                            }
                             ImageEditViewMode.SelectDrawingVisual = visual;
                             drawingVisual.Pen.Brush = Brushes.Yellow;
                             drawingVisual.Render();
@@ -348,18 +357,10 @@ namespace ColorVision.Engine.Templates.POI
                     }
                     return;
                 }
-                if (ImageEditViewMode.SelectDrawingVisuals != null)
-                {
-                    foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                    {
-                        if (item is IDrawingVisual id)
-                        {
-                            id.Pen.Brush = Brushes.Red;
-                            id.Render();
-                        }
-                    }
-                    ImageEditViewMode.SelectDrawingVisuals = null;
-                }
+
+                SelectDrawingVisualsClear();
+                SelectDrawingVisualClear();
+
                 ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
             }
@@ -431,6 +432,28 @@ namespace ColorVision.Engine.Templates.POI
                         }
                     }
                 }
+
+                if (IsRightButtonDown)
+                {
+                    if (ImageEditViewMode.SelectDrawingVisual is ICircle circle)
+                    {
+                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
+                        circle.Radius = Radius;
+                    }
+
+                    if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                    {
+                        var OldRect = rectangle.Rect;
+                        double x = OldRect.X;
+                        double y = OldRect.Y;
+                        double width = OldRect.Width + point.X - LastMouseMove.X;
+                        double height = OldRect.Height + point.Y - LastMouseMove.Y;
+                        if (width >= 1 && height >= 1)
+                        {
+                            rectangle.Rect = new Rect(x, y, width, height);
+                        }
+                    }
+                }
                 LastMouseMove = point;
             }
         }
@@ -438,115 +461,105 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
-                IsMouseDown = false;
-                var MouseUpP = e.GetPosition(drawCanvas);
-
-                if (PoiParam.PoiConfig.IsUserDraw)
+                if (IsMouseDown)
                 {
-                    if (PoiParam.PoiConfig.IsAreaCircle && ImageEditViewMode.DrawCircle)
-                    {
-                        PoiParam.PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
-                        PoiParam.PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
-                        PoiParam.PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
-                        drawCanvas.RemoveVisual(DrawCircleCache);
-                    }
+                    IsMouseDown = false;
+                    var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (PoiParam.PoiConfig.IsAreaRect && ImageEditViewMode.DrawRect)
+                    if (PoiParam.PoiConfig.IsUserDraw)
                     {
-                        PoiParam.PoiConfig.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
-                        PoiParam.PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
-                        PoiParam.PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
-                        PoiParam.PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
-                        drawCanvas.RemoveVisual(DrawingRectangleCache);
-                    }
-                    RenderPoiConfig();
-                }
- 
-                if (ImageEditViewMode.SelectDrawingVisuals !=null)
-                {
-                    foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
-                    {
-                        if (item is IDrawingVisual drawingVisual)
+                        if (PoiParam.PoiConfig.IsAreaCircle && ImageEditViewMode.DrawCircle)
                         {
-                            drawingVisual.Pen.Brush = Brushes.Red;
-                            drawingVisual.Render();
+                            PoiParam.PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
+                            PoiParam.PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
+                            PoiParam.PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
+                            drawCanvas.RemoveVisual(DrawCircleCache);
                         }
-                    }
-                }
 
-                if (drawCanvas.ContainsVisual(SelectRect))
-                {
-                    if (ImageEditViewMode.EraseVisual)
-                    {
-                        drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
-                        drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                        foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                        if (PoiParam.PoiConfig.IsAreaRect && ImageEditViewMode.DrawRect)
                         {
-                            drawCanvas.RemoveVisual(item);
+                            PoiParam.PoiConfig.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
+                            PoiParam.PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
+                            PoiParam.PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
+                            PoiParam.PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
+                            drawCanvas.RemoveVisual(DrawingRectangleCache);
                         }
+                        RenderPoiConfig();
                     }
-                    else
+
+                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv || ImageEditViewMode.SelectDrawingVisuals == null || !ImageEditViewMode.SelectDrawingVisuals.Contains(dv))
+                        SelectDrawingVisualsClear();
+
+                    if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        ImageEditViewMode.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                        if (ImageEditViewMode.EraseVisual)
                         {
-                            if (item is IDrawingVisual drawingVisual)
+                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
+                            drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
+                            foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
                             {
-                                drawingVisual.Pen.Brush = Brushes.Yellow;
-                                drawingVisual.Render();
+                                drawCanvas.RemoveVisual(item);
                             }
                         }
+                        else
+                        {
+                            ImageEditViewMode.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                            foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                            {
+                                if (item is IDrawingVisual drawingVisual)
+                                {
+                                    drawingVisual.Pen.Brush = Brushes.Yellow;
+                                    drawingVisual.Render();
+                                }
+                            }
 
-                        if (ImageEditViewMode.SelectDrawingVisuals.Count == 0)
-                            ImageEditViewMode.SelectDrawingVisuals = null;
+                            if (ImageEditViewMode.SelectDrawingVisuals.Count == 0)
+                                ImageEditViewMode.SelectDrawingVisuals = null;
+                        }
+
+                        drawCanvas.RemoveVisual(SelectRect);
                     }
 
-                    drawCanvas.RemoveVisual(SelectRect);
+
+                    if (ImageEditViewMode.DrawPolygon && DrawingPolygonCache != null)
+                    {
+                        DrawingPolygonCache.Points.Add(MouseUpP);
+                        DrawingPolygonCache.MovePoints = null;
+                        DrawingPolygonCache.Render();
+                    }
+                    else if (ImageEditViewMode.DrawCircle && DrawCircleCache != null)
+                    {
+                        DrawCircleCache.Render();
+                        PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
+
+                        DrawCircleCache.AutoAttributeChanged = true;
+
+                        ListView1.ScrollIntoView(DrawCircleCache);
+                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
+
+                    }
+                    else if (ImageEditViewMode.DrawRect)
+                    {
+                        DrawingRectangleCache.Render();
+
+
+                        PropertyGrid2.SelectedObject = DrawingRectangleCache.BaseAttribute;
+                        DrawingRectangleCache.AutoAttributeChanged = true;
+                        ListView1.ScrollIntoView(DrawingRectangleCache);
+                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
+
+                    }
+                    drawCanvas.ReleaseMouseCapture();
+
+                    if (ImageEditViewMode.SelectDrawingVisual is DVCircle circle)
+                    {
+                        circle.IsDrawing = false;
+                        circle.Render();
+                    }
                 }
-
-
-                if (ImageEditViewMode.DrawPolygon && DrawingPolygonCache != null)
-                {
-                    DrawingPolygonCache.Points.Add(MouseUpP);
-                    DrawingPolygonCache.MovePoints = null;
-                    DrawingPolygonCache.Render();
-                }
-                else if (ImageEditViewMode.DrawCircle   && DrawCircleCache != null)
-                {
-                    DrawCircleCache.Render();
-                    PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
-
-                    DrawCircleCache.AutoAttributeChanged = true;
-
-                    ListView1.ScrollIntoView(DrawCircleCache);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
-
-                }
-                else if (ImageEditViewMode.DrawRect)
-                {
-                    DrawingRectangleCache.Render();
-
-
-                    PropertyGrid2.SelectedObject = DrawingRectangleCache.BaseAttribute;
-                    DrawingRectangleCache.AutoAttributeChanged = true;
-                    ListView1.ScrollIntoView(DrawingRectangleCache);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
-
-                }
-                drawCanvas.ReleaseMouseCapture();
-
-                if (ImageEditViewMode.SelectDrawingVisual is DVCircle circle)
-                {
-                    circle.IsDrawing = false;
-                    circle.Render();
-                }
-                if (ImageEditViewMode.SelectDrawingVisual is IDrawingVisual drawingVisual1)
-                {
-                    drawingVisual1.Pen.Brush = Brushes.Red;
-                    drawingVisual1.Render();
-                }
-                ImageEditViewMode.SelectDrawingVisual = null;
             }
+            if (IsRightButtonDown)
+                IsRightButtonDown = false;
         }
 
         private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)

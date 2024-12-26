@@ -113,7 +113,7 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <Border x:Name="ToolBarBottom" DataContext="{Binding ToolBarTop}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="4" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
+            <Border x:Name="ToolBarBottom" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="4" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
                 <Grid>
                     <StackPanel Orientation="Horizontal" >
                         <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
@@ -134,12 +134,12 @@
                         <Button x:Name="reference"  Click="reference_Click" Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}"  Margin="-5"/>
                         </Button>
-                        <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}" AllowsTransparency="True">
+                        <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
                             <StackPanel Margin="0">
-                                <Button Content="无" Click="reference1_Click" Width="80" Tag="-1"/>
-                                <Button Content="十字准线" Click="reference1_Click" Width="80" Tag="2"/>
-                                <Button Content="同心圆" Click="reference1_Click" Width="80" Tag="0"/>
-                                <Button Content="单十字准线" Click="reference1_Click" Width="80"  Tag="1"/>
+                                <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
+                                <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
+                                <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
+                                <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
                             </StackPanel>
                         </Popup>
                     </StackPanel>

@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Util.Draw.Special
 {
@@ -19,12 +20,40 @@ namespace ColorVision.Util.Draw.Special
         public int Mode { get => _Mode; set { _Mode = value; Render(); } } 
         private int _Mode = 2;
 
-        public ToolReferenceLine(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public RelayCommand SelectNoneCommand { get; set; }
+        public RelayCommand Select0Command { get; set; }
+        public RelayCommand Select1Command { get; set; }
+        public RelayCommand Select2Command { get; set; }
+
+        public ImageEditViewMode Paraent { get; set; }
+
+        public ToolReferenceLine(ImageEditViewMode imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
+            Paraent = imageEditViewMode;
             DrawVisualImage = new DrawingVisual();
+
+            SelectNoneCommand = new RelayCommand(a => SetMode(-1));
+            Select0Command = new RelayCommand(a => SetMode(0));
+            Select1Command = new RelayCommand(a => SetMode(1));
+            Select2Command = new RelayCommand(a => SetMode(2));
+
         }
+
+        private void SetMode(int i)
+        {
+            if (i == -1)
+            {
+                Paraent.ConcentricCircle = false;
+            }
+            else
+            {
+                Paraent.ConcentricCircle = true;
+                Mode = i;
+            }
+        }
+
         public bool IsShow
         {
             get => _IsShow; set

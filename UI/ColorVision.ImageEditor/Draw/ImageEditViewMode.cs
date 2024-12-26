@@ -119,7 +119,7 @@ namespace ColorVision.ImageEditor.Draw
             Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(zoombox, drawCanvas);
+            ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
@@ -340,6 +340,7 @@ namespace ColorVision.ImageEditor.Draw
             Image.Clear();
             Image.Source = null;
             Image.UpdateLayout();
+
             ToolBarScaleRuler.IsShow = false;
             ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
