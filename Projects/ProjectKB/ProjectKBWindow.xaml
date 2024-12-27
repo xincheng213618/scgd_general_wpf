@@ -144,29 +144,29 @@
                                 <GridViewColumn Header="Avg Lv">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgLv}" />
+                                            <TextBlock Text="{Binding AvgLv, StringFormat={}{0:F2}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn Header="Avg C1">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgC1}" />
+                                            <TextBlock Text="{Binding AvgC1, StringFormat={}{0:F2}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn Header="Avg C2">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgC2}" />
+                                            <TextBlock Text="{Binding AvgC2, StringFormat={}{0:F2}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn Header="Min Lv">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                        <TextBlock Text="{Binding  MinLv}" />
-                                    </DataTemplate>
+                                            <TextBlock Text="{Binding  MinLv, StringFormat={}{0:F2}}" />
+                                        </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                             </GridView>

@@ -373,38 +373,69 @@ namespace ProjectKB
 
                             kBItem.Result = true;
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinLv!= 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv!= 0)
                             {
-                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinLv;
+                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
                             }
                             else
                             {
                                 log.Debug("跳过minLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.MaxLv != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxLv;
+                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
                             }
                             else
                             {
                                 log.Debug("跳过MaxLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.AvgLv != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.AvgLv;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
                             }
                             else
                             {
-                                log.Debug("跳过AvgLv检测");
+                                log.Debug("跳过MinAvgLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.Uniformity != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.Uniformity;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectKBConfig.Instance.SPECConfig.MaxAvgLv;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MaxAvgLv检测");
+                            }
+
+
+
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
+                            {
+                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity;
                             }
                             else
                             {
                                 log.Debug("跳过Uniformity检测");
                             }
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                            {
+                                kBItem.Result = kBItem.Result && minLKey.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MinKeyLc检测");
+                            }
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                            {
+                                kBItem.Result = kBItem.Result && minLKey.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MaxKeyLc检测");
+                            }
+
 
                             kBItem.Exposure = "50";
 
@@ -483,7 +514,7 @@ namespace ProjectKB
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}  {item.Lc*100,10:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {item.Lv,-10:F2}  {item.Lc*100,10:F2}%" + Environment.NewLine;
             }
 
             outtext += Environment.NewLine;
@@ -491,15 +522,13 @@ namespace ProjectKB
             outtext += $"Max Lv= {kmitemmaster.MaxLv} cd/m2" + Environment.NewLine;
             outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
             outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
-            outtext += $"Avg Cx= {kmitemmaster.AvgC1}" + Environment.NewLine;
-            outtext += $"Avg Cy= {kmitemmaster.AvgC2}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
             outtext += $"Avg Lv={kmitemmaster.AvgLv}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
-            outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
+            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
+
 
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
             outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
@@ -552,7 +581,7 @@ namespace ProjectKB
                                 }
                                 else
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 10);
                                 }
 
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
