@@ -50,7 +50,13 @@ namespace ColorVision
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("skip", false, "skip");
             parser.Parse();
-            string skipname = parser.GetValue("skip");
+            string skipValue = parser.GetValue("skip");
+            var skipNames = skipValue?.Split(',')
+                         .Select(name => name.Trim())
+                         .Where(name => !string.IsNullOrEmpty(name))
+                         .ToList();
+
+            skipNames = skipNames ?? new List<string>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try {
@@ -58,7 +64,7 @@ namespace ColorVision
                     {
                         if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
                         {
-                            if (componentInitialize.Name != skipname)
+                            if (!skipNames.Contains(componentInitialize.Name))
                             {
                                 _IComponentInitializers.Add(componentInitialize);
                             }

@@ -27,6 +27,16 @@ namespace ColorVision.Engine.Templates.Flow
         public bool ShowWarning { get => _ShowWarning; set { _ShowWarning = value; NotifyPropertyChanged(); } }
         private bool _ShowWarning = true;
 
+        [DisplayName("显示nickName")]
+        public bool IsShowNickName  {   get => _IsShowNickName; set { _IsShowNickName = value; NotifyPropertyChanged(); }  }
+        private bool _IsShowNickName;
+
+        public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
+        private int _LastSelectFlow;
+        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
+        private long _LastFlowTime;
+
+
         public long Capacity { get; set; } = 10L * 1024 * 1024 * 1024; //10GB
 
         [JsonIgnore]

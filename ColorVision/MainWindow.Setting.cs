@@ -74,6 +74,7 @@ namespace ColorVision
                     }
                     catch (Exception ex) 
                     { 
+                        log.Error(ex);
                     }
                 }
                 return IntPtr.Zero;

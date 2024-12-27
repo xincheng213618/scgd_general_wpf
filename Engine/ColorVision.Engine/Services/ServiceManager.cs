@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
@@ -16,11 +16,12 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
-using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI;
 using FlowEngineLib;
 using System;
@@ -28,9 +29,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services
 {
@@ -52,7 +50,6 @@ namespace ColorVision.Engine.Services
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
         public List<MQTTServiceInfo> ServiceTokens => MqttRCService.GetInstance().ServiceTokens;
-
         public ServiceManager()
         {
             if (MySqlControl.GetInstance().IsConnect)
@@ -97,36 +94,6 @@ namespace ColorVision.Engine.Services
                     return 0; // keep original order if neither a nor b are in playControls
                 });
             }
-
-        }
-
-
-        public MQTTServiceInfo? GetServiceInfo(ServiceTypes serviceType,string serviceCode)
-        {
-            foreach (var item in ServiceTokens)
-            {
-                if(item.ServiceType == serviceType.ToString())
-                {
-                    if(string.IsNullOrEmpty(serviceCode)) return item;
-                    else if(serviceCode == item.ServiceCode) return item;
-                }
-            }
-            return null;
-        }
-        public List<MQTTServiceInfo> GetServiceJsonList()
-        {
-            List<MQTTServiceInfo> result = new();
-            foreach (var item in ServiceTokens)
-            {
-                MQTTServiceInfo serviceInfo = new() { PublishTopic = item.PublishTopic, ServiceCode = item.ServiceCode, ServiceType = item.ServiceType, Token = item.Token, SubscribeTopic = item.SubscribeTopic };
-                result.Add(serviceInfo);
-                foreach (var dev in item.Devices)
-                {
-                    MQTTDeviceInfo device = new() { ID = dev.Value.ID, DeviceCode = dev.Value.DeviceCode };
-                    serviceInfo.Devices.Add(dev.Key, device);
-                }
-            }
-            return result;
         }
         /// <summary>
         /// 生成显示空间
@@ -186,7 +153,7 @@ namespace ColorVision.Engine.Services
         public void LoadServices()
         {
             LastGenControl?.Clear();
-            ServiceTokens.Clear();
+            MqttRCService.GetInstance().ServiceTokens.Clear();
 
 
             List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
@@ -364,14 +331,5 @@ namespace ColorVision.Engine.Services
             return svrType + ":" + svrCode;
         }
 
-        public static void BeginNewBatch(string sn, string name)
-        {
-            BatchResultMasterModel batch = new();
-            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-            batch.Code = sn;
-            batch.CreateDate = DateTime.Now;
-            batch.TenantId = 0;
-            BatchResultMasterDao.Instance.Save(batch);
-        }
     }
 }

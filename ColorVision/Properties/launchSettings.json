@@ -2,6 +2,7 @@
   "profiles": {
     "ColorVision": {
       "commandName": "Project",
+      "commandLineArgs": "-skip CudaInitializer,SystemInitializer,SolutionManagerInitializer",
       "nativeDebugging": true
     }
   }

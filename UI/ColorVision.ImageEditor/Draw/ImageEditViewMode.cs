@@ -400,7 +400,7 @@ namespace ColorVision.ImageEditor.Draw
             if (_ImageEditMode == true)
             {
 
-                if (e.Key == Key.Left || e.Key == Key.W)
+                if (e.Key == Key.Left || e.Key == Key.A)
                 {
                     void Move(DrawingVisual item)
                     {

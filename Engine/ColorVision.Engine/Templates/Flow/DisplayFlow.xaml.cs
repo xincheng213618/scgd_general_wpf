@@ -4,6 +4,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -20,17 +21,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
-    public class DisplayFlowConfig : ViewModelBase, IConfig
-    {
-        public static DisplayFlowConfig Instance => ConfigService.Instance.GetRequiredService<DisplayFlowConfig>();
-
-        public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
-        private int _LastSelectFlow;
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
-
-    }
 
     public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
@@ -70,7 +60,7 @@ namespace ColorVision.Engine.Templates.Flow
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
-                    DisplayFlowConfig.Instance.LastSelectFlow = flowParam.Id;
+                    FlowConfig.Instance.LastSelectFlow = flowParam.Id;
                 FlowUpdate();
             };
 
@@ -86,7 +76,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = FlowParam.Params.FirstOrDefault(a => a.Id == DisplayFlowConfig.Instance.LastSelectFlow);
+            var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -112,7 +102,7 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                         else
                         {
-                            var tokens = ServiceManager.GetInstance().ServiceTokens;
+                            var tokens = MqttRCService.GetInstance().ServiceTokens;
 
                             foreach (var item in View.STNodeEditorMain.Nodes)
                             {
@@ -155,21 +145,22 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            FlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
+
             if (sender is FlowControlData FlowControlData)
             {
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
-
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 100); // 停止定时器
-                    DisplayFlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName  + Environment.NewLine + FlowControlData.Params, "ColorVision");
                     });
                 }
             }
@@ -197,7 +188,7 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current?.Dispatcher.Invoke(() =>
             {
                 try
                 {
@@ -207,19 +198,20 @@ namespace ColorVision.Engine.Templates.Flow
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 ||  DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
+                        if (FlowConfig.Instance.LastFlowTime == 0 || FlowConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
                         {
                              msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = FlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
-                        handler.UpdateMessage(msg);
+                        if (flowControl.IsFlowRun)
+                            handler.UpdateMessage(msg);
                     }
                 }
                 catch
@@ -258,7 +250,8 @@ namespace ColorVision.Engine.Templates.Flow
                 flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
+               
+                handler.Cancelling -= Handler_Cancelling; ;
                 handler.Cancelling += Handler_Cancelling; ;
                
                 flowControl.FlowData += (s, e) =>
@@ -277,10 +270,7 @@ namespace ColorVision.Engine.Templates.Flow
                     {
 
                     }
-
                 };
-
-
 
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -316,19 +306,15 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {
-            if (sender is IPendingHandler pendingHandler)
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            flowControl.Stop();
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ButtonRun.Visibility = Visibility.Visible;
-                    ButtonStop.Visibility = Visibility.Collapsed;
-                });
-
-                flowControl?.Stop();
-
-                pendingHandler.Cancelling -= Handler_Cancelling;
-                pendingHandler?.Close();
-            }
+                ButtonRun.Visibility = Visibility.Visible;
+                ButtonStop.Visibility = Visibility.Collapsed;
+            });
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)

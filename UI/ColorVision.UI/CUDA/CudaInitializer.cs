@@ -25,6 +25,7 @@ namespace ColorVision.UI.CUDA
         public static ConfigCuda Config => ConfigCuda.Instance;
 
         public override int Order => 7;
+        public override string Name => nameof(CudaInitializer);
 
         private readonly IMessageUpdater _messageUpdater;
 

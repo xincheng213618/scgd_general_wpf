@@ -10,7 +10,6 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
-using LiveChartsCore.VisualElements;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -53,17 +52,8 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            Config.IsOpenSidebar = true;
+
             this.DataContext = Config;
-            if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
-            {
-                ThemeManager.Current.SystemThemeChanged += (e) =>
-                {
-                    Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
-                };
-                if (ThemeManager.Current.SystemTheme == Theme.Dark)
-                    Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
-            }
 
             if (WindowConfig.IsExist)
             {
@@ -114,8 +104,7 @@ namespace ColorVision
             });
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
-
-
+            ProgramTimer.StopAndReport();
         }
 
         public static async void LoadIMainWindowInitialized() 

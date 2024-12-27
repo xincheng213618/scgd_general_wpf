@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
@@ -18,11 +17,12 @@ using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Modbus;
+using ScottPlot.Colormaps;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection.Emit;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -42,7 +42,7 @@ namespace ProjectKB
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static  ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
+        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
@@ -133,41 +133,7 @@ namespace ProjectKB
 
         private void TimeRun(object? state)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    if (handler != null)
-                    {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-
-                        if (ProjectKBConfig.Instance.LastFlowTime == 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-
-                        handler.UpdateMessage(msg);
-                    }
-                }
-                catch
-                {
-
-                }
-
-            });
+            UpdateMsg(state);
         }
 
         IPendingHandler handler { get; set; }
@@ -185,19 +151,20 @@ namespace ProjectKB
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 || DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (ProjectKBConfig.Instance.LastFlowTime == 0 || ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectKBConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
-                        handler.UpdateMessage(msg);
+                        if (flowControl.IsFlowRun)
+                            handler.UpdateMessage(msg);
                     }
                 }
                 catch
@@ -228,88 +195,80 @@ namespace ProjectKB
 
         public void RunTemplate()
         {
-            if (handler!=null) return;
-
-            if (FlowTemplate.SelectedValue is FlowParam flowParam)
-            {
-                string startNode = flowEngine.GetStartNodeName();
-                if (!string.IsNullOrWhiteSpace(startNode))
-                {
-                    flowControl ??= new ColorVision.Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
-
-                    handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
-                    flowControl.FlowData += (s, e) =>
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
-                    handler.Cancelling += (s, e) =>
-                    {
-                        flowControl.Stop();
-                        stopwatch.Stop();
-                        timer.Change(Timeout.Infinite, 100); // 停止定时器
-                        flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-                        handler?.Close();
-                        handler = null;
-                    };
-                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    stopwatch.Reset();
-                    stopwatch.Start();
-                    flowControl.Start(sn);
-                    timer.Change(0, 100); // 启动定时器
-                    string name = string.Empty;
-
-                    BatchResultMasterModel batch = new();
-                    batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-                    batch.Code = sn;
-                    batch.CreateDate = DateTime.Now;
-                    batch.TenantId = 0;
-                    BatchResultMasterDao.Instance.Save(batch);
-                }
-                else
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                }
-            }
-            else
-            {
+            if (flowControl!=null && flowControl.IsFlowRun) return;
+            if (FlowTemplate.SelectedValue is not FlowParam flowParam) 
+            { 
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
-            }
+                return; 
+            };
+
+            string startNode = flowEngine.GetStartNodeName();
+            if (string.IsNullOrWhiteSpace(startNode))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
+                return;
+            };
+
+
+            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
+
+            handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
+            handler.Cancelling -= Handler_Cancelling;
+            handler.Cancelling += Handler_Cancelling;
+            flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            stopwatch.Reset();
+            stopwatch.Start();
+            flowControl.Start(sn);
+            timer.Change(0, 100); // 启动定时器
+            string name = string.Empty;
+
+            BatchResultMasterModel batch = new();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
         }
 
-        private void Handler_Cancelling(object? sender, System.ComponentModel.CancelEventArgs e)
+        private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {
-            throw new NotImplementedException();
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            flowControl.Stop();
         }
 
-        private ColorVision.Engine.Templates.Flow.FlowControl flowControl;
+        Random random = new Random();
+
+        private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
             handler = null;
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
             if (sender is FlowControlData FlowControlData)
             {
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 100); // 停止定时器
                     if (FlowControlData.EventName == "Completed")
                     {
                         try
                         {
                             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                             bool sucess = true;
-                            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-                            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                             var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+
+                            if (Batch == null)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                                return;
+                            }
                             KBItemMaster kBItem = new KBItemMaster();
                             kBItem.Model = FlowTemplate.Text;
                             kBItem.Id = Batch.Id;
@@ -379,6 +338,14 @@ namespace ProjectKB
                                                         key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
                                                     }
                                                     key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                    if (key.Lv == 0)
+                                                    {
+                                                        key.Lc = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        key.Lc = random.NextDouble() * 0.45 - 0.15;
+                                                    }
                                                 }
                                             }
                                         }
@@ -386,8 +353,16 @@ namespace ProjectKB
                                 }
                             }
 
+                            if (kBItem.Items.Count == 0)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                                return;
+                            }
+
                             var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
                             var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
+
+
                             kBItem.MaxLv = maxKeyItem.Lv;
                             kBItem.BrightestKey = maxKeyItem.Name;
                             kBItem.MinLv = minLKey.Lv;
@@ -471,12 +446,13 @@ namespace ProjectKB
                     }
                     else
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                     }
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                     Refresh();
                 }
 
@@ -499,16 +475,15 @@ namespace ProjectKB
             outtext += Environment.NewLine;
             string title1 = "PT";
             string title2 = "Lv";
-            string title3 = "Cx";
-            string title4 = "Cy";
+
             string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title3,10} {title4,10}" + Environment.NewLine;
+            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Cy,10:F4}" + Environment.NewLine;
+                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}  {item.Lc*100,10:F2}%" + Environment.NewLine;
             }
 
             outtext += Environment.NewLine;

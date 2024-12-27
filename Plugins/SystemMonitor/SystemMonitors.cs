@@ -134,16 +134,16 @@ namespace ColorVision.UI.Configs
             {
                 try
                 {
-                    RAMPercent = 100 - PCRAM.NextValue() / 1024 / RAMAL * 100;
-                    RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
+                    //RAMPercent = 100 - PCRAM.NextValue() / 1024 / RAMAL * 100;
+                    //RAMThisPercent = PCRAMThis.NextValue() / 1024 / 1024 / 1024 / RAMAL * 100;
 
-                    CPUThisPercent = PCCPUThis.NextValue();
-                    CPUPercent = PCCPU.NextValue();
+                    //CPUThisPercent = PCCPUThis.NextValue();
+                    //CPUPercent = PCCPU.NextValue();
 
-                    float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
-                    RAMThis = curRAM.ToString("f1") + "MB";
-                    MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
-                    ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
+                    //float curRAM = PCRAMThis.NextValue() / 1024 / 1024;
+                    //RAMThis = curRAM.ToString("f1") + "MB";
+                    //MemoryThis = curRAM.ToString("f1") + "MB" + "/" + RAMAL.ToString("f1") + "GB";
+                    //ProcessorTotal = PCCPU.NextValue().ToString("f1") + "%";
                 }
                 catch
                 {

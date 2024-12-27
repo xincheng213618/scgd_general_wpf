@@ -30,6 +30,8 @@ namespace ColorVision
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
+
+        [JsonIgnore]
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
         [JsonIgnore]
