@@ -132,7 +132,8 @@ namespace ColorVision.UI.PropertyEditor
             var textBlock = new TextBlock
             {
                 Text = displayName,
-                MinWidth = 120
+                MinWidth = 120,
+                Foreground = (Brush)FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
 
@@ -162,7 +163,8 @@ namespace ColorVision.UI.PropertyEditor
             var textBlock = new TextBlock
             {
                 Text = displayName,
-                MinWidth = 120
+                MinWidth = 120,
+                Foreground = (Brush)FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
 

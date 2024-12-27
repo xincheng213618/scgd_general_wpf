@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -157,6 +158,7 @@ namespace ColorVision.Engine.Services
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ApplyCaption();
                 window.ShowDialog();
             });
             RefreshCommand = new RelayCommand(a => RestartRCService());
