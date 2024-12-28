@@ -530,7 +530,7 @@ namespace ProjectKB
                 List<KBItem> round = new List<KBItem>();
                 foreach (var keys in kBItems.Where(a=>a != item))
                 {
-                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 200))
+                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 500))
                         round.Add(keys);
                 }
                 foreach (var keys in round)
@@ -538,7 +538,14 @@ namespace ProjectKB
                     log.Debug($"Round Key {item.Name}: {keys.Name}");
                 }
                 double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
-                item.Lc = (item.Lc - averagelv) / averagelv;
+                if (averagelv == 0)
+                {
+                    item.Lc = 0;
+                }
+                else
+                {
+                    item.Lc = (item.Lc - averagelv) / averagelv;
+                }
             }
         }
 
