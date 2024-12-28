@@ -171,6 +171,9 @@ namespace ProjectKB
         private bool _AutoModbusConnect = true;
 
 
+        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
+        private double _KBLVSacle = 0.006583904;
+
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
