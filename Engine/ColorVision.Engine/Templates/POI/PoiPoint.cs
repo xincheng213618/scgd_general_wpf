@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI
         private int _HaloOutMOVE = 20;
 
         public int KeyOutMOVE { get => _KeyOutMOVE; set { _KeyOutMOVE = value; NotifyPropertyChanged(); } }
-        private int _KeyOutMOVE = 35;
+        private int _KeyOutMOVE = 5;
 
         public int KeyOffsetX { get => _KeyOffsetX; set { _KeyOffsetX = value; NotifyPropertyChanged(); } }
         private int _KeyOffsetX;
