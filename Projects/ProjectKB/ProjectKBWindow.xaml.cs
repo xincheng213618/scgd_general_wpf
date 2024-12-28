@@ -353,6 +353,7 @@ namespace ProjectKB
                                 }
                             }
 
+
                             if (kBItem.Items.Count == 0)
                             {
                                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
@@ -370,6 +371,9 @@ namespace ProjectKB
                             kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                             kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
                             kBItem.SN = SNtextBox.Text;
+
+                            CalCulLc(kBItem.Items);
+
 
                             kBItem.Result = true;
 
@@ -405,9 +409,6 @@ namespace ProjectKB
                             {
                                 log.Debug("跳过MaxAvgLv检测");
                             }
-
-
-
 
                             if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
                             {
@@ -494,6 +495,53 @@ namespace ProjectKB
                 Refresh();
             }
         }
+        public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)
+        {
+            return Math.Pow(px - centerX, 2) + Math.Pow(py - centerY, 2) <= Math.Pow(r, 2);
+        }
+
+        public static bool IsRectInCircle(KBItem item, double centerX, double centerY, double r)
+        {
+            Rect rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+            var corners = new[]
+{
+            (rect.X, rect.Y),
+            (rect.X + rect.Width, rect.Y),
+            (rect.X, rect.Y + rect.Height),
+            (rect.X + rect.Width, rect.Y + rect.Height)
+        };
+            foreach (var corner in corners)
+            {
+                if (!IsPointInCircle(corner.Item1, corner.Item2, centerX, centerY, r))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public void CalCulLc(ObservableCollection<KBItem> kBItems)
+        {
+            if (kBItems.Count == 0) return;
+            foreach (var item in kBItems)
+            {
+                double centex = item.KBKeyRect.X + item.KBKeyRect.Width / 2;
+                double centey = item.KBKeyRect.Y + item.KBKeyRect.Height / 2;
+
+                List<KBItem> round = new List<KBItem>();
+                foreach (var keys in kBItems.Where(a=>a != item))
+                {
+                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 200))
+                        round.Add(keys);
+                }
+                foreach (var keys in round)
+                {
+                    log.Debug($"Round Key {item.Name}: {keys.Name}");
+                }
+                double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
+                item.Lc = (item.Lc - averagelv) / averagelv;
+            }
+        }
+
 
 
         public void GenoutputText(KBItemMaster kmitemmaster)
