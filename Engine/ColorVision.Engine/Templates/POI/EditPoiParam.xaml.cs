@@ -1340,9 +1340,24 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (e.Key == Key.Delete)
             {
-                if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[ListView1.SelectedIndex] is Visual visual)
+                if (sender is ListView listView && listView.SelectedItems.Count > 0)
                 {
-                    ImageShow.RemoveVisual(visual);
+                    var visualsToRemove = new List<Visual>();
+
+                    foreach (var selectedItem in listView.SelectedItems)
+                    {
+                        int index = listView.Items.IndexOf(selectedItem);
+                        if (index >= 0 && DrawingVisualLists[index] is Visual visual)
+                        {
+                            visualsToRemove.Add(visual);
+                        }
+                    }
+
+                    foreach (var visual in visualsToRemove)
+                    {
+                        ImageShow.RemoveVisual(visual);
+                    }
+
                     PropertyGrid2.SelectedObject = null;
                 }
             }
