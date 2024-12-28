@@ -30,7 +30,7 @@
                 <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding SaveFolderPath}"/>
             </DockPanel>
             <UniformGrid Columns="2">
-                <CheckBox x:Name="CB_CalculateHalo" Content="CM_CalculateHalo" IsChecked="True" />
+                <CheckBox x:Name="CB_CalculateHalo" Content="CM_CalculateHalo" IsChecked="False" />
                 <CheckBox x:Name="CB_CalculateKey" Content="CM_CalculateKey" IsChecked="True" />
             </UniformGrid>
             <StackPanel Orientation="Horizontal" Margin="0,2">
