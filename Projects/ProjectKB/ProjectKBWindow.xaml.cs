@@ -17,7 +17,6 @@ using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Modbus;
-using ScottPlot.Colormaps;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -377,9 +376,9 @@ namespace ProjectKB
 
                             kBItem.Result = true;
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv!= 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv!= 0)
                             {
-                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
+                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
                             }
                             else
                             {
@@ -573,15 +572,15 @@ namespace ProjectKB
             }
 
             outtext += Environment.NewLine;
-            outtext += $"Min Lv= {kmitemmaster.MinLv} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kmitemmaster.MaxLv} cd/m2" + Environment.NewLine;
+            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
+            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
             outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
             outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kmitemmaster.AvgLv}" + Environment.NewLine;
+            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
             outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
 
 
@@ -637,7 +636,7 @@ namespace ProjectKB
                                 }
                                 else
                                 {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 10);
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 5);
                                 }
 
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
