@@ -530,21 +530,21 @@ namespace ProjectKB
                 List<KBItem> round = new List<KBItem>();
                 foreach (var keys in kBItems.Where(a=>a != item))
                 {
-                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 500))
+                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 300))
                         round.Add(keys);
                 }
-                foreach (var keys in round)
-                {
-                    log.Debug($"Round Key {item.Name}: {keys.Name}");
-                }
+                List<string> strings = round.Select(keys => keys.Name).ToList();
+                log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
+
                 double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
+                log.Debug($"Round Key {item.Name}: averagelv{averagelv}");
                 if (averagelv == 0)
                 {
                     item.Lc = 0;
                 }
                 else
                 {
-                    item.Lc = (item.Lc - averagelv) / averagelv;
+                    item.Lc = (item.Lv - averagelv) / averagelv;
                 }
             }
         }
@@ -611,6 +611,7 @@ namespace ProjectKB
             if (sender is ListView listView && listView.SelectedIndex >-1)
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
+                CalCulLc(kBItem.Items);
                 GenoutputText(kBItem);
                 Task.Run(async () =>
                 {
