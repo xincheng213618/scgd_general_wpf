@@ -79,10 +79,10 @@ namespace ProjectKB
                     item.Model,
                     item.SN,
                     "",
-                    item.AvgLv.ToString(CultureInfo.InvariantCulture),
-                    item.MinLv.ToString(CultureInfo.InvariantCulture),
-                    item.MaxLv.ToString(CultureInfo.InvariantCulture),
-                    item.LvUniformity.ToString(CultureInfo.InvariantCulture),
+                    item.AvgLv.ToString("F2",CultureInfo.InvariantCulture),
+                    item.MinLv.ToString("F2",CultureInfo.InvariantCulture),
+                    item.MaxLv.ToString("F2",CultureInfo.InvariantCulture),
+                    item.LvUniformity.ToString("F2",CultureInfo.InvariantCulture),
                     item.DrakestKey.ToString(CultureInfo.InvariantCulture),
                     item.BrightestKey.ToString(CultureInfo.InvariantCulture),
                     "",
@@ -100,11 +100,11 @@ namespace ProjectKB
 
             for (int i = 0; i < item.Items.Count; i++)
             {
-                values.Add(item.Items[i].Lv.ToString());
+                values.Add(item.Items[i].Lv.ToString("F2"));
             }
             values.Add("");
-            values.Add(item.MaxLv.ToString());
-            values.Add(item.MinLv.ToString());
+            values.Add(item.MaxLv.ToString("F2"));
+            values.Add(item.MinLv.ToString("F2"));
 
             csvBuilder.AppendLine(string.Join(",", values));
 
