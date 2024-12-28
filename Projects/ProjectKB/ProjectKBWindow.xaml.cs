@@ -309,9 +309,9 @@ namespace ProjectKB
                                                 key.Lv = list.Y;
                                                 if (key.KBKeyRect.KBKey.Area != 0)
                                                 {
-                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
+                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area ;
                                                 }
-                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
 
                                             }
                                         }
@@ -337,7 +337,7 @@ namespace ProjectKB
                                                     {
                                                         key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
                                                     }
-                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
                                                     if (key.Lv == 0)
                                                     {
                                                         key.Lc = 0;
