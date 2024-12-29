@@ -241,20 +241,21 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
+
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (sender is FlowControlData FlowControlData)
                 {
                     if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {
-                        stopwatch.Stop();
-                        timer.Change(Timeout.Infinite, 100); // 停止定时器
 
                         if (FlowControlData.EventName == "Completed")
                         {
-                            HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
-                            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-
                             Results.Clear();
                             var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                             if (Batch != null)
@@ -323,6 +324,8 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                                         Results.Add(tempResult1);
                                     }
+
+
                                     var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
                                     Results.Clear();
                                     bool IsOK = true;
