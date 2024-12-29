@@ -55,6 +55,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
+            templatePoi.ExportTemp.Height = 400;
+            templatePoi.ExportTemp.Width = 300;
             templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
             foreach (var item in list)
             {

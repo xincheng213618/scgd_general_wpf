@@ -49,13 +49,16 @@ namespace ColorVision.Engine.Services.Dao
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl));
             ContextMenu.Items.Add(new MenuItem() { Header = "在文件夹中选中文件", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "创建到POI", Command = CreateToPoiCommand });
         }
 
         public void CreateToPoi()
         {
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() { Name = templatePoi.NewCreateFileName("poi") };
-            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+            templatePoi.ExportTemp.Height = 400;
+            templatePoi.ExportTemp.Width = 300;
+            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FileUrl;
             templatePoi.OpenCreate();
         }
 
