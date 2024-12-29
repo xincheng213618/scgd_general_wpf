@@ -13,6 +13,48 @@
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
+        <GeometryDrawing x:Key="GridSquare"
+                 Brush="{DynamicResource GlobalTextBrush}"
+                 Geometry="M0,0 L0,1 1,1 1,0 Z" />
+        <DrawingBrush x:Key="TransparentGridBrush"
+              TileMode="Tile"
+              ViewportUnits="Absolute"
+              Viewport="0 0 20 20"
+              Opacity="0.5">
+            <DrawingBrush.Drawing>
+                <DrawingGroup>
+                    <!-- Gray square -->
+                    <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
+                    <!-- Transparent square -->
+                    <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
+                    <!-- Another row -->
+                    <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
+                    <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
+                </DrawingGroup>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+        <GeometryDrawing x:Key="SmallGridGeometry"
+                         Geometry="M0,0 L0,1 0.03,1 0.03,0.03 1,0.03 1,0 Z"
+                         Brush="{DynamicResource GlobalTextBrush}" />
+
+        <GeometryDrawing x:Key="LargeGridGeometry"
+                         Geometry="M0,0 L0,1 0.015,1 0.015,0.015 1,0.015 1,0 Z"
+                         Brush="{DynamicResource GlobalTextBrush}" />
+
+        <DrawingBrush x:Key="SmallGridLinesDrawingBrush"
+                      TileMode="Tile"
+                      ViewportUnits="Absolute"
+                      Viewport="0 0 20 20"
+                      Transform="{Binding ViewportTransform, ElementName=Zoombox1}"
+                      Drawing="{StaticResource SmallGridGeometry}" />
+        
+        <DrawingBrush x:Key="LargeGridLinesDrawingBrush"
+                      TileMode="Tile"
+                      ViewportUnits="Absolute"
+                      Opacity="0.5"
+                      Viewport="0 0 200 200"
+                      Transform="{Binding ViewportTransform, ElementName=Zoombox1}"
+                      Drawing="{StaticResource LargeGridGeometry}" />
         <DataTemplate x:Key="DrawingVisualCircleTemplate" >
             <StackPanel  Orientation="Horizontal">
                 <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
@@ -37,7 +79,10 @@
 
         <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
     </UserControl.Resources>
+    
     <Grid x:Name="ImageContentGrid" >
+        <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
+
         <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -91,8 +136,11 @@
                 </ListView>
             </Grid>
         </Grid>
-        <Grid x:Name="ZoomGrid" Background="#c3c3c3">
-            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}" ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
+
+        <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
+
+        <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentBrush}">
+            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
             </draw:ZoomboxSub>
