@@ -24,6 +24,8 @@ using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
+using ColorVision.Engine.Templates.Compliance;
+using MQTTMessageLib.Algorithm;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
@@ -262,15 +264,24 @@ namespace ColorVision.Projects.ProjectHeyuan
                             {
                                 var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                                 List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                                List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
                                 foreach (var item in resultMaster)
                                 {
-                                    List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-
-                                    foreach (var pointResultModel in POIPointResultModels)
+                                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
                                     {
-                                        PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
-                                        PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                                        foreach (var pointResultModel in POIPointResultModels)
+                                        {
+                                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                            PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                        }
                                     }
+                                    if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
+                                    {
+                                        var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
+                                        complianceXYZModels.AddRange(lists);
+                                    }
+
                                 }
 
                                 Results.Clear();
@@ -289,6 +300,11 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
                                     {
                                         var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
+
+                                        var ValidateSinglesmodel = complianceXYZModels.FirstOrDefault(a => a.Name == poiResultCIExyuvData1.Name);
+
+                                        poiResultCIExyuvData1.POIPointResultModel.ValidateResult = ValidateSinglesmodel?.ValidateResult;
+
                                         TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
                                         tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
                                         tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
