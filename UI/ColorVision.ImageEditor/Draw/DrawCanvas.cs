@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
@@ -12,9 +13,16 @@ namespace ColorVision.ImageEditor.Draw
         public DrawCanvas()
         {
             this.Focusable = true;
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo()));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo()));
+
         }
 
         private List<Visual> visuals = new();
+
+        private Stack<Action> undoStack = new Stack<Action>();
+        private Stack<Action> redoStack = new Stack<Action>();
+
 
         protected override Visual GetVisualChild(int index) => visuals[index];
 
@@ -54,7 +62,7 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-        public void AddVisual(Visual visual)
+        public void AddVisual(Visual visual, bool recordAction = true)
         {
             try
             {
@@ -64,6 +72,12 @@ namespace ColorVision.ImageEditor.Draw
                 AddLogicalChild(visual);
                 VisualsAdd?.Invoke(visual, EventArgs.Empty);
                 VisualsChanged?.Invoke(visual, EventArgs.Empty);
+
+                if (recordAction)
+                {
+                    undoStack.Push(() => RemoveVisual(visual, false));
+                    redoStack.Clear();
+                }
             }
             catch
             {
@@ -72,7 +86,7 @@ namespace ColorVision.ImageEditor.Draw
 
         }
 
-        public void RemoveVisual(Visual? visual)
+        public void RemoveVisual(Visual? visual, bool recordAction = true)
         {
             if (visual == null) return;
             visuals.Remove(visual);
@@ -82,6 +96,27 @@ namespace ColorVision.ImageEditor.Draw
             VisualsRemove?.Invoke(visual, EventArgs.Empty);
             VisualsChanged?.Invoke(visual, EventArgs.Empty);
 
+            if (recordAction)
+            {
+                undoStack.Push(() => AddVisual(visual,false));
+                redoStack.Clear();
+            }
+        }
+        public void Undo()
+        {
+            if (undoStack.Count > 0)
+            {
+                var undoAction = undoStack.Pop();
+                undoAction();
+            }
+        }
+        public void Redo()
+        {
+            if (redoStack.Count > 0)
+            {
+                var redoAction = redoStack.Pop();
+                redoAction();
+            }
         }
         public void TopVisual(Visual visual)
         {

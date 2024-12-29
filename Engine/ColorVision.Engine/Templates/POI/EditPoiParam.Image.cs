@@ -498,7 +498,7 @@ namespace ColorVision.Engine.Templates.POI
                             drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
                             foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
                             {
-                                drawCanvas.RemoveVisual(item);
+                                drawCanvas.RemoveVisual(item, false);
                             }
                         }
                         else
@@ -517,7 +517,7 @@ namespace ColorVision.Engine.Templates.POI
                                 ImageEditViewMode.SelectDrawingVisuals = null;
                         }
 
-                        drawCanvas.RemoveVisual(SelectRect);
+                        drawCanvas.RemoveVisual(SelectRect,false);
                     }
 
 

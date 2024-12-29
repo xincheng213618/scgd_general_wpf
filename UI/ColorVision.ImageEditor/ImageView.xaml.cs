@@ -328,7 +328,7 @@ namespace ColorVision.ImageEditor
                 if (ImageEditViewMode.EraseVisual)
                 {
                     ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
-                    drawCanvas.AddVisual(SelectRect);
+                    drawCanvas.AddVisual(SelectRect,false);
 
                     if (ImageEditViewMode.SelectDrawingVisuals != null)
                     {
@@ -450,7 +450,7 @@ namespace ColorVision.ImageEditor
                 SelectDrawingVisualClear();
                 SelectDrawingVisualsClear();
                 ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
-                drawCanvas.AddVisual(SelectRect);
+                drawCanvas.AddVisual(SelectRect, false);
 
             }
         }
@@ -590,10 +590,8 @@ namespace ColorVision.ImageEditor
                                 ImageEditViewMode.SelectDrawingVisuals = null;
                         }
 
-                        drawCanvas.RemoveVisual(SelectRect);
+                        drawCanvas.RemoveVisual(SelectRect,false);
                     }
-
-                    drawCanvas.RemoveVisual(SelectRect);
 
                     if (ImageEditViewMode.DrawPolygon)
                     {

@@ -23,7 +23,8 @@
                 <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
                     <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
                     <MenuItem x:Name="MenuEdit" Header="{x:Static properties:Resources.MenuEdit}">
-                        <MenuItem Header="{x:Static properties:Resources.MenuUndo}" Command="ApplicationCommands.Redo" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuUndo}" Command="ApplicationCommands.Undo" />
+                        <MenuItem Header="Redo" Command="ApplicationCommands.Redo" />
                         <MenuItem Header="{x:Static properties:Resources.MenuCopy}" Command="ApplicationCommands.Copy" />
                         <MenuItem Header="{x:Static properties:Resources.MenuCut}" Command="ApplicationCommands.Cut" />
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
