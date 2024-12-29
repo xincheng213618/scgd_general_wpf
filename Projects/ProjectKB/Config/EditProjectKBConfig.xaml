@@ -77,10 +77,16 @@
                             <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <TextBlock Text="数据保存路径" MinWidth="120"  />
+                            <TextBlock Text="Csv保存路径" MinWidth="120"  />
                             <TextBox Text="{Binding  ResultSavePath}" Width="350" Margin="0,0,5,0"/>
                             <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath_Click" />
                             <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Text保存路径" MinWidth="120"  />
+                            <TextBox Text="{Binding  ResultSavePath1}" Width="350" Margin="0,0,5,0"/>
+                            <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath1_Click" />
+                            <Button Content="🗁" Click="Open1_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
                             <TextBlock Text="KBLVSacle " Width="120"/>

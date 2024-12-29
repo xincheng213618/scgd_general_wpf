@@ -18,5 +18,8 @@ namespace ProjectKB
         private double _Cy;
         public double Lc { get => _Lc; set { _Lc = value; NotifyPropertyChanged(); } }
         private double _Lc;
+
+        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        private bool _Result = true;
     }
 }

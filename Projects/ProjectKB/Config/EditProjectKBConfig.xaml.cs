@@ -33,6 +33,7 @@ namespace ProjectKB
             System.Windows.Forms.FolderBrowserDialog dialog = new();
             dialog.UseDescriptionForTitle = true;
             dialog.Description = "为新项目选择位置";
+            dialog.InitialDirectory = ProjectKBConfig.Instance.ResultSavePath;
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 if (string.IsNullOrEmpty(dialog.SelectedPath))
@@ -49,5 +50,26 @@ namespace ProjectKB
             ColorVision.Common.Utilities.PlatformHelper.OpenFolder(ProjectKBConfig.Instance.ResultSavePath);
         }
 
+        private void SelectDataPath1_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为新项目选择位置";
+            dialog.InitialDirectory = ProjectKBConfig.Instance.ResultSavePath;
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                ProjectKBConfig.Instance.ResultSavePath1 = dialog.SelectedPath;
+            }
+        }
+
+        private void Open1_Click(object sender, RoutedEventArgs e)
+        {
+            ColorVision.Common.Utilities.PlatformHelper.OpenFolder(ProjectKBConfig.Instance.ResultSavePath1);
+        }
     }
 }

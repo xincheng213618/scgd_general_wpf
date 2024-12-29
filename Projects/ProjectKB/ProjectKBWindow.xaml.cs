@@ -22,8 +22,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -91,21 +93,28 @@ namespace ProjectKB
                         log.Debug("初始化寄存器设置为0");
                         ModbusControl.GetInstance().SetRegisterValue(0);
                     }
-
-                    ModbusControl.GetInstance().StatusChanged += (s, e) =>
-                    {
-                        if (ModbusControl.GetInstance().CurrentValue == 1)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                log.Info("触发拍照，执行流程");
-                                RunTemplate();
-                            });
-                        }
-                    };
+                    ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
                 }
             });
+            this.Closed += (s, e) =>
+            {
+                timer.Change(Timeout.Infinite, 100); // 停止定时器
+                timer?.Dispose();
+                ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            };
 
+        }
+
+        private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
+        {
+            if (ModbusControl.GetInstance().CurrentValue == 1)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    log.Info("触发拍照，执行流程");
+                    RunTemplate();
+                });
+            }
         }
 
         public void Refresh()
@@ -359,9 +368,50 @@ namespace ProjectKB
                                 return;
                             }
 
+                            CalCulLc(kBItem.Items);
+
+
+                            foreach (var item in kBItem.Items)
+                            {
+
+                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv != 0)
+                                {
+                                    item.Result = item.Result && item.Lv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过minLv检测");
+                                }
+                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+                                {
+                                    item.Result = item.Result && item.Lv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MaxLv检测");
+                                }
+
+                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                                {
+                                    item.Result = item.Result && item.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MinKeyLc检测");
+                                }
+                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                                {
+                                    item.Result = item.Result && item.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MaxLv检测");
+                                }
+                            }
+
+
                             var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
                             var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
-
 
                             kBItem.MaxLv = maxKeyItem.Lv;
                             kBItem.BrightestKey = maxKeyItem.Name;
@@ -370,9 +420,10 @@ namespace ProjectKB
                             kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                             kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
                             kBItem.SN = SNtextBox.Text;
+                            kBItem.NbrFailPoints = kBItem.Items.Count(item => !item.Result);
+
 
                             CalCulLc(kBItem.Items);
-
 
                             kBItem.Result = true;
 
@@ -411,7 +462,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity;
+                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity /100;
                             }
                             else
                             {
@@ -420,7 +471,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && minLKey.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc;
+                                kBItem.Result = kBItem.Result && minLKey.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
                             }
                             else
                             {
@@ -429,7 +480,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && minLKey.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc;
+                                kBItem.Result = kBItem.Result && minLKey.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
                             }
                             else
                             {
@@ -450,15 +501,20 @@ namespace ProjectKB
                             }
                             ViewResluts.Insert(0, kBItem);
                             listView1.SelectedIndex = 0;
-                            string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
+                            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
                             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
+
                             log.Debug($"结果正在写入{resultPath},result:{result}");
                             File.WriteAllText(resultPath, result);
 
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMdd}.csv";
+                                string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                                string regexPattern = $"[{Regex.Escape(invalidChars)}]";
+
+                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.DateTime:yyyyMMdd}.csv";
+
                                 KBItemMaster.SaveCsv(kBItem, csvpath);
                                 log.Debug($"writecsv:{csvpath}");
                             });
@@ -552,26 +608,55 @@ namespace ProjectKB
 
         public void GenoutputText(KBItemMaster kmitemmaster)
         {
+            NGResult.Text = kmitemmaster.Result ? "OK" : "NG";
+            NGResult.Foreground = kmitemmaster.Result ? Brushes.Green : Brushes.Red;
+
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Document.Blocks.Clear(); // 清除之前的内容
+
             string outtext = string.Empty;
             outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine; 
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
             outtext += $"Poiints of Interest: " + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-            outtext += Environment.NewLine;
+
+            Run run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(run);
+
+            outputText.Document.Blocks.Add(paragraph);
+            outtext = string.Empty;
+
+            paragraph = new Paragraph();
+
             string title1 = "PT";
             string title2 = "Lv";
 
             string title5 = "Lc";
             outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            paragraph.Inlines.Add(run);
+            outtext = string.Empty;
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv,-10:F2}  {item.Lc*100,10:F2}%" + Environment.NewLine;
+                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc*100,10:F2}%  {(item.Result?"":"Fail")}" +Environment.NewLine;
+                run = new Run(outtext);
+                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+                run.FontSize += 1;
+                paragraph.Inlines.Add(run);
+                outtext = string.Empty;
             }
+            outputText.Document.Blocks.Add(paragraph);
 
-            outtext += Environment.NewLine;
             outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
             outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
             outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
@@ -583,10 +668,14 @@ namespace ProjectKB
             outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
             outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
 
-
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
-            outputText.Text = outtext;
+
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+            paragraph = new Paragraph(run);
+            outtext = string.Empty;
+            outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
 
@@ -601,8 +690,9 @@ namespace ProjectKB
         {
             ViewResluts.Clear();
             ImageView.Clear();
-            outputText.Text = string.Empty;
+            outputText.Document.Blocks.Clear();
             outputText.Background = Brushes.White;
+            NGResult.Text = string.Empty;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -610,8 +700,15 @@ namespace ProjectKB
             if (sender is ListView listView && listView.SelectedIndex >-1)
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
-                CalCulLc(kBItem.Items);
                 GenoutputText(kBItem);
+
+                var maxKeyItem = kBItem.Items.Where(a=>a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
+                var minLKey = kBItem.Items.Where(a => a.Result).OrderBy(item => item.Lv).FirstOrDefault();
+
+
+                string DrakestKey = minLKey?.Name;
+                string BrightestKey = maxKeyItem?.Name;
+
                 Task.Run(async () =>
                 {
                     await Task.Delay(30);
@@ -626,11 +723,15 @@ namespace ProjectKB
                                 DVRectangle Rectangle = new();
                                 Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
 
-                                if (item.Name == kBItem.DrakestKey)
+                                if (item.Result == false)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                }
+                                else if (item.Name == DrakestKey)
                                 {
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
                                 }
-                                else if (item.Name == kBItem.BrightestKey)
+                                else if (item.Name == BrightestKey)
                                 {
                                     Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
                                 }

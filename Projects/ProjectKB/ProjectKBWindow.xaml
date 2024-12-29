@@ -11,6 +11,7 @@
         Title="键盘测试" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Icon="/ProjectKB;component/Assets/ProjectKB.png">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
+        <local:OKNGConverter x:Key="OKNGConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -62,13 +63,17 @@
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="良品率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductRate}"/>
+                                <TextBlock Text="{Binding SummaryInfo.GoodProductRate, StringFormat={}{0:P1}}"/>
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
                                 <TextBlock Text="不良频率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductRate}"/>
+                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
                             </DockPanel>
                         </StackPanel>
+
+                        <Border VerticalAlignment="Bottom">
+                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center"  BorderThickness="0"/>
+                        </Border>
                     </Grid>
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
                     <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
@@ -134,10 +139,10 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Exposure" >
+                                <GridViewColumn Header="Result" >
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding Exposure}" />
+                                            <TextBlock Text="{Binding Result,Converter={StaticResource OKNGConverter}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -148,24 +153,24 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="Avg C1">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgC1, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Avg C2">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgC2, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                                 <GridViewColumn Header="Min Lv">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:KBItemMaster}">
                                             <TextBlock Text="{Binding  MinLv, StringFormat={}{0:F2}}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Max Lv">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding MaxLv, StringFormat={}{0:F2}}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Uniform">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
+                                            <TextBlock Text="{Binding LvUniformity, StringFormat={}{0:F2}}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
@@ -203,7 +208,13 @@
                         <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
-                <TextBox x:Name="outputText" Grid.Row="1" Margin="5,0" Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" Text="" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                    <FlowDocument>
+                        <Paragraph>
+
+                        </Paragraph>
+                    </FlowDocument>
+                </RichTextBox>
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">

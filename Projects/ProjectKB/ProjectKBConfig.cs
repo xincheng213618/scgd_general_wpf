@@ -163,6 +163,12 @@ namespace ProjectKB
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+
+
+        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
+        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
 

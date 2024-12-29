@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
@@ -22,6 +23,8 @@ namespace ColorVision.Engine.Services.Dao
         public RelayCommand CopyToCommand { get; set; }
 
         public RelayCommand OpenContainingFolderCommand { get; set; }
+        public RelayCommand CreateToPoiCommand { get; set; }
+
 
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
         {
@@ -40,10 +43,20 @@ namespace ColorVision.Engine.Services.Dao
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl));
             OpenCVCIECommand = new RelayCommand(a => Open(), a => File.Exists(FileUrl));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
+            CreateToPoiCommand = new RelayCommand(a => CreateToPoi(), a => File.Exists(FileUrl));
+
             ContextMenu = new ContextMenu();
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileUrl}"), a => File.Exists(FileUrl));
             ContextMenu.Items.Add(new MenuItem() { Header = "在文件夹中选中文件", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
+        }
+
+        public void CreateToPoi()
+        {
+            TemplatePoi templatePoi = new TemplatePoi();
+            templatePoi.ExportTemp = new PoiParam() { Name = templatePoi.NewCreateFileName("poi") };
+            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+            templatePoi.OpenCreate();
         }
 
         public void CopyTo()
