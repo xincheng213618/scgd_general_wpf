@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Themes;
+using cvColorVision;
 using NPOI.SS.Formula.Functions;
 using ProjectKB.Modbus;
 using System;
@@ -49,7 +50,10 @@ namespace ProjectKB
                 ModbusConfig.Name = ModbusConfig.Host +"_" +ModbusConfig.Port;
             }
             ModbusConfigs.Remove(ModbusConfig);
-            ModbusControl.GetInstance().Connect();
+            Task.Run(() =>
+            {
+                ModbusControl.GetInstance().Connect();
+            });
             Close();
         }
 

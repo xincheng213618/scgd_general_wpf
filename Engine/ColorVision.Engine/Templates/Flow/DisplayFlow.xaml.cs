@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using NPOI.OpenXmlFormats.Dml;
@@ -68,7 +69,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
-                FlowUpdate();
+                Refresh();
             };
 
 
@@ -95,48 +96,34 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded -= FlowDisplayControl_Loaded;
         }
 
-        private void FlowUpdate()
+
+        private void Refresh()
         {
-            if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
+            if (ComboBoxFlow.SelectedValue is not FlowParam flowParam) return;
+            if (View == null) return;
+            if (string.IsNullOrEmpty(flowParam.DataBase64))
             {
-                if (View != null)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(flowParam.DataBase64))
-                        {
-                            MessageBox.Show("再选择之前请先创建对映的模板");
-                        }
-                        else
-                        {
-                            foreach (var item in View.STNodeEditorMain.Nodes)
-                            {
-                                if (item is CVCommonNode algorithmNode)
-                                {
-                                    algorithmNode.nodeRunEvent -= UpdateMsg;
-                                }
-                            }
-                            var tol = MqttRCService.GetInstance().ServiceTokens;
-                            View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tol);
-                            foreach (var item in View.STNodeEditorMain.Nodes)
-                            {
-                                if (item is CVCommonNode algorithmNode)
-                                {
-                                    algorithmNode.nodeRunEvent += UpdateMsg;
-                                }
-                            }
-                            if(Config.IsAutoSize)
-                                View.AutoSize();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
+                MessageBox.Show("再选择之前请先创建对映的模板");
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                return;
             }
-            else
+
+            try
             {
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
+
+                if (Config.IsAutoSize)
+                    View.AutoSize();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
         }
@@ -253,6 +240,7 @@ namespace ColorVision.Engine.Templates.Flow
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (!string.IsNullOrWhiteSpace(startNode))
             {
+                Refresh();
                 flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
@@ -341,19 +329,19 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            FlowUpdate();
+            Refresh();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             new TemplateEditorWindow(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            FlowUpdate();
+            Refresh();
         }
 
         private void ButtonEdit_Click(object sender, RoutedEventArgs e)
         {
             new FlowEngineToolWindow(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-            FlowUpdate();
+            Refresh();
         }
 
         public void Dispose()
