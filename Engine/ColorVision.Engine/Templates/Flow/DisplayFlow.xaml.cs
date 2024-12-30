@@ -10,6 +10,7 @@ using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using NPOI.OpenXmlFormats.Dml;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
@@ -52,6 +53,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             this.DataContext = Config;
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
+
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             View = new ViewFlow();
@@ -107,8 +109,6 @@ namespace ColorVision.Engine.Templates.Flow
                         }
                         else
                         {
-                            var tokens = MqttRCService.GetInstance().ServiceTokens;
-
                             foreach (var item in View.STNodeEditorMain.Nodes)
                             {
                                 if (item is CVCommonNode algorithmNode)
@@ -116,10 +116,8 @@ namespace ColorVision.Engine.Templates.Flow
                                     algorithmNode.nodeRunEvent -= UpdateMsg;
                                 }
                             }
-
-                           
-
-                            View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tokens);
+                            var tol = MqttRCService.GetInstance().ServiceTokens;
+                            View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tol);
                             foreach (var item in View.STNodeEditorMain.Nodes)
                             {
                                 if (item is CVCommonNode algorithmNode)
