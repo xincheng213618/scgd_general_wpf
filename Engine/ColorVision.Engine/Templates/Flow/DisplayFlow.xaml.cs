@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
@@ -8,6 +9,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using log4net;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
@@ -24,6 +26,9 @@ namespace ColorVision.Engine.Templates.Flow
 
     public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(DisplayFlow));
+
+
         private static DisplayFlow _instance;
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
@@ -111,6 +116,9 @@ namespace ColorVision.Engine.Templates.Flow
                                     algorithmNode.nodeRunEvent -= UpdateMsg;
                                 }
                             }
+
+                           
+
                             View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tokens);
                             foreach (var item in View.STNodeEditorMain.Nodes)
                             {

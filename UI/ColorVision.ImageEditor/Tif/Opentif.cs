@@ -74,6 +74,10 @@ namespace ColorVision.ImageEditor.Tif
             {
                 return 1; // 灰度
             }
+            else if (format == PixelFormats.Gray32Float)
+            {
+                return 1; // 灰度
+            }
             else if (format == PixelFormats.Rgb24)
             {
                 return 3; // RGB
