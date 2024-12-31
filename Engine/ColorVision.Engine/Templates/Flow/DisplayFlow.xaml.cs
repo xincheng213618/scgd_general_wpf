@@ -1,23 +1,23 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
-using NPOI.OpenXmlFormats.Dml;
 using Panuon.WPF.UI;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -111,12 +111,20 @@ namespace ColorVision.Engine.Templates.Flow
             try
             {
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                {
                     item.nodeRunEvent -= UpdateMsg;
+                    item.nodeEndEvent -= nodeEndEvent;
+                }
 
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                {
                     item.nodeRunEvent += UpdateMsg;
+
+                    item.nodeEndEvent += nodeEndEvent;
+
+                }
 
                 if (Config.IsAutoSize)
                     View.AutoSize();
@@ -149,12 +157,12 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName  + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    });
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+                }
+                else
+                {
                 }
             }
         }
@@ -217,6 +225,27 @@ namespace ColorVision.Engine.Templates.Flow
 
 
             });
+        }
+        PropertyInfo MarkColorProperty { get; set; }
+        private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
+        {
+            if (sender is CVCommonNode algorithmNode)
+            {
+                if (e != null)
+                {
+                    algorithmNode.IsSelected = false;
+                    if (MarkColorProperty == null)
+                    {
+                        Type type = typeof(STNode);
+                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    // 设置值
+                    if (MarkColorProperty != null)
+                    {
+                        MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
+                    }
+                }
+            }
         }
 
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
