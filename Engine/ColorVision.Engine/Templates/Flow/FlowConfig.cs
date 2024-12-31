@@ -31,6 +31,10 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsShowNickName  {   get => _IsShowNickName; set { _IsShowNickName = value; NotifyPropertyChanged(); }  }
         private bool _IsShowNickName;
 
+        [DisplayName("显示流程详细")]
+        public bool IsShowDetailFlow { get => _IsShowDetailFlow; set { _IsShowDetailFlow = value; NotifyPropertyChanged(); } }
+        private bool _IsShowDetailFlow ;
+
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
         public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }

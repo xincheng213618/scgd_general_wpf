@@ -92,7 +92,16 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
+                View.FlowRecords.Clear();
                 Refresh();
+                if (FlowConfig.Instance.IsShowDetailFlow)
+                {
+                    foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    {
+                        View.FlowRecords.Add(new FlowRecord(item));
+                    }
+                }
+
             };
 
 
@@ -149,9 +158,7 @@ namespace ColorVision.Engine.Templates.Flow
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                 {
                     item.nodeRunEvent += UpdateMsg;
-
                     item.nodeEndEvent += nodeEndEvent;
-
                 }
 
                 if (Config.IsAutoSize)
@@ -161,6 +168,11 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 MessageBox.Show(ex.Message);
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
+            }
+
+            foreach (var item in View.FlowRecords)
+            {
+                item.IsSelected = false;
             }
         }
 
@@ -246,15 +258,18 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     log.Error(ex);
                 } 
-
             }
-
         }
+
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
             {
+                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                if (record !=null)
+                    record.DateTimeStop = DateTime.Now;
+
                 if (e != null)
                 {
                     algorithmNode.IsSelected = false;
@@ -276,13 +291,17 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                if (e != null)
+                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                if (record != null)
                 {
-                    algorithmNode.IsSelected = true;
-                    Msg1 = algorithmNode.Title;
-      
-                    UpdateMsg(sender);
+                    record.DateTimeRun = DateTime.Now;
+                    record.IsSelected = true;
                 }
+
+                algorithmNode.IsSelected = true;
+                Msg1 = algorithmNode.Title;
+
+                UpdateMsg(sender);
             }
         }
 
