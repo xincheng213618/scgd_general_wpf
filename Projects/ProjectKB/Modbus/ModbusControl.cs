@@ -90,7 +90,7 @@ namespace ProjectKB.Modbus
                         ushort currentValue = registers[0];
                         log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
 
-                        Application.Current.Dispatcher.Invoke(() =>
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             CurrentValue = currentValue;
                             if (currentValue != previousValue)
@@ -141,8 +141,8 @@ namespace ProjectKB.Modbus
                                     }
 
                                     // Set a 3-second timeout for send and receive operations
-                                    client.ReceiveTimeout = 800;
-                                    client.SendTimeout = 800;
+                                    client.ReceiveTimeout = 3000;
+                                    client.SendTimeout = 3000;
 
                                     var factory = new ModbusFactory();
                                     var master = factory.CreateMaster(client);
@@ -152,7 +152,7 @@ namespace ProjectKB.Modbus
                                     ushort currentValue = registers[0];
                                     log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
 
-                                    Application.Current.Dispatcher.Invoke(() =>
+                                    Application.Current.Dispatcher.BeginInvoke(() =>
                                     {
                                         CurrentValue = currentValue;
                                         if (currentValue != previousValue)

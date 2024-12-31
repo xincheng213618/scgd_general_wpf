@@ -106,7 +106,7 @@ namespace ProjectKB
         {
             if (ModbusControl.GetInstance().CurrentValue == 1)
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current.Dispatcher.BeginInvoke(() =>
                 {
                     log.Info("触发拍照，执行流程");
                     RunTemplate();
@@ -149,7 +149,7 @@ namespace ProjectKB
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
@@ -517,7 +517,7 @@ namespace ProjectKB
                                 KBItemMaster.SaveCsv(kBItem, csvpath);
                                 log.Debug($"writecsv:{csvpath}");
                             });
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 log.Debug("流程执行结束，设置寄存器为0，触发移动");
                                 ModbusControl.GetInstance().SetRegisterValue(0);
@@ -709,7 +709,7 @@ namespace ProjectKB
                 Task.Run(async () =>
                 {
                     await Task.Delay(30);
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (File.Exists(kBItem.ResultImagFile))
                         {

@@ -46,8 +46,27 @@ namespace ColorVision.Engine.Templates.Flow
             this.flowEngine = flowEngine;
         }
 
-        public bool IsFlowRun { get => _IsFlowRun; set { _IsFlowRun = value; NotifyPropertyChanged(); } }
+        private readonly object _lock = new object();
         private bool _IsFlowRun;
+
+        public bool IsFlowRun
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _IsFlowRun;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _IsFlowRun = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
         public void Stop()
         {
