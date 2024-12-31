@@ -5,12 +5,14 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -72,22 +74,15 @@ namespace ProjectKB
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
-            FlowTemplate.SelectionChanged += (s, e) =>
-            {
-                if (FlowTemplate.SelectedIndex > -1)
-                {
-                    Refresh();
-                }
-            };
-
+            FlowTemplate.SelectionChanged += (s, e) => Refresh();
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
                 {
-                    bool con = ModbusControl.GetInstance().Connect();
+                    bool con = await ModbusControl.GetInstance().Connect();
                     if (con)
                     {
                         log.Debug("初始化寄存器设置为0");
@@ -95,7 +90,9 @@ namespace ProjectKB
                     }
                     ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
                 }
+
             });
+
             this.Closed += (s, e) =>
             {
                 timer.Change(Timeout.Infinite, 100); // 停止定时器
@@ -119,22 +116,25 @@ namespace ProjectKB
 
         public void Refresh()
         {
-            foreach (var item in STNodeEditorMain.Nodes)
+            if (FlowTemplate.SelectedIndex < 0) return;
+
+            try
             {
-                if (item is CVCommonNode algorithmNode)
-                {
-                    algorithmNode.nodeRunEvent -= UpdateMsg;
-                }
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+                log.Info("Refresh");
+                flowEngine.LoadFromBase64(string.Empty);
+                log.Info("Refresh");
+
+                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                log.Info("Refresh");
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
             }
-            var tokens = MqttRCService.GetInstance().ServiceTokens;
-            log.Info($"tokenscount{tokens.Count}");
-            flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
-            foreach (var item in STNodeEditorMain.Nodes)
+            catch (Exception ex)
             {
-                if (item is CVCommonNode algorithmNode)
-                {
-                    algorithmNode.nodeRunEvent += UpdateMsg;
-                }
+                MessageBox.Show(ex.Message);
+                flowEngine.LoadFromBase64(string.Empty);
             }
         }
 
@@ -216,8 +216,7 @@ namespace ProjectKB
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
                 return;
             };
-
-
+            Refresh();
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
@@ -527,7 +526,7 @@ namespace ProjectKB
                         }
                         catch(Exception ex)
                         {
-                            MessageBox.Show(ex.Message);
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                         }
 
                     }
@@ -540,14 +539,12 @@ namespace ProjectKB
                 {
 
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    Refresh();
                 }
 
             }
             else
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
-                Refresh();
             }
         }
         public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)

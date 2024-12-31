@@ -79,8 +79,8 @@ namespace ColorVision.Engine.Services.RC
             rcServiceConfigs.Remove(rcServiceConfig);
 
             Task.Run(() => {
-                MqttRCService.GetInstance().QueryServices();
-                MqttRCService.GetInstance().ReRegist(); });
+                MqttRCService.GetInstance().ReRegist();
+            });
             Close();
         }
 
@@ -93,9 +93,9 @@ namespace ColorVision.Engine.Services.RC
         private void Button_Click_Test(object sender, RoutedEventArgs e)
         {
             rcServiceConfig.AppSecret = PasswordBox1.Password;
-            Task.Run(() =>
+            Task.Run(async () =>
             {
-                bool IsConnect = MqttRCService.GetInstance().TryRegist(rcServiceConfig);
+                bool IsConnect = await MqttRCService.GetInstance().TryRegist(rcServiceConfig);
                 Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
             });
         }

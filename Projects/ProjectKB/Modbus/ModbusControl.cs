@@ -63,31 +63,44 @@ namespace ProjectKB.Modbus
             }
         }
 
-        public bool Connect()
+        public async Task<bool> Connect()
         {
             try
             {
-
-                using (var client = new TcpClient(Config.Host, Config.Port))
+                using (var client = new TcpClient())
                 {
-                    var factory = new ModbusFactory();
-                    var master = factory.CreateMaster(client);
-                    // 读取从站1的寄存器地址100的值
-                    ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
-                    ushort currentValue = registers[0];
-                    log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
-                    Application.Current.Dispatcher.Invoke(() =>
+                    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3)))
                     {
-                        CurrentValue = currentValue;
-                        if (currentValue != previousValue)
+                        var connectTask = client.ConnectAsync(Config.Host, Config.Port);
+
+                        if (await Task.WhenAny(connectTask, Task.Delay(Timeout.Infinite, cts.Token)) != connectTask)
                         {
-                            previousValue = currentValue;
+                            throw new TimeoutException("Failed to connect within the timeout period.");
                         }
-                    });
-                    IsConnect = true;
 
+                        // Set a 3-second timeout for send and receive operations
+                        client.ReceiveTimeout = 1000;
+                        client.SendTimeout = 1000;
 
+                        var factory = new ModbusFactory();
+                        var master = factory.CreateMaster(client);
 
+                        // Read register value
+                        ushort[] registers = await Task.Run(() => master.ReadHoldingRegisters(1, registerAddress, 1));
+                        ushort currentValue = registers[0];
+                        log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            CurrentValue = currentValue;
+                            if (currentValue != previousValue)
+                            {
+                                previousValue = currentValue;
+                            }
+                        });
+
+                        IsConnect = true;
+                    }
                 }
             }
             catch (Exception ex)
@@ -106,7 +119,7 @@ namespace ProjectKB.Modbus
 
         bool IsRun = false;
 
-        public void CheckUpdate()
+        public async void CheckUpdate()
         {
             while (true)
             {
@@ -116,25 +129,41 @@ namespace ProjectKB.Modbus
                     {
                         if (!IsRun)
                         {
-                            using (var client = new TcpClient(Config.Host, Config.Port))
+                            using (var client = new TcpClient())
                             {
-                                var factory = new ModbusFactory();
-                                var master = factory.CreateMaster(client);
-                                // 读取从站1的寄存器地址100的值
-                                ushort[] registers = master.ReadHoldingRegisters(1, registerAddress, 1);
-                                ushort currentValue = registers[0];
-                                log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
-                                Application.Current.Dispatcher.Invoke(() =>
+                                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3)))
                                 {
-                                    CurrentValue = currentValue;
-                                    if (currentValue != previousValue)
-                                    {
-                                        previousValue = currentValue;
-                                    }
-                                });
-                                IsConnect = true;
-                            }
+                                    var connectTask = client.ConnectAsync(Config.Host, Config.Port);
 
+                                    if (await Task.WhenAny(connectTask, Task.Delay(Timeout.Infinite, cts.Token)) != connectTask)
+                                    {
+                                        throw new TimeoutException("Failed to connect within the timeout period.");
+                                    }
+
+                                    // Set a 3-second timeout for send and receive operations
+                                    client.ReceiveTimeout = 800;
+                                    client.SendTimeout = 800;
+
+                                    var factory = new ModbusFactory();
+                                    var master = factory.CreateMaster(client);
+
+                                    // Read register value
+                                    ushort[] registers = await Task.Run(() => master.ReadHoldingRegisters(1, registerAddress, 1));
+                                    ushort currentValue = registers[0];
+                                    log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
+
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        CurrentValue = currentValue;
+                                        if (currentValue != previousValue)
+                                        {
+                                            previousValue = currentValue;
+                                        }
+                                    });
+
+                                    IsConnect = true;
+                                }
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -144,21 +173,36 @@ namespace ProjectKB.Modbus
                         break;
                     }
                 }
-                Thread.Sleep(1000); // 每秒检查一次
+                await Task.Delay(1000); // 每秒检查一次   
             }
         }
 
-        public bool SetRegisterValue(ushort value)
+        public async Task<bool> SetRegisterValue(ushort value)
         {
             try
             {
                 IsRun = true;
-                using (var client = new TcpClient(Config.Host, Config.Port))
+                using (var client = new TcpClient())
                 {
-                    var factory = new ModbusFactory();
-                    var master = factory.CreateMaster(client);
-                    master.WriteSingleRegister(1, registerAddress, value);
-                    Console.WriteLine($"Register value set to: {value}");
+                    using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3)))
+                    {
+                        var connectTask = client.ConnectAsync(Config.Host, Config.Port);
+
+                        if (await Task.WhenAny(connectTask, Task.Delay(Timeout.Infinite, cts.Token)) != connectTask)
+                        {
+                            throw new TimeoutException("Failed to connect within the timeout period.");
+                        }
+
+                        // Set a 3-second timeout for send and receive operations
+                        client.ReceiveTimeout = 1000;
+                        client.SendTimeout = 1000;
+
+                        var factory = new ModbusFactory();
+                        var master = factory.CreateMaster(client);
+
+                        await Task.Run(() => master.WriteSingleRegister(1, registerAddress, value));
+                        Console.WriteLine($"Register value set to: {value}");
+                    }
                 }
                 IsRun = false;
                 return true;
