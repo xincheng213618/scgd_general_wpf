@@ -130,7 +130,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         {
                             foreach (MeasureImgResultModel result in resultMaster)
                             {
-                                Application.Current.Dispatcher.Invoke(() =>
+                                Application.Current?.Dispatcher.BeginInvoke(() =>
                                 {
                                     ShowResult(result);
                                 });

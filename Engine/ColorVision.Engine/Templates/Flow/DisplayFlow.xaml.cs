@@ -21,6 +21,7 @@ using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -76,8 +77,8 @@ namespace ColorVision.Engine.Templates.Flow
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
 
-            timer = new Timer(UpdateMsg, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer = new Timer(UpdateMsg, null, 0, 500);
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
         }
@@ -99,6 +100,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Refresh()
         {
+            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            {
+                MqttRCService.GetInstance().QueryServices();
+            }
+            
             if (ComboBoxFlow.SelectedValue is not FlowParam flowParam) return;
             if (View == null) return;
             if (string.IsNullOrEmpty(flowParam.DataBase64))
@@ -147,12 +153,11 @@ namespace ColorVision.Engine.Templates.Flow
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
             FlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
 
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
-
             if (sender is FlowControlData FlowControlData)
             {
                 ButtonRun.Visibility = Visibility.Visible;
@@ -189,30 +194,31 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            Application.Current?.Dispatcher.BeginInvoke(() =>
+            if (flowControl.IsFlowRun)
             {
-                if (flowControl.IsFlowRun)
+                long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                string msg;
+                if (FlowConfig.Instance.LastFlowTime == 0 || FlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                 {
-                    long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                    TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                    string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                    string msg;
-                    if (FlowConfig.Instance.LastFlowTime == 0 || FlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
-                    {
-                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                    }
-                    else
-                    {
-                        long remainingMilliseconds = FlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                        TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                        string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                        msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                    }
-                    if (flowControl.IsFlowRun)
-                        handler.UpdateMessage(msg);
+                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                 }
-            });
+                else
+                {
+                    long remainingMilliseconds = FlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                    TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                    string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                }
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    if (flowControl.IsFlowRun)
+                        handler?.UpdateMessage(msg);
+                });
+            }
+
         }
         PropertyInfo MarkColorProperty { get; set; }
         private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
@@ -253,12 +259,17 @@ namespace ColorVision.Engine.Templates.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-
             CheckDiskSpace("C");
             CheckDiskSpace("D");
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (!string.IsNullOrWhiteSpace(startNode))
             {
+                if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+                {
+                    MqttRCService.GetInstance().QueryServices();
+                    MessageBox.Show("Token为空，正在刷新token");
+                    return;
+                }
                 Refresh();
                 flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
@@ -266,32 +277,14 @@ namespace ColorVision.Engine.Templates.Flow
                
                 handler.Cancelling -= Handler_Cancelling; ;
                 handler.Cancelling += Handler_Cancelling; ;
-               
-                flowControl.FlowData += (s, e) =>
-                {
-                    try
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-
-                    }
-                };
-
+ 
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 ButtonRun.Visibility = Visibility.Collapsed;
                 ButtonStop.Visibility = Visibility.Visible;
                 stopwatch.Restart();
                 stopwatch.Start();
-                timer.Change(0, 100); // 启动定时器
+                timer.Change(0, 500); // 启动定时器
                 flowControl.Start(sn);
                 string name = string.Empty;
                 if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
