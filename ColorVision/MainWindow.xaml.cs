@@ -85,8 +85,6 @@ namespace ColorVision
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
-
-            QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
             Task.Run(() =>
             {
