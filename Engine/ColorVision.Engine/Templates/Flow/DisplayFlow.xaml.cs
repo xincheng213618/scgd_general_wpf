@@ -2,8 +2,10 @@
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Scheduler;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using FlowEngineLib;
@@ -11,6 +13,7 @@ using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Panuon.WPF.UI;
+using Quartz;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
@@ -19,6 +22,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -26,6 +30,24 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    public class FlowJob : IJob
+    {
+        public Task Execute(IJobExecutionContext context)
+        {
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            schedulerInfo.RunCount++;
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                DisplayFlow.GetInstance().RunFlow();
+                schedulerInfo.Status = SchedulerStatus.Ready;
+            });
+            return Task.CompletedTask;
+        }
+    }
 
     public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
@@ -212,11 +234,19 @@ namespace ColorVision.Engine.Templates.Flow
 
                     msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                 }
-                Application.Current?.Dispatcher.BeginInvoke(() =>
+                try
                 {
-                    if (flowControl.IsFlowRun)
-                        handler?.UpdateMessage(msg);
-                });
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (flowControl.IsFlowRun)
+                            handler?.UpdateMessage(msg);
+                    });
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                } 
+
             }
 
         }
@@ -259,6 +289,19 @@ namespace ColorVision.Engine.Templates.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
+            RunFlow();
+        }
+
+        public void RunFlow()
+        {
+            flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+            if (flowControl.IsFlowRun)
+            {
+                log.Info("流程正在运行");
+                return;
+            }
+
             CheckDiskSpace("C");
             CheckDiskSpace("D");
             string startNode = View.FlowEngineControl.GetStartNodeName();
@@ -271,13 +314,12 @@ namespace ColorVision.Engine.Templates.Flow
                     return;
                 }
                 Refresh();
-                flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-               
+
                 handler.Cancelling -= Handler_Cancelling; ;
                 handler.Cancelling += Handler_Cancelling; ;
- 
+
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                 ButtonRun.Visibility = Visibility.Collapsed;

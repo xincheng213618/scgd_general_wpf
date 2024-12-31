@@ -12,7 +12,6 @@ using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
 using MQTTnet.Client;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -48,7 +47,6 @@ namespace ColorVision.Engine.Services.RC
         private string SysConfigRespTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
-
 
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
         private ServiceNodeStatus _RegStatus;
@@ -227,8 +225,9 @@ namespace ColorVision.Engine.Services.RC
 
             }
         }
-        public static void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        public void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
+            LastAliveTime = DateTime.Now; ;
             DoUpdateServiceTokens(services);
             DoUpdateServices(services);
         }
@@ -343,6 +342,12 @@ namespace ColorVision.Engine.Services.RC
 
         public void KeepLive(int heartbeatTime)
         {
+            TimeSpan sp = DateTime.Now - LastAliveTime;
+            if (sp.TotalMilliseconds > 10000)
+            {
+                Regist();
+            }
+
             if (Token == null)
             {
                 ReRegist();
