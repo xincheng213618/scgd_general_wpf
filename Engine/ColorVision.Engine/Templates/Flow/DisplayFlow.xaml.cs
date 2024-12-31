@@ -225,6 +225,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (e != null)
                 {
+                    algorithmNode.IsSelected = true;
                     Msg1 = algorithmNode.Title;
                     UpdateMsg(sender);
                 }
