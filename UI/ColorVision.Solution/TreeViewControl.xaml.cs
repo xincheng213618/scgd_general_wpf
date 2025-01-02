@@ -1,13 +1,40 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.V;
+using HandyControl.Tools.Converter;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
+    public class TreeViewItemMarginConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double num = 0.0;
+            UIElement uIElement = value as TreeViewItem;
+            while (uIElement != null && uIElement.GetType() != typeof(TreeView))
+            {
+                uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
+                if (uIElement is TreeViewItem)
+                {
+                    num += 4.0;
+                }
+            }
+
+            return new Thickness(num, 0.0, 0.0, 0.0);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
     /// <summary>
     /// TreeViewControl.xaml 的交互逻辑
     /// </summary>

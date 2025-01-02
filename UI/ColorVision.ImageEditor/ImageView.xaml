@@ -45,7 +45,6 @@
                       TileMode="Tile"
                       ViewportUnits="Absolute"
                       Viewport="0 0 20 20"
-                      Transform="{Binding ViewportTransform, ElementName=Zoombox1}"
                       Drawing="{StaticResource SmallGridGeometry}" />
         
         <DrawingBrush x:Key="LargeGridLinesDrawingBrush"
@@ -53,7 +52,6 @@
                       ViewportUnits="Absolute"
                       Opacity="0.5"
                       Viewport="0 0 200 200"
-                      Transform="{Binding ViewportTransform, ElementName=Zoombox1}"
                       Drawing="{StaticResource LargeGridGeometry}" />
         <DataTemplate x:Key="DrawingVisualCircleTemplate" >
             <StackPanel  Orientation="Horizontal">

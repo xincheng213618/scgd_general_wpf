@@ -11,14 +11,14 @@
         xmlns:cm ="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
-        Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" Background="{DynamicResource GlobalBackground}"  BorderThickness="0,0,0,1">
+        <Border Grid.Row="0"  Height="27" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}"  BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
                     <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
@@ -46,9 +46,9 @@
                 <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="Auto" MaxWidth="600"/>
                 <ColumnDefinition  Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
-            <Border  x:Name="LeftMainContent"  Grid.Row="0" Panel.ZIndex="101" Margin="-2,-1,0,0"  Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" >
+            <Border  x:Name="LeftMainContent" Grid.Row="0" Margin="-2,0,0,0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" >
                 <Grid >
-                    <TabControl x:Name="LeftTabControl" Style="{StaticResource TabControlBaseStyle}" Background="{DynamicResource GlobalBackground}" SelectedIndex="{Binding LeftTabControlSelectedIndex}"  TabStripPlacement="Bottom"  Width="303">
+                    <TabControl x:Name="LeftTabControl" Style="{StaticResource TabControlBaseStyle}" BorderThickness="0" Background="{DynamicResource GlobalBackground}" SelectedIndex="{Binding LeftTabControlSelectedIndex}"  TabStripPlacement="Bottom"  Width="303">
                         <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Background="{DynamicResource GlobalBackground}"  Width="150" />
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Background="{DynamicResource GlobalBackground}"  Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
