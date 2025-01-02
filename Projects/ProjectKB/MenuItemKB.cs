@@ -1,27 +1,25 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Projects.ProjectShiYuan
+namespace ProjectKB
 {
     public class ProjectWindowInstance
     {
-        public static ShiyuanProjectWindow WindowInstance { get; set; }
+        public static ProjectKBWindow WindowInstance { get; set; }
     }
 
-    public class ShiyuanProjectPlugin : IProjectBase
+    public class PluginKB: IProjectBase
     {
-        public override string? Header => "ProjectShiyuan";
-        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectShiyuan";
+        public  override string? Header => "键盘测试";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";
 
-        public override string Description { get; set; } = "视源项目";
         public override void Execute()
         {
             if (ProjectWindowInstance.WindowInstance == null)
             {
-                ProjectWindowInstance.WindowInstance = new ShiyuanProjectWindow
+                ProjectWindowInstance.WindowInstance = new ProjectKBWindow
                 {
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };
@@ -35,20 +33,20 @@ namespace ColorVision.Projects.ProjectShiYuan
         }
     }
 
-    public class ShiyuanProjectExport : MenuItemBase
+    public class MenuItemKB : MenuItemBase
     {
         public override string OwnerGuid => "Tool";
 
-        public override string GuidId => "ProjectShiyuan";
+        public override string GuidId => nameof(MenuItemKB);
 
         public override int Order => 100;
-        public override string Header => "视源项目";
+        public override string Header => "键盘测试";
 
         public override void Execute()
         {
             if (ProjectWindowInstance.WindowInstance == null)
             {
-                ProjectWindowInstance.WindowInstance = new ShiyuanProjectWindow
+                ProjectWindowInstance.WindowInstance = new ProjectKBWindow
                 {
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };

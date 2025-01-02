@@ -14,16 +14,7 @@ namespace ColorVision.Engine.Rbac
         public override string Header => Properties.Resources.MenuLogin;
         public override void Execute()
         {
-            if (UserConfig.Instance.UserName != null)
-            {
-                var user = UserConfig.Instance;
-                MessageBox.Show(user.PermissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
-
-            }
-            else
-            {
-                new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            }
+            new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
     }
 

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Rbac;
 using ColorVision.FloatingBall;
 using ColorVision.Scheduler;
 using ColorVision.Solution;
@@ -23,7 +22,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
@@ -155,11 +153,6 @@ namespace ColorVision
             }
         }
 
-
-        private void Login_Click(object sender, RoutedEventArgs e)
-        {
-            new UserInfoWindow() { }.ShowDialog();
-        }
 
         private void StatusBarGrid_Initialized(object sender, EventArgs e)
         {
