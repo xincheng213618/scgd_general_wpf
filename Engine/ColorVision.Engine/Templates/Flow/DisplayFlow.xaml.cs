@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Panuon.WPF.UI;
@@ -128,7 +129,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             try
             {
-                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
@@ -137,7 +138,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
@@ -276,6 +277,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+
+
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
@@ -322,7 +325,25 @@ namespace ColorVision.Engine.Templates.Flow
                     return;
                 }
                 if (!LastCompleted)
+                {
                     Refresh();
+                }
+                else
+                {
+                    foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                    {
+                        if (MarkColorProperty == null)
+                        {
+                            Type type = typeof(STNode);
+                            MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                        }
+                        // 设置值
+                        if (MarkColorProperty != null)
+                        {
+                            MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
+                        }
+                    }
+                }
                 LastCompleted = false;
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);

@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using static QRCoder.PayloadGenerator;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -17,6 +18,8 @@ namespace ColorVision.Engine.Services.Flow
             Guid = sTNode.Guid;
             Name = sTNode.Title;
         }
+
+        public ContextMenu ContextMenu { get; set; }
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
@@ -57,6 +60,7 @@ namespace ColorVision.Engine.Services.Flow
             STNodePropertyGrid1.IsEditEnable = false;
             STNodeEditorMain.ActiveChanged += (s, e) =>
             {
+                winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);

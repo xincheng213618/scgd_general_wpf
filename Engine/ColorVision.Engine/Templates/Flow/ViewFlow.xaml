@@ -14,18 +14,17 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-
         <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"   EnableEdit="False"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
         </Grid>
-        <Grid Grid.Column="1"  x:Name="Grid2" >
+        <Grid Grid.Column="1"  x:Name="Grid2"  Width="300" >
             <Grid.RowDefinitions >
-                <RowDefinition Height="300"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <WindowsFormsHost x:Name="winf2" Width="300">
+            <WindowsFormsHost x:Name="winf2" Height="400" Visibility="Collapsed">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
             <ListView  x:Name="listViewRecord" Grid.Row="1"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
