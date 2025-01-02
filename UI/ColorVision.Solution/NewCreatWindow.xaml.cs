@@ -41,7 +41,7 @@ namespace ColorVision.Solution
                 return text;
             }
         }
-        public RelayCommand Command => new(A => Execute());
+        public ICommand Command => new RelayCommand(A => Execute());
 
         public HotKeys HotKeys => new(Resources.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
         public Visibility Visibility => Visibility.Visible;

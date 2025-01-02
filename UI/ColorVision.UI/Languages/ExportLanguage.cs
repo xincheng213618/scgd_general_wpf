@@ -2,6 +2,7 @@
 using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Languages
 {
@@ -18,7 +19,7 @@ namespace ColorVision.UI.Languages
         public string? InputGestureText => "Ctrl + Shift + L";
 
         public object? Icon => null;
-        public RelayCommand Command => new(a => { });
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
 
         public MenuItem MenuItem

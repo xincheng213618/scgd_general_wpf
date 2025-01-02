@@ -68,7 +68,7 @@ namespace ColorVision.Wizards
             foreach (var step in IWizardSteps)
             {
                 Border border = new Border() { Margin = new Thickness(5, 5, 5, 5) };
-                border.Child = new Button() { Content = step.Header, Command = step.Command };
+                border.Child = new Button() { Content = step.Header, Command = step.RelayCommand };
                 WizardStackPanel.Children.Add(border);
             }
 

@@ -7,24 +7,19 @@ using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.PG.Templates
 {
-    public class ExportPGParam : IMenuItem
+    public class ExportPGParam : MenuItemBase
     {
-        public Visibility Visibility => Visibility.Visible;
+        public override string OwnerGuid => "Template";
 
-        public string OwnerGuid => "Template";
+        public override string GuidId => "PGParam";
+        public override int Order => 11;
+        public override string Header => Properties.Resources.MenuPG;
 
-        public string? GuidId => "PGParam";
-        public int Order => 11;
-        public string? Header => Properties.Resources.MenuPG;
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(a =>
+        public override void Execute()
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
@@ -32,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
                 return;
             }
             new TemplateEditorWindow(new TemplatePGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        }
+
     }
 }

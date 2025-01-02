@@ -117,24 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuCut" xml:space="preserve">
-    <value>切り取る (_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>コピーする (_C)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>削除する (_D)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編集する (_E)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>終了する (_X)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>ファイル (_F)</value>
-  </data>
   <data name="MenuNew" xml:space="preserve">
     <value>新規作成 (_N)</value>
   </data>
@@ -144,23 +126,11 @@
   <data name="MenuUpdate" xml:space="preserve">
     <value>更新を確認する (_U)</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>表示 (_V)</value>
-  </data>
   <data name="MenuViewSidebar" xml:space="preserve">
     <value>サイドバー</value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>ステータスバー</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>取り消す (_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>ツール (_T)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>ヘルプ (_H)</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
     <value>について (_A)</value>
@@ -312,9 +282,6 @@
   <data name="Local" xml:space="preserve">
     <value>地元</value>
   </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>名前を変更(_M)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
   </data>
@@ -332,9 +299,6 @@
   </data>
   <data name="Rollback" xml:space="preserve">
     <value>戻る</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>ペースト(_P)</value>
   </data>
   <data name="Initializer" xml:space="preserve">
     <value>初期化モジュール</value>

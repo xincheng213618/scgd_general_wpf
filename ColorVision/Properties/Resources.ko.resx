@@ -117,44 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuFile" xml:space="preserve">
-    <value>파일 (_F)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>도움 (_H)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>종료 (_X)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>삭제 (_D)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>편집 (_E)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>잘라내기 (_T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>복사 (_C)</value>
-  </data>
   <data name="MenuNew" xml:space="preserve">
     <value>새로 만들기 (_N)</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
     <value>열기 (_O)</value>
   </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>취소 (_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>도구 (_T)</value>
-  </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>업데이트 확인 (_U)</value>
-  </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>보기 (_V)</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
     <value>사이드바</value>
@@ -312,9 +282,6 @@
   <data name="Local" xml:space="preserve">
     <value>현지의</value>
   </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>이름 바꾸기(_M)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>
   </data>
@@ -332,9 +299,6 @@
   </data>
   <data name="Rollback" xml:space="preserve">
     <value>돌아가다</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>페이스트(_P)</value>
   </data>
   <data name="Initializer" xml:space="preserve">
     <value>초기화 모듈</value>

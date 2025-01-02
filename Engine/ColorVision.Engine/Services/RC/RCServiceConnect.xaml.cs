@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.RC
         public string Header => "RC配置";
         public string Description => "配置注册中心，如果已经正确配置服务可以点击服务配置即可不需要手动配置";
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand RelayCommand => new RelayCommand(a =>
         {
             new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         });

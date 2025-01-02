@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Scheduler
 {
@@ -22,7 +23,7 @@ namespace ColorVision.Scheduler
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
+        public ICommand Command => new RelayCommand(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
         public HotKeys HotKeys => new HotKeys(Properties.Resources.TaskViewerWindow, Hotkey.None, () => { new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); });
     }

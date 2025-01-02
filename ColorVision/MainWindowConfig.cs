@@ -140,7 +140,7 @@ namespace ColorVision
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
         public static void Execute()
         {
@@ -170,7 +170,7 @@ namespace ColorVision
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
 
         public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
@@ -204,7 +204,7 @@ namespace ColorVision
 
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
 
         public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);

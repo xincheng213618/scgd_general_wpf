@@ -18,7 +18,7 @@ namespace WindowsServicePlugin
         public string Header => "更新服务配置";
         public string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
 
-        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
 
         Dictionary<string, string> dic = new Dictionary<string, string>();
         public void Execute()

@@ -18,7 +18,7 @@ namespace WindowsServicePlugin
             public string Header => "从服务中配置Mysql";
             public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
 
-            public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+            public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
 
             Dictionary<string, string> dic = new Dictionary<string, string>();
             public void Execute()

@@ -4,6 +4,7 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Views
 {
@@ -50,7 +51,7 @@ namespace ColorVision.UI.Views
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(a => { });
+        public ICommand? Command => null;
         public Visibility Visibility => Visibility.Visible;
     }
 

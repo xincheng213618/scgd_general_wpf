@@ -12,7 +12,7 @@ namespace ColorVision.Engine.MySql
         public string Header => "Mysql配置";
         public string Description => "用户可以在这里配置数据库的连接，默认用户是root";
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand RelayCommand => new RelayCommand(a =>
         {
             MySqlConnect mySqlConnect = new() { Owner = Application.Current.GetActiveWindow()};
             mySqlConnect.ShowDialog();

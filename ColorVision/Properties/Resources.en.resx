@@ -117,44 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuFile" xml:space="preserve">
-    <value>_File</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>_Help</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>E_xit</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>_Delete</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>_Edit</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Cu_t</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>_Copy</value>
-  </data>
   <data name="MenuNew" xml:space="preserve">
     <value>_New</value>
   </data>
   <data name="MenuOpen" xml:space="preserve">
     <value>_Open</value>
   </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>_Undo</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>_Tool</value>
-  </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>Check For _Updates</value>
-  </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>_View</value>
   </data>
   <data name="MenuViewSidebar" xml:space="preserve">
     <value>Sidebar</value>
@@ -312,9 +282,6 @@
   <data name="Local" xml:space="preserve">
     <value>local</value>
   </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>Rena_me</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Aliases</value>
   </data>
@@ -332,9 +299,6 @@
   </data>
   <data name="Rollback" xml:space="preserve">
     <value>Rollback</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>_Paste</value>
   </data>
   <data name="Initializer" xml:space="preserve">
     <value>Initialization module</value>

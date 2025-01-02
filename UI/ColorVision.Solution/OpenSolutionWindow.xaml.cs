@@ -44,7 +44,7 @@ namespace ColorVision.Solution
 
         public Visibility Visibility => Visibility.Visible;
 
-        public RelayCommand Command => new(A => Execute());
+        public ICommand Command => new RelayCommand(A => Execute());
 
 
         public HotKeys HotKeys => new(Resources.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
@@ -87,10 +87,6 @@ namespace ColorVision.Solution
             ListView1.ItemsSource = SolutionInfos;
             ListView1.Visibility = Visibility.Visible;
         }
-
-
-
-
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

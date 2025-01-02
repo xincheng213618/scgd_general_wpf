@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Common.MVVM;
+using log4net;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -19,20 +20,11 @@ namespace ColorVision.UI.Menus
 
         }
 
-        public void LoadMenuItemFromAssembly(bool IsClear = false)
+        public void LoadMenuItemFromAssembly()
         {
-
+            log.Info("LoadMenuItemFromAssembly");
+            Menu.Items.Clear();
             var menuItems = new Dictionary<string, MenuItem>();
-            foreach (var item in Menu.Items.OfType<MenuItem>())
-            {
-                if (item.Name == "MenuFile")
-                {
-                    menuItems.Add("File", item);
-                    if (IsClear)
-                        item.Items.Clear();
-                }
-            }
-
             List<IMenuItem> iMenuItems = new();
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
@@ -57,12 +49,12 @@ namespace ColorVision.UI.Menus
                             Tag = iMenuItem,
                             Visibility = iMenuItem.Visibility,
                         };
-                        if (iMenuItem.Command != null)
+                        if (iMenuItem.Command is RelayCommand relayCommand)
                         {
-                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
                             Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
                             {
-                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
                             };
                         }
                     }

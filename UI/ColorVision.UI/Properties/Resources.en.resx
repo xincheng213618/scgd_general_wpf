@@ -243,4 +243,28 @@
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>_Paste</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Rena_me</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>_Undo</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>_View</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>_Delete</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Cu_t</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>_Copy</value>
+  </data>
 </root>

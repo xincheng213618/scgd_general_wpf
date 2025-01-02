@@ -8,7 +8,6 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
-        xmlns:cm ="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -20,18 +19,7 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0"  Height="27" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
             <Grid>
-                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
-                    <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
-                    <MenuItem x:Name="MenuEdit" Header="{x:Static properties:Resources.MenuEdit}">
-                        <MenuItem Header="{x:Static properties:Resources.MenuUndo}" Command="ApplicationCommands.Undo" />
-                        <MenuItem Header="Redo" Command="ApplicationCommands.Redo" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuCopy}" Command="ApplicationCommands.Copy" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuCut}" Command="ApplicationCommands.Cut" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuPaste}" Command="ApplicationCommands.Paste" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static cm:Commands.ReName}" />
-                    </MenuItem>
-                </Menu>
+                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" />
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                 <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
             </Grid>

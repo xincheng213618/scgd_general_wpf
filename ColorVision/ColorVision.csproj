@@ -123,4 +123,8 @@
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Menus\" />
+  </ItemGroup>
+
 </Project>

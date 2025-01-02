@@ -131,34 +131,6 @@
           <source>关于(_A)</source>
           <target state="new">について (_A)</target>
         </trans-unit>
-        <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
-          <source>复制(_C)</source>
-          <target state="new">コピーする (_C)</target>
-        </trans-unit>
-        <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
-          <source>剪切(_T)</source>
-          <target state="new">切り取る (_T)</target>
-        </trans-unit>
-        <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
-          <source>删除(_D)</source>
-          <target state="new">削除する (_D)</target>
-        </trans-unit>
-        <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
-          <source>编辑(_E)</source>
-          <target state="new">編集する (_E)</target>
-        </trans-unit>
-        <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
-          <source>退出(_X)</source>
-          <target state="new">終了する (_X)</target>
-        </trans-unit>
-        <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
-          <source>文件(_F)</source>
-          <target state="new">ファイル (_F)</target>
-        </trans-unit>
-        <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
-          <source>帮助(_H)</source>
-          <target state="new">ヘルプ (_H)</target>
-        </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
           <target state="new">新規作成 (_N)</target>
@@ -171,33 +143,13 @@
           <source>选项(_O)</source>
           <target state="new">オプション (_O)</target>
         </trans-unit>
-        <trans-unit id="MenuPaste" translate="yes" xml:space="preserve">
-          <source>粘贴(_P)</source>
-          <target state="new">ペースト(_P)</target>
-        </trans-unit>
-        <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
-          <source>重命名(_M)</source>
-          <target state="new">名前を変更(_M)</target>
-        </trans-unit>
         <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
           <source>设置(_S)</source>
           <target state="new">設定 (_S)</target>
         </trans-unit>
-        <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
-          <source>工具(_T)</source>
-          <target state="new">ツール (_T)</target>
-        </trans-unit>
-        <trans-unit id="MenuUndo" translate="yes" xml:space="preserve">
-          <source>撤销(_U)</source>
-          <target state="new">取り消す (_U)</target>
-        </trans-unit>
         <trans-unit id="MenuUpdate" translate="yes" xml:space="preserve">
           <source>检查更新(_U)</source>
           <target state="new">更新を確認する (_U)</target>
-        </trans-unit>
-        <trans-unit id="MenuView" translate="yes" xml:space="preserve">
-          <source>视图(_V)</source>
-          <target state="new">表示 (_V)</target>
         </trans-unit>
         <trans-unit id="MenuViewSidebar" translate="yes" xml:space="preserve">
           <source>侧边栏</source>
