@@ -170,6 +170,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         private FlowControl flowControl;
 
+        bool LastCompleted = true;
+
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             stopwatch.Stop();
@@ -188,6 +190,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 else
                 {
+                    LastCompleted = true;
                 }
             }
         }
@@ -318,7 +321,9 @@ namespace ColorVision.Engine.Templates.Flow
                     MessageBox.Show("Token为空，正在刷新token");
                     return;
                 }
-                Refresh();
+                if (!LastCompleted)
+                    Refresh();
+                LastCompleted = false;
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 

@@ -55,6 +55,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn  Header="RunTime" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:FlowRecord}">
+                                    <TextBlock Text="{Binding RunTime,StringFormat=mm\\:ss\\:fff}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                     </GridView>
                 </ListView.View>
 
