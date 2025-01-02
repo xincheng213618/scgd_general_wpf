@@ -17,6 +17,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             Guid = sTNode.Guid;
             Name = sTNode.Title;
+            DateTimeFlowRun = DateTime.Now;
         }
 
         public ContextMenu ContextMenu { get; set; }
@@ -27,15 +28,17 @@ namespace ColorVision.Engine.Services.Flow
         public Guid Guid { get; set; }
         public string Name { get => _Name; set { _Name =value; NotifyPropertyChanged(); } }
         private string _Name;
+        public DateTime DateTimeFlowRun { get => _DateTimeFlowRun; set { _DateTimeFlowRun = value; NotifyPropertyChanged(); } }
+        private DateTime _DateTimeFlowRun;
 
         public DateTime DateTimeRun { get => _DateTimeRun; set { _DateTimeRun = value; NotifyPropertyChanged(); } }
         private DateTime _DateTimeRun;
 
-        public DateTime DateTimeStop { get => _DateTimeStop; set { _DateTimeStop = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(RunTime)); } }
+        public DateTime DateTimeStop { get => _DateTimeStop; set { _DateTimeStop = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(RunTime)); NotifyPropertyChanged(nameof(FlowTime)); } }
         private DateTime _DateTimeStop;
 
-        public TimeSpan RunTime { get => DateTimeStop- DateTimeRun;}
-
+        public TimeSpan RunTime { get => _DateTimeStop - _DateTimeRun; }
+        public TimeSpan FlowTime { get => _DateTimeStop - _DateTimeFlowRun; }
     }
 
     /// <summary>

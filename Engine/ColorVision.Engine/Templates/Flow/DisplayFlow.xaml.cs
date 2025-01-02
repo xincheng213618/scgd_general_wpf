@@ -343,6 +343,15 @@ namespace ColorVision.Engine.Templates.Flow
                             MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
                         }
                     }
+                    if (FlowConfig.Instance.IsShowDetailFlow)
+                    {
+                        foreach (var item in View.FlowRecords)
+                        {
+                            item.IsSelected = false;
+                            item.DateTimeFlowRun = DateTime.Now;
+                        }
+                    }
+
                 }
                 LastCompleted = false;
 

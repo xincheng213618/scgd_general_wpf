@@ -54,10 +54,17 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="RunTime" Width="150">
+                        <GridViewColumn  Header="RunTime" Width="80">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:FlowRecord}">
-                                    <TextBlock Text="{Binding RunTime,StringFormat=mm\\:ss\\:fff}"/>
+                                    <TextBlock Text="{Binding RunTime,StringFormat=ss\\:ffff}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="FlowTime" Width="110">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:FlowRecord}">
+                                    <TextBlock Text="{Binding FlowTime,StringFormat=mm\\:ss\\:ff}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
