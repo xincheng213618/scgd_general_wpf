@@ -22,6 +22,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.Flow;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -347,7 +348,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCamera result = new(model);
 
             ViewResultCameras.AddUnique(result, Config.InsertAtBeginning);
-            if (Config.AutoRefreshView)
+            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);

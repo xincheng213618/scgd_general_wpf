@@ -26,6 +26,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Templates.Flow;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -187,7 +188,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             ViewResultCamera result = new(model);
             ViewResults.AddUnique(result);
-            if (Config.AutoRefreshView)
+            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);

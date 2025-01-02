@@ -3,10 +3,10 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
@@ -177,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
-                if (Config.AutoRefreshView)
+                if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
                     SideSave(algorithmResult, Config.SaveSideDataDirPath);

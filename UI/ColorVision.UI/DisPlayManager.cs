@@ -37,7 +37,7 @@ namespace ColorVision.UI
             UpdateDisPlayBorder();
 
             if (disPlayControl is UserControl userControl)
-                userControl.PreviewMouseDown += (s, e) =>
+                userControl.MouseDown += (s, e) =>
                 {
                     if (userControl.Parent is StackPanel stackPanel)
                     {

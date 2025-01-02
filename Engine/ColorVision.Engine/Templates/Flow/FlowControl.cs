@@ -1,18 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
-using ColorVision.Engine.Services.Types;
-using ColorVision.Scheduler;
 using FlowEngineLib;
 using log4net;
-using MQTTMessageLib.Flow;
 using Newtonsoft.Json;
-using Quartz;
 using System;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -72,7 +65,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Stop()
         {
-            IsFlowRun = false;
             if (flowEngine == null)
             {
                 FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Stop", SerialNumber, string.Empty);
@@ -87,11 +79,14 @@ namespace ColorVision.Engine.Templates.Flow
                 ClearEventHandler();
                 flowEngine.StopNode(SerialNumber);
             }
+            IsFlowRun = false;
+            FlowConfig.Instance.FlowRun = false;
         }
 
         public void Start(string sn)
         {
             IsFlowRun = true;
+            FlowConfig.Instance.FlowRun = true;
             SerialNumber = sn;
             if (flowEngine == null)
             {
@@ -118,6 +113,7 @@ namespace ColorVision.Engine.Templates.Flow
             data.Params = e.Message;
             data.SerialNumber =e.SerialNumber;
             Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(data, new EventArgs()));
+            FlowConfig.Instance.FlowRun = false;
         }
 
 
@@ -152,6 +148,7 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                          Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }
+                    FlowConfig.Instance.FlowRun = false;
                     return Task.CompletedTask;
                 }
                 catch (Exception ex)
