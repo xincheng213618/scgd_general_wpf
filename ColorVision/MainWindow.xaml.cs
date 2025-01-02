@@ -44,7 +44,8 @@ namespace ColorVision
             Config.SetWindow(this);
             SizeChanged += (s, e) => Config.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
-            Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
+            //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
+            Title = "ColorVision";
             this.ApplyCaption();
             this.SetWindowFull(Config);
         }
