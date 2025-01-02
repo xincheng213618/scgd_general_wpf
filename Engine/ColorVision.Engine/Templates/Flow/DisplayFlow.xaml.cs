@@ -101,12 +101,9 @@ namespace ColorVision.Engine.Templates.Flow
                         View.FlowRecords.Add(new FlowRecord(item));
                     }
                 }
-
             };
 
-
             this.ApplyChangedSelectedColor(DisPlayBorder);
-
 
             timer = new Timer(UpdateMsg, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -135,8 +132,10 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 MqttRCService.GetInstance().QueryServices();
             }
-            
-            if (ComboBoxFlow.SelectedValue is not FlowParam flowParam) return;
+           
+            if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= FlowParam.Params.Count) return;
+            FlowParam flowParam = FlowParam.Params[ComboBoxFlow.SelectedIndex].Value;
+
             if (View == null) return;
             if (string.IsNullOrEmpty(flowParam.DataBase64))
             {
