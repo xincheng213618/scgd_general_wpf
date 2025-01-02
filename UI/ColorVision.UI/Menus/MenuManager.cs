@@ -31,30 +31,6 @@ namespace ColorVision.UI.Menus
                     if (IsClear)
                         item.Items.Clear();
                 }
-                if (item.Name == "MenuTool")
-                {
-                    menuItems.Add("Tool", item);
-                    if (IsClear)
-                        item.Items.Clear();
-                }
-                if (item.Name == "MenuTemplate")
-                {
-                    menuItems.Add("Template", item);
-                    if (IsClear)
-                        item.Items.Clear();
-                }
-                if (item.Name == "MenuHelp")
-                {
-                    menuItems.Add("Help", item);
-                    if (IsClear)
-                        item.Items.Clear();
-                }
-                if (item.Name == "MenuView")
-                {
-                    menuItems.Add("View", item);
-                    if (IsClear)
-                        item.Items.Clear();
-                }
             }
 
             List<IMenuItem> iMenuItems = new();
@@ -123,7 +99,7 @@ namespace ColorVision.UI.Menus
                 }
             }
 
-            foreach (var item in iMenuItems.ToList())
+            foreach (var item in iMenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
             {
                 if (item.OwnerGuid == "Menu")
                 {
@@ -137,7 +113,7 @@ namespace ColorVision.UI.Menus
                         Visibility = item.Visibility,
                     };
                     menuItems.Add(item.GuidId ?? Guid.NewGuid().ToString(), menuItem);  
-                    Menu.Items.Insert(item.Order, menuItem);
+                    Menu.Items.Add(menuItem);
                     iMenuItems.Remove(item);
                 }
             }

@@ -31,9 +31,6 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuPaste}" Command="ApplicationCommands.Paste" />
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static cm:Commands.ReName}" />
                     </MenuItem>
-                    <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
-                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/>
-                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}"/>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                 <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
