@@ -11,7 +11,7 @@ namespace ColorVision.Solution.V.Files
 
         string ToolTip { get; set; }
 
-        ImageSource Icon { get; set; }
+        ImageSource? Icon { get; set; }
 
         string FileSize { get; set; }
 

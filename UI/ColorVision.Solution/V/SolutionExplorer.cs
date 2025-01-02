@@ -4,8 +4,11 @@ using ColorVision.Solution.V.Folders;
 using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Solution.V;
+using log4net;
+using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -48,6 +51,7 @@ namespace ColorVision.Solution.V
 
     public class VMCreate
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(VMCreate));
         public static VMCreate Instance { get; set; } = new VMCreate();
 
         public VMCreate()
@@ -81,7 +85,6 @@ namespace ColorVision.Solution.V
 
         public List<string> ManagerObject { get; set; } = new List<string>();
 
-
         public  async Task GeneralChild(VObject vObject, DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
@@ -99,12 +102,15 @@ namespace ColorVision.Solution.V
             foreach (var item in directoryInfo.GetFiles())
             {
                 i++;
-                if (i == 5)
+                if (i == 100)
                 {
                     await Task.Delay(100);
                     i = 0;
                 }
+                var _stopwatch = Stopwatch.StartNew();
                 CreateFile(vObject, item);
+                _stopwatch.Stop();
+                log.Debug($"{item.FullName}加载时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
             }
         }
 
@@ -122,7 +128,7 @@ namespace ColorVision.Solution.V
             foreach (var item in directoryInfo.GetFiles())
             {
                 i++;
-                if (i == 5)
+                if (i == 100)
                 {
                     await Task.Delay(100);
                     i = 0;
@@ -217,6 +223,7 @@ namespace ColorVision.Solution.V
 
     public class SolutionExplorer: VObject
     {
+        private static readonly ILog log  = LogManager.GetLogger(typeof(SolutionExplorer));
         public DirectoryInfo DirectoryInfo { get; set; }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
@@ -317,9 +324,12 @@ namespace ColorVision.Solution.V
                 await Task.Delay(300);
                 if(DirectoryInfo!=null)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(async () =>
                     {
-                         _= VMCreate.Instance.GeneralChild(this, DirectoryInfo);
+                        var _stopwatch = Stopwatch.StartNew();
+                        await VMCreate.Instance.GeneralChild(this, DirectoryInfo);
+                        _stopwatch.Stop();
+                        log.Info($"工程初始化时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
                     });
                 }
             });

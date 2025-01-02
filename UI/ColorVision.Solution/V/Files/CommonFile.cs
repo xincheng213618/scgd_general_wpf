@@ -18,9 +18,7 @@ namespace ColorVision.Solution.V.Files
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
-            var icon = FileIcon.GetFileIcon(fileInfo.FullName);
-            if (icon != null)
-                Icon = icon.ToImageSource();
+            Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
 
         public string Name { get; set; }

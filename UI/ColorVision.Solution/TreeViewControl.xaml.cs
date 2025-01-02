@@ -22,7 +22,7 @@ namespace ColorVision.Solution
                 uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
                 if (uIElement is TreeViewItem)
                 {
-                    num += 4.0;
+                    num += 3.0;
                 }
             }
 

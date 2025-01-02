@@ -65,7 +65,7 @@ namespace ColorVision.Solution.V
         public virtual string ToolTip { get => _ToolTip; set { _ToolTip = value; NotifyPropertyChanged(); } }
         private string _ToolTip = string.Empty;
 
-        public virtual ImageSource Icon { get; set; }
+        public virtual ImageSource? Icon { get; set; }
 
         public RelayCommand AddChildrenCommand { get; set; }
         public RelayCommand RemoveChildrenCommand { get; set; }
