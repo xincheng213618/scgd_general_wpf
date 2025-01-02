@@ -206,7 +206,7 @@ namespace ColorVision.Solution.V
             {
                 if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         VFile vFile = new VFile(file);
                         vObject.AddChild(vFile);
@@ -237,7 +237,7 @@ namespace ColorVision.Solution.V
         
         public FileInfo ConfigFileInfo { get; set; }
 
-        public SolutionExplorer(string FullPath)
+        public  SolutionExplorer(string FullPath)
         {
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
@@ -318,21 +318,10 @@ namespace ColorVision.Solution.V
                 };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
-
-            Task.Run(async () =>
-            {
-                await Task.Delay(300);
-                if(DirectoryInfo!=null)
-                {
-                    Application.Current.Dispatcher.BeginInvoke(async () =>
-                    {
-                        var _stopwatch = Stopwatch.StartNew();
-                        await VMCreate.Instance.GeneralChild(this, DirectoryInfo);
-                        _stopwatch.Stop();
-                        log.Info($"工程初始化时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
-                    });
-                }
-            });
+            var _stopwatch = Stopwatch.StartNew();
+            VMCreate.Instance.GeneralChild(this, DirectoryInfo);
+            _stopwatch.Stop();
+            log.Info($"工程初始化时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
             SaveCommand = new RelayCommand(a => SaveConfig());
         }
