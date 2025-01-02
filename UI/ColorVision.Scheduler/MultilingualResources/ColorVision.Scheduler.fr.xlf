@@ -10,4 +10,22 @@
       </group>
     </body>
   </file>
+  <file datatype="xml" source-language="zh-Hans" target-language="fr" original="UI/COLORVISION.SCHEDULER/PROPERTIES/RESOURCES.RESX">
+    <body>
+      <group id="UI/COLORVISION.SCHEDULER/PROPERTIES/RESOURCES.RESX" datatype="resx">
+        <trans-unit id="Create" translate="yes" xml:space="preserve">
+          <source>创建</source>
+          <target state="new">créer</target>
+        </trans-unit>
+        <trans-unit id="CreateTask" translate="yes" xml:space="preserve">
+          <source>创建任务</source>
+          <target state="new">Créer des tâches</target>
+        </trans-unit>
+        <trans-unit id="TaskViewerWindow" translate="yes" xml:space="preserve">
+          <source>任务计划程序</source>
+          <target state="new">Fenêtre de visualisation des tâches</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
 </xliff>

@@ -4,16 +4,17 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Scheduler"
+        xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:QuartzSchedulerManager}"
-        Title="TaskViewerWindow" Height="450" Width="1024">
+        Title="{x:Static properties:Resources.TaskViewerWindow}" Height="450" Width="1024" Background="{StaticResource BackgroundBrush}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel>
-            <Button DockPanel.Dock="Right" Content="Create Task" Click="CreateTaskButton_Click" Margin="5"/>
+            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Margin="5"/>
             <StackPanel Orientation="Horizontal">
                 <Button  Content="Start" Command="{Binding StartCommand}"  Margin="5"/>
                 <Button  Content="PauseAll" Command="{Binding PauseAllCommand}"  Margin="5"/>
@@ -22,9 +23,16 @@
             </StackPanel>
         </DockPanel>
 
-        <ListView x:Name="ListViewTask" Grid.Row="1" >
+        <ListView x:Name="ListViewTask" Grid.Row="1"  BorderThickness="0">
+            
             <ListView.View>
                 <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn Header="GroupName">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">

@@ -120,4 +120,10 @@
   <data name="Create" xml:space="preserve">
     <value>作成する</value>
   </data>
+  <data name="TaskViewerWindow" xml:space="preserve">
+    <value>タスクビューアウィンドウ</value>
+  </data>
+  <data name="CreateTask" xml:space="preserve">
+    <value>タスクの作成</value>
+  </data>
 </root>
