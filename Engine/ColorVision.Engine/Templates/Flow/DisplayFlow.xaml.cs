@@ -2,14 +2,11 @@
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using FlowEngineLib;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Panuon.WPF.UI;
@@ -25,7 +22,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Interop;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -53,7 +49,6 @@ namespace ColorVision.Engine.Templates.Flow
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DisplayFlow));
 
-
         private static DisplayFlow _instance;
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
@@ -76,12 +71,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-
             View = new ViewFlow();
-
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 
@@ -92,15 +82,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
-                View.FlowRecords.Clear();
                 Refresh();
-                if (FlowConfig.Instance.IsShowDetailFlow)
-                {
-                    foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
-                    {
-                        View.FlowRecords.Add(new FlowRecord(item));
-                    }
-                }
             };
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -150,6 +132,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
+                    View.FlowRecords.Clear();
                 }
 
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
@@ -158,6 +141,10 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     item.nodeRunEvent += UpdateMsg;
                     item.nodeEndEvent += nodeEndEvent;
+                    if (FlowConfig.Instance.IsShowDetailFlow)
+                    {
+                        View.FlowRecords.Add(new FlowRecord(item));
+                    }
                 }
 
                 if (Config.IsAutoSize)

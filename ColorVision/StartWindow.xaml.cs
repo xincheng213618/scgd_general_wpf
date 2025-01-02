@@ -77,7 +77,6 @@ namespace ColorVision
                 }
             }
 
-
             _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
             Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
