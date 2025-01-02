@@ -222,30 +222,33 @@ namespace ColorVision.ImageEditor
 
         private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            var Point = Mouse.GetPosition(ImageShow);
-            var DrawingVisual = ImageShow.GetVisual(Point);
+            if (ImageEditViewMode.ImageEditMode)
+            {
+                var Point = Mouse.GetPosition(ImageShow);
+                var DrawingVisual = ImageShow.GetVisual(Point);
 
-            if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual  && DrawingVisual is IDrawingVisual drawing)
-            {
-                var ContextMenu = new ContextMenu();
-                MenuItem menuItem = new() { Header = "隐藏(_H)" };
-                menuItem.Click += (s, e) =>
+                if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
-                    drawing.BaseAttribute.IsShow = false;
-                };
-                MenuItem menuIte2 = new() { Header = "删除" };
-                menuIte2.Click += (s, e) =>
+                    var ContextMenu = new ContextMenu();
+                    MenuItem menuItem = new() { Header = "隐藏(_H)" };
+                    menuItem.Click += (s, e) =>
+                    {
+                        drawing.BaseAttribute.IsShow = false;
+                    };
+                    MenuItem menuIte2 = new() { Header = "删除" };
+                    menuIte2.Click += (s, e) =>
+                    {
+                        ImageShow.RemoveVisual(DrawingVisual);
+                        PropertyGrid2.SelectedObject = null;
+                    };
+                    ContextMenu.Items.Add(menuItem);
+                    ContextMenu.Items.Add(menuIte2);
+                    ImageShow.ContextMenu = ContextMenu;
+                }
+                else
                 {
-                    ImageShow.RemoveVisual(DrawingVisual);
-                    PropertyGrid2.SelectedObject = null;
-                };
-                ContextMenu.Items.Add(menuItem);
-                ContextMenu.Items.Add(menuIte2);
-                ImageShow.ContextMenu = ContextMenu;
-            }
-            else
-            {
-                ImageShow.ContextMenu = null;
+                    ImageShow.ContextMenu = null;
+                }
             }
         }
         private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
