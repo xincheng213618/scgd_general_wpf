@@ -17,7 +17,11 @@ namespace ColorVision.Engine.Services.Flow
         {
             Guid = sTNode.Guid;
             Name = sTNode.Title;
-            DateTimeFlowRun = DateTime.Now;
+            DateTime date = DateTime.Now;
+            DateTimeFlowRun = date;
+            DateTimeRun = date;
+            DateTimeStop = date;
+
         }
 
         public ContextMenu ContextMenu { get; set; }

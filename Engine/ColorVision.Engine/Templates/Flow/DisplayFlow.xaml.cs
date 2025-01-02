@@ -345,6 +345,7 @@ namespace ColorVision.Engine.Templates.Flow
                     }
                     if (FlowConfig.Instance.IsShowDetailFlow)
                     {
+                        View.FlowRecords.Sort((x, y) => x.FlowTime.CompareTo(y.FlowTime));
                         foreach (var item in View.FlowRecords)
                         {
                             item.IsSelected = false;
