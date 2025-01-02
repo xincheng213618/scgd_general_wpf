@@ -207,9 +207,6 @@
   <data name="Settings" xml:space="preserve">
     <value>设置</value>
   </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>模板(_M)</value>
-  </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>启用数据库</value>
   </data>

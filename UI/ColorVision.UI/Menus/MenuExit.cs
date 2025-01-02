@@ -15,5 +15,4 @@ namespace ColorVision.UI.Menus
             Environment.Exit(0);
         }
     }
-
 }

@@ -207,9 +207,6 @@
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
   </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>_Modèle</value>
-  </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>Activer la base de données</value>
   </data>

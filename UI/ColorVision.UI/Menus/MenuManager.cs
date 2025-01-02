@@ -123,11 +123,32 @@ namespace ColorVision.UI.Menus
                 }
             }
 
+            foreach (var item in iMenuItems.ToList())
+            {
+                if (item.OwnerGuid == "Menu")
+                {
+                    MenuItem menuItem = new()
+                    {
+                        Header = item.Header,
+                        Icon = item.Icon,
+                        InputGestureText = item.InputGestureText,
+                        Command = item.Command,
+                        Tag = item,
+                        Visibility = item.Visibility,
+                    };
+                    menuItems.Add(item.GuidId ?? Guid.NewGuid().ToString(), menuItem);  
+                    Menu.Items.Insert(item.Order, menuItem);
+                    iMenuItems.Remove(item);
+                }
+            }
+
             foreach (var keyValuePair in menuItems)
             {
                 CreateMenu(keyValuePair.Value, keyValuePair.Key);
             }
 
+
+            
             iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
             foreach (var iMenuItem in iMenuItems)
             {

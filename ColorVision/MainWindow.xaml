@@ -31,7 +31,6 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuPaste}" Command="ApplicationCommands.Paste" />
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static cm:Commands.ReName}" />
                     </MenuItem>
-                    <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
                     <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
                     <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/>
                     <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}"/>
@@ -46,7 +45,7 @@
                 <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="Auto" MaxWidth="600"/>
                 <ColumnDefinition  Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
-            <Border  x:Name="LeftMainContent" Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Border  x:Name="LeftMainContent" Grid.Row="0" Margin="-2,0,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <Grid >
                     <TabControl x:Name="LeftTabControl" Style="{StaticResource TabControlBaseStyle}" BorderThickness="0" Background="{DynamicResource GlobalBackground}" SelectedIndex="{Binding LeftTabControlSelectedIndex}"  TabStripPlacement="Bottom"  Width="303">
                         <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Background="{DynamicResource GlobalBackground}"  Width="150" />

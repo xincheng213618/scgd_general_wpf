@@ -207,9 +207,6 @@
   <data name="Settings" xml:space="preserve">
     <value>Настройки</value>
   </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(_M)</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
   </data>

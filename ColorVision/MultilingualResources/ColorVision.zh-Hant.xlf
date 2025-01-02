@@ -183,10 +183,6 @@
           <source>设置(_S)</source>
           <target state="new">設置(_S)</target>
         </trans-unit>
-        <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
-          <source>模板(_M)</source>
-          <target state="new">範本(_M)</target>
-        </trans-unit>
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">工具(_T)</target>

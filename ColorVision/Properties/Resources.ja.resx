@@ -207,9 +207,6 @@
   <data name="Settings" xml:space="preserve">
     <value>設定</value>
   </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>テンプレート(_M)</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>回復インターフェイスのレイアウトを開始します</value>
   </data>

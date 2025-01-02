@@ -466,15 +466,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_M) 的本地化字符串。
-        /// </summary>
-        public static string MenuTemplate {
-            get {
-                return ResourceManager.GetString("MenuTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工具(_T) 的本地化字符串。
         /// </summary>
         public static string MenuTool {

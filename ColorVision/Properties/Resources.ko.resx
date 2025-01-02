@@ -207,9 +207,6 @@
   <data name="Settings" xml:space="preserve">
     <value>설정</value>
   </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>템플릿(_M)</value>
-  </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>복구 인터페이스 레이아웃 시작</value>
   </data>
