@@ -381,26 +381,10 @@ namespace ColorVision.ImageEditor.Draw
                     MaxImage();
                 e.Handled = true;
             }
-            if (_ImageEditMode == false)
-            {
-                if (e.Key == Key.Add || e.Key ==Key.I)
-                {
-                    ZoomIncrease.RaiseExecute(e);
-                    e.Handled = true;
-                }
-                if (e.Key == Key.Subtract || e.Key == Key.O)
-                {
-                    ZoomDecrease.RaiseExecute(e);
-                    e.Handled = true;
-                }
-            }
-
-
 
             if (_ImageEditMode == true)
             {
-
-                if (e.Key == Key.Left || e.Key == Key.A)
+                if (!Keyboard.IsKeyDown(Key.LeftCtrl) && ( e.Key == Key.Left || e.Key == Key.A))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -427,7 +411,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Right || e.Key == Key.D)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -454,7 +438,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Up || e.Key == Key.W)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -481,7 +465,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Down || e.Key == Key.S)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -508,7 +492,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Add || e.Key == Key.I)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -535,7 +519,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Subtract || e.Key == Key.O)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -569,7 +553,7 @@ namespace ColorVision.ImageEditor.Draw
                     }
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Delete)
+                else if (!Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Delete))
                 {
                     void Move(DrawingVisual item)
                     {
@@ -590,12 +574,68 @@ namespace ColorVision.ImageEditor.Draw
                     e.Handled = true;
 
                 }
+                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
+                {
+                    ZoomIncrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
+                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
+                {
+                    ZoomDecrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
+                else if( Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(-10, 0);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
+                }
+                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Right || e.Key == Key.D))
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(10, 0);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
+                }
+                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Up || e.Key == Key.W))
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(0, -10);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
+                }
+                else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Down || e.Key == Key.S))
+                {
+                    TranslateTransform translateTransform = new();
+                    Vector vector = new(0, 10);
+                    translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
+                    translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
+                    ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
+                    e.Handled = true;
+                }
             }
 
 
-                if (_ImageEditMode == false)
+            if (_ImageEditMode == false)
             {
-                if (e.Key == Key.Left || e.Key == Key.W)
+                if (e.Key == Key.Add || e.Key == Key.I)
+                {
+                    ZoomIncrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Subtract || e.Key == Key.O)
+                {
+                    ZoomDecrease.RaiseExecute(e);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Left || e.Key == Key.A)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(-10, 0);
@@ -629,16 +669,6 @@ namespace ColorVision.ImageEditor.Draw
                     translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                     translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Add || e.Key == Key.I)
-                {
-                    ZoomboxSub.Zoom(1.1);
-                    e.Handled = true;
-                }
-                else if (e.Key == Key.Subtract || e.Key ==Key.O)
-                {
-                    ZoomboxSub.Zoom(0.9);
                     e.Handled = true;
                 }
             }

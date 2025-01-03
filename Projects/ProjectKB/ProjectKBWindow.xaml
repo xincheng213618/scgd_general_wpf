@@ -84,18 +84,14 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Grid Visibility="Visible" Height="32">
-                        <ToolBarTray  Grid.Row="0" IsLocked="True"  Background="Transparent">
-                            <ToolBar Band="0" BandIndex="0" Padding="3,2" >
-
-                            </ToolBar>
-                        </ToolBarTray>
-                        <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
+                        <StackPanel HorizontalAlignment="Left"  Orientation="Horizontal">
+                            <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  VerticalAlignment="Center" Command="{Binding OpenConfigCommand}" >
+                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </Button>
                             <Button Click="Button_Click_Clear" Background="#01FFFFFF" BorderThickness="0">
                                 <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="4" />
                             </Button>
-                            <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  VerticalAlignment="Center" Command="{Binding Config.EditCommand}" >
-                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </Button>
+
                         </StackPanel>
                     </Grid>
 
