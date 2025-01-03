@@ -185,6 +185,11 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
+
+                if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                {
+                    ErrorSign();
+                }
                 if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
@@ -274,6 +279,27 @@ namespace ColorVision.Engine.Templates.Flow
                         MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
                     }
                 }
+            }
+        }
+
+        public void ErrorSign()
+        {
+            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                if (item.IsSelected == true)
+                {
+                    if (MarkColorProperty == null)
+                    {
+                        Type type = typeof(STNode);
+                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    // 设置值
+                    if (MarkColorProperty != null)
+                    {
+                        MarkColorProperty.SetValue(item, System.Drawing.Color.Red);
+                    }
+                }
+
             }
         }
 
