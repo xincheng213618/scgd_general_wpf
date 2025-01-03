@@ -563,7 +563,6 @@ namespace ColorVision.Engine.Templates.POI
                     Init = true;
                     return;
                 }
-
                 DrawingVisualLists.SuspendUpdate();
                 int WaitNum = 50;
                 if (!PoiParam.PoiConfig.IsShowText)

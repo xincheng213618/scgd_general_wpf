@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8604
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Globalization;

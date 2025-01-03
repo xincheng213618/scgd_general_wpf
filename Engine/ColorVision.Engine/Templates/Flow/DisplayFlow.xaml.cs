@@ -85,6 +85,7 @@ namespace ColorVision.Engine.Templates.Flow
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
                 Refresh();
             };
+            MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => Refresh();
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 

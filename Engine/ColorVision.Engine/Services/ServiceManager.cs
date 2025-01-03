@@ -153,9 +153,6 @@ namespace ColorVision.Engine.Services
         public void LoadServices()
         {
             LastGenControl?.Clear();
-            MqttRCService.GetInstance().ServiceTokens.Clear();
-
-
             List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPid(1);
 
             TypeServices.Clear();
