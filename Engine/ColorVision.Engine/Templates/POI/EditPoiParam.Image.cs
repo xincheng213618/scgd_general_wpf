@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8604
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Globalization;
@@ -222,6 +223,9 @@ namespace ColorVision.Engine.Templates.POI
                 ImageEditViewMode.SelectDrawingVisual = null;
             }
         }
+        private double DefalutWidth { get; set; } = 30;
+        private double DefalutHeight { get; set; } = 30;
+        private double DefalutRadius { get; set; } = 30;
 
         private void ImageShow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -268,7 +272,7 @@ namespace ColorVision.Engine.Templates.POI
                     DrawCircleCache.Attribute.Id = No;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
-                    DrawCircleCache.Attribute.Radius = PoiParam.PoiConfig.DefaultCircleRadius;
+                    DrawCircleCache.Attribute.Radius = DefalutRadius;
                     DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
 
                     drawCanvas.AddVisual(DrawCircleCache);
@@ -284,7 +288,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Id = No;
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP,new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
 
@@ -537,6 +541,8 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.ScrollIntoView(DrawCircleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
 
+                        DefalutRadius = DrawCircleCache.Attribute.Radius;
+
                     }
                     else if (ImageEditViewMode.DrawRect)
                     {
@@ -548,6 +554,8 @@ namespace ColorVision.Engine.Templates.POI
                         ListView1.ScrollIntoView(DrawingRectangleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
+                        DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                        DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                     }
                     drawCanvas.ReleaseMouseCapture();
 

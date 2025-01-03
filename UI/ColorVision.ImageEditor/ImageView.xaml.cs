@@ -229,7 +229,9 @@ namespace ColorVision.ImageEditor
 
                 if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
-                    var ContextMenu = new ContextMenu();
+                    Zoombox1.ContextMenu ??= new ContextMenu();
+                    Zoombox1.ContextMenu.Items.Clear();
+                    var ContextMenu = Zoombox1.ContextMenu;
                     MenuItem menuItem = new() { Header = "隐藏(_H)" };
                     menuItem.Click += (s, e) =>
                     {
@@ -243,11 +245,10 @@ namespace ColorVision.ImageEditor
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
-                    ImageShow.ContextMenu = ContextMenu;
                 }
                 else
                 {
-                    ImageShow.ContextMenu = null;
+                    Zoombox1.ContextMenu.Items.Clear();
                 }
             }
         }
@@ -353,6 +354,7 @@ namespace ColorVision.ImageEditor
                     DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
                     DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
+                    DrawCircleCache.Attribute.Radius = DefalutRadius;
                     drawCanvas.AddVisual(DrawCircleCache);
 
                     SelectDrawingVisualClear();
@@ -363,7 +365,7 @@ namespace ColorVision.ImageEditor
                 if (ImageEditViewMode.DrawRect)
                 {
                     DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
@@ -554,6 +556,12 @@ namespace ColorVision.ImageEditor
 
             }
         }
+
+        private double DefalutWidth { get; set; } = 30;
+        private double DefalutHeight { get; set; } = 30;
+        private double DefalutRadius { get; set; } = 30;
+
+
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
@@ -608,7 +616,7 @@ namespace ColorVision.ImageEditor
                     }
                     else if (ImageEditViewMode.DrawCircle)
                     {
-                        if (DrawCircleCache.Attribute.Radius == 30)
+                        if (DrawCircleCache.Attribute.Radius == DefalutRadius)
                             DrawCircleCache.Render();
 
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -628,11 +636,12 @@ namespace ColorVision.ImageEditor
 
                         ListView1.ScrollIntoView(DrawCircleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
+                        DefalutRadius = DrawCircleCache.Radius;
 
                     }
                     else if (ImageEditViewMode.DrawRect)
                     {
-                        if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
+                        if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                             DrawingRectangleCache.Render();
 
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -653,6 +662,8 @@ namespace ColorVision.ImageEditor
                         ListView1.ScrollIntoView(DrawingRectangleCache);
                         ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
+                        DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                        DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                     }
 
                     drawCanvas.ReleaseMouseCapture();
@@ -834,7 +845,6 @@ namespace ColorVision.ImageEditor
         public void RenderContextMenu()
         {
             Zoombox1.ContextMenu ??= new ContextMenu();
-
             Zoombox1.ContextMenu.Items.Clear();
             foreach (var item in ImageEditViewMode.GetContextMenus())
             {

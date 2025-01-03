@@ -54,6 +54,10 @@ namespace ColorVision.Engine.Services.RC
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
 
+        private bool initialized;
+        public event EventHandler ServiceTokensInitialized;
+
+
         public MqttRCService()
         {
             NodeType = "client";
@@ -231,7 +235,7 @@ namespace ColorVision.Engine.Services.RC
             DoUpdateServiceTokens(services);
             DoUpdateServices(services);
         }
-        private static void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        private void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
             log.Info("Refresh Token");
             var tokens = MqttRCService.GetInstance().ServiceTokens;
@@ -256,6 +260,12 @@ namespace ColorVision.Engine.Services.RC
                     tokens.Add(serviceInfo);
                 }
             }
+
+            if (!initialized)
+            {
+                ServiceTokensInitialized?.Invoke(tokens, new EventArgs());
+            }
+            initialized = true;
         }
         private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
         {

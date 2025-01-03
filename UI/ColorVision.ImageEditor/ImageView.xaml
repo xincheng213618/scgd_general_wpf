@@ -20,7 +20,7 @@
               TileMode="Tile"
               ViewportUnits="Absolute"
               Viewport="0 0 20 20"
-              Opacity="0.5">
+              Opacity="0.1">
             <DrawingBrush.Drawing>
                 <DrawingGroup>
                     <!-- Gray square -->
@@ -137,7 +137,7 @@
 
         <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
-        <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentBrush}">
+        <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
             <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                 </draw:DrawCanvas>
@@ -267,7 +267,7 @@
 
                     <Button  Content="白" Padding="8,5" Click="AdjustWhiteBalance_Click" Margin="0,0,0,2"/>
 
-                    <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter}}" >
+                    <StackPanel>
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
