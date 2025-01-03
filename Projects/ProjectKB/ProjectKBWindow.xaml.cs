@@ -18,6 +18,7 @@ using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
+using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -74,9 +75,27 @@ namespace ProjectKB
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
-            FlowTemplate.SelectionChanged += (s, e) => Refresh();
-            timer = new Timer(TimeRun, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
+                {
+                    string Name = FlowParam.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
+                    if (ProjectKBConfig.Instance.SPECConfigs.TryGetValue(Name,out SPECConfig sPECConfig))
+                    {
+                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                    }
+                    else
+                    {
+                        sPECConfig = new SPECConfig();
+                        ProjectKBConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
+                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                    }
+
+                }
+                Refresh();
+            };
+            timer = new Timer(TimeRun, null, 0, 500);
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             Task.Run(async () =>
             {
@@ -95,7 +114,7 @@ namespace ProjectKB
 
             this.Closed += (s, e) =>
             {
-                timer.Change(Timeout.Infinite, 100); // 停止定时器
+                timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
                 ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
             };
@@ -122,12 +141,10 @@ namespace ProjectKB
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
-                log.Info("Refresh");
                 flowEngine.LoadFromBase64(string.Empty);
-                log.Info("Refresh");
 
                 flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
-                log.Info("Refresh");
+
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
@@ -200,6 +217,7 @@ namespace ProjectKB
         {
             RunTemplate();
         }
+        bool LastCompleted = true;
 
         public void RunTemplate()
         {
@@ -216,7 +234,11 @@ namespace ProjectKB
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
                 return;
             };
-            Refresh();
+            if (!LastCompleted)
+            {
+                Refresh();
+            }
+            LastCompleted = false;
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
             handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
@@ -227,7 +249,7 @@ namespace ProjectKB
             stopwatch.Reset();
             stopwatch.Start();
             flowControl.Start(sn);
-            timer.Change(0, 100); // 启动定时器
+            timer.Change(0, 500); // 启动定时器
             string name = string.Empty;
 
             BatchResultMasterModel batch = new();
@@ -241,11 +263,9 @@ namespace ProjectKB
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {
             stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
             flowControl.Stop();
         }
-
-        Random random = new Random();
 
         private FlowControl flowControl;
 
@@ -255,7 +275,7 @@ namespace ProjectKB
             handler?.Close();
             handler = null;
             stopwatch.Stop();
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
             ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
@@ -265,6 +285,7 @@ namespace ProjectKB
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
+                        LastCompleted = true;
                         try
                         {
                             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -349,10 +370,6 @@ namespace ProjectKB
                                                     {
                                                         key.Lc = 0;
                                                     }
-                                                    else
-                                                    {
-                                                        key.Lc = random.NextDouble() * 0.45 - 0.15;
-                                                    }
                                                 }
                                             }
                                         }
@@ -411,7 +428,6 @@ namespace ProjectKB
 
                             var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
                             var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
-
                             kBItem.MaxLv = maxKeyItem.Lv;
                             kBItem.BrightestKey = maxKeyItem.Name;
                             kBItem.MinLv = minLKey.Lv;
@@ -470,7 +486,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && minLKey.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
                             }
                             else
                             {
@@ -479,7 +495,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && minLKey.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
                             }
                             else
                             {

@@ -184,6 +184,7 @@ namespace ProjectKB
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
         public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
+        public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
 
         public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
         private SPECConfig _SPECConfig = new SPECConfig();
