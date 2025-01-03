@@ -5,7 +5,7 @@ using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution
 {
-    public class SolutionManagerInitializer : IInitializer
+    public class SolutionManagerInitializer : InitializerBase
     {
         private readonly IMessageUpdater log;
 
@@ -14,9 +14,11 @@ namespace ColorVision.Solution
             log = messageUpdater;
         }
 
-        public int Order => 1;
+        public override string Name => nameof(SolutionManagerInitializer);
 
-        public async Task InitializeAsync()
+        public override int Order => 1;
+
+        public override async Task InitializeAsync()
         {
             // 解析命令行参数
             bool su = false;
@@ -24,38 +26,36 @@ namespace ColorVision.Solution
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
             var solutionpath = parser.GetValue("solutionpath");
-            Application.Current.Dispatcher.Invoke(() =>
+
+            var solutionManager = SolutionManager.GetInstance();
+            if (solutionpath != null)
             {
-                var solutionManager = SolutionManager.GetInstance();
-                if (solutionpath != null)
+                su = solutionManager.OpenSolution(solutionpath);
+            }
+
+            // 检查默认解决方案目录
+            if (!su)
+            {
+                if (solutionManager.SolutionHistory.RecentFiles.Count > 0)
                 {
-                    su = solutionManager.OpenSolution(solutionpath);
+                    su = solutionManager.OpenSolution(solutionManager.SolutionHistory.RecentFiles[0]);
                 }
 
-                // 检查默认解决方案目录
+                JumpListManager jumpListManager = new JumpListManager();
+                jumpListManager.AddRecentFiles(solutionManager.SolutionHistory.RecentFiles);
+
                 if (!su)
                 {
-                    if (solutionManager.SolutionHistory.RecentFiles.Count > 0)
-                    {
-                        su = solutionManager.OpenSolution(solutionManager.SolutionHistory.RecentFiles[0]);
-                    }
+                    string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                    if (!Directory.Exists(Default))
+                        Directory.CreateDirectory(Default);
 
-                    JumpListManager jumpListManager = new JumpListManager();
-                    jumpListManager.AddRecentFiles(solutionManager.SolutionHistory.RecentFiles);
-
-                    if (!su)
-                    {
-                        string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                        if (!Directory.Exists(Default))
-                            Directory.CreateDirectory(Default);
-
-                        string DefaultSolution = Default + "\\" + "Default";
-                        if (!Directory.Exists(DefaultSolution))
-                            Directory.CreateDirectory(DefaultSolution);
-                        solutionManager.CreateSolution(DefaultSolution);
-                    }
+                    string DefaultSolution = Default + "\\" + "Default";
+                    if (!Directory.Exists(DefaultSolution))
+                        Directory.CreateDirectory(DefaultSolution);
+                    solutionManager.CreateSolution(DefaultSolution);
                 }
-            });
+            }
         }
     }
 }

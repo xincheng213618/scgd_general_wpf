@@ -16,7 +16,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
-
         public RelayCommand EditCommand { get; set; }
 
         public ViewCalibrationConfig()
@@ -42,6 +41,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         [DisplayName("打开图像超时")]
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
+
+        [DisplayName("搜索条数限制")]
+        public int SearchLimit { get => _SearchLimit; set { _SearchLimit = value; NotifyPropertyChanged(); } }
+        private int _SearchLimit = -1;
 
     }
 }

@@ -1490,8 +1490,8 @@
           <target state="new">Check For _Updates</target>
         </trans-unit>
         <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">Focus point verification template settings (B)</target>
+          <source>校验模板设置(_B)</source>
+          <target state="new">Verification template settings (B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

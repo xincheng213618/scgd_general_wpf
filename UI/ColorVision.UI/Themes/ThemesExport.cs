@@ -23,7 +23,7 @@ namespace ColorVision.Themes
         public string? InputGestureText => "Ctrl + Shift + T";
 
         public object? Icon => null;
-        public RelayCommand? Command => null;
+        public ICommand? Command => null;
         public MenuItem MenuItem { get
             { 
                 MenuItem MenuTheme = new() { Header = Header,InputGestureText =InputGestureText };

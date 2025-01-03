@@ -1,11 +1,13 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MQTT;
 using ColorVision.UI;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCInitializer : IInitializer
+    public class RCInitializer : InitializerBase
     {
         private readonly IMessageUpdater _messageUpdater;
 
@@ -13,9 +15,10 @@ namespace ColorVision.Engine.Services.RC
         {
             _messageUpdater = messageUpdater;
         }
-
-        public int Order => 4;
-        public async Task InitializeAsync()
+        public override string Name => nameof(RCInitializer);
+        public override IEnumerable<string> Dependencies => new List<string>() { nameof(MqttInitializer) };
+        public override int Order => 4;
+        public override async Task InitializeAsync()
         {
             if (RCSetting.Instance.IsUseRCService)
             {

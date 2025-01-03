@@ -7,6 +7,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
+using System.Windows;
+using System.IO;
 
 namespace ColorVision.Solution.V
 {
@@ -17,6 +19,7 @@ namespace ColorVision.Solution.V
         public VObject Parent { get; set; }
 
         public virtual ObservableCollection<VObject> VisualChildren { get; set; }
+
         public event EventHandler AddChildEventHandler;
 
         public virtual void AddChild(VObject vObject)
@@ -37,8 +40,20 @@ namespace ColorVision.Solution.V
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set
+            { 
+                if (_Name == value) return; 
+                if (!IsEditMode || ReName(value))
+                {
+                    _Name = value;
+                }
+                NotifyPropertyChanged();  
+            } 
+        }
         private string _Name = string.Empty;
+
+        public virtual string FullPath { get => _FullPath; set { _FullPath = value; NotifyPropertyChanged(); } }
+        private string _FullPath = string.Empty;
 
         public virtual bool IsEditMode
         {
@@ -50,10 +65,10 @@ namespace ColorVision.Solution.V
         public virtual string ToolTip { get => _ToolTip; set { _ToolTip = value; NotifyPropertyChanged(); } }
         private string _ToolTip = string.Empty;
 
-        public virtual ImageSource Icon { get; set; }
+        public virtual ImageSource? Icon { get; set; }
 
-        public RelayCommand AddChildren { get; set; }
-        public RelayCommand RemoveChildren { get; set; }
+        public RelayCommand AddChildrenCommand { get; set; }
+        public RelayCommand RemoveChildrenCommand { get; set; }
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
 
@@ -71,7 +86,7 @@ namespace ColorVision.Solution.V
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
-            OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
+            OpenCommand = new RelayCommand((s) => Open());
             DeleteCommand = new RelayCommand(s =>Delete());
         }
 
@@ -81,7 +96,6 @@ namespace ColorVision.Solution.V
                 return;
             Parent.RemoveChild(this);
         }
-
 
         public virtual bool CanReName { get; set; } = true;
         public virtual bool CanDelete { get; set; } = true;
@@ -105,7 +119,7 @@ namespace ColorVision.Solution.V
             throw new NotImplementedException();
         }
 
-        public virtual void ReName()
+        public virtual bool ReName(string name)
         {
             throw new NotImplementedException();
         }

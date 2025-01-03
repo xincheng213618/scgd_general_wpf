@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.Dao
             return model;
         }
 
-        public List<MeasureImgResultModel> GetAllDevice(string devcode) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } });
+        public List<MeasureImgResultModel> GetAllDevice(string devcode,int limit) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } }, limit);
 
 
         public List<MeasureImgResultModel> ConditionalQuery(string id, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd, int limit =-1)

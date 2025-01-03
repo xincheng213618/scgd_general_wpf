@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
@@ -17,7 +18,7 @@ namespace ColorVision.UI.Menus
 
         public object? Icon { get; set; }
 
-        public RelayCommand? Command { get; set; }
+        public ICommand? Command { get; set; }
         public Visibility Visibility { get; set; }
     }
 

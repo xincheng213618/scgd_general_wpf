@@ -131,34 +131,6 @@
           <source>关于(_A)</source>
           <target state="new">소개 (_A)</target>
         </trans-unit>
-        <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
-          <source>复制(_C)</source>
-          <target state="new">복사 (_C)</target>
-        </trans-unit>
-        <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
-          <source>剪切(_T)</source>
-          <target state="new">잘라내기 (_T)</target>
-        </trans-unit>
-        <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
-          <source>删除(_D)</source>
-          <target state="new">삭제 (_D)</target>
-        </trans-unit>
-        <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
-          <source>编辑(_E)</source>
-          <target state="new">편집 (_E)</target>
-        </trans-unit>
-        <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
-          <source>退出(_X)</source>
-          <target state="new">종료 (_X)</target>
-        </trans-unit>
-        <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
-          <source>文件(_F)</source>
-          <target state="new">파일 (_F)</target>
-        </trans-unit>
-        <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
-          <source>帮助(_H)</source>
-          <target state="new">도움 (_H)</target>
-        </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
           <target state="new">새로 만들기 (_N)</target>
@@ -171,37 +143,13 @@
           <source>选项(_O)</source>
           <target state="new">옵션 (_O)</target>
         </trans-unit>
-        <trans-unit id="MenuPaste" translate="yes" xml:space="preserve">
-          <source>粘贴(_P)</source>
-          <target state="new">페이스트(_P)</target>
-        </trans-unit>
-        <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
-          <source>重命名(_M)</source>
-          <target state="new">이름 바꾸기(_M)</target>
-        </trans-unit>
         <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
           <source>设置(_S)</source>
           <target state="new">구성 (_S)</target>
         </trans-unit>
-        <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
-          <source>模板(_M)</source>
-          <target state="new">템플릿(_M)</target>
-        </trans-unit>
-        <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
-          <source>工具(_T)</source>
-          <target state="new">도구 (_T)</target>
-        </trans-unit>
-        <trans-unit id="MenuUndo" translate="yes" xml:space="preserve">
-          <source>撤销(_U)</source>
-          <target state="new">취소 (_U)</target>
-        </trans-unit>
         <trans-unit id="MenuUpdate" translate="yes" xml:space="preserve">
           <source>检查更新(_U)</source>
           <target state="new">업데이트 확인 (_U)</target>
-        </trans-unit>
-        <trans-unit id="MenuView" translate="yes" xml:space="preserve">
-          <source>视图(_V)</source>
-          <target state="new">보기 (_V)</target>
         </trans-unit>
         <trans-unit id="MenuViewSidebar" translate="yes" xml:space="preserve">
           <source>侧边栏</source>

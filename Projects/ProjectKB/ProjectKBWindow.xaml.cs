@@ -1,26 +1,33 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
+using ProjectKB.Modbus;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -29,15 +36,16 @@ namespace ProjectKB
     class KBvalue
     {
         public double Y { get; set; }
+        public int PixNumber { get; set; } = 1;
     }
 
     /// <summary>
-    /// Interaction logic for ProjectKBWindow.xaml
+    /// Interaction logic for _windowInstance.xaml
     /// </summary>
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static  ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
+        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
 
         public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
 
@@ -61,102 +69,79 @@ namespace ProjectKB
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
-
+            ImageView.Config.IsLayoutUpdated = false;
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
-            FlowTemplate.SelectionChanged += (s, e) =>
-            {
-                if (FlowTemplate.SelectedIndex > -1)
-                {
-                    var tokens = ServiceManager.GetInstance().ServiceTokens;
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is CVCommonNode algorithmNode)
-                        {
-                            algorithmNode.nodeRunEvent -= UpdateMsg;
-                        }
-                    }
-                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is CVCommonNode algorithmNode)
-                        {
-                            algorithmNode.nodeRunEvent += UpdateMsg;
-                        }
-                    }
-                }
-            };
-
+            FlowTemplate.SelectionChanged += (s, e) => Refresh();
             timer = new Timer(TimeRun, null, 0, 100);
             timer.Change(Timeout.Infinite, 100); // 停止定时器
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)
                 {
-                    bool con = ModbusControl.GetInstance().Connect();
+                    bool con = await ModbusControl.GetInstance().Connect();
                     if (con)
                     {
                         log.Debug("初始化寄存器设置为0");
                         ModbusControl.GetInstance().SetRegisterValue(0);
                     }
-
-                    ModbusControl.GetInstance().StatusChanged += (s, e) =>
-                    {
-                        if (ModbusControl.GetInstance().CurrentValue == 1)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                log.Info("触发拍照，执行流程");
-                                RunTemplate();
-                            });
-                        }
-                    };
+                    ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
                 }
+
             });
 
+            this.Closed += (s, e) =>
+            {
+                timer.Change(Timeout.Infinite, 100); // 停止定时器
+                timer?.Dispose();
+                ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
+            };
+
+        }
+
+        private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
+        {
+            if (ModbusControl.GetInstance().CurrentValue == 1)
+            {
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    log.Info("触发拍照，执行流程");
+                    RunTemplate();
+                });
+            }
+        }
+
+        public void Refresh()
+        {
+            if (FlowTemplate.SelectedIndex < 0) return;
+
+            try
+            {
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+                log.Info("Refresh");
+                flowEngine.LoadFromBase64(string.Empty);
+                log.Info("Refresh");
+
+                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                log.Info("Refresh");
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                flowEngine.LoadFromBase64(string.Empty);
+            }
         }
 
 
         private void TimeRun(object? state)
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                try
-                {
-                    if (handler != null)
-                    {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-
-                        if (ProjectKBConfig.Instance.LastFlowTime == 0)
-                        {
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
-
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-
-                        handler.UpdateMessage(msg);
-                    }
-                }
-                catch
-                {
-
-                }
-
-            });
+            UpdateMsg(state);
         }
 
         IPendingHandler handler { get; set; }
@@ -164,7 +149,7 @@ namespace ProjectKB
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
@@ -174,19 +159,20 @@ namespace ProjectKB
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 || DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (ProjectKBConfig.Instance.LastFlowTime == 0 || ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectKBConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
-                        handler.UpdateMessage(msg);
+                        if (flowControl.IsFlowRun)
+                            handler.UpdateMessage(msg);
                     }
                 }
                 catch
@@ -217,72 +203,79 @@ namespace ProjectKB
 
         public void RunTemplate()
         {
-            if (FlowTemplate.SelectedValue is FlowParam flowParam)
-            {
-                string startNode = flowEngine.GetStartNodeName();
-                if (!string.IsNullOrWhiteSpace(startNode))
-                {
-                    flowControl ??= new ColorVision.Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
-
-                    handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
-                    flowControl.FlowData += (s, e) =>
-                    {
-                        if (s is FlowControlData msg)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
-                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    stopwatch.Reset();
-                    stopwatch.Start();
-                    flowControl.Start(sn);
-                    timer.Change(0, 100); // 启动定时器
-                    string name = string.Empty;
-
-                    BatchResultMasterModel batch = new();
-                    batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-                    batch.Code = sn;
-                    batch.CreateDate = DateTime.Now;
-                    batch.TenantId = 0;
-                    BatchResultMasterDao.Instance.Save(batch);
-                }
-                else
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                }
-            }
-            else
-            {
+            if (flowControl!=null && flowControl.IsFlowRun) return;
+            if (FlowTemplate.SelectedValue is not FlowParam flowParam) 
+            { 
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
-            }
+                return; 
+            };
+
+            string startNode = flowEngine.GetStartNodeName();
+            if (string.IsNullOrWhiteSpace(startNode))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
+                return;
+            };
+            Refresh();
+            flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
+
+            handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
+            handler.Cancelling -= Handler_Cancelling;
+            handler.Cancelling += Handler_Cancelling;
+            flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            stopwatch.Reset();
+            stopwatch.Start();
+            flowControl.Start(sn);
+            timer.Change(0, 100); // 启动定时器
+            string name = string.Empty;
+
+            BatchResultMasterModel batch = new();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
         }
 
+        private void Handler_Cancelling(object? sender, CancelEventArgs e)
+        {
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            flowControl.Stop();
+        }
 
-        private ColorVision.Engine.Templates.Flow.FlowControl flowControl;
+        Random random = new Random();
+
+        private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
+            handler = null;
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
             if (sender is FlowControlData FlowControlData)
             {
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 100); // 停止定时器
                     if (FlowControlData.EventName == "Completed")
                     {
                         try
                         {
                             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                             bool sucess = true;
-                            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-                            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
                             var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+
+                            if (Batch == null)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                                return;
+                            }
                             KBItemMaster kBItem = new KBItemMaster();
                             kBItem.Model = FlowTemplate.Text;
                             kBItem.Id = Batch.Id;
@@ -323,9 +316,9 @@ namespace ProjectKB
                                                 key.Lv = list.Y;
                                                 if (key.KBKeyRect.KBKey.Area != 0)
                                                 {
-                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
+                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area ;
                                                 }
-                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
 
                                             }
                                         }
@@ -339,17 +332,27 @@ namespace ProjectKB
                                         foreach (var poi in pois)
                                         {
                                             var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
+
                                             var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
                                             if (key != null)
                                             {
                                                 if(list!=null && list.Count == 2)
                                                 {
                                                     key.Lv = list[0].Y;
+                                                    key.Lv = key.Lv  * list[0].PixNumber;
                                                     if (key.KBKeyRect.KBKey.Area != 0)
                                                     {
                                                         key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
                                                     }
-                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv;
+                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
+                                                    if (key.Lv == 0)
+                                                    {
+                                                        key.Lc = 0;
+                                                    }
+                                                    else
+                                                    {
+                                                        key.Lc = random.NextDouble() * 0.45 - 0.15;
+                                                    }
                                                 }
                                             }
                                         }
@@ -357,8 +360,58 @@ namespace ProjectKB
                                 }
                             }
 
+
+                            if (kBItem.Items.Count == 0)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                                return;
+                            }
+
+                            CalCulLc(kBItem.Items);
+
+
+                            foreach (var item in kBItem.Items)
+                            {
+
+                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv != 0)
+                                {
+                                    item.Result = item.Result && item.Lv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过minLv检测");
+                                }
+                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+                                {
+                                    item.Result = item.Result && item.Lv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MaxLv检测");
+                                }
+
+                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                                {
+                                    item.Result = item.Result && item.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MinKeyLc检测");
+                                }
+                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                                {
+                                    item.Result = item.Result && item.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                }
+                                else
+                                {
+                                    log.Debug("跳过MaxLv检测");
+                                }
+                            }
+
+
                             var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
                             var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
+
                             kBItem.MaxLv = maxKeyItem.Lv;
                             kBItem.BrightestKey = maxKeyItem.Name;
                             kBItem.MinLv = minLKey.Lv;
@@ -366,41 +419,73 @@ namespace ProjectKB
                             kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
                             kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
                             kBItem.SN = SNtextBox.Text;
+                            kBItem.NbrFailPoints = kBItem.Items.Count(item => !item.Result);
+
+
+                            CalCulLc(kBItem.Items);
 
                             kBItem.Result = true;
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinLv!= 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv!= 0)
                             {
-                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinLv;
+                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
                             }
                             else
                             {
                                 log.Debug("跳过minLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.MaxLv != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxLv;
+                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
                             }
                             else
                             {
                                 log.Debug("跳过MaxLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.AvgLv != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.AvgLv;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
                             }
                             else
                             {
-                                log.Debug("跳过AvgLv检测");
+                                log.Debug("跳过MinAvgLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.Uniformity != 0)
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.Uniformity;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectKBConfig.Instance.SPECConfig.MaxAvgLv;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MaxAvgLv检测");
+                            }
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
+                            {
+                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity /100;
                             }
                             else
                             {
                                 log.Debug("跳过Uniformity检测");
                             }
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                            {
+                                kBItem.Result = kBItem.Result && minLKey.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MinKeyLc检测");
+                            }
+
+                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                            {
+                                kBItem.Result = kBItem.Result && minLKey.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                            }
+                            else
+                            {
+                                log.Debug("跳过MaxKeyLc检测");
+                            }
+
 
                             kBItem.Exposure = "50";
 
@@ -415,38 +500,45 @@ namespace ProjectKB
                             }
                             ViewResluts.Insert(0, kBItem);
                             listView1.SelectedIndex = 0;
-                            string resultPath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
+                            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
                             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
+
                             log.Debug($"结果正在写入{resultPath},result:{result}");
                             File.WriteAllText(resultPath, result);
 
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{kBItem.DateTime:yyyyMMdd}.csv";
+                                string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+                                string regexPattern = $"[{Regex.Escape(invalidChars)}]";
+
+                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.DateTime:yyyyMMdd}.csv";
+
                                 KBItemMaster.SaveCsv(kBItem, csvpath);
                                 log.Debug($"writecsv:{csvpath}");
                             });
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 log.Debug("流程执行结束，设置寄存器为0，触发移动");
                                 ModbusControl.GetInstance().SetRegisterValue(0);
                             });
+                            SNtextBox.Text = string.Empty;
                         }
                         catch(Exception ex)
                         {
-                            MessageBox.Show(ex.Message);
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                         }
 
                     }
                     else
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                     }
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                 }
 
             }
@@ -455,48 +547,132 @@ namespace ProjectKB
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
+        public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)
+        {
+            return Math.Pow(px - centerX, 2) + Math.Pow(py - centerY, 2) <= Math.Pow(r, 2);
+        }
+
+        public static bool IsRectInCircle(KBItem item, double centerX, double centerY, double r)
+        {
+            Rect rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+            var corners = new[]
+{
+            (rect.X, rect.Y),
+            (rect.X + rect.Width, rect.Y),
+            (rect.X, rect.Y + rect.Height),
+            (rect.X + rect.Width, rect.Y + rect.Height)
+        };
+            foreach (var corner in corners)
+            {
+                if (!IsPointInCircle(corner.Item1, corner.Item2, centerX, centerY, r))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public void CalCulLc(ObservableCollection<KBItem> kBItems)
+        {
+            if (kBItems.Count == 0) return;
+            foreach (var item in kBItems)
+            {
+                double centex = item.KBKeyRect.X + item.KBKeyRect.Width / 2;
+                double centey = item.KBKeyRect.Y + item.KBKeyRect.Height / 2;
+
+                List<KBItem> round = new List<KBItem>();
+                foreach (var keys in kBItems.Where(a=>a != item))
+                {
+                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 300))
+                        round.Add(keys);
+                }
+                List<string> strings = round.Select(keys => keys.Name).ToList();
+                log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
+
+                double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
+                log.Debug($"Round Key {item.Name}: averagelv{averagelv}");
+                if (averagelv == 0)
+                {
+                    item.Lc = 0;
+                }
+                else
+                {
+                    item.Lc = (item.Lv - averagelv) / averagelv;
+                }
+            }
+        }
+
 
 
         public void GenoutputText(KBItemMaster kmitemmaster)
         {
+            NGResult.Text = kmitemmaster.Result ? "OK" : "NG";
+            NGResult.Foreground = kmitemmaster.Result ? Brushes.Green : Brushes.Red;
+
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Document.Blocks.Clear(); // 清除之前的内容
+
             string outtext = string.Empty;
             outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine; 
             outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
             outtext += $"Poiints of Interest: " + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-            outtext += Environment.NewLine;
+
+            Run run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(run);
+
+            outputText.Document.Blocks.Add(paragraph);
+            outtext = string.Empty;
+
+            paragraph = new Paragraph();
+
             string title1 = "PT";
             string title2 = "Lv";
-            string title3 = "Cx";
-            string title4 = "Cy";
+
             string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title3,10} {title4,10}" + Environment.NewLine;
+            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            paragraph.Inlines.Add(run);
+            outtext = string.Empty;
 
             foreach (var item in kmitemmaster.Items)
             {
                 string formattedString = $"[{item.Name}]";
 
-                outtext += $"{formattedString,-20}   {item.Lv,-10:F4}   {item.Cx,10:F4}   {item.Cy,10:F4}" + Environment.NewLine;
+                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc*100,10:F2}%  {(item.Result?"":"Fail")}" +Environment.NewLine;
+                run = new Run(outtext);
+                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+                run.FontSize += 1;
+                paragraph.Inlines.Add(run);
+                outtext = string.Empty;
             }
+            outputText.Document.Blocks.Add(paragraph);
 
-            outtext += Environment.NewLine;
-            outtext += $"Min Lv= {kmitemmaster.MinLv} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kmitemmaster.MaxLv} cd/m2" + Environment.NewLine;
+            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
+            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
             outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
             outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
-            outtext += $"Avg Cx= {kmitemmaster.AvgC1}" + Environment.NewLine;
-            outtext += $"Avg Cy= {kmitemmaster.AvgC2}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
             outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kmitemmaster.AvgLv}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
-            outtext += $"Color Uniformity={kmitemmaster.LvUniformity}" + Environment.NewLine;
+            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
+            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
 
             outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
-            outputText.Text = outtext;
+
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+            paragraph = new Paragraph(run);
+            outtext = string.Empty;
+            outputText.Document.Blocks.Add(paragraph);
             SNtextBox.Focus();
         }
 
@@ -511,8 +687,9 @@ namespace ProjectKB
         {
             ViewResluts.Clear();
             ImageView.Clear();
-            outputText.Text = string.Empty;
+            outputText.Document.Blocks.Clear();
             outputText.Background = Brushes.White;
+            NGResult.Text = string.Empty;
         }
 
         private void listView1_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -521,18 +698,57 @@ namespace ProjectKB
             {
                 var kBItem = ViewResluts[listView.SelectedIndex];
                 GenoutputText(kBItem);
-                Task.Run(() =>
+
+                var maxKeyItem = kBItem.Items.Where(a=>a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
+                var minLKey = kBItem.Items.Where(a => a.Result).OrderBy(item => item.Lv).FirstOrDefault();
+
+
+                string DrakestKey = minLKey?.Name;
+                string BrightestKey = maxKeyItem?.Name;
+
+                Task.Run(async () =>
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    await Task.Delay(30);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
                         if (File.Exists(kBItem.ResultImagFile))
                         {
                             ImageView.OpenImage(kBItem.ResultImagFile);
+                            ImageView.ImageShow.Clear();
+                            foreach (var item in kBItem.Items)
+                            {
+                                DVRectangle Rectangle = new();
+                                Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
+
+                                if (item.Result == false)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
+                                }
+                                else if (item.Name == DrakestKey)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
+                                }
+                                else if (item.Name == BrightestKey)
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
+                                }
+                                else
+                                {
+                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 5);
+                                }
+
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Id = -1;
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                            }
                         }
                     });
                 });
             }
         }
+
+
 
         private void listView1_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {

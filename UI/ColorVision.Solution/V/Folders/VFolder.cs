@@ -1,8 +1,12 @@
 ﻿using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Xml.Linq;
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.V.Files;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -10,17 +14,18 @@ namespace ColorVision.Solution.V.Folders
     {
         public IFolder Folder { get; set; }
 
-        public DirectoryInfo DirectoryInfo { get; set; }
-
+        public DirectoryInfo DirectoryInfo { get => Folder.DirectoryInfo; set { Folder.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
+        public RelayCommand AddDirCommand { get; set; }
+        FileSystemWatcher FileSystemWatcher { get; set; }
 
         public VFolder(IFolder folder)
         {
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
-            DirectoryInfo = folder.DirectoryInfo;
+            FullPath = folder.DirectoryInfo.FullName;
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ContextMenu = new ContextMenu();
@@ -28,9 +33,68 @@ namespace ColorVision.Solution.V.Folders
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
 
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
+            AddDirCommand = new RelayCommand(a => VMCreate.Instance.AddDir(this, DirectoryInfo.FullName));
+
+            ContextMenu.Items.Add(new Separator());
+            MenuItem menuItem5 = new() { Header = "复制完整路径", Command = CopyFullPathCommand };
+            ContextMenu.Items.Add(menuItem5);
+
+            MenuItem menuItem3 = new() { Header = "添加" };
+            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
+            menuItem3.Items.Add(menuItem4);
+            ContextMenu.Items.Add(menuItem3);
             ContextMenu.Items.Add(new Separator());
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
+
+            if (DirectoryInfo != null && DirectoryInfo.Exists)
+            {
+                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
+                
+                FileSystemWatcher.Created += (s, e) =>
+                {
+                    if (File.Exists(e.FullPath))
+                    {
+                        Application.Current?.Dispatcher.Invoke(() =>
+                        {
+                            VMCreate.Instance.CreateFile(this, new FileInfo(e.FullPath));
+                        });
+                        return;
+                    }
+                    if (Directory.Exists(e.FullPath))
+                    {
+                        Application.Current?.Dispatcher.Invoke(async () =>
+                        {
+                            await VMCreate.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
+                        }); ;
+                        return;
+                    }
+                };
+                FileSystemWatcher.Deleted += (s, e) =>
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                        var a = VisualChildren.FirstOrDefault(a => a.FullPath == e.FullPath);
+                        if (a != null)
+                        {
+                            VisualChildren.Remove(a);
+                        }
+                    });
+                };
+                FileSystemWatcher.Changed += (s, e) =>
+                {
+                    Application.Current?.Dispatcher.Invoke(() =>
+                    {
+                    });
+                };
+                FileSystemWatcher.Renamed += (s, e) =>
+                {
+
+                };
+                FileSystemWatcher.EnableRaisingEvents = true;
+
+            }
         }
+
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
 
@@ -56,16 +120,48 @@ namespace ColorVision.Solution.V.Folders
             }
         }
 
-        public override void ReName()
+        public override bool ReName(string name)
         {
-            if (this is VFolder vFolder)
+            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("路径地址不允许为空"); return false; }
+
+            try
             {
-                if (vFolder.Folder is IFolder folder)
+                if (DirectoryInfo.Parent != null)
                 {
-                    folder.ReName();
+                    if (FileSystemWatcher!=null)
+                        FileSystemWatcher.EnableRaisingEvents = false;
+
+                    foreach (var item in VisualChildren)
+                    {
+                        if (item is VFolder vFolder)
+                        {
+                            vFolder.FileSystemWatcher.EnableRaisingEvents = false;
+                        }
+
+                    }
+                    string destinationDirectoryPath = Path.Combine(DirectoryInfo.Parent.FullName, name);
+                    Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
+                    DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
+
+                    this.VisualChildren.Clear();
+                    VMCreate.Instance.GeneralChild(this,this.DirectoryInfo);
+                    if (FileSystemWatcher != null)
+                    {
+                        FileSystemWatcher.Path = DirectoryInfo.FullName;
+                        FileSystemWatcher.EnableRaisingEvents = true;
+                    }
+                    return true;
                 }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
             }
         }
+
+
 
         public override void Delete()
         {

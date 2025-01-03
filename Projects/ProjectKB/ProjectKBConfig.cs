@@ -5,6 +5,8 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using ProjectKB.Config;
+using ProjectKB.Modbus;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
@@ -161,6 +163,12 @@ namespace ProjectKB
        
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+
+
+        public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
+        private string _ResultSavePath1 = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
 
@@ -169,6 +177,9 @@ namespace ProjectKB
         private bool _AutoModbusConnect = true;
 
 
+        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
+        private double _KBLVSacle = 0.006583904;
+
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
@@ -176,64 +187,6 @@ namespace ProjectKB
 
         public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
         private SPECConfig _SPECConfig = new SPECConfig();
-
-    }
-
-    public class SummaryInfo : ViewModelBase
-    {
-        public bool IsShowSummary { get => _IsShowSummary; set { _IsShowSummary = value; NotifyPropertyChanged(); } }
-        private bool _IsShowSummary;
-
-        public double Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
-        private double _Width = 300;
-
-        /// <summary>
-        /// 线别
-        /// </summary>
-        public string LineNumber { get => _LineNumber; set { _LineNumber = value; NotifyPropertyChanged(); } }
-        private string _LineNumber;
-
-        /// <summary>
-        /// 工号
-        /// </summary>
-        public string WorkerNumber { get => _WorkerNumber; set { _WorkerNumber = value; NotifyPropertyChanged(); } }
-        private string _WorkerNumber;
-
-        /// <summary>
-        /// 目标生产
-        /// </summary>
-        public int TargetProduction { get => _TargetProduction; set { _TargetProduction = value; NotifyPropertyChanged(); } }
-        private int _TargetProduction;
-
-        /// <summary>
-        /// 已生产
-        /// </summary>
-        public int ActualProduction { get => _ActualProduction; set { _ActualProduction = value; NotifyPropertyChanged(); } }
-        private int _ActualProduction;
-        /// <summary>
-        /// 良品数量
-        /// </summary>
-        public int GoodProductCount { get => _GoodProductCount; set { _GoodProductCount = value; NotifyPropertyChanged(); } }
-        private int _GoodProductCount;
-
-        /// <summary>
-        /// 不良品数量
-        /// </summary>
-        public int DefectiveProductCount { get => _DefectiveProductCount; set { _DefectiveProductCount = value; NotifyPropertyChanged(); } }
-        private int _DefectiveProductCount;
-        /// <summary>
-        /// 良品率
-        /// </summary>
-        public double GoodProductRate { get => GoodProductCount / ActualProduction; set { _GoodProductRate = value; NotifyPropertyChanged(); } }
-        private double _GoodProductRate;
-
-        /// <summary>
-        /// 不良率
-        /// </summary>
-        public double DefectiveProductRate { get => DefectiveProductCount / ActualProduction; set { _DefectiveProductRate = value; NotifyPropertyChanged(); } }
-        private double _DefectiveProductRate;
-
-
 
     }
 }

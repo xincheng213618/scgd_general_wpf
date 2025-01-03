@@ -120,4 +120,10 @@
   <data name="Create" xml:space="preserve">
     <value>創建</value>
   </data>
+  <data name="TaskViewerWindow" xml:space="preserve">
+    <value>任務計劃程序</value>
+  </data>
+  <data name="CreateTask" xml:space="preserve">
+    <value>創建任務</value>
+  </data>
 </root>

@@ -243,4 +243,28 @@
   <data name="Close" xml:space="preserve">
     <value>폐쇄</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>페이스트(_P)</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>이름 바꾸기(_M)</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>취소 (_U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>보기 (_V)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>편집 (_E)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>삭제 (_D)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>잘라내기 (_T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>복사 (_C)</value>
+  </data>
 </root>

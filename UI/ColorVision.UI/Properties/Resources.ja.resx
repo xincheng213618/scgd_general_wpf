@@ -243,4 +243,28 @@
   <data name="Close" xml:space="preserve">
     <value>閉鎖</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>ペースト(_P)</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>名前を変更(_M)</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>取り消す (_U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>表示 (_V)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>編集する (_E)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>削除する (_D)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>切り取る (_T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>コピーする (_C)</value>
+  </data>
 </root>

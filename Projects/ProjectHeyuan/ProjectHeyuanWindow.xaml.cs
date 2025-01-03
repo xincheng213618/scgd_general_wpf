@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Themes;
 using ColorVision.UI;
@@ -24,6 +24,10 @@ using System.Windows.Media;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
+using ColorVision.Engine.Templates.Compliance;
+using MQTTMessageLib.Algorithm;
+using ColorVision.Engine.Services.RC;
+using FlowEngineLib.Base;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {
@@ -155,6 +159,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             InitializeComponent();
             this.ApplyCaption();
         }
+        STNodeEditor STNodeEditorMain = new STNodeEditor();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
@@ -162,7 +167,6 @@ namespace ColorVision.Projects.ProjectHeyuan
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
 
-            STNodeEditor STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
 
@@ -173,14 +177,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
             FlowTemplate.ItemsSource = FlowParam.Params;
-            FlowTemplate.SelectionChanged += (s, e) =>
-            {
-                if (FlowTemplate.SelectedIndex > -1)
-                {
-                    var tokens = ServiceManager.GetInstance().ServiceTokens;
-                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
-                }
-            };
+            FlowTemplate.SelectionChanged += (s, e) => Refresh();
 
             List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
             foreach (var item in strings)
@@ -193,8 +190,37 @@ namespace ColorVision.Projects.ProjectHeyuan
             timer = new Timer(TimeRun, null, 0, 100);
         }
 
+        public void Refresh()
+        {
+            if (FlowTemplate.SelectedIndex < 0) return;
+
+            try
+            {
+
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent -= UpdateMsg;
+
+                flowEngine.LoadFromBase64(string.Empty);
+                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+
+                foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
+                    item.nodeRunEvent += UpdateMsg;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                flowEngine.LoadFromBase64(string.Empty);
+            }
+        }
+
 
         private void TimeRun(object? state)
+        {
+            UpdateMsg(state);
+        }
+
+        string Msg1;
+        private void UpdateMsg(object? sender)
         {
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -204,33 +230,41 @@ namespace ColorVision.Projects.ProjectHeyuan
                     {
                         long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-
-                        if (HYMesManager.GetInstance().LastFlowTime == 0)
+                        if (HYMesManager.GetInstance().LastFlowTime == 0 || HYMesManager.GetInstance().LastFlowTime - elapsedMilliseconds < 0)
                         {
-                            msg = $"已经执行：{elapsedTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
                             long remainingMilliseconds = HYMesManager.GetInstance().LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = $"已经执行：{elapsedTime}, 上次执行：{HYMesManager.GetInstance().LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{HYMesManager.GetInstance().LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
-
-                        handler.UpdateMessage(msg);
+                        if (flowControl.IsFlowRun)
+                            handler.UpdateMessage(msg);
                     }
                 }
                 catch
                 {
 
                 }
-
             });
+        }
+
+        private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
+        {
+            if (sender is CVCommonNode algorithmNode)
+            {
+                if (e != null)
+                {
+                    Msg1 = algorithmNode.Title;
+                    UpdateMsg(sender);
+                }
+            }
         }
 
         private FlowControl flowControl;
@@ -241,35 +275,45 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
+
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (sender is FlowControlData FlowControlData)
                 {
                     if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {
-                        stopwatch.Stop();
-                        timer.Change(Timeout.Infinite, 100); // 停止定时器
 
                         if (FlowControlData.EventName == "Completed")
                         {
-                            HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
-                            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-
                             Results.Clear();
                             var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                             if (Batch != null)
                             {
                                 var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
                                 List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+                                List<ComplianceXYZModel> complianceXYZModels = new List<ComplianceXYZModel>();
                                 foreach (var item in resultMaster)
                                 {
-                                    List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-
-                                    foreach (var pointResultModel in POIPointResultModels)
+                                    if (item.ImgFileType == AlgorithmResultType.POI_XYZ)
                                     {
-                                        PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
-                                        PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                                        foreach (var pointResultModel in POIPointResultModels)
+                                        {
+                                            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                            PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                        }
                                     }
+                                    if (item.ImgFileType == AlgorithmResultType.Compliance_Math_CIE_XYZ)
+                                    {
+                                        var lists = ComplianceXYZDao.Instance.GetAllByPid(item.Id);
+                                        complianceXYZModels.AddRange(lists);
+                                    }
+
                                 }
 
                                 Results.Clear();
@@ -288,6 +332,11 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
                                     {
                                         var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
+
+                                        var ValidateSinglesmodel = complianceXYZModels.FirstOrDefault(a => a.Name == poiResultCIExyuvData1.Name);
+
+                                        poiResultCIExyuvData1.POIPointResultModel.ValidateResult = ValidateSinglesmodel?.ValidateResult;
+
                                         TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
                                         tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
                                         tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
@@ -323,6 +372,8 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                                         Results.Add(tempResult1);
                                     }
+
+
                                     var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
                                     Results.Clear();
                                     bool IsOK = true;
@@ -452,6 +503,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                 string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
+                    Refresh();
                     flowControl ??= new Engine.Templates.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
                     
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);

@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.KB;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
+using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Tif;
 using ColorVision.Net;
@@ -95,14 +96,19 @@ namespace ColorVision.Engine.Templates.POI
         public async void DelayClose()
         {
             await Task.Delay(100);
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke((Action)(() =>
             {
-                this.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
                     ImageEditViewMode?.ClearImage();
-                    writeableBitmap = null;
-                }));
-            });
+                    if (HImageCache != null)
+                    {
+                        HImageCache?.Dispose();
+                        HImageCache = null;
+                    };
+                    this.ViewBitmapSource = null;
+                }))));
+            }));
         }
         
 
@@ -316,12 +322,6 @@ namespace ColorVision.Engine.Templates.POI
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
-        public void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
@@ -397,7 +397,7 @@ namespace ColorVision.Engine.Templates.POI
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, (CVType)fileExtType));
                         PoiConfig.BackgroundFilePath = filePath;
                     }
                     catch (Exception ex)
@@ -438,12 +438,24 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-
+        public HImage? HImageCache { get; set; }
 
         public void SetImageSource(BitmapSource imageSource)
         {
-            ImageShow.Source = imageSource;
-
+            ViewBitmapSource = imageSource;
+            ImageShow.Source = ViewBitmapSource;
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            };
+            if (imageSource is WriteableBitmap writeableBitmap)
+            {
+                Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+                {
+                    HImageCache = writeableBitmap.ToHImage();
+                })));
+            }
             PoiParam.Width = imageSource.PixelWidth;
             PoiParam.Height = imageSource.PixelHeight;
             InitPoiConfigValue(imageSource.PixelWidth, imageSource.PixelHeight);
@@ -476,32 +488,37 @@ namespace ColorVision.Engine.Templates.POI
             writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, stride, 0);
             return writeableBitmap;
         }
-        WriteableBitmap writeableBitmap;
         private void CreateImage(int width, int height, Color color,bool IsClear = true)
         {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
+
             Thread thread = new(() => 
             {
-                Application.Current.Dispatcher.Invoke(() =>
+                Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
-                    writeableBitmap = CreateWhiteLayer(width, height);
+                    this.ViewBitmapSource = CreateWhiteLayer(width, height);
                     if (ImageShow.Source == null)
                     {
-                        ImageShow.Source = writeableBitmap;
+                        ImageShow.Source = this.ViewBitmapSource;
                         Zoombox1.ZoomUniform();
-                        if (IsClear|| !Init)
-                            InitPoiConfigValue((int)writeableBitmap.Width,(int)writeableBitmap.Height);
+                        if (IsClear || !Init)
+                            InitPoiConfigValue((int)this.ViewBitmapSource.Width,(int)this.ViewBitmapSource.Height);
                     }
                     else
                     {
-                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != writeableBitmap.PixelWidth || img.PixelHeight != writeableBitmap.PixelHeight))
+                        if (ImageShow.Source is BitmapSource img && (img.PixelWidth != this.ViewBitmapSource.Width || img.PixelHeight != this.ViewBitmapSource.Height))
                         {
-                            InitPoiConfigValue((int)writeableBitmap.Width, (int)writeableBitmap.Height);
-                            ImageShow.Source = writeableBitmap;
+                            InitPoiConfigValue((int)this.ViewBitmapSource.Width, (int)this.ViewBitmapSource.Height);
+                            ImageShow.Source = this.ViewBitmapSource;
                             Zoombox1.ZoomUniform();
                         }
                         else
                         {
-                            ImageShow.Source = writeableBitmap;
+                            ImageShow.Source = this.ViewBitmapSource;
                         }
 
                     }
@@ -519,7 +536,7 @@ namespace ColorVision.Engine.Templates.POI
                     Init = true;
                     ImageShow.ImageInitialize();
 
-                });
+                }));
             });
             thread.Start();
             PoiConfig.BackgroundFilePath = null;
@@ -1323,9 +1340,24 @@ namespace ColorVision.Engine.Templates.POI
         {
             if (e.Key == Key.Delete)
             {
-                if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[ListView1.SelectedIndex] is Visual visual)
+                if (sender is ListView listView && listView.SelectedItems.Count > 0)
                 {
-                    ImageShow.RemoveVisual(visual);
+                    var visualsToRemove = new List<Visual>();
+
+                    foreach (var selectedItem in listView.SelectedItems)
+                    {
+                        int index = listView.Items.IndexOf(selectedItem);
+                        if (index >= 0 && DrawingVisualLists[index] is Visual visual)
+                        {
+                            visualsToRemove.Add(visual);
+                        }
+                    }
+
+                    foreach (var visual in visualsToRemove)
+                    {
+                        ImageShow.RemoveVisual(visual);
+                    }
+
                     PropertyGrid2.SelectedObject = null;
                 }
             }
@@ -1542,7 +1574,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == FileExtType.Src)
+            if (fileInfo.FileExtType == CVType.Src)
             {
                 if (fileInfo.data != null)
                 {
@@ -1550,7 +1582,7 @@ namespace ColorVision.Engine.Templates.POI
                     SetImageSource(src.ToWriteableBitmap());
                 }
             }
-            else if (fileInfo.FileExtType == FileExtType.Raw)
+            else if (fileInfo.FileExtType == CVType.Raw)
             {
                 OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = null;
@@ -1593,7 +1625,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, CVType.Raw));
                         PoiConfig.BackgroundFilePath = model.FileUrl;
                     }
                     else
@@ -1807,10 +1839,93 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
+
+        private void reference_Click(object sender, RoutedEventArgs e)
+        {
+            menuPop1.IsOpen = true;
+        }
+
+        private void reference1_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string tag)
+            {
+                menuPop1.IsOpen = false;
+            }
+        }
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             new EidtPoiDataGridForm((ObservableCollection<IDrawingVisual>)DrawingVisualLists).Show();           
         }
+
+
+        public ImageSource PseudoImage { get; set; }
+        public ImageSource ViewBitmapSource { get; set; }
+
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
+            RenderPseudo();
+        }
+        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            PseudoColor pseudoColor = new PseudoColor(new ImageViewConfig());
+            pseudoColor.ShowDialog();
+            var Colormapes = PseudoColor.GetColormapDictionary().First(x => x.Key == ColormapTypes.COLORMAP_JET);
+            string valuepath = Colormapes.Value;
+            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
+            RenderPseudo();
+        }
+        private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
+        {
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
+            {
+                RenderPseudo();
+            }, e.NewValue);
+        }
+        public void RenderPseudo()
+        {
+            Application.Current.Dispatcher.Invoke((Action)(() =>
+            {
+                if (Pseudo.IsChecked == false)
+                {
+                    ImageShow.Source = this.ViewBitmapSource;
+                    PseudoImage = null;
+                    return;
+                }
+
+                if (HImageCache != null)
+                {
+                    // 首先获取滑动条的值，这需要在UI线程中执行
+
+                    uint min = (uint)PseudoSlider.ValueStart;
+                    uint max = (uint)PseudoSlider.ValueEnd;
+
+                    log.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+                    Task.Run(() =>
+                    {
+                        int ret = OpenCVMediaHelper.M_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, ColormapTypes.COLORMAP_JET, -1);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (ret == 0)
+                            {
+                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = nint.Zero;
+                                    PseudoImage = image;
+                                }
+                                if (Pseudo.IsChecked == true)
+                                {
+                                    ImageShow.Source = PseudoImage;
+                                }
+                            }
+                        });
+                    });
+                };
+            }));
+        }
+
     }
 
 }

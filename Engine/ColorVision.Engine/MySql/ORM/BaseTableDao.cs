@@ -130,9 +130,9 @@ namespace ColorVision.Engine.MySql.ORM
             if (param != null && param.Count > 0)
                 whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
 
-            string sql = $"SELECT * FROM {TableName} {whereClause}";
+            string sql = $"SELECT * FROM {TableName} {whereClause} ";
             if (limit >= 1)
-                sql += $" LIMIT {limit}";
+                sql += $" ORDER BY id DESC  LIMIT {limit}";
             DataTable d_info = GetData(sql, param);
 
             List<T> list = new List<T>(d_info.Rows.Count);
@@ -184,7 +184,7 @@ namespace ColorVision.Engine.MySql.ORM
             }
             if (limit >= 1)
             {
-                sql += $" LIMIT {limit}";
+                sql += $" ORDER BY id DESC LIMIT {limit}";
             }
             DataTable d_info = GetData(sql, param);
             List<T> list = new List<T>(d_info.Rows.Count);

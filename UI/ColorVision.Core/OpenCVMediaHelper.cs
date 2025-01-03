@@ -19,7 +19,7 @@ namespace ColorVision
         /// <param name="colormapTypes"></param>
         /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_PseudoColor(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes = ColormapTypes.COLORMAP_JET);
+        public static extern int M_PseudoColor(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes ,int channel);
 
         /// <summary>
         /// 自动对比度

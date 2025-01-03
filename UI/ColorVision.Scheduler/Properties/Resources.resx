@@ -100,4 +100,10 @@
   <data name="Create" xml:space="preserve">
     <value>创建</value>
   </data>
+  <data name="TaskViewerWindow" xml:space="preserve">
+    <value>任务计划程序</value>
+  </data>
+  <data name="CreateTask" xml:space="preserve">
+    <value>创建任务</value>
+  </data>
 </root>

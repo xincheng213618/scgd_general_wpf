@@ -2,7 +2,6 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;

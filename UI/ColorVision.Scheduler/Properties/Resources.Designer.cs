@@ -68,5 +68,23 @@ namespace ColorVision.Scheduler.Properties {
                 return ResourceManager.GetString("Create", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 创建任务 的本地化字符串。
+        /// </summary>
+        public static string CreateTask {
+            get {
+                return ResourceManager.GetString("CreateTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务计划程序 的本地化字符串。
+        /// </summary>
+        public static string TaskViewerWindow {
+            get {
+                return ResourceManager.GetString("TaskViewerWindow", resourceCulture);
+            }
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace ColorVision.Solution.V
                 baseObject.IsEditMode = false;
         }
 
-        private void TextBox_KeyUp(object sender, KeyEventArgs e)
+        private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (sender is TextBox tb && tb.Tag is VObject baseObject)
             {
@@ -22,7 +22,16 @@ namespace ColorVision.Solution.V
                 if (e.Key == Key.Escape || e.Key == Key.Enter)
                 {
                     baseObject.IsEditMode = false;
+                    e.Handled = true;
                 }
+            }
+        }
+        private void TextBox_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                textBox.SelectAll();
+                textBox.Focus(); // 可选，确保焦点在 TextBox 上
             }
         }
         private void TreeViewItem_Initialized(object sender, EventArgs e)

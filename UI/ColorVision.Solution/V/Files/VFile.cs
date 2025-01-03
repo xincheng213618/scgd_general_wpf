@@ -5,6 +5,8 @@ using ColorVision.Solution.Properties;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.UI;
+using System.Windows;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -14,7 +16,8 @@ namespace ColorVision.Solution.V.Files
         public RelayCommand OpenContainingFolderCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
 
-        public FileInfo FileInfo { get; set; }
+        public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
+
 
         public VFile(IFileMeta fileMeta)
         {
@@ -22,11 +25,9 @@ namespace ColorVision.Solution.V.Files
             Name = fileMeta.Name;
             ToolTip = fileMeta.ToolTip;
             Icon = fileMeta.Icon;
-            FileInfo = fileMeta.FileInfo;
-
-            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileMeta.FullName), a => true);
+            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileInfo.FullName}"), a=> FileInfo.Exists);
-            CopyFullPathCommand = new RelayCommand(a => Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
+            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
@@ -35,9 +36,8 @@ namespace ColorVision.Solution.V.Files
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
 
-            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter =this });
+            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter = this });
 
-            ContextMenu.Items.Add(new Separator());
             if (fileMeta is IContextMenuProvider menuItemProvider)
             {
                 var iMenuItems = new List<MenuItemMetadata>();
@@ -102,6 +102,27 @@ namespace ColorVision.Solution.V.Files
         {
             File.Delete(FileInfo.FullName);
             Parent.RemoveChild(this);
+        }
+        public override bool ReName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) { MessageBox.Show("路径地址不允许为空"); return false; }
+            try
+            {
+                if (FileInfo.Directory != null)
+                {
+
+                    string destinationDirectoryPath = Path.Combine(FileInfo.Directory.FullName, name);
+                    File.Move(FileInfo.FullName, destinationDirectoryPath);
+                    FileInfo =  new FileInfo(destinationDirectoryPath);
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
         }
     }
 }

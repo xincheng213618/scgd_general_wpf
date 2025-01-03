@@ -112,16 +112,16 @@ namespace ColorVision.Engine.Templates.KB
                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, item.Param.KeyOutMOVE, item.Param.KeyThreadV, IAlgorithm.SaveFolderPath + $"\\{item.Name}", ref Keygray1);
                                 keyGray = (float)(keyGray * item.Param.KeyScale);
                             }
-                            if (item.Name.Contains(",") || item.Name.Contains("\""))
+                            if (item.Name.Contains(',') || item.Name.Contains('\"'))
                             {
                                 item.Name = $"\"{item.Name.Replace("\"", "\"\"")}\"";
                             }
                             writer.WriteLine($"{item.Name},{rect},{haloGray},{haloGray1},{keyGray},{Keygray1}");
 
                         }
-                        catch(Exception ex)
+                        catch
                         {
-
+                            
                         }
 
                     }

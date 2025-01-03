@@ -254,7 +254,7 @@ namespace ColorVision.UI
         {
             if (!LogConfig.Instance.AutoRefresh) return;
             var renderedMessage = RenderLoggingEvent(loggingEvent);
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 if (LogConfig.Instance.LogReserve)
                 {

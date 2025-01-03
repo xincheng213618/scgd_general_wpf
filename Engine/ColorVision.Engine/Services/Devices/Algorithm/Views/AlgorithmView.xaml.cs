@@ -3,10 +3,10 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
@@ -68,15 +68,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             this.DataContext = this;
 
-            ImageView.ImageShow.ImageInitialized += (s, e) =>
-            {
-                if (listView1.SelectedIndex > -1)
-                {
-                    ViewResults[listView1.SelectedIndex].Width = (int)ImageView.ImageShow.Source.Width;
-                    ViewResults[listView1.SelectedIndex].Height = (int)ImageView.ImageShow.Source.Height;
-                }
-
-            };
 
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
@@ -186,7 +177,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
-                if (Config.AutoRefreshView)
+                if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
                     SideSave(algorithmResult, Config.SaveSideDataDirPath);
@@ -538,8 +529,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
-                if (Config.InsertAtBeginning)
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll(Config.SearchLimit);
+                if (!Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
                 {
@@ -555,8 +546,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 if (TextBoxType.SelectedValue is AlgorithmResultType algorithmResultType)
                     altype = ((int)algorithmResultType).ToString();
                 ViewResults.Clear();
-                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
-                if (Config.InsertAtBeginning)
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime, Config.SearchLimit);
+                if (!Config.InsertAtBeginning)
                     algResults.Reverse();
                 foreach (var item in algResults)
                 {

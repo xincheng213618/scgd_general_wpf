@@ -52,5 +52,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; NotifyPropertyChanged(); } }
         private bool _AutoSaveSideData;
 
+        [DisplayName("搜索条数限制")]
+        public int SearchLimit { get => _SearchLimit; set { _SearchLimit = value; NotifyPropertyChanged(); } }
+        private int _SearchLimit = -1;
+
     }
 }

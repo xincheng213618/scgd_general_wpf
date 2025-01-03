@@ -1,39 +1,55 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Scheduler;
 using ColorVision.UI;
 using FlowEngineLib;
+using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
+using log4net;
 using Panuon.WPF.UI;
+using Quartz;
+using ST.Library.UI.NodeEditor;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
-    public class DisplayFlowConfig : ViewModelBase, IConfig
+    public class FlowJob : IJob
     {
-        public static DisplayFlowConfig Instance => ConfigService.Instance.GetRequiredService<DisplayFlowConfig>();
-
-        public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
-        private int _LastSelectFlow;
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
-
+        public Task Execute(IJobExecutionContext context)
+        {
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            schedulerInfo.RunCount++;
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                DisplayFlow.GetInstance().RunFlow();
+                schedulerInfo.Status = SchedulerStatus.Ready;
+            });
+            return Task.CompletedTask;
+        }
     }
 
     public partial class DisplayFlow : UserControl, IDisPlayControl, IIcon, IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(DisplayFlow));
+
         private static DisplayFlow _instance;
         private static readonly object _locker = new();
         public static DisplayFlow GetInstance() { lock (_locker) { return _instance ??= new DisplayFlow(); } }
@@ -56,11 +72,7 @@ namespace ColorVision.Engine.Templates.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
-
             View = new ViewFlow();
-
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 
@@ -70,23 +82,21 @@ namespace ColorVision.Engine.Templates.Flow
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
-                    DisplayFlowConfig.Instance.LastSelectFlow = flowParam.Id;
-                FlowUpdate();
+                    FlowConfig.Instance.LastSelectFlow = flowParam.Id;
+                Refresh();
             };
-
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-
-            timer = new Timer(UpdateMsg, null, 0, 100);
-            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            timer = new Timer(UpdateMsg, null, 0, 500);
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
         }
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = FlowParam.Params.FirstOrDefault(a => a.Id == DisplayFlowConfig.Instance.LastSelectFlow);
+            var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -98,50 +108,58 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded -= FlowDisplayControl_Loaded;
         }
 
-        private void FlowUpdate()
-        {
-            if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
-            {
-                if (View != null)
-                {
-                    try
-                    {
-                        if (string.IsNullOrEmpty(flowParam.DataBase64))
-                        {
-                            MessageBox.Show("再选择之前请先创建对映的模板");
-                        }
-                        else
-                        {
-                            var tokens = ServiceManager.GetInstance().ServiceTokens;
 
-                            foreach (var item in View.STNodeEditorMain.Nodes)
-                            {
-                                if (item is CVCommonNode algorithmNode)
-                                {
-                                    algorithmNode.nodeRunEvent -= UpdateMsg;
-                                }
-                            }
-                            View.FlowEngineControl.LoadFromBase64(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value.DataBase64, tokens);
-                            foreach (var item in View.STNodeEditorMain.Nodes)
-                            {
-                                if (item is CVCommonNode algorithmNode)
-                                {
-                                    algorithmNode.nodeRunEvent += UpdateMsg;
-                                }
-                            }
-                            if(Config.IsAutoSize)
-                                View.AutoSize();
-                        }
-                    }
-                    catch (Exception ex)
+        private void Refresh()
+        {
+            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            {
+                MqttRCService.GetInstance().QueryServices();
+            }
+           
+            if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= FlowParam.Params.Count) return;
+            FlowParam flowParam = FlowParam.Params[ComboBoxFlow.SelectedIndex].Value;
+
+            if (View == null) return;
+            if (string.IsNullOrEmpty(flowParam.DataBase64))
+            {
+                MessageBox.Show("再选择之前请先创建对映的模板");
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                return;
+            }
+
+            try
+            {
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                {
+                    item.nodeRunEvent -= UpdateMsg;
+                    item.nodeEndEvent -= nodeEndEvent;
+                    View.FlowRecords.Clear();
+                }
+
+                View.FlowEngineControl.LoadFromBase64(string.Empty);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                {
+                    item.nodeRunEvent += UpdateMsg;
+                    item.nodeEndEvent += nodeEndEvent;
+                    if (FlowConfig.Instance.IsShowDetailFlow)
                     {
-                        MessageBox.Show(ex.Message);
+                        View.FlowRecords.Add(new FlowRecord(item));
                     }
                 }
+
+                if (Config.IsAutoSize)
+                    View.AutoSize();
             }
-            else
+            catch (Exception ex)
             {
+                MessageBox.Show(ex.Message);
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
+            }
+
+            foreach (var item in View.FlowRecords)
+            {
+                item.IsSelected = false;
             }
         }
 
@@ -153,24 +171,27 @@ namespace ColorVision.Engine.Templates.Flow
 
         private FlowControl flowControl;
 
+        bool LastCompleted = true;
+
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 500); // 停止定时器
+            FlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
             if (sender is FlowControlData FlowControlData)
             {
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
-
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
-                    stopwatch.Stop();
-                    timer.Change(Timeout.Infinite, 100); // 停止定时器
-                    DisplayFlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
-                    });
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+                }
+                else
+                {
+                    LastCompleted = true;
                 }
             }
         }
@@ -197,82 +218,148 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            if (flowControl.IsFlowRun)
             {
+                long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+                TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
+                string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                string msg;
+                if (FlowConfig.Instance.LastFlowTime == 0 || FlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                {
+                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
+                }
+                else
+                {
+                    long remainingMilliseconds = FlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                    TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
+                    string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+
+                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                }
                 try
                 {
-                    if (handler != null)
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
-                        long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
-                        TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
-                        string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
-                        string msg;
-                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 ||  DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds <0)
-                        {
-                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
-                        }
-                        else
-                        {
-                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
-                            TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
-                            string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
+                        if (flowControl.IsFlowRun)
+                            handler?.UpdateMessage(msg);
+                    });
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                } 
+            }
+        }
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
-                        }
-                        handler.UpdateMessage(msg);
+        PropertyInfo MarkColorProperty { get; set; }
+        private void nodeEndEvent(object sender, FlowEngineNodeEndEventArgs e)
+        {
+            if (sender is CVCommonNode algorithmNode)
+            {
+                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                if (record !=null)
+                    record.DateTimeStop = DateTime.Now;
+
+                if (e != null)
+                {
+                    algorithmNode.IsSelected = false;
+                    if (MarkColorProperty == null)
+                    {
+                        Type type = typeof(STNode);
+                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    // 设置值
+                    if (MarkColorProperty != null)
+                    {
+                        MarkColorProperty.SetValue(algorithmNode, System.Drawing.Color.Green);
                     }
                 }
-                catch
-                {
-
-                }
-
-
-
-
-
-            });
+            }
         }
+
+
 
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                if (e != null)
+                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                if (record != null)
                 {
-                    Msg1 = algorithmNode.Title;
-                    UpdateMsg(sender);
+                    record.DateTimeRun = DateTime.Now;
+                    record.IsSelected = true;
                 }
+
+                algorithmNode.IsSelected = true;
+                Msg1 = algorithmNode.Title;
+
+                UpdateMsg(sender);
             }
         }
 
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
+            RunFlow();
+        }
+
+        public void RunFlow()
+        {
+            flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+            if (flowControl.IsFlowRun)
+            {
+                log.Info("流程正在运行");
+                return;
+            }
 
             CheckDiskSpace("C");
             CheckDiskSpace("D");
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (!string.IsNullOrWhiteSpace(startNode))
             {
-                flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+                if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+                {
+                    MqttRCService.GetInstance().QueryServices();
+                    MessageBox.Show("Token为空，正在刷新token");
+                    return;
+                }
+                if (!LastCompleted)
+                {
+                    Refresh();
+                }
+                else
+                {
+                    foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                    {
+                        if (MarkColorProperty == null)
+                        {
+                            Type type = typeof(STNode);
+                            MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                        }
+                        // 设置值
+                        if (MarkColorProperty != null)
+                        {
+                            MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
+                        }
+                    }
+                    if (FlowConfig.Instance.IsShowDetailFlow)
+                    {
+                        View.FlowRecords.Sort((x, y) => x.FlowTime.CompareTo(y.FlowTime));
+                        foreach (var item in View.FlowRecords)
+                        {
+                            item.IsSelected = false;
+                            item.DateTimeFlowRun = DateTime.Now;
+                        }
+                    }
+
+                }
+                LastCompleted = false;
 
                 handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
+                handler.Cancelling -= Handler_Cancelling; ;
                 handler.Cancelling += Handler_Cancelling; ;
-               
-                flowControl.FlowData += (s, e) =>
-                {
-                    if (s is FlowControlData msg)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                        });
-                    }
-                };
-
-
 
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -280,7 +367,7 @@ namespace ColorVision.Engine.Templates.Flow
                 ButtonStop.Visibility = Visibility.Visible;
                 stopwatch.Restart();
                 stopwatch.Start();
-                timer.Change(0, 100); // 启动定时器
+                timer.Change(0, 500); // 启动定时器
                 flowControl.Start(sn);
                 string name = string.Empty;
                 if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
@@ -308,19 +395,21 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {
-            if (sender is IPendingHandler pendingHandler)
+            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVCommonNode>())
             {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ButtonRun.Visibility = Visibility.Visible;
-                    ButtonStop.Visibility = Visibility.Collapsed;
-                });
-
-                flowControl?.Stop();
-
-                pendingHandler.Cancelling -= Handler_Cancelling;
-                pendingHandler?.Close();
+                item.nodeRunEvent -= UpdateMsg;
+                item.nodeEndEvent -= nodeEndEvent;
             }
+
+            stopwatch.Stop();
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
+            flowControl.Stop();
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ButtonRun.Visibility = Visibility.Visible;
+                ButtonStop.Visibility = Visibility.Collapsed;
+            });
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
@@ -341,19 +430,19 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            FlowUpdate();
+            Refresh();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             new TemplateEditorWindow(new TemplateFlow(), ComboBoxFlow.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            FlowUpdate();
+            Refresh();
         }
 
         private void ButtonEdit_Click(object sender, RoutedEventArgs e)
         {
             new FlowEngineToolWindow(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
-            FlowUpdate();
+            Refresh();
         }
 
         public void Dispose()

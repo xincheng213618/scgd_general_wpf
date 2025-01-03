@@ -1,21 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Services.RC;
 using FlowEngineLib;
 using log4net;
-using MQTTMessageLib.Flow;
 using Newtonsoft.Json;
 using System;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
     public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
@@ -34,7 +30,6 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowControl(MQTTControl mQTTControl, string topic)
         {
             MQTTControl = mQTTControl;
-            //SendTopic = "FLOW/CMD/" + topic;
             SendTopic = "MQTTRCService/Flow/RC_local";
             SubscribeTopic = "FLOW/STATUS/" + topic;
             MQTTControl.SubscribeCache(SubscribeTopic);
@@ -46,12 +41,30 @@ namespace ColorVision.Engine.Templates.Flow
             this.flowEngine = flowEngine;
         }
 
-        public bool IsFlowRun { get => _IsFlowRun; set { _IsFlowRun = value; NotifyPropertyChanged(); } }
+        private readonly object _lock = new object();
         private bool _IsFlowRun;
+
+        public bool IsFlowRun
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _IsFlowRun;
+                }
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    _IsFlowRun = value;
+                    NotifyPropertyChanged();
+                }
+            }
+        }
 
         public void Stop()
         {
-            IsFlowRun = false;
             if (flowEngine == null)
             {
                 FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Stop", SerialNumber, string.Empty);
@@ -63,14 +76,17 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
+                ClearEventHandler();
                 flowEngine.StopNode(SerialNumber);
             }
-            ClearEventHandler();
+            IsFlowRun = false;
+            FlowConfig.Instance.FlowRun = false;
         }
 
         public void Start(string sn)
         {
             IsFlowRun = true;
+            FlowConfig.Instance.FlowRun = true;
             SerialNumber = sn;
             if (flowEngine == null)
             {
@@ -83,30 +99,23 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else
             {
-                var tol = ServiceManager.GetInstance().ServiceTokens;
+                var tol = MqttRCService.GetInstance().ServiceTokens;
                 flowEngine.StartNode(sn, tol);
+                flowEngine.Finished -= Finished;
+                flowEngine.Finished += Finished;
             }
+        }
+        public void Finished(object sender, FlowEngineEventArgs e)
+        {
+            IsFlowRun = false;
+            FlowControlData data = new FlowControlData();
+            data.EventName = e.Status.ToString();
+            data.Params = e.Message;
+            data.SerialNumber =e.SerialNumber;
+            Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(data, new EventArgs()));
+            FlowConfig.Instance.FlowRun = false;
         }
 
-        public void Start(string sn, FlowParam flowParam)
-        {
-            var serviceInfo = ServiceManager.GetInstance().GetServiceInfo(ServiceTypes.Flow, string.Empty);
-            if (serviceInfo != null)
-            {
-                SerialNumber = sn;
-                devName = serviceInfo.Devices.First().Key;
-                DeviceFlowRunParam<MQTTServiceInfo> data = new()
-                {
-                    Services = ServiceManager.GetInstance().GetServiceJsonList(),
-                    TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name }
-                };
-                MQTTFlowRun<MQTTServiceInfo> req = new(serviceInfo.ServiceCode, devName, sn, serviceInfo.Token, data);
-                string Msg = JsonConvert.SerializeObject(req);
-                log.Debug(Msg);
-                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-                Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
-            }
-        }
 
         public event EventHandler? FlowCompleted;
         public event EventHandler? FlowMsg;
@@ -117,6 +126,7 @@ namespace ColorVision.Engine.Templates.Flow
             FlowCompleted = null;
             FlowMsg = null;
             FlowData = null;
+            flowEngine.Finished -= Finished;
         }
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
@@ -136,8 +146,9 @@ namespace ColorVision.Engine.Templates.Flow
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
                     if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {
-                        Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
+                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
                     }
+                    FlowConfig.Instance.FlowRun = false;
                     return Task.CompletedTask;
                 }
                 catch (Exception ex)

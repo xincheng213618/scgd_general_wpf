@@ -25,9 +25,7 @@ namespace ColorVision.Engine.Impl.CommonText
             FileInfo = fileInfo;
             Name = FileInfo.Name;
             FullName = FileInfo.FullName;
-            var icon = FileIcon.GetFileIcon(fileInfo.FullName);
-            if (icon != null)
-                Icon = icon.ToImageSource();
+            Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
         public string Name { get; set; }
         public string FullName { get; set; }

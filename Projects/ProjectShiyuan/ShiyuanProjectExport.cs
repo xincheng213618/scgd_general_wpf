@@ -6,6 +6,10 @@ using System.Windows;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
+    public class ProjectWindowInstance
+    {
+        public static ShiyuanProjectWindow WindowInstance { get; set; }
+    }
 
     public class ShiyuanProjectPlugin : IProjectBase
     {
@@ -15,28 +19,46 @@ namespace ColorVision.Projects.ProjectShiYuan
         public override string Description { get; set; } = "视源项目";
         public override void Execute()
         {
-            new ShiyuanProjectWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (ProjectWindowInstance.WindowInstance == null)
+            {
+                ProjectWindowInstance.WindowInstance = new ShiyuanProjectWindow
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+                ProjectWindowInstance.WindowInstance.Show();
+            }
+            else
+            {
+                ProjectWindowInstance.WindowInstance.Activate();
+            }
         }
     }
 
-    public class ShiyuanProjectExport : IMenuItem
+    public class ShiyuanProjectExport : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
 
-        public string? GuidId => "ProjectShiyuan";
+        public override string GuidId => "ProjectShiyuan";
 
-        public int Order => 100;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => "视源项目";
-        public string? InputGestureText => null;
+        public override int Order => 100;
+        public override string Header => "视源项目";
 
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-
-        private static void Execute()
+        public override void Execute()
         {
-            new ShiyuanProjectWindow() {WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (ProjectWindowInstance.WindowInstance == null)
+            {
+                ProjectWindowInstance.WindowInstance = new ShiyuanProjectWindow
+                {
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner
+                };
+                ProjectWindowInstance.WindowInstance.Closed += (s, e) => ProjectWindowInstance.WindowInstance = null;
+                ProjectWindowInstance.WindowInstance.Show();
+            }
+            else
+            {
+                ProjectWindowInstance.WindowInstance.Activate();
+            }
         }
     }
 }

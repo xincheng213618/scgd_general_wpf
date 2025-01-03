@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:local="clr-namespace:ColorVision.Engine.DataHistory.Dao"
       xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
-      xmlns:camera ="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Views"
+      xmlns:camera ="clr-namespace:ColorVision.Engine.Services.Dao"
       xmlns:algorithm ="clr-namespace:ColorVision.Engine.Services.Devices.Algorithm.Views"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"

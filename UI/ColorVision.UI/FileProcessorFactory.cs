@@ -3,26 +3,19 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;
 using System.IO;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.UI
 {
-    public class MenuOpen : IMenuItem
+    public class MenuOpen : MenuItemBase
     {
-        public string? OwnerGuid => MenuItemConstants.File;
+        public override string OwnerGuid => MenuItemConstants.File;
 
-        public string? GuidId => nameof(MenuOpen);
+        public override string GuidId => nameof(MenuOpen);
 
-        public int Order => 1;
+        public override int Order => 1;
 
-        public string? Header => Resources.MenuOpen;
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand? Command => null;
-
-        public Visibility Visibility => Visibility.Visible;
+        public override string Header => Resources.MenuOpen;
     }
 
     public class MenuFileOpen : MenuItemBase

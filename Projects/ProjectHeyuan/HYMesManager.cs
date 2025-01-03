@@ -166,7 +166,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                             if (Msg.Contains("CSN,S"))
                             {
                                 string[] parts = Msg.Split(',');
-                                CSNResult = parts[^1].Contains('0');
+                                CSNResult = parts[^1].Contains('0') || parts[^2].Contains('0');
                                 CPTResult = null;
                                 CGIResult = null;
                                 CMIResult = null;

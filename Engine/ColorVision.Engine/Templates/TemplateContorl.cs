@@ -1,6 +1,8 @@
-﻿using ColorVision.Engine.MySql;
+﻿#pragma warning disable CS1998
+using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -16,7 +18,7 @@ namespace ColorVision.Engine.Templates
     /// <summary>
     /// 对模板进行初始化
     /// </summary>
-    public class TemplateInitializer : IInitializer
+    public class TemplateInitializer : InitializerBase
     {
         private readonly IMessageUpdater _messageUpdater;
 
@@ -25,9 +27,13 @@ namespace ColorVision.Engine.Templates
             _messageUpdater = messageUpdater;
         }
 
-        public int Order => 4;
+        public override int Order => 4;
 
-        public async Task InitializeAsync()
+        public override string Name => nameof(TemplateInitializer);
+
+        public override IEnumerable<string> Dependencies => new List<string>() { nameof(MySqlInitializer) };
+
+        public override async Task InitializeAsync()
         {
             _messageUpdater.Update("正在加载模板");
             Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());

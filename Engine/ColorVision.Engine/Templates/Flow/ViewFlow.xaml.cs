@@ -1,29 +1,68 @@
-﻿using ColorVision.UI.Views;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Views;
+using NPOI.OpenXmlFormats.Dml.Diagram;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using static QRCoder.PayloadGenerator;
 
 namespace ColorVision.Engine.Services.Flow
 {
+    public class FlowRecord:ViewModelBase
+    {
+        public FlowRecord(STNode sTNode)
+        {
+            Guid = sTNode.Guid;
+            Name = sTNode.Title;
+            DateTime date = DateTime.Now;
+            DateTimeFlowRun = date;
+            DateTimeRun = date;
+            DateTimeStop = date;
+
+        }
+
+        public ContextMenu ContextMenu { get; set; }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        private bool _IsSelected;
+
+        public Guid Guid { get; set; }
+        public string Name { get => _Name; set { _Name =value; NotifyPropertyChanged(); } }
+        private string _Name;
+        public DateTime DateTimeFlowRun { get => _DateTimeFlowRun; set { _DateTimeFlowRun = value; NotifyPropertyChanged(); } }
+        private DateTime _DateTimeFlowRun;
+
+        public DateTime DateTimeRun { get => _DateTimeRun; set { _DateTimeRun = value; NotifyPropertyChanged(); } }
+        private DateTime _DateTimeRun;
+
+        public DateTime DateTimeStop { get => _DateTimeStop; set { _DateTimeStop = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(RunTime)); NotifyPropertyChanged(nameof(FlowTime)); } }
+        private DateTime _DateTimeStop;
+
+        public TimeSpan RunTime { get => _DateTimeStop - _DateTimeRun; }
+        public TimeSpan FlowTime { get => _DateTimeStop - _DateTimeFlowRun; }
+    }
+
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
     public partial class ViewFlow : UserControl,IView
     {
-        private FlowEngineLib.FlowEngineControl _FlowEngineControl;
-        public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return _FlowEngineControl; } set { _FlowEngineControl = value; } }
+        public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
+        public ObservableCollection<FlowRecord> FlowRecords { get; set; } = new ObservableCollection<FlowRecord>();
 
         public ViewFlow()
         {
-            _FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
+            FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            listViewRecord.ItemsSource = FlowRecords;
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             STNodePropertyGrid1.IsEditEnable = false;
             STNodeEditorMain.ActiveChanged += (s, e) =>
@@ -31,7 +70,7 @@ namespace ColorVision.Engine.Services.Flow
                 winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
-            _FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
+            FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
@@ -189,6 +228,16 @@ namespace ColorVision.Engine.Services.Flow
             {
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.05f, mousePosition.X, mousePosition.Y);
             }
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

@@ -1,8 +1,8 @@
 ﻿namespace ColorVision.UI.CUDA
 {
-    public class SystemInitializer : IInitializer
+    public class SystemInitializer : InitializerBase
     {
-        public int Order => 8;
+        public override int Order => 8;
 
         private readonly IMessageUpdater _messageUpdater;
 
@@ -11,7 +11,9 @@
             _messageUpdater = messageUpdater;
         }
 
-        public async Task InitializeAsync()
+        public override string Name => nameof(SystemInitializer);
+
+        public override async Task InitializeAsync()
         {
             _messageUpdater.Update("Debug Mode: " + SystemHelper.IsDebugMode());
             _messageUpdater.Update("OS Version: " + SystemHelper.GetOSVersion());

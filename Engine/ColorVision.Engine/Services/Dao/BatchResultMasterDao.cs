@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Engine.Services.DAO
+namespace ColorVision.Engine.Services.Dao
 {
     public class BatchResultMasterModel : PKModel
     {

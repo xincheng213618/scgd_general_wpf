@@ -30,6 +30,8 @@ namespace ColorVision
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
+
+        [JsonIgnore]
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
         [JsonIgnore]
@@ -78,6 +80,8 @@ namespace ColorVision
         public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
 
 
+        public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _LeftTabControlSelectedIndex = 1;
 
 
 
@@ -136,7 +140,7 @@ namespace ColorVision
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
         public static void Execute()
         {
@@ -166,7 +170,7 @@ namespace ColorVision
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
 
         public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
@@ -200,7 +204,7 @@ namespace ColorVision
 
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public ICommand Command => null;
         public Visibility Visibility => Visibility.Visible;
 
         public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);

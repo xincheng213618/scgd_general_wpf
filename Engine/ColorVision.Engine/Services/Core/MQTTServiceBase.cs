@@ -132,8 +132,9 @@ namespace ColorVision.Engine.Services.Core
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
+
             //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = HeartbeatTime + HeartbeatTime / 2  + 5;
+            long overTime = 2* HeartbeatTime;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
                 DisConnected?.Invoke(sender, new EventArgs());

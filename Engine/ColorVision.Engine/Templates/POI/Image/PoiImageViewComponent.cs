@@ -206,8 +206,6 @@ namespace ColorVision.Engine.Templates.POI.Image
                 PoiResultCIEYData.Point = poiPoint;
                 float dYVal = 0;
 
-                float Wave = 0;
-
                 switch (poiPoint.PointType)
                 {
                     case POIPointTypes.None:
@@ -397,7 +395,6 @@ namespace ColorVision.Engine.Templates.POI.Image
                 {
                     POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
 
-                    double Gama = 1;
                     float[] pdfrequency = new float[10];
                     float[] pdomainSamplingData = new float[10];
                     int  i = cvCameraCSLib.SFRCalculation(ToCHImage((HImage)imageView.HImageCache),new CRECT() { x = pOIPoint.PixelX, y = pOIPoint.PixelY,cx = pOIPoint.Width,cy = pOIPoint.Height }, 1,pdfrequency, pdomainSamplingData,10);

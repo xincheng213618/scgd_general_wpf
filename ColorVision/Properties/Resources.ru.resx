@@ -117,27 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>помощь</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>Файл(Ф)</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Вырезать(Т)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>Копировать (С)</value>
-  </data>
-  <data name="MenuDelete" xml:space="preserve">
-    <value>Удалить(Д)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>Изменить (Е)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>Выход(Х)</value>
-  </data>
   <data name="MenuNew" xml:space="preserve">
     <value>Новый(Н)</value>
   </data>
@@ -147,20 +126,11 @@
   <data name="MenuUpdate" xml:space="preserve">
     <value>Проверить наличие обновлений(U)</value>
   </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>Посмотреть(В)</value>
-  </data>
   <data name="MenuViewSidebar" xml:space="preserve">
     <value>Боковая панель</value>
   </data>
   <data name="MenuViewStatusBar" xml:space="preserve">
     <value>Статус бар</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>Отменить(U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>Инструмент(Т)</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
     <value>Об</value>
@@ -206,9 +176,6 @@
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Настройки</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(_M)</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Макет интерфейса запуска восстановления</value>
@@ -315,9 +282,6 @@
   <data name="Local" xml:space="preserve">
     <value>местный</value>
   </data>
-  <data name="MenuRename" xml:space="preserve">
-    <value>Переименовать(_М)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Псевдоним</value>
   </data>
@@ -335,9 +299,6 @@
   </data>
   <data name="Rollback" xml:space="preserve">
     <value>возвращаться</value>
-  </data>
-  <data name="MenuPaste" xml:space="preserve">
-    <value>Вставить(_P)</value>
   </data>
   <data name="Initializer" xml:space="preserve">
     <value>Модуль инициализации</value>

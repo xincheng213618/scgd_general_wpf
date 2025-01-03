@@ -4,6 +4,7 @@ using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Dump
 {
@@ -66,14 +67,9 @@ namespace ColorVision.UI.Dump
 
         public object? Icon => null;
 
-        public RelayCommand Command => new(A => Execute());
+        public ICommand Command => null;
 
         public Visibility Visibility => Visibility.Visible;
 
-        private  void Execute()
-        {
-            if (Directory.Exists(DumpConfig.DumpFolder))
-                PlatformHelper.OpenFolder(DumpConfig.DumpFolder);
-        }
     }
 }

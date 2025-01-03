@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using CVCommCore;
+using FlowEngineLib;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
@@ -47,12 +48,13 @@ namespace ColorVision.Engine.Services.RC
         private NodeToken? Token;
         private bool TryTestRegist;
 
-
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
         private ServiceNodeStatus _RegStatus;
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
 
-        public MqttRCService():base()
+        public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
+
+        public MqttRCService()
         {
             NodeType = "client";
             NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
@@ -61,6 +63,7 @@ namespace ColorVision.Engine.Services.RC
             RegStatus = ServiceNodeStatus.Unregistered;
 
             ServiceName = Guid.NewGuid().ToString();
+            MQTTControl.ApplicationMessageReceivedAsync -= MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.MQTTConnectChanged += (s,e) =>
             {
@@ -131,7 +134,7 @@ namespace ColorVision.Engine.Services.RC
                                 MQTTRCServicesQueryResponse respQurey = JsonConvert.DeserializeObject<MQTTRCServicesQueryResponse>(Msg);
                                 if (respQurey != null)
                                 {
-                                    Application.Current?.Dispatcher.Invoke((Action)delegate {
+                                    Application.Current?.Dispatcher.Invoke(()=> {
                                         UpdateServices(respQurey.Data);
                                     });
                                 }
@@ -222,15 +225,16 @@ namespace ColorVision.Engine.Services.RC
 
             }
         }
-        public static void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        public void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
+            LastAliveTime = DateTime.Now; ;
             DoUpdateServiceTokens(services);
             DoUpdateServices(services);
         }
-
         private static void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            var tokens = ServiceManager.GetInstance().ServiceTokens;
+            log.Info("Refresh Token");
+            var tokens = MqttRCService.GetInstance().ServiceTokens;
             tokens.Clear();
             foreach (var itemService in services.Values)
             {
@@ -338,6 +342,12 @@ namespace ColorVision.Engine.Services.RC
 
         public void KeepLive(int heartbeatTime)
         {
+            TimeSpan sp = DateTime.Now - LastAliveTime;
+            if (sp.TotalMilliseconds > 10000)
+            {
+                Regist();
+            }
+
             if (Token == null)
             {
                 ReRegist();
@@ -372,7 +382,7 @@ namespace ColorVision.Engine.Services.RC
             });
         }
 
-        public bool TryRegist(RCServiceConfig cfg)
+        public async Task<bool> TryRegist(RCServiceConfig cfg)
         {
             TryTestRegist = true;
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
@@ -380,10 +390,10 @@ namespace ColorVision.Engine.Services.RC
             string appSecret = cfg.AppSecret;
             RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
-            PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
+            await PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             for (int i = 0; i < 50; i++)
             {
-                Thread.Sleep(30);
+                await Task.Delay(30);
                 if (IsConnect)
                 {
                     TryTestRegist = false;

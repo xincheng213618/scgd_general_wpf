@@ -26,6 +26,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Templates.Flow;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -39,7 +40,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public View View { get; set; }
 
-        public ObservableCollection<ViewResultCalibration> ViewResults { get; set; } = new ObservableCollection<ViewResultCalibration>();
+        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
 
@@ -124,7 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL, (CVType)pm_dl_ch.FileExtType);
                         break;
                 }
             }
@@ -132,18 +133,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             {
                 switch (arg.EventName)
                 {
-                    case MQTTFileServerEventEnum.Event_File_Upload:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        if (!string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
-                        break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                         LocalFileName = pm_dl.FileName;
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, (CVType)pm_dl.FileExtType);
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL, (CVType)pm_dl_ch.FileExtType);
                         break;
                 }
             }
@@ -189,9 +186,9 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void ShowResult(MeasureImgResultModel model)
         {
-            ViewResultCalibration result = new(model);
+            ViewResultCamera result = new(model);
             ViewResults.AddUnique(result);
-            if (Config.AutoRefreshView)
+            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);
@@ -259,9 +256,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        ImageView.Config.FilePath = data.FilePath;
-
-                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
                         switch (data.FileType)
                         {
@@ -277,15 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
-                        {
-                            DeviceService.Open(data.FilePath, fileExt);
-                        }
-                        else
-                        {
-                            ImageView.Config.FilePath = localName;
-                            ImageView.OpenImage(ImageView.Config.FilePath);
-                        }
+                        DeviceService.Open(data.FilePath, fileExt);
                     }
                 }
             }
@@ -309,18 +295,19 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code);
-            if (Config.InsertAtBeginning)
+            List<MeasureImgResultModel> algResults = MeasureImgResultDao.Instance.GetAllDevice(Device.Code, Config.SearchLimit);
+            if (!Config.InsertAtBeginning)
                 algResults.Reverse();
             foreach (var item in algResults)
             {
-                ViewResultCalibration algorithmResult = new(item);
+                ViewResultCamera algorithmResult = new(item);
                 ViewResults.AddUnique(algorithmResult);
             }
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
+            AdvanceSearchConfig.Instance.Limit = Config.SearchLimit;
             AdvanceSearch advanceSearch = new AdvanceSearch(MeasureImgResultDao.Instance) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             advanceSearch.Closed += (s, e) =>
             {
@@ -330,7 +317,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
                 foreach (var item in advanceSearch.SearchResults)
                 {
-                    ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
+                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
                     ViewResults.AddUnique(algorithmResult);
                 }
             };
@@ -339,7 +326,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCalibration viewResult)
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewResult)
             {
                 ViewResults.Remove(viewResult);
                 ImageView.Clear();
@@ -351,7 +338,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
             {
-
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())

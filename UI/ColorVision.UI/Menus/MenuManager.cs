@@ -1,6 +1,8 @@
-﻿using log4net;
+﻿using ColorVision.Common.MVVM;
+using log4net;
 using System.Windows;
 using System.Windows.Controls;
+
 
 namespace ColorVision.UI.Menus
 {
@@ -18,25 +20,11 @@ namespace ColorVision.UI.Menus
 
         }
 
-        public void LoadMenuItemFromAssembly(bool IsClear = true)
+        public void LoadMenuItemFromAssembly()
         {
+            log.Info("LoadMenuItemFromAssembly");
+            Menu.Items.Clear();
             var menuItems = new Dictionary<string, MenuItem>();
-            foreach (var item in Menu.Items.OfType<MenuItem>())
-            {
-                if (item.Name == "MenuFile")
-                    menuItems.Add("File", item);
-                if (item.Name == "MenuTool")
-                    menuItems.Add("Tool", item);
-                if (item.Name == "MenuTemplate")
-                    menuItems.Add("Template", item);
-                if (item.Name == "MenuHelp")
-                    menuItems.Add("Help", item);
-                if (item.Name == "MenuView")
-                    menuItems.Add("View", item);
-                if (IsClear)
-                    item.Items.Clear();
-            }
-
             List<IMenuItem> iMenuItems = new();
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
@@ -61,12 +49,12 @@ namespace ColorVision.UI.Menus
                             Tag = iMenuItem,
                             Visibility = iMenuItem.Visibility,
                         };
-                        if (iMenuItem.Command != null)
+                        if (iMenuItem.Command is RelayCommand relayCommand)
                         {
-                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
                             Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
                             {
-                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
                             };
                         }
                     }
@@ -83,6 +71,7 @@ namespace ColorVision.UI.Menus
                     iMenuItems.Remove(item);
                 }
             }
+         
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
@@ -102,11 +91,32 @@ namespace ColorVision.UI.Menus
                 }
             }
 
+            foreach (var item in iMenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
+            {
+                if (item.OwnerGuid == "Menu")
+                {
+                    MenuItem menuItem = new()
+                    {
+                        Header = item.Header,
+                        Icon = item.Icon,
+                        InputGestureText = item.InputGestureText,
+                        Command = item.Command,
+                        Tag = item,
+                        Visibility = item.Visibility,
+                    };
+                    menuItems.Add(item.GuidId ?? Guid.NewGuid().ToString(), menuItem);  
+                    Menu.Items.Add(menuItem);
+                    iMenuItems.Remove(item);
+                }
+            }
+
             foreach (var keyValuePair in menuItems)
             {
                 CreateMenu(keyValuePair.Value, keyValuePair.Key);
             }
 
+
+            
             iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
             foreach (var iMenuItem in iMenuItems)
             {
@@ -122,23 +132,6 @@ namespace ColorVision.UI.Menus
                 };
                 Menu.Items.Add(menuItem);
             }
-        }
-
-        public void AddMenuItem(MenuItem menuItem, int index = -1)
-        {
-            if (index < 0 || index > Menu.Items.Count)
-            {
-                Menu.Items.Add(menuItem);
-            }
-            else
-            {
-                Menu.Items.Insert(index, menuItem);
-            }
-        }
-
-        public void RemoveMenuItem(MenuItem menuItem)
-        {
-            Menu.Items.Remove(menuItem);
         }
     }
 }

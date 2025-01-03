@@ -14,20 +14,65 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
-
-        <Grid Grid.Column="0" Grid.ColumnSpan="2" x:Name="Grid1">
+        <Grid Grid.Column="0" Grid.ColumnSpan="1" x:Name="Grid1">
             <WindowsFormsHost x:Name="winf1" Visibility="Visible" VerticalAlignment="Stretch">
                 <st:STNodeEditor  x:Name="STNodeEditorMain" x:FieldModifier="public"   EnableEdit="False"  MouseDown="STNodeEditorMain_MouseDown" MouseUp="STNodeEditorMain_MouseUp" MouseMove="STNodeEditorMain_MouseMove" MouseWheel="STNodeEditorMain_MouseWheel" />
             </WindowsFormsHost>
         </Grid>
-        <Grid Grid.Column="1"  x:Name="Grid2">
+        <Grid Grid.Column="1"  x:Name="Grid2"  Width="300" >
             <Grid.RowDefinitions >
-                <RowDefinition Height="300"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <WindowsFormsHost x:Name="winf2" Width="300" Visibility="Collapsed" VerticalAlignment="Stretch">
+            <WindowsFormsHost x:Name="winf2" Height="400" Visibility="Collapsed">
                 <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
             </WindowsFormsHost>
+            <ListView  x:Name="listViewRecord" Grid.Row="1"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
+                <ListView.Resources >
+                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn  Header="Name" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:FlowRecord}">
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="RunTime" Width="80">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:FlowRecord}">
+                                    <TextBlock Text="{Binding RunTime,StringFormat=ss\\:ffff}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="FlowTime" Width="110">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:FlowRecord}">
+                                    <TextBlock Text="{Binding FlowTime,StringFormat=mm\\:ss\\:ff}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+
+            </ListView>
+
         </Grid>
     </Grid>
 </UserControl>

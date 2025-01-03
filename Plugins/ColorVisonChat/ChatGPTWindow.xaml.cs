@@ -16,7 +16,7 @@ namespace ColorVisonChat
         public const string BaseUrl = "https://api.openai.com/";
     }
 
-    public class CalibrationCorrection : IMenuItem
+    public class ExportColorVisonChat : IMenuItem
     {
         public string? OwnerGuid => "Tool";
 
@@ -30,7 +30,7 @@ namespace ColorVisonChat
 
         public object? Icon => null;
 
-        public RelayCommand Command => new(A => Execute());
+        public ICommand Command => new RelayCommand(A => Execute());
         public Visibility Visibility => Visibility.Visible;
 
         private static void Execute()

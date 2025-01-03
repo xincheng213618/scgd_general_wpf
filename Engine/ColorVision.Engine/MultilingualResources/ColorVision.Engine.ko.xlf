@@ -1486,8 +1486,8 @@
           <target state="new">업데이트 확인 (_U)</target>
         </trans-unit>
         <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">우려사항 확인 템플릿 설정(B)</target>
+          <source>校验模板设置(_B)</source>
+          <target state="new">확인 템플릿 설정(B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

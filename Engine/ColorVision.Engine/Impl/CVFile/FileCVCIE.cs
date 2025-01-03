@@ -32,15 +32,13 @@ namespace ColorVision.Engine.Impl.CVFile
         public RelayCommand ExportBMPCommand { get; set; }
         public RelayCommand ExportTIFFCommand { get; set; }
         public RelayCommand ExportPNGCommand { get; set; }
-
+        
         public FileCVCIE(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
             FullName = FileInfo.FullName;
-            var icon = FileIcon.GetFileIcon(fileInfo.FullName);
-            if (icon != null)
-                Icon = icon.ToImageSource();
+            Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
 
             ExportCommand = new RelayCommand(a => Export(), a => true);
             ExportBMPCommand = new RelayCommand(a => ExportAS(ImageFormat.Bmp), A => true);
@@ -51,7 +49,7 @@ namespace ColorVision.Engine.Impl.CVFile
         public string Name { get; set; }
         public string FullName { get; set; }
         public string ToolTip { get; set; }
-        public ImageSource Icon { get; set; }
+        public ImageSource? Icon { get; set; }
 
         public string FileSize { get => FileInfo.Length.ToString(); set { NotifyPropertyChanged(); } }
 
@@ -63,7 +61,7 @@ namespace ColorVision.Engine.Impl.CVFile
         {
             int index = CVFileUtil.ReadCIEFileHeader(FullName, out CVCIEFile cvcie);
             if (index < 0) return;
-            cvcie.FileExtType = FullName.Contains(".cvraw") ? FileExtType.Raw : FullName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            cvcie.FileExtType = FullName.Contains(".cvraw") ? CVType.Raw : FullName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
             CVFileUtil.ReadCIEFileData(FullName, ref cvcie, index);
             var src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);

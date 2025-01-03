@@ -25,24 +25,40 @@
         <ScrollViewer>
             <StackPanel x:Name="StackPanelContent" Margin="5">
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
-                    <StackPanel Margin="10,5">
+                    <UniformGrid Columns="2" Margin="10,5">
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MinLv: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SPECConfig.MinLv}"/>
+                            <TextBlock Text="MinKeyLv: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MinKeyLv}"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="MaxLv: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SPECConfig.MaxLv}"/>
+                            <TextBlock Text="MaxKeyLv: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxKeyLv}"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="AvgLv: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SPECConfig.AvgLv}"/>
+                            <TextBlock Text="MinAvgLv: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MinAvgLv}"/>
                         </StackPanel>
                         <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
-                            <TextBlock Text="Uniformity: " Width="120"/>
-                            <TextBox Width="200"  Text="{Binding SPECConfig.Uniformity}"/>
+                            <TextBlock Text="MaxAvgLv: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxAvgLv}"/>
                         </StackPanel>
-                    </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="MinUniformity: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MinUniformity}"/>
+                        </StackPanel>
+                        <StackPanel>
+                            
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="MinKeyLc: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MinKeyLc}"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="MaxKeyLc: " Width="100"/>
+                            <TextBox Width="140"  Text="{Binding SPECConfig.MaxKeyLc}"/>
+                        </StackPanel>
+                    </UniformGrid>
+
 
                 </Border>
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
@@ -61,10 +77,20 @@
                             <TextBox Text="{Binding SummaryInfo.Width }" Width="50"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                            <TextBlock Text="数据保存路径" MinWidth="120"  />
+                            <TextBlock Text="Csv保存路径" MinWidth="120"  />
                             <TextBox Text="{Binding  ResultSavePath}" Width="350" Margin="0,0,5,0"/>
                             <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath_Click" />
                             <Button Content="🗁" Click="Open_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="Text保存路径" MinWidth="120"  />
+                            <TextBox Text="{Binding  ResultSavePath1}" Width="350" Margin="0,0,5,0"/>
+                            <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right" Width="40"  Click="SelectDataPath1_Click" />
+                            <Button Content="🗁" Click="Open1_Click" Margin="5,0" Height="30" Width="30" Padding="0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="KBLVSacle " Width="120"/>
+                            <TextBox Width="140"  Text="{Binding KBLVSacle}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>

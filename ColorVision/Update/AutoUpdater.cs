@@ -367,8 +367,8 @@ namespace ColorVision.Update
                     return;
                 }
 
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var totalReadBytes = 0L;
+                double totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                double totalReadBytes = 0L;
                 var readBytes = 0;
                 var buffer = new byte[8192];
                 var isMoreToRead = true;
@@ -404,7 +404,7 @@ namespace ColorVision.Update
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s   {totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
 
                                 if (totalBytes != -1L)
                                 {

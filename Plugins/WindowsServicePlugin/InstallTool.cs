@@ -127,47 +127,53 @@ namespace WindowsServicePlugin
                                     windowUpdate.Close();
                                 });
 
-                                Application.Current.Dispatcher.Invoke(() =>
+                                _= Task.Run(async () =>
                                 {
                                     Process.GetProcessesByName("CVWinSMS").ToList().ForEach(p => p.Kill());
-
-                                    try
+                                    log.Info("正在关闭CVWinSMS");
+                                    await Task.Delay(3000);
+                                    Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        string? folderBrowser = Directory.GetParent(Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName)?.FullName;
-                                        if (folderBrowser != null)
+                                        try
                                         {
-                                            ZipFile.ExtractToDirectory(downloadPath, folderBrowser, true);
+                                            string? folderBrowser = Directory.GetParent(Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath)?.FullName)?.FullName;
+                                            if (folderBrowser != null)
+                                            {
+                                                ZipFile.ExtractToDirectory(downloadPath, folderBrowser, true);
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show("更新失败， 找不到更新所在的文件夹");
+                                            }
                                         }
-                                        else
+                                        catch (Exception ex)
                                         {
-                                            MessageBox.Show("更新失败， 找不到更新所在的文件夹");
+                                            MessageBox.Show("更新失败，" + ex.Message);
+
                                         }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        MessageBox.Show("更新失败，" + ex.Message);
 
-                                    }
+                                        // 启动新的实例
+                                        ProcessStartInfo startInfo = new();
+                                        startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+                                        startInfo.WorkingDirectory = Environment.CurrentDirectory;
+                                        startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
+                                        startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
+                                                                  // 如果需要静默安装，添加静默安装参数
+                                                                  //quiet 没法自启，桌面图标也是空                       
+                                                                  //startInfo.Arguments = "/quiet";
 
-                                    // 启动新的实例
-                                    ProcessStartInfo startInfo = new();
-                                    startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                                    startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                                    startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
-                                    startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                                              // 如果需要静默安装，添加静默安装参数
-                                                              //quiet 没法自启，桌面图标也是空                       
-                                                              //startInfo.Arguments = "/quiet";
+                                        try
+                                        {
+                                            Process p = Process.Start(startInfo);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            MessageBox.Show(ex.ToString());
+                                            File.Delete(downloadPath);
+                                        }
 
-                                    try
-                                    {
-                                        Process p = Process.Start(startInfo);
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        MessageBox.Show(ex.ToString());
-                                        File.Delete(downloadPath);
-                                    }
+                                    });
+
 
                                 });
 

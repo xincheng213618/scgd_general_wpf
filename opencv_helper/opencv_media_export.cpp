@@ -97,7 +97,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 }
 
 
-COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types)
+COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types, int channel)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
@@ -106,11 +106,16 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 
 	cv::Mat out = mat.clone();
 	if (out.channels() != 1) {
-		cv::cvtColor(out, out, cv::COLOR_BGR2GRAY);
+		if (channel >= 0 && channel < mat.channels()) {
+			std::vector<cv::Mat> channels;
+			cv::split(mat, channels);
+			out = channels[channel];
+		}
+		else {
+			// Default to converting to grayscale if no valid channel is specified
+			cv::cvtColor(mat, out, cv::COLOR_BGR2GRAY);
+		}
 	}
-	//if (out.depth() == CV_16U) {
-	//	cv::normalize(out, out, 0, 255, cv::NORM_MINMAX, CV_8U);
-	//}
 	pseudoColor(out, min, max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
 	MatToHImage(out, outImage);

@@ -46,8 +46,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
         }
 
-        public int Width { get; set; }
-        public int Height { get; set; }
 
         public void ExportToPoi()
         {
@@ -57,9 +55,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
-            templatePoi.ExportTemp.Width = Width;
-            templatePoi.ExportTemp.Height = Height;
-
+            templatePoi.ExportTemp.Height = 400;
+            templatePoi.ExportTemp.Width = 300;
+            templatePoi.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
             foreach (var item in list)
             {
                 PoiPoint poiPoint = new PoiPoint() {

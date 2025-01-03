@@ -18,6 +18,8 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates.SysDictionary;
 using System.Windows.Documents;
+using ColorVision.Solution;
+using OpenCvSharp;
 
 namespace ColorVision.Engine.Templates
 {
@@ -326,6 +328,7 @@ namespace ColorVision.Engine.Templates
                 sfd.AddExtension = false;
                 sfd.RestoreDirectory = true;
                 sfd.Title = "导出模板";
+                sfd.InitialDirectory = SolutionManager.GetInstance().CurrentSolutionExplorer.DirectoryInfo.FullName;
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.FileName.Contains('.'))
                     sfd.FileName = sfd.FileName + ".cfg";
@@ -381,6 +384,8 @@ namespace ColorVision.Engine.Templates
             ofd.Filter = "*.cfg|*.cfg";
             ofd.Title = "导入模板";
             ofd.RestoreDirectory = true;
+            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolutionExplorer.DirectoryInfo.FullName;
+
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(sfd.FileName), StringComparison.OrdinalIgnoreCase)))
             //{

@@ -6,8 +6,6 @@ using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Eval;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +13,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Media
 {
@@ -135,15 +132,15 @@ namespace ColorVision.Engine.Media
                     }
                     if (layer == "R")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                        imageView.ExtractChannel(0);
                     }
                     if (layer == "G")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                        imageView.ExtractChannel(1);
                     }
                     if (layer == "B")
                     {
-                        imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                        imageView.ExtractChannel(2);
                     }
                     if (layer == "X")
                     {
@@ -156,10 +153,9 @@ namespace ColorVision.Engine.Media
                     if (layer == "Z")
                     {
                         imageView.OpenImage(CVFileUtil.OpenLocalFileChannel(imageView.Config.FilePath, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+
                     }
                 }
-
-
             }
 
 
@@ -168,7 +164,7 @@ namespace ColorVision.Engine.Media
 
                 int index = CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile meta);
                 if (index <= 0) return;
-                if (meta.FileExtType == FileExtType.CIE)
+                if (meta.FileExtType == CVType.CIE)
                 {
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
@@ -179,13 +175,30 @@ namespace ColorVision.Engine.Media
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
                     imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
 
+                    if (!File.Exists(meta.srcFileName))
+                        meta.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.srcFileName);
+
                     if (meta.channels ==3)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "R", "G", "B", "X", "Y", "Z" };
+                        }
+                        else
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "X", "Y", "Z" };
+                        }
                     }
                     else if (meta.channels == 1)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "G","Y" };
+                        if (File.Exists(meta.srcFileName))
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src", "Y" };
+                        }
+                        else
+                        {
+                            ComboBoxLayerItems = new List<string>() { "Src" };
+                        }
                     }
                     else
                     {
@@ -203,7 +216,7 @@ namespace ColorVision.Engine.Media
                     }
                     else if (meta.channels == 1)
                     {
-                        ComboBoxLayerItems = new List<string>() { "Src", "G" };
+                        ComboBoxLayerItems = new List<string>() { "Src"};
                     }
                     else
                     {

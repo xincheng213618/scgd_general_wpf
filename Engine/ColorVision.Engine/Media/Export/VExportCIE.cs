@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Net;
 using ColorVision.RecentFile;
-using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;
@@ -47,12 +46,12 @@ namespace ColorVision.Engine.Media
 
             int index = CVFileUtil.ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return -1;
-            cvcie.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+            cvcie.FileExtType = FileName.Contains(".cvraw") ? CVType.Raw : FileName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
             Mat src;
             switch (cvcie.FileExtType)
             {
-                case FileExtType.Raw:
+                case CVType.Raw:
                     if (export.IsExportSrc)
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
@@ -60,7 +59,7 @@ namespace ColorVision.Engine.Media
                         SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
-                case FileExtType.Src:
+                case CVType.Src:
                     if (export.IsExportSrc)
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
@@ -68,7 +67,7 @@ namespace ColorVision.Engine.Media
                         SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
-                case FileExtType.CIE:
+                case CVType.CIE:
 
                     if (export.IsExportSrc)
                     {
@@ -121,9 +120,9 @@ namespace ColorVision.Engine.Media
                         }
                     }
                     break;
-                case FileExtType.Calibration:
+                case CVType.Calibration:
                     break;
-                case FileExtType.Tif:
+                case CVType.Tif:
                     break;
                 default:
                     break;
@@ -134,8 +133,8 @@ namespace ColorVision.Engine.Media
         public VExportCIE(string filePath)
         {
             FilePath = filePath;
-            FileExtType = filePath.Contains(".cvraw") ? FileExtType.Raw : filePath.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
-            if (FileExtType == FileExtType.CIE)
+            FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+            if (FileExtType == CVType.CIE)
             {
                 IsExportChannelX = true;
                 IsExportChannelY = true;
@@ -153,7 +152,7 @@ namespace ColorVision.Engine.Media
                 }
 
             }
-            else if (FileExtType == FileExtType.Raw)
+            else if (FileExtType == CVType.Raw)
             {
                 IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
                 IsChannelOne = CVCIEFile.channels == 0;
@@ -182,9 +181,9 @@ namespace ColorVision.Engine.Media
         public RecentFileList RecentImage { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentImageSaveList") };
 
         public ObservableCollection<string> RecentImageSaveList { get; set; }
-        public bool IsCVRaw { get => FileExtType == FileExtType.Raw; }
+        public bool IsCVRaw { get => FileExtType == CVType.Raw; }
 
-        public bool IsCVCIE { get => FileExtType == FileExtType.CIE; }
+        public bool IsCVCIE { get => FileExtType == CVType.CIE; }
 
         public bool IsChannelOne { get; set; }
 
@@ -198,8 +197,8 @@ namespace ColorVision.Engine.Media
         public string SavePath { get => _SavePath; set { _SavePath = value; NotifyPropertyChanged(); } }
         private string _SavePath;
 
-        public FileExtType FileExtType { get => _FileExtType; set { _FileExtType = value; NotifyPropertyChanged(); } }
-        private FileExtType _FileExtType;
+        public CVType FileExtType { get => _FileExtType; set { _FileExtType = value; NotifyPropertyChanged(); } }
+        private CVType _FileExtType;
         public bool IsExportChannelX { get => _IsExportChannelX; set { _IsExportChannelX = value; NotifyPropertyChanged(); } }
         private bool _IsExportChannelX;
 

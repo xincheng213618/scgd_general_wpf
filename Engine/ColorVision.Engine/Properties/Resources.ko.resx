@@ -370,7 +370,7 @@
     <value>보기 (_V)</value>
   </data>
   <data name="MenuValidue" xml:space="preserve">
-    <value>우려사항 확인 템플릿 설정(B)</value>
+    <value>확인 템플릿 설정(B)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>업데이트 확인 (_U)</value>

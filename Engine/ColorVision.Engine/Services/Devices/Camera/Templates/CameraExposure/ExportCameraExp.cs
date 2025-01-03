@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
@@ -19,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
         public Visibility Visibility => Visibility.Visible;
         public object? Icon { get; }
 
-        public RelayCommand Command => new(a =>
+        public ICommand Command => new RelayCommand(a =>
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {

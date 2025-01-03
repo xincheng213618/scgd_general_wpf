@@ -82,15 +82,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Net", "Engine\C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Engine", "Engine\ColorVision.Engine\ColorVision.Engine.csproj", "{1BEA1A24-9C84-4882-B079-25E59C98B87C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectBase", "Projects\ProjectBase\ProjectBase.csproj", "{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectHeyuan", "Projects\ProjectHeyuan\ProjectHeyuan.csproj", "{6D8B92D2-0992-4DCC-B683-F4A5B254526F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectShiyuan", "Projects\ProjectShiyuan\ProjectShiyuan.csproj", "{5B6F1F8E-623D-4005-AED5-2BCCA458E2C3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectKB", "Projects\ProjectKB\ProjectKB.csproj", "{51E0F7EE-4ABB-4595-95C5-48D9B9D2EAA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SystemMonitor", "Plugins\SystemMonitor\SystemMonitor.csproj", "{D45AF1EE-BBBA-4F98-9A06-08E408F78681}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemMonitor", "Plugins\SystemMonitor\SystemMonitor.csproj", "{D45AF1EE-BBBA-4F98-9A06-08E408F78681}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -488,22 +486,6 @@ Global
 		{1BEA1A24-9C84-4882-B079-25E59C98B87C}.Release|x64.Build.0 = Release|x64
 		{1BEA1A24-9C84-4882-B079-25E59C98B87C}.Release|x86.ActiveCfg = Release|x64
 		{1BEA1A24-9C84-4882-B079-25E59C98B87C}.Release|x86.Build.0 = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|Any CPU.Build.0 = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|ARM64.Build.0 = Debug|ARM64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|x64.ActiveCfg = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|x64.Build.0 = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|x86.ActiveCfg = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Debug|x86.Build.0 = Debug|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|Any CPU.ActiveCfg = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|Any CPU.Build.0 = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|ARM64.ActiveCfg = Release|ARM64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|ARM64.Build.0 = Release|ARM64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|x64.ActiveCfg = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|x64.Build.0 = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|x86.ActiveCfg = Release|x64
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD}.Release|x86.Build.0 = Release|x64
 		{6D8B92D2-0992-4DCC-B683-F4A5B254526F}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{6D8B92D2-0992-4DCC-B683-F4A5B254526F}.Debug|Any CPU.Build.0 = Debug|x64
 		{6D8B92D2-0992-4DCC-B683-F4A5B254526F}.Debug|ARM64.ActiveCfg = Debug|ARM64
@@ -595,19 +577,18 @@ Global
 		{CB709B84-F614-491B-AF69-D69ACADB303A} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 		{2EAC6277-5509-42D9-A99A-F665771971EC} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
 		{1BEA1A24-9C84-4882-B079-25E59C98B87C} = {BF3D024B-583C-403A-A213-BFC0D1BED4F0}
-		{C3F89FB1-70DF-44FC-B594-334EDA79DEBD} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{6D8B92D2-0992-4DCC-B683-F4A5B254526F} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{5B6F1F8E-623D-4005-AED5-2BCCA458E2C3} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{51E0F7EE-4ABB-4595-95C5-48D9B9D2EAA9} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 		{D45AF1EE-BBBA-4F98-9A06-08E408F78681} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
-		RESX_EnableXlifSync = True
-		RESX_AutoCreateNewLanguageFiles = True
 		RESX_ConfirmAddLanguageFile = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_EnableXlifSync = True
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal

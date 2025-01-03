@@ -7,7 +7,7 @@ namespace ColorVision.UI
     {
         public int Order { get; }
         public string Header { get; }
-        public RelayCommand Command { get; }
+        public RelayCommand RelayCommand { get; }
 
         public string Description { get; }
     }
@@ -17,7 +17,7 @@ namespace ColorVision.UI
         public abstract string Header { get; }
         public abstract int Order { get; }
 
-        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
         public abstract string Description { get; }
 
         public virtual void Execute()

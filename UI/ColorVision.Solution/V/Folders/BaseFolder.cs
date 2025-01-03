@@ -21,9 +21,7 @@ namespace ColorVision.Solution.V.Folders
         {
             DirectoryInfo  = directoryInfo;
             Name = directoryInfo.Name;
-            var icon = FileIcon.GetDirectoryIcon();
-            if (icon != null)
-            Icon = icon.ToImageSource();
+            Icon = FileIcon.GetDirectoryIconImageSource();
 
             GeneralRelayCommand();
             GeneralContextMenu();
@@ -42,7 +40,7 @@ namespace ColorVision.Solution.V.Folders
 
         public string Name { get; set; }
         public string ToolTip { get; set; }
-        public ImageSource Icon { get; set; }
+        public ImageSource? Icon { get; set; }
 
         public void Copy()
         {

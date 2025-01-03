@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.Compliance;
@@ -241,7 +241,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
 
                         handler.UpdateMessage(msg);
@@ -269,17 +269,17 @@ namespace ColorVision.Projects.ProjectShiYuan
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (DisplayFlowConfig.Instance.LastFlowTime == 0 || DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (ProjectShiYuanConfig.Instance.LastFlowTime == 0 || ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = DisplayFlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = ProjectShiYuanConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{DisplayFlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectShiYuanConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         handler.UpdateMessage(msg);
                     }

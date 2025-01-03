@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 
-namespace ColorVision.Solution
+namespace ColorVision.UI
 {
     public static class Commands
     {

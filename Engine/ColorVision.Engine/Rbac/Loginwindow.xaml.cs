@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
@@ -7,35 +6,18 @@ using System.Windows;
 
 namespace ColorVision.Engine.Rbac
 {
-    public class ExportLogin : IMenuItem
+    public class ExportLogin : MenuItemBase
     {
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "Login";
-
-        public int Order => 3;
-
-        public string? Header => Properties.Resources.MenuLogin;
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-        public Visibility Visibility => Visibility.Visible;
-
-        public RelayCommand Command => new(A =>
+        public override string OwnerGuid => MenuItemConstants.Help;
+        public override string GuidId => "Login";
+        public override int Order => 3;
+        public override string Header => Properties.Resources.MenuLogin;
+        public override void Execute()
         {
-            if (UserConfig.Instance.UserName != null)
-            {
-                var user = UserConfig.Instance;
-                MessageBox.Show(user.PermissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
-
-            }
-            else
-            {
-                new LoginWindow() { Owner =Application.Current.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            }
-        });
+            new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
     }
+
 
 
     /// <summary>

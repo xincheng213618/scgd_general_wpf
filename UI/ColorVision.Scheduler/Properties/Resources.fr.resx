@@ -120,4 +120,10 @@
   <data name="Create" xml:space="preserve">
     <value>créer</value>
   </data>
+  <data name="TaskViewerWindow" xml:space="preserve">
+    <value>Fenêtre de visualisation des tâches</value>
+  </data>
+  <data name="CreateTask" xml:space="preserve">
+    <value>Créer des tâches</value>
+  </data>
 </root>

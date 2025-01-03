@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -36,6 +35,7 @@ namespace ColorVision
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
             log.Info("args£º" + string.Join(", ", args));
 

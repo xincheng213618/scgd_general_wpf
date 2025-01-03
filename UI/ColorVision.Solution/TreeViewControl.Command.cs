@@ -1,5 +1,6 @@
 ﻿using ColorVision.Solution.V;
 using ColorVision.Solution.V.Files;
+using ColorVision.UI;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Windows;

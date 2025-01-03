@@ -13,7 +13,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         private DrawCanvas DrawCanvas { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
-
         public Gridline(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
@@ -72,8 +71,6 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (DrawCanvas.Source is BitmapSource bitmapSource)
             {
-
-
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new("Arial");
                 double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
@@ -82,7 +79,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                 int lenindex = (int)(40 * ratio);
                 double fontSize = 15 / ZoomboxSub.ContentMatrix.M11; 
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
-                for (int i = 0; i < bitmapSource.Width; i += lenindex)
+                for (int i = 0; i < bitmapSource.Height; i += lenindex)
                 {
                     string text = (i * ActualLength).ToString("F0") ;
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
@@ -96,10 +93,11 @@ namespace ColorVision.ImageEditor.Draw.Special
                     {
                         dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
                     }
-                    dc.DrawLine(pen, new Point(i, 0), new Point(i, bitmapSource.Height));
+                    dc.DrawLine(pen, new Point(0, i), new Point(bitmapSource.Width, i));
+
                 }
 
-                for (int i = 0; i < bitmapSource.Height; i += lenindex)
+                for (int i = 0; i < bitmapSource.Width; i += lenindex)
                 {
                     string text = (i * ActualLength).ToString("F0");
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
@@ -107,14 +105,14 @@ namespace ColorVision.ImageEditor.Draw.Special
                     if (DrawCanvas.RenderTransform is TransformGroup transformGroup && transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault() is ScaleTransform scaleTransform)
                     {
                         dc.PushTransform(scaleTransform);
-                        dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(i -10 / ZoomboxSub.ContentMatrix.M11,- 20 / ZoomboxSub.ContentMatrix.M11));
                         dc.Pop();
                     }
                     else
                     {
-                        dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
+                        dc.DrawText(formattedText, new Point(i -10 / ZoomboxSub.ContentMatrix.M11,  -20 / ZoomboxSub.ContentMatrix.M11));
                     }
-                    dc.DrawLine(pen, new Point(0, i), new Point(bitmapSource.Width, i));
+                    dc.DrawLine(pen, new Point(i, 0), new Point(i, bitmapSource.Height));
                 }
             }
         }
@@ -123,7 +121,6 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
-
         }
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);

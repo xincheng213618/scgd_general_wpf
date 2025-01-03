@@ -36,15 +36,65 @@
 
 
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Padding="0" Margin="-3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
+            <TreeView  	x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="-3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
+                <TreeView.Resources>
+                    <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
+                </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
-                    <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle }">
+                    <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle}">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
                         <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition MinHeight="{TemplateBinding MinHeight}" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Name="Bd" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="true" CornerRadius="{Binding Path=(hc:BorderElement.CornerRadius), RelativeSource={RelativeSource TemplatedParent}}">
+                                            <DockPanel LastChildFill="True" Margin="{Binding Converter={StaticResource TreeViewItemMarginConverter}, RelativeSource={RelativeSource TemplatedParent}}">
+                                                <ToggleButton Name="Expander" ClickMode="Press" Style="{StaticResource ExpandCollapseToggleStyle}" IsChecked="{Binding IsExpanded , RelativeSource={RelativeSource TemplatedParent}}" />
+                                                <ContentPresenter Name="PART_Header" VerticalAlignment="Center" ContentSource="Header" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                            </DockPanel>
+                                        </Border>
+                                        <ItemsPresenter Name="ItemsHost" Grid.Row="1" />
+                                        
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger SourceName="Bd" Property="UIElement.IsMouseOver" Value="true">
+                                            <Setter TargetName="Bd" Value="{DynamicResource SecondaryRegionBrush}" Property="Background" />
+                                        </Trigger>
+                                        <Trigger Property="TreeViewItem.IsExpanded" Value="false">
+                                            <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                                        </Trigger>
+                                        <Trigger Property="ItemsControl.HasItems" Value="false">
+                                            <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                        </Trigger>
+                                        <Trigger Property="TreeViewItem.IsSelected" Value="true">
+                                            <Setter TargetName="Bd" Value="{DynamicResource PrimaryBrush}" Property="Background" />
+                                            <Setter Value="{DynamicResource TextIconBrush}" Property="Foreground" />
+                                        </Trigger>
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="TreeViewItem.IsSelected" Value="true" />
+                                                <Condition Property="TreeViewItem.IsSelectionActive" Value="false" />
+                                            </MultiTrigger.Conditions>
+                                            <Setter TargetName="Bd" Value="{DynamicResource DarkDefaultBrush}" Property="Background" />
+                                            <Setter Value="{DynamicResource PrimaryTextBrush}" Property="Foreground" />
+                                        </MultiTrigger>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter Property="UIElement.Opacity" Value=".4" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
                     </Style>
+
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </Border>

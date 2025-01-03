@@ -1,14 +1,23 @@
-﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
-using MQTTMessageLib.FileServer;
-
+﻿#pragma warning disable CA1501
 
 namespace ColorVision.Net
 {
+    public enum CVType
+    {
+        None = -1,
+        Raw,
+        Src,
+        CIE,
+        Calibration,
+        Tif,
+        Dat
+    }
+
     public struct CVCIEFile
     {
         public uint version;
 
-        public FileExtType FileExtType;
+        public CVType FileExtType;
         public int rows;
         public int cols;
         public int bpp;

@@ -7,6 +7,8 @@ using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using ColorVision.Common.Utilities;
+using System.Collections.Generic;
 
 namespace ColorVision.Common.NativeMethods
 {
@@ -60,7 +62,40 @@ namespace ColorVision.Common.NativeMethods
             Icon _Icon = Icon.FromHandle(_SHFILEINFO.hIcon);
             return _Icon;
         }
+        public static Dictionary<string, ImageSource> FileImageSourceCache { get; set; } = new Dictionary<string, ImageSource>();
 
+        public static ImageSource GetFileIconImageSource(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException("Path cannot be null or empty", nameof(path));
+            }
+
+            string extension = Path.GetExtension(path);
+            if (FileImageSourceCache.TryGetValue(extension, out ImageSource source))
+            {
+                return source;
+            }
+
+            Icon icon = GetFileIcon(path);
+            source = icon.ToImageSource();
+
+            FileImageSourceCache.TryAdd(extension, source);
+            return source;
+        }
+
+
+        public static ImageSource? DirectoryIconImageSource { get; set; }
+        public static ImageSource? GetDirectoryIconImageSource()
+        {
+            if (DirectoryIconImageSource == null)
+            {
+                Icon icon = GetDirectoryIcon();
+                DirectoryIconImageSource = icon?.ToImageSource();
+            }
+            return DirectoryIconImageSource;
+
+        }
         /// <summary>
         /// 获取文件夹图标 
         /// </summary>

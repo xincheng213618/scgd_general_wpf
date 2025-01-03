@@ -349,69 +349,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制(_C) 的本地化字符串。
-        /// </summary>
-        public static string MenuCopy {
-            get {
-                return ResourceManager.GetString("MenuCopy", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剪切(_T) 的本地化字符串。
-        /// </summary>
-        public static string MenuCut {
-            get {
-                return ResourceManager.GetString("MenuCut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 删除(_D) 的本地化字符串。
-        /// </summary>
-        public static string MenuDelete {
-            get {
-                return ResourceManager.GetString("MenuDelete", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 编辑(_E) 的本地化字符串。
-        /// </summary>
-        public static string MenuEdit {
-            get {
-                return ResourceManager.GetString("MenuEdit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 退出(_X) 的本地化字符串。
-        /// </summary>
-        public static string MenuExit {
-            get {
-                return ResourceManager.GetString("MenuExit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 文件(_F) 的本地化字符串。
-        /// </summary>
-        public static string MenuFile {
-            get {
-                return ResourceManager.GetString("MenuFile", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 帮助(_H) 的本地化字符串。
-        /// </summary>
-        public static string MenuHelp {
-            get {
-                return ResourceManager.GetString("MenuHelp", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 新建(_N) 的本地化字符串。
         /// </summary>
         public static string MenuNew {
@@ -439,24 +376,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 粘贴(_P) 的本地化字符串。
-        /// </summary>
-        public static string MenuPaste {
-            get {
-                return ResourceManager.GetString("MenuPaste", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 重命名(_M) 的本地化字符串。
-        /// </summary>
-        public static string MenuRename {
-            get {
-                return ResourceManager.GetString("MenuRename", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 设置(_S) 的本地化字符串。
         /// </summary>
         public static string MenuSettings {
@@ -466,47 +385,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_M) 的本地化字符串。
-        /// </summary>
-        public static string MenuTemplate {
-            get {
-                return ResourceManager.GetString("MenuTemplate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 工具(_T) 的本地化字符串。
-        /// </summary>
-        public static string MenuTool {
-            get {
-                return ResourceManager.GetString("MenuTool", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 撤销(_U) 的本地化字符串。
-        /// </summary>
-        public static string MenuUndo {
-            get {
-                return ResourceManager.GetString("MenuUndo", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 检查更新(_U) 的本地化字符串。
         /// </summary>
         public static string MenuUpdate {
             get {
                 return ResourceManager.GetString("MenuUpdate", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 视图(_V) 的本地化字符串。
-        /// </summary>
-        public static string MenuView {
-            get {
-                return ResourceManager.GetString("MenuView", resourceCulture);
             }
         }
         

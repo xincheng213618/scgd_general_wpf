@@ -243,4 +243,28 @@
   <data name="Close" xml:space="preserve">
     <value>закрытие</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>Вставить(_P)</value>
+  </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Переименовать(_М)</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>Отменить(U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Посмотреть(В)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Изменить (Е)</value>
+  </data>
+  <data name="MenuDelete" xml:space="preserve">
+    <value>Удалить(Д)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Вырезать(Т)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Копировать (С)</value>
+  </data>
 </root>

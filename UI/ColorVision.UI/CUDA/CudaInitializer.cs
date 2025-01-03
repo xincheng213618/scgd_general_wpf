@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision.UI.CUDA
 {
-    public class CudaInitializer : IInitializer
+    public class CudaInitializer : InitializerBase
     {
         [DllImport("nvcuda.dll")]
         private static extern int cuInit(uint Flags);
@@ -24,7 +24,8 @@ namespace ColorVision.UI.CUDA
         private static extern int cuDeviceTotalMem_v2(out ulong bytes, int device);
         public static ConfigCuda Config => ConfigCuda.Instance;
 
-        public int Order => 7;
+        public override int Order => 7;
+        public override string Name => nameof(CudaInitializer);
 
         private readonly IMessageUpdater _messageUpdater;
 
@@ -33,7 +34,7 @@ namespace ColorVision.UI.CUDA
             _messageUpdater = messageUpdater;
         }
 
-        public async Task InitializeAsync()
+        public override async Task InitializeAsync()
         {
             Config.IsCudaSupported = CheckCudaSupport();
             if (Config.IsCudaSupported)

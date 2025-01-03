@@ -241,6 +241,22 @@
           <source>日志级别</source>
           <target state="new">Niveau de journalisation</target>
         </trans-unit>
+        <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
+          <source>复制(_C)</source>
+          <target state="new">Copie(C)</target>
+        </trans-unit>
+        <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
+          <source>剪切(_T)</source>
+          <target state="new">Couper(_T)</target>
+        </trans-unit>
+        <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
+          <source>删除(_D)</source>
+          <target state="new">Supprimer(D)</target>
+        </trans-unit>
+        <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
+          <source>编辑(_E)</source>
+          <target state="new">Modifier(E)</target>
+        </trans-unit>
         <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
           <source>退出(_X)</source>
           <target state="new">Quitter (X)</target>
@@ -265,6 +281,14 @@
           <source>选项(_O)</source>
           <target state="new">_Option</target>
         </trans-unit>
+        <trans-unit id="MenuPaste" translate="yes" xml:space="preserve">
+          <source>粘贴(_P)</source>
+          <target state="new">Coller(_P)</target>
+        </trans-unit>
+        <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
+          <source>重命名(_M)</source>
+          <target state="new">Renommer(M)</target>
+        </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
           <source>模板(_M)</source>
           <target state="new">_Modèle</target>
@@ -272,6 +296,14 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">Outil(T)</target>
+        </trans-unit>
+        <trans-unit id="MenuUndo" translate="yes" xml:space="preserve">
+          <source>撤销(_U)</source>
+          <target state="new">Annuler (U)</target>
+        </trans-unit>
+        <trans-unit id="MenuView" translate="yes" xml:space="preserve">
+          <source>视图(_V)</source>
+          <target state="new">Vue(V)</target>
         </trans-unit>
         <trans-unit id="OpenConfigFile" translate="yes" xml:space="preserve">
           <source>打开配置文件</source>

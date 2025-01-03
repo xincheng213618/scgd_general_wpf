@@ -10,7 +10,7 @@ namespace ColorVision.Solution.V.Folders
 
         public DirectoryInfo DirectoryInfo { get; set; }
         string ToolTip { get; set; }
-        ImageSource Icon { get; set; }
+        ImageSource? Icon { get; set; }
         ContextMenu ContextMenu { get; set; }
 
         void Open();

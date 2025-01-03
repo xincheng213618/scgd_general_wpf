@@ -302,10 +302,7 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 ModDetailDao.Instance.UpdateByPid(flowParam.Id, list);
             }
-
         }
-
-
 
         public FlowParam()
         {
@@ -321,13 +318,13 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ModDetailModel mod = new() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
                 modDetailModels.Add(mod);
-                dataBase64 = model.Value ?? string.Empty;
+                _DataBase64 = model.Value ?? string.Empty;
             }
             AddDetail(modDetailModels);
         }
 
-        private string dataBase64;
-        public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
+        private string _DataBase64;
+        public string DataBase64 { get => _DataBase64; set { _DataBase64 = value; } }
 
         private const string propertyName = "filename";
 

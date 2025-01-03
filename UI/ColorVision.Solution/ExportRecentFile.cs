@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Solution.Properties;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
@@ -21,7 +22,7 @@ namespace ColorVision.Solution
         public string? InputGestureText => null;
 
         public object? Icon => null;
-        public RelayCommand Command => new(a => { });
+        public ICommand Command => null;
 
         private RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
         public Visibility Visibility => Visibility.Visible;
