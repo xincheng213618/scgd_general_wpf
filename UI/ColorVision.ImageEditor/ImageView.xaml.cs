@@ -229,7 +229,9 @@ namespace ColorVision.ImageEditor
 
                 if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
-                    var ContextMenu = new ContextMenu();
+                    Zoombox1.ContextMenu ??= new ContextMenu();
+                    Zoombox1.ContextMenu.Items.Clear();
+                    var ContextMenu = Zoombox1.ContextMenu;
                     MenuItem menuItem = new() { Header = "隐藏(_H)" };
                     menuItem.Click += (s, e) =>
                     {
@@ -243,11 +245,10 @@ namespace ColorVision.ImageEditor
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
-                    ImageShow.ContextMenu = ContextMenu;
                 }
                 else
                 {
-                    ImageShow.ContextMenu = null;
+                    Zoombox1.ContextMenu.Items.Clear();
                 }
             }
         }
@@ -834,7 +835,6 @@ namespace ColorVision.ImageEditor
         public void RenderContextMenu()
         {
             Zoombox1.ContextMenu ??= new ContextMenu();
-
             Zoombox1.ContextMenu.Items.Clear();
             foreach (var item in ImageEditViewMode.GetContextMenus())
             {
