@@ -486,7 +486,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
                             }
                             else
                             {
@@ -495,7 +495,7 @@ namespace ProjectKB
 
                             if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
                             }
                             else
                             {

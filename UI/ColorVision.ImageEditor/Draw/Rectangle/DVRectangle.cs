@@ -1,8 +1,10 @@
-﻿using System.Windows;
+﻿using ColorVision.UI;
+using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
+
     public class DVRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisual, IRectangle
     {
         public BaseProperties BaseAttribute => Attribute;
