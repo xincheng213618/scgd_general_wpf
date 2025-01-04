@@ -37,6 +37,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.Jsons;
 using System.Collections.Generic;
 using System.Windows.Media;
+using System.Reflection;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -88,12 +89,13 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
         }
-
+        STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             listViewRecord.ItemsSource = FlowRecords;
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             STNodePropertyGrid1.IsEditEnable = false;
+            STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.ActiveChanged += (s, e) =>
             {
@@ -283,14 +285,98 @@ namespace ColorVision.Engine.Services.Flow
 
                     );
                 }
-                else
-                {
-                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
-                }
             };
+            AddContentMenu();
+        }
+
+
+        public void AddContentMenu()
+        {
+            STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+            Type STNodeTreeViewtype = STNodeTreeView1.GetType();
+
+            // 获取私有字段信息
+            FieldInfo fieldInfo = STNodeTreeViewtype.GetField("m_dic_all_type", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (fieldInfo != null)
+            {
+                // 获取字段的值
+                var value = fieldInfo.GetValue(STNodeTreeView1);
+                Dictionary<string, List<Type>> values = new Dictionary<string, List<Type>>();
+                if (value is Dictionary<Type, string> m_dic_all_type)
+                {
+                    foreach (var item in m_dic_all_type)
+                    {
+                        if (values.ContainsKey(item.Value))
+                        {
+                            values[item.Value].Add(item.Key);
+                        }
+                        else
+                        {
+                            values.Add(item.Value, new List<Type>() { item.Key });
+                        }
+                    }
+
+                    foreach (var nodetype in values)
+                    {
+                        string header = nodetype.Key.Replace("FlowEngineLib/", "");
+                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
+
+
+                        foreach (var type in nodetype.Value)
+                        {
+                            if (type.IsSubclassOf(typeof(STNode)))
+                            {
+                                if (Activator.CreateInstance(type) is STNode sTNode)
+                                {
+                                    toolStripItem.DropDownItems.Add(sTNode.Title, null, (s, e) =>
+                                    {
+                                        STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+                                        if (sTNode1 != null)
+                                        {
+                                            sTNode1.Create();
+                                            var p = STNodeEditorMain.PointToClient(lastMousePosition);
+                                            p = STNodeEditorMain.ControlToCanvas(p);
+                                            sTNode1.Left = p.X;
+                                            sTNode1.Top = p.Y;
+                                            STNodeEditorMain.Nodes.Add(sTNode1);
+                                        }
+                                    });
+                                }
+                            }
+
+                        }
+                        STNodeEditorMain.ContextMenuStrip.Items.Add(toolStripItem);
+
+                    }
+
+                }
+            }
+
+
+            STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
+            {
+                if (IsOptionDisConnected) e.Cancel = true;
+                if (IsHover())
+                    e.Cancel = true;
+                IsOptionDisConnected = false;
+            };
+            STNodeEditorMain.OptionDisConnected += (s, e) =>
+            {
+                IsOptionDisConnected = true;
+            };
+        }
+        bool IsOptionDisConnected;
+        public bool IsHover()
+        {
+            lastMousePosition = System.Windows.Forms.Cursor.Position;
+            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
+            var info = STNodeEditorMain.FindNodeFromPoint(p);
+            if (info.Node !=null || info.NodeOption != null)
+            {
+                return true;
+            }
+            return false;
         }
 
         public float CanvasScale { get; set; }
