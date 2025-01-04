@@ -94,12 +94,10 @@ namespace ColorVision.Engine.Services.Flow
         {
             listViewRecord.ItemsSource = FlowRecords;
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodePropertyGrid1.IsEditEnable = false;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.ActiveChanged += (s, e) =>
             {
-                winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
 
                 SignStackPannel.Children.Clear();
@@ -259,6 +257,20 @@ namespace ColorVision.Engine.Services.Flow
 
             };
 
+
+            STNodeEditorMain.PreviewKeyDown += (s, e) =>
+            {
+                if (e.KeyCode == System.Windows.Forms.Keys.Delete)
+                {
+                    if (STNodeEditorMain.ActiveNode != null)
+                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+
+                    foreach (var item in STNodeEditorMain.GetSelectedNode())
+                    {
+                        STNodeEditorMain.Nodes.Remove(item);
+                    }
+                }
+            };
 
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
@@ -458,7 +470,24 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             lastMousePosition = e.Location;
-            if (STNodeEditorMain.HoverNode == null && e.Button == System.Windows.Forms.MouseButtons.Left)
+            System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
+            m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
+            m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
+            NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
+
+            if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
+            {
+
+            }
+            else if (nodeFindInfo.Node != null)
+            {
+
+            }
+            else if (nodeFindInfo.NodeOption != null)
+            {
+
+            }
+            else if (e.Button == System.Windows.Forms.MouseButtons.Left)
             {
                 IsMouseDown = true;
             }
