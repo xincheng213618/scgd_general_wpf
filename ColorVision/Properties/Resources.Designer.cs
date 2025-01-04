@@ -322,47 +322,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 日志 的本地化字符串。
-        /// </summary>
-        public static string Log {
-            get {
-                return ResourceManager.GetString("Log", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最大化 的本地化字符串。
-        /// </summary>
-        public static string Maximize {
-            get {
-                return ResourceManager.GetString("Maximize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 关于(_A) 的本地化字符串。
         /// </summary>
         public static string MenuAbout {
             get {
                 return ResourceManager.GetString("MenuAbout", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 新建(_N) 的本地化字符串。
-        /// </summary>
-        public static string MenuNew {
-            get {
-                return ResourceManager.GetString("MenuNew", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 打开(_O) 的本地化字符串。
-        /// </summary>
-        public static string MenuOpen {
-            get {
-                return ResourceManager.GetString("MenuOpen", resourceCulture);
             }
         }
         

@@ -119,25 +119,9 @@
           <source>本地</source>
           <target state="new">本地</target>
         </trans-unit>
-        <trans-unit id="Log" translate="yes" xml:space="preserve">
-          <source>日志</source>
-          <target state="new">紀錄</target>
-        </trans-unit>
-        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
-          <source>最大化</source>
-          <target state="new">最大化</target>
-        </trans-unit>
         <trans-unit id="MenuAbout" translate="yes" xml:space="preserve">
           <source>关于(_A)</source>
           <target state="new">關於(_A)</target>
-        </trans-unit>
-        <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
-          <source>新建(_N)</source>
-          <target state="new">新建(_N)</target>
-        </trans-unit>
-        <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
-          <source>打开(_O)</source>
-          <target state="new">打开(_O)</target>
         </trans-unit>
         <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
           <source>选项(_O)</source>

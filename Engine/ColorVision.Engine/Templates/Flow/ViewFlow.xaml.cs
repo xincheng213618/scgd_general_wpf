@@ -1,13 +1,43 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using ColorVision.Engine.Templates.DataLoad;
+using ColorVision.Engine.Templates.Distortion;
+using ColorVision.Engine.Templates.FocusPoints;
+using ColorVision.Engine.Templates.FOV;
+using ColorVision.Engine.Templates.Ghost;
+using ColorVision.Engine.Templates.ImageCropping;
+using ColorVision.Engine.Templates.JND;
+using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.Engine.Templates.LedCheck;
+using ColorVision.Engine.Templates.LEDStripDetection;
+using ColorVision.Engine.Templates.MTF;
+using ColorVision.Engine.Templates.POI.BuildPoi;
+using ColorVision.Engine.Templates.POI.POIFilters;
+using ColorVision.Engine.Templates.POI.POIOutput;
+using ColorVision.Engine.Templates.POI.POIRevise;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.ROI;
+using ColorVision.Engine.Templates.SFR;
+using ColorVision.Engine.Templates.Validate;
+using ColorVision.Engine.Templates;
 using ColorVision.UI.Views;
 using NPOI.OpenXmlFormats.Dml.Diagram;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static QRCoder.PayloadGenerator;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Templates.Jsons;
+using System.Collections.Generic;
+using System.Windows.Media;
+using System.Reflection;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -59,17 +89,177 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
         }
-
+        STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             listViewRecord.ItemsSource = FlowRecords;
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             STNodePropertyGrid1.IsEditEnable = false;
+            STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
+
             STNodeEditorMain.ActiveChanged += (s, e) =>
             {
                 winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+
+                SignStackPannel.Children.Clear();
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
+                {
+                    AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
+                    AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+
+
+                    // Usage
+                    AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateCameraExposureParam());
+                    AddStackPanel(name => commCaeraNode.POITempName = name, commCaeraNode.POITempName, "POI模板", new TemplatePoi());
+                    AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
+                    AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+                }
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
+                {
+                    AddStackPanel(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
+
+                }
+
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
+                {
+                    AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
+
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
+                    AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+                }
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
+                {
+                    void Refesh()
+                    {
+                        SignStackPannel.Children.Clear();
+
+                        switch (algorithmNode.Algorithm)
+                        {
+                            case FlowEngineLib.Algorithm.AlgorithmType.MTF:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.SFR:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR", new TemplateSFR());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.FOV:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.畸变:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测1:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测1", new TemplateLedCheck());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.发光区检测1:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测1", new TemplateFocusPoints());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测OLED", new TemplateRoi());
+                                break;
+                            case FlowEngineLib.Algorithm.AlgorithmType.JND:
+                                AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "JND", new TemplateJND());
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    algorithmNode.nodeEvent -= (s, e) => Refesh();
+                    algorithmNode.nodeEvent += (s, e) => Refesh();
+                    Refesh();
+                }
+
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.CVCameraNode cvCameraNode)
+                {
+                    AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
+                    AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+
+                    AddStackPanel(name => cvCameraNode.POITempName = name, cvCameraNode.POITempName, "POI模板", new TemplatePoi());
+                    AddStackPanel(name => cvCameraNode.POIFilterTempName = name, cvCameraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
+                    AddStackPanel(name => cvCameraNode.POIReviseTempName = name, cvCameraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+
+                }
+
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.LVCameraNode lcCameranode)
+                {
+                    AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
+                    var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
+                    AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+
+                    AddStackPanel(name => lcCameranode.POITempName = name, lcCameranode.POITempName, "POI模板", new TemplatePoi());
+                    AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
+                    AddStackPanel(name => lcCameranode.POIReviseTempName = name, lcCameranode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+
+                }
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
+                {
+                    AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
+                }
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
+                {
+                    AddStackPanel(name => algDataLoadNode.TempName = name, algDataLoadNode.TempName, "模板", new TemplateDataLoad());
+                }
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.OLED.OLEDImageCroppingNode OLEDImageCroppingNode)
+                {
+                    AddStackPanel(name => OLEDImageCroppingNode.TempName = name, OLEDImageCroppingNode.TempName, "参数模板", new TemplateImageCropping());
+                }
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.POINode poinode)
+                {
+                    AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
+                    AddStackPanel(name => poinode.FilterTemplateName = name, poinode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
+                    AddStackPanel(name => poinode.ReviseTemplateName = name, poinode.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
+                    AddStackPanel(name => poinode.OutputTemplateName = name, poinode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
+                }
+
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
+                {
+                    AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
+                }
+                if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
+                {
+                    void Refesh()
+                    {
+                        SignStackPannel.Children.Clear();
+                        switch (algComplianceMathNode.ComplianceMath)
+                        {
+                            case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
+                                AddStackPanel(name => algComplianceMathNode.TempName = name, algComplianceMathNode.TempName, "CIE", new ObservableCollection<TemplateModel<ValidateParam>>(TemplateComplyParam.CIEParams.SelectMany(p => p.Value)));
+                                break;
+                            case FlowEngineLib.Node.Algorithm.ComplianceMathType.JND:
+                                AddStackPanel(name => algComplianceMathNode.TempName = name, algComplianceMathNode.TempName, "JND", new TemplateComplyParam("Comply.JND"));
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    algComplianceMathNode.nodeEvent -= (s, e) => Refesh();
+                    algComplianceMathNode.nodeEvent += (s, e) => Refesh();
+                    Refesh();
+                }
+
             };
+
+
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
             View = new View();
@@ -95,14 +285,98 @@ namespace ColorVision.Engine.Services.Flow
 
                     );
                 }
-                else
-                {
-                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
-                }
             };
+            AddContentMenu();
+        }
+
+
+        public void AddContentMenu()
+        {
+            STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+            Type STNodeTreeViewtype = STNodeTreeView1.GetType();
+
+            // 获取私有字段信息
+            FieldInfo fieldInfo = STNodeTreeViewtype.GetField("m_dic_all_type", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            if (fieldInfo != null)
+            {
+                // 获取字段的值
+                var value = fieldInfo.GetValue(STNodeTreeView1);
+                Dictionary<string, List<Type>> values = new Dictionary<string, List<Type>>();
+                if (value is Dictionary<Type, string> m_dic_all_type)
+                {
+                    foreach (var item in m_dic_all_type)
+                    {
+                        if (values.ContainsKey(item.Value))
+                        {
+                            values[item.Value].Add(item.Key);
+                        }
+                        else
+                        {
+                            values.Add(item.Value, new List<Type>() { item.Key });
+                        }
+                    }
+
+                    foreach (var nodetype in values)
+                    {
+                        string header = nodetype.Key.Replace("FlowEngineLib/", "");
+                        var toolStripItem = new System.Windows.Forms.ToolStripMenuItem(header);
+
+
+                        foreach (var type in nodetype.Value)
+                        {
+                            if (type.IsSubclassOf(typeof(STNode)))
+                            {
+                                if (Activator.CreateInstance(type) is STNode sTNode)
+                                {
+                                    toolStripItem.DropDownItems.Add(sTNode.Title, null, (s, e) =>
+                                    {
+                                        STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+                                        if (sTNode1 != null)
+                                        {
+                                            sTNode1.Create();
+                                            var p = STNodeEditorMain.PointToClient(lastMousePosition);
+                                            p = STNodeEditorMain.ControlToCanvas(p);
+                                            sTNode1.Left = p.X;
+                                            sTNode1.Top = p.Y;
+                                            STNodeEditorMain.Nodes.Add(sTNode1);
+                                        }
+                                    });
+                                }
+                            }
+
+                        }
+                        STNodeEditorMain.ContextMenuStrip.Items.Add(toolStripItem);
+
+                    }
+
+                }
+            }
+
+
+            STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
+            {
+                if (IsOptionDisConnected) e.Cancel = true;
+                if (IsHover())
+                    e.Cancel = true;
+                IsOptionDisConnected = false;
+            };
+            STNodeEditorMain.OptionDisConnected += (s, e) =>
+            {
+                IsOptionDisConnected = true;
+            };
+        }
+        bool IsOptionDisConnected;
+        public bool IsHover()
+        {
+            lastMousePosition = System.Windows.Forms.Cursor.Position;
+            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
+            var info = STNodeEditorMain.FindNodeFromPoint(p);
+            if (info.Node !=null || info.NodeOption != null)
+            {
+                return true;
+            }
+            return false;
         }
 
         public float CanvasScale { get; set; }
@@ -239,5 +513,218 @@ namespace ColorVision.Engine.Services.Flow
         {
 
         }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                DisplayMemberPath = "Code",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            var selectedItem = itemSource.FirstOrDefault(x => x.Code == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Code;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName });
+
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small")
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = itemSource;
+            var selectedItem = itemSource.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+            dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50 });
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
+                Width = 120
+            };
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = template.TemplateParams;
+            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                Margin = new Thickness(5, 0, 0, 0),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
+            };
+
+            // 创建 TextBlock
+            TextBlock textBlock = new TextBlock
+            {
+                Text = "\uE713",
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // 创建 Button
+            Button button = new Button
+            {
+                Width = 20,
+                BorderBrush = Brushes.Transparent,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+
+            button.Click += (s, e) =>
+            {
+                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            };
+
+            // 将控件添加到 Grid
+            grid.Children.Add(textBlock);
+            grid.Children.Add(button);
+
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(grid);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50 });
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
+                Width = 120
+            };
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = template.TemplateParams;
+            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                Margin = new Thickness(5, 0, 0, 0),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
+            };
+
+            // 创建 TextBlock
+            TextBlock textBlock = new TextBlock
+            {
+                Text = "\uE713",
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // 创建 Button
+            Button button = new Button
+            {
+                Width = 20,
+                BorderBrush = Brushes.Transparent,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+
+            button.Click += (s, e) =>
+            {
+                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            };
+
+            // 将控件添加到 Grid
+            grid.Children.Add(textBlock);
+            grid.Children.Add(button);
+
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(grid);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+
     }
 }

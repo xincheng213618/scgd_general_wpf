@@ -29,6 +29,7 @@ using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Start;
+using Mysqlx.Crud;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
@@ -419,10 +420,17 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditorMain.ContextMenuStrip.Items.Add("另存为", null, (s, e) => SaveToFile());
             STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
             {
-                if (IsHover()) e.Cancel = true;
+                if (IsOptionDisConnected) e.Cancel = true;
+                if (IsHover()) 
+                    e.Cancel = true;
+                IsOptionDisConnected = false;
+            };
+            STNodeEditorMain.OptionDisConnected += (s, e) =>
+            {
+                IsOptionDisConnected = true;
             };
         }
-
+        bool IsOptionDisConnected;
         public void SaveToFile()
         {
             // 创建并配置 SaveFileDialog
@@ -467,6 +475,7 @@ namespace ColorVision.Engine.Templates.Flow
             lastMousePosition = System.Windows.Forms.Cursor.Position;
             var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
             p = STNodeEditorMain.ControlToCanvas(p);
+
             foreach (var item in STNodeEditorMain.Nodes)
             {
                 if (item is STNode sTNode)
@@ -474,6 +483,29 @@ namespace ColorVision.Engine.Templates.Flow
                     bool result = sTNode.Rectangle.Contains(p);
                     if (result)
                         return true;
+
+                    if (sTNode.GetInputOptions() is STNodeOption[] inputOptions)
+                    {
+                        foreach (STNodeOption inputOption in inputOptions)
+                        {
+                            if (inputOption != STNodeOption.Empty && inputOption.DotRectangle.Contains(p))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+
+                    if (sTNode.GetOutputOptions() is STNodeOption[] outputOptions)
+                    {
+                        foreach (STNodeOption outputOption in outputOptions)
+                        {
+                            if (outputOption != STNodeOption.Empty && outputOption.DotRectangle.Contains(p))
+                            {
+                                return true;
+                            }
+                        }
+
+                    }
                 }
             }
             return false;
