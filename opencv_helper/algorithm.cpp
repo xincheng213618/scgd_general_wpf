@@ -71,19 +71,27 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     if (image.depth() == CV_32F) {
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-
+    cv::Mat maskGreater;
+    cv::Mat maskLess;
     if (max1 < 255) {
-        cv::Mat maskGreater = image > max1; // Change maxVal to your specific threshold
+        maskGreater = image > max1; // Change maxVal to your specific threshold
         image.setTo(cv::Scalar(255, 255, 255), maskGreater);
     }
     if (min1 > 0) {
         // Set values less than a threshold to black
-        cv::Mat maskLess = image < min1; // Change minVal to your specific threshold
+        maskLess = image < min1; // Change minVal to your specific threshold
         image.setTo(cv::Scalar(0, 0, 0), maskLess);
     }
 
     cv::applyColorMap(image, image, types);
 
+    if (max1 < 255) {
+        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
+    }
+    if (min1 > 0) {
+        // Set values less than a threshold to black
+        image.setTo(cv::Scalar(0, 0, 0), maskLess);
+    }
 
     return 0;
 }
