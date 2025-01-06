@@ -4,10 +4,10 @@ using System.Windows;
 
 namespace ColorVision.Projects
 {
-    public class ExportProjectManager : MenuItemBase
+    public class ProjectManagerExport : MenuItemBase
     {
         public override string OwnerGuid => "Help";
-        public override string GuidId => nameof(ExportProjectManager);
+        public override string GuidId => nameof(ProjectManagerExport);
         public override int Order => 10000;
         public override string Header => "项目管理";
 

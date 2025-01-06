@@ -128,7 +128,7 @@ namespace ColorVision.Projects
 @echo off
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c ProjectManagerExport
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -201,7 +201,7 @@ del ""%~f0"" & exit
 @echo off
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c ProjectManagerExport
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";

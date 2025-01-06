@@ -202,7 +202,7 @@ namespace ColorVision
                     }
                     else
                     {
-                        MainWindow mainWindow = new();
+                        MainWindow mainWindow = new MainWindow();
                         mainWindow.Show();
                     }
                     Close();
