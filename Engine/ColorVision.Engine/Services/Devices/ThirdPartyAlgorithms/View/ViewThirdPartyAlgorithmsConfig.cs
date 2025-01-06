@@ -12,14 +12,8 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 {
-    public class ViewThirdPartyAlgorithmsConfig : ViewAlgorithmConfig
+    public class ViewThirdPartyAlgorithmsConfig : ViewConfigBase,IConfig
     {
-        public static new ViewThirdPartyAlgorithmsConfig Instance => ConfigService.Instance.GetRequiredService<ViewThirdPartyAlgorithmsConfig>();
-
-        public ViewThirdPartyAlgorithmsConfig()
-        {
-        }
-
-
+        public static  ViewThirdPartyAlgorithmsConfig Instance => ConfigService.Instance.GetRequiredService<ViewThirdPartyAlgorithmsConfig>();
     }
 }

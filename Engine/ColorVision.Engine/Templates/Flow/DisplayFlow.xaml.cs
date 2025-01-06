@@ -264,9 +264,12 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
-                if (record !=null)
-                    record.DateTimeStop = DateTime.Now;
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                    if (record != null)
+                        record.DateTimeStop = DateTime.Now;
+                });
 
                 if (e != null)
                 {
@@ -312,12 +315,16 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
-                if (record != null)
+                Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    record.DateTimeRun = DateTime.Now;
-                    record.IsSelected = true;
-                }
+                    var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                    if (record != null)
+                    {
+                        record.DateTimeRun = DateTime.Now;
+                        record.IsSelected = true;
+                    }
+                });
+
 
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
@@ -378,7 +385,11 @@ namespace ColorVision.Engine.Templates.Flow
                         foreach (var item in View.FlowRecords)
                         {
                             item.IsSelected = false;
-                            item.DateTimeFlowRun = DateTime.Now;
+                            var time = DateTime.Now;
+                            item.DateTimeFlowRun = time;
+                            item.DateTimeRun = time;
+                            item.DateTimeStop = time;
+
                         }
                     }
 
