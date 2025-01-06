@@ -33,21 +33,6 @@ namespace ColorVision.UI
 
     }
 
-    public class ConfigHandlerMenu : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-
-        public override string GuidId => nameof(ConfigHandlerMenu);
-
-        public override string Header => "保存配置";
-
-        public override int Order => 999;
-
-        public override void Execute()
-        {
-            ConfigHandler.GetInstance().SaveConfigs();
-        }
-    }
     public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
