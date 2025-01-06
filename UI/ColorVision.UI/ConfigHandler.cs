@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.UI.Menus;
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
@@ -30,6 +31,22 @@ namespace ColorVision.UI
         public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
 
 
+    }
+
+    public class ConfigHandlerMenu : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Tool;
+
+        public override string GuidId => nameof(ConfigHandlerMenu);
+
+        public override string Header => "保存配置";
+
+        public override int Order => 999;
+
+        public override void Execute()
+        {
+            ConfigHandler.GetInstance().SaveConfigs();
+        }
     }
     public class ConfigHandler: IConfigService
     {

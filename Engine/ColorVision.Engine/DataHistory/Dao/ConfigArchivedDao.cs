@@ -1,10 +1,36 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
+    public class ConfigArchiveMenu : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.Tool;
+
+        public override string GuidId => nameof(ConfigArchiveMenu);
+
+        public override string Header => "归档配置";
+
+        public override void Execute()
+        {
+            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+            if (configArchivedModel == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到归档配置信息", "ColorVision");
+                return;
+            }
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+            propertyEditorWindow.ShowDialog();
+        }
+    }
+
+    [DisplayName("归档配置")]
     public class ConfigArchivedModel : ViewModelBase, IPKModel
     {
         [Column("id"), Browsable(false)]

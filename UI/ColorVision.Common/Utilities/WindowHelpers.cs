@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.ComponentModel;
 
-namespace ColorVision.Common.Utilities
+namespace System.Windows
 {
     public sealed class WindowStatus
     {
