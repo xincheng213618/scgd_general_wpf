@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Templates.SysDictionary

@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;

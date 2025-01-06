@@ -2,11 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Xml.Linq;
 using ColorVision.Common.MVVM;
 using ColorVision.Solution.Properties;
-using ColorVision.Solution.V.Files;
-using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.V.Folders
 {

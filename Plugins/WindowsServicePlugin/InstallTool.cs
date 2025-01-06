@@ -1,18 +1,13 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
-using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using log4net;
-using log4net.Util;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 
 

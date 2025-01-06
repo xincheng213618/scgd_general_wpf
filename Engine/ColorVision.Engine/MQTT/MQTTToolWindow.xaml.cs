@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS4014
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;

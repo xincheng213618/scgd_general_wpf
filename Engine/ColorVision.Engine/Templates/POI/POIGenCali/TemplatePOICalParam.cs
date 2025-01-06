@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 

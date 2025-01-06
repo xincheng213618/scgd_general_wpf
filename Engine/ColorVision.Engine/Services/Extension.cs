@@ -1,12 +1,8 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services
 {

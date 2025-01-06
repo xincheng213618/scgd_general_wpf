@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.V;
-using HandyControl.Tools.Converter;
 using System.Globalization;
 using System.IO;
 using System.Windows;

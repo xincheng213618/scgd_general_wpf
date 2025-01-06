@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8625
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;

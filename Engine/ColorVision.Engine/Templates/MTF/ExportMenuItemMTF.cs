@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.MTF
+﻿namespace ColorVision.Engine.Templates.MTF
 {
     public class ExportMenuItemMTF : ExportTemplateBase
     {

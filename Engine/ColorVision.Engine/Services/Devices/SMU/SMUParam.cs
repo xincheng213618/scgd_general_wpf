@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;

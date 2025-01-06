@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.SFR
+﻿namespace ColorVision.Engine.Templates.SFR
 {
     public class ExportSFRParam : ExportTemplateBase
     {

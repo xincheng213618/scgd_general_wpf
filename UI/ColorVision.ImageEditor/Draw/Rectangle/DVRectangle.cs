@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw

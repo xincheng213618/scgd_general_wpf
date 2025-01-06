@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.Matching
 {

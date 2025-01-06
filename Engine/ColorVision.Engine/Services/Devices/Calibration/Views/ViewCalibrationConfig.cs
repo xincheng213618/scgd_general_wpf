@@ -1,14 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
-using ColorVision.UI.PropertyEditor;
-using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.ImageEditor;
+﻿using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {

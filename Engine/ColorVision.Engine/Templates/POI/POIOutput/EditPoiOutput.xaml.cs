@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.POI.POIOutput

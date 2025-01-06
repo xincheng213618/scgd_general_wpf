@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.CfwPort

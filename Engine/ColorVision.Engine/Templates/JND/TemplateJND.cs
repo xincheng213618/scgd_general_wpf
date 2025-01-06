@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.JND

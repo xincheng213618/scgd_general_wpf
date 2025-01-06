@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.POIOutput;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection

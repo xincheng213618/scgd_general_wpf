@@ -1,5 +1,4 @@
 ﻿#pragma warning disable IDE1006,CA1708
-using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.POI.POIGenCali

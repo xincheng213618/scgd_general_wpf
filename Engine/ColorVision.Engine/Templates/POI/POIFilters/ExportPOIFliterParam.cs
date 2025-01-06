@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.POI.POIFilters
+﻿namespace ColorVision.Engine.Templates.POI.POIFilters
 {
     public class ExportPoiFliterParam : ExportTemplateBase
     {

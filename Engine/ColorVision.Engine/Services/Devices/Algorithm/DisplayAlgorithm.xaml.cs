@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using cvColorVision;
 using CVCommCore;
 using log4net;
 using System;

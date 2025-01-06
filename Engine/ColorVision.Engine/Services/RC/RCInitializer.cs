@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System.Collections.Generic;
 using System.Threading.Tasks;

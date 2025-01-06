@@ -2,7 +2,6 @@
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
-using SkiaSharp;
 using System;
 using System.Windows;
 

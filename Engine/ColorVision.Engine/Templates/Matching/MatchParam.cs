@@ -1,8 +1,5 @@
 ﻿#pragma warning disable CA1707,IDE1006
 
-using ColorVision.Engine.Templates;
-using cvColorVision;
-using OpenCvSharp;
 using System.Collections.Generic;
 using System.ComponentModel;
 

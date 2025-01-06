@@ -1,5 +1,4 @@
-﻿ using ColorVision.Engine.MySql.ORM;
-using Panuon.WPF.UI;
+﻿using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {

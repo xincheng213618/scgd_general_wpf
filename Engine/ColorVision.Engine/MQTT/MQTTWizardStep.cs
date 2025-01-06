@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.Engine.MQTT

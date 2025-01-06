@@ -1,9 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.PropertyEditor;
-using HandyControl.Tools.Extension;
 using System.ComponentModel;
 using System.Windows;
 

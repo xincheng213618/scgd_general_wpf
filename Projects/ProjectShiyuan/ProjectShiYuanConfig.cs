@@ -1,11 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.Engine.Services.Flow;
 using System.Windows;
-using ColorVision.Common.Utilities;
-using System;
 using ColorVision.Engine.Templates.Flow;
 using System.IO;
 using System.Reflection;

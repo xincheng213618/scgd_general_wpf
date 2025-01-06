@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.Ghost
+﻿namespace ColorVision.Engine.Templates.Ghost
 {
     public class ExportGhostParam : ExportTemplateBase
     {

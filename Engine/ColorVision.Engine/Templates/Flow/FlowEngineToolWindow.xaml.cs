@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Properties;
+﻿using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -29,7 +28,6 @@ using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Start;
-using Mysqlx.Crud;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;

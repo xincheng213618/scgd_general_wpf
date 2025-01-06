@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;

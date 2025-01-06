@@ -17,9 +17,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates.SysDictionary;
-using System.Windows.Documents;
 using ColorVision.Solution;
-using OpenCvSharp;
 
 namespace ColorVision.Engine.Templates
 {

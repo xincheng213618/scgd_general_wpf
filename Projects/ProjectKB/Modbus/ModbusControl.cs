@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
 using log4net;
 using NModbus;
 using System.Net.Sockets;

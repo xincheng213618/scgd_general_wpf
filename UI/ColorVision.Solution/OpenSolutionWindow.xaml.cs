@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Solution.Properties;
 using ColorVision.RecentFile;
 using ColorVision.UI.HotKey;

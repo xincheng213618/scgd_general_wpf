@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Dao;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {

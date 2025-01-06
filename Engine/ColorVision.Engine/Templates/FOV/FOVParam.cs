@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using cvColorVision;
+﻿using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
 

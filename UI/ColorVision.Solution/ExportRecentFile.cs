@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.RecentFile;
+﻿using ColorVision.RecentFile;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;

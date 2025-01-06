@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Media;
-using ColorVision.Engine.Impl.CommonImage;
+﻿using ColorVision.Engine.Impl.CommonImage;
 
 namespace ColorVision.Engine.Impl.CVFile
 {

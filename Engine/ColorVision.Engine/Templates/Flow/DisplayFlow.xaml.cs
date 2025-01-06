@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
 using FlowEngineLib;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Panuon.WPF.UI;

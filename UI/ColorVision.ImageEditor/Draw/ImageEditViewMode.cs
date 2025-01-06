@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
-using ColorVision.UI;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;

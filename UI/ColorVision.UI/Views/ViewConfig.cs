@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;

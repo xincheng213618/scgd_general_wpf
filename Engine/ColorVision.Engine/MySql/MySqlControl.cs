@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;

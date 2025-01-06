@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
-using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using System.Windows;
 using System.Windows.Controls;

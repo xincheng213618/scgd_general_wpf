@@ -1,15 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
+﻿using ColorVision.UI.Menus;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
 using iText.Layout.Properties;
 using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Reports
 {

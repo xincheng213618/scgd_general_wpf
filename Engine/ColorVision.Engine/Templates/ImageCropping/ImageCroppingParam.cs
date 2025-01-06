@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CA1707,IDE1006
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.ComponentModel;
 

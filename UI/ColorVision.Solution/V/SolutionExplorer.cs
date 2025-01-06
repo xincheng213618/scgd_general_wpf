@@ -5,7 +5,6 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Solution.V;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Diagnostics;

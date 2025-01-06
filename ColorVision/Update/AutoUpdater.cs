@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;

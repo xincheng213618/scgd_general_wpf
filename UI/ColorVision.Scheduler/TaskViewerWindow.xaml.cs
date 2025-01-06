@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Messages;

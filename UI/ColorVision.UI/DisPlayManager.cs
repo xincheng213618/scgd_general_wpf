@@ -1,7 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using ColorVision.UI.Views;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.FOV
+﻿namespace ColorVision.Engine.Templates.FOV
 {
     public class ExportFOV : ExportTemplateBase
     {

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Windows;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;

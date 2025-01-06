@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
