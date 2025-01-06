@@ -12,6 +12,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
+    [DisplayName("校正视图配置")]
     public class ViewCalibrationConfig : ViewConfigBase, IConfig
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();

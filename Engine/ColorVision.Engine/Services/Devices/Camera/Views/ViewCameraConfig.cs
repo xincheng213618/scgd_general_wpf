@@ -11,6 +11,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
+    [DisplayName("相机视图配置")]
     public class ViewCameraConfig : ViewConfigBase, IConfig
     {
         public static ViewCameraConfig Instance => ConfigService.Instance.GetRequiredService<ViewCameraConfig>();

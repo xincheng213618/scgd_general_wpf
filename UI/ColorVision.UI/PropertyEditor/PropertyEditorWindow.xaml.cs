@@ -37,6 +37,10 @@ namespace ColorVision.UI.PropertyEditor
         public void GenCategoryGroups(ViewModelBase source)
         {
             Type type = source.GetType();
+            var title = type.GetCustomAttribute<DisplayNameAttribute>();
+            if (title != null)
+                this.Title = title.DisplayName;
+
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                   .Where(p => p.CanRead && p.CanWrite);
 

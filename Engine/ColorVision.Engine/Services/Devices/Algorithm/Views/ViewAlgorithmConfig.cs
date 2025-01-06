@@ -13,6 +13,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+    [DisplayName("算法视图配置")]
     public class ViewAlgorithmConfig : ViewConfigBase, IConfig
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
