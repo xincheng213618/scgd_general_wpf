@@ -33,6 +33,11 @@ namespace ColorVision.Engine.Services
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 comboBox.ItemsSource = KeyValues;
+
+                if (view.View.ViewIndex >= max)
+                {
+                    view.View.ViewIndex = -1;
+                }
                 comboBox.SelectedValue = view.View.ViewIndex;
             }
 
