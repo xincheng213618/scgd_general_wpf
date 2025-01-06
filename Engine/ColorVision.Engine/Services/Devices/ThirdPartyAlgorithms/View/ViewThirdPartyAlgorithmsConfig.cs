@@ -5,6 +5,7 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -29,8 +30,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowSideListView = true;
 
-
-        [DisplayName("数据列保存路径")]
+        [DisplayName("数据列保存路径"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; NotifyPropertyChanged(); } }
         private string _SaveSideDataDirPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
