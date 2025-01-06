@@ -19,9 +19,22 @@ namespace ColorVision.UI.Menus
         {
 
         }
-
+        private bool Initialized;
+        private List<MenuItem> MenuBack;
         public void LoadMenuItemFromAssembly()
         {
+            if (!Initialized)
+            {
+                MenuBack = new List<MenuItem>();
+                foreach (var item in Menu.Items.OfType<MenuItem>().ToList())
+                {
+                    Menu.Items.Remove(item);
+                    MenuBack.Add(item);
+                }
+            }
+
+
+            Initialized = true;
             log.Info("LoadMenuItemFromAssembly");
             Menu.Items.Clear();
             var menuItems = new Dictionary<string, MenuItem>();
@@ -114,8 +127,6 @@ namespace ColorVision.UI.Menus
             {
                 CreateMenu(keyValuePair.Value, keyValuePair.Key);
             }
-
-
             
             iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
             foreach (var iMenuItem in iMenuItems)
@@ -132,6 +143,24 @@ namespace ColorVision.UI.Menus
                 };
                 Menu.Items.Add(menuItem);
             }
+            var list = Menu.Items.OfType<MenuItem>().ToList();
+            foreach (var item in MenuBack)
+            {
+                var men = list.FirstOrDefault(a => a.Header!=null && a.Header.ToString() == item.Header.ToString());
+                if (men is null)
+                {
+                    Menu.Items.Add(item);
+                }
+                else
+                {
+                    foreach (var item1 in item.Items.OfType<MenuItem>().ToList())
+                    {
+                        item.Items.Remove(item1);
+                        men.Items.Add(item1);
+                    }
+                }
+            }
+
         }
     }
 }
