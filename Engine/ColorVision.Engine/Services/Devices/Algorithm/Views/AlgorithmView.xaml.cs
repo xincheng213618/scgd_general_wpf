@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
@@ -681,6 +682,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         ViewResultSFR.SaveCsv(ViewResultSFRs, fileName);
                         break;
                     case AlgorithmResultType.MTF:
+                        var ViewResultMTFs = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
+                        ViewHandleMTF.SaveCsv(ViewResultMTFs, fileName);
                         break;
                     case AlgorithmResultType.Ghost:
                         var ViewResultGhosts = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
