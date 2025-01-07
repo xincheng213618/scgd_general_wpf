@@ -1,5 +1,6 @@
 #pragma warning disable CS8603
 using System;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using log4net;
@@ -24,10 +25,10 @@ public class VideoReader : CVImageReaderProxy
 	}
 
 	public void Startup(string name, bool isLocal)
-	{
+    {
 		if (isLocal)
 		{
-			reader = new (name);
+			reader = new MMFReader(name);
             OpenVideo = true;
 			Task.Run(async delegate
 			{

@@ -13,6 +13,7 @@ using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -73,8 +74,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (DService.IsVideoOpen)
             {
-                DService.Close();
-                CameraVideoControl.Close();
+                CameraVideoControl?.Close();
+                var msgrecode = DService.Close();
+                log.Info("正在关闭视频模式");
+                msgrecode.MsgSucessed += (e) =>
+                {
+                    DService.IsVideoOpen = false;
+                    DService.DeviceStatus = DeviceStatusType.Closed;
+                    base.RestartRCService();
+                };
+                return;
             }
             base.RestartRCService();
         }

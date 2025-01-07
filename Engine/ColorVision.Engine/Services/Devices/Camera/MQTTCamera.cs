@@ -183,7 +183,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord OpenVideo(string host, int port)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
-            IsVideoOpen = true;
             bool IsLocal = (host=="127.0.0.1");
             MsgSend msg = new()
             {

@@ -141,8 +141,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
-                        CroppedBitmaps.Clear();
-                        smallWindowImages.Clear();
                         break;
                     case DeviceStatusType.LiveOpened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
@@ -357,9 +355,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
+                                DService.IsVideoOpen = false;
                             }
                             else
                             {
+                                DService.IsVideoOpen = true;
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
                                 StackPanelOpen.Visibility = Visibility.Visible;
@@ -379,35 +379,37 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-
-        List<CroppedBitmap> CroppedBitmaps = new List<CroppedBitmap>();
-        List<ImageView> smallWindowImages = new List<ImageView>();
-
+        bool isfist = false;
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
+            if (!isfist)
+            {
+                View.ImageView.ImageEditViewMode.ZoomUniform.Execute(this);
+            }
+            isfist = true;
 
-            if (CroppedBitmaps.Count == 0)
-            {
-                foreach (var item in Device.Config.ROIParams)
-                {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
-                    ImageView smallWindowImage = new ImageView() { };
-                    smallWindowImage.ImageShow.Source = croppedBitmap;
-                    CroppedBitmaps.Add(croppedBitmap);
-                    smallWindowImages.Add(smallWindowImage);
-                    Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
-                    window.Show();
-                }
-            }
-            else
-            {
-                for (int i = 0; i < CroppedBitmaps.Count; i++)
-                {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
-                    smallWindowImages[i].ImageShow.Source = croppedBitmap;
-                }
-            }
+            //if (CroppedBitmaps.Count == 0)
+            //{
+            //    foreach (var item in Device.Config.ROIParams)
+            //    {
+            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
+            //        ImageView smallWindowImage = new ImageView() { };
+            //        smallWindowImage.ImageShow.Source = croppedBitmap;
+            //        CroppedBitmaps.Add(croppedBitmap);
+            //        smallWindowImages.Add(smallWindowImage);
+            //        Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
+            //        window.Show();
+            //    }
+            //}
+            //else
+            //{
+            //    for (int i = 0; i < CroppedBitmaps.Count; i++)
+            //    {
+            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
+            //        smallWindowImages[i].ImageShow.Source = croppedBitmap;
+            //    }
+            //}
 
         }
 
@@ -489,6 +491,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (DService.IsVideoOpen)
                 Device.CameraVideoControl.Close();
+
             MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
             if (msgRecord != null)
             {
