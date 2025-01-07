@@ -1,12 +1,31 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+
 namespace ColorVision.UI
 {
+    public static class AssemblyHandlerExtension
+    {
+        public static void LoadImplementations<T>(this ObservableCollection<T> interfaces) 
+        {
+            interfaces.Clear();
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is T imageEditorFunction)
+                    {
+                        interfaces.Add(imageEditorFunction);
+                    }
+                }
+            }
+        }
+    }
 
 
     public class AssemblyHandler

@@ -154,8 +154,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
                                 OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                 hImageProcessed.pData = IntPtr.Zero;
-                                view.ImageView.PseudoImage = image;
-                                view.ImageView.ImageShow.Source = view.ImageView.PseudoImage;
+                                view.ImageView.FunctionImage = image;
+                                view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
                             }
                         });
 

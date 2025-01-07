@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI.Views;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -63,17 +65,25 @@ namespace ColorVision.ImageEditor
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             if (Config != null)
+            {
+                Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
                 Config.BalanceChanged -= ImageViewConfig_BalanceChanged;
+            }
             Config = imageViewConfig;
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
+            Zoombox1.DataContext = imageViewConfig;
             ImageEditViewMode.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
+            Config.ColormapTypesChanged += Config_ColormapTypesChanged;
+            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
+        }
+
+        private void Config_ColormapTypesChanged(object? sender, EventArgs e)
+        {
             var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
             string valuepath = ColormapTypes.Value;
             ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-
-            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
         }
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
@@ -90,7 +100,6 @@ namespace ColorVision.ImageEditor
             ToolBarRight.DataContext = ImageEditViewMode;
             ToolBarBottom.DataContext = ImageEditViewMode;
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
-            ListView1.ItemsSource = DrawingVisualLists;
             ImageEditViewMode.ClearImageEventHandler += Clear;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
@@ -109,7 +118,44 @@ namespace ColorVision.ImageEditor
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
+
+            IImageEditorFunctionInitialized();
         }
+
+        public void IImageEditorFunctionInitialized()
+        {
+            foreach (var imageEditorFunction in ImageViewComponentManager.GetInstance().IImageEditorFunctions)
+            {
+                Button button = new Button();
+                button.Content = imageEditorFunction.Header;
+                button.Click += (s, e) =>
+                {
+                    if (ViewBitmapSource == null) return;
+                    if (HImageCache == null) return;
+                    Task.Run(() =>
+                    {
+                        int ret = imageEditorFunction.Execute((HImage)HImageCache, out HImage hImageProcessed);
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            if (ret == 0)
+                            {
+                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                                {
+                                    var image = hImageProcessed.ToWriteableBitmap();
+                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                    hImageProcessed.pData = IntPtr.Zero;
+                                    FunctionImage = image;
+                                }
+                                ImageShow.Source = FunctionImage;
+                            }
+                        });
+                    });
+                };
+                AdvancedStackPanel.Children.Add(button);
+            }
+        }
+
+
 
         public void Clear(object? sender, EventArgs e)
         {
@@ -126,8 +172,6 @@ namespace ColorVision.ImageEditor
                 {
                     if (e1.PropertyName == "IsShow")
                     {
-                        ListView1.ScrollIntoView(visual);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
                         if (visual.BaseAttribute.IsShow == true)
                         {
                             if (!ImageShow.ContainsVisual(visual1))
@@ -247,17 +291,6 @@ namespace ColorVision.ImageEditor
                 else
                 {
                     Zoombox1.ContextMenu.Items.Clear();
-                }
-            }
-        }
-        private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Delete)
-            {
-                if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[ListView1.SelectedIndex] is Visual visual)
-                {
-                    ImageShow.RemoveVisual(visual);
-                    PropertyGrid2.SelectedObject = null;
                 }
             }
         }
@@ -403,10 +436,6 @@ namespace ColorVision.ImageEditor
                     {
                         PropertyGrid2.Refresh();
                     };
-
-                    ListView1.ScrollIntoView(drawingVisual);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
-
 
                     if (ImageEditViewMode.ImageEditMode == true)
                     {
@@ -632,8 +661,6 @@ namespace ColorVision.ImageEditor
                         };
                         DrawCircleCache.AutoAttributeChanged = true;
 
-                        ListView1.ScrollIntoView(DrawCircleCache);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
                         DefalutRadius = DrawCircleCache.Radius;
 
                     }
@@ -657,8 +684,6 @@ namespace ColorVision.ImageEditor
                             PropertyGrid2.Refresh();
                         };
 
-                        ListView1.ScrollIntoView(DrawingRectangleCache);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
                         DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
                         DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
@@ -707,7 +732,7 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             Config.Properties.Clear();
-            PseudoImage = null;
+            FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
             if (HImageCache != null)
@@ -856,7 +881,7 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
-        public ImageSource PseudoImage { get; set; }
+        public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -864,15 +889,6 @@ namespace ColorVision.ImageEditor
             RenderPseudo();
         }
 
-        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
-        {
-            PseudoColor pseudoColor = new PseudoColor(Config);
-            pseudoColor.ShowDialog();
-            var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
-            string valuepath = ColormapTypes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-            RenderPseudo();
-        }
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
             DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
@@ -887,7 +903,7 @@ namespace ColorVision.ImageEditor
                 if (Pseudo.IsChecked == false)
                 {
                     ImageShow.Source = ViewBitmapSource;
-                    PseudoImage = null;
+                    FunctionImage = null;
                     return;
                 }
 
@@ -907,16 +923,16 @@ namespace ColorVision.ImageEditor
                         {
                             if (ret == 0)
                             {
-                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = IntPtr.Zero;
-                                    PseudoImage = image;
+                                    FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)
                                 {
-                                    ImageShow.Source = PseudoImage;
+                                    ImageShow.Source = FunctionImage;
                                 }
                             }
                         });
@@ -1032,15 +1048,15 @@ namespace ColorVision.ImageEditor
                 {
                     if (ret == 0)
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                             hImageProcessed.pData = IntPtr.Zero;
-                            PseudoImage = image;
+                            FunctionImage = image;
                         }
-                        ImageShow.Source = PseudoImage;
+                        ImageShow.Source = FunctionImage;
                         Config.Channel = 1;
                     }
                 });
@@ -1065,7 +1081,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache != null)
@@ -1073,15 +1089,15 @@ namespace ColorVision.ImageEditor
                 int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
-                        PseudoImage = image;
+                        FunctionImage = image;
                     }
-                    ImageShow.Source = PseudoImage;
+                    ImageShow.Source = FunctionImage;
                 }
             };
         }
@@ -1100,15 +1116,15 @@ namespace ColorVision.ImageEditor
 
                     if (ret == 0)
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                             hImageProcessed.pData = IntPtr.Zero;
-                            PseudoImage = image;
+                            FunctionImage = image;
                         }
-                        ImageShow.Source = PseudoImage;
+                        ImageShow.Source = FunctionImage;
                     }
                 };
             });
@@ -1122,7 +1138,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache != null)
@@ -1130,15 +1146,15 @@ namespace ColorVision.ImageEditor
                 int ret = OpenCVMediaHelper.M_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
-                        PseudoImage = image;
+                        FunctionImage = image;
                     }
-                    ImageShow.Source = PseudoImage;
+                    ImageShow.Source = FunctionImage;
                 }
             };
         }
@@ -1149,7 +1165,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache == null) return;
@@ -1157,15 +1173,15 @@ namespace ColorVision.ImageEditor
             int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
             if (ret == 0)
             {
-                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                 {
                     var image = hImageProcessed.ToWriteableBitmap();
 
                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                     hImageProcessed.pData = IntPtr.Zero;
-                    PseudoImage = image;
+                    FunctionImage = image;
                 }
-                ImageShow.Source = PseudoImage;
+                ImageShow.Source = FunctionImage;
             }
         }
 

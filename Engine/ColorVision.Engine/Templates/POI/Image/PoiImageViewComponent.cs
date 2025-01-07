@@ -401,9 +401,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
 
             }
-              
-
-            imageView.ButtonCalculSFR.Click += (s,e)=> CalculSFR();
+             
         }
 
     }
