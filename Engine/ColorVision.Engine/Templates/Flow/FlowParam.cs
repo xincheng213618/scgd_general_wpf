@@ -190,6 +190,13 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
+    public static class FlowParamExtension
+    {
+        public static void Save(this FlowParam flowParam)
+        {
+            FlowParam.Save2DB(flowParam);
+        }
+    }
 
     /// <summary>
     /// 流程引擎模板

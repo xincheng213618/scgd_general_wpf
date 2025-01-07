@@ -7,8 +7,8 @@
              xmlns:st ="clr-namespace:ST.Library.UI.NodeEditor;assembly=ST.Library.UI"
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
-             xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"  
-             d:DesignHeight="300" d:DesignWidth="400" Initialized="UserControl_Initialized" >
+             xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             d:DesignHeight="600" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
     <Grid Margin="0,0.5,0,0">
         <Grid.ColumnDefinitions >
             <ColumnDefinition Width="*"/>
@@ -22,15 +22,42 @@
         <Grid Grid.Column="1"  x:Name="Grid2"  Width="300" >
             <Grid.RowDefinitions >
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel x:Name="SignStackPannel" Grid.Row="0" Orientation="Vertical" Margin="3" >
-            </StackPanel>
-            <WindowsFormsHost x:Name="winf2"  Grid.Row="1"  Height="400" >
-                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
-            </WindowsFormsHost>
-            <ListView  x:Name="listViewRecord" Grid.Row="2"   BorderThickness="0" Padding="0" Grid.RowSpan="2" >
+            <Border Grid.Row="0"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="5" CornerRadius="5">
+                <StackPanel Margin="5">
+                    <Grid Margin="0,0,0,5">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Click="Button_Save_Click" HorizontalAlignment="Left" Margin="0,0,5,0" Padding="2">
+                                <Image Source="{StaticResource DrawingImageSave}" Height="15" />
+                            </Button>
+                            <Button DockPanel.Dock="Left" Click="Button_Click_Refresh"  Padding="2" Height="21" Width="21"  >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="12"  ToolTip="刷新">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform1" CenterX="6" CenterY="6"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Button>
+                        </StackPanel>
+
+                    </Grid>
+
+                    <Slider x:Name="ZoomSlider" Value="{Binding CanvasScale}" Maximum="3" Minimum="0.45" />
+                </StackPanel>
+            </Border>
+
+            <ListView  x:Name="listViewRecord" Grid.Row="1"   BorderThickness="0" Padding="0"  Margin="5,0,5,5"  >
                 <ListView.Resources >
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
@@ -73,8 +100,18 @@
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
-
             </ListView>
+            <Border Grid.Row="2"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="5,0,5,5" CornerRadius="5">
+                <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" >
+                </StackPanel>
+            </Border>
+
+
+            <WindowsFormsHost x:Name="winf2"  Grid.Row="3"  Height="400" >
+                <st:STNodePropertyGrid x:Name="STNodePropertyGrid1" />
+            </WindowsFormsHost>
+
+
 
         </Grid>
     </Grid>

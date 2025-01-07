@@ -92,9 +92,9 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
-
-
+            View.Refresh += (s,e) => Refresh();
         }
+
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
@@ -140,6 +140,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.FlowParam = flowParam;
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent += UpdateMsg;

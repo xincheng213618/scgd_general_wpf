@@ -509,16 +509,9 @@ namespace ColorVision.Engine.Templates.Flow
             return false;
         }
 
-        //private string startNodeName;
-        private BaseStartNode nodeStart;
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
-            if (e.Node != null && e.Node is BaseStartNode nodeStart)
-            {
-                //this.startNodeName = nodeStart.NodeName;
-                this.nodeStart = nodeStart;
-            }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
         }
@@ -583,7 +576,6 @@ namespace ColorVision.Engine.Templates.Flow
         private bool AutoSave()
         {
             if (FlowParam == null) return false;
-            if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return false; } }
             var data = STNodeEditorMain.GetCanvasData();
 
             string base64 = Convert.ToBase64String(data);
@@ -600,7 +592,6 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else if (FlowParam !=null)
             {
-                if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
                 var data = STNodeEditorMain.GetCanvasData();
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 FlowParam.Save2DB(FlowParam);

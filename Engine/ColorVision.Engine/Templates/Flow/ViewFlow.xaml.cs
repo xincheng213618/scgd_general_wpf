@@ -35,6 +35,9 @@ using ColorVision.Engine.Templates.Jsons;
 using System.Collections.Generic;
 using System.Windows.Media;
 using System.Reflection;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using ColorVision.Engine.Templates.Flow;
 
 namespace ColorVision.Engine.Services.Flow
 {
@@ -55,7 +58,6 @@ namespace ColorVision.Engine.Services.Flow
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
-
         public Guid Guid { get; set; }
         public string Name { get => _Name; set { _Name =value; NotifyPropertyChanged(); } }
         private string _Name;
@@ -75,8 +77,11 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl,IView
+    public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
         public ObservableCollection<FlowRecord> FlowRecords { get; set; } = new ObservableCollection<FlowRecord>();
@@ -86,9 +91,14 @@ namespace ColorVision.Engine.Services.Flow
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
         }
+        public FlowParam FlowParam { get; set; }
+
+        public float CanvasScale { get => STNodeEditorMain.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
+
         STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = this;
             listViewRecord.ItemsSource = FlowRecords;
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
@@ -387,8 +397,6 @@ namespace ColorVision.Engine.Services.Flow
             }
             return false;
         }
-
-        public float CanvasScale { get; set; }
 
         public void AutoSize()
         {
@@ -751,6 +759,16 @@ namespace ColorVision.Engine.Services.Flow
             SignStackPannel.Children.Add(dockPanel);
         }
 
-
+        private void Button_Save_Click(object sender, RoutedEventArgs e)
+        {
+            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData()); 
+            FlowParam.Save();
+            MessageBox.Show("保存成功");
+        }
+        public event EventHandler Refresh;
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
+            Refresh?.Invoke(this, new EventArgs());
+        }
     }
 }
