@@ -88,10 +88,18 @@
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
                     <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
-                    <Button  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
+                    <Grid>
+                        <ProgressBar Grid.Column="1" Name="ProgressBarOpen" Background="Transparent" Value="1" Foreground="Red" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=OpenButton,Path=Content}"  MaxWidth="400" Visibility="Collapsed"/>
+                        <Button x:Name="OpenButton"  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
+                    </Grid>
+
                 </DockPanel>
                 <DockPanel x:Name="ButtonClose"  Visibility="Collapsed" >
-                    <Button Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
+                    <Grid>
+                        <ProgressBar Grid.Column="1" Name="ProgressBarClose" Background="Transparent" Value="1" Foreground="Green" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" hc:VisualElement.Text="{Binding ElementName=CloseButton,Path=Content}"  MaxWidth="400" Visibility="Collapsed"/>
+                        <Button x:Name="CloseButton" Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Click="Close_Click" />
+                    </Grid>
+
                 </DockPanel>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
