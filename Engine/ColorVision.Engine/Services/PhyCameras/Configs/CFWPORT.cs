@@ -6,6 +6,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     public class CFWPORT : ViewModelBase
     {
+        public CFWPORT()
+        {
+            _ChannelCfgs = new List<ChannelCfg> { };
+        }
+
         public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; NotifyPropertyChanged(); } }
         private bool _IsUseCFW;
 
@@ -27,11 +32,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                     NotifyPropertyChanged();
                     return;
                 }
-                _CFWNum = value; 
+                _CFWNum = value;
                 NotifyPropertyChanged();
-                NotifyPropertyChanged(nameof(IsCFWNum1)); 
+                NotifyPropertyChanged(nameof(IsCFWNum1));
                 NotifyPropertyChanged(nameof(IsCFWNum2));
-                NotifyPropertyChanged(nameof(IsCFWNum3)); 
+                NotifyPropertyChanged(nameof(IsCFWNum3));
             } }
         private int _CFWNum = 1;
 
@@ -48,8 +53,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; NotifyPropertyChanged(); } }
 
-        private List<ChannelCfg> _ChannelCfgs = new List<ChannelCfg>{
-            new() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new() {Cfwport =1,Chtype =ImageChannelType.Gray_X }, new(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
-        };
+        private List<ChannelCfg> _ChannelCfgs;
     }
 }

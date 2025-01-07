@@ -99,6 +99,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 { ImageChannelType.Gray_Z, chType3 }
             };
 
+            if (EditConfig.CFW.ChannelCfgs.Count == 0)
+            {
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 0, Chtype = ImageChannelType.Gray_Y });
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 1, Chtype = ImageChannelType.Gray_X });
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 2, Chtype = ImageChannelType.Gray_Z });
+            }
             while (EditConfig.CFW.ChannelCfgs.Count< 9)
             {
                 EditConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Media.Imaging;
 using CVImageChannelLib;
 
@@ -7,7 +8,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
     public delegate void CameraVideoFrameHandler(WriteableBitmap bitmap);
 
-    public class CameraVideoControl
+    public class CameraVideoControl: IDisposable
     {
         private VideoReader reader;
 
@@ -36,8 +37,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         public void Close()
         {
+            reader.OnFrameRecv -= Reader_OnFrameRecv;
             reader?.Close();
             reader?.Dispose();  
+        }
+
+        public void Dispose()
+        {
+            reader?.Close();
+            reader?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }
