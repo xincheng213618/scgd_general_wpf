@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -39,6 +41,13 @@ namespace ColorVision.Engine.MySql
                 log.Info($"正在连接数据库:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
+
+                ///https://blog.csdn.net/a79412906/article/details/8971534
+                ///https://bugs.mysql.com/bug.php?id=2400
+                BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
+
+                //BatchExecuteQuery("SHOW VARIABLES LIKE 'interactive_timeout';SHOW VARIABLES LIKE 'wait_timeout';");
+
                 Application.Current.Dispatcher.Invoke(() => MySqlConnectChanged?.Invoke(MySqlConnection, new EventArgs()));
                 IsConnect = true;
                 log.Info($"数据库连接成功:{connStr}");
@@ -55,7 +64,7 @@ namespace ColorVision.Engine.MySql
 
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 3 )
         {
-            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout};SSL Mode =None";
+            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout};SSL Mode =None;Pooling=true";
             return connStr;
         }
 
@@ -124,6 +133,48 @@ namespace ColorVision.Engine.MySql
                 log.Error(ex);
             }
             return count;
+        }
+        public void BatchExecuteQuery(string sqlBatch)
+        {
+            // Split the entire SQL batch into individual SQL statements
+            var statements = sqlBatch.Split(';', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var sql in statements)
+            {
+                try
+                {
+                    // Trim whitespace from the SQL statement
+                    string trimmedSql = sql.Trim();
+                    if (string.IsNullOrEmpty(trimmedSql))
+                        continue;
+
+                    using (MySqlCommand command = new(trimmedSql, MySqlConnection))
+                    {
+                        using (MySqlDataReader reader = command.ExecuteReader())
+                        {
+                            // Print column names
+                            var columnNames = Enumerable.Range(0, reader.FieldCount)
+                                                        .Select(reader.GetName)
+                                                        .ToArray();
+                            log.Info("Column Names: " + string.Join(", ", columnNames));
+
+                            // Print each row
+                            while (reader.Read())
+                            {
+                                var rowValues = Enumerable.Range(0, reader.FieldCount)
+                                                          .Select(reader.GetValue)
+                                                          .ToArray();
+                                log.Info("Row Values: " + string.Join(", ", rowValues));
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log the error information without affecting the execution of subsequent statements
+                    log.Error($"SQL execution failed.\nError: {ex.Message}\nFailed SQL: {sql.Trim()}\n");
+                }
+            }
         }
 
         public int BatchExecuteNonQuery(string sqlBatch)
