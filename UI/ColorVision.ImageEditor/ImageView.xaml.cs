@@ -1266,6 +1266,7 @@ namespace ColorVision.ImageEditor
                 ViewBitmapSource = writeableBitmap;
                 ImageShow.Source = ViewBitmapSource; ;
                 HImageCache = writeableBitmap.ToHImage();
+                Config.Channel = HImageCache.Value.channels;
                 FunctionImage = null;
                 GammaSlider.Value = 1;
             }

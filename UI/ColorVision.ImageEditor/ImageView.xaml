@@ -274,12 +274,12 @@
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock  Text="Gamma" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
-                                <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.1" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0.1" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
+                                <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
                             </DockPanel>
-                            <Button Content="应用" Click="Apply_Click" />
                         </StackPanel>
                     </Border>
-
+                    
+                    <Button Content="应用" Click="Apply_Click"  Margin="5"/>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
