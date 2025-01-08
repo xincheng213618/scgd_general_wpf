@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.TextFormatting;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -127,7 +128,10 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodePropertyGrid1.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
+            STNodeTreeView1.AddNode(typeof(NodeTest));
+
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.LoadAssembly(typeof(ExportFlowEngine).Assembly);
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {

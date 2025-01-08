@@ -56,6 +56,8 @@ namespace ColorVision.Engine.Services.Flow
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+
+
         }
 
         public void OpenFlowTemplate()
@@ -99,9 +101,11 @@ namespace ColorVision.Engine.Services.Flow
         {
             this.DataContext = this;
             listViewRecord.ItemsSource = FlowRecords;
-            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
+            STNodeTreeView1.AddNode(typeof(NodeTest));
 
+            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            STNodeEditorMain.LoadAssembly(typeof(ExportFlowEngine).Assembly);
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
