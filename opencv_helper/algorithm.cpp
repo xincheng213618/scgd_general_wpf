@@ -318,3 +318,35 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
     image.convertTo(image, -1, alpha, beta);
 }
 
+void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma)
+{
+    CV_Assert(gamma >= 0);
+
+    int depth = src.depth();
+    int lutSize = (depth == CV_8U) ? 256 : 65536;
+    cv::Mat lut(1, lutSize, (depth == CV_8U) ? CV_8UC1 : CV_16UC1);
+
+    if (depth == CV_8U)
+    {
+        uchar* p = lut.ptr<uchar>();
+        for (int i = 0; i < lutSize; i++)
+        {
+            p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
+        }
+    }
+    else if (depth == CV_16U)
+    {
+        ushort* p = lut.ptr<ushort>();
+        for (int i = 0; i < lutSize; i++)
+        {
+            p[i] = cv::saturate_cast<ushort>(pow(i / 65535.0, gamma) * 65535.0);
+        }
+    }
+    else
+    {
+        CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported image depth");
+    }
+
+    cv::LUT(src, lut, dst);
+}
+

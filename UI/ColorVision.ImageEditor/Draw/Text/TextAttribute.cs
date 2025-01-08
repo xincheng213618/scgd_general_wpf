@@ -11,7 +11,7 @@ namespace ColorVision.ImageEditor.Draw
 
         [Category("TextAttribute"), DisplayName("Text")]
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
-        private string _Text;
+        private string _Text = string.Empty;
 
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }

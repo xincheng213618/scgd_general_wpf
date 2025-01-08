@@ -62,8 +62,6 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             if (IsShowText)
             {
-                TextAttribute.Text = Attribute.Text;
-                TextAttribute.Text = string.IsNullOrWhiteSpace(TextAttribute.Text) ? Attribute.Id.ToString() : TextAttribute.Text;
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
 
                 Brush brush = Brushes.Red;
