@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
-            View.Refresh += (s,e) => Refresh();
+            View.RefreshFlow += (s,e) => Refresh();
         }
 
 
@@ -148,6 +148,14 @@ namespace ColorVision.Engine.Templates.Flow
                     if (FlowConfig.Instance.IsShowDetailFlow)
                     {
                         View.FlowRecords.Add(new FlowRecord(item));
+                    }
+                }
+                foreach (var item in View.STNodeEditorMain.Nodes)
+                {
+                    if (item is STNode node)
+                    {
+                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => View.STNodeEditorMain.Nodes.Remove(node));
                     }
                 }
 
