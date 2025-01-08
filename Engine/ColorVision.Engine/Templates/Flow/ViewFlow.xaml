@@ -36,7 +36,7 @@
                             </ToggleButton>
 
                             <Button Command="{Binding SaveCommand}" Margin="0,0,5,0" Padding="2">
-                                <Image Source="{StaticResource DrawingImageSave}" Height="15" />
+                                <Image Source="{DynamicResource DrawingImageSave}" Height="15" />
                             </Button>
                             <Button Command="{Binding RefreshCommand}" Padding="2" Height="21" Width="21"  Margin="0,0,5,0" >
                                 <Button.Triggers>
@@ -55,16 +55,16 @@
                                 </TextBlock>
                             </Button>
                             <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                <Image  Source="{StaticResource DrawingImageexpend}"/>
+                                <Image  Source="{DynamicResource DrawingImageexpend}"/>
                             </Button>
                             <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                <Image  Source="{StaticResource DrawingImageFlow}"/>
+                                <Image  Source="{DynamicResource DrawingImageFlow}"/>
                             </Button>
                             <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                <Image  Source="{StaticResource DrawingImageClear}"/>
+                                <Image  Source="{DynamicResource DrawingImageClear}"/>
                             </Button>
                             <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                <Image  Source="{StaticResource DIExpand}"/>
+                                <Image  Source="{DynamicResource DIExpand}"/>
                             </Button>
                             <Button Command="{Binding FlowConfig.EditCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"/>
