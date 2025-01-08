@@ -21,7 +21,6 @@
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
-            <EventSetter Event="PreviewTextInput" Handler="TextBox_PreviewTextInput"/>
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
