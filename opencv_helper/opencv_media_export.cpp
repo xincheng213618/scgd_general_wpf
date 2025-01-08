@@ -292,10 +292,12 @@ COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float re
 
 COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, float gamma)
 {
+	float adjustedGamma = 1.0 / gamma;
+
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	cv::Mat dst = mat.clone();
 
-	ApplyGammaCorrection(mat, dst, gamma);
+	ApplyGammaCorrection(mat, dst, adjustedGamma);
 
 	MatToHImage(dst, outImage);
 	return 0;
