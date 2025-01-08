@@ -9,6 +9,7 @@ using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -1232,7 +1233,8 @@ namespace ColorVision.ImageEditor
 
                 // 首先获取滑动条的值，这需要在UI线程中执行
                 float Gamma = (float)GammaSlider.Value;
-
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
                 log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
                 Task.Run(() =>
                 {
@@ -1249,6 +1251,8 @@ namespace ColorVision.ImageEditor
                                 FunctionImage = image;
                             }
                             ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
                         }
                     });
                 });
