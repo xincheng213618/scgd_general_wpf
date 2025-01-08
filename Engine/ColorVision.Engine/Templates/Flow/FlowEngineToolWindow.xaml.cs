@@ -625,7 +625,11 @@ namespace ColorVision.Engine.Templates.Flow
                     else
                     {
                         LayoutNode(child, currentY);
-                        currentY +=  verticalSpacing;
+                        var childrenWithout1 = GetChildrenWithout(node);
+                        if (childrenWithout1.Count > 1)
+                        {
+                            currentY += verticalSpacing;
+                        }
                     }
                 }
                 var childrenWithout = GetChildrenWithout(node);
@@ -663,7 +667,7 @@ namespace ColorVision.Engine.Templates.Flow
                 node.Top = (minParentY + maxParentY) / 2;
 
                 SetCof(node,  verticalSpacing);
-                 int currenty = node.Top;
+                int currenty = node.Top;
                 foreach (var child in children)
                 {
                     LayoutNode(child, currenty);
@@ -826,7 +830,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if (IsMouseDown)
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;

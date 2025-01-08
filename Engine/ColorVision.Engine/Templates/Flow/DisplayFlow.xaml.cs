@@ -92,7 +92,7 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
-            View.Refresh += (s,e) => Refresh();
+            View.RefreshFlow += (s,e) => Refresh();
         }
 
 

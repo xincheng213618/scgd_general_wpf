@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1720
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -51,7 +52,6 @@ namespace ColorVision.Engine.Services.Flow
             DateTimeFlowRun = date;
             DateTimeRun = date;
             DateTimeStop = date;
-
         }
 
         public ContextMenu ContextMenu { get; set; }
@@ -77,7 +77,7 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged
+    public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged,IDisposable
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -86,11 +86,46 @@ namespace ColorVision.Engine.Services.Flow
         public View View { get; set; }
         public ObservableCollection<FlowRecord> FlowRecords { get; set; } = new ObservableCollection<FlowRecord>();
 
+        public RelayCommand AutoSizeCommand { get; set; }
+
+        public event EventHandler RefreshFlow;
+        public RelayCommand RefreshCommand { get; set; }
+
+        public RelayCommand ClearCommand { get; set; }
+        public RelayCommand SaveCommand { get; set; }
+
+        public static FlowConfig FlowConfig => FlowConfig.Instance;
+
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        private bool _IsEditMode = true;
+
         public ViewFlow()
         {
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
+            AutoSizeCommand = new RelayCommand(a => AutoSize());
+            RefreshCommand = new RelayCommand(a => Refresh());
+            ClearCommand = new RelayCommand(a => Clear());
+            SaveCommand = new RelayCommand(a => Save());
         }
+
+        public void Save()
+        {
+            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
+            FlowParam.Save();
+            MessageBox.Show("保存成功");
+        }
+
+        public void Refresh()
+        {
+            RefreshFlow?.Invoke(this, new EventArgs());
+        }
+        public void Clear()
+        {
+            STNodeEditorMain.Nodes.Clear();
+        }
+
+
         public FlowParam FlowParam { get; set; }
 
         public float CanvasScale { get => STNodeEditorMain.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
@@ -505,7 +540,7 @@ namespace ColorVision.Engine.Services.Flow
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if (IsMouseDown)
+            if ((!IsEditMode|| Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
@@ -753,22 +788,15 @@ namespace ColorVision.Engine.Services.Flow
             grid.Children.Add(textBlock);
             grid.Children.Add(button);
 
-
             dockPanel.Children.Add(comboBox);
             dockPanel.Children.Add(grid);
             SignStackPannel.Children.Add(dockPanel);
         }
 
-        private void Button_Save_Click(object sender, RoutedEventArgs e)
+        public void Dispose()
         {
-            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData()); 
-            FlowParam.Save();
-            MessageBox.Show("保存成功");
-        }
-        public event EventHandler Refresh;
-        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
-        {
-            Refresh?.Invoke(this, new EventArgs());
+            STNodeEditorMain?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

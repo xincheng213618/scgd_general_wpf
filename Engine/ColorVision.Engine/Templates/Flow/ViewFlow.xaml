@@ -8,6 +8,7 @@
              mc:Ignorable="d" 
              PreviewKeyDown="UserControl_PreviewKeyDown"
              xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             d:DataContext="{d:DesignInstance local:ViewFlow}"
              d:DesignHeight="600" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
     <Grid Margin="0,0.5,0,0">
         <Grid.ColumnDefinitions >
@@ -30,10 +31,14 @@
                 <StackPanel Margin="5">
                     <Grid Margin="0,0,0,5">
                         <StackPanel Orientation="Horizontal">
-                            <Button Click="Button_Save_Click" HorizontalAlignment="Left" Margin="0,0,5,0" Padding="2">
+                            <ToggleButton IsChecked="{Binding IsEditMode}" Margin="0,0,5,0" Padding="2" Height="21" Width="21" >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                            </ToggleButton>
+
+                            <Button Command="{Binding SaveCommand}" Margin="0,0,5,0" Padding="2">
                                 <Image Source="{StaticResource DrawingImageSave}" Height="15" />
                             </Button>
-                            <Button DockPanel.Dock="Left" Click="Button_Click_Refresh"  Padding="2" Height="21" Width="21"  >
+                            <Button Command="{Binding RefreshCommand}" Padding="2" Height="21" Width="21"  Margin="0,0,5,0" >
                                 <Button.Triggers>
                                     <EventTrigger RoutedEvent="Button.Click">
                                         <BeginStoryboard>
@@ -49,6 +54,16 @@
                                     </TextBlock.RenderTransform>
                                 </TextBlock>
                             </Button>
+                            <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
+                                <Image  Source="{StaticResource DrawingImageexpend}"/>
+                            </Button>
+                            <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
+                                <Image  Source="{StaticResource DrawingImageClear}"/>
+                            </Button>
+                            <Button Command="{Binding FlowConfig.EditCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            </Button>
+
                         </StackPanel>
 
                     </Grid>
