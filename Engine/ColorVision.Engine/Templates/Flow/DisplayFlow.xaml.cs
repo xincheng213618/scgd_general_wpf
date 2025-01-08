@@ -150,6 +150,14 @@ namespace ColorVision.Engine.Templates.Flow
                         View.FlowRecords.Add(new FlowRecord(item));
                     }
                 }
+                foreach (var item in View.STNodeEditorMain.Nodes)
+                {
+                    if (item is STNode node)
+                    {
+                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => View.STNodeEditorMain.Nodes.Remove(node));
+                    }
+                }
 
                 if (Config.IsAutoSize)
                     View.AutoSize();

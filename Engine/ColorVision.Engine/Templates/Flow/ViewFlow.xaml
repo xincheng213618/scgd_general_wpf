@@ -57,8 +57,14 @@
                             <Button Command="{Binding AutoSizeCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
                                 <Image  Source="{StaticResource DrawingImageexpend}"/>
                             </Button>
+                            <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
+                                <Image  Source="{StaticResource DrawingImageFlow}"/>
+                            </Button>
                             <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
                                 <Image  Source="{StaticResource DrawingImageClear}"/>
+                            </Button>
+                            <Button Command="{Binding OpenFlowTemplateCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
+                                <Image  Source="{StaticResource DIExpand}"/>
                             </Button>
                             <Button Command="{Binding FlowConfig.EditCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="{DynamicResource GlobalTextBrush}"/>
