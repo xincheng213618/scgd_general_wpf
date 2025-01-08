@@ -298,6 +298,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             else if (FlowParam !=null)
             {
+                if (!STNodeEditorHelper.CheckFlow()) return;
                 var data = STNodeEditorMain.GetCanvasData();
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 FlowParam.Save2DB(FlowParam);

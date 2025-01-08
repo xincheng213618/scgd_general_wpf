@@ -34,6 +34,7 @@ using ColorVision.Engine.Templates.Jsons;
 using System.Windows;
 using System.Windows.Media;
 using System.Reflection;
+using FlowEngineLib.End;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -752,6 +753,79 @@ namespace ColorVision.Engine.Templates.Flow
                     return startNode;
             }
             return null;
+        }
+
+        public bool CheckFlow()
+        {
+            ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
+
+            bool isContainsMQTTStartNode = false;
+            bool isContainsCVEndNode = false;
+            STNode startNode = null;
+            STNode endNode = null;
+
+            foreach (var item in STNodeEditorMain.Nodes)
+            {
+                if (item is MQTTStartNode mqttStartNode)
+                {
+                    isContainsMQTTStartNode = true;
+                    startNode = mqttStartNode;
+                }
+                else if (item is CVEndNode cvEndNode)
+                {
+                    isContainsCVEndNode = true;
+                    endNode = cvEndNode;
+                }
+            }
+
+            if (!isContainsMQTTStartNode)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程起始结点");
+                return false;
+            }
+
+            if (!isContainsCVEndNode)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到流程结束结点");
+                return false;
+            }
+
+            // 检查从起点到终点的路径
+            if (!IsPathExists(startNode, endNode))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "无法找到从起始结点到结束结点的有效路径");
+                return false;
+            }
+            return true;
+        }
+
+        private bool IsPathExists(STNode startNode, STNode endNode)
+        {
+            var visited = new HashSet<STNode>();
+            var queue = new Queue<STNode>();
+            queue.Enqueue(startNode);
+
+            while (queue.Count > 0)
+            {
+                var currentNode = queue.Dequeue();
+                if (currentNode == endNode)
+                {
+                    return true;
+                }
+
+                visited.Add(currentNode);
+
+                var children = GetChildren(currentNode);
+                foreach (var child in children)
+                {
+                    if (!visited.Contains(child))
+                    {
+                        queue.Enqueue(child);
+                    }
+                }
+            }
+
+            return false;
         }
         #endregion
     }

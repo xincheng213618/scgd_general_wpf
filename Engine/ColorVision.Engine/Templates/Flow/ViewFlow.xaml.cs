@@ -3,8 +3,11 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI.Views;
+using FlowEngineLib.End;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -69,10 +72,12 @@ namespace ColorVision.Engine.Services.Flow
 
         public void Save()
         {
+            if (!STNodeEditorHelper.CheckFlow()) return;
             FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
             FlowParam.Save();
-            MessageBox.Show("保存成功");
+            MessageBox.Show(Application.Current.GetActiveWindow(),"保存成功","Flow");
         }
+
 
         public void Refresh()
         {
