@@ -48,3 +48,8 @@ int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 
 //白平衡
 void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance);
+
+/// <summary>
+///自动色阶
+/// </summary>
+void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma);

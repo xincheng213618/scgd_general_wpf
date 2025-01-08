@@ -130,7 +130,6 @@ namespace ColorVision.ImageEditor
                 button.Content = imageEditorFunction.Header;
                 button.Click += (s, e) =>
                 {
-                    if (ViewBitmapSource == null) return;
                     if (HImageCache == null) return;
                     Task.Run(() =>
                     {
@@ -1218,6 +1217,54 @@ namespace ColorVision.ImageEditor
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(), e.NewValue);
+        }
+
+        public void ApplyGammaCorrection()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+
+                // 首先获取滑动条的值，这需要在UI线程中执行
+                float Gamma = (float)GammaSlider.Value;
+
+                log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                        }
+                    });
+                });
+            });
+        }
+
+        private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            if (FunctionImage is WriteableBitmap writeableBitmap)
+            {
+                ViewBitmapSource = writeableBitmap;
+                ImageShow.Source = ViewBitmapSource; ;
+                HImageCache = writeableBitmap.ToHImage();
+                FunctionImage = null;
+                GammaSlider.Value = 1;
+            }
         }
     }
 }
