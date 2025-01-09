@@ -76,12 +76,43 @@ namespace ColorVision.UI
                 }
                 catch (Exception ex)
                 {
-                    log.Error(ex);
                     MessageBox.Show("加载插件错误：" + ex.Message, "ColorVision");
-
+                    log.Error(ex);
                 }
             }
         }
 
+        public static List<IPlugin> LoadPlugins(string path)
+        {
+            List<IPlugin> plugins = new();
+            if (!Directory.Exists(path)) return plugins;
+            // 获取所有 dll 文件
+            foreach (string file in Directory.GetFiles(path, "*.dll"))
+            {
+                try
+                {
+                    using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read))
+                    {
+                        byte[] assemblyData = new byte[fs.Length];
+                        fs.Read(assemblyData, 0, assemblyData.Length);
+                        Assembly assembly = Assembly.Load(assemblyData);
+                        foreach (var type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
+                        {
+                            if (Activator.CreateInstance(type) is IPlugin plugin)
+                            {
+                                plugin.Execute();
+                                plugins.Add(plugin);
+                            }
+                        }
+                    }
+
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
+                }
+
+            }
+            return plugins;
+        }
     }
 }
