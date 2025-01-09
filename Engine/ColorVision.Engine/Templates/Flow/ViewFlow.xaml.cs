@@ -102,10 +102,8 @@ namespace ColorVision.Engine.Services.Flow
             this.DataContext = this;
             listViewRecord.ItemsSource = FlowRecords;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-            STNodeTreeView1.AddNode(typeof(NodeTest));
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditorMain.LoadAssembly(typeof(ExportFlowEngine).Assembly);
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {

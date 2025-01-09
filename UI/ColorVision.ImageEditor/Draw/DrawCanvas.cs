@@ -8,6 +8,18 @@ using System.Windows.Media;
 namespace ColorVision.ImageEditor.Draw
 {
 
+    public class ActionCommand
+    {
+        public Action UndoAction { get; set; }
+        public Action RedoAction { get; set; }
+
+        public ActionCommand(Action undoAction, Action redoAction)
+        {
+            UndoAction = undoAction;
+            RedoAction = redoAction;
+        }
+    }
+
     public class DrawCanvas : Image
     {
         public DrawCanvas()
@@ -15,13 +27,12 @@ namespace ColorVision.ImageEditor.Draw
             this.Focusable = true;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo()));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo()));
-
         }
 
         private List<Visual> visuals = new();
 
-        private Stack<Action> undoStack = new Stack<Action>();
-        private Stack<Action> redoStack = new Stack<Action>();
+        public Stack<ActionCommand> UndoStack { get; set; } = new Stack<ActionCommand>();
+        public Stack<ActionCommand> RedoStack { get; set; } = new Stack<ActionCommand>();
 
 
         protected override Visual GetVisualChild(int index) => visuals[index];
@@ -62,6 +73,8 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
+
+
         public void AddVisual(Visual visual, bool recordAction = true)
         {
             try
@@ -75,9 +88,17 @@ namespace ColorVision.ImageEditor.Draw
 
                 if (recordAction)
                 {
-                    undoStack.Push(() => RemoveVisual(visual, false));
-                    redoStack.Clear();
+                    Action undoaction = new Action(() =>
+                    {
+                        RemoveVisual(visual, false);
+                    });
+                    Action redoaction = new Action(() =>
+                    {
+                        AddVisual(visual, false);
+                    });
+                    AddActionCommand(new ActionCommand(undoaction, redoaction));
                 }
+
             }
             catch
             {
@@ -98,26 +119,43 @@ namespace ColorVision.ImageEditor.Draw
 
             if (recordAction)
             {
-                undoStack.Push(() => AddVisual(visual,false));
-                redoStack.Clear();
+                Action undoaction = new Action(() =>
+                {
+                    AddVisual(visual, false);
+                });
+                Action redoaction = new Action(() =>
+                {
+                    RemoveVisual(visual, false);
+                });
+                AddActionCommand(new ActionCommand(undoaction, redoaction));
             }
         }
+
+        public void AddActionCommand(ActionCommand actionCommand)
+        {
+            UndoStack.Push(actionCommand);
+            RedoStack.Clear();
+        }
+
         public void Undo()
         {
-            if (undoStack.Count > 0)
+            if (UndoStack.Count > 0)
             {
-                var undoAction = undoStack.Pop();
-                undoAction();
+                var undoAction = UndoStack.Pop();
+                undoAction.UndoAction();
+                RedoStack.Push(undoAction);
             }
         }
         public void Redo()
         {
-            if (redoStack.Count > 0)
+            if (RedoStack.Count > 0)
             {
-                var redoAction = redoStack.Pop();
-                redoAction();
+                var redoAction = RedoStack.Pop();
+                redoAction.RedoAction();
+                UndoStack.Push(redoAction);
             }
         }
+
         public void TopVisual(Visual visual)
         {
             RemoveVisualChild(visual);
