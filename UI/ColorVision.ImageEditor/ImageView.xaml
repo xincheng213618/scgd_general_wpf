@@ -256,6 +256,9 @@
         </Grid>
 
         <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
             <ScrollViewer Margin="5,0">
                 <StackPanel x:Name="AdvancedStackPanel">
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">

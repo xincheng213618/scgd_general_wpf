@@ -10,6 +10,7 @@ namespace ColorVision.ImageEditor.Draw
 
     public class ActionCommand
     {
+        public string Header { get; set; }
         public Action UndoAction { get; set; }
         public Action RedoAction { get; set; }
 
@@ -56,6 +57,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Clear()
         {
+            ClearActionCommand();
+
             foreach (var item in visuals)
             {
                 RemoveVisualChild(item);
@@ -71,9 +74,6 @@ namespace ColorVision.ImageEditor.Draw
             AddVisualChild(visual);
             AddLogicalChild(visual);
         }
-
-
-
 
         public void AddVisual(Visual visual, bool recordAction = true)
         {
@@ -129,6 +129,13 @@ namespace ColorVision.ImageEditor.Draw
                 });
                 AddActionCommand(new ActionCommand(undoaction, redoaction));
             }
+        }
+
+
+        public void ClearActionCommand()
+        {
+            UndoStack.Clear();
+            RedoStack.Clear();
         }
 
         public void AddActionCommand(ActionCommand actionCommand)

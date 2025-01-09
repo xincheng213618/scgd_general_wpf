@@ -632,6 +632,8 @@ namespace ColorVision.Engine.Templates.POI
                     WaitControl.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 }
+
+                ImageShow.ClearActionCommand();
                 Init = true;
             }
             catch

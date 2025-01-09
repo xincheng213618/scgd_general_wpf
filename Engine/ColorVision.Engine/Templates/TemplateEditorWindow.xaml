@@ -50,11 +50,12 @@
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="创建副本"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
