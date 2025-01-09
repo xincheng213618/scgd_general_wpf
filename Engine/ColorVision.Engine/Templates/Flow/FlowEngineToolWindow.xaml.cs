@@ -128,10 +128,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNodePropertyGrid1.Text = "属性";
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
-            STNodeTreeView1.AddNode(typeof(NodeTest));
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodeEditorMain.LoadAssembly(typeof(ExportFlowEngine).Assembly);
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
