@@ -17,20 +17,6 @@ using System.Windows.Media.TextFormatting;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    public class ExportFlowEngine : MenuItemBase
-    {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "FlowEngine";
-        public override string Header => Resources.WorkflowEngine;
-        public override int Order => 3;
-
-        [RequiresPermission(PermissionMode.Administrator)]
-        public override void Execute()
-        {
-            new FlowEngineToolWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.Show();
-        }
-    }
-
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>

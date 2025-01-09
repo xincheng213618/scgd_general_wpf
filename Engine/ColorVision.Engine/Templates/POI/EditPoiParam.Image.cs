@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -557,11 +558,42 @@ namespace ColorVision.Engine.Templates.POI
                         DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                     }
                     drawCanvas.ReleaseMouseCapture();
-
                     if (ImageEditViewMode.SelectDrawingVisual is DVCircle circle)
                     {
                         circle.IsDrawing = false;
                         circle.Render();
+                    }
+                    if (ImageEditViewMode.SelectDrawingVisual != null)
+                    {
+                        if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                        {
+                            var l = MouseUpP - MouseDownP;
+
+                            Action undoaction = new Action(() =>
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
+                            });
+                            Action redoaction = new Action(() =>
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
+                            });
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                        }
+                        else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
+                        {
+                            var l = MouseUpP - MouseDownP;
+                            Action undoaction = new Action(() =>
+                            {
+                                Circl.Center -= l;
+                            });
+                            Action redoaction = new Action(() =>
+                            {
+                                Circl.Center += l;
+                            });
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                        }
                     }
                 }
             }

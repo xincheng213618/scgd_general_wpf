@@ -26,6 +26,8 @@ namespace ColorVision.Projects
         public ObservableCollection<ProjectInfo> Projects { get; private set; } = new ObservableCollection<ProjectInfo>();
 
         public RelayCommand OpenStoreCommand { get;  set; }
+        public RelayCommand OpenDownloadCacheCommand { get; set; }
+
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
 
@@ -54,6 +56,12 @@ namespace ColorVision.Projects
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
+
+            OpenDownloadCacheCommand = new RelayCommand(a => OpenDownloadCache());
+        }
+        public static void OpenDownloadCache()
+        {
+            PlatformHelper.OpenFolder(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"ColorVision"));
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}

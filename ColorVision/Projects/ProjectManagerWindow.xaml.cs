@@ -18,7 +18,6 @@ namespace ColorVision.Projects
         }
 
 
-
         private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (ListViewProjects.SelectedIndex > -1)

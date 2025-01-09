@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Projects"
         d:DataContext="{d:DesignInstance local:ProjectManager}"
         mc:Ignorable="d"
-        Title="ProjectManagerWindow" Height="450" Width="900" Initialized="Window_Initialized">
+        Title="ProjectManagerWindow" Height="450" Width="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,6 +17,7 @@
             <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
             <TextBox Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" Width="100" Margin="0,0,5,0"/>
             <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
+            <Button Content="打开缓存文件夹" Command="{Binding OpenDownloadCacheCommand}" Margin="0,0,5,0"/>
         </StackPanel>
         <Grid  Grid.Row="1">
             <Grid.ColumnDefinitions>

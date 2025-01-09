@@ -237,8 +237,8 @@ namespace ColorVision.Engine.Services.RC
         }
         private void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            log.Info("Refresh Token");
-            var tokens = MqttRCService.GetInstance().ServiceTokens;
+            log.Debug("Refresh Token");
+            var tokens = ServiceTokens;
             tokens.Clear();
             foreach (var itemService in services.Values)
             {
@@ -272,7 +272,6 @@ namespace ColorVision.Engine.Services.RC
             ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
             return svrs.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
         }
-
         public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
         {
             List<TypeService> svrs = new(ServiceManager.GetInstance().TypeServices);

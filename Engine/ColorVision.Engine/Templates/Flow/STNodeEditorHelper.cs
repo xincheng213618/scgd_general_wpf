@@ -38,6 +38,7 @@ using FlowEngineLib.End;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib;
+using ColorVision.Engine.Services.PhyCameras.Group;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -158,7 +159,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
-                AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+                AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
 
                 // Usage
@@ -180,7 +181,8 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
-                AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+                
+                AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
             }
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
@@ -239,7 +241,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
-                AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+                AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
                 AddStackPanel(name => cvCameraNode.POITempName = name, cvCameraNode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => cvCameraNode.POIFilterTempName = name, cvCameraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
@@ -252,7 +254,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
-                AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", reuslt?.PhyCamera?.CalibrationParams ?? new ObservableCollection<TemplateModel<Services.PhyCameras.Group.CalibrationParam>>());
+                AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
                 AddStackPanel(name => lcCameranode.POITempName = name, lcCameranode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
@@ -311,7 +313,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName });
+            dockPanel.Children.Add(new TextBlock() { Text = signName ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -345,7 +347,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -380,7 +382,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50 });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50  ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",
@@ -388,6 +390,7 @@ namespace ColorVision.Engine.Templates.Flow
                 Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
                 Width = 120
             };
+
             HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
             comboBox.ItemsSource = template.TemplateParams;
             var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
@@ -451,7 +454,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50 });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",

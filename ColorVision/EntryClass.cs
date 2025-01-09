@@ -9,6 +9,7 @@ using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -71,8 +72,9 @@ namespace ColorVision
                 ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
                 //Environment.Exit(0);
             }
+
             //杀死僵尸进程
-            log.Info("程序打开");
+            log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
             App app;
             app = new App();
             app.InitializeComponent();
