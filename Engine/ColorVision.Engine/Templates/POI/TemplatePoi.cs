@@ -2,7 +2,9 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates.POI.Dao;
+using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using OpenCvSharp;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -73,6 +75,21 @@ namespace ColorVision.Engine.Templates.POI
         }
 
 
+        public override bool CopyTo(int index)
+        {
+            PoiParam.LoadPoiDetailFromDB(TemplateParams[index].Value);
+            string fileContent = TemplateParams[index].Value.ToJsonN();
+            ExportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
+            if (ExportTemp != null)
+            {
+                ExportTemp.Id = -1;
+                foreach (var item in ExportTemp.PoiPoints)
+                {
+                    item.Id = -1;
+                }
+            }
+            return true;
+        }
 
         public override void Create(string templateName)
         {
