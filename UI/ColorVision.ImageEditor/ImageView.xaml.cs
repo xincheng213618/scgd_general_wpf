@@ -1302,5 +1302,10 @@ namespace ColorVision.ImageEditor
                 GammaSlider.Value = 1;
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            GammaSlider.Value = 1;
+        }
     }
 }

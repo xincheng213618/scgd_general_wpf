@@ -66,7 +66,7 @@ namespace ColorVision
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-            PluginLoader.LoadPluginsAssembly("Plugins");
+            //加载Engine
             Assembly.LoadFrom("ColorVision.Engine.dll"); ;
 
             ConfigHandler.GetInstance();
@@ -107,6 +107,8 @@ namespace ColorVision
                 //杀死僵尸进程
                 KillZombieProcesses();
             }
+
+            PluginLoader.LoadPluginsAssembly("Plugins");
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();

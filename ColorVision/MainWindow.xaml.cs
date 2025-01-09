@@ -124,7 +124,6 @@ namespace ColorVision
 
             //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
-            PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
