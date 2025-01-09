@@ -38,6 +38,7 @@ using FlowEngineLib.End;
 using FlowEngineLib.Base;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib;
+using iText.Commons.Utils;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -105,13 +106,16 @@ namespace ColorVision.Engine.Templates.Flow
         }
         protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
         {
-            MessageBox.Show("1");
+            if (e.Status != ConnectionStatus.Connected || e.TargetOption.Data == null)
+            {
+                FlowConfig.Instance.IsShowNickName = true;
+                m_op_end.TransferData();
+            }
             return;
         }
         protected override void DoTransCompleted(CVStartCFC action)
         {
-            MessageBox.Show("1");
-            base.DoTransCompleted(action);
+            return;
         }
         protected override void OnCreate()
         {
