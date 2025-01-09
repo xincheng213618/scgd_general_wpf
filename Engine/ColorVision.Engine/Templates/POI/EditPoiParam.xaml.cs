@@ -314,8 +314,13 @@ namespace ColorVision.Engine.Templates.POI
             {
                 AlgorithmKBLocal local = new AlgorithmKBLocal();
                 local.FilePath = PoiParam.PoiConfig.BackgroundFilePath;
-                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a=>a.Value == PoiParam));
-                FunctionStackpanel.Children.Add(local.GetUserControl());
+                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a => a.Value == PoiParam));
+
+                Border Margin = new Border() { Margin = new Thickness(0, 5, 0, 0), Style = (Style)FindResource("BorderModuleArea"), CornerRadius = new CornerRadius(5) };
+                StackPanel stackPanel = new StackPanel(){Margin = new Thickness(5)};
+                Margin.Child = stackPanel;
+                stackPanel.Children.Add(local.GetUserControl());
+                FunctionStackpanel.Children.Add(Margin);
             }
         }
 
@@ -429,7 +434,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             else if (Path.GetExtension(filePath).Contains(".tif"))
             {
-                SetImageSource(TiffReader.ReadTiff(filePath));
+                SetImageSource(new WriteableBitmap(TiffReader.ReadTiff(filePath)));
             }
             else 
             {

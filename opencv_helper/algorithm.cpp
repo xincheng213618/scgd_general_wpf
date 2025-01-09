@@ -321,9 +321,8 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
 void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma)
 {
     CV_Assert(gamma >= 0);
-    
+
     float adjustedGamma = 1.0 / gamma;
-	//这样写符合直觉，>1 的时候增强，<1 的时候减弱 直接invGamma不进行幂运算会造成失败
 
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 256 : 65536;
@@ -336,20 +335,29 @@ void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma)
         {
             p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, adjustedGamma) * 255.0);
         }
+        cv::LUT(src, lut, dst);
     }
     else if (depth == CV_16U)
     {
         ushort* p = lut.ptr<ushort>();
         for (int i = 0; i < lutSize; i++)
         {
-            p[i] = cv::saturate_cast<ushort>(pow(i / 65535.0, gamma) * 65535.0);
+            p[i] = cv::saturate_cast<ushort>(pow(i / 65535.0, adjustedGamma) * 65535.0);
+        }
+        dst.create(src.size(), src.type());
+        for (int y = 0; y < src.rows; y++)
+        {
+            const ushort* srcRow = src.ptr<ushort>(y);
+            ushort* dstRow = dst.ptr<ushort>(y);
+            for (int x = 0; x < src.cols; x++)
+            {
+                dstRow[x] = p[srcRow[x]];
+            }
         }
     }
     else
     {
         CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported image depth");
     }
-
-    cv::LUT(src, lut, dst);
 }
 
