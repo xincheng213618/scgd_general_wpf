@@ -1,8 +1,10 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -184,7 +186,12 @@ namespace ColorVision.UI.PropertyEditor
                 button.Click += (s, e) =>
                 {
                     var openFileDialog = new Microsoft.Win32.OpenFileDialog();
-                    openFileDialog.DefaultDirectory = (string)property.GetValue(obj);
+                    string Filepath = (string)property.GetValue(obj);
+                    if (File.Exists(Filepath))
+                    {
+                        openFileDialog.DefaultDirectory = Directory.GetDirectoryRoot(Filepath);
+                    }
+
                     if (openFileDialog.ShowDialog() == true)
                     {
                         property.SetValue(obj, openFileDialog.FileName);
@@ -230,6 +237,7 @@ namespace ColorVision.UI.PropertyEditor
                     folderDialog.SelectedPath = (string)property.GetValue(obj);
                     if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
+                        if (folderDialog.SelectedPath == null) return;
                         property.SetValue(obj, folderDialog.SelectedPath);
                     }
                 };

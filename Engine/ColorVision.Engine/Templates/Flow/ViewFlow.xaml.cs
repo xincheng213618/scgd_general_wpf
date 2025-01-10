@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.UI.Views;
 using FlowEngineLib.End;
 using FlowEngineLib.Start;
@@ -10,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,8 +59,46 @@ namespace ColorVision.Engine.Services.Flow
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
 
-
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
         }
+        #region ActionCommand
+        public Stack<ActionCommand> UndoStack { get; set; } = new Stack<ActionCommand>();
+        public Stack<ActionCommand> RedoStack { get; set; } = new Stack<ActionCommand>();
+
+
+
+        public void ClearActionCommand()
+        {
+            UndoStack.Clear();
+            RedoStack.Clear();
+        }
+
+        public void AddActionCommand(ActionCommand actionCommand)
+        {
+            UndoStack.Push(actionCommand);
+            RedoStack.Clear();
+        }
+
+        public void Undo()
+        {
+            if (UndoStack.Count > 0)
+            {
+                var undoAction = UndoStack.Pop();
+                undoAction.UndoAction();
+                RedoStack.Push(undoAction);
+            }
+        }
+        public void Redo()
+        {
+            if (RedoStack.Count > 0)
+            {
+                var redoAction = RedoStack.Pop();
+                redoAction.RedoAction();
+                UndoStack.Push(redoAction);
+            }
+        }
+        #endregion
 
         public void OpenFlowTemplate()
         {
@@ -110,18 +150,23 @@ namespace ColorVision.Engine.Services.Flow
                 if (e.KeyCode == System.Windows.Forms.Keys.Delete)
                 {
                     if (STNodeEditorMain.ActiveNode != null)
-                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+                    {
+                        var node = STNodeEditorMain.ActiveNode;
+                        STNodeEditorMain.Nodes.Remove(node);
+                    }
 
                     foreach (var item in STNodeEditorMain.GetSelectedNode())
                     {
-                        STNodeEditorMain.Nodes.Remove(item);
+                        var node = STNodeEditorMain.ActiveNode;
+                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
                     }
                 }
+
                 if (e.KeyCode == System.Windows.Forms.Keys.S  && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Save();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.KeyCode == System.Windows.Forms.Keys.F5 ||( e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
                 {
                     Refresh();
                 }
@@ -174,35 +219,94 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Left)
+            if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length == 0)
             {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
+                if (e.Key == Key.Left)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Right)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Up)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Add)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Subtract)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
+                    e.Handled = true;
+                }
             }
-            else if (e.Key == Key.Right)
+            else
             {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Add)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Subtract)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
+
+                foreach (var item in STNodeEditorMain.GetSelectedNode())
+                {
+                    if (e.Key == Key.Left)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Right)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Up)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Down)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+
+                        e.Handled = true;
+                    }
+                    if (e.Key == Key.Delete)
+                    {
+                        STNodeEditorMain.Nodes.Remove(item);
+
+                        e.Handled = true;
+                    }
+                }
             }
         }
 
@@ -237,6 +341,7 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             IsMouseDown = false;
+            
         }
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
@@ -267,6 +372,7 @@ namespace ColorVision.Engine.Services.Flow
             if (e.Delta < 0)
             {
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
+
             }
             else
             {

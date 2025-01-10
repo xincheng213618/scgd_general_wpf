@@ -1,5 +1,7 @@
+using IWshRuntimeLibrary;
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Common.Utilities;
@@ -12,6 +14,7 @@ public static class PlatformHelper
     /// <param name="folder">路径</param>
     public static void OpenFolder(string folder)
     {
+        folder = folder.Replace("\\\\", "\\");
         if (OperatingSystem.IsWindows())
         {
             Process.Start("explorer.exe", $"{folder}");
@@ -29,6 +32,8 @@ public static class PlatformHelper
     }
     public static void OpenFolderAndSelectFile(string filePath)
     {
+        filePath = filePath.Replace("\\\\", "\\");
+
         var psi = new ProcessStartInfo
         {
             FileName = "explorer.exe",

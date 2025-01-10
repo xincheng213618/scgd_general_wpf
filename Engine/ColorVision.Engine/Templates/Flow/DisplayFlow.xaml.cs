@@ -397,7 +397,6 @@ namespace ColorVision.Engine.Templates.Flow
                             item.DateTimeFlowRun = time;
                             item.DateTimeRun = time;
                             item.DateTimeStop = time;
-
                         }
                     }
 
