@@ -267,6 +267,25 @@
                                 <ui:ToggleSwitch x:Name="PropertyIsChecked"  DockPanel.Dock="Right" IsChecked="False"/>
                                 <TextBlock Text="显示编辑属性"/>
                             </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="自动刷新绘图" Width="100"/>
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" />
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="RedBalance" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="100" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.RedBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.RedBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="GreenBalance" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="100" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.GreenBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" Value="{Binding Config.GreenBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="BlueBalance" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="100" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.BlueBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.BlueBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
                             <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                                 <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
                             </ToggleButton>
