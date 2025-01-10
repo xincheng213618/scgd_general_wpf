@@ -214,271 +214,265 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="0,0,5,5">
-                        <TabControl Background="Transparent">
-                            <TabItem Header="配置参数">
-                                <StackPanel >
-                                    <StackPanel Orientation="Horizontal">
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
-                                        <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
-                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
-                                        <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
-                                        <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
-                                        <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="四边形"/>
-                                        <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
-                                    </StackPanel>
-                                    <StackPanel>
-                                        <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="中心点"  MinWidth="50"/>
-                                                <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
-                                                <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
-                                            </DockPanel>
-                                            <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="半径:" MinWidth="50"/>
-                                                <TextBox  x:Name="TextBoxAreaCircleR" Width="55" Text="{Binding PoiConfig.AreaCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
-                                            </DockPanel>
-                                            <UniformGrid Columns="2">
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="数量:" MinWidth="50"/>
-                                                    <TextBox x:Name="tbNum" Width="55" Text="{Binding PoiConfig.AreaCircleNum}"  />
-                                                </DockPanel>
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="角度:"  MinWidth="50"/>
-                                                    <TextBox x:Name="tbAngle" Width="55" Text="{Binding PoiConfig.AreaCircleAngle}" />
-                                                </DockPanel>
-                                            </UniformGrid>
-
-                                            <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                        </StackPanel>
-                                        <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="中心点"  MinWidth="50"/>
-                                                <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
-                                                <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
-                                            </DockPanel>
-                                            <UniformGrid  Columns="2">
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="宽度:" MinWidth="50"/>
-                                                    <TextBox x:Name="tbWidth"  Width="55" Text="{Binding PoiConfig.AreaRectWidth}"  />
-                                                </DockPanel>
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="高度:" MinWidth="50"/>
-                                                    <TextBox x:Name="tbHeight" Width="55"  Text="{Binding PoiConfig.AreaRectHeight}" />
-                                                </DockPanel>
-                                            </UniformGrid>
-                                            <UniformGrid  Columns="2" >
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="行数:"  MinWidth="50"/>
-                                                    <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
-                                                </DockPanel>
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="列数:" MinWidth="50"/>
-                                                    <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
-                                                </DockPanel>
-                                            </UniformGrid>
-
-                                            <Grid>
-                                                <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-
-                                                <Button Content="模板匹配" Margin="3" Height="25" HorizontalAlignment="Center" Click="SplitImage_Click"/>
-
-                                                <StackPanel  HorizontalAlignment="Right">
-                                                    <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
-                                                    <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
-                                                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
-                                                            <StackPanel Margin="5">
-                                                                <UniformGrid Columns="2" >
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxUp2" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
-                                                                        <TextBox   x:Name="TextBoxLeft2" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxDown2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxRight2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                </UniformGrid>
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <ComboBox x:Name="ComboBoxBorderType11" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                                                    <Button Content="设置" Click="ButtonImportMarinSetting2"/>
-                                                                </StackPanel>
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </Popup>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                        <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Grid>
-                                                <StackPanel>
-                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                        <TextBlock Text="X1"   MinWidth="20"/>
-                                                        <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
-                                                        <TextBox   Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"   />
-                                                    </DockPanel>
-                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                        <TextBlock Text="X2"  MinWidth="20"/>
-                                                        <TextBox  Text="{Binding PoiConfig.Polygon2X}" Width="55" Margin="5,0"  />
-                                                        <TextBox   Text="{Binding PoiConfig.Polygon2Y}" Width="55" Margin="5,0"  />
-                                                    </DockPanel>
-                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                        <TextBlock  Text="X3"  MinWidth="20" />
-                                                        <TextBox  Text="{Binding PoiConfig.Polygon3X}" Width="55" Margin="5,0"  />
-                                                        <TextBox   Text="{Binding PoiConfig.Polygon3Y}" Width="55" Margin="5,0"  />
-                                                    </DockPanel>
-                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                        <TextBlock Text="X4"   MinWidth="20"/>
-                                                        <TextBox  Text="{Binding PoiConfig.Polygon4X}" Width="55" Margin="5,0"  />
-                                                        <TextBox   Text="{Binding PoiConfig.Polygon4Y}" Width="55" Margin="5,0"  />
-                                                    </DockPanel>
-                                                </StackPanel>
-                                                <StackPanel  HorizontalAlignment="Right">
-                                                    <Button Content="从基准点导入" Margin="3" Height="25" Click="PoiConfigImport_Click"/>
-                                                    <Button x:Name="ButtonImportMarin" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
-                                                    <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
-                                                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
-                                                            <StackPanel Margin="5">
-                                                                <UniformGrid Columns="2" >
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxUp1" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
-                                                                        <TextBox   x:Name="TextBoxLeft1" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxDown1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
-                                                                        <TextBox  x:Name="TextBoxRight1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                                                    </DockPanel>
-                                                                </UniformGrid>
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <ComboBox x:Name="ComboBoxBorderType1" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                                                    <Button Content="设置" Click="ButtonImportMarinSetting"/>
-                                                                </StackPanel>
-                                                            </StackPanel>
-                                                        </Border>
-                                                    </Popup>
-                                                </StackPanel>
-
-                                            </Grid>
-
-                                            <UniformGrid  Columns="2" >
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="行数:"   MinWidth="50"/>
-                                                    <TextBox  Text="{Binding PoiConfig.AreaPolygonRow}" Width="55"  />
-                                                </DockPanel>
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="列数:"  MinWidth="50"/>
-                                                    <TextBox  Text="{Binding PoiConfig.AreaPolygonCol}" Width="55" />
-                                                </DockPanel>
-                                            </UniformGrid>
-                                            <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                        </StackPanel>
-                                        <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <ListView  x:Name="ListViewPolygon"  MaxHeight="200" Style="{StaticResource ListView.Small}" ItemsSource="{Binding PoiConfig.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
-                                                <ListView.Resources>
-                                                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                                                    </ContextMenu>
-                                                </ListView.Resources>
-                                                <ListView.View >
-                                                    <GridView >
-                                                        <GridView.ColumnHeaderContainerStyle>
-                                                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                                <Setter Property="Background" Value="Transparent"/>
-                                                                <Setter Property="BorderThickness" Value="0"/>
-                                                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                                            </Style>
-                                                        </GridView.ColumnHeaderContainerStyle>
-                                                        <GridViewColumn Header="显示">
-                                                            <GridViewColumn.CellTemplate>
-                                                                <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                                    <TextBlock Text="{Binding .}"/>
-                                                                </DataTemplate>
-                                                            </GridViewColumn.CellTemplate>
-                                                        </GridViewColumn>
-                                                        <GridViewColumn Header="显示">
-                                                            <GridViewColumn.CellTemplate>
-                                                                <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                                    <Button Content="删除" Click="Button_Click" Tag="{Binding .}"/>
-                                                                </DataTemplate>
-                                                            </GridViewColumn.CellTemplate>
-                                                        </GridViewColumn>
-                                                        <GridViewColumn Header="显示" Width="70">
-                                                            <GridViewColumn.CellTemplate>
-                                                                <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                                    <TextBox Text="{Binding SplitNumber}" HorizontalContentAlignment="Center" Width="50"/>
-                                                                </DataTemplate>
-                                                            </GridViewColumn.CellTemplate>
-                                                        </GridViewColumn>
-
-
-                                                    </GridView>
-                                                </ListView.View>
-                                            </ListView>
-
-
-
-                                            <UniformGrid  Columns="2" >
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="设定分割"   MinWidth="70"/>
-                                                    <TextBox Text="{Binding PoiConfig.AreaPolygonLenNum}" Width="55"/>
-                                                </DockPanel>
-                                                <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
-                                                    <TextBox  Text="是否使用结点" />
-                                                </DockPanel>
-                                            </UniformGrid>
-                                            <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                        </StackPanel>
-                                    </StackPanel>
-
-                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding IsPointCircle}" Content="圆形"/>
-                                        <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding IsPointRect}" Content="矩形"/>
-                                    </StackPanel>
-
-                                    <StackPanel Margin="5" Visibility="{Binding IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
-                                        <DockPanel Margin="2"  HorizontalAlignment="Left">
-                                            <TextBlock Text="半径:" Width="40"/>
-                                            <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />
+                    <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
+                        <StackPanel  Margin="5">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
+                                <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
+                                <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
+                                <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="四边形"/>
+                                <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel  Margin="2" HorizontalAlignment="Left">
+                                        <TextBlock Text="中心点"  MinWidth="50"/>
+                                        <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
+                                        <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
+                                    </DockPanel>
+                                    <DockPanel  Margin="2" HorizontalAlignment="Left">
+                                        <TextBlock Text="半径:" MinWidth="50"/>
+                                        <TextBox  x:Name="TextBoxAreaCircleR" Width="55" Text="{Binding PoiConfig.AreaCircleRadius}"  BorderThickness="0,0,0,1"  PreviewTextInput="TextBox_PreviewTextInput"/>
+                                    </DockPanel>
+                                    <UniformGrid Columns="2">
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="数量:" MinWidth="50"/>
+                                            <TextBox x:Name="tbNum" Width="55" Text="{Binding PoiConfig.AreaCircleNum}"  />
                                         </DockPanel>
-                                    </StackPanel>
-                                    <StackPanel Margin="5" Visibility="{Binding IsPointRect,Converter={StaticResource bool2VisibilityConverter}}"  Orientation="Horizontal">
-                                        <DockPanel Margin="2" >
-                                            <TextBlock Text="宽度:" Width="40"/>
-                                            <TextBox Text="{Binding PoiConfig.DefaultRectWidth}"  Width="55"  />
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="角度:"  MinWidth="50"/>
+                                            <TextBox x:Name="tbAngle" Width="55" Text="{Binding PoiConfig.AreaCircleAngle}" />
                                         </DockPanel>
-                                        <DockPanel Margin="2" >
-                                            <TextBlock Text="高度:" Width="40"/>
-                                            <TextBox Text="{Binding PoiConfig.DefaultRectHeight}"  Width="55"  />
-                                        </DockPanel>
-                                    </StackPanel>
-                                    <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
-                                    <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
+                                    </UniformGrid>
+
+                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                 </StackPanel>
-                            </TabItem>
-                            <TabItem Header="导入布点">
-                                <Button Margin="2" Content="导入" Click="Import_Draw_Click"/>
-                            </TabItem>
-                        </TabControl>
+                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel  Margin="2" HorizontalAlignment="Left">
+                                        <TextBlock Text="中心点"  MinWidth="50"/>
+                                        <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
+                                        <TextBox  Text="{Binding PoiConfig.CenterY}" Width="55" Margin="5,0"  />
+                                    </DockPanel>
+                                    <UniformGrid  Columns="2">
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="宽度:" MinWidth="50"/>
+                                            <TextBox x:Name="tbWidth"  Width="55" Text="{Binding PoiConfig.AreaRectWidth}"  />
+                                        </DockPanel>
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="高度:" MinWidth="50"/>
+                                            <TextBox x:Name="tbHeight" Width="55"  Text="{Binding PoiConfig.AreaRectHeight}" />
+                                        </DockPanel>
+                                    </UniformGrid>
+                                    <UniformGrid  Columns="2" >
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="行数:"  MinWidth="50"/>
+                                            <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
+                                        </DockPanel>
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="列数:" MinWidth="50"/>
+                                            <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
+                                        </DockPanel>
+                                    </UniformGrid>
+
+                                    <Grid>
+                                        <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+
+                                        <Button Content="模板匹配" Margin="3" Height="25" HorizontalAlignment="Center" Click="SplitImage_Click"/>
+
+                                        <StackPanel  HorizontalAlignment="Right">
+                                            <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
+                                            <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
+                                                <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
+                                                    <StackPanel Margin="5">
+                                                        <UniformGrid Columns="2" >
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxUp2" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                                                <TextBox   x:Name="TextBoxLeft2" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxDown2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxRight2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                        </UniformGrid>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <ComboBox x:Name="ComboBoxBorderType11" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
+                                                            <Button Content="设置" Click="ButtonImportMarinSetting2"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Popup>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <Grid>
+                                        <StackPanel>
+                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                <TextBlock Text="X1"   MinWidth="20"/>
+                                                <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
+                                                <TextBox   Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"   />
+                                            </DockPanel>
+                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                <TextBlock Text="X2"  MinWidth="20"/>
+                                                <TextBox  Text="{Binding PoiConfig.Polygon2X}" Width="55" Margin="5,0"  />
+                                                <TextBox   Text="{Binding PoiConfig.Polygon2Y}" Width="55" Margin="5,0"  />
+                                            </DockPanel>
+                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                <TextBlock  Text="X3"  MinWidth="20" />
+                                                <TextBox  Text="{Binding PoiConfig.Polygon3X}" Width="55" Margin="5,0"  />
+                                                <TextBox   Text="{Binding PoiConfig.Polygon3Y}" Width="55" Margin="5,0"  />
+                                            </DockPanel>
+                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                <TextBlock Text="X4"   MinWidth="20"/>
+                                                <TextBox  Text="{Binding PoiConfig.Polygon4X}" Width="55" Margin="5,0"  />
+                                                <TextBox   Text="{Binding PoiConfig.Polygon4Y}" Width="55" Margin="5,0"  />
+                                            </DockPanel>
+                                        </StackPanel>
+                                        <StackPanel  HorizontalAlignment="Right">
+                                            <Button Content="从基准点导入" Margin="3" Height="25" Click="PoiConfigImport_Click"/>
+                                            <Button x:Name="ButtonImportMarin" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
+                                            <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
+                                                <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
+                                                    <StackPanel Margin="5">
+                                                        <UniformGrid Columns="2" >
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxUp1" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                                                <TextBox   x:Name="TextBoxLeft1" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxDown1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                            <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                                                <TextBox  x:Name="TextBoxRight1"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                            </DockPanel>
+                                                        </UniformGrid>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <ComboBox x:Name="ComboBoxBorderType1" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
+                                                            <Button Content="设置" Click="ButtonImportMarinSetting"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Popup>
+                                        </StackPanel>
+
+                                    </Grid>
+
+                                    <UniformGrid  Columns="2" >
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="行数:"   MinWidth="50"/>
+                                            <TextBox  Text="{Binding PoiConfig.AreaPolygonRow}" Width="55"  />
+                                        </DockPanel>
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="列数:"  MinWidth="50"/>
+                                            <TextBox  Text="{Binding PoiConfig.AreaPolygonCol}" Width="55" />
+                                        </DockPanel>
+                                    </UniformGrid>
+                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                </StackPanel>
+                                <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <ListView  x:Name="ListViewPolygon"  MaxHeight="200" Style="{StaticResource ListView.Small}" ItemsSource="{Binding PoiConfig.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
+                                        <ListView.Resources>
+                                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                                            </ContextMenu>
+                                        </ListView.Resources>
+                                        <ListView.View >
+                                            <GridView >
+                                                <GridView.ColumnHeaderContainerStyle>
+                                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                                    </Style>
+                                                </GridView.ColumnHeaderContainerStyle>
+                                                <GridViewColumn Header="显示">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
+                                                            <TextBlock Text="{Binding .}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                                <GridViewColumn Header="显示">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
+                                                            <Button Content="删除" Click="Button_Click" Tag="{Binding .}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                                <GridViewColumn Header="显示" Width="70">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate DataType="{x:Type local:PolygonPoint}">
+                                                            <TextBox Text="{Binding SplitNumber}" HorizontalContentAlignment="Center" Width="50"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+
+
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
+
+
+
+                                    <UniformGrid  Columns="2" >
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="设定分割"   MinWidth="70"/>
+                                            <TextBox Text="{Binding PoiConfig.AreaPolygonLenNum}" Width="55"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
+                                            <TextBox  Text="是否使用结点" />
+                                        </DockPanel>
+                                    </UniformGrid>
+                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding IsPointCircle}" Content="圆形"/>
+                                <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding IsPointRect}" Content="矩形"/>
+                            </StackPanel>
+
+                            <StackPanel Margin="5" Visibility="{Binding IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
+                                <DockPanel Margin="2"  HorizontalAlignment="Left">
+                                    <TextBlock Text="半径:" Width="40"/>
+                                    <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />
+                                </DockPanel>
+                            </StackPanel>
+                            <StackPanel Margin="5" Visibility="{Binding IsPointRect,Converter={StaticResource bool2VisibilityConverter}}"  Orientation="Horizontal">
+                                <DockPanel Margin="2" >
+                                    <TextBlock Text="宽度:" Width="40"/>
+                                    <TextBox Text="{Binding PoiConfig.DefaultRectWidth}"  Width="55"  />
+                                </DockPanel>
+                                <DockPanel Margin="2" >
+                                    <TextBlock Text="高度:" Width="40"/>
+                                    <TextBox Text="{Binding PoiConfig.DefaultRectHeight}"  Width="55"  />
+                                </DockPanel>
+                            </StackPanel>
+                            <ComboBox x:Name="ComboBoxBorderType2"  Visibility="{Binding ElementName=RadioButtonAreaMask,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" HorizontalAlignment="Left" Width="100" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="5,3"/>
+                            <Button x:Name="button2" Margin="5"  Height="30" Width="100" FontWeight="Bold" HorizontalAlignment="Left"  Content="绘制" Click="Button2_Click"/>
+                        </StackPanel>
+
                     </Border>
                 </StackPanel>
             </ScrollViewer>

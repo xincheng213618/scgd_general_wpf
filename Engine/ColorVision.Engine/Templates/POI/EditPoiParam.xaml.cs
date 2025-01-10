@@ -1540,16 +1540,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             SettingPopup.IsOpen = true;
         }
-        private void Import_Draw_Click(object sender, RoutedEventArgs e)
-        {
-            EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowFocusPointAd.Closed += (s, e) =>
-            {
-                if(windowFocusPointAd.IsSucess)
-                    PoiParamToDrawingVisual(PoiParam);
-            };
-            windowFocusPointAd.ShowDialog();
-        }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
             if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
