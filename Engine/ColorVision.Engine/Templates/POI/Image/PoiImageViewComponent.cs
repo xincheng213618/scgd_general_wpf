@@ -20,12 +20,12 @@ namespace ColorVision.Engine.Templates.POI.Image
     {
         public void Execute(ImageView imageView)
         {
+            imageView.ToolBarAl.Visibility  = Visibility.Visible;
             if (MySqlControl.GetInstance().IsConnect)
             {
                 imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 imageView.ComboxPOITemplate.SelectedIndex = 0;
-                imageView.ToolBarAl.Visibility = Visibility.Visible;
-
+                imageView.ToolBarAl.Visibility = Visibility.Visible;   
             }
             else
             {
