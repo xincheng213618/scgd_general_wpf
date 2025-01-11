@@ -3,29 +3,13 @@ using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Navigation;
 
 namespace ColorVision.ImageEditor.Draw
 {
-
-    public class ActionCommand
-    {
-        public string Header { get; set; }
-
-        public Action UndoAction { get; set; }
-        public Action RedoAction { get; set; }
-
-        public ActionCommand(Action undoAction, Action redoAction)
-        {
-            UndoAction = undoAction;
-            RedoAction = redoAction;
-        }
-    }
 
     public class DrawCanvas : Image
     {

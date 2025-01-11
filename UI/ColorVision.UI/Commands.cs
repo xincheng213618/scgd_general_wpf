@@ -2,6 +2,7 @@
 
 namespace ColorVision.UI
 {
+
     public static class Commands
     {
         /// <summary>

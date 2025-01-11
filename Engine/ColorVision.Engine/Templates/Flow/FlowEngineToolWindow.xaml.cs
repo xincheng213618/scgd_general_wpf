@@ -1,23 +1,15 @@
-﻿using ColorVision.Engine.Properties;
-using ColorVision.Engine.Templates.FOV;
-using ColorVision.ImageEditor.Draw;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.TextFormatting;
 
 namespace ColorVision.Engine.Templates.Flow
 {

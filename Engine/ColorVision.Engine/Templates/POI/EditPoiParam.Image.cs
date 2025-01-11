@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8602,CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Globalization;
@@ -579,7 +580,7 @@ namespace ColorVision.Engine.Templates.POI
                                 var OldRect = rectangle.Rect;
                                 rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
                             });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动IRectangle" });
                         }
                         else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
                         {
@@ -592,7 +593,7 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 Circl.Center += l;
                             });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动ICircle" });
                         }
                     }
                 }
