@@ -36,23 +36,7 @@ namespace ColorVision.ImageEditor.Draw
             this.Focusable = true;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, (s, e) => UndoHistory(), (s, e) =>
-            {
-                if (e.Parameter is MenuItem menuItem)
-                {
-                    if (menuItem.ItemsSource != UndoStack)
-                    {
-                        menuItem.ItemsSource = UndoStack;
-                    }
-                }
-                e.CanExecute = UndoStack.Count > 0;
-            }));
-
-        }
-
-        public void UndoHistory()
-        {
-
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>{ e.CanExecute = UndoStack.Count > 0;  if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
         }
         #region ActionCommand
         public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
