@@ -1,9 +1,14 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 
 namespace ColorVision.ImageEditor.Draw
 {
@@ -11,6 +16,7 @@ namespace ColorVision.ImageEditor.Draw
     public class ActionCommand
     {
         public string Header { get; set; }
+
         public Action UndoAction { get; set; }
         public Action RedoAction { get; set; }
 
@@ -30,10 +36,27 @@ namespace ColorVision.ImageEditor.Draw
             this.Focusable = true;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, (s, e) => UndoHistory(), (s, e) =>
+            {
+                if (e.Parameter is MenuItem menuItem)
+                {
+                    if (menuItem.ItemsSource != UndoStack)
+                    {
+                        menuItem.ItemsSource = UndoStack;
+                    }
+                }
+                e.CanExecute = UndoStack.Count > 0;
+            }));
+
+        }
+
+        public void UndoHistory()
+        {
+
         }
         #region ActionCommand
-        public Stack<ActionCommand> UndoStack { get; set; } = new Stack<ActionCommand>();
-        public Stack<ActionCommand> RedoStack { get; set; } = new Stack<ActionCommand>();
+        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
+        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
 
         public void ClearActionCommand()
         {
@@ -43,7 +66,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public void AddActionCommand(ActionCommand actionCommand)
         {
-            UndoStack.Push(actionCommand);
+            UndoStack.Add(actionCommand);
             RedoStack.Clear();
         }
 
@@ -51,18 +74,21 @@ namespace ColorVision.ImageEditor.Draw
         {
             if (UndoStack.Count > 0)
             {
-                var undoAction = UndoStack.Pop();
+                var undoAction = UndoStack[^1]; // Access the last element
+                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
                 undoAction.UndoAction();
-                RedoStack.Push(undoAction);
+                RedoStack.Add(undoAction);
             }
         }
+
         public void Redo()
         {
             if (RedoStack.Count > 0)
             {
-                var redoAction = RedoStack.Pop();
+                var redoAction = RedoStack[^1]; // Access the last element
+                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
                 redoAction.RedoAction();
-                UndoStack.Push(redoAction);
+                UndoStack.Add(redoAction);
             }
         }
         #endregion
@@ -127,7 +153,7 @@ namespace ColorVision.ImageEditor.Draw
                     {
                         AddVisual(visual, false);
                     });
-                    AddActionCommand(new ActionCommand(undoaction, redoaction));
+                    AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
                 }
 
             }
@@ -158,7 +184,7 @@ namespace ColorVision.ImageEditor.Draw
                 {
                     RemoveVisual(visual, false);
                 });
-                AddActionCommand(new ActionCommand(undoaction, redoaction));
+                AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
             }
         }
 

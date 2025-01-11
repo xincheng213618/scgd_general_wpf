@@ -712,7 +712,7 @@ namespace ColorVision.ImageEditor
                                 var OldRect = rectangle.Rect;
                                 rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
                             });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
                         }
                         else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
                         {
@@ -725,10 +725,9 @@ namespace ColorVision.ImageEditor
                             {
                                 Circl.Center += l;
                             });
-                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction));
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header ="移动圆"});
                         }
                     }
-
                 }
                 if (IsRightButtonDown)
                 {

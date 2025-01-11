@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI.Properties;
+using System.Windows.Input;
 
 namespace ColorVision.UI.Menus.Base
 {
@@ -7,6 +8,26 @@ namespace ColorVision.UI.Menus.Base
         public override string GuidId => MenuItemConstants.File;
         public override string Header => Resources.MenuFile;
         public override int Order => 1;
+    }
+
+    public class MenuSave : MenuItemEditBase
+    {
+        public override string OwnerGuid => MenuItemConstants.File;
+
+        public override string GuidId => "Save";
+        public override string Header => "Save";
+        public override int Order => 20;
+        public override ICommand Command => ApplicationCommands.Save;
+    }
+
+    public class MenuSaveAs : MenuItemEditBase
+    {
+        public override string OwnerGuid => MenuItemConstants.File;
+
+        public override string GuidId => "Save";
+        public override string Header => "Save as";
+        public override int Order => 20;
+        public override ICommand Command => ApplicationCommands.SaveAs;
     }
 
     public class MenuExit : MenuItemBase
