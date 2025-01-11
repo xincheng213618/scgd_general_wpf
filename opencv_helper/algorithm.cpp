@@ -118,7 +118,7 @@ void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, dou
 
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
-    CV_Assert(!src.empty() && src.channels() == 3);
+    CV_Assert(!src.empty() && src.channels() >= 3);
     spdlog::info("AutoLevelsAdjust");
 
     //统计灰度直方图

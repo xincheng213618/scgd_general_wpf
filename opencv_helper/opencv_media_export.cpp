@@ -128,7 +128,7 @@ COLORVISIONCORE_API int M_AutoLevelsAdjust(HImage img, HImage* outImage)
 
 	if (mat.empty())
 		return -1;
-	if (mat.channels() != 3) {
+	if (mat.channels() ==1 ) {
 		return -1;
 	}
 	cv::Mat out = mat.clone();
@@ -147,7 +147,7 @@ COLORVISIONCORE_API int M_AutomaticColorAdjustment(HImage img, HImage* outImage)
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-	if (mat.channels() != 3) {
+	if (mat.channels() == 1) {
 		return -1;
 	}
 	cv::Mat out = mat.clone();
@@ -165,7 +165,7 @@ COLORVISIONCORE_API int M_AutomaticToneAdjustment(HImage img, HImage* outImage)
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-	if (mat.channels() != 3) {
+	if (mat.channels() == 1) {
 		return -1;
 	}
 	cv::Mat out = mat.clone();
