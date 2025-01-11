@@ -58,8 +58,8 @@
 			<Private>True</Private>
 		</Reference>
 		<Reference Include="ST.Library.UI">
-			<HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
-			<Private>True</Private>
+		  <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+		  <Private>True</Private>
 		</Reference>
 	</ItemGroup>
 	

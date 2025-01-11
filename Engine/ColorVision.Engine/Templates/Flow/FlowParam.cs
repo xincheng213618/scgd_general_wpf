@@ -3,9 +3,12 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using CVCommCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -172,6 +175,11 @@ namespace ColorVision.Engine.Templates.Flow
                 var item = new TemplateModel<FlowParam>(param.Name ?? "default", param);
                 TemplateParams.Add(item);
             }
+            return false;
+        }
+
+        public override bool CopyTo(int index)
+        {
             return false;
         }
 

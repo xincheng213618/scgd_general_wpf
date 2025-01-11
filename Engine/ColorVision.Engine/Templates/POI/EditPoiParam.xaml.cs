@@ -632,6 +632,8 @@ namespace ColorVision.Engine.Templates.POI
                     WaitControl.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 }
+
+                ImageShow.ClearActionCommand();
                 Init = true;
             }
             catch
@@ -1537,16 +1539,6 @@ namespace ColorVision.Engine.Templates.POI
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
         {
             SettingPopup.IsOpen = true;
-        }
-        private void Import_Draw_Click(object sender, RoutedEventArgs e)
-        {
-            EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowFocusPointAd.Closed += (s, e) =>
-            {
-                if(windowFocusPointAd.IsSucess)
-                    PoiParamToDrawingVisual(PoiParam);
-            };
-            windowFocusPointAd.ShowDialog();
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {

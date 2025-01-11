@@ -415,7 +415,13 @@ namespace ColorVision.Engine.Services.RC
 
         public void Archived(string sn)
         {
-            MQTTArchivedRequest request = new(sn);
+            MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
+            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
+        }
+        public void ArchivedAll()
+        {
+            MQTTArchivedRequest request = new MQTTArchivedRequest();
+            request.EventName = "ArchivedAll";
             PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
 

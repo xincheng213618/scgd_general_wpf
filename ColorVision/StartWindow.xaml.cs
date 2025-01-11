@@ -57,6 +57,7 @@ namespace ColorVision
                          .ToList();
 
             skipNames = skipNames ?? new List<string>();
+
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try {
@@ -71,8 +72,9 @@ namespace ColorVision
                         }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    log.Error(ex);
                     AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }

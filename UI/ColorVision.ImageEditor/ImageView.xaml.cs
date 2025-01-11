@@ -119,6 +119,7 @@ namespace ColorVision.ImageEditor
             Drop += ImageView_Drop;
 
             IImageEditorFunctionInitialized();
+            ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
         }
 
         public void IImageEditorFunctionInitialized()
@@ -1132,10 +1133,6 @@ namespace ColorVision.ImageEditor
                 }
             };
         }
-        private void AdjustWhiteBalance_Click(object sender, RoutedEventArgs e)
-        {
-            AdjustWhiteBalance();
-        }
 
         public void AdjustWhiteBalance()
         {
@@ -1300,12 +1297,27 @@ namespace ColorVision.ImageEditor
                 Config.Channel = HImageCache.Value.channels;
                 FunctionImage = null;
                 GammaSlider.Value = 1;
+                Config.RedBalance = 1;
+                Config.GreenBalance = 1;
+                Config.BlueBalance = 1;
             }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             GammaSlider.Value = 1;
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            Config.RedBalance = 1;
+            Config.GreenBalance = 1;
+            Config.BlueBalance = 1;
+        }
+
+        private void Reload_Click(object sender, RoutedEventArgs e)
+        {
+            OpenImage(Config.FilePath);
         }
     }
 }

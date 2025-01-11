@@ -148,6 +148,7 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPannel = stackPanel;
             STNodeEditorMain.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChanged;
+
             AddContentMenu();
         }
 

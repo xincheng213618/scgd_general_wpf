@@ -88,7 +88,7 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
+                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                         <StackPanel Orientation="Horizontal" >
                             <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
@@ -200,8 +200,6 @@
 
                         <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
 
-                        <Button  Content="白" Padding="8,5" Click="AdjustWhiteBalance_Click" Margin="0,0,0,2"/>
-
                         <StackPanel>
                             <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                                 <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
@@ -256,33 +254,71 @@
         </Grid>
 
         <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <ScrollViewer Margin="5,0">
                 <StackPanel x:Name="AdvancedStackPanel">
                     <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
                                 <ui:ToggleSwitch x:Name="PropertyIsChecked"  DockPanel.Dock="Right" IsChecked="False"/>
-                                <TextBlock Text="显示编辑属性"/>
+                                <TextBlock Text="显示编辑属性" Width="100" HorizontalAlignment="Left"/>
                             </DockPanel>
-                            <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
-                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
-                            </ToggleButton>
-                            <ToggleButton  Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
-                            <ToggleButton Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
-                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
-                            </ToggleButton>
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
+                                <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="伪彩色" Width="100"/>
+                                <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Red" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.RedBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.RedBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Green" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.GreenBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" Value="{Binding Config.GreenBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Blue" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.BlueBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.BlueBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <Button DockPanel.Dock="Right" Content="还原白平衡" Click="Button_Click_2" Margin="5,0,0,0"/>
                             <DockPanel Margin="0,0,0,5">
                                 <TextBlock  Text="Gamma" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
-                                <Button DockPanel.Dock="Right" Content="还原" Click="Button_Click_1"/>
+                                <Button DockPanel.Dock="Right" Content="还原" Click="Button_Click_1" Margin="5,0,0,0"/>
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                 <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
-                    
-                    <Button Content="应用" Click="Apply_Click"  Margin="5"/>
+
+                    <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton  Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
+                    </ToggleButton>
+
                 </StackPanel>
             </ScrollViewer>
+            <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
+                <Button Content="应用当前图片" Click="Apply_Click"  Margin="0,0,10,0"/>
+                <Button Content="重新加载" Click="Reload_Click" />
+            </StackPanel>
+
         </Grid>
     </Grid>
 </UserControl>

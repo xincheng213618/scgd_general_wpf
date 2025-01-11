@@ -23,7 +23,7 @@
             <StackPanel Margin="5">
 
                 <DockPanel Margin="5" >
-                    <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resources.Clear}"    />
+                    <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resources.Clear}"   Click="Button_Click"  />
                     <TextBlock Text="{x:Static properties:Resources.ClearCache}" />
                 </DockPanel>
             </StackPanel>

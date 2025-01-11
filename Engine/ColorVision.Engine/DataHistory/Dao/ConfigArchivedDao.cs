@@ -3,6 +3,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;
+using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace ColorVision.Engine.DataHistory.Dao
@@ -35,8 +36,8 @@ namespace ColorVision.Engine.DataHistory.Dao
         [Column("id"), Browsable(false)]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
-        [Column("path"), DisplayName("数据目录"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
-        public string Path { get => _Path; set { _Path = value; NotifyPropertyChanged(); } }
+        [Column("path"), DisplayName("数据目录"), PropertyEditorType(PropertyEditorType.TextSelectFolder)]
+        public string Path { get => Regex.Replace(_Path, @"(?<!\\)\\(?!\\)", @"\\"); set { _Path = value; NotifyPropertyChanged(); } }
         private string _Path;
         [Column("cron_expression"), DisplayName("Cron表达式"), PropertyEditorType(PropertyEditorType.CronExpression)]
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; NotifyPropertyChanged(); } }
