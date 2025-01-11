@@ -87,7 +87,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 10, () => AdjustWhiteBalance());
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -1259,7 +1259,7 @@ namespace ColorVision.ImageEditor
                 if (HImageCache == null) return;
 
                 // 首先获取滑动条的值，这需要在UI线程中执行
-                float Gamma = (float)GammaSlider.Value;
+                double Gamma = GammaSlider.Value;
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
@@ -1318,5 +1318,53 @@ namespace ColorVision.ImageEditor
         {
             OpenImage(Config.FilePath);
         }
+
+        private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+        }
+        private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+        }
+        public void AdjustBrightnessContrast()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+
+                // 首先获取滑动条的值，这需要在UI线程中执行
+                double Brightness = BrightnessSlider.Value;
+                double Contrast = ContrastSlider.Value;
+                //实现类似于PS的效果
+                Brightness = Brightness * 4 / 5;
+                Contrast = Contrast / 300 + 1;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+
     }
 }

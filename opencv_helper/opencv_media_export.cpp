@@ -279,10 +279,10 @@ COLORVISIONCORE_API int M_ExtractChannel(HImage img, HImage* outImage, int chann
 }
 
 
-COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float redBalance, float greenBalance, float blueBalance)
+COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, double redBalance, double greenBalance, double blueBalance)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst = mat.clone();
+	cv::Mat dst;
 
 	AdjustWhiteBalance(mat,dst, redBalance, greenBalance, blueBalance);
 
@@ -290,14 +290,26 @@ COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float re
 	return 0;
 }
 
-COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, float gamma)
+COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, double gamma)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	cv::Mat dst = mat.clone();
+	cv::Mat dst;
 
 	ApplyGammaCorrection(mat, dst, gamma);
 
 	MatToHImage(dst, outImage);
 	return 0;
 }
+
+COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage, double alpha, double beta)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	cv::Mat dst;
+	AdjustBrightnessContrast(mat, dst, alpha, beta);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
 

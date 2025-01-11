@@ -80,10 +80,13 @@ namespace ColorVision
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, float redBalance, float greenBalance, float blueBalance);
+        public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, double redBalance, double greenBalance, double blueBalance);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int M_ApplyGammaCorrection(HImage image, out HImage hImage, float gamma);
+        public unsafe static extern int M_ApplyGammaCorrection(HImage image, out HImage hImage, double gamma);
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_AdjustBrightnessContrast(HImage image, out HImage hImage, double alpha, double beta);
 
 
     }
