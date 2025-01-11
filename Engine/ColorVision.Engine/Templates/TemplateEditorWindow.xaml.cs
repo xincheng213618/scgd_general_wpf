@@ -62,6 +62,8 @@ namespace ColorVision.Engine.Templates
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 UserControl userControl = ITemplate.GetUserControl();
+                if (userControl.Parent is Grid grid)
+                    grid.Children.Remove(userControl);
                 GridProperty.Children.Add(userControl);
                 if (!double.IsNaN(userControl.Height))
                 {
