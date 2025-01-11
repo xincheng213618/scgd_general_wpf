@@ -38,10 +38,23 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   VerticalAlignment="Center"/>
-                <Grid Grid.Column="1" Width="20" Margin="5,0,0,0" HorizontalAlignment="Left">
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="Setting_Click"/>
-                </Grid>
+                <Button Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Click="Setting_Click" Padding="2" Height="21" Width="21" >
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="12" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform2" CenterX="6" CenterY="6"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Button>
+
             </Grid>
 
             <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
