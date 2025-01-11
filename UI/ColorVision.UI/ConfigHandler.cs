@@ -45,9 +45,14 @@ namespace ColorVision.UI
         public Assembly[] GetAssemblies()
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            return assemblies.Where(a => !RemoveAssemblies.Contains(a)).ToArray();
+            return assemblies.Where(a =>
+                !RemoveAssemblies.Contains(a) &&
+                !RemoveAssemblyNames.Contains(a.GetName().Name)
+            ).ToArray();
         }
         public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
+        public List<string> RemoveAssemblyNames { get; set; } = new List<string>();
+
 
 
     }
