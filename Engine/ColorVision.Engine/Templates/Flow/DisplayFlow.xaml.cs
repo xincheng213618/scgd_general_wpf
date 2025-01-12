@@ -234,6 +234,7 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
+            if (!FlowConfig.Instance.FlowPreviewMsg) return;
             if (flowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -260,10 +261,10 @@ namespace ColorVision.Engine.Templates.Flow
                             handler?.UpdateMessage(msg);
                     });
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     log.Error(ex);
-                } 
+                }
             }
         }
 
@@ -337,7 +338,11 @@ namespace ColorVision.Engine.Templates.Flow
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
 
-                UpdateMsg(sender);
+                if (FlowConfig.Instance.FlowPreviewMsg)
+                {
+                    UpdateMsg(sender);
+                }
+
             }
         }
 
@@ -402,11 +407,12 @@ namespace ColorVision.Engine.Templates.Flow
 
                 }
                 LastCompleted = false;
-
-                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
-                handler.Cancelling -= Handler_Cancelling; ;
-                handler.Cancelling += Handler_Cancelling; ;
+                if (FlowConfig.Instance.FlowPreviewMsg)
+                {
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler.Cancelling -= Handler_Cancelling; ;
+                    handler.Cancelling += Handler_Cancelling; ;
+                }
 
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
