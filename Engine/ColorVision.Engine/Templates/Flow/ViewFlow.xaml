@@ -59,7 +59,20 @@
                                     <Image  Source="{DynamicResource DrawingImageexpend}"/>
                                 </Button>
                                 <Button Command="{Binding AutoAlignmentCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
-                                    <Image  Source="{DynamicResource DrawingImageFlow}"/>
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform3" Storyboard.TargetProperty="Angle" From="0" To="720" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                    <Image  Source="{DynamicResource DrawingImageFlow}">
+                                        <Image.RenderTransform>
+                                            <RotateTransform x:Name="rotateTransform3" CenterX="8" CenterY="8"/>
+                                        </Image.RenderTransform>
+                                    </Image>
                                 </Button>
                                 <Button Command="{Binding ClearCommand}"  Margin="0,0,5,0"  Padding="2" Height="21" Width="21" >
                                     <Image  Source="{DynamicResource DrawingImageClear}"/>
@@ -138,7 +151,7 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <Border Grid.Row="2"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="5,0,5,5" CornerRadius="5">
+            <Border x:Name="SignStackBorder" Grid.Row="2"  Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="5,0,5,5" CornerRadius="5">
                 <StackPanel x:Name="SignStackPannel"  Orientation="Vertical" Margin="3" >
                 </StackPanel>
             </Border>

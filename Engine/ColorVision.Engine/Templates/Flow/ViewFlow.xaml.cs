@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using ColorVision.UI.Views;
 using FlowEngineLib.End;
 using FlowEngineLib.Start;
@@ -61,12 +62,12 @@ namespace ColorVision.Engine.Services.Flow
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
         }
         #region ActionCommand
-        public Stack<ActionCommand> UndoStack { get; set; } = new Stack<ActionCommand>();
-        public Stack<ActionCommand> RedoStack { get; set; } = new Stack<ActionCommand>();
 
-
+        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
+        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
 
         public void ClearActionCommand()
         {
@@ -76,7 +77,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public void AddActionCommand(ActionCommand actionCommand)
         {
-            UndoStack.Push(actionCommand);
+            UndoStack.Add(actionCommand);
             RedoStack.Clear();
         }
 
@@ -84,18 +85,21 @@ namespace ColorVision.Engine.Services.Flow
         {
             if (UndoStack.Count > 0)
             {
-                var undoAction = UndoStack.Pop();
+                var undoAction = UndoStack[^1]; // Access the last element
+                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
                 undoAction.UndoAction();
-                RedoStack.Push(undoAction);
+                RedoStack.Add(undoAction);
             }
         }
+
         public void Redo()
         {
             if (RedoStack.Count > 0)
             {
-                var redoAction = RedoStack.Pop();
+                var redoAction = RedoStack[^1]; // Access the last element
+                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
                 redoAction.RedoAction();
-                UndoStack.Push(redoAction);
+                UndoStack.Add(redoAction);
             }
         }
         #endregion
@@ -144,6 +148,8 @@ namespace ColorVision.Engine.Services.Flow
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+
+            STNodeEditorMain.ActiveChanged +=(s,e) => SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
@@ -202,6 +208,7 @@ namespace ColorVision.Engine.Services.Flow
             };
             STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
         }
+
 
         public void AutoSize()
         {

@@ -57,8 +57,6 @@ namespace ColorVision
                          .ToList();
 
             skipNames = skipNames ?? new List<string>();
-            AssemblyHandler.GetInstance().RemoveAssemblyNames.Add("ST.Library.UI");
-            AssemblyHandler.GetInstance().RemoveAssemblyNames.Add("FlowEngineLib");
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
@@ -74,8 +72,9 @@ namespace ColorVision
                         }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    log.Error(ex);
                     AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }

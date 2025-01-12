@@ -91,6 +91,9 @@ namespace WindowsServicePlugin
         }
         public async Task Initialize()
         {
+            // 如果是调试模式，不进行更新检测
+            if (Debugger.IsAttached) return;
+
             if (Config.IsAutoUpdate)
             {
                 await GetLatestReleaseVersion();

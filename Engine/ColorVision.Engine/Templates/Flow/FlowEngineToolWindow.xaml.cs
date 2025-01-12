@@ -1,19 +1,15 @@
-﻿using ColorVision.Engine.Properties;
-using ColorVision.Engine.Templates.FOV;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI.Menus;
+using ColorVision.UI;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.TextFormatting;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -40,7 +36,50 @@ namespace ColorVision.Engine.Templates.Flow
             FlowParam = flowParam;
             OpenFlowBase64(flowParam);
             ButtonOpen.Visibility = Visibility.Collapsed;
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
         }
+        #region ActionCommand
+
+        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
+        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
+
+        public void ClearActionCommand()
+        {
+            UndoStack.Clear();
+            RedoStack.Clear();
+        }
+
+        public void AddActionCommand(ActionCommand actionCommand)
+        {
+            UndoStack.Add(actionCommand);
+            RedoStack.Clear();
+        }
+
+        public void Undo()
+        {
+            if (UndoStack.Count > 0)
+            {
+                var undoAction = UndoStack[^1]; // Access the last element
+                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
+                undoAction.UndoAction();
+                RedoStack.Add(undoAction);
+            }
+        }
+
+        public void Redo()
+        {
+            if (RedoStack.Count > 0)
+            {
+                var redoAction = RedoStack[^1]; // Access the last element
+                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
+                redoAction.RedoAction();
+                UndoStack.Add(redoAction);
+            }
+        }
+        #endregion
+
         public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -131,9 +170,9 @@ namespace ColorVision.Engine.Templates.Flow
                 }
                 if (e.KeyCode == System.Windows.Forms.Keys.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
-                    SaveFlow();
+                    Save();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                if (e.KeyCode == System.Windows.Forms.Keys.F5 || (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
                 {
                     Refresh();
                 }
@@ -151,7 +190,7 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         if (MessageBox.Show("是否保存修改", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
-                            SaveFlow();
+                            Save();
                         }
                     }
                 }
@@ -216,13 +255,13 @@ namespace ColorVision.Engine.Templates.Flow
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            SaveFlow();
+            Save();
             STNodeEditorMain.Nodes.Clear();
         }
 
         private void Button_Click_Save(object sender, RoutedEventArgs e)
         {
-            SaveFlow();
+            Save();
         }
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
@@ -276,7 +315,7 @@ namespace ColorVision.Engine.Templates.Flow
             return FlowParam.DataBase64.Length != base64.Length;
         }
 
-        private void SaveFlow()
+        private void Save()
         {
             if (File.Exists(FileFlow))
             {

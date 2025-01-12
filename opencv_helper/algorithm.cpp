@@ -96,7 +96,7 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     return 0;
 }
 
-void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance) {
+void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance) {
     // Split the source image into BGR channels
     std::vector<cv::Mat> channels(3);
     cv::split(src, channels);
@@ -118,7 +118,7 @@ void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, floa
 
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
-    CV_Assert(!src.empty() && src.channels() == 3);
+    CV_Assert(!src.empty() && src.channels() >= 3);
     spdlog::info("AutoLevelsAdjust");
 
     //统计灰度直方图
@@ -318,11 +318,16 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
     image.convertTo(image, -1, alpha, beta);
 }
 
-void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma)
+void AdjustBrightnessContrast(const cv::Mat& src, cv::Mat& dst, double alpha, double beta)
+{
+    src.convertTo(dst, src.type(), alpha, beta);
+}
+
+void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
 {
     CV_Assert(gamma >= 0);
 
-    float adjustedGamma = 1.0 / gamma;
+    double adjustedGamma = 1.0 / gamma;
 
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 256 : 65536;

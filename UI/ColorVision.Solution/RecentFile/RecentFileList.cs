@@ -1,7 +1,16 @@
-﻿namespace ColorVision.RecentFile
+﻿using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace ColorVision.RecentFile
 {
-    public class RecentFileList
+    public class RecentFileList: INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        
+        
         private static List<string> RegistryKeyList = RegistryPersister.RegistryKeyList;
 
         public IRecentFile Persister { get; set; }
@@ -30,8 +39,14 @@
         }
 
         public List<string> RecentFiles { get => Persister.RecentFiles(MaxNumberOfFiles); } 
-        public void RemoveFile(string filepath) => Persister.RemoveFile(filepath, MaxNumberOfFiles); 
-        public void InsertFile(string filepath) => Persister.InsertFile(filepath, MaxNumberOfFiles); 
+        public void RemoveFile(string filepath)
+        {
+            Persister.RemoveFile(filepath, MaxNumberOfFiles);
+        }
+        public void InsertFile(string filepath)
+        {
+            Persister.InsertFile(filepath, MaxNumberOfFiles);
+        }
 
         public void Clear() => Persister.Clear(); 
 

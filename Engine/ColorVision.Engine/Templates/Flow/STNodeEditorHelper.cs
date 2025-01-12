@@ -39,6 +39,12 @@ using FlowEngineLib.Base;
 using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -161,10 +167,38 @@ namespace ColorVision.Engine.Templates.Flow
             STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             SignStackPannel.Children.Clear();
 
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
+            {
+                AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
+            }
+
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.SMUModelNode sMUModelNode)
+            {
+                AddStackPanel(name => sMUModelNode.DeviceCode = name, sMUModelNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
+                AddStackPanel(name => sMUModelNode.ModelName = name, sMUModelNode.ModelName, "SMUParam设置", new TemplateSMUParam());
+            }
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.SMUNode sMUNode)
+            {
+                AddStackPanel(name => sMUNode.DeviceCode = name, sMUNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
+                AddStackPanel(name => sMUNode.NodeName = name, sMUNode.NodeName, "SMUParam设置", new TemplateSMUParam());
+            }
+
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode spectrumNode)
+            {
+                AddStackPanel(name => spectrumNode.DeviceCode = name, spectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Spectum.SpectrumLoopNode spectrumLoopNode)
+            {
+                AddStackPanel(name => spectrumLoopNode.DeviceCode = name, spectrumLoopNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
+            }
+
+
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
             {
                 AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
+
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
 
@@ -177,6 +211,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
             {
+                AddStackPanel(name => kbnode.DeviceCode = name, kbnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
                 AddStackPanel(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
 
             }
@@ -196,6 +232,7 @@ namespace ColorVision.Engine.Templates.Flow
                 void Refesh()
                 {
                     SignStackPannel.Children.Clear();
+                    AddStackPanel(name => algorithmNode.DeviceCode = name, algorithmNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                     switch (algorithmNode.Algorithm)
                     {
@@ -270,19 +307,24 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
             {
+                AddStackPanel(name => buidpoi.DeviceCode = name, buidpoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
             }
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
             {
+                AddStackPanel(name => algDataLoadNode.DeviceCode = name, algDataLoadNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
                 AddStackPanel(name => algDataLoadNode.TempName = name, algDataLoadNode.TempName, "模板", new TemplateDataLoad());
             }
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.OLED.OLEDImageCroppingNode OLEDImageCroppingNode)
             {
+                AddStackPanel(name => OLEDImageCroppingNode.DeviceCode = name, OLEDImageCroppingNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => OLEDImageCroppingNode.TempName = name, OLEDImageCroppingNode.TempName, "参数模板", new TemplateImageCropping());
             }
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.POINode poinode)
             {
+                AddStackPanel(name => poinode.DeviceCode = name, poinode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => poinode.FilterTemplateName = name, poinode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => poinode.ReviseTemplateName = name, poinode.ReviseTemplateName, "POI修正", new TemplatePoiReviseParam());
@@ -291,6 +333,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
             {
+                AddStackPanel(name => commonsendorNode.DeviceCode = name, commonsendorNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
                 AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
             }
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
@@ -298,6 +341,7 @@ namespace ColorVision.Engine.Templates.Flow
                 void Refesh()
                 {
                     SignStackPannel.Children.Clear();
+                    AddStackPanel(name => algComplianceMathNode.DeviceCode = name, algComplianceMathNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                     switch (algComplianceMathNode.ComplianceMath)
                     {
                         case FlowEngineLib.Node.Algorithm.ComplianceMathType.CIE:
@@ -333,6 +377,15 @@ namespace ColorVision.Engine.Templates.Flow
             if (selectedItem != null)
                 comboBox.SelectedIndex = itemSource.IndexOf(selectedItem);
 
+            Grid myGrid = new Grid();
+            myGrid.DataContext = selectedItem;
+
+            // Create a Button
+            var button = new Button
+            {
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
             comboBox.SelectionChanged += (s, e) =>
             {
                 string selectedName = string.Empty;
@@ -340,11 +393,55 @@ namespace ColorVision.Engine.Templates.Flow
                 if (comboBox.SelectedValue is T templateModel)
                 {
                     selectedName = templateModel.Code;
+                    myGrid.DataContext = templateModel;
                 }
                 updateStorageAction(selectedName);
                 STNodePropertyGrid1.Refresh();
             };
 
+            // Create a ToggleButton
+            var toggleButton = new ToggleButton
+            {
+                Style = (Style)Application.Current.FindResource("ButtonMQTTConnect"),
+                Height = 10,
+                Width = 10,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                IsEnabled = false
+            };
+            // Create the binding for IsChecked
+            var binding = new Binding("Config.IsAlive")
+            {
+                Mode = BindingMode.OneWay
+            };
+            // Set the binding to the ToggleButton
+            toggleButton.SetBinding(ToggleButton.IsCheckedProperty, binding);
+            // Create an Image
+            var image = new Image
+            {
+                Source = (ImageSource)Application.Current.FindResource("DrawingImageProperty"),
+                Height = 18,
+                Margin = new Thickness(0)
+            };
+
+
+
+            // Create the binding for IsChecked
+            var binding1 = new Binding("PropertyCommand")
+            {
+                Mode = BindingMode.OneWay
+            };
+            // Set the binding to the ToggleButton
+            button.SetBinding(Button.CommandProperty, binding1);
+
+            // Add elements to the Grid
+            myGrid.Children.Add(toggleButton);
+            myGrid.Children.Add(image);
+            myGrid.Children.Add(button);
+
+            // Optionally, set the DockPanel.Dock property if needed
+            DockPanel.SetDock(myGrid, Dock.Right);
+
+            dockPanel.Children.Add(myGrid);
             dockPanel.Children.Add(comboBox);
             SignStackPannel.Children.Add(dockPanel);
         }

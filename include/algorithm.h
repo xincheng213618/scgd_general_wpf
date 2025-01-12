@@ -47,9 +47,18 @@ cv::Mat fusion(std::vector<cv::Mat> imgs, int STEP);
 int extractChannel(cv::Mat& input, cv::Mat& dst, int channel);
 
 //白平衡
-void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance);
+void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance);
 
 /// <summary>
 ///自动色阶
 /// </summary>
-void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, float gamma);
+void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma);
+
+/// <summary>
+/// 调整亮度和对比度
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+/// <param name="alpha"></param>
+/// <param name="beta"></param>
+void AdjustBrightnessContrast(const cv::Mat& src, cv::Mat& dst, double alpha, double beta);

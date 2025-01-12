@@ -301,6 +301,17 @@
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                 <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
                             </DockPanel>
+
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="亮度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=BrightnessSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider x:Name="BrightnessSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-100" Maximum="150" ValueChanged="BrightnessSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=ContrastSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider x:Name="ContrastSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-50" Maximum="100" ValueChanged="ContrastSlider_ValueChanged"/>
+                            </DockPanel>
                         </StackPanel>
                     </Border>
 
