@@ -4,7 +4,9 @@ using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -20,10 +22,23 @@ namespace ColorVision.Engine.MySql
 
         public MySqlConnection MySqlConnection { get; set; }
 
-        public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig; 
+        public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
 
+        private Timer timer;
         public MySqlControl()
         {
+            timer = new Timer(ReConnect, null, 0, MySqlSetting.Instance.ReConnectTime);
+            MySqlSetting.Instance.ReConnectTimeChanged += (s, e) =>
+            {
+                timer.Change(0, MySqlSetting.Instance.ReConnectTime);
+            };
+        }
+        public void ReConnect(object o)
+        {
+            if (IsConnect)
+            {
+                Connect();
+            }
         }
 
         public event EventHandler MySqlConnectChanged;
@@ -41,10 +56,10 @@ namespace ColorVision.Engine.MySql
                 log.Info($"正在连接数据库:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
-
+                
                 ///https://blog.csdn.net/a79412906/article/details/8971534
                 ///https://bugs.mysql.com/bug.php?id=2400
-                BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
+                //BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
 
                 //BatchExecuteQuery("SHOW VARIABLES LIKE 'interactive_timeout';SHOW VARIABLES LIKE 'wait_timeout';");
 
