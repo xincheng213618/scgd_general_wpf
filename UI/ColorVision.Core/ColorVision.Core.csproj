@@ -9,29 +9,46 @@
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <IncludeSymbols>True</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="libs\" />
+    <None Remove="ColorVision.Core.props" />
+    <None Remove="ColorVision.Core.targets" />
   </ItemGroup>
-
 	<ItemGroup>
-		<None Include="..\..\packages\opencv\x64\opencv_core4100.dll" Link="libs\opencv_core4100.dll">
+		<Content Include="..\..\x64\Release\opencv_helper.dll" Link="runtimes\win-x64\native\opencv_helper.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="..\..\packages\opencv\x64\opencv_highgui4100.dll" Link="libs\opencv_highgui4100.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>		
+		<Content Include="..\..\packages\opencv\x64\opencv_core4100.dll" Link="runtimes\win-x64\native\opencv_core4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="..\..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="libs\opencv_imgcodecs4100.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\opencv_highgui4100.dll" Link="runtimes\win-x64\native\opencv_highgui4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="..\..\packages\opencv\x64\opencv_imgproc4100.dll" Link="libs\opencv_imgproc4100.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>	
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="runtimes\win-x64\native\opencv_imgcodecs4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Include="..\..\packages\opencv\x64\opencv_videoio4100.dll" Link="libs\opencv_videoio4100.dll">
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+			</Content>
+		<Content Include="..\..\packages\opencv\x64\opencv_imgproc4100.dll" Link="runtimes\win-x64\native\opencv_imgproc4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+		<Content Include="..\..\packages\opencv\x64\opencv_videoio4100.dll" Link="runtimes\win-x64\native\opencv_videoio4100.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>runtimes/win-x64/native</PackagePath>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+
 	</ItemGroup>
 
 </Project>

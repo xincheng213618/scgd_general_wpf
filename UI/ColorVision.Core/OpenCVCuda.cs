@@ -5,7 +5,7 @@ namespace ColorVision
 {
     public static class OpenCVCuda
     {
-        private const string LibPath = "libs\\opencv_cuda.dll";
+        private const string LibPath = "opencv_cuda.dll";
 
 
         [DllImport(LibPath)]
