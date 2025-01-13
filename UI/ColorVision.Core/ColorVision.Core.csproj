@@ -9,28 +9,42 @@
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <IncludeSymbols>True</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
+	  <NoWarn>$(NoWarn);NU5100</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="libs\" />
   </ItemGroup>
-
 	<ItemGroup>
+		<None Include="..\..\x64\Release\opencv_helper.dll" Link="libs\opencv_helper.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
+		</None>
 		<None Include="..\..\packages\opencv\x64\opencv_core4100.dll" Link="libs\opencv_core4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
 		</None>
 		<None Include="..\..\packages\opencv\x64\opencv_highgui4100.dll" Link="libs\opencv_highgui4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
 		</None>
 		<None Include="..\..\packages\opencv\x64\opencv_imgcodecs4100.dll" Link="libs\opencv_imgcodecs4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
 		</None>
 		<None Include="..\..\packages\opencv\x64\opencv_imgproc4100.dll" Link="libs\opencv_imgproc4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
 		</None>
 		<None Include="..\..\packages\opencv\x64\opencv_videoio4100.dll" Link="libs\opencv_videoio4100.dll">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Pack>true</Pack>
+			<PackagePath>libs</PackagePath>
 		</None>
 	</ItemGroup>
 
