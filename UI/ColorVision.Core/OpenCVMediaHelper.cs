@@ -6,7 +6,7 @@ namespace ColorVision
 {
     public static class OpenCVMediaHelper
     {
-        private const string LibPath = "libs\\opencv_helper.dll";
+        private const string LibPath = "opencv_helper.dll";
 
 
         /// <summary>
