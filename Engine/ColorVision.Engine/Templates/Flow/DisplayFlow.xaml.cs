@@ -156,6 +156,8 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
                         node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => View.STNodeEditorMain.Nodes.Remove(node));
+                        node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => View.STNodeEditorMain.ActiveNode.LockOption = !View.STNodeEditorMain.ActiveNode.LockOption);
+                        node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => View.STNodeEditorMain.ActiveNode.LockLocation = !View.STNodeEditorMain.ActiveNode.LockLocation);
                     }
                 }
 

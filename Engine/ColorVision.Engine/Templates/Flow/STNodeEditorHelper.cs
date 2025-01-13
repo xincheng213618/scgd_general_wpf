@@ -155,6 +155,8 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditorMain.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
+            STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
+
             AddContentMenu();
         }
 
