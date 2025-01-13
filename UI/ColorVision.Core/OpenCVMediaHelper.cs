@@ -82,12 +82,35 @@ namespace ColorVision
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, double redBalance, double greenBalance, double blueBalance);
 
+        /// <summary>
+        /// 伽马校正
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="gamma"></param>
+        /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_ApplyGammaCorrection(HImage image, out HImage hImage, double gamma);
 
+        /// <summary>
+        /// 调整亮度对比度
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="alpha"></param>
+        /// <param name="beta"></param>
+        /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_AdjustBrightnessContrast(HImage image, out HImage hImage, double alpha, double beta);
 
+        /// <summary>
+        /// 反相
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_InvertImage(HImage image, out HImage hImage);
 
     }
 }

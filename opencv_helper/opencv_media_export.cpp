@@ -312,4 +312,20 @@ COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
 	return 0;
 }
 
+/// <summary>
+/// ∑¥œ‡
+/// </summary>
+/// <param name="img"></param>
+/// <param name="outImage"></param>
+/// <returns></returns>
+COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	cv::Mat dst;
+	cv::bitwise_not(mat, dst);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
 

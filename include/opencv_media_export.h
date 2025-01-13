@@ -44,6 +44,7 @@ extern "C" COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* ou
 
 extern "C" COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage, double alpha, double beta);
 
+extern "C" COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage);
 
 
 

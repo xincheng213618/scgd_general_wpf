@@ -296,7 +296,7 @@
                             </DockPanel>
                             <Button DockPanel.Dock="Right" Content="还原白平衡" Click="Button_Click_2" Margin="5,0,0,0"/>
                             <DockPanel Margin="0,0,0,5">
-                                <TextBlock  Text="Gamma" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBlock  Text="伽马" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
                                 <Button DockPanel.Dock="Right" Content="还原" Click="Button_Click_1" Margin="5,0,0,0"/>
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                 <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
@@ -312,6 +312,8 @@
                                 <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=ContrastSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                 <hc:PreviewSlider x:Name="ContrastSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-50" Maximum="100" ValueChanged="ContrastSlider_ValueChanged"/>
                             </DockPanel>
+                            <Button DockPanel.Dock="Right" Content="反相" Click="Button_Click_InvertImage" Margin="0,0,0,5"/>
+
                         </StackPanel>
                     </Border>
 

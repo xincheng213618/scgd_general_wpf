@@ -1365,6 +1365,40 @@ namespace ColorVision.ImageEditor
             });
         }
 
+        public void InvertImag()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"InvertImag");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_InvertImage((HImage)HImageCache, out HImage hImageProcessed);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"InvertImag {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
 
+        private void Button_Click_InvertImage(object sender, RoutedEventArgs e)
+        {
+            InvertImag();
+        }
     }
 }
