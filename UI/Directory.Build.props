@@ -17,8 +17,14 @@
     <AssemblyCompany>ColorVision Corp.</AssemblyCompany>
     <AssemblyCopyright>Copyright (C) 2024 ColorVision Corporation</AssemblyCopyright>
     <AssemblyProduct>ColorVision</AssemblyProduct>
-	<VersionPrefix>1.1.9.11</VersionPrefix>
+	<VersionPrefix>1.1.9.12</VersionPrefix>
     <Company>ColorVision</Company>
     <NeutralLanguage>zh-CN</NeutralLanguage>
+	<Authors>xincheng</Authors>
+	<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+	<IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	<RepositoryUrl>https://github.com/xincheng213618/scgd_general_wpf</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 </Project>
