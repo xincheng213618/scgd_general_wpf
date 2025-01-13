@@ -101,7 +101,7 @@ namespace ColorVision.Solution.V
             foreach (var item in directoryInfo.GetFiles())
             {
                 i++;
-                if (i == 100)
+                if (i == 10)
                 {
                     await Task.Delay(100);
                     i = 0;
