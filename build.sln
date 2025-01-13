@@ -3,8 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33617.297
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision", "ColorVision\ColorVision.csproj", "{AD038578-6456-48BF-9379-151DCBE9DBF5}"
-EndProject
+
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决方案项", "{61C6DABF-289A-41CD-B85D-F0AA9D8C6947}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
@@ -14,17 +13,39 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决�
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "Engine\cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{106E1C5D-57C2-49F9-854D-A50BFFA88802}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{CC28D563-3E82-4852-82C0-A06609BB416C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Common", "UI\ColorVision.Common\ColorVision.Common.csproj", "{C8071225-73B5-4559-A22E-CD057B424A3C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Net", "Engine\ColorVision.Net\ColorVision.Net.csproj", "{371CA508-3C4B-48C0-8A2C-49AFA2097938}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "UI\ColorVision.Core\ColorVision.Core.csproj", "{F5A74929-90C7-407C-87F4-D2176ACC2ACC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVisionSetup", "ColorVisionSetup\ColorVisionSetup.csproj", "{62EE75AB-AC8D-4E34-BC89-094E05298902}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "UI\ColorVision.Themes\ColorVision.Themes.csproj", "{64AAF73B-1782-4D82-AEB5-868E21516768}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "UI\ColorVision.UI\ColorVision.UI.csproj", "{FF7ACD54-F730-4F7E-9F58-8B290883ACB7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.ImageEditor", "UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj", "{B5D3A18A-0E0E-4818-A3B5-5AA7AA9B3D25}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{8E0942C0-BE69-4092-BA4C-D84D6EC37576}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "UI\ColorVision.Solution\ColorVision.Solution.csproj", "{01B0715F-F5DE-4B00-9E0E-7E257782CD85}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{9A311925-FBEF-4A49-A392-9CA8DDAF4F40}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "Engine\cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CVImageChannelLib", "Engine\CVImageChannelLib\CVImageChannelLib.csproj", "{19D29263-A775-41D1-A263-943E99B3A09B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Net", "Engine\ColorVision.Net\ColorVision.Net.csproj", "{371CA508-3C4B-48C0-8A2C-49AFA2097938}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ColorVisionIcons64", "ColorVisionIcons64\ColorVisionIcons64.vcxproj", "{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "UI\ColorVision.UI\ColorVision.UI.csproj", "{FF7ACD54-F730-4F7E-9F58-8B290883ACB7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Engine", "Engine\ColorVision.Engine\ColorVision.Engine.csproj", "{DACD2EB5-0B07-4B20-BED4-5158902E1105}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision", "ColorVision\ColorVision.csproj", "{AD038578-6456-48BF-9379-151DCBE9DBF5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{44BA4462-A1C2-4384-810F-A39D12EA216C}"
 EndProject
@@ -32,35 +53,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalibrationCorrection", "Pl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventVWR", "Plugins\EventVWR\EventVWR.csproj", "{B1AEEDF8-983D-4BAB-B69B-87B599123769}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projects", "Projects", "{C5742CDA-D2FF-4E83-AA33-696A76B00961}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Engine", "Engine\ColorVision.Engine\ColorVision.Engine.csproj", "{DACD2EB5-0B07-4B20-BED4-5158902E1105}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "UI\ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{8E0942C0-BE69-4092-BA4C-D84D6EC37576}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "UI\ColorVision.Themes\ColorVision.Themes.csproj", "{64AAF73B-1782-4D82-AEB5-868E21516768}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Solution", "UI\ColorVision.Solution\ColorVision.Solution.csproj", "{01B0715F-F5DE-4B00-9E0E-7E257782CD85}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "opencv_helper\opencv_helper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CVImageChannelLib", "Engine\CVImageChannelLib\CVImageChannelLib.csproj", "{19D29263-A775-41D1-A263-943E99B3A09B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScreenRecorder", "Plugins\ScreenRecorder\ScreenRecorder.csproj", "{50B5542B-A4EF-489E-9938-25E8CB10B253}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{106E1C5D-57C2-49F9-854D-A50BFFA88802}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WindowsServicePlugin", "Plugins\WindowsServicePlugin\WindowsServicePlugin.csproj", "{289B350A-0052-47D2-B93E-1FDAA526B507}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Core", "UI\ColorVision.Core\ColorVision.Core.csproj", "{F5A74929-90C7-407C-87F4-D2176ACC2ACC}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.ImageEditor", "UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj", "{B5D3A18A-0E0E-4818-A3B5-5AA7AA9B3D25}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UI", "UI", "{CC28D563-3E82-4852-82C0-A06609BB416C}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{9A311925-FBEF-4A49-A392-9CA8DDAF4F40}"
-EndProject
+EndProjec
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SystemMonitor", "Plugins\SystemMonitor\SystemMonitor.csproj", "{83982982-7EC7-4FC9-BBE1-E8C4FE9C1E42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVisionSetup", "ColorVisionSetup\ColorVisionSetup.csproj", "{62EE75AB-AC8D-4E34-BC89-094E05298902}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projects", "Projects", "{C5742CDA-D2FF-4E83-AA33-696A76B00961}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
