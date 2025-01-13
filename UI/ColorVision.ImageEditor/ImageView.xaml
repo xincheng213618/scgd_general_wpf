@@ -161,8 +161,21 @@
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                         </ToggleButton>
                         <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-                        <Button   Command="{Binding OpenProperty}" Margin="1,0">
-                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <Button   Command="{Binding OpenProperty}" Margin="1,0" Padding="5">
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
                         </Button>
 
                         <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
