@@ -118,42 +118,8 @@ namespace ColorVision.ImageEditor
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
 
-            IImageEditorFunctionInitialized();
             ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
         }
-
-        public void IImageEditorFunctionInitialized()
-        {
-            foreach (var imageEditorFunction in ImageViewComponentManager.GetInstance().IImageEditorFunctions)
-            {
-                Button button = new Button();
-                button.Content = imageEditorFunction.Header;
-                button.Click += (s, e) =>
-                {
-                    if (HImageCache == null) return;
-                    Task.Run(() =>
-                    {
-                        int ret = imageEditorFunction.Execute((HImage)HImageCache, out HImage hImageProcessed);
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            if (ret == 0)
-                            {
-                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                                {
-                                    var image = hImageProcessed.ToWriteableBitmap();
-                                    OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                    hImageProcessed.pData = IntPtr.Zero;
-                                    FunctionImage = image;
-                                }
-                                ImageShow.Source = FunctionImage;
-                            }
-                        });
-                    });
-                };
-                AdvancedStackPanel.Children.Add(button);
-            }
-        }
-
 
 
         public void Clear(object? sender, EventArgs e)
@@ -801,6 +767,7 @@ namespace ColorVision.ImageEditor
 
         public async void OpenImage(string? filePath)
         {
+            Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;

@@ -81,7 +81,6 @@
                     <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
-
                 <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                         <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
@@ -169,7 +168,6 @@
                         <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                             <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                         </ToggleButton>
-
                     </ToolBar>
                 </ToolBarTray>
                 <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
@@ -188,14 +186,14 @@
 
                 <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}"  Margin="-5"/>
+                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
                         </ToggleButton>
-                        <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
+                        <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}" />
                         </Button>
-                        <Button x:Name="Button1931"  x:FieldModifier="public" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
                         </Button>
 
                         <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
