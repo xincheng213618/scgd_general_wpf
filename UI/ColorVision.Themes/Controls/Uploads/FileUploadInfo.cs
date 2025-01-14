@@ -1,10 +1,15 @@
-﻿using ColorVision.Common.MVVM;
+﻿using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Themes.Controls.Uploads
 {
-    public class FileUploadInfo : ViewModelBase
+    public class FileUploadInfo : INotifyPropertyChanged
     {
-        public RelayCommand OpenFilePathCommand { get; set; }
+        public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// 消息通知事件
+        /// </summary>
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public FileUploadInfo()
         {

@@ -27,10 +27,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <Resource Include="Assets\Image\background0.png">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </Resource>
