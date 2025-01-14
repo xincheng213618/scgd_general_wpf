@@ -1,155 +1,156 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <ImplicitUsings>disable</ImplicitUsings>
-	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
-	  <IncludeSymbols>True</IncludeSymbols>
-	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-windows;net6.0-windows</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\Colormaps\colorscale_autumn.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_bone.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_cividis.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_cool.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_deepgreen.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_hot.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_hsv.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_inferno.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_jet.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_magma.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_mkpj1.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_mkpj2.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_ocean.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_parula.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_pink.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_plasma.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_rainbow.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_spring.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_summer.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_turbo.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_twilight.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_viridis.jpg" />
-    <None Remove="Assets\Colormaps\colorscale_winter.jpg" />
-    <None Remove="Assets\Colormap\colorscale_autumn.jpg" />
-    <None Remove="Assets\Colormap\colorscale_bone.jpg" />
-    <None Remove="Assets\Colormap\colorscale_cividis.jpg" />
-    <None Remove="Assets\Colormap\colorscale_cool.jpg" />
-    <None Remove="Assets\Colormap\colorscale_deepgreen.jpg" />
-    <None Remove="Assets\Colormap\colorscale_hot.jpg" />
-    <None Remove="Assets\Colormap\colorscale_hsv.jpg" />
-    <None Remove="Assets\Colormap\colorscale_inferno.jpg" />
-    <None Remove="Assets\Colormap\colorscale_jet.jpg" />
-    <None Remove="Assets\Colormap\colorscale_magma.jpg" />
-    <None Remove="Assets\Colormap\colorscale_mkpj1.jpg" />
-    <None Remove="Assets\Colormap\colorscale_mkpj2.jpg" />
-    <None Remove="Assets\Colormap\colorscale_ocean.jpg" />
-    <None Remove="Assets\Colormap\colorscale_parula.jpg" />
-    <None Remove="Assets\Colormap\colorscale_pink.jpg" />
-    <None Remove="Assets\Colormap\colorscale_plasma.jpg" />
-    <None Remove="Assets\Colormap\colorscale_rainbow.jpg" />
-    <None Remove="Assets\Colormap\colorscale_spring.jpg" />
-    <None Remove="Assets\Colormap\colorscale_summer.jpg" />
-    <None Remove="Assets\Colormap\colorscale_turbo.jpg" />
-    <None Remove="Assets\Colormap\colorscale_twilight.jpg" />
-    <None Remove="Assets\Colormap\colorscale_twilight_shifted.jpg" />
-    <None Remove="Assets\Colormap\colorscale_viridis.jpg" />
-    <None Remove="Assets\Colormap\colorscale_winter.jpg" />
-    <None Remove="Assets\Image\CIE1931xy.ico" />
-    <None Remove="Assets\Image\CIE1931xy.png" />
-    <None Remove="Assets\Image\CIE1931xy1.png" />
-    <None Remove="Assets\Image\ColorVision.ico" />
-    <None Remove="Assets\Image\ColorVision.png" />
-    <None Remove="Assets\Image\ColorVision1.ico" />
-    <None Remove="Assets\Image\connect.png" />
-    <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-    <None Remove="Assets\Image\pictureBox1.Image.png" />
-    <None Remove="Assets\png\PowerToy.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Remove="Assets\Colormaps\colorscale_autumn.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_bone.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_cividis.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_cool.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_deepgreen.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_hot.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_hsv.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_inferno.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_jet.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_magma.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_mkpj1.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_mkpj2.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_ocean.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_parula.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_pink.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_plasma.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_rainbow.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_spring.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_summer.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_turbo.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_twilight.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_viridis.jpg" />
+		<None Remove="Assets\Colormaps\colorscale_winter.jpg" />
+		<None Remove="Assets\Colormap\colorscale_autumn.jpg" />
+		<None Remove="Assets\Colormap\colorscale_bone.jpg" />
+		<None Remove="Assets\Colormap\colorscale_cividis.jpg" />
+		<None Remove="Assets\Colormap\colorscale_cool.jpg" />
+		<None Remove="Assets\Colormap\colorscale_deepgreen.jpg" />
+		<None Remove="Assets\Colormap\colorscale_hot.jpg" />
+		<None Remove="Assets\Colormap\colorscale_hsv.jpg" />
+		<None Remove="Assets\Colormap\colorscale_inferno.jpg" />
+		<None Remove="Assets\Colormap\colorscale_jet.jpg" />
+		<None Remove="Assets\Colormap\colorscale_magma.jpg" />
+		<None Remove="Assets\Colormap\colorscale_mkpj1.jpg" />
+		<None Remove="Assets\Colormap\colorscale_mkpj2.jpg" />
+		<None Remove="Assets\Colormap\colorscale_ocean.jpg" />
+		<None Remove="Assets\Colormap\colorscale_parula.jpg" />
+		<None Remove="Assets\Colormap\colorscale_pink.jpg" />
+		<None Remove="Assets\Colormap\colorscale_plasma.jpg" />
+		<None Remove="Assets\Colormap\colorscale_rainbow.jpg" />
+		<None Remove="Assets\Colormap\colorscale_spring.jpg" />
+		<None Remove="Assets\Colormap\colorscale_summer.jpg" />
+		<None Remove="Assets\Colormap\colorscale_turbo.jpg" />
+		<None Remove="Assets\Colormap\colorscale_twilight.jpg" />
+		<None Remove="Assets\Colormap\colorscale_twilight_shifted.jpg" />
+		<None Remove="Assets\Colormap\colorscale_viridis.jpg" />
+		<None Remove="Assets\Colormap\colorscale_winter.jpg" />
+		<None Remove="Assets\Image\CIE1931xy.ico" />
+		<None Remove="Assets\Image\CIE1931xy.png" />
+		<None Remove="Assets\Image\CIE1931xy1.png" />
+		<None Remove="Assets\Image\ColorVision.ico" />
+		<None Remove="Assets\Image\ColorVision.png" />
+		<None Remove="Assets\Image\ColorVision1.ico" />
+		<None Remove="Assets\Image\connect.png" />
+		<None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+		<None Remove="Assets\Image\pictureBox1.Image.png" />
+		<None Remove="Assets\png\PowerToy.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-    <PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
-	<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
+		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ColorVision.Core\ColorVision.Core.csproj" />
+		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="Assets\Colormaps\colorscale_autumn.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_bone.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_cividis.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_cool.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_deepgreen.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_hot.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_hsv.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_inferno.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_jet.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_magma.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_mkpj1.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_mkpj2.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_ocean.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_parula.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_pink.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_plasma.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_rainbow.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_spring.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_summer.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_turbo.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_twilight.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_viridis.jpg" />
-    <Resource Include="Assets\Colormaps\colorscale_winter.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_autumn.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_bone.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_cividis.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_cool.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_deepgreen.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_hot.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_hsv.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_inferno.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_jet.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_magma.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_mkpj1.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_mkpj2.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_ocean.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_parula.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_pink.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_plasma.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_rainbow.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_spring.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_summer.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_turbo.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_twilight.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_twilight_shifted.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_viridis.jpg" />
-    <Resource Include="Assets\Colormap\colorscale_winter.jpg" />
-    <Resource Include="Assets\Image\CIE1931xy.ico" />
-    <Resource Include="Assets\Image\CIE1931xy.png" />
-    <Resource Include="Assets\Image\CIE1931xy1.png" />
-    <Resource Include="Assets\Image\ColorVision.ico" />
-    <Resource Include="Assets\Image\ColorVision.png" />
-    <Resource Include="Assets\Image\ColorVision1.ico" />
-    <Resource Include="Assets\Image\connect.png" />
-    <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
-    <Resource Include="Assets\Image\pictureBox1.Image.png" />
-    <Resource Include="Assets\png\PowerToy.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="Assets\Colormaps\colorscale_autumn.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_bone.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_cividis.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_cool.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_deepgreen.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_hot.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_hsv.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_inferno.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_jet.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_magma.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_mkpj1.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_mkpj2.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_ocean.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_parula.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_pink.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_plasma.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_rainbow.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_spring.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_summer.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_turbo.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_twilight.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_viridis.jpg" />
+		<Resource Include="Assets\Colormaps\colorscale_winter.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_autumn.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_bone.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_cividis.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_cool.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_deepgreen.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_hot.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_hsv.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_inferno.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_jet.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_magma.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_mkpj1.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_mkpj2.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_ocean.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_parula.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_pink.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_plasma.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_rainbow.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_spring.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_summer.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_turbo.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_twilight.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_twilight_shifted.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_viridis.jpg" />
+		<Resource Include="Assets\Colormap\colorscale_winter.jpg" />
+		<Resource Include="Assets\Image\CIE1931xy.ico" />
+		<Resource Include="Assets\Image\CIE1931xy.png" />
+		<Resource Include="Assets\Image\CIE1931xy1.png" />
+		<Resource Include="Assets\Image\ColorVision.ico" />
+		<Resource Include="Assets\Image\ColorVision.png" />
+		<Resource Include="Assets\Image\ColorVision1.ico" />
+		<Resource Include="Assets\Image\connect.png" />
+		<Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+		<Resource Include="Assets\Image\pictureBox1.Image.png" />
+		<Resource Include="Assets\png\PowerToy.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="HistogramChartWindow.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Window3D.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="HistogramChartWindow.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+		<Compile Update="Window3D.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+	</ItemGroup>
 
 </Project>

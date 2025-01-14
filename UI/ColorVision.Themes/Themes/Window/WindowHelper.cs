@@ -88,7 +88,7 @@ namespace ColorVision.Themes.Controls
         public static bool IsForegroundWindowBelongToSelf()
         {
             var hwnd = GetForegroundWindow();
-            if (hwnd == nint.Zero)
+            if (hwnd == IntPtr.Zero)
                 return false;
 
             GetWindowThreadProcessId(hwnd, out var procId);
