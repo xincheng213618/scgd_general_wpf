@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.POI
     public static class PoiParamExtension
     {
         public static void LoadPoiDetailFromDB(this PoiParam poiParam) => PoiParam.LoadPoiDetailFromDB(poiParam);
-        public static void Save2DB(this PoiParam poiParam) => PoiParam.Save2DB(poiParam);
+        public static int Save2DB(this PoiParam poiParam) => PoiParam.Save2DB(poiParam);
     }
 
     /// <summary>
@@ -17,17 +17,18 @@ namespace ColorVision.Engine.Templates.POI
     /// </summary>
     public class PoiParam : ParamModBase
     {
-        public static void Save2DB(PoiParam poiParam)
+        public static int Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new(poiParam);
-            PoiMasterDao.Instance.Save(poiMasterModel);
+            int ret = PoiMasterDao.Instance.Save(poiMasterModel);
+            if (ret == -1) return ret;
 
             List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
             foreach (PoiPoint pt in poiParam.PoiPoints)
             {
                 poiDetails.Add(new PoiDetailModel(poiParam.Id, pt));
             }
-            PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
+            return PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }
           
 
