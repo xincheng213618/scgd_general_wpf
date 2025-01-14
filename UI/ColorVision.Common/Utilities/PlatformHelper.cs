@@ -1,76 +1,76 @@
-using IWshRuntimeLibrary;
 using System;
 using System.Diagnostics;
-using System.IO;
 using System.Windows;
 
-namespace ColorVision.Common.Utilities;
-
-public static class PlatformHelper
+namespace ColorVision.Common.Utilities
 {
-    /// <summary>
-    /// 打开文件夹
-    /// </summary>
-    /// <param name="folder">路径</param>
-    public static void OpenFolder(string folder)
+
+    public static class PlatformHelper
     {
-        folder = folder.Replace("\\\\", "\\");
-        if (OperatingSystem.IsWindows())
+        /// <summary>
+        /// 打开文件夹
+        /// </summary>
+        /// <param name="folder">路径</param>
+        public static void OpenFolder(string folder)
         {
-            Process.Start("explorer.exe", $"{folder}");
-        }
-
-        if (OperatingSystem.IsMacOS())
-        {
-            Process.Start("open", $"\"{folder}\"");
-        }
-
-        if (OperatingSystem.IsLinux())
-        {
-            Process.Start("xdg-open", $"\"{folder}\"");
-        }
-    }
-    public static void OpenFolderAndSelectFile(string filePath)
-    {
-        filePath = filePath.Replace("\\\\", "\\");
-
-        var psi = new ProcessStartInfo
-        {
-            FileName = "explorer.exe",
-            Arguments = $"/select,{filePath}",
-            UseShellExecute = true
-        };
-        Process.Start(psi);
-
-    }
-
-
-    /// <summary>
-    /// 打开各种 (文件、url)
-    /// </summary>
-    /// <param name="filename">文件名</param>
-    public static void Open(string filename)
-    {
-        try
-        {
+            folder = folder.Replace("\\\\", "\\");
             if (OperatingSystem.IsWindows())
             {
-                Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
+                Process.Start("explorer.exe", $"{folder}");
             }
+
             if (OperatingSystem.IsMacOS())
-            {   
-                Process.Start("open", $"\"{filename}\"");
+            {
+                Process.Start("open", $"\"{folder}\"");
             }
 
             if (OperatingSystem.IsLinux())
             {
-                Process.Start("xdg-open", $"\"{filename}\"");
+                Process.Start("xdg-open", $"\"{folder}\"");
             }
         }
-        catch(Exception ex)
+        public static void OpenFolderAndSelectFile(string filePath)
         {
-            MessageBox.Show(ex.Message);
+            filePath = filePath.Replace("\\\\", "\\");
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"/select,{filePath}",
+                UseShellExecute = true
+            };
+            Process.Start(psi);
+
         }
 
+
+        /// <summary>
+        /// 打开各种 (文件、url)
+        /// </summary>
+        /// <param name="filename">文件名</param>
+        public static void Open(string filename)
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                {
+                    Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
+                }
+                if (OperatingSystem.IsMacOS())
+                {
+                    Process.Start("open", $"\"{filename}\"");
+                }
+
+                if (OperatingSystem.IsLinux())
+                {
+                    Process.Start("xdg-open", $"\"{filename}\"");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+        }
     }
 }
