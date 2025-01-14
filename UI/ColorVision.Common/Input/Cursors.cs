@@ -14,7 +14,7 @@ namespace ColorVision.Input
         public static Cursor PickUp { get => EnsureCursor("pickup.cur"); }
 
 
-        private static Dictionary<string, Cursor> _stockCursors = new();
+        private static Dictionary<string, Cursor> _stockCursors = new Dictionary<string, Cursor>();
 
         internal static Cursor EnsureCursor(string cursorType)
         {
