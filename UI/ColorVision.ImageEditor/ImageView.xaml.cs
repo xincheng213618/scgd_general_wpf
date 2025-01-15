@@ -1306,6 +1306,7 @@ namespace ColorVision.ImageEditor
                 //实现类似于PS的效果
                 Brightness = Brightness * 4 / 5;
                 Contrast = Contrast / 300 + 1;
+                Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
