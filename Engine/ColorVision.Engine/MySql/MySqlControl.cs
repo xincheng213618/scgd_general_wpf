@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;
@@ -13,7 +12,7 @@ using System.Windows;
 namespace ColorVision.Engine.MySql
 {
 
-    public class MySqlControl: ViewModelBase
+    public class MySqlControl: ViewModelBase, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
         private static MySqlControl _instance;
@@ -33,11 +32,11 @@ namespace ColorVision.Engine.MySql
                 timer.Change(0, MySqlSetting.Instance.ReConnectTime);
             };
         }
-        public void ReConnect(object o)
+        public void ReConnect(object? o)
         {
             if (IsConnect)
             {
-                Connect();
+                ReConnect();
             }
         }
 
@@ -46,6 +45,30 @@ namespace ColorVision.Engine.MySql
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
         private static readonly char[] separator = new[] { ';' };
+
+        private Task<bool> ReConnect()
+        {
+            {
+                string connStr = GetConnectionString(Config);
+                try
+                {
+                    IsConnect = false;
+                    log.Info($"正在连接数据库:{connStr}");
+                    MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
+                    MySqlConnection.Open();
+                    IsConnect = true;
+                    log.Info($"数据库连接成功:{connStr}");
+                    return Task.FromResult(true);
+                }
+                catch (Exception ex)
+                {
+                    IsConnect = false;
+                    log.Error(ex);
+                    return Task.FromResult(false);
+                }
+            }
+        }
+
 
         public Task<bool> Connect()
         {
@@ -251,6 +274,8 @@ namespace ColorVision.Engine.MySql
         public void Dispose()
         {
             MySqlConnection.Dispose();
+            timer?.Dispose();
+            GC.SuppressFinalize(this);
         }
 
     }

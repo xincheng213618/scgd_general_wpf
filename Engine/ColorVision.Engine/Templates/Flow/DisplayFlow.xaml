@@ -23,8 +23,22 @@
                 <Image Source="{DynamicResource DrawingImageFlow}"/>
             </Grid>
             <Grid Width="20" Margin="0,0"  HorizontalAlignment="Right">
-                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Command="{Binding EditCommand}"/>
+                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="8" CenterY="8"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}">
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
             </Grid>
         </Grid>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
@@ -35,14 +49,14 @@
                             <EventTrigger RoutedEvent="Button.Click">
                                 <BeginStoryboard>
                                     <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        <DoubleAnimation Storyboard.TargetName="rotateTransform5" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
                                     </Storyboard>
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Button.Triggers>
                         <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"  Foreground="{DynamicResource GlobalTextBrush}" FontSize="15" ToolTip="刷新">
                             <TextBlock.RenderTransform>
-                                <RotateTransform x:Name="rotateTransform1" CenterX="7.5" CenterY="7.5"/>
+                                <RotateTransform x:Name="rotateTransform5" CenterX="7.5" CenterY="7.5"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
@@ -51,8 +65,22 @@
                         <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Click="ButtonEdit_Click"/>
                     </Grid>
                     <Grid Width="20" Margin="0,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="Button_Click"/>
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="Button_Click">
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                        </Button>
                     </Grid>
 
                     <ComboBox  x:Name="ComboBoxFlow" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />

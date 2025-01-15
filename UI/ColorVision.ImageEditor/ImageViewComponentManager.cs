@@ -14,15 +14,11 @@ namespace ColorVision.ImageEditor
 
         public ObservableCollection<IImageViewComponent> IImageViewComponents { get; set; } = new ObservableCollection<IImageViewComponent>();
         public ObservableCollection<IImageViewOpen> IImageViewOpens { get; set; } = new ObservableCollection<IImageViewOpen>();
-        public ObservableCollection<IImageEditorFunction> IImageEditorFunctions { get; set; } = new ObservableCollection<IImageEditorFunction>();
-
 
         public ImageViewComponentManager()
         {
             IImageViewComponents.LoadImplementations();
             IImageViewOpens.LoadImplementations();
-            IImageEditorFunctions.LoadImplementations();
-
         }
     }
 }

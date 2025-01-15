@@ -1510,11 +1510,12 @@ namespace ColorVision.Engine.Templates.POI
             WaitControlText.Text = "数据正在保存";
             Thread thread = new(() =>
             {
-                PoiParam.Save2DB();
+                int ret = PoiParam.Save2DB();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     WaitControl.Visibility = Visibility.Collapsed;
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
+                    string Msg = ret ==-1 ?"保存失败,具体报错信息请查看日志": "保存成功";
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Msg, "ColorVision");
                 });
             });
             thread.Start();
