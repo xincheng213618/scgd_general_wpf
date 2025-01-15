@@ -331,10 +331,11 @@ void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
 
     int depth = src.depth();
     int lutSize = (depth == CV_8U) ? 256 : 65536;
-    cv::Mat lut(1, lutSize, (depth == CV_8U) ? CV_8UC1 : CV_16UC1);
 
     if (depth == CV_8U)
     {
+        cv::Mat lut(1, lutSize, CV_8UC1);
+
         uchar* p = lut.ptr<uchar>();
         for (int i = 0; i < lutSize; i++)
         {
@@ -344,17 +345,20 @@ void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
     }
     else if (depth == CV_16U)
     {
+        cv::Mat lut(1, lutSize, CV_16UC1);
         ushort* p = lut.ptr<ushort>();
         for (int i = 0; i < lutSize; i++)
         {
             p[i] = cv::saturate_cast<ushort>(pow(i / 65535.0, adjustedGamma) * 65535.0);
         }
         dst.create(src.size(), src.type());
+
+        int channels = src.channels();
         for (int y = 0; y < src.rows; y++)
         {
             const ushort* srcRow = src.ptr<ushort>(y);
             ushort* dstRow = dst.ptr<ushort>(y);
-            for (int x = 0; x < src.cols; x++)
+            for (int x = 0; x < src.cols * channels; x++)
             {
                 dstRow[x] = p[srcRow[x]];
             }
