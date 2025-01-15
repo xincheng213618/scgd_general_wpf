@@ -14,14 +14,14 @@
     <ApplicationDefinition Remove="App.xaml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ColorVision.ImageEditor" Version="1.1.9.18" />
+  </ItemGroup>
+
 	<ItemGroup>
 	<Page Include="App.xaml">
 	<Generator>MSBuild:Compile</Generator>
 	</Page>
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 	</ItemGroup>
 
   <ItemGroup>
