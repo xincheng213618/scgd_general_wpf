@@ -187,11 +187,13 @@ namespace ColorVision.UI.PropertyEditor
                 {
                     var openFileDialog = new Microsoft.Win32.OpenFileDialog();
                     string Filepath = (string)property.GetValue(obj);
+#if NET8_0
+                    ///8.0才有这个属性
                     if (File.Exists(Filepath))
                     {
                         openFileDialog.DefaultDirectory = Directory.GetDirectoryRoot(Filepath);
                     }
-
+#endif
                     if (openFileDialog.ShowDialog() == true)
                     {
                         property.SetValue(obj, openFileDialog.FileName);

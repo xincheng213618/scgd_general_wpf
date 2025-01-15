@@ -1,54 +1,55 @@
 <Project Sdk="Microsoft.NET.Sdk">
+	
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-windows;net6.0-windows;net9.0-windows</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <ImplicitUsings>enable</ImplicitUsings>
-	 <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	 <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
-	 <IncludeSymbols>True</IncludeSymbols>
-	 <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
+	<ItemGroup>
+		<None Remove="Assets\Image\background0.png" />
+		<None Remove="Assets\Image\ColorVision.ico" />
+		<None Remove="Assets\Image\ColorVision1.ico" />
+		<None Remove="Assets\Image\归档查询.png" />
+		<None Remove="Assets\Image\综合查询.png" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Remove="Assets\Image\background0.png" />
-    <None Remove="Assets\Image\ColorVision.ico" />
-    <None Remove="Assets\Image\ColorVision1.ico" />
-    <None Remove="Assets\Image\归档查询.png" />
-    <None Remove="Assets\Image\综合查询.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>PublicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Resource Include="Assets\Image\background0.png">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
-    <Resource Include="Assets\Image\ColorVision.ico" />
-    <Resource Include="Assets\Image\ColorVision1.ico" />
-    <Resource Include="Assets\Image\归档查询.png" />
-    <Resource Include="Assets\Image\综合查询.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="Assets\Image\background0.png">
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Assets\Image\ColorVision.ico" />
+		<Resource Include="Assets\Image\ColorVision1.ico" />
+		<Resource Include="Assets\Image\归档查询.png" />
+		<Resource Include="Assets\Image\综合查询.png" />
+	</ItemGroup>
 
 </Project>

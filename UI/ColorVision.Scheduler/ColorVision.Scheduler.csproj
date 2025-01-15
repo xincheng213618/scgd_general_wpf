@@ -1,40 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
-	  <IncludeSymbols>True</IncludeSymbols>
-	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-windows;net6.0-windows;net9.0-windows</TargetFrameworks>
+		<OutputType>Library</OutputType>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Quartz" Version="3.13.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Quartz" Version="3.13.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Update="CreateTask.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+		<Compile Update="CreateTask.xaml.cs">
+			<SubType>Code</SubType>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>publicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Properties\Resources.resx">
+			<Generator>publicResXFileCodeGenerator</Generator>
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+		</EmbeddedResource>
+	</ItemGroup>
 
 </Project>
