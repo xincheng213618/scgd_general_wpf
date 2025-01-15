@@ -28,15 +28,15 @@ namespace ColorVision.Engine.Services.Configs
         /// <summary>
         /// 端口范围
         /// </summary>
-        [DisplayName("端口地址")]
+        [DisplayName("端口范围")]
         public string PortRange { get => _PortRange; set { _PortRange = value; NotifyPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600;  return string.Format("{0}-{1}", fromPort, fromPort + 5);  }))();
 
         /// <summary>
         /// 保存天数
         /// </summary>
-        [DisplayName("端口地址")]
+        [DisplayName("保存天数")]
         public uint SaveDays { get => _SaveDays; set { _SaveDays = value; NotifyPropertyChanged(); } }
-        private uint _SaveDays = 7;
+        private uint _SaveDays = 365;
     }
 }

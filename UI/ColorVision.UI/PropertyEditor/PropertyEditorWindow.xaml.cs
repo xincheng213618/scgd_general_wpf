@@ -105,7 +105,7 @@ namespace ColorVision.UI.PropertyEditor
                         {
                             dockPanel = GenBoolProperties(property, obj);
                         }
-                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
                         {
                             dockPanel = GenTextboxProperties(property, obj);
                         }
