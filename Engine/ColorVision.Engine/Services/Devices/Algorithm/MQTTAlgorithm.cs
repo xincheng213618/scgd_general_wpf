@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using ColorVision.Engine.MySql.ORM;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -53,6 +54,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             {
                                 data.Files.Reverse();
                                 RawImageFiles = data.Files;
+                                foreach (var item in RawImageFiles)
+                                {
+                                    if (!ImageFiles.Contains(item))
+                                        ImageFiles.Add(item);
+                                }
                             });
                             break;
                         case FileExtType.Src:
@@ -62,6 +68,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                             {
                                 data.Files.Reverse();
                                 CIEImageFiles = data.Files;
+                                foreach (var item in CIEImageFiles)
+                                {
+                                    if (!ImageFiles.Contains(item))
+                                        ImageFiles.Add(item);
+                                }
                             });
                             break;
                         case FileExtType.Calibration:
@@ -100,6 +111,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
+        public ObservableCollection<string> ImageFiles { get => _ImageFiles; set { _ImageFiles = value; NotifyPropertyChanged(); } }
+        private ObservableCollection<string> _ImageFiles = new ObservableCollection<string>();
 
         public List<string> RawImageFiles { get => _RawImageFiles; set { _RawImageFiles = value; NotifyPropertyChanged(); } } 
         private List<string> _RawImageFiles = new List<string>();

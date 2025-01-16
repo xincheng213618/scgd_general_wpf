@@ -130,6 +130,7 @@ namespace ColorVision.Engine.Templates.Ghost
         {
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
             IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
+            IAlgorithm.DService.GetCIEFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
