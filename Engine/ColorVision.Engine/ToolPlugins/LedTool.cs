@@ -21,7 +21,7 @@ namespace ColorVision.Engine.ToolPlugins
     public class LedToolConfig : ViewModelBase, IConfig
     {
         
-        public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();
+        public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();   
 
         [DisplayName("灯珠数据文件"),PropertyEditorType(PropertyEditorType.TextSelectFile)]
         public string SelectedPath { get => _SelectedPath; set { _SelectedPath = value; NotifyPropertyChanged(); } }

@@ -3,7 +3,9 @@ using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -26,6 +28,9 @@ namespace ColorVision.Engine.Templates.Ghost
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateGhost.Params;
             ComboxTemplate.SelectedIndex = 0;
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {

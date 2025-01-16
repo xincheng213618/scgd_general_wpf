@@ -10,7 +10,9 @@
              d:DesignHeight="100" d:DesignWidth="280" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
+
             <DockPanel Margin="0,2">
+               
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip=""/>
@@ -18,6 +20,10 @@
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
+            </DockPanel>
+            <DockPanel Margin="0,2">
+                <TextBlock Text="CVOLED_COLOR" Width="60"/>
+                <ComboBox  x:Name="ComboxCVOLEDCOLOR" SelectedValue="{Binding CVOLEDCOLOR}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
             </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
