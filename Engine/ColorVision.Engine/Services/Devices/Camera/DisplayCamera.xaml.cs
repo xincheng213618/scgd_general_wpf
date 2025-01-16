@@ -276,17 +276,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 ButtonProgressBarOpen.Start();
                 ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.Instance.OpenTime; 
                 ServicesHelper.SendCommand(button,msgRecord);
-                MsgRecordSucessChangedHandler msgRecordStateChangedHandler = null;
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
                     ButtonOpen.Visibility = Visibility.Collapsed;
                     ButtonClose.Visibility = Visibility.Visible;
                     StackPanelOpen.Visibility = Visibility.Visible;
-                    msgRecord.MsgSucessed -= msgRecordStateChangedHandler;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarOpen.Stop();
                     DisplayCameraConfig.Instance.OpenTime = ButtonProgressBarOpen.Elapsed;
                 };
-                msgRecord.MsgSucessed += msgRecordStateChangedHandler;
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
             }
         }
