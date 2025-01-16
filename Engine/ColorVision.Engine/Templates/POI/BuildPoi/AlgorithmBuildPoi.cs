@@ -12,6 +12,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
+    public struct PointFloat
+    {
+        public float X { get; set; }
+
+        public float Y { get; set; }
+
+        public PointFloat(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
     public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "关注点布点";
