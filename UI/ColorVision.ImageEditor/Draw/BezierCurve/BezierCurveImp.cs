@@ -82,6 +82,7 @@ namespace ColorVision.ImageEditor.Draw
             {
                 DVBezierCurveCache = new DVBezierCurve() { AutoAttributeChanged = false };
                 DVBezierCurveCache.Points.Add(MouseDownP);
+                DVBezierCurveCache.Points.Add(MouseDownP);
 
                 DVBezierCurveCache.Attribute.Pen = new Pen(Brushes.Red, 1 / ZoomboxSub.ContentMatrix.M11);
                 DVBezierCurveCache.Render();
