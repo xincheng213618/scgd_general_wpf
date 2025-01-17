@@ -213,6 +213,7 @@ namespace ColorVision.ImageEditor
         }
 
         private DrawingVisual SelectRect = new DrawingVisual();
+        private DrawingVisual SelectRect1 = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;
@@ -423,6 +424,12 @@ namespace ColorVision.ImageEditor
                             ImageEditViewMode.SelectDrawingVisual = visual;
                             drawingVisual.Pen.Brush = Brushes.Yellow;
                             drawingVisual.Render();
+
+                            //if (!drawCanvas.ContainsVisual(SelectRect1))
+                            //{
+                            //    drawCanvas.AddVisual(SelectRect1,false);
+                            //}
+                            //ImageEditViewMode.DrawSelectRect(SelectRect1, VisualTreeHelper.GetDescendantBounds(visual));
                         }
 
                         if (ImageEditViewMode.SelectDrawingVisual is DVCircle Circl)
@@ -595,6 +602,7 @@ namespace ColorVision.ImageEditor
 
                         drawCanvas.RemoveVisual(SelectRect,false);
                     }
+
 
                     if (ImageEditViewMode.DrawPolygon)
                     {
