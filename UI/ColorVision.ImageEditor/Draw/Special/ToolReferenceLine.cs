@@ -38,8 +38,8 @@ namespace ColorVision.Util.Draw.Special
             Select0Command = new RelayCommand(a => SetMode(0));
             Select1Command = new RelayCommand(a => SetMode(1));
             Select2Command = new RelayCommand(a => SetMode(2));
-
         }
+
 
         private void SetMode(int i)
         {

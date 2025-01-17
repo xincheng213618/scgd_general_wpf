@@ -68,6 +68,9 @@ namespace ColorVision.ImageEditor.Draw
 
         private DrawCanvas Image { get; set; }
 
+        private BezierCurveImp BezierCurveImp { get; set; }
+
+
         public MouseMagnifier MouseMagnifier { get; set; }
 
         public Crosshair Crosshair { get; set; }
@@ -119,6 +122,9 @@ namespace ColorVision.ImageEditor.Draw
             ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(this,zoombox, drawCanvas);
+
+            BezierCurveImp = new BezierCurveImp(this, zoombox, drawCanvas);
+
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
             ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
@@ -824,6 +830,22 @@ namespace ColorVision.ImageEditor.Draw
                     LastChoice = nameof(DrawPolygon);
                 }
 
+                NotifyPropertyChanged();
+            }
+        }
+
+        public bool DrawBezierCurve
+        {
+            get => BezierCurveImp.IsShow;
+            set
+            {
+                if (BezierCurveImp.IsShow == value) return;
+                BezierCurveImp.IsShow = value;
+                if (value)
+                {
+                    ImageEditMode = true;
+                    LastChoice = nameof(DrawBezierCurve);
+                }
                 NotifyPropertyChanged();
             }
         }

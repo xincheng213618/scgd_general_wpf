@@ -3,12 +3,8 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-
-
     public class DVDatumCircle : DrawingVisualBase<CircleProperties>, IDrawingVisualDatum, ICircle
     {
-        public BaseProperties BaseAttribute => Attribute;
-
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
