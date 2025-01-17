@@ -12,17 +12,19 @@
 #include <ctime>
 using namespace cv;
 
-int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
+int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
 {
+    int depth = src.depth();
+    int lutSize = (depth == CV_8U) ? 255 : 65535;
     // 创建输入图像的cv::Mat
     // 处理图像，绘制圆形
     for (int i = 0; i < pointCount/2; ++i)
     {
         int x = points[i * 2];
         int y = points[i * 2 + 1];
-        cv::circle(img, cv::Point(x, y), radius, cv::Scalar(0, 0, 255), thickness);
+        cv::circle(src, cv::Point(x, y), radius, cv::Scalar(0, 0, lutSize), thickness);
     }
-    dst = img;
+    dst = src;
     return 0; // 成功
 }
 

@@ -53,7 +53,7 @@ namespace ColorVision
         public static extern int M_ExtractChannel(HImage image, out HImage hImage, int channel);
        
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radio, int[] points, int pointCount, int thickness);
+        public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radius, int[] points, int pointCount, int thickness);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, int scaleFactor , int targetPixelsX, int targetPixelsY);

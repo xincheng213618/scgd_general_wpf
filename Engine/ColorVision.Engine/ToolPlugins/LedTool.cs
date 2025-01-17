@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.UI;
@@ -20,16 +22,24 @@ namespace ColorVision.Engine.ToolPlugins
     [DisplayName("绘制")]
     public class LedToolConfig : ViewModelBase, IConfig
     {
-        
-        public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();   
 
-        [DisplayName("灯珠数据文件"),PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public static LedToolConfig Instance => ConfigService.Instance.GetRequiredService<LedToolConfig>();
+
+        [DisplayName("灯珠数据文件"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
         public string SelectedPath { get => _SelectedPath; set { _SelectedPath = value; NotifyPropertyChanged(); } }
         private string _SelectedPath;
 
         [DisplayName("图像文件"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
         public string SelectedPath1 { get => _SelectedPath1; set { _SelectedPath1 = value; NotifyPropertyChanged(); } }
         private string _SelectedPath1;
+
+        [DisplayName("半径"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public int Radius { get => _Radius; set { _Radius = value; NotifyPropertyChanged(); } }
+        private int _Radius = 4;
+
+        [DisplayName("宽度"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public int Thickness { get => _Thickness; set { _Thickness = value; NotifyPropertyChanged(); } }
+        private int _Thickness = 1;
 
     }
 
@@ -70,6 +80,7 @@ namespace ColorVision.Engine.ToolPlugins
 
         public override void Execute()
         {
+            Points = new List<List<Point>>();
             new PropertyEditorWindow(LedToolConfig.Instance).ShowDialog();
 
             if (!File.Exists(LedToolConfig.Instance.SelectedPath))
@@ -83,6 +94,7 @@ namespace ColorVision.Engine.ToolPlugins
                 MessageBox.Show("找不到图像文件");
                 return;
             }
+            int count = 0;
             try
             {
                 if (File.Exists(LedToolConfig.Instance.SelectedPath))
@@ -101,6 +113,7 @@ namespace ColorVision.Engine.ToolPlugins
                             if (double.TryParse(xy[i], out double x) && double.TryParse(xy[i + 1], out double y))
                             {
                                 points.Add(new Point(x, y));
+                                count++;
                             }
                         }
                         Points.Add(points);
@@ -127,10 +140,30 @@ namespace ColorVision.Engine.ToolPlugins
                 MessageBox.Show("图像文件打开失败");
                 return;
             }
+            int z = 0;
+            int[] ints = new int[count * 2];
+            for (int i = 0; i < Points.Count; i++)
+            {
+                for (int j = 0; j < Points[i].Count; j++)
+                {
+                    ints[2 * z] = (int)Points[i][j].X;
+                    ints[2 * z + 1] = (int)Points[i][j].Y;
+                    z += 1;
+                }
+            }
+
+
+            System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+            saveFileDialog.Filter = "PNG|*.png";
+            saveFileDialog.FileName = "test.png";
+            if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                int ret = OpenCVMediaHelper.M_DrawPoiImage((HImage)hImage, out HImage hImageProcessed, LedToolConfig.Instance.Radius, ints, ints.Length, LedToolConfig.Instance.Thickness);
+                hImageProcessed.ToWriteableBitmap().SaveImageSourceToFile(saveFileDialog.FileName);
+            }
 
 
         }
-
     }
 }
 
