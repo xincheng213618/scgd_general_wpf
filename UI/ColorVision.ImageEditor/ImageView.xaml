@@ -353,8 +353,6 @@
             <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
                 <Button Content="应用当前图片" Click="Apply_Click"  Margin="0,0,10,0"/>
                 <Button Content="重新加载" Click="Reload_Click" />
-                <Button Content="Set" Click="Set_Click" />
-
             </StackPanel>
 
         </Grid>

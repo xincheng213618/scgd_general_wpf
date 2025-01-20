@@ -1421,11 +1421,5 @@ namespace ColorVision.ImageEditor
         {
             DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
         }
-
-        private void Set_Click(object sender, RoutedEventArgs e)
-        {
-            RenderOptions.SetBitmapScalingMode(ImageShow, BitmapScalingMode.NearestNeighbor);
-            ImageShow.InvalidateVisual();
-        }
     }
 }

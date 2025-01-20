@@ -169,7 +169,7 @@ namespace ColorVision.ImageEditor.Draw
         public List<MenuItem> GenContextMenu()
         {
             List<MenuItem> ContextMenus = new List<MenuItem>();
-            MenuItem menuItemZoom = new() { Header = "缩放工具", Command = SaveImageCommand };
+            MenuItem menuItemZoom = new() { Header = "缩放工具" };
             menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
@@ -184,6 +184,35 @@ namespace ColorVision.ImageEditor.Draw
             ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
             ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });
             ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
+
+
+
+            MenuItem menuItemBitmapScalingMode = new() { Header = "點陣圖縮放模式"};
+
+
+            void update()
+            {
+                var ime = RenderOptions.GetBitmapScalingMode(Image);
+
+                menuItemBitmapScalingMode.Items.Clear();
+                foreach (var item in Enum.GetValues(typeof(BitmapScalingMode)).Cast<BitmapScalingMode>().GroupBy(mode => (int)mode) .Select(group => group.First()))
+                {
+                    MenuItem menuItem1 = new() { Header = item.ToString() };
+                    if (ime != item)
+                    {
+                        menuItem1.Click += (s, e) =>
+                        {
+                            RenderOptions.SetBitmapScalingMode(Image, item);
+                        };
+                    }
+                    menuItem1.IsChecked = ime == item;
+                    menuItemBitmapScalingMode.Items.Add(menuItem1);
+                }
+            }
+
+            menuItemBitmapScalingMode.SubmenuOpened +=(s,e) => update();
+            update();
+            ContextMenus.Add(menuItemBitmapScalingMode);
             return ContextMenus;
         }
 
