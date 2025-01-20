@@ -1376,5 +1376,56 @@ namespace ColorVision.ImageEditor
         {
             InvertImag();
         }
+
+
+        void ThresholdImg()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                double thresh = thresholdSlider.Value;
+                double maxval = 65535;
+                int type = 0;
+                log.Info($"InvertImag");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_Threshold((HImage)HImageCache, out HImage hImageProcessed, thresh, maxval,type);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"InvertImag {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+        private void Threshold_Click(object sender, RoutedEventArgs e)
+        {
+            ThresholdImg();
+        }
+
+        private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
+        }
+
+        private void Set_Click(object sender, RoutedEventArgs e)
+        {
+            RenderOptions.SetBitmapScalingMode(ImageShow, BitmapScalingMode.NearestNeighbor);
+            ImageShow.InvalidateVisual();
+        }
     }
 }

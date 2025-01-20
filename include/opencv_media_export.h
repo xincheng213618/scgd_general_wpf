@@ -46,5 +46,8 @@ extern "C" COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage
 
 extern "C" COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage);
 
+extern "C" COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh, double maxval, int type);
+
+
 
 

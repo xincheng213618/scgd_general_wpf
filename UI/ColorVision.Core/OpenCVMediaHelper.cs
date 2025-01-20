@@ -112,5 +112,16 @@ namespace ColorVision
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_InvertImage(HImage image, out HImage hImage);
 
+
+        /// <summary>
+        /// 二值化
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_Threshold(HImage image, out HImage hImage, double thresh, double maxval, int type);
+        
+
     }
 }

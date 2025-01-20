@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CS8602
 
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
+using ColorVision.Net;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
@@ -24,14 +26,33 @@ namespace ColorVision.Engine.Templates.Ghost
         {
             if (filePath == null)
                 return;
-            int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
-            if (i != 0) return;
-            Application.Current.Dispatcher.Invoke(() =>
+            if (CVFileUtil.IsCIEFile(filePath))
             {
-                ImageView.SetImageSource(hImage.ToWriteableBitmap());
-                OpenCVHelper.FreeHImageData(hImage.pData);
-                hImage.pData = IntPtr.Zero;
-            });
+                HImage hImage1 = new NetFileUtil().OpenLocalCVFile(filePath).ToWriteableBitmap().ToHImage();
+
+                int i = OpenCVHelper.GhostImage(hImage1, out HImage hImage, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY);
+                if (i != 0) return;
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    ImageView.SetImageSource(hImage.ToWriteableBitmap());
+                    OpenCVHelper.FreeHImageData(hImage.pData);
+                    hImage1.Dispose();
+                    hImage.pData = IntPtr.Zero;
+                    ImageView.UpdateZoomAndScale();
+                });
+            }
+            else
+            {
+                int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
+                if (i != 0) return;
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    ImageView.SetImageSource(hImage.ToWriteableBitmap());
+                    OpenCVHelper.FreeHImageData(hImage.pData);
+                    hImage.pData = IntPtr.Zero;
+                    ImageView.UpdateZoomAndScale();
+                });
+            }
         }
 
         public static void SaveCsv(IList<AlgResultGhostModel> algResultGhostModels,string FileName)
@@ -47,22 +68,26 @@ namespace ColorVision.Engine.Templates.Ghost
             foreach (var item in algResultGhostModels)
             {
                 List<string> content = new List<string>();
-                content.Add(item.Id.ToString());
-                content.Add(item.LEDCenters);
-                content.Add(item.LEDBlobGray);
-                content.Add(item.GhostAverageGray);
+                content.Add(EscapeCsvField(item.Id.ToString()));
+                content.Add(EscapeCsvField(item.LEDCenters));
+                content.Add(EscapeCsvField(item.LEDBlobGray));
+                content.Add(EscapeCsvField(item.GhostAverageGray));
                 csvBuilder.AppendLine(string.Join(",", content));
             }
             csvBuilder.AppendLine();
             csvBuilder.AppendLine();
-
-
-
-
             File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-
+        private static string EscapeCsvField(string field)
+        {
+            if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
+            {
+                field = field.Replace("\"", "\"\"");
+                return $"\"{field}\"";
+            }
+            return field;
+        }
 
         public void Handle(AlgorithmView view, AlgorithmResult result)
         {
@@ -73,6 +98,7 @@ namespace ColorVision.Engine.Templates.Ghost
                     view.ImageView.OpenImage(result.FilePath);
                 return;
             }
+
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -141,7 +167,7 @@ namespace ColorVision.Engine.Templates.Ghost
 
             }
             List<string> header = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
-            List<string> bdHeader = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
+            List<string> bdHeader = new() { "LEDCenters", "LEDBlobGray", "GhostAverageGray" };
 
             if (view.listViewSide.View is GridView gridView)
             {

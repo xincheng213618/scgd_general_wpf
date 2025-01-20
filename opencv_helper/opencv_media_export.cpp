@@ -329,3 +329,33 @@ COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 	return 0;
 }
 
+/// <summary>
+/// ¶þÖµ»¯
+/// </summary>
+/// <param name="img"></param>
+/// <param name="outImage"></param>
+/// <returns></returns>
+COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh, double maxval, int type)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	cv::Mat dst;
+	cv::threshold(mat, dst, thresh, maxval, type);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	cv::Mat dst;
+	cv::cvtColor(mat, dst, cv::COLOR_RGBA2GRAY);
+
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+
+
