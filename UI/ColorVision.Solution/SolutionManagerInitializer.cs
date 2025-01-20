@@ -1,6 +1,5 @@
 ﻿using ColorVision.UI;
 using System.IO;
-using System.Windows;
 using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution

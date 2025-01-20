@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.ImageEditor;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -15,12 +14,11 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using ScottPlot;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -36,7 +34,72 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public int ExpTimeParamTemplateIndex { get; set; }
         public int ExpTimeParamTemplate1Index { get; set; }
 
+        public double OpenTime { get; set; } = 10;
+        public double CloseTime { get; set; } = 10;
 
+    }
+
+
+    public class ButtonProgressBar:IDisposable
+    {
+        public ProgressBar ProgressBar { get; set; }
+        public Button Button { get; set; }
+
+        public ButtonProgressBar(ProgressBar progressBar, Button button)
+        {
+            ProgressBar = progressBar;
+            Button = button;
+
+            TimerGetData = new DispatcherTimer();
+            TimerGetData.Interval = TimeSpan.FromMilliseconds(10); // 定时器间隔
+            TimerGetData.Tick += GetData_Tick;
+        }
+
+        public void Start()
+        {
+            Button.Visibility = Visibility.Hidden;
+            ProgressBar.Visibility = Visibility.Visible;
+            ProgressBar.Value = 1;
+
+            ProgressBar.Value = 0;
+            _startTime = DateTime.Now;
+            TimerGetData.Start();
+        }
+
+        public void Stop()
+        {
+            Button.Visibility = Visibility.Visible;
+            ProgressBar.Visibility = Visibility.Collapsed;
+            ProgressBar.Value = 1;
+            TimerGetData.Stop();
+            Elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
+        }
+        public double Elapsed { get; set; }
+
+        DateTime _startTime;
+        DispatcherTimer TimerGetData;
+        public double TargetTime { get; set; }
+
+        void GetData_Tick(object? sender, EventArgs e)
+        {
+            var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
+            if (elapsed >= TargetTime)
+            {
+                ProgressBar.Value = 99;
+            }
+            else
+            {
+                ProgressBar.Value = (elapsed / TargetTime) * 100;
+            }
+        }
+
+        public void Dispose()
+        {
+            TimerGetData.Tick -= GetData_Tick;
+            TimerGetData.Stop();
+            TimerGetData = null;
+            GC.SuppressFinalize(this);
+        }
     }
 
 
@@ -51,7 +114,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
-        private DateTime _startTime;
 
         public DisplayCamera(DeviceCamera device)
         {
@@ -62,34 +124,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
 
-
-            TimerGetData = new DispatcherTimer();
-            TimerGetData.Interval = TimeSpan.FromMilliseconds(10); // 定时器间隔
-            TimerGetData.Tick += GetData_Tick;
         }
-
-        double GetDataTime;
-
-
-        private void GetData_Tick(object? sender, EventArgs e)
-        {
-            var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
-            if (elapsed >= GetDataTime)
-            {
-                ProgressBar.Value = 99;
-            }
-            else
-            {
-                ProgressBar.Value = (elapsed / GetDataTime) * 100;
-            }
-        }
-        private DispatcherTimer TimerGetData;
-
+        ButtonProgressBar ButtonProgressBarGetData { get; set; }
+        ButtonProgressBar ButtonProgressBarOpen { get; set; }
+        ButtonProgressBar ButtonProgressBarClose { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
             this.AddViewConfig(View, ComboxView);
+
+            ButtonProgressBarGetData = new ButtonProgressBar(ProgressBar, TakePhotoButton);
+            ButtonProgressBarOpen = new ButtonProgressBar(ProgressBarOpen, OpenButton);
+            ButtonProgressBarClose = new ButtonProgressBar(ProgressBarClose, CloseButton);
 
             void UpdateTemplate()
             {
@@ -142,8 +189,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
-                        CroppedBitmaps.Clear();
-                        smallWindowImages.Clear();
                         break;
                     case DeviceStatusType.LiveOpened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
@@ -228,16 +273,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                ButtonProgressBarOpen.Start();
+                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.Instance.OpenTime; 
                 ServicesHelper.SendCommand(button,msgRecord);
-                MsgRecordSucessChangedHandler msgRecordStateChangedHandler = null;
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
                     ButtonOpen.Visibility = Visibility.Collapsed;
                     ButtonClose.Visibility = Visibility.Visible;
                     StackPanelOpen.Visibility = Visibility.Visible;
-                    msgRecord.MsgSucessed -= msgRecordStateChangedHandler;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                    ButtonProgressBarOpen.Stop();
+                    DisplayCameraConfig.Instance.OpenTime = ButtonProgressBarOpen.Elapsed;
                 };
-                msgRecord.MsgSucessed += msgRecordStateChangedHandler;
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
             }
         }
@@ -248,13 +297,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
             TakePhotoButton.Visibility = Visibility.Hidden;
-            ProgressBar.Visibility = Visibility.Visible;
-            ProgressBar.Value = 1;
-
-            ProgressBar.Value = 0;
-            _startTime = DateTime.Now;
-            TimerGetData.Start();
-
 
             if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
             {
@@ -272,25 +314,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 param = new CalibrationParam() { Id = -1, Name = "Empty" };
             }
 
-
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
 
-            GetDataTime = Device.Config.ExpTime + DisplayCameraConfig.Instance.TakePictureDelay;
+            ButtonProgressBarGetData.Start();
+            ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.Instance.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.Instance.TakePictureDelay}");
 
             ServicesHelper.SendCommand(button, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
-                TakePhotoButton.Visibility = Visibility.Visible;
-                ProgressBar.Visibility = Visibility.Collapsed;
-                ProgressBar.Value = 1;
-                TimerGetData.Stop();
-                var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
-                DisplayCameraConfig.Instance.TakePictureDelay = elapsed - Device.Config.ExpTime;
-
+                ButtonProgressBarGetData.Stop();
+                DisplayCameraConfig.Instance.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
                 if (s == MsgRecordState.Timeout)
                 {
                     MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
@@ -358,9 +395,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                                 Device.CameraVideoControl.Close();
                                 DService.Close();
+                                DService.IsVideoOpen = false;
                             }
                             else
                             {
+                                DService.IsVideoOpen = true;
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
                                 StackPanelOpen.Visibility = Visibility.Visible;
@@ -380,35 +419,37 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-
-        List<CroppedBitmap> CroppedBitmaps = new List<CroppedBitmap>();
-        List<ImageView> smallWindowImages = new List<ImageView>();
-
+        bool isfist = false;
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
+            if (!isfist)
+            {
+                View.ImageView.ImageEditViewMode.ZoomUniform.Execute(this);
+            }
+            isfist = true;
 
-            if (CroppedBitmaps.Count == 0)
-            {
-                foreach (var item in Device.Config.ROIParams)
-                {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
-                    ImageView smallWindowImage = new ImageView() { };
-                    smallWindowImage.ImageShow.Source = croppedBitmap;
-                    CroppedBitmaps.Add(croppedBitmap);
-                    smallWindowImages.Add(smallWindowImage);
-                    Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
-                    window.Show();
-                }
-            }
-            else
-            {
-                for (int i = 0; i < CroppedBitmaps.Count; i++)
-                {
-                    CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
-                    smallWindowImages[i].ImageShow.Source = croppedBitmap;
-                }
-            }
+            //if (CroppedBitmaps.Count == 0)
+            //{
+            //    foreach (var item in Device.Config.ROIParams)
+            //    {
+            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
+            //        ImageView smallWindowImage = new ImageView() { };
+            //        smallWindowImage.ImageShow.Source = croppedBitmap;
+            //        CroppedBitmaps.Add(croppedBitmap);
+            //        smallWindowImages.Add(smallWindowImage);
+            //        Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
+            //        window.Show();
+            //    }
+            //}
+            //else
+            //{
+            //    for (int i = 0; i < CroppedBitmaps.Count; i++)
+            //    {
+            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
+            //        smallWindowImages[i].ImageShow.Source = croppedBitmap;
+            //    }
+            //}
 
         }
 
@@ -490,7 +531,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (DService.IsVideoOpen)
                 Device.CameraVideoControl.Close();
+
             MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
+            ButtonProgressBarClose.Start();
+            ButtonProgressBarClose.TargetTime = DisplayCameraConfig.Instance.CloseTime;
             if (msgRecord != null)
             {
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
@@ -507,6 +551,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     ButtonClose.Visibility = Visibility.Collapsed;
                     StackPanelOpen.Visibility = Visibility.Collapsed;
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                    ButtonProgressBarClose.Stop();
+                    DisplayCameraConfig.Instance.CloseTime = ButtonProgressBarClose.Elapsed;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             }

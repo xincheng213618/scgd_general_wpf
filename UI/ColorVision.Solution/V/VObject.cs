@@ -7,8 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
-using System.Windows;
-using System.IO;
 
 namespace ColorVision.Solution.V
 {

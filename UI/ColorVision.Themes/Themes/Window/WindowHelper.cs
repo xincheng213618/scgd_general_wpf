@@ -1,12 +1,12 @@
 ﻿
 
+using ColorVision.Common.NativeMethods;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
-using ColorVision.Common.NativeMethods;
-using static ColorVision.Common.NativeMethods.User32;
+using static ColorVision.Themes.NativeMethods.User32;
 
 namespace ColorVision.Themes.Controls
 {
@@ -88,7 +88,7 @@ namespace ColorVision.Themes.Controls
         public static bool IsForegroundWindowBelongToSelf()
         {
             var hwnd = GetForegroundWindow();
-            if (hwnd == nint.Zero)
+            if (hwnd == IntPtr.Zero)
                 return false;
 
             GetWindowThreadProcessId(hwnd, out var procId);

@@ -12,17 +12,19 @@
 #include <ctime>
 using namespace cv;
 
-int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
+int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
 {
+    int depth = src.depth();
+    int lutSize = (depth == CV_8U) ? 255 : 65535;
     // 创建输入图像的cv::Mat
     // 处理图像，绘制圆形
     for (int i = 0; i < pointCount/2; ++i)
     {
         int x = points[i * 2];
         int y = points[i * 2 + 1];
-        cv::circle(img, cv::Point(x, y), radius, cv::Scalar(0, 0, 255), thickness);
+        cv::circle(src, cv::Point(x, y), radius, cv::Scalar(0, 0, lutSize), thickness);
     }
-    dst = img;
+    dst = src;
     return 0; // 成功
 }
 
@@ -71,24 +73,32 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
     if (image.depth() == CV_32F) {
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
     }
-
+    cv::Mat maskGreater;
+    cv::Mat maskLess;
     if (max1 < 255) {
-        cv::Mat maskGreater = image > max1; // Change maxVal to your specific threshold
+        maskGreater = image > max1; // Change maxVal to your specific threshold
         image.setTo(cv::Scalar(255, 255, 255), maskGreater);
     }
     if (min1 > 0) {
         // Set values less than a threshold to black
-        cv::Mat maskLess = image < min1; // Change minVal to your specific threshold
+        maskLess = image < min1; // Change minVal to your specific threshold
         image.setTo(cv::Scalar(0, 0, 0), maskLess);
     }
 
     cv::applyColorMap(image, image, types);
 
+    if (max1 < 255) {
+        image.setTo(cv::Scalar(255, 255, 255), maskGreater);
+    }
+    if (min1 > 0) {
+        // Set values less than a threshold to black
+        image.setTo(cv::Scalar(0, 0, 0), maskLess);
+    }
 
     return 0;
 }
 
-void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, float greenBalance, float blueBalance) {
+void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, double redBalance, double greenBalance, double blueBalance) {
     // Split the source image into BGR channels
     std::vector<cv::Mat> channels(3);
     cv::split(src, channels);
@@ -110,7 +120,7 @@ void AdjustWhiteBalance(const cv::Mat& src, cv::Mat& dst, float redBalance, floa
 
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
-    CV_Assert(!src.empty() && src.channels() == 3);
+    CV_Assert(!src.empty() && src.channels() >= 3);
     spdlog::info("AutoLevelsAdjust");
 
     //统计灰度直方图
@@ -308,5 +318,57 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
     double beta = -min_gray * alpha;
 
     image.convertTo(image, -1, alpha, beta);
+}
+
+void AdjustBrightnessContrast(const cv::Mat& src, cv::Mat& dst, double alpha, double beta)
+{
+    src.convertTo(dst, src.type(), alpha, beta);
+}
+
+void ApplyGammaCorrection(const cv::Mat& src, cv::Mat& dst, double gamma)
+{
+    CV_Assert(gamma >= 0);
+
+    double adjustedGamma = 1.0 / gamma;
+
+    int depth = src.depth();
+    int lutSize = (depth == CV_8U) ? 256 : 65536;
+
+    if (depth == CV_8U)
+    {
+        cv::Mat lut(1, lutSize, CV_8UC1);
+
+        uchar* p = lut.ptr<uchar>();
+        for (int i = 0; i < lutSize; i++)
+        {
+            p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, adjustedGamma) * 255.0);
+        }
+        cv::LUT(src, lut, dst);
+    }
+    else if (depth == CV_16U)
+    {
+        cv::Mat lut(1, lutSize, CV_16UC1);
+        ushort* p = lut.ptr<ushort>();
+        for (int i = 0; i < lutSize; i++)
+        {
+            p[i] = cv::saturate_cast<ushort>(pow(i / 65535.0, adjustedGamma) * 65535.0);
+        }
+        dst.create(src.size(), src.type());
+
+        int channels = src.channels();
+        for (int y = 0; y < src.rows; y++)
+        {
+            const ushort* srcRow = src.ptr<ushort>(y);
+            ushort* dstRow = dst.ptr<ushort>(y);
+            for (int x = 0; x < src.cols * channels; x++)
+            {
+                dstRow[x] = p[srcRow[x]];
+            }
+        }
+    }
+    else
+    {
+        CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported image depth");
+    }
 }
 

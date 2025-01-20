@@ -8,6 +8,7 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
 using log4net;
 using Microsoft.Xaml.Behaviors;
@@ -25,12 +26,55 @@ using System.Windows.Data;
 
 namespace ColorVision
 {
+    public class CommadnInitialized : IMainWindowInitialized
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(CommadnInitialized));
 
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    /// 
-    public partial class MainWindow : Window
+        public Task Initialize()
+        {
+            log.Info("CommadnInitialized");
+            try
+            {
+                var parser = ArgumentParser.GetInstance();
+                parser.AddArgument("cmd", false, "c");
+                parser.Parse();
+
+                string cmd = parser.GetValue("cmd");
+                if (cmd != null)
+                {
+                    List<IMenuItem> IMenuItems = new List<IMenuItem>();
+                    foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                    {
+                        foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                        {
+                            if (Activator.CreateInstance(type) is IMenuItem menuitem)
+                            {
+                                IMenuItems.Add(menuitem);
+                            }
+                        }
+                    }
+                    if (IMenuItems.Find(a => a.GuidId == cmd) is IMenuItem menuitem1)
+                    {
+                        log.Info($"Execute{menuitem1.Header}");
+                        menuitem1.Command?.Execute(this);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                log.Error(ex);
+            }
+
+            return Task.CompletedTask;  
+        }
+    }
+
+
+        /// <summary>
+        /// Interaction logic for MainWindow.xaml
+        /// </summary>
+        /// 
+        public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
@@ -80,7 +124,6 @@ namespace ColorVision
 
             //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
-            PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
@@ -271,5 +314,14 @@ namespace ColorVision
 
         }
 
+        private void ViewTab_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            ViewConfig.Instance.EditCommand.Execute(sender);
+        }
+
+        private void SolutionTab1_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            SolutionSetting.Instance.EditCommand.Execute(sender);
+        }
     }
 }

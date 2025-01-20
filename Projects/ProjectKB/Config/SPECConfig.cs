@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using NPOI.SS.Formula.Functions;
 
 namespace ProjectKB.Config
 {

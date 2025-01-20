@@ -1,14 +1,11 @@
 ﻿using ColorVision.Common.Algorithms;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;

@@ -3,13 +3,12 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Views;
-using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -65,22 +64,30 @@ namespace ColorVision.ImageEditor
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             if (Config != null)
+            {
+                Config.ColormapTypesChanged -= Config_ColormapTypesChanged;
                 Config.BalanceChanged -= ImageViewConfig_BalanceChanged;
+            }
             Config = imageViewConfig;
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
+            Zoombox1.DataContext = imageViewConfig;
             ImageEditViewMode.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
+            Config.ColormapTypesChanged += Config_ColormapTypesChanged;
+            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
+        }
+
+        private void Config_ColormapTypesChanged(object? sender, EventArgs e)
+        {
             var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
             string valuepath = ColormapTypes.Value;
             ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-
-            Config.BalanceChanged += ImageViewConfig_BalanceChanged;
         }
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 10, () => AdjustWhiteBalance());
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance());
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -92,7 +99,6 @@ namespace ColorVision.ImageEditor
             ToolBarRight.DataContext = ImageEditViewMode;
             ToolBarBottom.DataContext = ImageEditViewMode;
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
-            ListView1.ItemsSource = DrawingVisualLists;
             ImageEditViewMode.ClearImageEventHandler += Clear;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
@@ -111,7 +117,10 @@ namespace ColorVision.ImageEditor
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
             Drop += ImageView_Drop;
+
+            ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
         }
+
 
         public void Clear(object? sender, EventArgs e)
         {
@@ -128,8 +137,6 @@ namespace ColorVision.ImageEditor
                 {
                     if (e1.PropertyName == "IsShow")
                     {
-                        ListView1.ScrollIntoView(visual);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
                         if (visual.BaseAttribute.IsShow == true)
                         {
                             if (!ImageShow.ContainsVisual(visual1))
@@ -206,6 +213,7 @@ namespace ColorVision.ImageEditor
         }
 
         private DrawingVisual SelectRect = new DrawingVisual();
+        private DrawingVisual SelectRect1 = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;
@@ -229,7 +237,9 @@ namespace ColorVision.ImageEditor
 
                 if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
-                    var ContextMenu = new ContextMenu();
+                    Zoombox1.ContextMenu ??= new ContextMenu();
+                    Zoombox1.ContextMenu.Items.Clear();
+                    var ContextMenu = Zoombox1.ContextMenu;
                     MenuItem menuItem = new() { Header = "隐藏(_H)" };
                     menuItem.Click += (s, e) =>
                     {
@@ -243,22 +253,10 @@ namespace ColorVision.ImageEditor
                     };
                     ContextMenu.Items.Add(menuItem);
                     ContextMenu.Items.Add(menuIte2);
-                    ImageShow.ContextMenu = ContextMenu;
                 }
                 else
                 {
-                    ImageShow.ContextMenu = null;
-                }
-            }
-        }
-        private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Delete)
-            {
-                if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[ListView1.SelectedIndex] is Visual visual)
-                {
-                    ImageShow.RemoveVisual(visual);
-                    PropertyGrid2.SelectedObject = null;
+                    Zoombox1.ContextMenu.Items.Clear();
                 }
             }
         }
@@ -353,6 +351,7 @@ namespace ColorVision.ImageEditor
                     DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
                     DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
+                    DrawCircleCache.Attribute.Radius = DefalutRadius;
                     drawCanvas.AddVisual(DrawCircleCache);
 
                     SelectDrawingVisualClear();
@@ -363,7 +362,7 @@ namespace ColorVision.ImageEditor
                 if (ImageEditViewMode.DrawRect)
                 {
                     DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
+                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
@@ -404,10 +403,6 @@ namespace ColorVision.ImageEditor
                         PropertyGrid2.Refresh();
                     };
 
-                    ListView1.ScrollIntoView(drawingVisual);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
-
-
                     if (ImageEditViewMode.ImageEditMode == true)
                     {
                         if (ImageEditViewMode.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageEditViewMode.SelectDrawingVisuals.Contains(visual1))
@@ -429,6 +424,12 @@ namespace ColorVision.ImageEditor
                             ImageEditViewMode.SelectDrawingVisual = visual;
                             drawingVisual.Pen.Brush = Brushes.Yellow;
                             drawingVisual.Render();
+
+                            //if (!drawCanvas.ContainsVisual(SelectRect1))
+                            //{
+                            //    drawCanvas.AddVisual(SelectRect1,false);
+                            //}
+                            //ImageEditViewMode.DrawSelectRect(SelectRect1, VisualTreeHelper.GetDescendantBounds(visual));
                         }
 
                         if (ImageEditViewMode.SelectDrawingVisual is DVCircle Circl)
@@ -554,6 +555,12 @@ namespace ColorVision.ImageEditor
 
             }
         }
+
+        private double DefalutWidth { get; set; } = 30;
+        private double DefalutHeight { get; set; } = 30;
+        private double DefalutRadius { get; set; } = 30;
+
+
         private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
@@ -596,6 +603,7 @@ namespace ColorVision.ImageEditor
                         drawCanvas.RemoveVisual(SelectRect,false);
                     }
 
+
                     if (ImageEditViewMode.DrawPolygon)
                     {
                         if (DrawingVisualPolygonCache != null)
@@ -608,7 +616,7 @@ namespace ColorVision.ImageEditor
                     }
                     else if (ImageEditViewMode.DrawCircle)
                     {
-                        if (DrawCircleCache.Attribute.Radius == 30)
+                        if (DrawCircleCache.Attribute.Radius == DefalutRadius)
                             DrawCircleCache.Render();
 
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -626,13 +634,12 @@ namespace ColorVision.ImageEditor
                         };
                         DrawCircleCache.AutoAttributeChanged = true;
 
-                        ListView1.ScrollIntoView(DrawCircleCache);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
+                        DefalutRadius = DrawCircleCache.Radius;
 
                     }
                     else if (ImageEditViewMode.DrawRect)
                     {
-                        if (DrawingRectangleCache.Attribute.Rect.Width == 30 && DrawingRectangleCache.Attribute.Rect.Height == 30)
+                        if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                             DrawingRectangleCache.Render();
 
                         if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
@@ -650,9 +657,9 @@ namespace ColorVision.ImageEditor
                             PropertyGrid2.Refresh();
                         };
 
-                        ListView1.ScrollIntoView(DrawingRectangleCache);
-                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
 
+                        DefalutWidth = DrawingRectangleCache.Attribute.Rect.Width;
+                        DefalutHeight = DrawingRectangleCache.Attribute.Rect.Height;
                     }
 
                     drawCanvas.ReleaseMouseCapture();
@@ -663,6 +670,38 @@ namespace ColorVision.ImageEditor
                         circle.Render();
                     }
 
+                    if (ImageEditViewMode.SelectDrawingVisual != null)
+                    {
+                        if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                        {
+                            var l = MouseUpP - MouseDownP;
+
+                            Action undoaction = new Action(() =>
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
+                            });
+                            Action redoaction = new Action(() =>
+                            {
+                                var OldRect = rectangle.Rect;
+                                rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
+                            });
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
+                        }
+                        else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
+                        {
+                            var l = MouseUpP - MouseDownP;
+                            Action undoaction = new Action(() =>
+                            {
+                                Circl.Center -= l;
+                            });
+                            Action redoaction = new Action(() =>
+                            {
+                                Circl.Center += l;
+                            });
+                            ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header ="移动圆"});
+                        }
+                    }
                 }
                 if (IsRightButtonDown)
                 {
@@ -698,7 +737,7 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             Config.Properties.Clear();
-            PseudoImage = null;
+            FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
             if (HImageCache != null)
@@ -736,6 +775,7 @@ namespace ColorVision.ImageEditor
 
         public async void OpenImage(string? filePath)
         {
+            Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
             Config.FilePath = filePath;
@@ -834,7 +874,6 @@ namespace ColorVision.ImageEditor
         public void RenderContextMenu()
         {
             Zoombox1.ContextMenu ??= new ContextMenu();
-
             Zoombox1.ContextMenu.Items.Clear();
             foreach (var item in ImageEditViewMode.GetContextMenus())
             {
@@ -848,7 +887,7 @@ namespace ColorVision.ImageEditor
                 }
             }
         }
-        public ImageSource PseudoImage { get; set; }
+        public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
@@ -856,15 +895,6 @@ namespace ColorVision.ImageEditor
             RenderPseudo();
         }
 
-        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
-        {
-            PseudoColor pseudoColor = new PseudoColor(Config);
-            pseudoColor.ShowDialog();
-            var ColormapTypes = PseudoColor.GetColormapDictionary().First(x => x.Key == Config.ColormapTypes);
-            string valuepath = ColormapTypes.Value;
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.ImageEditor;component/{valuepath}", UriKind.Relative));
-            RenderPseudo();
-        }
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
             DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
@@ -879,7 +909,7 @@ namespace ColorVision.ImageEditor
                 if (Pseudo.IsChecked == false)
                 {
                     ImageShow.Source = ViewBitmapSource;
-                    PseudoImage = null;
+                    FunctionImage = null;
                     return;
                 }
 
@@ -899,16 +929,16 @@ namespace ColorVision.ImageEditor
                         {
                             if (ret == 0)
                             {
-                                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                                 {
                                     var image = hImageProcessed.ToWriteableBitmap();
                                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                     hImageProcessed.pData = IntPtr.Zero;
-                                    PseudoImage = image;
+                                    FunctionImage = image;
                                 }
                                 if (Pseudo.IsChecked == true)
                                 {
-                                    ImageShow.Source = PseudoImage;
+                                    ImageShow.Source = FunctionImage;
                                 }
                             }
                         });
@@ -1024,15 +1054,15 @@ namespace ColorVision.ImageEditor
                 {
                     if (ret == 0)
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                             hImageProcessed.pData = IntPtr.Zero;
-                            PseudoImage = image;
+                            FunctionImage = image;
                         }
-                        ImageShow.Source = PseudoImage;
+                        ImageShow.Source = FunctionImage;
                         Config.Channel = 1;
                     }
                 });
@@ -1057,7 +1087,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache != null)
@@ -1065,21 +1095,17 @@ namespace ColorVision.ImageEditor
                 int ret = OpenCVMediaHelper.M_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
-                        PseudoImage = image;
+                        FunctionImage = image;
                     }
-                    ImageShow.Source = PseudoImage;
+                    ImageShow.Source = FunctionImage;
                 }
             };
-        }
-        private void AdjustWhiteBalance_Click(object sender, RoutedEventArgs e)
-        {
-            AdjustWhiteBalance();
         }
 
         public void AdjustWhiteBalance()
@@ -1092,15 +1118,15 @@ namespace ColorVision.ImageEditor
 
                     if (ret == 0)
                     {
-                        if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                        if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
                             var image = hImageProcessed.ToWriteableBitmap();
 
                             OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                             hImageProcessed.pData = IntPtr.Zero;
-                            PseudoImage = image;
+                            FunctionImage = image;
                         }
-                        ImageShow.Source = PseudoImage;
+                        ImageShow.Source = FunctionImage;
                     }
                 };
             });
@@ -1114,7 +1140,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache != null)
@@ -1122,15 +1148,15 @@ namespace ColorVision.ImageEditor
                 int ret = OpenCVMediaHelper.M_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
                 if (ret == 0)
                 {
-                    if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
                         var image = hImageProcessed.ToWriteableBitmap();
 
                         OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                         hImageProcessed.pData = IntPtr.Zero;
-                        PseudoImage = image;
+                        FunctionImage = image;
                     }
-                    ImageShow.Source = PseudoImage;
+                    ImageShow.Source = FunctionImage;
                 }
             };
         }
@@ -1141,7 +1167,7 @@ namespace ColorVision.ImageEditor
             if (toggleButton.IsChecked == false)
             {
                 ImageShow.Source = ViewBitmapSource;
-                PseudoImage = null;
+                FunctionImage = null;
                 return;
             }
             if (HImageCache == null) return;
@@ -1149,15 +1175,15 @@ namespace ColorVision.ImageEditor
             int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
             if (ret == 0)
             {
-                if (!HImageExtension.UpdateWriteableBitmap(PseudoImage, hImageProcessed))
+                if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                 {
                     var image = hImageProcessed.ToWriteableBitmap();
 
                     OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                     hImageProcessed.pData = IntPtr.Zero;
-                    PseudoImage = image;
+                    FunctionImage = image;
                 }
-                ImageShow.Source = PseudoImage;
+                ImageShow.Source = FunctionImage;
             }
         }
 
@@ -1194,6 +1220,206 @@ namespace ColorVision.ImageEditor
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(), e.NewValue);
+        }
+
+        public void ApplyGammaCorrection()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+
+                // 首先获取滑动条的值，这需要在UI线程中执行
+                double Gamma = GammaSlider.Value;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+        private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            if (FunctionImage is WriteableBitmap writeableBitmap)
+            {
+                ViewBitmapSource = writeableBitmap;
+                ImageShow.Source = ViewBitmapSource; ;
+                HImageCache = writeableBitmap.ToHImage();
+                Config.Channel = HImageCache.Value.channels;
+                FunctionImage = null;
+                GammaSlider.Value = 1;
+                Config.RedBalance = 1;
+                Config.GreenBalance = 1;
+                Config.BlueBalance = 1;
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            GammaSlider.Value = 1;
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            Config.RedBalance = 1;
+            Config.GreenBalance = 1;
+            Config.BlueBalance = 1;
+        }
+
+        private void Reload_Click(object sender, RoutedEventArgs e)
+        {
+            OpenImage(Config.FilePath);
+        }
+
+        private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+        }
+        private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+        }
+        public void AdjustBrightnessContrast()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+
+                // 首先获取滑动条的值，这需要在UI线程中执行
+                double Brightness = BrightnessSlider.Value;
+                double Contrast = ContrastSlider.Value;
+                //实现类似于PS的效果
+                Brightness = Brightness * 4 / 5;
+                Contrast = Contrast / 300 + 1;
+                Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+        public void InvertImag()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"InvertImag");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_InvertImage((HImage)HImageCache, out HImage hImageProcessed);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"InvertImag {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+        private void Button_Click_InvertImage(object sender, RoutedEventArgs e)
+        {
+            InvertImag();
+        }
+
+
+        void ThresholdImg()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                double thresh = thresholdSlider.Value;
+                double maxval = 65535;
+                int type = 0;
+                log.Info($"InvertImag");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_Threshold((HImage)HImageCache, out HImage hImageProcessed, thresh, maxval,type);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"InvertImag {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
+        private void Threshold_Click(object sender, RoutedEventArgs e)
+        {
+            ThresholdImg();
+        }
+
+        private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
         }
     }
 }

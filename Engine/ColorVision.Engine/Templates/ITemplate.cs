@@ -17,9 +17,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates.SysDictionary;
-using System.Windows.Documents;
 using ColorVision.Solution;
-using OpenCvSharp;
+using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Templates
 {
@@ -85,6 +84,12 @@ namespace ColorVision.Engine.Templates
         {
 
         }
+
+        public virtual bool CopyTo(int index)
+        {
+            return false;
+        }
+
         public virtual bool Import()
         {
             throw new NotImplementedException();
@@ -375,6 +380,16 @@ namespace ColorVision.Engine.Templates
                     Directory.Delete(tempDirectory, true);
                 }
             }
+        }
+        public override bool CopyTo(int index)
+        {
+            string fileContent = TemplateParams[index].Value.ToJsonN();
+            ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+            if (ExportTemp != null)
+            {
+                ExportTemp.Id = -1;
+            }
+            return true;
         }
 
         public T? ExportTemp { get; set; }

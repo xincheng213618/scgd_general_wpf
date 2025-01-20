@@ -39,6 +39,10 @@ namespace ColorVision.Engine.Templates.Flow
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
         private bool _AutoRefreshView;
 
+        [DisplayName("流程运行显示监控")]
+        public bool FlowPreviewMsg { get => _FlowPreviewMsg; set { _FlowPreviewMsg = value; NotifyPropertyChanged(); } }
+        private bool _FlowPreviewMsg = true;
+
         public bool FlowRun { get => _FlowRun; set { _FlowRun = value; NotifyPropertyChanged(); } }
         private bool _FlowRun;
 

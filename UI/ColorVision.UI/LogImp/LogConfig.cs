@@ -3,7 +3,6 @@ using ColorVision.UI.Configs;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
-using Newtonsoft.Json.Linq;
 using System.Windows.Controls;
 using System.Windows.Data;
 

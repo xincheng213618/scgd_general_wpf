@@ -3,9 +3,12 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using CVCommCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -175,6 +178,11 @@ namespace ColorVision.Engine.Templates.Flow
             return false;
         }
 
+        public override bool CopyTo(int index)
+        {
+            return false;
+        }
+
         public override void Create(string templateName)
         {
             FlowParam? param = FlowParam.AddFlowParam(templateName);
@@ -190,6 +198,13 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
+    public static class FlowParamExtension
+    {
+        public static void Save(this FlowParam flowParam)
+        {
+            FlowParam.Save2DB(flowParam);
+        }
+    }
 
     /// <summary>
     /// 流程引擎模板

@@ -38,7 +38,16 @@ extern "C" COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPix
 
 extern "C" COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type);
 
-extern "C" COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, float redBalance, float greenBalance, float blueBalance);
+extern "C" COLORVISIONCORE_API int M_GetWhiteBalance(HImage img, HImage* outImage, double redBalance, double greenBalance, double blueBalance);
+
+extern "C" COLORVISIONCORE_API int M_ApplyGammaCorrection(HImage img, HImage* outImage, double gamma);
+
+extern "C" COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage, double alpha, double beta);
+
+extern "C" COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh, double maxval, int type);
+
 
 
 

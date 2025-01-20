@@ -93,8 +93,8 @@ namespace ColorVisionTool
 
             log.Info("软件启动");
 
-            demoType.Image1 = Image1;
-            demoType.Zoombox1 = Zoombox1;
+            demoType.Image1 = Image1.ImageShow;
+            demoType.Zoombox1 = Image1.Zoombox1;
             demoType.MotorInfo = MotorInfo;
 
             StackPanelInfo.DataContext = MotorInfo;

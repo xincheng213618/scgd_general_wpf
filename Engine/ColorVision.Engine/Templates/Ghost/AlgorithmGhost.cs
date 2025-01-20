@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -32,7 +31,6 @@ namespace ColorVision.Engine.Templates.Ghost
         {
             new TemplateEditorWindow(new TemplateGhost(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
@@ -44,6 +42,8 @@ namespace ColorVision.Engine.Templates.Ghost
         }
         public UserControl UserControl { get; set; }
 
+        public CVOLEDCOLOR CVOLEDCOLOR { get => _CVOLEDCOLOR; set { _CVOLEDCOLOR = value; NotifyPropertyChanged(); } }
+        private CVOLEDCOLOR _CVOLEDCOLOR;
 
         public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, GhostParam ghostParam, string serialNumber)
         {
@@ -54,6 +54,7 @@ namespace ColorVision.Engine.Templates.Ghost
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
 
             Params.Add("TemplateParam", new CVTemplateParam() { ID = ghostParam.Id, Name = ghostParam.Name });
+            Params.Add("Color", CVOLEDCOLOR);
 
             MsgSend msg = new()
             {

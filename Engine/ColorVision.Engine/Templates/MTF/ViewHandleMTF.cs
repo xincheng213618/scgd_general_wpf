@@ -9,6 +9,9 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.SFR;
+using System.Text;
+using System.Globalization;
 
 namespace ColorVision.Engine.Templates.MTF
 {
@@ -65,6 +68,30 @@ namespace ColorVision.Engine.Templates.MTF
                     gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
+        }
+
+        public static void SaveCsv(ObservableCollection<ViewResultMTF> viewResultMTFs, string FileName)
+        {
+            var csvBuilder = new StringBuilder();
+            List<string> properties = new() { "Name", "位置", "大小", "形状", "Articulation", };
+            // 写入列头
+            csvBuilder.AppendLine(string.Join(",", properties));
+            // 写入数据行
+            foreach (var item in viewResultMTFs)
+            {
+                List<string> values = new()
+                {
+                    item.Point.Id?.ToString(CultureInfo.InvariantCulture),
+                    item.Name,
+                    $"{item.Point.PixelX}|{item.Point.PixelY}" ,
+                    $"{item.Point.Width}|{item.Point.Height}",
+                    item.Shapes.ToString(),
+                    item.Articulation.ToString(),
+                };
+                csvBuilder.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
     }
 }

@@ -202,6 +202,17 @@ namespace ColorVision.UI.Views
         {
             GenViewGrid(nums);
             SetView(nums);
+
+            for (int i = 0; i < nums; i++)
+            {
+                if (i< Views.Count)
+                {
+                    if (Views[i] is IView view1 && view1.View.ViewIndex < 0)
+                    {
+                        view1.View.ViewIndex = i;
+                    }
+                }
+            }
         }
         public void SetViewGridTwo()
         {

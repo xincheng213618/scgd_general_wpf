@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Devices.Sensor.Templates;
+﻿using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using CVCommCore;

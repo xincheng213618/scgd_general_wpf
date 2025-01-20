@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -65,8 +65,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             if (listView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                ViewSMUConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                ViewSMUConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
         }

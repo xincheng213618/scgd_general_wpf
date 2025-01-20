@@ -57,6 +57,7 @@ namespace ColorVision
                          .ToList();
 
             skipNames = skipNames ?? new List<string>();
+
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try {
@@ -71,12 +72,56 @@ namespace ColorVision
                         }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    log.Error(ex);
                     AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }
 
+
+            // 构建依赖图和入度表
+            var dependencyGraph = new Dictionary<string, List<string>>();
+            var inDegree = new Dictionary<string, int>();
+            _IComponentInitializers.ForEach(init =>
+            {
+                dependencyGraph[init.Name] = init.Dependencies.ToList();
+                inDegree[init.Name] = 0;
+                foreach (var dep in init.Dependencies)
+                {
+                    if (!inDegree.ContainsKey(dep))
+                    {
+                        inDegree[dep] = 0;
+                    }
+                    inDegree[dep]++;
+                }
+            });
+
+            // 拓扑排序
+            var sortedInitializers = new List<IInitializer>();
+            var queue = new Queue<string>(inDegree.Where(kvp => kvp.Value == 0).Select(kvp => kvp.Key).OrderBy(kvp => _IComponentInitializers.First(init => init.Name == kvp).Order));
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                sortedInitializers.Add(_IComponentInitializers.First(init => init.Name == current));
+                foreach (var neighbor in dependencyGraph[current])
+                {
+                    inDegree[neighbor]--;
+                    if (inDegree[neighbor] == 0)
+                    {
+                        queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            // 检查是否有环
+            if (sortedInitializers.Count != _IComponentInitializers.Count)
+            {
+                throw new Exception("Dependency cycle detected");
+            }
+
+            // 使用排序后的初始化器列表
+            _IComponentInitializers = sortedInitializers;
             _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
             Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
@@ -159,7 +204,7 @@ namespace ColorVision
                     }
                     else
                     {
-                        MainWindow mainWindow = new();
+                        MainWindow mainWindow = new MainWindow();
                         mainWindow.Show();
                     }
                     Close();

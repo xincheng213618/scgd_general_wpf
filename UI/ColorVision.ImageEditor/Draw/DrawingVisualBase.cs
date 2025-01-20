@@ -18,6 +18,8 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawingVisualBase<T>: DrawingVisualBase where T : BaseProperties, new()
     {
+        public BaseProperties BaseAttribute => Attribute;
+
         public override int ID { get => Attribute.Id; set => Attribute.Id = value; }
 
         public bool IsShowText { get; set; } = true;

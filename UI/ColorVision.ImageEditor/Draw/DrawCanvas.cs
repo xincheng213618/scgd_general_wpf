@@ -1,5 +1,8 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,19 +13,53 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DrawCanvas : Image
     {
+        private List<Visual> visuals = new();
+
         public DrawCanvas()
         {
             this.Focusable = true;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo()));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo()));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>{ e.CanExecute = UndoStack.Count > 0;  if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
+        }
+        #region ActionCommand
+        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
+        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
 
+        public void ClearActionCommand()
+        {
+            UndoStack.Clear();
+            RedoStack.Clear();
         }
 
-        private List<Visual> visuals = new();
+        public void AddActionCommand(ActionCommand actionCommand)
+        {
+            UndoStack.Add(actionCommand);
+            RedoStack.Clear();
+        }
 
-        private Stack<Action> undoStack = new Stack<Action>();
-        private Stack<Action> redoStack = new Stack<Action>();
+        public void Undo()
+        {
+            if (UndoStack.Count > 0)
+            {
+                var undoAction = UndoStack[^1]; // Access the last element
+                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
+                undoAction.UndoAction();
+                RedoStack.Add(undoAction);
+            }
+        }
 
+        public void Redo()
+        {
+            if (RedoStack.Count > 0)
+            {
+                var redoAction = RedoStack[^1]; // Access the last element
+                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
+                redoAction.RedoAction();
+                UndoStack.Add(redoAction);
+            }
+        }
+        #endregion
 
         protected override Visual GetVisualChild(int index) => visuals[index];
 
@@ -45,6 +82,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Clear()
         {
+            ClearActionCommand();
+
             foreach (var item in visuals)
             {
                 RemoveVisualChild(item);
@@ -61,7 +100,6 @@ namespace ColorVision.ImageEditor.Draw
             AddLogicalChild(visual);
         }
 
-
         public void AddVisual(Visual visual, bool recordAction = true)
         {
             try
@@ -75,9 +113,17 @@ namespace ColorVision.ImageEditor.Draw
 
                 if (recordAction)
                 {
-                    undoStack.Push(() => RemoveVisual(visual, false));
-                    redoStack.Clear();
+                    Action undoaction = new Action(() =>
+                    {
+                        RemoveVisual(visual, false);
+                    });
+                    Action redoaction = new Action(() =>
+                    {
+                        AddVisual(visual, false);
+                    });
+                    AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "添加" });
                 }
+
             }
             catch
             {
@@ -98,26 +144,18 @@ namespace ColorVision.ImageEditor.Draw
 
             if (recordAction)
             {
-                undoStack.Push(() => AddVisual(visual,false));
-                redoStack.Clear();
+                Action undoaction = new Action(() =>
+                {
+                    AddVisual(visual, false);
+                });
+                Action redoaction = new Action(() =>
+                {
+                    RemoveVisual(visual, false);
+                });
+                AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移除" });
             }
         }
-        public void Undo()
-        {
-            if (undoStack.Count > 0)
-            {
-                var undoAction = undoStack.Pop();
-                undoAction();
-            }
-        }
-        public void Redo()
-        {
-            if (redoStack.Count > 0)
-            {
-                var redoAction = redoStack.Pop();
-                redoAction();
-            }
-        }
+
         public void TopVisual(Visual visual)
         {
             RemoveVisualChild(visual);

@@ -1,10 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.RecentFile;
+﻿using ColorVision.Solution.Properties;
 using ColorVision.UI.Menus;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Solution.Properties;
+using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Solution
@@ -24,7 +22,6 @@ namespace ColorVision.Solution
         public object? Icon => null;
         public ICommand Command => null;
 
-        private RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
         public Visibility Visibility => Visibility.Visible;
 
         public MenuItem MenuItem
@@ -35,36 +32,39 @@ namespace ColorVision.Solution
 
                 RecentListMenuItem ??= new MenuItem();
                 RecentListMenuItem.Header = Resources.RecentFiles;
-                RecentListMenuItem.SubmenuOpened += (s, e) =>
-                {
-                    var firstMenuItem = RecentListMenuItem.Items[0];
-                    foreach (var item in SolutionHistory.RecentFiles)
-                    {
-                        if (File.Exists(item))
-                        {
-                            MenuItem menuItem = new();
-                            menuItem.Header = item;
-                            menuItem.Click += (sender, e) =>
-                            {
-                                SolutionManager.GetInstance().OpenSolution(item);
-                            };
-                            RecentListMenuItem.Items.Add(menuItem);
-                        }
-                        else
-                        {
-                            SolutionHistory.RecentFiles.Remove(item);
-                        }
-                    };
-                    RecentListMenuItem.Items.Remove(firstMenuItem);
 
-                };
-                RecentListMenuItem.SubmenuClosed += (s, e) =>
+                RecentListMenuItem.ItemsSource = SolutionManager.GetInstance().SolutionHistory.RecentFiles;
+                RecentListMenuItem.Loaded += (s, e) =>
                 {
-                    RecentListMenuItem.Items.Clear();
-                    RecentListMenuItem.Items.Add(new MenuItem());
+                    RecentListMenuItem.ItemsSource = SolutionManager.GetInstance().SolutionHistory.RecentFiles;
                 };
-                RecentListMenuItem.Items.Add(new MenuItem());
+
+                // Define the ItemTemplate
+                DataTemplate dataTemplate = new DataTemplate(typeof(string));
+                FrameworkElementFactory textBlockFactory = new FrameworkElementFactory(typeof(TextBlock));
+                textBlockFactory.SetBinding(TextBlock.TextProperty, new Binding());
+                dataTemplate.VisualTree = textBlockFactory;
+
+                // Set the ItemTemplate to the MenuItem
+                RecentListMenuItem.ItemTemplate = dataTemplate;
+
+                // Add event handler for item click
+                RecentListMenuItem.ItemContainerStyle = new Style(typeof(MenuItem));
+                RecentListMenuItem.ItemContainerStyle.Setters.Add(new EventSetter
+                {
+                    Event = MenuItem.ClickEvent,
+                    Handler = new RoutedEventHandler(UndoToCommandHandler)
+                });
                 return RecentListMenuItem;
+            }
+        }
+
+        private void UndoToCommandHandler(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Header is string item)
+            {
+                SolutionManager.GetInstance().OpenSolution(item);
+
             }
         }
     }

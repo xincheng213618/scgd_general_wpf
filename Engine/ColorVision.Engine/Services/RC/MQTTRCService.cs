@@ -54,6 +54,10 @@ namespace ColorVision.Engine.Services.RC
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; } = new List<MQTTServiceInfo>();
 
+        private bool initialized;
+        public event EventHandler ServiceTokensInitialized;
+
+
         public MqttRCService()
         {
             NodeType = "client";
@@ -231,10 +235,10 @@ namespace ColorVision.Engine.Services.RC
             DoUpdateServiceTokens(services);
             DoUpdateServices(services);
         }
-        private static void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        private void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
-            log.Info("Refresh Token");
-            var tokens = MqttRCService.GetInstance().ServiceTokens;
+            log.Debug("Refresh Token");
+            var tokens = ServiceTokens;
             tokens.Clear();
             foreach (var itemService in services.Values)
             {
@@ -256,13 +260,18 @@ namespace ColorVision.Engine.Services.RC
                     tokens.Add(serviceInfo);
                 }
             }
+
+            if (!initialized)
+            {
+                ServiceTokensInitialized?.Invoke(tokens, new EventArgs());
+            }
+            initialized = true;
         }
         private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
         {
             ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
             return svrs.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
         }
-
         public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
         {
             List<TypeService> svrs = new(ServiceManager.GetInstance().TypeServices);
@@ -406,7 +415,13 @@ namespace ColorVision.Engine.Services.RC
 
         public void Archived(string sn)
         {
-            MQTTArchivedRequest request = new(sn);
+            MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
+            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
+        }
+        public void ArchivedAll()
+        {
+            MQTTArchivedRequest request = new MQTTArchivedRequest();
+            request.EventName = "ArchivedAll";
             PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
 

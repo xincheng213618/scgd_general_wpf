@@ -1,13 +1,10 @@
 ﻿#pragma warning disable CS8603  
 
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.PG.Templates
 {

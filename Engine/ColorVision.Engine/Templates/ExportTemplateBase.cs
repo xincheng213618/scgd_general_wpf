@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.UI.Menus;
 using System.Windows;
 

@@ -1,18 +1,13 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
-using ColorVision.Common.NativeMethods;
-using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using log4net;
-using log4net.Util;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Windows;
 
 
@@ -31,6 +26,9 @@ namespace WindowsServicePlugin
         public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/InstallTool";
 
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoUpdate = true;
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata>()
@@ -43,6 +41,15 @@ namespace WindowsServicePlugin
                     BindingName = nameof(CVWinSMSPath),
                     Source =Instance
                 },
+                new ConfigSettingMetadata
+                {
+                    Name = "CVWinSMSIsAutoUpdate",
+                    Description =  "",
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(IsAutoUpdate),
+                    Source = Instance,
+                }
             };
 
         }
@@ -84,7 +91,13 @@ namespace WindowsServicePlugin
         }
         public async Task Initialize()
         {
-            await GetLatestReleaseVersion();
+            // 如果是调试模式，不进行更新检测
+            if (Debugger.IsAttached) return;
+
+            if (Config.IsAutoUpdate)
+            {
+                await GetLatestReleaseVersion();
+            }
         }
 
         public async Task GetLatestReleaseVersion()

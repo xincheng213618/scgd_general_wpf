@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8625
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -21,12 +20,12 @@ namespace ColorVision.Engine.Templates.POI.Image
     {
         public void Execute(ImageView imageView)
         {
+            imageView.ToolBarAl.Visibility  = Visibility.Visible;
             if (MySqlControl.GetInstance().IsConnect)
             {
                 imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                 imageView.ComboxPOITemplate.SelectedIndex = 0;
-                imageView.ToolBarAl.Visibility = Visibility.Visible;
-
+                imageView.ToolBarAl.Visibility = Visibility.Visible;   
             }
             else
             {
@@ -402,9 +401,7 @@ namespace ColorVision.Engine.Templates.POI.Image
 
 
             }
-              
-
-            imageView.ButtonCalculSFR.Click += (s,e)=> CalculSFR();
+             
         }
 
     }

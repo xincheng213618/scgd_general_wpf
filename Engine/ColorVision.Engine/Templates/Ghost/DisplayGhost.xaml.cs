@@ -3,7 +3,9 @@ using ColorVision.Engine.Services;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -26,6 +28,9 @@ namespace ColorVision.Engine.Templates.Ghost
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplateGhost.Params;
             ComboxTemplate.SelectedIndex = 0;
+            ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
+                                            select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
+            ComboxCVOLEDCOLOR.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -112,7 +117,7 @@ namespace ColorVision.Engine.Templates.Ghost
         private void Open_File(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -125,6 +130,7 @@ openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;
         {
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
             IAlgorithm.DService.GetRawFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
+            IAlgorithm.DService.GetCIEFiles(deviceService.Code, deviceService.ServiceTypes.ToString());
         }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)

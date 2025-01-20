@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore.CVAlgorithm;
@@ -13,6 +12,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
+    public struct PointFloat
+    {
+        public float X { get; set; }
+
+        public float Y { get; set; }
+
+        public PointFloat(float x, float y)
+        {
+            X = x;
+            Y = y;
+        }
+    }
+
     public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "关注点布点";
@@ -35,7 +47,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public void OpenCADFile()
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif|All files (*.*)|*.*";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.tiff|All files (*.*)|*.*";
             openFileDialog.RestoreDirectory = true;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

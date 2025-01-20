@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.ROI
+﻿namespace ColorVision.Engine.Templates.ROI
 {
     public class ExportRoi : ExportTemplateBase
     {

@@ -1,12 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
 using ColorVision.Themes;
-using cvColorVision;
-using NPOI.SS.Formula.Functions;
 using ProjectKB.Modbus;
-using System;
 using System.Collections.ObjectModel;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

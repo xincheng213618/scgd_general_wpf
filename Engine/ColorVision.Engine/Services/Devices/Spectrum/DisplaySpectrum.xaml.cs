@@ -1,11 +1,8 @@
-﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using CVCommCore;
 using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;

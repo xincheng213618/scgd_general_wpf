@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuNew" xml:space="preserve">
-    <value>새로 만들기 (_N)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>열기 (_O)</value>
-  </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>업데이트 확인 (_U)</value>
   </data>
@@ -155,9 +149,6 @@
   </data>
   <data name="Minimize" xml:space="preserve">
     <value>최소화</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>최대화</value>
   </data>
   <data name="Pin" xml:space="preserve">
     <value>상단 고정</value>
@@ -218,9 +209,6 @@
   </data>
   <data name="NotRunAsAdmin" xml:space="preserve">
     <value>비관리자로 실행</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>통나무</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>

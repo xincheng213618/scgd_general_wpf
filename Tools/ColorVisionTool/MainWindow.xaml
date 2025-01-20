@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVisionTool"
         mc:Ignorable="d"
         xmlns:effects="http://gu.se/Geometry"
-        xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw;assembly=ColorVision.ImageEditor"
+        xmlns:im ="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         Title="自动聚焦工具" Height="720" Width="1500" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -43,10 +43,8 @@
 
 
         </Grid>
-        <Border Grid.Column="1" Background="#c3c3c3">
-            <effects:Zoombox x:Name="Zoombox1">
-                <draw:DrawCanvas x:Name="Image1" RenderOptions.BitmapScalingMode="Fant"/>
-            </effects:Zoombox>
+        <Border Grid.Column="1" >
+            <im:ImageView x:Name="Image1"/>
         </Border>
         <GridSplitter Grid.Column="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Width="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"  DragCompleted="GridSplitter_DragCompleted"  />
     </Grid>

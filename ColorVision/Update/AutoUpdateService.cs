@@ -1,8 +1,8 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -19,6 +19,9 @@ namespace ColorVision.Update
 
         public static async Task Check()
         {
+            // 如果是调试模式，不进行更新检测
+            if (Debugger.IsAttached) return;
+
             await Task.Run(CheckVersion);
             if (AutoUpdateConfig.Instance.IsAutoUpdate)
             {

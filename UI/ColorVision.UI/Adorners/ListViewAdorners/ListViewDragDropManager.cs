@@ -1,6 +1,4 @@
 #pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601ColorVision.Common.Adorners.ListViewAdorners
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;

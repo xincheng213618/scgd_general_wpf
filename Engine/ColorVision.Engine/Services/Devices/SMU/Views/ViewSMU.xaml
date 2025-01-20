@@ -97,10 +97,23 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <Button  Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalAlignment="Right" VerticalAlignment="Center"  Command="{Binding OpenProperty}" >
-                    <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                <Button Grid.Column="0" Margin="5,1,5,0" HorizontalAlignment="Right" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
                 </Button>
-                
+
                 <ListView  Height="200" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >

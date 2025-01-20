@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Solution.Properties;
+using ColorVision.RecentFile;
 
 namespace ColorVision.Solution
 {
@@ -67,6 +68,11 @@ namespace ColorVision.Solution
                 await Task.Delay(1000);
                 button.Content = temp;
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") }.Clear();
         }
     }
 }

@@ -119,25 +119,9 @@
           <source>本地</source>
           <target state="new">현지의</target>
         </trans-unit>
-        <trans-unit id="Log" translate="yes" xml:space="preserve">
-          <source>日志</source>
-          <target state="new">통나무</target>
-        </trans-unit>
-        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
-          <source>最大化</source>
-          <target state="new">최대화</target>
-        </trans-unit>
         <trans-unit id="MenuAbout" translate="yes" xml:space="preserve">
           <source>关于(_A)</source>
           <target state="new">소개 (_A)</target>
-        </trans-unit>
-        <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
-          <source>新建(_N)</source>
-          <target state="new">새로 만들기 (_N)</target>
-        </trans-unit>
-        <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
-          <source>打开(_O)</source>
-          <target state="new">열기 (_O)</target>
         </trans-unit>
         <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
           <source>选项(_O)</source>

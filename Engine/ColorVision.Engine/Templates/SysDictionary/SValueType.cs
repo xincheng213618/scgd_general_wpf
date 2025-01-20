@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CA1720
 using System.ComponentModel;
-using System.Xml.Serialization;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {

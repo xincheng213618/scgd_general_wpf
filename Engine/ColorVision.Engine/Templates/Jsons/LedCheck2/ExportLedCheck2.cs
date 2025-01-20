@@ -1,7 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.Jsons.LedCheck2
+﻿namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public class ExportLedCheck2 : ExportTemplateBase
     {

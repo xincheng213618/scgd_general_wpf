@@ -2,6 +2,8 @@
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;
+using ColorVision.UI.PropertyEditor;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -55,10 +57,17 @@ namespace ColorVision.UI.Views
         public Visibility Visibility => Visibility.Visible;
     }
 
-
+    [DisplayName("视图配置")]
     public class ViewConfig : ViewModelBase, IConfig
     {
         public static ViewConfig Instance => ConfigService.Instance.GetRequiredService<ViewConfig>();
+
+        public RelayCommand EditCommand { get; set; }
+
+        public ViewConfig()
+        {
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
 
         public bool IsAutoSelect { get => _IsAutoSelect; set { _IsAutoSelect = value; NotifyPropertyChanged(); } }
         private bool _IsAutoSelect =true;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
@@ -14,6 +13,7 @@ using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -72,9 +72,20 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public new void RestartRCService()
         {
+            if (DService.IsVideoOpen)
+            {
+                CameraVideoControl?.Close();
+                var msgrecode = DService.Close();
+                log.Info("正在关闭视频模式");
+                msgrecode.MsgSucessed += (e) =>
+                {
+                    DService.IsVideoOpen = false;
+                    DService.DeviceStatus = DeviceStatusType.Closed;
+                    base.RestartRCService();
+                };
+                return;
+            }
             base.RestartRCService();
-            CameraVideoControl?.Close();
-            DService.IsVideoOpen = false;
         }
 
         private PhyCamera lastPhyCamera;

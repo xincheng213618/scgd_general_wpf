@@ -1,6 +1,5 @@
 ﻿using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
-using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {

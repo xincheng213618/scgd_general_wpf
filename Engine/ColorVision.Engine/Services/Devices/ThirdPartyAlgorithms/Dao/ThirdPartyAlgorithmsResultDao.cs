@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using NPOI.SS.Formula.Functions;
-using System.Data;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
 {

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.UI.PropertyEditor;
+
 #pragma warning disable CS8602
 
 using ColorVision.UI.Sorts;
@@ -213,9 +214,9 @@ namespace ColorVision.Engine.DataHistory.Dao
                 MessageBox.Show(Application.Current.GetActiveWindow(),"找不到归档配置信息","ColorVision");
                 return;
             }
-            EditArchived editArchived = new EditArchived(configArchivedModel) { Owner = Application.Current.GetActiveWindow() };
-            editArchived.ShowDialog();
-
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+            propertyEditorWindow.ShowDialog();
         }
     }
 }

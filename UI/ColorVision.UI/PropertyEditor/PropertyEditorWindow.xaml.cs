@@ -1,9 +1,10 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,7 +12,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Linq;
 
 namespace ColorVision.UI.PropertyEditor
 {
@@ -20,6 +20,7 @@ namespace ColorVision.UI.PropertyEditor
     /// </summary>
     public partial class PropertyEditorWindow : Window
     {
+        public event EventHandler Submited;
         public ViewModelBase Config { get; set; }
         public ViewModelBase EditConfig { get; set; }
 
@@ -37,6 +38,10 @@ namespace ColorVision.UI.PropertyEditor
         public void GenCategoryGroups(ViewModelBase source)
         {
             Type type = source.GetType();
+            var title = type.GetCustomAttribute<DisplayNameAttribute>();
+            if (title != null)
+                this.Title = title.DisplayName;
+
             var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                   .Where(p => p.CanRead && p.CanWrite);
 
@@ -68,13 +73,13 @@ namespace ColorVision.UI.PropertyEditor
                         }
                     }
                 }
-
             }
         }
 
 
         public void DisplayProperties(ViewModelBase obj)
         {
+            categoryGroups.Clear();
             GenCategoryGroups(obj);
             foreach (var categoryGroup in categoryGroups)
             {
@@ -100,7 +105,7 @@ namespace ColorVision.UI.PropertyEditor
                         {
                             dockPanel = GenBoolProperties(property, obj);
                         }
-                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
                         {
                             dockPanel = GenTextboxProperties(property, obj);
                         }
@@ -155,11 +160,14 @@ namespace ColorVision.UI.PropertyEditor
         {
             var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
             var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+            var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+
+            PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
             displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
-
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+
             var textBlock = new TextBlock
             {
                 Text = displayName,
@@ -168,19 +176,143 @@ namespace ColorVision.UI.PropertyEditor
             };
             dockPanel.Children.Add(textBlock);
 
-            var textbox = new TextBox
+            if (propertyEditorType == PropertyEditorType.TextSelectFile)
             {
-                Margin = new Thickness(5, 0, 0, 0),
-                Style = (Style)FindResource("TextBox.Small")
-            };
-            textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
-            var binding = new Binding(property.Name)
+                var button = new Button
+                {
+                    Content = "...",
+                    Margin = new Thickness(5, 0, 0, 0)
+                };
+                button.Click += (s, e) =>
+                {
+                    var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+                    string Filepath = (string)property.GetValue(obj);
+#if NET8_0
+                    ///8.0才有这个属性
+                    if (File.Exists(Filepath))
+                    {
+                        openFileDialog.DefaultDirectory = Directory.GetDirectoryRoot(Filepath);
+                    }
+#endif
+                    if (openFileDialog.ShowDialog() == true)
+                    {
+                        property.SetValue(obj, openFileDialog.FileName);
+                    }
+                };
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                var button1 = new Button
+                {
+                    Content = "🗁",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                button1.Click += (s, e) =>
+                {
+                    Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
+                };
+                DockPanel.SetDock(button1, Dock.Right);
+                dockPanel.Children.Add(button1);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
+            }
+            else if (propertyEditorType == PropertyEditorType.TextSelectFolder)
             {
-                Source = obj,
-                Mode = BindingMode.TwoWay
-            };
-            textbox.SetBinding(TextBox.TextProperty, binding);
-            dockPanel.Children.Add(textbox);
+                var button = new Button
+                {
+                    Content = "...",
+                    Margin = new Thickness(5, 0, 0, 0)
+                };
+                button.Click += (s, e) =>
+                {
+                    var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
+                    folderDialog.SelectedPath = (string)property.GetValue(obj);
+                    if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        if (folderDialog.SelectedPath == null) return;
+                        property.SetValue(obj, folderDialog.SelectedPath);
+                    }
+                };
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                var button1 = new Button
+                {
+                    Content = "🗁",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                button1.Click += (s, e) =>
+                {
+                    Common.Utilities.PlatformHelper.OpenFolder((string)property.GetValue(obj));
+                };
+                DockPanel.SetDock(button1, Dock.Right);
+                dockPanel.Children.Add(button1);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
+
+            }
+            else if (propertyEditorType == PropertyEditorType.CronExpression)
+            {
+                var cronButton = new Button
+                {
+                    Content = "在线Cron表达式生成器",
+                    Margin = new Thickness(5, 0, 0, 0),
+                };
+                DockPanel.SetDock(cronButton, Dock.Right);
+                cronButton.Click += (s, e) =>
+                {
+                    PlatformHelper.Open("https://cron.qqe2.com/");
+                };
+                var cronTextBox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("TextBox.Small")
+                };
+                var cronBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                cronTextBox.SetBinding(TextBox.TextProperty, cronBinding);
+                dockPanel.Children.Add(cronButton);
+                dockPanel.Children.Add(cronTextBox);
+            }
+            else
+            {
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("TextBox.Small")
+                };
+                textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                dockPanel.Children.Add(textbox);
+            }
             return dockPanel;
         }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -198,7 +330,6 @@ namespace ColorVision.UI.PropertyEditor
             if (IsEdit)
             {
                 DisplayProperties(Config);
-
             }
             else
             {
@@ -211,6 +342,7 @@ namespace ColorVision.UI.PropertyEditor
         {
             if (!IsEdit)
                 EditConfig.CopyTo(Config);
+            Submited?.Invoke(sender, new EventArgs());
             this.Close();
         }
 
@@ -218,7 +350,9 @@ namespace ColorVision.UI.PropertyEditor
         {
             if (!IsEdit)
             {
-                EditConfig.Reset();
+                Config.CopyTo(EditConfig);
+                PropertyPanel.Children.Clear();
+                DisplayProperties(EditConfig);
             }
             else
             {

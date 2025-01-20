@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.POI.POIOutput
+﻿namespace ColorVision.Engine.Templates.POI.POIOutput
 {
     public class ExportPoiOutput : ExportTemplateBase
     {

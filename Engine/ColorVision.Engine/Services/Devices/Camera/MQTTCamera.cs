@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8602,CA1707
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Messages;
@@ -184,7 +183,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord OpenVideo(string host, int port)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
-            IsVideoOpen = true;
             bool IsLocal = (host=="127.0.0.1");
             MsgSend msg = new()
             {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Solution.Searches;
+using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -131,15 +131,13 @@ namespace ColorVision.Engine.DataHistory.Dao
             if (configArchivedModel == null)
             {
                 MessageBox.Show("找不到归档配置信息");
-
             }
             else
             {
-                EditArchived editArchived = new EditArchived(configArchivedModel) {  Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner};
-                editArchived.ShowDialog();
+                PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
+                propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
+                propertyEditorWindow.ShowDialog();
             }
-
-
         }
     }
 }

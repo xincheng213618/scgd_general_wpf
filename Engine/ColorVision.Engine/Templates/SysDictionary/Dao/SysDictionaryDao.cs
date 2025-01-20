@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System.Collections.Generic;
-using System.Data;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {

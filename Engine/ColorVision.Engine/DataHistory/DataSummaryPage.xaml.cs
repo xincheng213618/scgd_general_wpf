@@ -168,5 +168,10 @@ namespace ColorVision.Engine.DataHistory.Dao
                 Frame.Refresh();
             }
         }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            MqttRCService.GetInstance().ArchivedAll();
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Net;
+﻿using ColorVision.Net;
 using System;
 using System.Collections.Generic;
 using System.Drawing.Imaging;

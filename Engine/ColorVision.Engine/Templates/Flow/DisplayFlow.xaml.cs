@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
 using FlowEngineLib;
-using FlowEngineLib.Algorithm;
 using FlowEngineLib.Base;
 using log4net;
 using Panuon.WPF.UI;
@@ -85,6 +84,7 @@ namespace ColorVision.Engine.Templates.Flow
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
                 Refresh();
             };
+            MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => Refresh();
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
@@ -92,7 +92,9 @@ namespace ColorVision.Engine.Templates.Flow
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
             this.Loaded += FlowDisplayControl_Loaded;
+            View.RefreshFlow += (s,e) => Refresh();
         }
+
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
@@ -138,6 +140,7 @@ namespace ColorVision.Engine.Templates.Flow
 
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
                 View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                View.FlowParam = flowParam;
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
                     item.nodeRunEvent += UpdateMsg;
@@ -145,6 +148,16 @@ namespace ColorVision.Engine.Templates.Flow
                     if (FlowConfig.Instance.IsShowDetailFlow)
                     {
                         View.FlowRecords.Add(new FlowRecord(item));
+                    }
+                }
+                foreach (var item in View.STNodeEditorMain.Nodes)
+                {
+                    if (item is STNode node)
+                    {
+                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => View.STNodeEditorMain.Nodes.Remove(node));
+                        node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => View.STNodeEditorMain.ActiveNode.LockOption = !View.STNodeEditorMain.ActiveNode.LockOption);
+                        node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => View.STNodeEditorMain.ActiveNode.LockLocation = !View.STNodeEditorMain.ActiveNode.LockLocation);
                     }
                 }
 
@@ -185,6 +198,11 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
+
+                if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                {
+                    ErrorSign();
+                }
                 if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
@@ -218,6 +236,7 @@ namespace ColorVision.Engine.Templates.Flow
         string Msg1;
         private void UpdateMsg(object? sender)
         {
+            if (!FlowConfig.Instance.FlowPreviewMsg) return;
             if (flowControl.IsFlowRun)
             {
                 long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
@@ -244,10 +263,10 @@ namespace ColorVision.Engine.Templates.Flow
                             handler?.UpdateMessage(msg);
                     });
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     log.Error(ex);
-                } 
+                }
             }
         }
 
@@ -256,9 +275,12 @@ namespace ColorVision.Engine.Templates.Flow
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
-                if (record !=null)
-                    record.DateTimeStop = DateTime.Now;
+                Application.Current.Dispatcher.BeginInvoke(() =>
+                {
+                    var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                    if (record != null)
+                        record.DateTimeStop = DateTime.Now;
+                });
 
                 if (e != null)
                 {
@@ -277,23 +299,52 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        public void ErrorSign()
+        {
+            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                if (item.IsSelected == true)
+                {
+                    if (MarkColorProperty == null)
+                    {
+                        Type type = typeof(STNode);
+                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    // 设置值
+                    if (MarkColorProperty != null)
+                    {
+                        MarkColorProperty.SetValue(item, System.Drawing.Color.Red);
+                    }
+                }
+
+            }
+        }
+
 
 
         private void UpdateMsg(object sender, FlowEngineNodeRunEventArgs e)
         {
             if (sender is CVCommonNode algorithmNode)
             {
-                var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
-                if (record != null)
+                Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-                    record.DateTimeRun = DateTime.Now;
-                    record.IsSelected = true;
-                }
+                    var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
+                    if (record != null)
+                    {
+                        record.DateTimeRun = DateTime.Now;
+                        record.IsSelected = true;
+                    }
+                });
+
 
                 algorithmNode.IsSelected = true;
                 Msg1 = algorithmNode.Title;
 
-                UpdateMsg(sender);
+                if (FlowConfig.Instance.FlowPreviewMsg)
+                {
+                    UpdateMsg(sender);
+                }
+
             }
         }
 
@@ -349,17 +400,21 @@ namespace ColorVision.Engine.Templates.Flow
                         foreach (var item in View.FlowRecords)
                         {
                             item.IsSelected = false;
-                            item.DateTimeFlowRun = DateTime.Now;
+                            var time = DateTime.Now;
+                            item.DateTimeFlowRun = time;
+                            item.DateTimeRun = time;
+                            item.DateTimeStop = time;
                         }
                     }
 
                 }
                 LastCompleted = false;
-
-                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
-                handler.Cancelling -= Handler_Cancelling; ;
-                handler.Cancelling += Handler_Cancelling; ;
+                if (FlowConfig.Instance.FlowPreviewMsg)
+                {
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                    handler.Cancelling -= Handler_Cancelling; ;
+                    handler.Cancelling += Handler_Cancelling; ;
+                }
 
                 flowControl.FlowCompleted += FlowControl_FlowCompleted;
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");

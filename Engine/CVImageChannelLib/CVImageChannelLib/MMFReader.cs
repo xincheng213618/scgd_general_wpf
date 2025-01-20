@@ -10,10 +10,9 @@ namespace CVImageChannelLib;
 public class MMFReader : CVImageReaderProxy
 {
 	private MMFEndpointProxy<CVImagePacket> subscriber;
-
-	public MMFReader(string mapNamePrefix)
+    MemoryMappedFile memoryMappedFile;
+    public MMFReader(string mapNamePrefix)
 	{
-		MemoryMappedFile memoryMappedFile = null;
 		try
 		{
 			memoryMappedFile = MemoryMappedFile.OpenExisting(mapNamePrefix);
@@ -26,7 +25,8 @@ public class MMFReader : CVImageReaderProxy
 		{
 			subscriber = new MMFEndpointProxy<CVImagePacket>(memoryMappedFile);
 		}
-	}
+
+    }
 
 	public CVImagePacket SubscribePacket()
 	{
@@ -91,6 +91,7 @@ public class MMFReader : CVImageReaderProxy
 	public override void Dispose()
 	{
 		GC.SuppressFinalize(this);
-		base.Dispose();
+        memoryMappedFile?.Dispose();
+        base.Dispose();
 	}
 }

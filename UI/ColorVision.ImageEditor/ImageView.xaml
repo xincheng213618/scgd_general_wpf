@@ -9,7 +9,7 @@
              xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
-             d:DataContext="{d:DesignInstance local:ImageView}"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
@@ -45,286 +45,316 @@
                       TileMode="Tile"
                       ViewportUnits="Absolute"
                       Viewport="0 0 20 20"
-                      Drawing="{StaticResource SmallGridGeometry}" />
-        
+                      Drawing="{StaticResource SmallGridGeometry}" Opacity="0.1" />
+
         <DrawingBrush x:Key="LargeGridLinesDrawingBrush"
                       TileMode="Tile"
                       ViewportUnits="Absolute"
                       Opacity="0.5"
                       Viewport="0 0 200 200"
                       Drawing="{StaticResource LargeGridGeometry}" />
-        <DataTemplate x:Key="DrawingVisualCircleTemplate" >
-            <StackPanel  Orientation="Horizontal">
-                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
-                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Tag="{Binding .}"/>
-                <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
-                                                    <Run Text="("/>
-                                                    <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=","/>
-                                                    <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=")"/>
-                </TextBlock>
-                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
-            </StackPanel>
-        </DataTemplate>
-        <DataTemplate x:Key="DrawingVisualRectangleTemplate" >
-            <StackPanel  Orientation="Horizontal">
-                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Path=ID}" HorizontalAlignment="Center"/>
-                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="True" Tag="{Binding .}"/>
-                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Attribute.Rect}" />
-            </StackPanel>
-        </DataTemplate>
-
-        <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
     </UserControl.Resources>
-    
-    <Grid x:Name="ImageContentGrid" >
-        <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
 
-        <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="300"  Visibility="Collapsed">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="300"/>
-            </Grid.RowDefinitions>
-            <WindowsFormsHost x:Name="WindowsFormsHost1"  Grid.Row="1"  UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"  Visibility="Visible"  >
-                <winf:PropertyGrid x:Name="PropertyGrid2" Height="300"   >
-                </winf:PropertyGrid>
-            </WindowsFormsHost>
-            <Grid Grid.Row="0">
-                <Grid.Resources>
-                    <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
-                        <StackPanel  Orientation="Horizontal">
-                            <StackPanel.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                </ContextMenu>
-                            </StackPanel.ContextMenu>
-                            <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
-                            <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
-                            <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                            <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
-                                                    <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
-                                                    <Run Text=","/>
-                                                    <Run Text="{Binding Path = CenterY,StringFormat={}{0:F0}}"/>
-                            </TextBlock>
-                            <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Grid x:Name="ImageContentGrid" Grid.Row="1" >
+            <Grid Background="{StaticResource LargeGridLinesDrawingBrush}" Visibility="Collapsed"/>
+
+            <Grid x:Name="ImageGroupGrid" HorizontalAlignment="Right" Width="400"  Visibility="{Binding ElementName=PropertyIsChecked,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="300"/>
+                </Grid.RowDefinitions>
+                <WindowsFormsHost x:Name="WindowsFormsHost1"  Grid.Row="1" Height="300">
+                    <winf:PropertyGrid x:Name="PropertyGrid2"    >
+                    </winf:PropertyGrid>
+                </WindowsFormsHost>
+            </Grid>
+
+            <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
+
+            <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
+                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
+                    <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
+                    </draw:DrawCanvas>
+                </draw:ZoomboxSub>
+                <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
+                    <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
+                        <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
+                    </ToolBar>
+                </ToolBarTray>
+
+                <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
+                    <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
+                        <StackPanel Orientation="Horizontal" >
+                            <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                            <Button x:Name="ButtonCalculPOI"  x:FieldModifier="public" Content="POI"/>
                         </StackPanel>
-                    </DataTemplate>
-                    <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
-                        <StackPanel  Orientation="Horizontal">
-                            <StackPanel.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="Delete" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                </ContextMenu>
-                            </StackPanel.ContextMenu>
-                            <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
-                            <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
-                            <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                            <TextBlock>
-                                            <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
-                                            <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                            </TextBlock>
+                    </ToolBar>
+                </ToolBarTray>
+
+                <Border x:Name="ToolBarBottom" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" >
+                            <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}" />
+                            </ToggleButton>
+                            <ToggleButton  IsChecked="{Binding EraseVisual}" Padding="5" Margin="0,0,2,0"  Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"/>
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawCircle}" Padding="5" Margin="0,0,2,0" >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  />
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawRect}" Padding="5" Margin="0,0,2,0" >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"/>
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawPolygon}"  Padding="5" Margin="0,0,2,0"  >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
+                            </ToggleButton>
+                            <ToggleButton IsChecked="{Binding DrawBezierCurve}"  Padding="5" Margin="0,0,2,0"  >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}" />
+                            </ToggleButton>
+
+                            <Button x:Name="reference"  Click="reference_Click" Padding="5"   >
+                                <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}" />
+                            </Button>
+                            <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
+                                <StackPanel Margin="0">
+                                    <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
+                                    <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
+                                    <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
+                                    <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
+                                </StackPanel>
+                            </Popup>
                         </StackPanel>
-                    </DataTemplate>
-                    <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}"  DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
-                </Grid.Resources>
-                <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewKeyDown="ListView1_PreviewKeyDown"  SelectionChanged="ListView1_SelectionChanged" >
-                </ListView>
+
+                    </Grid>
+                </Border>
+
+
+                <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
+                        <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
+                        </ToggleButton>
+                        <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
+                        </Button>
+                        <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding RotateLeftCommand}" Margin="1,0">
+                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalLeftIcon}"  Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding RotateRightCommand}" Margin="1,0">
+                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalRightIcon}"  Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
+                        </Button>
+                        <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
+                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
+                        </ToggleButton>
+                        <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
+                        <Button   Command="{Binding OpenProperty}" Margin="1,0" Padding="5">
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+
+                        <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
+                            <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
+                        </ToggleButton>
+                    </ToolBar>
+                </ToolBarTray>
+                <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                        <Button Click="Button_Click" Margin="0,0,0,2">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
+                        </Button>
+                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
+                        </Button>
+                    </ToolBar>
+                </ToolBarTray>
+
+                <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                        <ToggleButton x:Name="AdvancedButton" Margin="0,0,0,2"  Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIExpand}" />
+                        </ToggleButton>
+                        <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}" />
+                        </Button>
+                        <Button x:Name="Button1931" x:FieldModifier="public" Margin="0,0,0,2" Padding="5" Visibility="Collapsed">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png"/>
+                        </Button>
+
+                        <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
+
+                        <StackPanel>
+                            <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
+                                <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
+                            </ToggleButton>
+                            <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                                <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                                <Grid Grid.Row="1"   Width="18">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
+                                    <Border Grid.Row="1"  Background="Transparent">
+                                        <Image x:Name="ColormapTypesImage" Source="/ColorVision.ImageEditor;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                                    </Border>
+                                    <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                                </Grid>
+                                <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                            </Grid>
+                        </StackPanel>
+                    </ToolBar>
+                </ToolBarTray>
+
+
+                <Border x:Name="BorderPropertieslayers" Background="#55000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="20" CornerRadius="10" >
+                    <StackPanel Margin="10">
+                        <TextBlock x:Name="InfoText" Text="" Foreground="White"  HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+
+            <Grid x:Name="WaitControl"  x:FieldModifier="public" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
+                <Grid   Background="Black"  Opacity="0.3"/>
+                <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
+                    <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
+                        <Grid>
+                            <base:ProgressRing  BorderBrush="Red" Margin="30" />
+                            <TextBlock x:Name="WaitControlText"   x:FieldModifier="public" Text="DataLoading" HorizontalAlignment="Center" FontSize="16"/>
+                            <ProgressBar x:Name="WaitControlProgressBar"  x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
+                        </Grid>
+                    </Border>
+                </Border>
             </Grid>
         </Grid>
 
-        <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
+        <Grid Grid.Column="1" Width="300" Visibility="{Binding ElementName=AdvancedButton, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer Margin="5,0">
+                <StackPanel x:Name="AdvancedStackPanel">
+                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch x:Name="PropertyIsChecked"  DockPanel.Dock="Right" IsChecked="False"/>
+                                <TextBlock Text="显示编辑属性" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <ui:ToggleSwitch IsChecked="{Binding Config.IsLayoutUpdated}" DockPanel.Dock="Right" />
+                                <TextBlock Text="自动刷新绘图" Width="100" HorizontalAlignment="Left"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="伪彩色" Width="100"/>
+                                <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
 
-        <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-            <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding Config.MaxZoom}"  MinZoom="{Binding Config.MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
-                <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove">
-                </draw:DrawCanvas>
-            </draw:ZoomboxSub>
+                    <Border Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="0,5" CornerRadius="5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Red" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.RedBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.RedBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Green" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.GreenBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" Value="{Binding Config.GreenBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="Blue" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.BlueBalance}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01"  Value="{Binding Config.BlueBalance}" Minimum="0.5" Maximum="2"/>
+                            </DockPanel>
+                            <Button DockPanel.Dock="Right" Content="还原白平衡" Click="Button_Click_2" Margin="5,0,0,0"/>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="伽马" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <Button DockPanel.Dock="Right" Content="还原" Click="Button_Click_1" Margin="5,0,0,0"/>
+                                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=GammaSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider x:Name="GammaSlider" TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.1" LargeChange="1" Value="1" Minimum="0" Maximum="10" ValueChanged="PreviewSlider_ValueChanged"/>
+                            </DockPanel>
 
-            <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
-                    <ComboBox x:Name="ComboBoxLayers"  x:FieldModifier="public"  SelectedIndex="0"/>
-                </ToolBar>
-            </ToolBarTray>
-
-            <ToolBarTray  x:Name="ToolBarAl"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Visible">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
-                    <StackPanel Orientation="Horizontal" >
-                        <ComboBox x:Name="ComboxPOITemplate"  x:FieldModifier="public" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button x:Name="ButtonCalculPOI"  x:FieldModifier="public" Content="POI"/>
-                        <Button x:Name="ButtonCalculSFR"  x:FieldModifier="public" Content="SFR"/>
-                    </StackPanel>
-                </ToolBar>
-            </ToolBarTray>
-
-            <Border x:Name="ToolBarBottom" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="4" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
-                <Grid>
-                    <StackPanel Orientation="Horizontal" >
-                        <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                            <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>
-                        </ToggleButton>
-                        <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"  Margin="-5"/>
-                        </ToggleButton>
-                        <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  Margin="-5"/>
-                        </ToggleButton>
-                        <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"  Margin="-5"/>
-                        </ToggleButton>
-                        <ToggleButton IsChecked="{Binding DrawPolygon}"  >
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
-                        </ToggleButton>
-                        <Button x:Name="reference"  Click="reference_Click" Margin="1,0">
-                            <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}"  Margin="-5"/>
-                        </Button>
-                        <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}"  AllowsTransparency="True">
-                            <StackPanel Margin="0">
-                                <Button Content="无" Command="{Binding ToolConcentricCircle.SelectNoneCommand}" Click="reference1_Click" Width="80" Tag="-1"/>
-                                <Button Content="十字准线" Command="{Binding ToolConcentricCircle.Select2Command}" Click="reference1_Click" Width="80" Tag="2"/>
-                                <Button Content="同心圆" Command="{Binding ToolConcentricCircle.Select0Command}" Click="reference1_Click" Width="80" Tag="0"/>
-                                <Button Content="单十字准线" Command="{Binding ToolConcentricCircle.Select1Command}" Click="reference1_Click" Width="80"  Tag="1"/>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="亮度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=BrightnessSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider x:Name="BrightnessSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-100" Maximum="150" ValueChanged="BrightnessSlider_ValueChanged"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=ContrastSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                <hc:PreviewSlider x:Name="ContrastSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="-50" Maximum="100" ValueChanged="ContrastSlider_ValueChanged"/>
+                            </DockPanel>
+                            <Button DockPanel.Dock="Right" Content="反相" Click="Button_Click_InvertImage" Margin="0,0,0,5"/>
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,5">
+                                    <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=thresholdSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
+                                    <hc:PreviewSlider x:Name="thresholdSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="0" Maximum="65535" ValueChanged="thresholdSlider_ValueChanged"/>
+                                </DockPanel>
+                                <Button Content="计算"  Click="Threshold_Click"/>
                             </StackPanel>
-                        </Popup>
-                    </StackPanel>
 
-                </Grid>
-            </Border>
+                        </StackPanel>
+                    </Border>
 
-
-            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
-                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
-                    </ToggleButton>
-                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
-                    </ToggleButton>
-                    <Button Command="{Binding ZoomUniform}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
-                    </Button>
-                    <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding RotateLeftCommand}" Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalLeftIcon}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding RotateRightCommand}" Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalRightIcon}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ZoomNone}"  Margin="1,0">
-                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
-                    </Button>
-                    <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
-                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
-                    </ToggleButton>
-                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-                    <Button   Command="{Binding OpenProperty}" Margin="1,0">
-                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                    </Button>
-
-                    <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
-                    </ToggleButton>
-
-                </ToolBar>
-            </ToolBarTray>
-            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                    <Button Click="Button_Click" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
-                    </Button>
-                    <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
-                    </Button>
-                </ToolBar>
-            </ToolBarTray>
-
-            <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,2,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                    <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
-                    </Button>
-                    <Button x:Name="Button1931"  x:FieldModifier="public" Margin="0,0,0,2">
-                        <Image Style="{StaticResource ToolBarImage}"  Source="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
-                    </Button>
-                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
+                    <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
-                    <ToggleButton  Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter1},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
+                    <ToggleButton  Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
                     </ToggleButton>
-                    <Button  Content="3D" Click="Button_3D_Click" Padding="5" Margin="0,0,0,2"/>
 
-                    <Button  Content="白" Padding="8,5" Click="AdjustWhiteBalance_Click" Margin="0,0,0,2"/>
-
-                    <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter}}" >
-                        <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
-                            <Image  Style="{StaticResource ToolBarImage}"   Source="/ColorVision.ImageEditor;component/Assets/png/PowerToy.png" Margin="-5"/>
-                        </ToggleButton>
-                        <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" Visibility="Collapsed" >
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
-                        </Grid>
-                        <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                            <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
-                            <Grid Grid.Row="1"   Width="18">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
-                                <Border Grid.Row="1"  Background="Transparent">
-                                    <Image x:Name="ColormapTypesImage" Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
-                                </Border>
-                                <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
-                            </Grid>
-                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
-                        </Grid>
-                    </StackPanel>
-                </ToolBar>
-            </ToolBarTray>
-
-
-            <Border x:Name="BorderPropertieslayers" Background="#55000000" Visibility="Collapsed" Grid.Row="1" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="20" CornerRadius="10" >
-                <StackPanel Margin="10">
-                    <TextBlock Foreground="White"  Text="按下E可以切换编辑模式和预览模式"  HorizontalAlignment="Center" />
-                    <TextBlock Foreground="White"  Text="按下TAB可以查看详细信息"  HorizontalAlignment="Center" />
-                    <TextBlock Foreground="White"  Text="按下F11可以全屏"  HorizontalAlignment="Center" />
-                    <TextBlock x:Name="InfoText" Text="" Foreground="White"  HorizontalAlignment="Center" />
                 </StackPanel>
-            </Border>
-        </Grid>
+            </ScrollViewer>
+            <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
+                <Button Content="应用当前图片" Click="Apply_Click"  Margin="0,0,10,0"/>
+                <Button Content="重新加载" Click="Reload_Click" />
+            </StackPanel>
 
-
-        <Grid x:Name="WaitControl"  x:FieldModifier="public" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
-            <Grid   Background="Black"  Opacity="0.3"/>
-            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
-                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
-                    <Grid>
-                        <base:ProgressRing  BorderBrush="Red" Margin="30" />
-                        <TextBlock x:Name="WaitControlText"   x:FieldModifier="public" Text="DataLoading" HorizontalAlignment="Center" FontSize="16"/>
-                        <ProgressBar x:Name="WaitControlProgressBar"  x:FieldModifier="public" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
-                    </Grid>
-                </Border>
-            </Border>
         </Grid>
     </Grid>
-
 </UserControl>

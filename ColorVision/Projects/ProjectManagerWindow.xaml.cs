@@ -1,5 +1,4 @@
-﻿using ColorVision.Plugins;
-using System.Windows;
+﻿using System.Windows;
 
 namespace ColorVision.Projects
 {
@@ -17,7 +16,6 @@ namespace ColorVision.Projects
         {
             this.DataContext = ProjectManager.GetInstance();
         }
-
 
 
         private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

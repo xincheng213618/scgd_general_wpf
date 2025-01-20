@@ -62,6 +62,8 @@ namespace ColorVision.Engine.Templates
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
                 UserControl userControl = ITemplate.GetUserControl();
+                if (userControl.Parent is Grid grid)
+                    grid.Children.Remove(userControl);
                 GridProperty.Children.Add(userControl);
                 if (!double.IsNaN(userControl.Height))
                 {
@@ -335,6 +337,31 @@ namespace ColorVision.Engine.Templates
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
             new TemplateSettingEdit(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void Button_CreateCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (ListView1.SelectedIndex > -1)
+            {
+                if (ITemplate.CopyTo(ListView1.SelectedIndex))
+                {
+                    int oldnum = ITemplate.Count;
+                    ITemplate.OpenCreate();
+                    if (oldnum != ITemplate.Count)
+                    {
+                        ListView1.SelectedIndex = ITemplate.Count - 1;
+                        if (ListView1.View is GridView gridView)
+                            GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+
+                    }
+                }
+            }
+            else
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+            }
+
+
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -80,23 +81,28 @@ namespace ColorVision.ImageEditor
         public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
         private bool _IsShowLoadImage = true;
 
-        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); } }
+        public event EventHandler ColormapTypesChanged;
+
+        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); ColormapTypesChanged?.Invoke(this, new EventArgs()); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
         public bool IsLayoutUpdated{ get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
 
+        public bool IsShowColorBar { get => _IsShowColorBar; set { _IsShowColorBar = value; NotifyPropertyChanged(); } }
+        private bool _IsShowColorBar = true;
+
         public event EventHandler BalanceChanged;
 
 
-        public float RedBalance { get => _RedBalance; set { _RedBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private float _RedBalance = 1;
+        public double RedBalance { get => _RedBalance; set { _RedBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private double _RedBalance = 1;
 
-        public float GreenBalance { get => _GreenBalance; set { _GreenBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private float _GreenBalance = 1;
+        public double GreenBalance { get => _GreenBalance; set { _GreenBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private double _GreenBalance = 1;
 
-        public float BlueBalance { get => _BlueBalance; set { _BlueBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
-        private float _BlueBalance = 1;
+        public double BlueBalance { get => _BlueBalance; set { _BlueBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
+        private double _BlueBalance = 1;
 
     }
 }

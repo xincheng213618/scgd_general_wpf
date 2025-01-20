@@ -5,7 +5,6 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Solution.V;
 using log4net;
-using Microsoft.VisualBasic.Logging;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -102,7 +101,7 @@ namespace ColorVision.Solution.V
             foreach (var item in directoryInfo.GetFiles())
             {
                 i++;
-                if (i == 100)
+                if (i == 10)
                 {
                     await Task.Delay(100);
                     i = 0;

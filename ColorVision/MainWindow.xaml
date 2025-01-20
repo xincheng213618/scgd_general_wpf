@@ -8,6 +8,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
+        xmlns:ui ="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -19,7 +20,23 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0"  Height="27" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
             <Grid>
-                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" />
+                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
+                    <MenuItem Header="编辑(_E)">
+                        <MenuItem  Header="UndoHistoy" Command="{x:Static ui:Commands.UndoHistory}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
+                            <MenuItem.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Header}" />
+                                </DataTemplate>
+                            </MenuItem.ItemTemplate>
+                            <MenuItem.ItemContainerStyle>
+                                <Style TargetType="MenuItem">
+                                    <Setter Property="Command" Value="{Binding UndoCommand}" />
+                                </Style>
+                            </MenuItem.ItemContainerStyle>
+                        </MenuItem>
+                    </MenuItem>
+
+                </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                 <Button Background="Transparent" BorderThickness="0"  Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>
             </Grid>

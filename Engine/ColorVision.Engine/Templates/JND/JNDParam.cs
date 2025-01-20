@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ColorVision.Engine.Templates.JND

@@ -177,10 +177,6 @@ int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X
 	if (mat.empty())
 		return -1;
 
-	// 确保图像是CV_32FC1类型
-	if (mat.type() != CV_32FC1) {
-		return -2; // 或者您可以在这里转换图像类型
-	}
 
 	// 转换为8位图像
 	double minVal, maxVal;
@@ -217,6 +213,50 @@ int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X
 	MatToHImage(scaledMat, outImage);
 	return 0;
 }
+
+int GhostImage(HImage img, HImage* outImage, int singleLedPixelNum, int* LED_pixel_X, int* LED_pixel_Y, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	if (mat.empty())
+		return -1;
+
+	// 转换为8位图像
+	double minVal, maxVal;
+	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
+	cv::Mat scaledMat;
+	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+	cv::cvtColor(scaledMat, scaledMat, cv::COLOR_GRAY2BGR);
+
+	std::vector<std::vector<cv::Point>> paintContours;
+
+	for (size_t i = 0; i < singleLedPixelNum; i++)
+	{
+		std::vector<cv::Point> lists;
+		lists.push_back(cv::Point(LED_pixel_X[i], LED_pixel_Y[i]));
+		paintContours.push_back(lists);
+	}
+
+	cv::drawContours(scaledMat, paintContours, -1, cv::Scalar(0, 255, 0), -1, 8, cv::noArray(), INT_MAX, cv::Point());
+
+
+	//paintContours.clear();
+	std::vector<std::vector<cv::Point>> paintContours1;
+
+
+	for (size_t i = 0; i < singleGhostPixelNum; i++)
+	{
+		std::vector<cv::Point> lists;
+		lists.push_back(cv::Point(Ghost_pixel_X[i], Ghost_pixel_Y[i]));
+		paintContours1.push_back(lists);
+	}
+	cv::drawContours(scaledMat, paintContours1, -1, cv::Scalar(0, 0, 255), -1, 8, cv::noArray(), INT_MAX, cv::Point());
+	//paintContours.clear();
+
+	MatToHImage(scaledMat, outImage);
+	return 0;
+}
+
 
 
 

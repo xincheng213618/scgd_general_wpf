@@ -1,5 +1,4 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;
@@ -10,7 +9,6 @@ using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

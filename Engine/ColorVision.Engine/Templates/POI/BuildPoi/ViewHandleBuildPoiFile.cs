@@ -3,8 +3,6 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
@@ -156,8 +154,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
                                 OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
                                 hImageProcessed.pData = IntPtr.Zero;
-                                view.ImageView.PseudoImage = image;
-                                view.ImageView.ImageShow.Source = view.ImageView.PseudoImage;
+                                view.ImageView.FunctionImage = image;
+                                view.ImageView.ImageShow.Source = view.ImageView.FunctionImage;
                             }
                         });
 

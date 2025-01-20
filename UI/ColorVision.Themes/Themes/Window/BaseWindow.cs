@@ -114,7 +114,7 @@ namespace ColorVision.Themes.Controls
         {
             get
             {
-                using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(nint.Zero);
+                using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
                 return graphics.DpiX;
             }
         }
@@ -123,7 +123,7 @@ namespace ColorVision.Themes.Controls
         {
             get
             {
-                using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(nint.Zero);
+                using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
                 return graphics.DpiY;
             }
         }
@@ -241,7 +241,7 @@ namespace ColorVision.Themes.Controls
                 }
 
             }
-            return nint.Zero;
+            return IntPtr.Zero;
         }
 
 

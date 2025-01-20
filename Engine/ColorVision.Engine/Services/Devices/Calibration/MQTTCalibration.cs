@@ -1,7 +1,5 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Messages;
+﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Themes.Controls;
 using CVCommCore;
 using CVCommCore.CVImage;
 using MQTTMessageLib;
@@ -9,7 +7,6 @@ using MQTTMessageLib.Calibration;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {

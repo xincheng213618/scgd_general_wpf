@@ -1,80 +1,191 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1720
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using ColorVision.UI.Views;
-using NPOI.OpenXmlFormats.Dml.Diagram;
+using FlowEngineLib.End;
+using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using static QRCoder.PayloadGenerator;
 
 namespace ColorVision.Engine.Services.Flow
 {
-    public class FlowRecord:ViewModelBase
-    {
-        public FlowRecord(STNode sTNode)
-        {
-            Guid = sTNode.Guid;
-            Name = sTNode.Title;
-            DateTime date = DateTime.Now;
-            DateTimeFlowRun = date;
-            DateTimeRun = date;
-            DateTimeStop = date;
-
-        }
-
-        public ContextMenu ContextMenu { get; set; }
-
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
-        private bool _IsSelected;
-
-        public Guid Guid { get; set; }
-        public string Name { get => _Name; set { _Name =value; NotifyPropertyChanged(); } }
-        private string _Name;
-        public DateTime DateTimeFlowRun { get => _DateTimeFlowRun; set { _DateTimeFlowRun = value; NotifyPropertyChanged(); } }
-        private DateTime _DateTimeFlowRun;
-
-        public DateTime DateTimeRun { get => _DateTimeRun; set { _DateTimeRun = value; NotifyPropertyChanged(); } }
-        private DateTime _DateTimeRun;
-
-        public DateTime DateTimeStop { get => _DateTimeStop; set { _DateTimeStop = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(RunTime)); NotifyPropertyChanged(nameof(FlowTime)); } }
-        private DateTime _DateTimeStop;
-
-        public TimeSpan RunTime { get => _DateTimeStop - _DateTimeRun; }
-        public TimeSpan FlowTime { get => _DateTimeStop - _DateTimeFlowRun; }
-    }
-
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewFlow : UserControl,IView
+    public partial class ViewFlow : UserControl,IView, INotifyPropertyChanged,IDisposable
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
         public ObservableCollection<FlowRecord> FlowRecords { get; set; } = new ObservableCollection<FlowRecord>();
+
+        public RelayCommand AutoSizeCommand { get; set; }
+
+        public event EventHandler RefreshFlow;
+        public RelayCommand RefreshCommand { get; set; }
+
+        public RelayCommand ClearCommand { get; set; }
+        public RelayCommand SaveCommand { get; set; }
+
+        public RelayCommand AutoAlignmentCommand { get; set; }
+
+        public RelayCommand OpenFlowTemplateCommand { get; set; }
+
+        public static FlowConfig FlowConfig => FlowConfig.Instance;
+
+        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        private bool _IsEditMode = true;
 
         public ViewFlow()
         {
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
             InitializeComponent();
+            AutoSizeCommand = new RelayCommand(a => AutoSize());
+            RefreshCommand = new RelayCommand(a => Refresh());
+            ClearCommand = new RelayCommand(a => Clear());
+            SaveCommand = new RelayCommand(a => Save());
+            AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
+            OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
+        }
+        #region ActionCommand
+
+        public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
+        public ObservableCollection<ActionCommand> RedoStack { get; set; } = new ObservableCollection<ActionCommand>();
+
+        public void ClearActionCommand()
+        {
+            UndoStack.Clear();
+            RedoStack.Clear();
         }
 
+        public void AddActionCommand(ActionCommand actionCommand)
+        {
+            UndoStack.Add(actionCommand);
+            RedoStack.Clear();
+        }
+
+        public void Undo()
+        {
+            if (UndoStack.Count > 0)
+            {
+                var undoAction = UndoStack[^1]; // Access the last element
+                UndoStack.RemoveAt(UndoStack.Count - 1); // Remove the last element
+                undoAction.UndoAction();
+                RedoStack.Add(undoAction);
+            }
+        }
+
+        public void Redo()
+        {
+            if (RedoStack.Count > 0)
+            {
+                var redoAction = RedoStack[^1]; // Access the last element
+                RedoStack.RemoveAt(RedoStack.Count - 1); // Remove the last element
+                redoAction.RedoAction();
+                UndoStack.Add(redoAction);
+            }
+        }
+        #endregion
+
+        public void OpenFlowTemplate()
+        {
+            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            Refresh();
+        }
+
+        public void AutoAlignment()
+        {
+            STNodeEditorHelper.ApplyTreeLayout(startX: 100, startY: 100, horizontalSpacing: 250, verticalSpacing: 200);
+            STNodeEditorHelper.AutoSize();
+        }
+
+        public void Save()
+        {
+            if (!STNodeEditorHelper.CheckFlow()) return;
+            FlowParam.DataBase64 = Convert.ToBase64String(STNodeEditorMain.GetCanvasData());
+            FlowParam.Save();
+            MessageBox.Show(Application.Current.GetActiveWindow(),"保存成功","Flow");
+        }
+
+
+        public void Refresh()
+        {
+            RefreshFlow?.Invoke(this, new EventArgs());
+        }
+        public void Clear()
+        {
+            STNodeEditorMain.Nodes.Clear();
+        }
+
+        public STNodeEditorHelper STNodeEditorHelper { get; set; }
+
+        public FlowParam FlowParam { get; set; }
+
+        public float CanvasScale { get => STNodeEditorHelper.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
+
+        STNodeTreeView STNodeTreeView1 = new STNodeTreeView();
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = this;
             listViewRecord.ItemsSource = FlowRecords;
+            STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
+
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
-            STNodePropertyGrid1.IsEditEnable = false;
-            STNodeEditorMain.ActiveChanged += (s, e) =>
+
+            STNodeEditorMain.ActiveChanged +=(s,e) => SignStackBorder.Visibility = STNodeEditorMain.ActiveNode != null ? Visibility.Visible : Visibility.Collapsed;
+
+            STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
-                STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
+                if (e.KeyCode == System.Windows.Forms.Keys.Delete)
+                {
+                    if (STNodeEditorMain.ActiveNode != null)
+                    {
+                        var node = STNodeEditorMain.ActiveNode;
+                        STNodeEditorMain.Nodes.Remove(node);
+                    }
+
+                    foreach (var item in STNodeEditorMain.GetSelectedNode())
+                    {
+                        var node = STNodeEditorMain.ActiveNode;
+                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+                    }
+                }
+
+                if (e.KeyCode == System.Windows.Forms.Keys.S  && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    Save();
+                }
+                if (e.KeyCode == System.Windows.Forms.Keys.F5 ||( e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
+                {
+                    Refresh();
+                }
+                if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                {
+                    AutoAlignment();
+                }
             };
+
             FlowEngineControl.AttachNodeEditor(STNodeEditorMain);
 
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
-
             View.ViewIndexChangedEvent += (s, e) =>
             {
                 if (e == -2)
@@ -92,49 +203,17 @@ namespace ColorVision.Engine.Services.Flow
                             View.ViewIndex = -1;
                         }
                     }
-
                     );
                 }
-                else
-                {
-                    STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("设为主窗口", null, (s, e1) => ViewGridManager.GetInstance().SetOneView(this));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("显示全部窗口", null, (s, e1) => ViewGridManager.GetInstance().SetViewNum(-1));
-                    STNodeEditorMain.ContextMenuStrip.Items.Add("独立窗口中显示", null, (s, e1) => View.ViewIndex = -2);
-                }
             };
+            STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
         }
 
-        public float CanvasScale { get; set; }
 
         public void AutoSize()
         {
-            // Calculate the centers
-            var boundsCenterX = STNodeEditorMain.Bounds.Width / 2;
-            var boundsCenterY = STNodeEditorMain.Bounds.Height / 2;
-
-            // Calculate the scale factor to fit CanvasValidBounds within Bounds
-            var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
-            var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
-            CanvasScale = Math.Min(scaleX, scaleY);
-            CanvasScale = CanvasScale>1?1:CanvasScale;
-            // Apply the scale
-            STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
-
-            var validBoundsCenterX = STNodeEditorMain.CanvasValidBounds.Width / 2;
-            var validBoundsCenterY = STNodeEditorMain.CanvasValidBounds.Height / 2;
-
-            // Calculate the offsets to move CanvasValidBounds to the center of Bounds
-            var offsetX = boundsCenterX - validBoundsCenterX * CanvasScale - 50 * CanvasScale;
-            var offsetY = boundsCenterY - validBoundsCenterY * CanvasScale - 50 * CanvasScale;
-
-
-            // Move the canvas
-            STNodeEditorMain.MoveCanvas(offsetX, STNodeEditorMain.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
-            STNodeEditorMain.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
+            STNodeEditorHelper.AutoSize();
         }
-
-
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
@@ -147,35 +226,94 @@ namespace ColorVision.Engine.Services.Flow
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Left)
+            if (STNodeEditorMain.ActiveNode == null && STNodeEditorMain.GetSelectedNode().Length == 0)
             {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
+                if (e.Key == Key.Left)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX + 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Right)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100 * CanvasScale, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Up)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Down)
+                {
+                    STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100 * CanvasScale, bAnimation: true, CanvasMoveArgs.Top);
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Add)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
+                    e.Handled = true;
+                }
+                else if (e.Key == Key.Subtract)
+                {
+                    STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+                    NotifyPropertyChanged(nameof(CanvasScale));
+                    e.Handled = true;
+                }
             }
-            else if (e.Key == Key.Right)
+            else
             {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX - 100, STNodeEditorMain.CanvasOffsetY, bAnimation: true, CanvasMoveArgs.Left);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Up)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY + 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Down)
-            {
-                STNodeEditorMain.MoveCanvas(STNodeEditorMain.CanvasOffsetX, STNodeEditorMain.CanvasOffsetY - 100, bAnimation: true, CanvasMoveArgs.Top);
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Add)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale + 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
-            }
-            else if (e.Key == Key.Subtract)
-            {
-                STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.1f, (STNodeEditorMain.Width / 2), (STNodeEditorMain.Height / 2));
-                e.Handled = true;
+
+                foreach (var item in STNodeEditorMain.GetSelectedNode())
+                {
+                    if (e.Key == Key.Left)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Right)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X - 10, item.Location.Y);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X + 10, item.Location.Y);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Up)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+                        e.Handled = true;
+                    }
+                    else if (e.Key == Key.Down)
+                    {
+                        item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+                        Action undoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y - 10);
+                        Action redoaction = () => item.Location = new System.Drawing.Point(item.Location.X, item.Location.Y + 10);
+
+                        ActionCommand actionCommand = new ActionCommand(undoaction, redoaction);
+                        AddActionCommand(actionCommand);
+
+                        e.Handled = true;
+                    }
+                    if (e.Key == Key.Delete)
+                    {
+                        STNodeEditorMain.Nodes.Remove(item);
+
+                        e.Handled = true;
+                    }
+                }
             }
         }
 
@@ -184,7 +322,24 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseDown(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             lastMousePosition = e.Location;
-            if (STNodeEditorMain.HoverNode == null && e.Button == System.Windows.Forms.MouseButtons.Left)
+            System.Drawing.PointF m_pt_down_in_canvas = new System.Drawing.PointF();
+            m_pt_down_in_canvas.X = ((float)e.X - STNodeEditorMain.CanvasOffsetX) / STNodeEditorMain.CanvasScale;
+            m_pt_down_in_canvas.Y = ((float)e.Y - STNodeEditorMain.CanvasOffsetY) / STNodeEditorMain.CanvasScale;
+            NodeFindInfo nodeFindInfo = STNodeEditorMain.FindNodeFromPoint(m_pt_down_in_canvas);
+
+            if (!string.IsNullOrEmpty(nodeFindInfo.Mark))
+            {
+
+            }
+            else if (nodeFindInfo.Node != null)
+            {
+
+            }
+            else if (nodeFindInfo.NodeOption != null)
+            {
+
+            }
+            else if (e.Button == System.Windows.Forms.MouseButtons.Left)
             {
                 IsMouseDown = true;
             }
@@ -193,11 +348,12 @@ namespace ColorVision.Engine.Services.Flow
         private void STNodeEditorMain_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
         {
             IsMouseDown = false;
+            
         }
 
         private void STNodeEditorMain_MouseMove(object sender, System.Windows.Forms.MouseEventArgs e)
         {
-            if (IsMouseDown)
+            if ((!IsEditMode|| Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) && IsMouseDown)
             {        // 计算鼠标移动的距离
                 int deltaX = e.X - lastMousePosition.X;
                 int deltaY = e.Y - lastMousePosition.Y;
@@ -223,6 +379,7 @@ namespace ColorVision.Engine.Services.Flow
             if (e.Delta < 0)
             {
                 STNodeEditorMain.ScaleCanvas(STNodeEditorMain.CanvasScale - 0.05f, mousePosition.X, mousePosition.Y);
+
             }
             else
             {
@@ -238,6 +395,13 @@ namespace ColorVision.Engine.Services.Flow
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
 
+        }
+
+
+        public void Dispose()
+        {
+            STNodeEditorMain?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -6,12 +6,17 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    public class CameraTempModel : PKModel
+    public class CameraTempModel : VPKModel
     {
+        [Column("temp_value")]
         public float? TempValue { get; set; }
+        [Column("pwm_value")]
         public int? PwmValue { get; set; }
+        [Column("create_date")]
+
         public DateTime? CreateDate { get; set; }
 
+        [Column("res_id")]
         public int? RescourceId { get; set; }
     }
 
@@ -21,42 +26,6 @@ namespace ColorVision.Engine.Services.Dao
 
         public CameraTempDao() : base("t_scgd_camera_temp", "id")
         {
-        }
-
-        public override DataTable CreateColumns(DataTable dataTable)
-        {
-            dataTable.Columns.Add("id", typeof(int));
-            dataTable.Columns.Add("temp_value", typeof(float));
-            dataTable.Columns.Add("pwm_value", typeof(int));
-            dataTable.Columns.Add("create_date", typeof(DateTime));
-            dataTable.Columns.Add("res_id", typeof(int));
-            return dataTable;
-        }
-
-        public override CameraTempModel GetModelFromDataRow(DataRow item)
-        {
-            CameraTempModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                TempValue = item.Field<float>("temp_value"),
-                PwmValue = item.Field<int>("pwm_value"),
-                CreateDate = item.Field<DateTime>("create_date"),
-                RescourceId = item.Field<int>("res_id")
-            };
-            return model;
-        }
-
-        public override DataRow Model2Row(CameraTempModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                row["id"] = item.Id;
-                row["temp_value"] = item.TempValue;
-                row["pwm_value"] = item.PwmValue;
-                row["create_date"] = item.CreateDate;
-                row["res_id"] = item.RescourceId;
-            }
-            return row;
         }
 
         public CameraTempModel? GetLatestCameraTemp(int? resId = null)

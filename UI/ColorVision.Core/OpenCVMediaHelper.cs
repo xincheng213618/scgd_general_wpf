@@ -6,7 +6,7 @@ namespace ColorVision
 {
     public static class OpenCVMediaHelper
     {
-        private const string LibPath = "libs\\opencv_helper.dll";
+        private const string LibPath = "opencv_helper.dll";
 
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace ColorVision
         public static extern int M_ExtractChannel(HImage image, out HImage hImage, int channel);
        
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radio, int[] points, int pointCount, int thickness);
+        public static extern int M_DrawPoiImage(HImage image, out HImage hImage, int radius, int[] points, int pointCount, int thickness);
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_ConvertImage(HImage image, out IntPtr rowGrayPixels, out int length, int scaleFactor , int targetPixelsX, int targetPixelsY);
@@ -80,7 +80,48 @@ namespace ColorVision
 
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, float redBalance, float greenBalance, float blueBalance);
+        public unsafe static extern int M_GetWhiteBalance(HImage image, out HImage hImage, double redBalance, double greenBalance, double blueBalance);
+
+        /// <summary>
+        /// 伽马校正
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="gamma"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_ApplyGammaCorrection(HImage image, out HImage hImage, double gamma);
+
+        /// <summary>
+        /// 调整亮度对比度
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="alpha"></param>
+        /// <param name="beta"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_AdjustBrightnessContrast(HImage image, out HImage hImage, double alpha, double beta);
+
+        /// <summary>
+        /// 反相
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_InvertImage(HImage image, out HImage hImage);
+
+
+        /// <summary>
+        /// 二值化
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_Threshold(HImage image, out HImage hImage, double thresh, double maxval, int type);
+        
 
     }
 }

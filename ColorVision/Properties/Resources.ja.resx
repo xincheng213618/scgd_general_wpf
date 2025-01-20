@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新規作成 (_N)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>開く (_O)</value>
-  </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>更新を確認する (_U)</value>
   </data>
@@ -155,9 +149,6 @@
   </data>
   <data name="Minimize" xml:space="preserve">
     <value>最小化</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
   </data>
   <data name="Pin" xml:space="preserve">
     <value>ピン留めする</value>
@@ -218,9 +209,6 @@
   </data>
   <data name="NotRunAsAdmin" xml:space="preserve">
     <value>非管理者として実行する</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>ログ</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus

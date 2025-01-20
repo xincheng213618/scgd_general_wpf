@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using log4net;
@@ -23,18 +22,21 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         private static ILog log = LogManager.GetLogger(nameof(TemplateJsonKBParam));
         public RelayCommand ImportFormPoiCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
+        public RelayCommand EditTemplatePoiCommand { get; set; }
 
 
         public TemplateJsonKBParam() : base()
         {
             ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
+            EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
         }
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
             ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
+            EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
         }
 
         public static ObservableCollection<TemplateModel<PoiParam>> PoiParams => TemplatePoi.Params;
@@ -45,6 +47,11 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public void OpenTemplatePoi()
         {
             new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+
+        public void EditTemplatePoi()
+        {
+            new TemplatePoi().PreviewMouseDoubleClick(_TemplatePoiSelectedIndex);
         }
 
         public void ImportFormPoi()

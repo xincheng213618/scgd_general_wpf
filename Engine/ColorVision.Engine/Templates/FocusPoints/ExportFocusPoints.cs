@@ -1,6 +1,4 @@
-﻿using ColorVision.Engine.Templates;
-
-namespace ColorVision.Engine.Templates.FocusPoints
+﻿namespace ColorVision.Engine.Templates.FocusPoints
 {
     public class ExportFocusPoints : ExportTemplateBase
     {

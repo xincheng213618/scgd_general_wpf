@@ -8,7 +8,6 @@ using System.Linq;
 using System.Windows.Controls;
 using System.Collections.Generic;
 using System.Windows;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Manager
 {

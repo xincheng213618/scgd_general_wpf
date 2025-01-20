@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="MenuNew" xml:space="preserve">
-    <value>Новый(Н)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>Открыть(О)</value>
-  </data>
   <data name="MenuUpdate" xml:space="preserve">
     <value>Проверить наличие обновлений(U)</value>
   </data>
@@ -155,9 +149,6 @@
   </data>
   <data name="Minimize" xml:space="preserve">
     <value>минимизировать</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>максимизировать</value>
   </data>
   <data name="Pin" xml:space="preserve">
     <value>прикрепить сверху</value>
@@ -218,9 +209,6 @@
   </data>
   <data name="NotRunAsAdmin" xml:space="preserve">
     <value>Запуск от имени администратора</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>бревно</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Началось успешно</value>

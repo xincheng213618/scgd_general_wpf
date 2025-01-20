@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;

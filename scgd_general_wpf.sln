@@ -32,6 +32,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "UI\ColorVision.UI\ColorVision.UI.csproj", "{04BB9722-017A-466F-B4ED-80165C654618}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{3978403E-55E4-4AAC-8978-1D39651BEA7C}"
+	ProjectSection(SolutionItems) = preProject
+		Plugins\Directory.Build.props = Plugins\Directory.Build.props
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalibrationCorrection", "Plugins\CalibrationCorrection\CalibrationCorrection.csproj", "{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}"
 EndProject
@@ -583,12 +586,12 @@ Global
 		{D45AF1EE-BBBA-4F98-9A06-08E408F78681} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal

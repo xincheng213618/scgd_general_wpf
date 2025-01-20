@@ -1,17 +1,8 @@
 ﻿using ColorVision.Common.Collections;
-using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.ImageEditor.Draw;
-using CsvHelper.Configuration.Attributes;
-using NPOI.SS.Formula.PTG;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ColorVision.Engine.Templates.POI

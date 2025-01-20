@@ -4,7 +4,6 @@ using ColorVision.Net;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
-using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -166,6 +165,8 @@ namespace ColorVision.Engine.Media
                 if (index <= 0) return;
                 if (meta.FileExtType == CVType.CIE)
                 {
+                    imageView.Button1931.Visibility = Visibility.Visible;
+
                     log.Debug(JsonConvert.SerializeObject(meta));
                     imageView.Config.AddProperties("IsCVCIE", true);
                     imageView.Config.AddProperties("Exp", meta.exp);

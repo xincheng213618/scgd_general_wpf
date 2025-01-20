@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Properties;
+﻿using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.CUDA;

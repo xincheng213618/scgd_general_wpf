@@ -1,12 +1,8 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services
 {
@@ -33,6 +29,11 @@ namespace ColorVision.Engine.Services
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
                 }
                 comboBox.ItemsSource = KeyValues;
+
+                if (view.View.ViewIndex >= max)
+                {
+                    view.View.ViewIndex = -1;
+                }
                 comboBox.SelectedValue = view.View.ViewIndex;
             }
 

@@ -1,8 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
-using ColorVision.Engine.Templates.Jsons.LedCheck2;
-using ColorVision.Engine.Templates.POI;
 using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
@@ -75,24 +73,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         }
 
 
-        public MsgRecord CallFunction(TemplateJsonParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType, PoiParam poiParam, CVOLEDCOLOR cOLOR)
-        {
-            serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = findDotsArrayParam.Id, Name = findDotsArrayParam.Name });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
-            Params.Add("Color", cOLOR);
-
-            MsgSend msg = new()
-            {
-                EventName = findDotsArrayParam.ModThirdPartyAlgorithmsModel.Code,
-                SerialNumber = serialNumber,
-                Params = Params
-            };
-
-            return PublishAsyncClient(msg);
-        }
 
         public MsgRecord CallFunction(TemplateJsonParam modparam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {

@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -125,7 +124,7 @@ namespace ColorVision.Plugins
 @echo off
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c PluginManagerExport
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -193,7 +192,7 @@ if exist %targetDirectory% (
 )
 
 endlocal
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c PluginManagerExport
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";

@@ -1,16 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.PhyCameras.Dao;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using System;
@@ -20,7 +15,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 

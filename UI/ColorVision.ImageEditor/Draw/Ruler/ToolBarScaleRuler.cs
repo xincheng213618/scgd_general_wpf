@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -75,7 +74,7 @@ namespace ColorVision.ImageEditor.Draw.Ruler
                     ScalRuler.ParentWidth = GridEx.ActualWidth;
                     ScalRuler.ParentHeight = GridEx.ActualHeight;
                     drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
-                    GridEx.SizeChanged -= GridEx_SizeChanged;
+                    GridEx.SizeChanged += GridEx_SizeChanged;
 
                     if (Window.GetWindow(Parent) is Window window)
                     {

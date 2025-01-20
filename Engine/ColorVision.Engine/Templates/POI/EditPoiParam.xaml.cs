@@ -314,8 +314,13 @@ namespace ColorVision.Engine.Templates.POI
             {
                 AlgorithmKBLocal local = new AlgorithmKBLocal();
                 local.FilePath = PoiParam.PoiConfig.BackgroundFilePath;
-                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a=>a.Value == PoiParam));
-                FunctionStackpanel.Children.Add(local.GetUserControl());
+                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a => a.Value == PoiParam));
+
+                Border Margin = new Border() { Margin = new Thickness(0, 5, 0, 0), Style = (Style)FindResource("BorderModuleArea"), CornerRadius = new CornerRadius(5) };
+                StackPanel stackPanel = new StackPanel(){Margin = new Thickness(5)};
+                Margin.Child = stackPanel;
+                stackPanel.Children.Add(local.GetUserControl());
+                FunctionStackpanel.Children.Add(Margin);
             }
         }
 
@@ -429,7 +434,7 @@ namespace ColorVision.Engine.Templates.POI
             }
             else if (Path.GetExtension(filePath).Contains(".tif"))
             {
-                SetImageSource(TiffReader.ReadTiff(filePath));
+                SetImageSource(new WriteableBitmap(TiffReader.ReadTiff(filePath)));
             }
             else 
             {
@@ -563,7 +568,6 @@ namespace ColorVision.Engine.Templates.POI
                     Init = true;
                     return;
                 }
-
                 DrawingVisualLists.SuspendUpdate();
                 int WaitNum = 50;
                 if (!PoiParam.PoiConfig.IsShowText)
@@ -628,6 +632,8 @@ namespace ColorVision.Engine.Templates.POI
                     WaitControl.Visibility = Visibility.Collapsed;
                     WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 }
+
+                ImageShow.ClearActionCommand();
                 Init = true;
             }
             catch
@@ -1504,11 +1510,12 @@ namespace ColorVision.Engine.Templates.POI
             WaitControlText.Text = "数据正在保存";
             Thread thread = new(() =>
             {
-                PoiParam.Save2DB();
+                int ret = PoiParam.Save2DB();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     WaitControl.Visibility = Visibility.Collapsed;
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
+                    string Msg = ret ==-1 ?"保存失败,具体报错信息请查看日志": "保存成功";
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), Msg, "ColorVision");
                 });
             });
             thread.Start();
@@ -1533,16 +1540,6 @@ namespace ColorVision.Engine.Templates.POI
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
         {
             SettingPopup.IsOpen = true;
-        }
-        private void Import_Draw_Click(object sender, RoutedEventArgs e)
-        {
-            EditPoiParamAdd windowFocusPointAd = new EditPoiParamAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowFocusPointAd.Closed += (s, e) =>
-            {
-                if(windowFocusPointAd.IsSucess)
-                    PoiParamToDrawingVisual(PoiParam);
-            };
-            windowFocusPointAd.ShowDialog();
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {

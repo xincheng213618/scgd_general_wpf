@@ -6,7 +6,6 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DVCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle
     {
-        public BaseProperties BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }

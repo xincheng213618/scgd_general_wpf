@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.V;
-using HandyControl.Tools.Converter;
 using System.Globalization;
 using System.IO;
 using System.Windows;
@@ -22,7 +21,7 @@ namespace ColorVision.Solution
                 uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
                 if (uIElement is TreeViewItem)
                 {
-                    num += 3.0;
+                    num += 4.0;
                 }
             }
 

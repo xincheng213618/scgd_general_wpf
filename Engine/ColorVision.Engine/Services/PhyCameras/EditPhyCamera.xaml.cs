@@ -60,27 +60,42 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-            var type = EditConfig.CameraType;
-
-            if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
+            ComboxCameraMode.SelectionChanged += (s, e) =>
             {
-                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                  where e1 != ImageChannel.Three
-                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-            }
-            else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
-            {
-                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                  where e1 != ImageChannel.One
-                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-            }
-            else
-            {
-                ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                  select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-
-
+                InitComboxCameraChannel();
+                ComboxCameraChannel.SelectedIndex = 0;
             };
+            ComboxCameraModel.SelectionChanged += (s, e) => 
+            {
+                InitComboxCameraChannel();
+                ComboxCameraChannel.SelectedIndex = 0;
+            };
+
+            InitComboxCameraChannel();
+            void InitComboxCameraChannel()
+            {
+                var type = EditConfig.CameraType;
+                if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.Three
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+
+                }
+                else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.One
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                }
+                else
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                };
+            }
+
+
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -99,6 +114,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 { ImageChannelType.Gray_Z, chType3 }
             };
 
+            if (EditConfig.CFW.ChannelCfgs.Count == 0)
+            {
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 0, Chtype = ImageChannelType.Gray_Y });
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 1, Chtype = ImageChannelType.Gray_X });
+                EditConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 2, Chtype = ImageChannelType.Gray_Z });
+            }
             while (EditConfig.CFW.ChannelCfgs.Count< 9)
             {
                 EditConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
