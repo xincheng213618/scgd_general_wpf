@@ -192,7 +192,7 @@
                         <Button Click="Button_Click" Margin="0,0,0,2">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
+                        <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2">
                             <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                         </Button>
                         <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">

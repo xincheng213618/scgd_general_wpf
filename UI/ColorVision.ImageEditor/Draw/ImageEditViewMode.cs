@@ -53,7 +53,7 @@ namespace ColorVision.ImageEditor.Draw
         public RelayCommand FlipVerticalCommand { get; set; }
 
 
-        public RelayCommand SaveImageCommand { get; set; }
+        public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ExportImageCommand { get; set; }
 
         public RelayCommand ClearImageCommand { get; set; }
@@ -101,6 +101,7 @@ namespace ColorVision.ImageEditor.Draw
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
+            drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
 
             this.Parent = Parent;
             drawCanvas.PreviewMouseDown += (s, e) =>
@@ -137,7 +138,7 @@ namespace ColorVision.ImageEditor.Draw
             FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image != null && Image.Source != null);
             drawCanvas.PreviewKeyDown += PreviewKeyDown;
             zoombox.Cursor = Cursors.Arrow;
-            SaveImageCommand = new RelayCommand(a => Save(),a=> Image!=null && Image.Source!=null);
+            SaveAsImageCommand = new RelayCommand(a => SaveAs(),a=> Image!=null && Image.Source!=null);
 
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
 
@@ -184,7 +185,7 @@ namespace ColorVision.ImageEditor.Draw
             ContextMenus.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
             ContextMenus.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
             ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });  
+            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveAsImageCommand });  
             ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
 
 
@@ -381,7 +382,7 @@ namespace ColorVision.ImageEditor.Draw
             ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
 
-        public void Save()
+        public void SaveAs()
         {
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "Png (*.png) | *.png";

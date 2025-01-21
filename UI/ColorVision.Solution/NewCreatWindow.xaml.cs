@@ -13,51 +13,6 @@ using ColorVision.Themes;
 
 namespace ColorVision.Solution
 {
-    public class HotKeyNewCreate : IHotKey,IMenuItem
-    {
-
-        public string? OwnerGuid => "File";
-
-        public string? GuidId => "MenuNew";
-
-        public int Order => 0;
-
-        public string? Header => Resources.MenuNew;
-
-        public string? InputGestureText => "Ctrl + N";
-
-        public object? Icon
-        {
-            get
-            {
-                TextBlock text = new()
-                {
-                    Text = "\uE8F4", // 使用Unicode字符
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 15,
-                };
-                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                return text;
-            }
-        }
-        public ICommand Command => new RelayCommand(A => Execute());
-
-        public HotKeys HotKeys => new(Resources.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
-        public Visibility Visibility => Visibility.Visible;
-        private void Execute()
-        {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            newCreatWindow.Closed += delegate
-            {
-                if (newCreatWindow.IsCreate)
-                {
-                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    SolutionManager.GetInstance().CreateSolution(SolutionDirectoryPath);
-                }
-            };
-            newCreatWindow.ShowDialog();
-        }
-    }
 
     public class NewCreateViewMode : ViewModelBase
     {

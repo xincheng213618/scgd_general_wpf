@@ -32,6 +32,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Net.Http;
 using System.Net.Http.Json;
+using ColorVision.Engine.Services.Configs;
+using ColorVision.UI.PropertyEditor;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -69,6 +71,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand EditCameraCommand { get; set; }
         public RelayCommand EditCalibrationCommand { get; set; }
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
+
+        public RelayCommand UpdateMotorConfigCommand {get; set; }
 
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
@@ -133,7 +137,27 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
+            UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
         }
+
+        public void UpdateMotorConfig()
+        {
+            var oldvalue = Config.MotorConfig.Clone();
+
+            var window = new PropertyEditorWindow(Config.MotorConfig, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            window.Closed += (s, e) =>
+            {
+                if (!Config.MotorConfig.EqualMax(oldvalue))
+                {
+                    Save();
+                }
+            };
+            window.ShowDialog();
+        }
+
+
+
+
 
         public void OpenSettingDirectory()
         {

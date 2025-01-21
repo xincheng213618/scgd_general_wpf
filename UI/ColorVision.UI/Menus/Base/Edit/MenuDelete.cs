@@ -9,5 +9,7 @@ namespace ColorVision.UI.Menus.Base.Edit
         public override string Header => Resources.MenuDelete;
         public override int Order => 20;
         public override ICommand Command => ApplicationCommands.Delete;
+        public override string InputGestureText => "Del";
+
     }
 }

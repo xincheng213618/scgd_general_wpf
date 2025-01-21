@@ -10,5 +10,7 @@ namespace ColorVision.UI.Menus.Base.Edit
         public override int Order => 20;
 
         public override ICommand Command => ApplicationCommands.Paste;
+        public override string InputGestureText => "Ctrl+V";
+
     }
 }

@@ -109,6 +109,11 @@ namespace ColorVision.UI.PropertyEditor
                         {
                             dockPanel = GenTextboxProperties(property, obj);
                         }
+                        else if (property.PropertyType.IsEnum)
+                        {
+                            dockPanel = GenEnumProperties(property, obj);
+
+                        }
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
@@ -154,6 +159,52 @@ namespace ColorVision.UI.PropertyEditor
             toggleSwitch.SetBinding(ToggleButton.IsCheckedProperty, binding);
             dockPanel.Children.Add(toggleSwitch);
             return dockPanel;
+        }
+
+
+        public DockPanel GenEnumProperties(PropertyInfo property, object obj)
+        {
+            var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
+            var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
+            var PropertyEditorTypeAttr = property.GetCustomAttribute<PropertyEditorTypeAttribute>();
+
+            PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
+
+            string displayName = displayNameAttr?.DisplayName ?? property.Name;
+            displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
+
+            var textBlock = new TextBlock
+            {
+                Text = displayName,
+                MinWidth = 120,
+                Foreground = (Brush)FindResource("GlobalTextBrush")
+            };
+            dockPanel.Children.Add(textBlock);
+
+            var comboBox = new ComboBox
+            {
+                Margin = new Thickness(5, 0, 0, 0),
+                MinWidth = 150
+            };
+
+            // Populate ComboBox with Enum values
+            var enumValues = Enum.GetValues(property.PropertyType);
+            foreach (var value in enumValues)
+            {
+                comboBox.Items.Add(value);
+            }
+            // Bind selected value to property
+            var binding = new Binding(property.Name)
+            {
+                Source = obj,
+                Mode = BindingMode.TwoWay
+            };
+            comboBox.SetBinding(ComboBox.SelectedItemProperty, binding);
+
+            dockPanel.Children.Add(comboBox);
+            return dockPanel;
+
         }
 
         public DockPanel GenTextboxProperties(PropertyInfo property, object obj)

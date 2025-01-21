@@ -8,5 +8,6 @@ namespace ColorVision.UI.Menus.Base.Edit
         public override string Header => "Redo";
         public override int Order => 10;
         public override ICommand Command => ApplicationCommands.Redo;
+        public override string InputGestureText => "Ctrl+Y";
     }
 }

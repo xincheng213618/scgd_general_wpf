@@ -131,6 +131,10 @@
                             </DockPanel>
                             <StackPanel Visibility="{Binding MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2">
+                                    <TextBlock Text="查询方法:" Width="120"/>
+                                    <ComboBox x:Name="ComboxFindFuncModel"  SelectedValue="{Binding MotorConfig.FindFuncModel}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
                                     <TextBlock Text="类型:" Width="120"/>
                                     <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                                 </DockPanel>

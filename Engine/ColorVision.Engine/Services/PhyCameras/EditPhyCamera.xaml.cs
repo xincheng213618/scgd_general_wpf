@@ -60,6 +60,9 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
+            ComboxFindFuncModel.ItemsSource = from e1 in Enum.GetValues(typeof(FindFuncModel)).Cast<FindFuncModel>()
+                                              select new KeyValuePair<FindFuncModel, string>(e1, e1.ToString());
+
             ComboxCameraMode.SelectionChanged += (s, e) =>
             {
                 InitComboxCameraChannel();
