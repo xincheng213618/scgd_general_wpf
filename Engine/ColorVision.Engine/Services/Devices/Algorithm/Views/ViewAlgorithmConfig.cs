@@ -6,6 +6,9 @@ using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ColorVision.Engine.Services.Dao;
+using Newtonsoft.Json;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -13,7 +16,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     public class ViewAlgorithmConfig : ViewConfigBase, IConfig
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
+        [JsonIgnore]
+        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
+        [JsonIgnore]
+        public RelayCommand ClearListCommand { get; set; }
+        public ViewAlgorithmConfig()
+        {
+            ClearListCommand = new RelayCommand(a => ViewResults.Clear());
+        }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();

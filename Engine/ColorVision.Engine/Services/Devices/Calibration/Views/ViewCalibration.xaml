@@ -43,7 +43,21 @@
             </ToolBarTray>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
                 <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25">
-                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                    <DoubleAnimation  Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" To="0.7" Duration="0:0:0.1" AutoReverse="True" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" RenderTransformOrigin="0.5,0.5">
+                        <Image.RenderTransform>
+                            <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1" />
+                        </Image.RenderTransform>
+                    </Image>
                 </Button>
                 <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
                     <Button.Triggers>
@@ -55,9 +69,9 @@
                             </BeginStoryboard>
                         </EventTrigger>
                     </Button.Triggers>
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}"  RenderTransformOrigin="0.5,0.5">
                         <TextBlock.RenderTransform>
-                            <RotateTransform x:Name="rotateTransform2" CenterX="8" CenterY="8"/>
+                            <RotateTransform x:Name="rotateTransform2" />
                         </TextBlock.RenderTransform>
                     </TextBlock>
                 </Button>

@@ -13,7 +13,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     public class ViewCalibrationConfig : ViewConfigBase, IConfig
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
-
+        [JsonIgnore]
+        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
         [JsonIgnore]
         public RelayCommand ClearListCommand { get; set; }
         public ViewCalibrationConfig()
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
+
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 

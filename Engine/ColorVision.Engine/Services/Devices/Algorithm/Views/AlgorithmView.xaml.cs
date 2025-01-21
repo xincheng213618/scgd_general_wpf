@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public static ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
