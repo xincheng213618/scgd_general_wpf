@@ -247,4 +247,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>复制(_C)</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>打印(_P)</value>
+  </data>
 </root>

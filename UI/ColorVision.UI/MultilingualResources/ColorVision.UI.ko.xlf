@@ -285,6 +285,10 @@
           <source>粘贴(_P)</source>
           <target state="new">페이스트(_P)</target>
         </trans-unit>
+        <trans-unit id="MenuPrint" translate="yes" xml:space="preserve">
+          <source>打印(_P)</source>
+          <target state="new">인쇄(_P)</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">이름 바꾸기(_M)</target>

@@ -30,6 +30,15 @@ namespace ColorVision.UI.Menus.Base
         public override ICommand Command => ApplicationCommands.SaveAs;
     }
 
+    public class MenuPrint : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.File;
+        public override string GuidId => "Cut";
+        public override string Header => Resources.MenuPrint;
+        public override int Order => 30;
+        public override ICommand Command => ApplicationCommands.Print;
+    }
+
     public class MenuExit : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.File;

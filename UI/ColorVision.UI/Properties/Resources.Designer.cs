@@ -367,6 +367,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 打印(_P) 的本地化字符串。
+        /// </summary>
+        public static string MenuPrint {
+            get {
+                return ResourceManager.GetString("MenuPrint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重命名(_M) 的本地化字符串。
         /// </summary>
         public static string MenuRename {

@@ -100,6 +100,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
+            drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
+
             this.Parent = Parent;
             drawCanvas.PreviewMouseDown += (s, e) =>
             {
@@ -112,7 +114,7 @@ namespace ColorVision.ImageEditor.Draw
                 drawCanvas.Focus();
             };
 
-
+            
             ZoomboxSub = zoombox ?? throw new ArgumentNullException(nameof(zoombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 

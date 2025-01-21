@@ -311,17 +311,6 @@ namespace ColorVision
             {
                 AddStatusBarIconMetadata(item);
             }
-
-        }
-
-        private void ViewTab_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ViewConfig.Instance.EditCommand.Execute(sender);
-        }
-
-        private void SolutionTab1_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            SolutionSetting.Instance.EditCommand.Execute(sender);
         }
     }
 }

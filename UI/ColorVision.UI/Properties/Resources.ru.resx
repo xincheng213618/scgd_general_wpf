@@ -267,4 +267,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>Копировать (С)</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>Печать(_P)</value>
+  </data>
 </root>

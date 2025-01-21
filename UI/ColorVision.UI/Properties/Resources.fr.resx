@@ -267,4 +267,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>Copie(C)</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>Imprimer</value>
+  </data>
 </root>

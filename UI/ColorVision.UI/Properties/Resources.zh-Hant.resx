@@ -267,4 +267,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>複製(_C)</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>列印(_P)</value>
+  </data>
 </root>

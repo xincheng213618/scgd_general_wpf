@@ -267,4 +267,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>_Copy</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>_Print</value>
+  </data>
 </root>

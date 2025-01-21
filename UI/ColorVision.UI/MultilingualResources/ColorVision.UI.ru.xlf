@@ -285,6 +285,10 @@
           <source>粘贴(_P)</source>
           <target state="new">Вставить(_P)</target>
         </trans-unit>
+        <trans-unit id="MenuPrint" translate="yes" xml:space="preserve">
+          <source>打印(_P)</source>
+          <target state="new">Печать(_P)</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">Переименовать(_М)</target>

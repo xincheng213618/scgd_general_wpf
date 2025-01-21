@@ -285,6 +285,10 @@
           <source>粘贴(_P)</source>
           <target state="new">_Paste</target>
         </trans-unit>
+        <trans-unit id="MenuPrint" translate="yes" xml:space="preserve">
+          <source>打印(_P)</source>
+          <target state="new">_Print</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">Rena_me</target>
