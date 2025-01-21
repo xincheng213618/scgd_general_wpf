@@ -49,7 +49,7 @@ namespace ColorVision.UI.Languages
         {
             if (defaultProcessDllName == null)
             {
-                string exeName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                string exeName = AppDomain.CurrentDomain.FriendlyName;
                 defaultProcessDllName = $"{exeName}.resources.dll";
             }
 
