@@ -106,14 +106,17 @@ namespace ColorVision.Engine.Services.Core
                                 }
                             }
                         }
-                        MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
-                        if (foundMsgRecord != null)
+                        Application.Current?.Dispatcher.BeginInvoke(() =>
                         {
-                            foundMsgRecord.ReciveTime = DateTime.Now;
-                            foundMsgRecord.MsgReturn = json;
-                            foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
-                            MsgRecords.Remove(foundMsgRecord);
-                        }
+                            MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                            if (foundMsgRecord != null)
+                            {
+                                foundMsgRecord.ReciveTime = DateTime.Now;
+                                foundMsgRecord.MsgReturn = json;
+                                foundMsgRecord.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
+                                MsgRecords.Remove(foundMsgRecord);
+                            }
+                        });
                     }
                     ///这里是因为这里先加载相机上，所以加在这里
                     if (!msgee)
