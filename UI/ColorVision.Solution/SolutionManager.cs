@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using ColorVision.UI.Shell;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
@@ -143,7 +144,7 @@ namespace ColorVision.Solution
                 Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
         }
 
-        public static void OpenSolutionWindow()
+        public void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.ShowDialog();

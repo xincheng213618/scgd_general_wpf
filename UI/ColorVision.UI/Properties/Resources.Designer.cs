@@ -268,6 +268,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关闭(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuClose {
+            get {
+                return ResourceManager.GetString("MenuClose", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCopy {
@@ -336,6 +345,15 @@ namespace ColorVision.UI.Properties {
         public static string MenuLanguage {
             get {
                 return ResourceManager.GetString("MenuLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建(_N) 的本地化字符串。
+        /// </summary>
+        public static string MenuNew {
+            get {
+                return ResourceManager.GetString("MenuNew", resourceCulture);
             }
         }
         

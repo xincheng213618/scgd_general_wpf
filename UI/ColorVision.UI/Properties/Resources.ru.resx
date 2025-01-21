@@ -270,4 +270,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>Печать(_P)</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Новый(Н)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>Закрыть(_C)</value>
+  </data>
 </root>

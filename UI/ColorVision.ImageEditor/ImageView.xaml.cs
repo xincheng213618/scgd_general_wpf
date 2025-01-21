@@ -56,7 +56,21 @@ namespace ColorVision.ImageEditor
             SetConfig(Config);
             foreach (var item in ImageViewComponentManager.GetInstance().IImageViewComponents)
                 item.Execute(this);
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => Open(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = ImageShow.Source !=null; }));
+
         }
+
+        public void Open()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImage(openFileDialog.FileName);
+            }
+        }
+
         private void Zoombox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
 
@@ -977,14 +991,10 @@ namespace ColorVision.ImageEditor
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                OpenImage(openFileDialog.FileName);
-            }
-            
+            Open();
         }
+
+
 
         public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
 

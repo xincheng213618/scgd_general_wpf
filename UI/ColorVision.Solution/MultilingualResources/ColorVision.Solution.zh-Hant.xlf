@@ -225,10 +225,6 @@
           <source>剪切(_T)</source>
           <target state="new">剪切(T)</target>
         </trans-unit>
-        <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
-          <source>新建(_N)</source>
-          <target state="new">新建(_N)</target>
-        </trans-unit>
         <trans-unit id="MenuOpenContainingFolder" translate="yes" xml:space="preserve">
           <source>打开所在的文件夹(_O)</source>
           <target state="new">打開所在的資料夾(O)</target>

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Solution.V;
 using ColorVision.Solution.V.Files;
 using ColorVision.UI;
+using log4net;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Windows;
@@ -8,6 +9,19 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+    public class CommadnInitialized : IMainWindowInitialized
+    {
+        public Task Initialize()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                Application.Current.MainWindow.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => SolutionManager.GetInstance().NewCreateWindow(), (s, e) => e.CanExecute = true));
+                Application.Current.MainWindow.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => SolutionManager.GetInstance().OpenSolutionWindow(), (s, e) => e.CanExecute = true));
+            });
+            return Task.CompletedTask;
+        }
+    }
+
     public partial class TreeViewControl
     {
         private void IniCommand()
@@ -17,6 +31,7 @@ namespace ColorVision.Solution
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(Commands.ReName, ExecutedCommand, CanExecuteCommand));
+
         }
 
         #region 通用命令执行函数

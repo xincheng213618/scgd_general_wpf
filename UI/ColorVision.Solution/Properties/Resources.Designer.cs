@@ -196,15 +196,6 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 新建(_N) 的本地化字符串。
-        /// </summary>
-        public static string MenuNew {
-            get {
-                return ResourceManager.GetString("MenuNew", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 打开所在的文件夹(_O) 的本地化字符串。
         /// </summary>
         public static string MenuOpenContainingFolder {
