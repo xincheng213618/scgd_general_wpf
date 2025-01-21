@@ -1,0 +1,112 @@
+﻿<Window x:Class="ColorVision.Engine.Messages.MessagesListWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Messages"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        mc:Ignorable="d"
+        Title="{x:Static properties:Resources.MsgLogWindow}" Height="600" Background="{StaticResource GlobalBackground}" Width="1200" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        </Style>  
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ListView x:Name="ListView1" Grid.Row="1" Background="Transparent"  BorderThickness="1" Margin="5" Style="{DynamicResource ListView.Small}" SelectionChanged="ListView1_SelectionChanged" ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
+                <ListView.Resources >
+                    <ContextMenu x:Key="ContextMenuItem">
+                        <MenuItem Header="{x:Static properties:Resources.SimulateSend}"  Click="MenuItem_Click" Tag="{Binding .}" />
+                        <MenuItem Header="{x:Static properties:Resources.SimulateReceive}"  Click="MenuItem_Click1" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.ViewSentData}"  Click="MenuItem_Click2" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.ViewReceivedData}"  Click="MenuItem_Click3" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Click4" Tag="{Binding .}"  />
+                    </ContextMenu>
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View >
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn  Header="ServiceName">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                    <TextBlock Text="{ Binding  MsgSend.ServiceName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="EventName">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                    <TextBlock Text="{ Binding  MsgSend.EventName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="SendTime">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                    <TextBlock Text="{ Binding  SendTime,StringFormat=HH:mm:ss}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="ReciveTime">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                    <TextBlock Text="{ Binding  ReciveTime,StringFormat=HH:mm:ss}" Visibility="{Binding IsRecive,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="MsgRecordState">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:MsgRecord}">
+                                    <TextBlock Text="{ Binding  MsgRecordState}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <Grid x:Name="GridContent" Grid.Column="1" d:DataContext="{d:DesignInstance local:MsgRecord}" Margin="0,5,5,5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0"  Margin="0,0,0,5">
+                    <TextBox Text="{Binding MsgSend,Mode=OneWay}"  IsReadOnly="True" BorderThickness="1"  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    <StackPanel HorizontalAlignment="Right" Margin="5">
+                        <Button Content="复制" Click="Button_Click_1" Margin="0,0,0,5"/>
+                        <Button Content="压缩"  Click="Button_Click_2"/>
+                    </StackPanel>
+                </Grid>
+                <Grid Grid.Row="1">
+                    <TextBox Text="{Binding MsgReturn,Mode=OneWay}" IsReadOnly="True" BorderThickness="1" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    <StackPanel HorizontalAlignment="Right" Margin="5">
+                        <Button Content="复制" Click="Button_Click_3" Margin="0,0,0,5"/>
+                        <Button Content="压缩"  Click="Button_Click_4"/>
+                    </StackPanel>
+                </Grid>
+               
+                
+            </Grid>
+        </Grid>
+
+    </Grid>
+</Window>

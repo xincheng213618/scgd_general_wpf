@@ -1,7 +1,9 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
+using FlowEngineLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -16,32 +18,80 @@ namespace ColorVision.Engine.Messages
     {
         public override string OwnerGuid => "Log";
         public override string GuidId => "MsgList";
-        public override string Header => "MQTTMsg";
+        public override string Header => "消息日志窗口";
         public override int Order => 2;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
+            new MessagesListWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
     }
 
+    public class MessagesListWindowConfig : IConfig
+    {
+        public static MessagesListWindowConfig Instance => ConfigService.Instance.GetRequiredService<MessagesListWindowConfig>();
+
+        public bool IsRestoreWindow { get; set; } = true;
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public int WindowState { get; set; }
+
+
+        public void SetWindow(Window window)
+        {
+            if (IsRestoreWindow && Height != 0 && Width != 0)
+            {
+                window.Top = Top;
+                window.Left = Left;
+                window.Height = Height;
+                window.Width = Width;
+                window.WindowState = (WindowState)WindowState;
+
+                if (Width > SystemParameters.WorkArea.Width)
+                {
+                    window.Width = SystemParameters.WorkArea.Width;
+                }
+                if (Height > SystemParameters.WorkArea.Height)
+                {
+                    window.Height = SystemParameters.WorkArea.Height;
+                }
+            }
+        }
+        public void SetConfig(Window window)
+        {
+            Top = window.Top;
+            Left = window.Left;
+            Height = window.Height;
+            Width = window.Width;
+            WindowState = (int)window.WindowState;
+        }
+    }
+
+
+
     /// <summary>
-    /// MsgList.xaml 的交互逻辑
+    /// MessagesListWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MsgList : Window
+    public partial class MessagesListWindow : Window
     {
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
 
 
-        public MsgList()
+        public MessagesListWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
+            MessagesListWindowConfig.Instance.SetWindow(this);
+            this.SizeChanged +=(s,e) => MessagesListWindowConfig.Instance.SetConfig(this);
         }
+
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            this.DataContext =
             MsgRecords = MsgConfig.Instance.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
         }
@@ -138,6 +188,46 @@ namespace ColorVision.Engine.Messages
         {
             MsgRecords.Clear();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ListView1.SelectedIndex > -1)
+            {
+                GridContent.DataContext = MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex];
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            JsonSerializerSettings settings = new()
+            {
+                Formatting = Formatting.Indented
+            };
+            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend, settings);
+            Common.NativeMethods.Clipboard.SetText(text);
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgSend);
+            Common.NativeMethods.Clipboard.SetText(text);
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            JsonSerializerSettings settings = new()
+            {
+                Formatting = Formatting.Indented
+            };
+            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn, settings);
+            Common.NativeMethods.Clipboard.SetText(text);
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            string text = JsonConvert.SerializeObject(MsgConfig.Instance.MsgRecords[ListView1.SelectedIndex].MsgReturn);
+            Common.NativeMethods.Clipboard.SetText(text);
         }
     }
 }

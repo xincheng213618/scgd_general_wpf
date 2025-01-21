@@ -182,7 +182,7 @@ namespace ColorVision.ImageEditor.Draw
             ContextMenus.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
             ContextMenus.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
             ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });
+            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveImageCommand });  
             ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
 
 

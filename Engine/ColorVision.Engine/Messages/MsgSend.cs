@@ -36,6 +36,6 @@ namespace ColorVision.Engine.Messages
         [JsonProperty("params")]
         public dynamic Params { get; set; }
 
-        public override string ToString() => JsonConvert.SerializeObject(this);
+        public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
     }
 }
