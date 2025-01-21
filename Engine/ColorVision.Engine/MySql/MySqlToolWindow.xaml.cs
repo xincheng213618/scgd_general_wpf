@@ -9,12 +9,11 @@ namespace ColorVision.Engine.MySql
 {
     public class ExportMySqlTool : MenuItemBase
     {
-        public override string OwnerGuid => "Log";
-        public override string GuidId => "MySqlTool";
+        public override string OwnerGuid => nameof(ExportMySqlMenuItem);
+        public override string GuidId => nameof(ExportMySqlTool);
         public override string Header => "MySqlTool";
         public override int Order => 2;
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MySqlToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

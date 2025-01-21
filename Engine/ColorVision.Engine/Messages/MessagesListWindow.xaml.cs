@@ -16,12 +16,11 @@ namespace ColorVision.Engine.Messages
 {
     public class ExportMsgList : MenuItemBase
     {
-        public override string OwnerGuid => "Log";
+        public override string OwnerGuid => MenuItemConstants.View;
         public override string GuidId => "MsgList";
         public override string Header => "消息日志窗口";
-        public override int Order => 2;
+        public override int Order => 20;
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MessagesListWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
