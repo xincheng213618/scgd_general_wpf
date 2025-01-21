@@ -2,6 +2,7 @@
 using cvColorVision;
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
+using ColorVision.UI.PropertyEditor;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
@@ -27,11 +28,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
-        [DisplayName("串口")]
+        [DisplayName("串口"),PropertyEditorType(PropertyEditorType.TextSerialPort)]
         public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("波特率")]
+        [DisplayName("波特率") ,PropertyEditorType(PropertyEditorType.TextBaudRate)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -40,7 +41,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
         private int _Position;
 
-        [DisplayName("波特率")]
+        [DisplayName("超时时间")]
         public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;
 

@@ -185,7 +185,8 @@ namespace ColorVision.UI.PropertyEditor
             var comboBox = new ComboBox
             {
                 Margin = new Thickness(5, 0, 0, 0),
-                MinWidth = 150
+                MinWidth = 150,
+                Style = (Style)FindResource("ComboBox.Small"),
             };
 
             // Populate ComboBox with Enum values
@@ -347,6 +348,45 @@ namespace ColorVision.UI.PropertyEditor
                 cronTextBox.SetBinding(TextBox.TextProperty, cronBinding);
                 dockPanel.Children.Add(cronButton);
                 dockPanel.Children.Add(cronTextBox);
+            }
+            else if (propertyEditorType == PropertyEditorType.TextSerialPort)
+            {
+                List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+                HandyControl.Controls.ComboBox serialPortComboBox = new HandyControl.Controls.ComboBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("ComboBox.Small"),
+                    IsEditable = true,
+                };
+                serialPortComboBox.ItemsSource = Serials;
+                var baudRateBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                HandyControl.Controls.InfoElement.SetShowClearButton(serialPortComboBox, true);
+                serialPortComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
+                dockPanel.Children.Add(serialPortComboBox);
+
+            }
+            else if (propertyEditorType == PropertyEditorType.TextBaudRate)
+            {
+                List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+                HandyControl.Controls.ComboBox baudRateComboBox = new HandyControl.Controls.ComboBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)FindResource("ComboBox.Small"),
+                    IsEditable = true,
+                };
+                baudRateComboBox.ItemsSource = BaudRates;
+                var baudRateBinding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                HandyControl.Controls.InfoElement.SetShowClearButton(baudRateComboBox,true);
+                baudRateComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
+                dockPanel.Children.Add(baudRateComboBox);
             }
             else
             {

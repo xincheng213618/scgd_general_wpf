@@ -103,7 +103,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.CFW.CopyFrom(e.CFW);
             Config.MotorConfig.CopyFrom(e.MotorConfig);
             Config.CameraID = e.CameraID;
-            Config.CameraType = e.CameraType;
             Config.CameraMode = e.CameraMode;
             Config.CameraModel = e.CameraModel;
             Config.TakeImageMode = e.TakeImageMode;

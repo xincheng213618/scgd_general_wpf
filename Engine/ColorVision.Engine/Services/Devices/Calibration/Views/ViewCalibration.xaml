@@ -42,8 +42,8 @@
                 </ToolBar>
             </ToolBarTray>
             <StackPanel HorizontalAlignment="Right"  Orientation="Horizontal">
-                <Button Click="Button_Click_Clear" Background="#01FFFFFF" BorderThickness="0"    >
-                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="4" />
+                <Button  Command="{Binding Config.ClearListCommand}" Padding="2" Height="25" Width="25">
+                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                 </Button>
                 <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding Config.EditCommand}" Padding="2" Height="25" Width="25" >
                     <Button.Triggers>

@@ -150,7 +150,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
                 EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
 
-                EditConfig.CameraType = phyCamera.Config.CameraType;
                 EditConfig.CameraMode = phyCamera.Config.CameraMode;
                 EditConfig.CameraModel = phyCamera.Config.CameraModel;
                 EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;

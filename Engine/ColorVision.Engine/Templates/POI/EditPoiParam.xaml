@@ -478,7 +478,7 @@
             </ScrollViewer>
         </Grid>
 
-        <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
+        <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="{StaticResource  TransparentGridBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>

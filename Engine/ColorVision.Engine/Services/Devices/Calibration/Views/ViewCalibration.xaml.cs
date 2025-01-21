@@ -38,7 +38,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public View View { get; set; }
 
-        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
 
@@ -48,6 +47,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             InitializeComponent();
         }
         public static ViewCalibrationConfig Config => ViewCalibrationConfig.Instance;
+        public static ObservableCollection<ViewResultCamera> ViewResults => Config.ViewResults;
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
@@ -231,13 +232,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
-        }
-
-
-
-        private void Button_Click_Clear(object sender, RoutedEventArgs e)
-        {
-            ViewResults.Clear();
         }
 
 

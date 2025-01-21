@@ -1,8 +1,11 @@
-﻿using ColorVision.ImageEditor;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
@@ -11,7 +14,17 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     {
         public static ViewCalibrationConfig Instance => ConfigService.Instance.GetRequiredService<ViewCalibrationConfig>();
 
+        [JsonIgnore]
+        public RelayCommand ClearListCommand { get; set; }
+        public ViewCalibrationConfig()
+        {
+            ClearListCommand = new RelayCommand(a => ViewResults.Clear());
+        }
+
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public ObservableCollection<ViewResultCamera> ViewResults { get; set; } = new ObservableCollection<ViewResultCamera>();
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 

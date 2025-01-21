@@ -3,6 +3,49 @@
 
     <!--<SolidColorBrush x:Key="IconSolidColorBrush" Color="#FF000000"/>-->
 
+
+    <GeometryDrawing x:Key="GridSquare"
+                 Brush="{DynamicResource GlobalTextBrush}"
+                 Geometry="M0,0 L0,1 1,1 1,0 Z" />
+    <DrawingBrush x:Key="TransparentGridBrush"
+              TileMode="Tile"
+              ViewportUnits="Absolute"
+              Viewport="0 0 20 20"
+              Opacity="0.1">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <!-- Gray square -->
+                <GeometryDrawing Brush="Gray" Geometry="M0,0 L0,10 10,10 10,0 Z" />
+                <!-- Transparent square -->
+                <GeometryDrawing Brush="Transparent" Geometry="M10,0 L10,10 20,10 20,0 Z" />
+                <!-- Another row -->
+                <GeometryDrawing Brush="Transparent" Geometry="M0,10 L0,20 10,20 10,10 Z" />
+                <GeometryDrawing Brush="Gray" Geometry="M10,10 L10,20 20,20 20,10 Z" />
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+    <GeometryDrawing x:Key="SmallGridGeometry"
+                         Geometry="M0,0 L0,1 0.03,1 0.03,0.03 1,0.03 1,0 Z"
+                         Brush="{DynamicResource GlobalTextBrush}" />
+
+    <GeometryDrawing x:Key="LargeGridGeometry"
+                         Geometry="M0,0 L0,1 0.015,1 0.015,0.015 1,0.015 1,0 Z"
+                         Brush="{DynamicResource GlobalTextBrush}" />
+
+    <DrawingBrush x:Key="SmallGridLinesDrawingBrush"
+                      TileMode="Tile"
+                      ViewportUnits="Absolute"
+                      Viewport="0 0 20 20"
+                      Drawing="{StaticResource SmallGridGeometry}" Opacity="0.1" />
+
+    <DrawingBrush x:Key="LargeGridLinesDrawingBrush"
+                      TileMode="Tile"
+                      ViewportUnits="Absolute"
+                      Opacity="0.5"
+                      Viewport="0 0 200 200"
+                      Drawing="{StaticResource LargeGridGeometry}" />
+
+
     <Style x:Key="ToolBarImage" TargetType="{x:Type Image}">
         <Setter Property="Height" Value="17"/>
         <Setter Property="Width" Value="17"/>

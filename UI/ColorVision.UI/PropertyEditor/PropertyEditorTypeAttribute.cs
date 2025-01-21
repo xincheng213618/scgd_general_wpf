@@ -10,6 +10,8 @@ namespace ColorVision.UI.PropertyEditor
         Enum,
         TextSelectFolder,
         TextSelectFile,
+        TextSerialPort,
+        TextBaudRate,
         CronExpression
     }
 
