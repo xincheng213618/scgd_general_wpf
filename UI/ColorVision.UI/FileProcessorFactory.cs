@@ -1,32 +1,35 @@
 ﻿using ColorVision.UI.Menus;
-using ColorVision.UI.Properties;
+using ColorVision.UI.Menus.Base.File;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class MenuOpen : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.File;
-
-        public override string GuidId => nameof(MenuOpen);
-
-        public override int Order => 1;
-
-        public override string Header => Resources.MenuOpen;
-    }
-
     public class MenuFileOpen : MenuItemBase
     {
-
         public override int Order => 1;
 
         public override string Header => "文件(_F)...";
 
-        public override string OwnerGuid => "MenuOpen";
+        public override string OwnerGuid => nameof(MenuOpen);
 
         public override string GuidId => nameof(MenuFileOpen);
-
+        public object? Icon
+        {
+            get
+            {
+                TextBlock text = new()
+                {
+                    Text = "\uE8E5", // 使用Unicode字符
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 15,
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                return text;
+            }
+        }
         public override void Execute()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();

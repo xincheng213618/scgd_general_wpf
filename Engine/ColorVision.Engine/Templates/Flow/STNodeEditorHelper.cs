@@ -793,6 +793,7 @@ namespace ColorVision.Engine.Templates.Flow
         {
             ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
             STNode rootNode = GetRootNode();
+            if (rootNode == null) return;
             int currentY = startY;
             HashSet<STNode> MoreParens = new HashSet<STNode>();
 

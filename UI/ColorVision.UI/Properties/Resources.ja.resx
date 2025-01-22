@@ -270,4 +270,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>印刷(_P)</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>新規作成 (_N)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>閉じる_C)</value>
+  </data>
 </root>

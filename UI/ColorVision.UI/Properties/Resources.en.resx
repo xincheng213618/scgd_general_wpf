@@ -270,4 +270,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>_Print</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>_New</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>_Close</value>
+  </data>
 </root>

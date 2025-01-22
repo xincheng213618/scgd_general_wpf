@@ -49,12 +49,10 @@ namespace ColorVision.Solution
         {
             this.DataContext = SolutionManager;
             SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+
             SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
 
             IniCommand();
-            Window window = Application.Current.MainWindow;
-            if (window != null)
-                window.Closing += Window_Closed;
         }
         
 
@@ -114,11 +112,6 @@ namespace ColorVision.Solution
         private TreeViewItem? SelectedTreeViewItem;
         private TreeViewItem? LastSelectedTreeViewItem;
 
-
-        private void Window_Closed(object? sender, EventArgs e)
-        {
-
-        }
 
         //第一次的点击逻辑
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e)

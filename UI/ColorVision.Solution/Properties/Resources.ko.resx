@@ -165,9 +165,6 @@
   <data name="NewProjectFormat" xml:space="preserve">
     <value>새로운 프로젝트 형식</value>
   </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>새로 만들기 (_N)</value>
-  </data>
   <data name="Reset" xml:space="preserve">
     <value>초기화</value>
   </data>

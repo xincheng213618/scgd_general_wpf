@@ -145,9 +145,6 @@
   <data name="NewProjectFormat" xml:space="preserve">
     <value>新建工程格式</value>
   </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新建(_N)</value>
-  </data>
   <data name="Reset" xml:space="preserve">
     <value>重置</value>
   </data>

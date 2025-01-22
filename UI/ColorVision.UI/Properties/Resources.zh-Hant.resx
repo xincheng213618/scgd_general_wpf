@@ -270,4 +270,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>列印(_P)</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>新建(_N)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>關閉(_C)</value>
+  </data>
 </root>

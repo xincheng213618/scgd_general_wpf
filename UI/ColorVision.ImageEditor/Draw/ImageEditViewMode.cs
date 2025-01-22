@@ -662,17 +662,17 @@ namespace ColorVision.ImageEditor.Draw
 
             if (_ImageEditMode == false)
             {
-                if (e.Key == Key.Add || e.Key == Key.I)
+                if (e.Key == Key.Add)
                 {
                     ZoomIncrease.RaiseExecute(e);
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Subtract || e.Key == Key.O)
+                else if (e.Key == Key.Subtract)
                 {
                     ZoomDecrease.RaiseExecute(e);
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Left || e.Key == Key.A)
+                else if (e.Key == Key.Left)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(-10, 0);
@@ -681,7 +681,7 @@ namespace ColorVision.ImageEditor.Draw
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Right || e.Key == Key.D)
+                else if (e.Key == Key.Right )
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(10, 0);
@@ -690,7 +690,7 @@ namespace ColorVision.ImageEditor.Draw
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Up || e.Key == Key.W)
+                else if (e.Key == Key.Up)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(0, -10);
@@ -699,7 +699,7 @@ namespace ColorVision.ImageEditor.Draw
                     ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
                     e.Handled = true;
                 }
-                else if (e.Key == Key.Down || e.Key == Key.S)
+                else if (e.Key == Key.Down)
                 {
                     TranslateTransform translateTransform = new();
                     Vector vector = new(0, 10);

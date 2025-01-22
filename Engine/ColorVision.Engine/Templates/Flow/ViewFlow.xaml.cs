@@ -54,6 +54,10 @@ namespace ColorVision.Engine.Services.Flow
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper.CheckFlow(); }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => { e.CanExecute = STNodeEditorMain.GetSelectedNode().Length>0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
@@ -161,11 +165,6 @@ namespace ColorVision.Engine.Services.Flow
                         var node = STNodeEditorMain.ActiveNode;
                         STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
                     }
-                }
-
-                if (e.KeyCode == System.Windows.Forms.Keys.S  && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                {
-                    Save();
                 }
                 if (e.KeyCode == System.Windows.Forms.Keys.F5 ||( e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
                 {
@@ -302,15 +301,18 @@ namespace ColorVision.Engine.Services.Flow
 
                         e.Handled = true;
                     }
-                    if (e.Key == Key.Delete)
-                    {
-                        STNodeEditorMain.Nodes.Remove(item);
-
-                        e.Handled = true;
-                    }
                 }
             }
         }
+
+        public void Delete()
+        {
+            foreach (var item in STNodeEditorMain.GetSelectedNode())
+            {
+                STNodeEditorMain.Nodes.Remove(item);
+            }
+        }
+
 
         private bool IsMouseDown;
         private System.Drawing.Point lastMousePosition;

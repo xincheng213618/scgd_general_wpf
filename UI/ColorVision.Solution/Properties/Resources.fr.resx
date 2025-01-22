@@ -165,9 +165,6 @@
   <data name="NewProjectFormat" xml:space="preserve">
     <value>Nouveau format de projet</value>
   </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>Nouveau(N)</value>
-  </data>
   <data name="Reset" xml:space="preserve">
     <value>réinitialiser</value>
   </data>

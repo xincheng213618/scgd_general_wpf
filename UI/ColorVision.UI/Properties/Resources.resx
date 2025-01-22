@@ -250,4 +250,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>打印(_P)</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>新建(_N)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>关闭(_C)</value>
+  </data>
 </root>

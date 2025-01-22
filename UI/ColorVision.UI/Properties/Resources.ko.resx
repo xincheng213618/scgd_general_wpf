@@ -270,4 +270,10 @@
   <data name="MenuPrint" xml:space="preserve">
     <value>인쇄(_P)</value>
   </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>새로 만들기 (_N)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>닫기_C)</value>
+  </data>
 </root>

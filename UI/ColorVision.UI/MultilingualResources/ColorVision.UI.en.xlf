@@ -241,6 +241,10 @@
           <source>日志级别</source>
           <target state="new">Log level</target>
         </trans-unit>
+        <trans-unit id="MenuClose" translate="yes" xml:space="preserve">
+          <source>关闭(_C)</source>
+          <target state="new">_Close</target>
+        </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
           <target state="new">_Copy</target>
@@ -272,6 +276,10 @@
         <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
           <source>语言(_L)</source>
           <target state="new">_Language</target>
+        </trans-unit>
+        <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
+          <source>新建(_N)</source>
+          <target state="new">_New</target>
         </trans-unit>
         <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
           <source>打开(_O)</source>
