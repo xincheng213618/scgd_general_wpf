@@ -84,5 +84,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("低速回原点")]
         public int HomeLowSpeed { get => _HomeLowSpeed; set { _HomeLowSpeed = value; NotifyPropertyChanged(); } }
         private int _HomeLowSpeed = 2000;
+
+        [DisplayName("电机移动区间下限")]
+        public int MinPosition { get => _MinPosition; set { _MinPosition = value; NotifyPropertyChanged(); } }
+        private int _MinPosition = 80000;
+
+        [DisplayName("电机移动区间上限")]
+        public int MaxPosition { get => _MaxPosition set { _MaxPosition = value; NotifyPropertyChanged(); } }
+        private int _MaxPosition = 180000;
     }
 }
