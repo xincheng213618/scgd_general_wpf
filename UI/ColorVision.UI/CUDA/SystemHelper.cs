@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
+using Microsoft.Win32;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -66,6 +67,23 @@ namespace ColorVision.UI.CUDA
         public static string GetUserName()
         {
             return Environment.UserName;
+        }
+
+        public static string LocalCpuInfo
+        {
+            get
+            {
+                try
+                {
+                    RegistryKey reg = Registry.LocalMachine;
+                    reg = reg.OpenSubKey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0");
+                    return reg.GetValue("ProcessorNameString").ToString();
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
         }
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()

@@ -56,6 +56,8 @@ namespace ColorVision
 #endif
             Icon = null;
 
+            TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo;
+
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
             {
                 TextCUDAVision.Visibility = Visibility.Visible;
