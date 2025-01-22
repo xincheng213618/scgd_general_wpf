@@ -90,7 +90,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private int _MinPosition = 80000;
 
         [DisplayName("电机移动区间上限")]
-        public int MaxPosition { get => _MaxPosition set { _MaxPosition = value; NotifyPropertyChanged(); } }
+        public int MaxPosition { get => _MaxPosition; set { _MaxPosition = value; NotifyPropertyChanged(); } }
         private int _MaxPosition = 180000;
     }
 }
