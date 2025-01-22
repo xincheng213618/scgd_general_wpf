@@ -324,7 +324,7 @@
                             <Button DockPanel.Dock="Right" Content="反相" Click="Button_Click_InvertImage" Margin="0,0,0,5"/>
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,5">
-                                    <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                    <TextBlock  Text="阈值" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=thresholdSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                     <hc:PreviewSlider x:Name="thresholdSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="0" Maximum="65535" ValueChanged="thresholdSlider_ValueChanged"/>
                                 </DockPanel>
