@@ -18,7 +18,6 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.Solution;
-using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Templates
 {

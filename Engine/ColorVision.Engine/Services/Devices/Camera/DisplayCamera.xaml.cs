@@ -14,7 +14,6 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
-using ScottPlot;
 using System;
 using System.Windows;
 using System.Windows.Controls;

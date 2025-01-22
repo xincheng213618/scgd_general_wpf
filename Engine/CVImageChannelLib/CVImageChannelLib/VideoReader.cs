@@ -1,6 +1,5 @@
 #pragma warning disable CS8603
 using System;
-using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using log4net;

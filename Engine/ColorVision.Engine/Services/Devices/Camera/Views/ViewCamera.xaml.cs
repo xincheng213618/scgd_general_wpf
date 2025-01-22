@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Messages;
 using ColorVision.Net;
@@ -9,9 +8,6 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
 using MQTTMessageLib.Camera;
-using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

@@ -1,14 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Solution.Properties;
 using ColorVision.RecentFile;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 using ColorVision.Themes;
 
 namespace ColorVision.Solution

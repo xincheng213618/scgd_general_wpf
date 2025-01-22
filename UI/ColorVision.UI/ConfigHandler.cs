@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using log4net;
+﻿using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
