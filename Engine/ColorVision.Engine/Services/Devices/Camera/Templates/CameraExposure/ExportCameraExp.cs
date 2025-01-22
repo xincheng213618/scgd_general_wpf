@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 
         public override string GuidId => "CameraExposureParam";
         public override int Order => 22;
-        public override string Header => "相机模板";
+        public override string Header => "相机模板";   
 
         public override void Execute()
         {

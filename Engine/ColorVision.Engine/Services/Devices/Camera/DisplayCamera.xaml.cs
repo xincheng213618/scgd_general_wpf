@@ -2,6 +2,7 @@
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
@@ -33,72 +34,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public int ExpTimeParamTemplateIndex { get; set; }
         public int ExpTimeParamTemplate1Index { get; set; }
 
+        public int AutoFocusTemplateIndex { get; set; }
+
         public double OpenTime { get; set; } = 10;
         public double CloseTime { get; set; } = 10;
 
-    }
-
-
-    public class ButtonProgressBar:IDisposable
-    {
-        public ProgressBar ProgressBar { get; set; }
-        public Button Button { get; set; }
-
-        public ButtonProgressBar(ProgressBar progressBar, Button button)
-        {
-            ProgressBar = progressBar;
-            Button = button;
-
-            TimerGetData = new DispatcherTimer();
-            TimerGetData.Interval = TimeSpan.FromMilliseconds(10); // 定时器间隔
-            TimerGetData.Tick += GetData_Tick;
-        }
-
-        public void Start()
-        {
-            Button.Visibility = Visibility.Hidden;
-            ProgressBar.Visibility = Visibility.Visible;
-            ProgressBar.Value = 1;
-
-            ProgressBar.Value = 0;
-            _startTime = DateTime.Now;
-            TimerGetData.Start();
-        }
-
-        public void Stop()
-        {
-            Button.Visibility = Visibility.Visible;
-            ProgressBar.Visibility = Visibility.Collapsed;
-            ProgressBar.Value = 1;
-            TimerGetData.Stop();
-            Elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
-        }
-        public double Elapsed { get; set; }
-
-        DateTime _startTime;
-        DispatcherTimer TimerGetData;
-        public double TargetTime { get; set; }
-
-        void GetData_Tick(object? sender, EventArgs e)
-        {
-            var elapsed = (DateTime.Now - _startTime).TotalMilliseconds;
-            if (elapsed >= TargetTime)
-            {
-                ProgressBar.Value = 99;
-            }
-            else
-            {
-                ProgressBar.Value = (elapsed / TargetTime) * 100;
-            }
-        }
-
-        public void Dispose()
-        {
-            TimerGetData.Tick -= GetData_Tick;
-            TimerGetData.Stop();
-            TimerGetData = null;
-            GC.SuppressFinalize(this);
-        }
     }
 
 
@@ -155,6 +95,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig.Instance;
+
+            ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
+            ComboxAutoFocus.SelectedIndex = 0;
+            ComboxAutoFocus.DataContext = DisplayCameraConfig.Instance;
+
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -418,7 +363,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
         }
-        bool isfist = false;
+        bool isfist;
         public void CameraVideoFrameReceived(WriteableBitmap bmp)
         {
             View.ImageView.ImageShow.Source = bmp;
@@ -427,36 +372,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 View.ImageView.ImageEditViewMode.ZoomUniform.Execute(this);
             }
             isfist = true;
-
-            //if (CroppedBitmaps.Count == 0)
-            //{
-            //    foreach (var item in Device.Config.ROIParams)
-            //    {
-            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, new Int32Rect(item.X, item.Y, item.Width, item.Height));
-            //        ImageView smallWindowImage = new ImageView() { };
-            //        smallWindowImage.ImageShow.Source = croppedBitmap;
-            //        CroppedBitmaps.Add(croppedBitmap);
-            //        smallWindowImages.Add(smallWindowImage);
-            //        Window window = new Window() { Content = smallWindowImage ,Height =300,Width =300 ,Owner =Application.Current.MainWindow};
-            //        window.Show();
-            //    }
-            //}
-            //else
-            //{
-            //    for (int i = 0; i < CroppedBitmaps.Count; i++)
-            //    {
-            //        CroppedBitmap croppedBitmap = new CroppedBitmap(bmp, Device.Config.ROIParams[i].ToInt32Rect());
-            //        smallWindowImages[i].ImageShow.Source = croppedBitmap;
-            //    }
-            //}
-
         }
 
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            MsgRecord msgRecord = DService.AutoFocus();
-            ServicesHelper.SendCommand(msgRecord, "自动聚焦",false);
+            if (ComboxAutoExpTimeParamTemplate.SelectedValue is not AutoFocusParam param) return;
+            MsgRecord msgRecord = DService.AutoFocus(param);
+            ServicesHelper.SendCommand(msgRecord, "自动聚焦", false);
         }
 
 
@@ -485,6 +408,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+
+        private void EditAutoFocus(object sender, RoutedEventArgs e)
+        {
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus(), ComboxAutoFocus.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
