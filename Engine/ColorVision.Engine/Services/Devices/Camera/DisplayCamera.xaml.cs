@@ -377,7 +377,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate.SelectedValue is not AutoFocusParam param) return;
+            if (ComboxAutoFocus.SelectedValue is not AutoFocusParam param) return;
             MsgRecord msgRecord = DService.AutoFocus(param);
             ServicesHelper.SendCommand(msgRecord, "自动聚焦", false);
         }
