@@ -17,7 +17,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     [DisplayName("电机配置")]
     public class MotorConfig : ViewModelBase
     {
+        [DisplayName("相机联动")]
+        public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
+        private bool _IsCameraLinkage = true;
 
+        [DisplayName("配置电机")]
         public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
         private bool _IsUseMotor;
 
