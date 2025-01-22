@@ -54,8 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraCode);
             CameraPhyID.DisplayMemberPath = "Code";
 
-            var type = DeviceCamera.Config.CameraType;
-
 
             ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
                                          select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
@@ -160,14 +158,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)
         {
             UpdateConfig();
-        }
-
-        private void RoiDelete_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is Int32RectViewModel int32RectViewModel)
-            {
-                EditConfig.ROIParams.Remove(int32RectViewModel);
-            }
         }
     }
 }

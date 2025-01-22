@@ -152,12 +152,6 @@
                         <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding RotateLeftCommand}" Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalLeftIcon}"  Margin="-5"/>
-                        </Button>
-                        <Button Command="{Binding RotateRightCommand}" Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalRightIcon}"  Margin="-5"/>
-                        </Button>
                         <Button Command="{Binding ZoomNone}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                         </Button>

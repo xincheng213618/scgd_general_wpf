@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.PhyCameras.Configs;
+﻿using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using cvColorVision;
 using Newtonsoft.Json;
 
@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 115200;
 
-        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+        public AutoFocusParam AutoFocusConfig { get; set; } = new AutoFocusParam();
 
         [JsonIgnore]
         public int Position { get => _Position;set { _Position = value; NotifyPropertyChanged(); } }

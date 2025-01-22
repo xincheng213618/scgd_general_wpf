@@ -1,0 +1,17 @@
+﻿using ColorVision.Engine.MySql;
+
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
+{
+    public class MysqCameraExposure : IMysqlCommand
+    {
+        public string GetMysqlCommandName() => "恢复Mysql CameraExposure模板设置";
+        public string GetRecover()
+        {
+
+            string t_scgd_sys_dictionary_mod_master = "INSERT INTO `t_scgd_sys_dictionary_mod_master` (`id`, `code`, `name`, `p_type`, `pid`, `mod_type`, `cfg_json`, `create_date`, `is_enable`, `is_delete`, `remark`, `tenant_id`) VALUES (200, 'AutoFocus', '自动聚焦', 0, NULL, 1, NULL, '2025-01-22 11:19:06', 1, 0, NULL, 0);\r\n";
+            string t_scgd_sys_dictionary_mod_item = "INSERT INTO `t_scgd_sys_dictionary_mod_item`(`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6000, 'EvaFunc', 6000, 'EvaFunc', 4, NULL, 'Variance', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6001, 'Forwardparam', 6001, 'Forwardparam', 0, NULL, '2000', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6002, 'CurStep', 6002, 'CurStep', 0, NULL, '5000', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6003, 'Curtailparam', 6003, 'Curtailparam', 1, NULL, '0.3', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6004, 'StopStep', 6004, 'StopStep', 0, NULL, '200', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6005, 'MinPosition', 6005, 'MinPosition', 0, NULL, '80000', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6006, 'MaxPosition', 6006, 'MaxPosition', 0, NULL, '180000', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6007, 'MinValue', 6007, 'MinValue', 1, NULL, '0', 200, '2025-01-22 11:21:32', 1, 0, NULL); INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type`, `value_range`, `default_val`, `pid`, `create_date`, `is_enable`, `is_delete`, `remark`) VALUES (6008, 'nTimeout', 6008, 'nTimeout', 0, NULL, '30000', 200, '2025-01-22 11:21:32', 1, 0, NULL);";
+            return t_scgd_sys_dictionary_mod_master + t_scgd_sys_dictionary_mod_item;
+        }
+
+    }
+}

@@ -148,11 +148,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             ComboxCalibrationTemplate.DataContext = DisplayCameraConfig.Instance;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params;
+            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTime.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate.DataContext = DisplayCameraConfig.Instance;
 
-            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
             ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig.Instance;
 
@@ -484,13 +484,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void EditAutoExpTime(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
         private void EditAutoExpTime1(object sender, RoutedEventArgs e)
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime(), ComboxAutoExpTimeParamTemplate1.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 
