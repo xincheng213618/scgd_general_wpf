@@ -45,6 +45,15 @@ namespace ColorVision.UI.CUDA
             var info = new Microsoft.VisualBasic.Devices.ComputerInfo();
             return $"Available Physical Memory: {info.AvailablePhysicalMemory / (1024 * 1024)} MB, Total Physical Memory: {info.TotalPhysicalMemory / (1024 * 1024)} MB";
         }
+
+        public static string GetTotalPhysicalMemory()
+        {
+            var info = new Microsoft.VisualBasic.Devices.ComputerInfo();
+            return Common.Utilities.MemorySize.MemorySizeText((long)info.TotalPhysicalMemory);
+        }
+
+
+
         // 获取系统语言
         public static string GetSystemLanguage()
         {

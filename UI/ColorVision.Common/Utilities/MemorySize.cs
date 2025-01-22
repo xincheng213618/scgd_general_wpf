@@ -153,7 +153,7 @@ namespace ColorVision.Common.Utilities
                     {
                         return $"{value:F1} {unit.Item2}";
                     }
-                    return $"{(long)value} {unit.Item2}";
+                    return $"{(long)Math.Round(value)} {unit.Item2}";
                 }
             }
             return "0 Byte"; // In case memorySize is 0

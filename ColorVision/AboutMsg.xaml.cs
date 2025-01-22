@@ -56,7 +56,7 @@ namespace ColorVision
 #endif
             Icon = null;
 
-            TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo;
+            TextBlockVision.Text += Environment.NewLine + SystemHelper.LocalCpuInfo + "   " + SystemHelper.GetTotalPhysicalMemory();
 
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
             {

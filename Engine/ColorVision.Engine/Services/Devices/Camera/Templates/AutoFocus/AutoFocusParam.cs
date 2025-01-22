@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
         private double _MinValue;
 
         [DisplayName("超时时间")]
-        public uint nTimeout { get => GetValue(_nTimeout); set { SetProperty(ref _nTimeout, value); } }
-        private uint _nTimeout = 30000;
+        public int nTimeout { get => GetValue(_nTimeout); set { SetProperty(ref _nTimeout, value); } }
+        private int _nTimeout = 30000;
     }
 }
