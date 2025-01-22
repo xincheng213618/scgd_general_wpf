@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 
         [Category("Camera"), Description("平均次数")]
         public int AvgCount { get => GetValue(_AvgCount); set { SetProperty(ref _AvgCount, value); } }
-        private int _AvgCount = -1;
+        private int _AvgCount = 1;
 
 
         [Category("Focus"), Description("焦距")]
