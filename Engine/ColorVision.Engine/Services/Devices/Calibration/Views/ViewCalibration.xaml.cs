@@ -25,6 +25,8 @@ using System.Windows.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
+using System.Linq;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -63,123 +65,49 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-
-            netFileUtil = new NetFileUtil();
-            netFileUtil.handler += NetFileUtil_handler;
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
         }
-
-
-        NetFileUtil netFileUtil;
-        private IPendingHandler? handler { get; set; }
-
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        private void Delete()
         {
-            if (arg.Code == 0)
-            {
-                if (arg.EventName == FileEvent.FileDownload && arg.FileData.data != null)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        OpenImage(arg.FileData);
-                    });
-                }
-                handler?.Close();
-            }
+            if (listView1.SelectedItems.Count == listView1.Items.Count)
+                ViewResults.Clear();
             else
             {
-                handler?.Close();
+                listView1.SelectedIndex = -1;
+                foreach (var item in listView1.SelectedItems.Cast<ViewResultCamera>().ToList())
+                    ViewResults.Remove(item);
             }
         }
-
-        string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (arg.Code == 0)
+            switch (arg.EventName)
             {
-                switch (arg.EventName)
-                {
-                    case MQTTCalibrationEventEnum.Event_GetData:
-                        int masterId = Convert.ToInt32(arg.Data.MasterId);
-                        List<MeasureImgResultModel> resultMaster = null;
-                        if (masterId > 0)
+                case MQTTCalibrationEventEnum.Event_GetData:
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
                         {
-                            resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                            if (model != null)
-                                resultMaster.Add(model);
-                        }
-                        if (resultMaster != null)
-                        {
-                            foreach (MeasureImgResultModel result in resultMaster)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    ShowResult(result);
-                                });
-                            }
+                                ShowResult(result);
+                            });
                         }
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_GetChannel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL, (CVType)pm_dl_ch.FileExtType);
-                        break;
-                }
+                    }
+                    break;
             }
-            else if (arg.Code == 102)
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        LocalFileName = pm_dl.FileName;
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, (CVType)pm_dl.FileExtType);
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_GetChannel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        netFileUtil.TaskStartDownloadFile(pm_dl_ch.IsLocal, pm_dl_ch.FileURL, (CVType)pm_dl_ch.FileExtType);
-                        break;
-                }
-            }
-            else
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTCalibrationEventEnum.Event_GetData:
-                        int masterId = Convert.ToInt32(arg.Data.MasterId);
-                        List<MeasureImgResultModel> resultMaster = null;
-                        if (masterId > 0)
-                        {
-                            resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
-                            if (model != null)
-                                resultMaster.Add(model);
-                        }
-                        if (resultMaster != null)
-                        {
-                            foreach (MeasureImgResultModel result in resultMaster)
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    ShowResult(result);
-                                });
-                            }
-                        }
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox1.Show("文件下载失败");
-                        });
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_GetChannel:
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                        break;
-                }
-            }
+
         }
 
 
@@ -224,14 +152,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
-            if (File.Exists(LocalFileName))
-            {
-            }
-            else
-            {
-                ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-            }
+            ImageSource bitmapSource = ImageView.ImageShow.Source;
+            ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
         }
 
 
@@ -240,31 +162,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResults[listView1.SelectedIndex];
+                if (data.FileUrl.Equals(ImageView.Config.FilePath, StringComparison.Ordinal)) return;
+
                 if (File.Exists(data.FileUrl))
                 {
                     ImageView.OpenImage(data.FileUrl);
-                }
-                else
-                {
-                    if (data.ResultCode == 0 && data.FilePath != null)
-                    {
-                        FileExtType fileExt = FileExtType.Src;
-                        switch (data.FileType)
-                        {
-                            case CameraFileType.SrcFile:
-                                fileExt = FileExtType.Src;
-                                break;
-                            case CameraFileType.RawFile:
-                                fileExt = FileExtType.Raw;
-                                break;
-                            case CameraFileType.CIEFile:
-                                fileExt = FileExtType.CIE;
-                                break;
-                            default:
-                                break;
-                        }
-                        DeviceService.Open(data.FilePath, fileExt);
-                    }
                 }
             }
         }
