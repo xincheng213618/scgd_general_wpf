@@ -16,13 +16,17 @@
         </Style>
     </Window.Resources>
     <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="43*"/>
+            <ColumnDefinition Width="447*"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer  x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigCalibration}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer  x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigCalibration}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Grid.ColumnSpan="2" Margin="0,0,0,30" Grid.RowSpan="2">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel Margin="5,0">
+                <StackPanel x:Name="EditStackPanel" Margin="5,0">
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
@@ -35,7 +39,7 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-                    
+
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
@@ -74,7 +78,7 @@
                 </StackPanel>
             </Border>
         </ScrollViewer>
-        <Border Grid.Row="1" Height="30">
+        <Border Grid.Row="1" Height="30" Grid.ColumnSpan="2">
             <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>

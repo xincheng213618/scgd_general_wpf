@@ -27,6 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
+
+            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

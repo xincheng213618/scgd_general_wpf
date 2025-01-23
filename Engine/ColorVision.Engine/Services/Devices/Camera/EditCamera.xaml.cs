@@ -60,72 +60,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
-            //EditStackPanel.Children.Add(GenerateContent(EditConfig));
+            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
         }
-
-        private static StackPanel GenerateContent(object config)
-        {
-            var stackPanel = new StackPanel();
-            var type = config.GetType();
-            var properties = type.GetProperties();
-
-            foreach (var property in properties)
-            {
-                if (!(property.CanWrite && property.CanRead)) continue; // Skip properties that cannot be set
-
-                var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
-                var textBlock = new TextBlock { Text = property.Name, Width = 120 };
-                dockPanel.Children.Add(textBlock);
-
-                if (property.PropertyType == typeof(string) ||
-                    property.PropertyType == typeof(int) ||
-                    property.PropertyType == typeof(double) ||
-                    property.PropertyType == typeof(float))
-                {
-                    var textBox = new TextBox
-                    {
-                        Text = property.GetValue(config)?.ToString(),
-                        Style = (Style)Application.Current.Resources["TextBox.Small"]
-                    };
-                    dockPanel.Children.Add(textBox);
-                }
-                else if (property.PropertyType == typeof(bool))
-                {
-                    var checkBox = new CheckBox
-                    {
-                        Content = "启用",
-                        IsChecked = (bool?)property.GetValue(config)
-                    };
-                    dockPanel.Children.Add(checkBox);
-                }
-                else if (property.PropertyType.IsEnum)
-                {
-                    var comboBox = new ComboBox
-                    {
-                        SelectedValue = property.GetValue(config),
-                        SelectedValuePath = "Key",
-                        DisplayMemberPath = "Value",
-                        Margin = new Thickness(0, 0, 10, 0)
-                    };
-
-                    comboBox.ItemsSource = Enum.GetValues(property.PropertyType)
-                                               .Cast<Enum>()
-                                               .Select(e => new KeyValuePair<Enum, string>(e, e.ToString()));
-                    dockPanel.Children.Add(comboBox);
-                }
-
-                stackPanel.Children.Add(dockPanel);
-            }
-
-            return stackPanel;
-        }
-    
-
-    private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             DeviceCamera.PhyCamera?.ReleaseDeviceCamera();
             EditConfig.CopyTo(DeviceCamera.Config);
-            if (DeviceCamera.PhyCamera !=null)
+            if (DeviceCamera.PhyCamera != null)
                 DeviceCamera.PhyCamera.ConfigChanged += DeviceCamera.PhyCameraConfigChanged;
 
 

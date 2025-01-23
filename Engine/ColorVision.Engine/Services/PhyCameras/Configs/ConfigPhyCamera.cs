@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
+using ColorVision.UI.PropertyEditor;
 using cvColorVision;
 using System;
 using System.ComponentModel;
@@ -180,16 +181,19 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
     public class FileSeviceConfig :ViewModelBase
     {
+        [DisplayName("数据存储路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; NotifyPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
         /// <summary>
         /// 端口地址
         /// </summary>
+        [DisplayName("端口地址")]
         public string Endpoint { get => _Endpoint; set { _Endpoint = value; NotifyPropertyChanged(); } }
         private string _Endpoint = "127.0.0.1";
         /// <summary>
         /// 端口范围
         /// </summary>
+        [DisplayName("端口范围")]
         public string PortRange { get => _PortRange; set { _PortRange = value; NotifyPropertyChanged(); } }
         private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600; return string.Format("{0}-{1}", fromPort, fromPort + 5); }))();
 
