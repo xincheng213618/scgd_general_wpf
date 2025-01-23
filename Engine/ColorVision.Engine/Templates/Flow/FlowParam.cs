@@ -196,34 +196,38 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override void Create(string templateName)
         {
-            try
+            FlowParam? param = AddFlowParam(templateName);
+            if (param != null)
             {
-                if (CreateTemp != null)
+                if (ExportTemp != null)
                 {
-                    CreateTemp.Name = templateName;
-                    FlowParam.Save2DB(CreateTemp);
-                    var a = new TemplateModel<FlowParam>(templateName, CreateTemp);
-                    TemplateParams.Add(a);
+                    param.DataBase64 = ExportTemp.DataBase64;
+                    param.Save();
                 }
-                else
-                {
-                    FlowParam? param = AddFlowParam(templateName);
-                    var a = new TemplateModel<FlowParam>(templateName, param);
-                    TemplateParams.Add(a);
-                }
+                var a = new TemplateModel<FlowParam>(templateName, param);
+                TemplateParams.Add(a);
             }
-            catch(Exception ex)
+            else
             {
-                
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(FlowParam)}模板失败", "ColorVision");
             }
-
         }
-        public static FlowParam? AddFlowParam(string text)
+        public FlowParam? AddFlowParam(string templateName)
         {
-            ModMasterModel flowMaster = new ModMasterModel("flow", text, UserConfig.Instance.TenantId);
-            Save(flowMaster);
-
+            ModMasterModel flowMaster = new ModMasterModel("flow", templateName, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(flowMaster.Pcode ?? string.Empty, flowMaster.TenantId);
+            if (mod != null)
+            {
+                flowMaster.Pid = mod.Id;
+                ModMasterDao.Instance.Save(flowMaster);
+                List<ModDetailModel> list = new();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+            }
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {
@@ -248,24 +252,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             return null;
         }
-        public static int Save(ModMasterModel modMaster)
-        {
-            int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(modMaster.Pcode ?? string.Empty, modMaster.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            return ret;
-        }
+
 
 
     }
