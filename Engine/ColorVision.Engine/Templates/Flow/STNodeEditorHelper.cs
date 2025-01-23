@@ -45,6 +45,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -200,7 +201,8 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
 
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-
+                AddStackPanel(name => commCaeraNode.FocusTempName = name, commCaeraNode.FocusTempName, "聚焦模板", new TemplateAutoFocus());
+                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
 
                 // Usage
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateCameraExposure());
