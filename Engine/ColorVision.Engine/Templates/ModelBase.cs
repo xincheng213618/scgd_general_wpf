@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Templates
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
                     val = modDetailModel.ValueA;
-                    if (typeof(T) == typeof(int))
+                    if (typeof(T) == typeof(int) || typeof(T) == typeof(uint))
                     {
                         if (string.IsNullOrEmpty(val)) val = "0";
                         return (T)(object)int.Parse(val);

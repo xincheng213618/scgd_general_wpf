@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
+using Microsoft.Win32;
 using System.Reflection;
 using System.Windows.Forms;
 
@@ -44,6 +45,15 @@ namespace ColorVision.UI.CUDA
             var info = new Microsoft.VisualBasic.Devices.ComputerInfo();
             return $"Available Physical Memory: {info.AvailablePhysicalMemory / (1024 * 1024)} MB, Total Physical Memory: {info.TotalPhysicalMemory / (1024 * 1024)} MB";
         }
+
+        public static string GetTotalPhysicalMemory()
+        {
+            var info = new Microsoft.VisualBasic.Devices.ComputerInfo();
+            return Common.Utilities.MemorySize.MemorySizeText((long)info.TotalPhysicalMemory);
+        }
+
+
+
         // 获取系统语言
         public static string GetSystemLanguage()
         {
@@ -66,6 +76,23 @@ namespace ColorVision.UI.CUDA
         public static string GetUserName()
         {
             return Environment.UserName;
+        }
+
+        public static string LocalCpuInfo
+        {
+            get
+            {
+                try
+                {
+                    RegistryKey reg = Registry.LocalMachine;
+                    reg = reg.OpenSubKey("HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0");
+                    return reg.GetValue("ProcessorNameString").ToString();
+                }
+                catch
+                {
+                    return string.Empty;
+                }
+            }
         }
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()

@@ -789,6 +789,8 @@ namespace ColorVision.ImageEditor
 
         public async void OpenImage(string? filePath)
         {
+            //如果文件已经打开，不会重复打开
+            if (filePath ==null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
             Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();

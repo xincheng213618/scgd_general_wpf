@@ -1,12 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Configs;
-using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;
 using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.UI.Views
 {

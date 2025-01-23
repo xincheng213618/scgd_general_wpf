@@ -2,6 +2,7 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Ghost;
@@ -88,8 +89,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-        }
 
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+        }
+        private void Delete()
+        {
+            if (listView1.SelectedItems.Count == listView1.Items.Count)
+                ViewResults.Clear();
+            else
+            {
+                listView1.SelectedIndex = -1;
+                foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
+                    ViewResults.Remove(item);
+            }
+
+
+        }
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
             if (arg.Code == 0 && arg.FileData.data != null)

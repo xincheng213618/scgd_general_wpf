@@ -23,7 +23,7 @@
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigPhyCamera}">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel Margin="5,0">
+                <StackPanel x:Name="StackPanelInfo" Margin="5,0">
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
@@ -48,8 +48,6 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-
-
                     <GroupBox Header="相机配置" Margin="0,5">
                         <StackPanel Margin="5">
                             <GroupBox Header="OB区域" Margin="0,2">
@@ -122,60 +120,6 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-
-                    <GroupBox Header="电机" Margin="0,5" >
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="启用:" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding MotorConfig.IsUseMotor}"/>
-                            </DockPanel>
-                            <StackPanel Visibility="{Binding MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="查询方法:" Width="120"/>
-                                    <ComboBox x:Name="ComboxFindFuncModel"  SelectedValue="{Binding MotorConfig.FindFuncModel}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="类型:" Width="120"/>
-                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding MotorConfig.SzComName}"  hc:InfoElement.ShowClearButton="True"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机运行加速度:" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunAcceleration}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机平稳运行速度:" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunSpeed}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机减速度:" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.Deceleration}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="原点加速度" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeAcceleration}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="高速回原点" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeHightSpeed}"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="低速回原点" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeLowSpeed}"/>
-                                </DockPanel>
-
-                            </StackPanel>
-                        </StackPanel>
-                    </GroupBox>
-
-
                     <GroupBox Header="滤色轮" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
@@ -259,24 +203,6 @@
                                 </UniformGrid>
                             </StackPanel>
 
-                        </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Header="存储信息" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="FileBasePath_Click"/>
-                                <TextBlock Text="目录:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.FileBasePath}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口地址:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口范围:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.PortRange}" />
-                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

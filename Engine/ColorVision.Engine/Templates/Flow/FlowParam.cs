@@ -3,7 +3,6 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
@@ -19,10 +18,10 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    public class ExportFlow : MenuItemBase
+    public class MenuFlowMeta : MenuItemBase
     {
         public override string OwnerGuid => "Template";
-        public override string GuidId => "FlowParam";
+        public override string GuidId => nameof(MenuFlowMeta);
         public override int Order => 0;
         public override string Header => Properties.Resources.MenuFlow;
         public override void Execute()
@@ -38,6 +37,7 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
+
         public TemplateFlow()
         {
             IsSideHide = true;
@@ -168,7 +168,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
             string base64 = Convert.ToBase64String(fileBytes);
-            if (FlowParam.AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
+            if (AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
             {
                 param.DataBase64 = base64;
                 FlowParam.Save2DB(param);
@@ -180,14 +180,29 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override bool CopyTo(int index)
         {
+            if (index > -1 && index < TemplateParams.Count)
+            {
+                string fileContent = TemplateParams[index].Value.ToJsonN();
+                ExportTemp = JsonConvert.DeserializeObject<FlowParam>(fileContent);
+                if (ExportTemp != null)
+                {
+                    ExportTemp.Id = -1;
+                }
+                return true;
+            }
             return false;
         }
 
         public override void Create(string templateName)
         {
-            FlowParam? param = FlowParam.AddFlowParam(templateName);
+            FlowParam? param = AddFlowParam(templateName);
             if (param != null)
             {
+                if (ExportTemp != null)
+                {
+                    param.DataBase64 = ExportTemp.DataBase64;
+                    param.Save();
+                }
                 var a = new TemplateModel<FlowParam>(templateName, param);
                 TemplateParams.Add(a);
             }
@@ -196,30 +211,22 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(FlowParam)}模板失败", "ColorVision");
             }
         }
-    }
-
-    public static class FlowParamExtension
-    {
-        public static void Save(this FlowParam flowParam)
+        public FlowParam? AddFlowParam(string templateName)
         {
-            FlowParam.Save2DB(flowParam);
-        }
-    }
-
-    /// <summary>
-    /// 流程引擎模板
-    /// </summary>
-    public class FlowParam : ParamModBase
-    {
-        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
-
-        private static ModMasterDao masterFlowDao = new("flow");
-
-        public static FlowParam? AddFlowParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel("flow", text, UserConfig.Instance.TenantId);
-            Save(flowMaster);
-
+            ModMasterModel flowMaster = new ModMasterModel("flow", templateName, UserConfig.Instance.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(flowMaster.Pcode ?? string.Empty, flowMaster.TenantId);
+            if (mod != null)
+            {
+                flowMaster.Pid = mod.Id;
+                ModMasterDao.Instance.Save(flowMaster);
+                List<ModDetailModel> list = new();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+            }
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {
@@ -245,25 +252,26 @@ namespace ColorVision.Engine.Templates.Flow
             return null;
         }
 
-        public static int Save(ModMasterModel modMaster)
-        {
-            int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(modMaster.Pcode ?? string.Empty, modMaster.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            return ret;
-        }
 
+
+    }
+
+    public static class FlowParamExtension
+    {
+        public static void Save(this FlowParam flowParam)
+        {
+            FlowParam.Save2DB(flowParam);
+        }
+    }
+
+    /// <summary>
+    /// 流程引擎模板
+    /// </summary>
+    public class FlowParam : ParamModBase
+    {
+        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+
+        private static ModMasterDao masterFlowDao = new("flow");
 
         public static void Save2DB(FlowParam flowParam)
         {

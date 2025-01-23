@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -12,9 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.ToolPlugins

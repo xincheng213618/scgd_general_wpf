@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
-using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -1,14 +1,13 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.UI.PropertyEditor;
+using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using ColorVision.Engine.Services.Dao;
-using Newtonsoft.Json;
-using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -16,6 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     public class ViewAlgorithmConfig : ViewConfigBase, IConfig
     {
         public static ViewAlgorithmConfig Instance => ConfigService.Instance.GetRequiredService<ViewAlgorithmConfig>();
+
         [JsonIgnore]
         public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 

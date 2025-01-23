@@ -36,7 +36,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="37"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup"/>
-                    <ColumnDefinition Width="3"/>
+                    <ColumnDefinition Width="7"/>
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" Margin="2 1 3 1" VerticalAlignment="Center"  HorizontalAlignment="Center" ContentSource="Icon" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                 <Border x:Name="GlyphPanel" Background="{DynamicResource EnvironmentCommandBarSelectedIcon}" BorderThickness="0" Margin="3 2" Visibility="Hidden" Width="18" Height="18">

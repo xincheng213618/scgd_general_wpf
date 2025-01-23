@@ -32,7 +32,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Net.Http;
 using System.Net.Http.Json;
-using ColorVision.Engine.Services.Configs;
 using ColorVision.UI.PropertyEditor;
 
 namespace ColorVision.Engine.Services.PhyCameras

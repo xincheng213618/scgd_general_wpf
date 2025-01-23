@@ -14,6 +14,8 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -302,7 +304,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
-        public MsgRecord AutoFocus()
+        public MsgRecord AutoFocus(AutoFocusParam param)
         {
             var Params = new Dictionary<string, object>() { };
 
@@ -311,16 +313,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "AutoFocus",
                 Params = Params
             };
-            Params.Add("tAutoFocusCfg", Config.AutoFocusConfig.ToJsonN());
-            return PublishAsyncClient(msg, Config.AutoFocusConfig.nTimeout);
+            Params.Add("AutoFocusTemplate", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            return PublishAsyncClient(msg, param.nTimeout);
         }
 
         public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
             var Params = new Dictionary<string, object>() { };
-            if (autoExpTimeParam.Id >=0)
-                Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
-
+            Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
             MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
@@ -393,7 +393,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord CacheClear()
+        public MsgRecord ClearDataCache()
         {
             MsgSend msg = new()
             {
@@ -403,14 +403,5 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetChannel(int recId, CVImageChannelType chType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
-                Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
-            };
-            return PublishAsyncClient(msg);
-        }
     }
 }

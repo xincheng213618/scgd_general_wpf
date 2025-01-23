@@ -29,7 +29,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public RelayCommand DisPlaySaveCommand { get; set; }
         public RelayCommand OpenCalibrationParamsCommand { get; set; }
 
-
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTCamera(Config);
@@ -104,6 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.MotorConfig.CopyFrom(e.MotorConfig);
             Config.CameraID = e.CameraID;
             Config.CameraMode = e.CameraMode;
+            Config.CameraType = e.CameraType;
             Config.CameraModel = e.CameraModel;
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
@@ -116,7 +116,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
-                var MsgRecord = DService.CacheClear();
+                var MsgRecord = DService.ClearDataCache();
                 MsgRecord.MsgSucessed += (s) =>
                 {
                     MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");

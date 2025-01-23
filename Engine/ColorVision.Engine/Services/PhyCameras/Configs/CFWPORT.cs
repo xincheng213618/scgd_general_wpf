@@ -1,5 +1,4 @@
-﻿using cvColorVision;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs

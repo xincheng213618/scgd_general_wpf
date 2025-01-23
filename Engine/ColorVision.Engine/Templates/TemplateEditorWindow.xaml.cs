@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -17,19 +18,25 @@ namespace ColorVision.Engine.Templates
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
-    public partial class TemplateEditorWindow : Window 
+    public partial class TemplateEditorWindow : Window
     {
         public ITemplate ITemplate { get; set; }
 
         public int DefaultIndex { get; set; }
 
-        public TemplateEditorWindow(ITemplate template,int defaultIndex = 0)
+        public TemplateEditorWindow(ITemplate template, int defaultIndex = 0)
         {
             ITemplate = template;
-            DefaultIndex = defaultIndex < 0 ? -1: defaultIndex;
-            template.Load();  
+            DefaultIndex = defaultIndex < 0 ? -1 : defaultIndex;
+            template.Load();
             InitializeComponent();
             this.ApplyCaption();
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => ITemplate.Save(), (s, e) => e.CanExecute = true));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+            this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
+
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         public static TemplateSetting Config => TemplateSetting.Instance;
@@ -37,7 +44,7 @@ namespace ColorVision.Engine.Templates
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
-           if (ListView1.View is GridView gridView)
+            if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
                 Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
@@ -88,13 +95,6 @@ namespace ColorVision.Engine.Templates
 
             this.PreviewKeyDown += (s, e) =>
             {
-                if (e.Key == Key.F2)
-                {
-                    if (ListView1.SelectedIndex >-1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
-                    {
-                        templateModelBase.IsEditMode = true;
-                    }
-                }
                 if (e.Key == Key.Enter)
                 {
                     if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
@@ -104,6 +104,16 @@ namespace ColorVision.Engine.Templates
                 }
             };
         }
+
+        public void ReName()
+        {
+            if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
+
+
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
@@ -150,9 +160,6 @@ namespace ColorVision.Engine.Templates
             e.Handled = true;
         }
 
-
-
-
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {
             ITemplate.Load();
@@ -182,7 +189,7 @@ namespace ColorVision.Engine.Templates
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                if (LastSelectedIndex >= 0 && LastSelectedIndex< listView.Items.Count)
+                if (LastSelectedIndex >= 0 && LastSelectedIndex < listView.Items.Count)
                 {
                     if (ITemplate.GetValue(LastSelectedIndex) is TemplateBase templateModelBase)
                     {
@@ -210,16 +217,34 @@ namespace ColorVision.Engine.Templates
             Close();
         }
 
+
+
         private void Button_New_Click(object sender, RoutedEventArgs e)
+        {
+            New();
+        }
+        private void New()
         {
             int oldnum = ITemplate.Count;
             ITemplate.OpenCreate();
-            if (oldnum!= ITemplate.Count)
+            if (oldnum != ITemplate.Count)
             {
-                ListView1.SelectedIndex= ITemplate.Count-1;
+                ListView1.SelectedIndex = ITemplate.Count - 1;
                 if (ListView1.View is GridView gridView)
                     GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
 
+            }
+
+        }
+        private void Delete()
+        {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+            {
+                int index = ListView1.SelectedIndex;
+                ITemplate.Delete(ListView1.SelectedIndex);
+                if (index > ITemplate.Count)
+                    index = ITemplate.Count - 1;
+                ListView1.SelectedIndex = index;
             }
         }
 
@@ -228,26 +253,13 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
-                {
-                    int index = ListView1.SelectedIndex;
-                    ITemplate.Delete(ListView1.SelectedIndex);
-                    if (index > ITemplate.Count)
-                        index = ITemplate.Count - 1;
-                    ListView1.SelectedIndex = index;
-                }
+                Delete();
             }
             else
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
             }
         }
-
-        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
-        {
-            e.Handled = true;
-        }
-
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
@@ -256,22 +268,6 @@ namespace ColorVision.Engine.Templates
                 templateModelBase.IsEditMode = false;
             }
         }
-
-        private void TextBox_GotFocus(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
-        private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is TextBox textBox && textBox.Tag is TemplateBase templateModelBase)
-            {
-                templateModelBase.IsEditMode = true;
-            }
-        }
-
-
 
         private void Button_Export_Click(object sender, RoutedEventArgs e)
         {
@@ -299,7 +295,7 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
-       
+
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -339,27 +335,33 @@ namespace ColorVision.Engine.Templates
             new TemplateSettingEdit(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
+        private void CreateCopy()
+        {
+            if (ITemplate.CopyTo(ListView1.SelectedIndex))
+            {
+                int oldnum = ITemplate.Count;
+                ITemplate.OpenCreate();
+                if (oldnum != ITemplate.Count)
+                {
+                    ListView1.SelectedIndex = ITemplate.Count - 1;
+                    if (ListView1.View is GridView gridView)
+                        GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+
+                }
+            }
+        }
+
         private void Button_CreateCopy_Click(object sender, RoutedEventArgs e)
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (ITemplate.CopyTo(ListView1.SelectedIndex))
-                {
-                    int oldnum = ITemplate.Count;
-                    ITemplate.OpenCreate();
-                    if (oldnum != ITemplate.Count)
-                    {
-                        ListView1.SelectedIndex = ITemplate.Count - 1;
-                        if (ListView1.View is GridView gridView)
-                            GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-
-                    }
-                }
+                CreateCopy();
             }
             else
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
             }
+
 
 
         }

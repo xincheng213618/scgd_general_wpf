@@ -7,27 +7,23 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
-    public class ExportCameraExp : IMenuItem
+    public class ExportCameraExp : MenuItemBase
     {
-        public string OwnerGuid => "Template";
+        public override string OwnerGuid => "Template";
 
-        public string? GuidId => "CameraExposureParam";
-        public int Order => 22;
-        public string? Header => Properties.Resources.MenuCameraExp;
+        public override string GuidId => "CameraExposureParam";
+        public override int Order => 22;
+        public override string Header => "相机模板";   
 
-        public string? InputGestureText { get; }
-        public Visibility Visibility => Visibility.Visible;
-        public object? Icon { get; }
-
-        public ICommand Command => new RelayCommand(a =>
+        public override void Execute()
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new TemplateEditorWindow(new TemplateCameraExposureParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+            new TemplateEditorWindow(new TemplateCameraExposure()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
     }
 
 }

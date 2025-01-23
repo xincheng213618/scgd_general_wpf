@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI;
+using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -18,6 +19,8 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
     {
+
+        private static ILog log = LogManager.GetLogger(typeof(FlowEngineToolWindow));
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
@@ -293,15 +296,24 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditorMain.Nodes.Clear();
             if (!string.IsNullOrEmpty(flowParam.DataBase64))
             {
-                STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
-                foreach (var item in STNodeEditorMain.Nodes)
+                try
                 {
-                    if (item is STNode node)
+                    STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+                    foreach (var item in STNodeEditorMain.Nodes)
                     {
-                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                        if (item is STNode node)
+                        {
+                            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                        }
                     }
                 }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show(ex.Message);
+                }
+
             }
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }

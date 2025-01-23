@@ -44,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             CameraPhyID.SelectedValuePath = "Name";
             EditConfig = DeviceCalibration.Config.Clone();
             EditContent.DataContext = EditConfig;
+            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 
 
         }
