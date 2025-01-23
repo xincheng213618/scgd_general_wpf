@@ -4,8 +4,11 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using CVCommCore;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,10 +19,10 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    public class ExportFlow : MenuItemBase
+    public class MenuFlowMeta : MenuItemBase
     {
         public override string OwnerGuid => "Template";
-        public override string GuidId => "FlowParam";
+        public override string GuidId => nameof(MenuFlowMeta);
         public override int Order => 0;
         public override string Header => Properties.Resources.MenuFlow;
         public override void Execute()
@@ -35,6 +38,7 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
+
         public TemplateFlow()
         {
             IsSideHide = true;
@@ -165,7 +169,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
             string base64 = Convert.ToBase64String(fileBytes);
-            if (FlowParam.AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
+            if (AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
             {
                 param.DataBase64 = base64;
                 FlowParam.Save2DB(param);
@@ -177,41 +181,44 @@ namespace ColorVision.Engine.Templates.Flow
 
         public override bool CopyTo(int index)
         {
+            if (index > -1 && index < TemplateParams.Count)
+            {
+                string fileContent = TemplateParams[index].Value.ToJsonN();
+                ExportTemp = JsonConvert.DeserializeObject<FlowParam>(fileContent);
+                if (ExportTemp != null)
+                {
+                    ExportTemp.Id = -1;
+                }
+                return true;
+            }
             return false;
         }
 
         public override void Create(string templateName)
         {
-            FlowParam? param = FlowParam.AddFlowParam(templateName);
-            if (param != null)
+            try
             {
-                var a = new TemplateModel<FlowParam>(templateName, param);
-                TemplateParams.Add(a);
+                if (CreateTemp != null)
+                {
+                    CreateTemp.Name = templateName;
+                    FlowParam.Save2DB(CreateTemp);
+                    var a = new TemplateModel<FlowParam>(templateName, CreateTemp);
+                    TemplateParams.Add(a);
+                }
+                else
+                {
+                    FlowParam? param = AddFlowParam(templateName);
+                    var a = new TemplateModel<FlowParam>(templateName, param);
+                    TemplateParams.Add(a);
+                }
             }
-            else
+            catch(Exception ex)
             {
+                
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(FlowParam)}模板失败", "ColorVision");
             }
+
         }
-    }
-
-    public static class FlowParamExtension
-    {
-        public static void Save(this FlowParam flowParam)
-        {
-            FlowParam.Save2DB(flowParam);
-        }
-    }
-
-    /// <summary>
-    /// 流程引擎模板
-    /// </summary>
-    public class FlowParam : ParamModBase
-    {
-        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
-
-        private static ModMasterDao masterFlowDao = new("flow");
-
         public static FlowParam? AddFlowParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel("flow", text, UserConfig.Instance.TenantId);
@@ -241,7 +248,6 @@ namespace ColorVision.Engine.Templates.Flow
             }
             return null;
         }
-
         public static int Save(ModMasterModel modMaster)
         {
             int ret = -1;
@@ -261,6 +267,25 @@ namespace ColorVision.Engine.Templates.Flow
             return ret;
         }
 
+
+    }
+
+    public static class FlowParamExtension
+    {
+        public static void Save(this FlowParam flowParam)
+        {
+            FlowParam.Save2DB(flowParam);
+        }
+    }
+
+    /// <summary>
+    /// 流程引擎模板
+    /// </summary>
+    public class FlowParam : ParamModBase
+    {
+        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+
+        private static ModMasterDao masterFlowDao = new("flow");
 
         public static void Save2DB(FlowParam flowParam)
         {
