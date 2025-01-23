@@ -8,7 +8,6 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using CVCommCore;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
