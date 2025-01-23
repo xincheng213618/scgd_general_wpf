@@ -128,7 +128,6 @@ namespace ColorVision
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
 
-            QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
             Task.Run(() =>
             {
