@@ -54,12 +54,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraCode);
             CameraPhyID.DisplayMemberPath = "Code";
 
-
-            ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
-                                         select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
+            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.AutoFocusConfig));
             EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
         }
         private void Button_Click(object sender, RoutedEventArgs e)

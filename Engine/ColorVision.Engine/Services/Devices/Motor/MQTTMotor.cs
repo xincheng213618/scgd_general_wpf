@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             {
                 EventName = "Move",
                 Params = new Dictionary<string, object>() {
-                    {"nPosition",nPosition },{"dwTimeOut", Config.dwTimeOut },{ "bAbs", IsbAbs}
+                    {"nPosition",nPosition },{"dwTimeOut", Config.MotorConfig.DwTimeOut },{ "bAbs", IsbAbs}
                 }
             };
             return PublishAsyncClient(msg);
@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             MsgSend msg = new()
             {
                 EventName = "MoveDiaphragm",
-                Params = new Dictionary<string, object>() { { "dPosition", dPosition },{"dwTimeOut", Config.dwTimeOut }   }
+                Params = new Dictionary<string, object>() { { "dPosition", dPosition },{"dwTimeOut", Config.MotorConfig.DwTimeOut }   }
             };
             return PublishAsyncClient(msg);
         }
@@ -118,7 +118,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             MsgSend msg = new()
             {
                 EventName = "GoHome",
-                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.dwTimeOut } }
+                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
             };
             return PublishAsyncClient(msg);
         }
@@ -128,7 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             MsgSend msg = new()
             {
                 EventName = "GetPosition",
-                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.dwTimeOut } }
+                Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
             };
             return PublishAsyncClient(msg);
         }

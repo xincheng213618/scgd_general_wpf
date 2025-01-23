@@ -146,49 +146,6 @@
 
                         </StackPanel>
                     </GroupBox>
-
-                    <GroupBox Header="自动聚焦" Margin="0,5"  Visibility="{Binding MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
-                        <StackPanel  Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="评价函数类型:" Width="120"/>
-                                <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"   Margin="0,0,10,0"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="超时时间:" Width="120"/>
-                                <TextBox  Text="{Binding AutoFocusConfig.nTimeout}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="电机移动区间下限:" Width="120"/>
-                                <TextBox Text="{Binding AutoFocusConfig.MinPosition}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="电机移动区间上限:" Width="120"/>
-                                <TextBox Text="{Binding AutoFocusConfig.MaxPosition}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="步径摆动范围:" Width="120"/>
-                                <TextBox  Text="{Binding AutoFocusConfig.Forwardparam}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="目前使用步径:" Width="120"/>
-                                <TextBox  Text="{Binding AutoFocusConfig.CurStep}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="步径每次缩诚系数:" Width="120"/>
-                                <TextBox Text="{Binding AutoFocusConfig.Curtailparam}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="停止步径:" Width="120"/>
-                                <TextBox Text="{Binding AutoFocusConfig.StopStep}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="最低评价值:" Width="120"/>
-                                <TextBox Text="{Binding AutoFocusConfig.MinValue}" />
-                            </DockPanel>
-                        </StackPanel>
-
-                    </GroupBox>
-
                     <GroupBox Header="视频模式" Margin="0,5">
                         <StackPanel Margin="5">
                             <GroupBox Header="视频串流配置" Margin="0,5">
