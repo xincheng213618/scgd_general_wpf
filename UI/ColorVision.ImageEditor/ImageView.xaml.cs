@@ -101,7 +101,7 @@ namespace ColorVision.ImageEditor
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance());
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -218,11 +218,16 @@ namespace ColorVision.ImageEditor
             if (Config.IsLayoutUpdated)
             {
                 double scale = 1/ Zoombox1.ContentMatrix.M11;
-                foreach (var item in DrawingVisualLists)
-                {
-                    item.Pen.Thickness = scale;
-                    item.Render();
-                }
+                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender", 20, ()=>ImageLayoutUpdatedRender(scale));
+            }
+        }
+
+        public void ImageLayoutUpdatedRender(double scale)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                item.Pen.Thickness = scale;
+                item.Render();
             }
         }
 
@@ -1122,13 +1127,12 @@ namespace ColorVision.ImageEditor
 
         public void AdjustWhiteBalance()
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            if (HImageCache != null)
             {
-                if (HImageCache != null)
+                int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
-
-                    if (ret == 0)
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
@@ -1139,11 +1143,9 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
-                    }
-                };
-            });
-
-
+                    });
+                }
+            };
         }
 
         private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
@@ -1236,40 +1238,31 @@ namespace ColorVision.ImageEditor
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a=> ApplyGammaCorrection(a), GammaSlider.Value);
         }
 
-        public void ApplyGammaCorrection()
+        public void ApplyGammaCorrection(double Gamma)
         {
+            if (HImageCache == null) return;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
+            int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (HImageCache == null) return;
-
-                // 首先获取滑动条的值，这需要在UI线程中执行
-                double Gamma = GammaSlider.Value;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
-                Task.Run(() =>
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        FunctionImage = image;
+                    }
+                    ImageShow.Source = FunctionImage;
+                    stopwatch.Stop();
+                    log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
+                }
             });
         }
 
@@ -1308,48 +1301,38 @@ namespace ColorVision.ImageEditor
 
         private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
         }
         private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
         }
-        public void AdjustBrightnessContrast()
+        public void AdjustBrightnessContrast(double Contrast ,double Brightness)
         {
+            if (HImageCache == null) return;
+            //实现类似于PS的效果
+            Brightness = Brightness * 4 / 5;
+            Contrast = Contrast / 300 + 1;
+            Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
+            int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (HImageCache == null) return;
-
-                // 首先获取滑动条的值，这需要在UI线程中执行
-                double Brightness = BrightnessSlider.Value;
-                double Contrast = ContrastSlider.Value;
-                //实现类似于PS的效果
-                Brightness = Brightness * 4 / 5;
-                Contrast = Contrast / 300 + 1;
-                Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
-                Task.Run(() =>
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        FunctionImage = image;
+                    }
+                    ImageShow.Source = FunctionImage;
+                    stopwatch.Stop();
+                    log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
+                }
             });
         }
 
