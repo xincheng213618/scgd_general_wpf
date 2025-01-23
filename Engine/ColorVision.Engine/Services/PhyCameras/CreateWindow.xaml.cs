@@ -59,14 +59,17 @@ namespace ColorVision.Engine.Services.PhyCameras
                             DeviceName.Text = model;
                             if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
                             {
+                                CreateConfig.CameraMode = CameraMode.BV_MODE;
                                 CreateConfig.Channel = ImageChannel.Three;
                             }
                             if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
                             {
+                                CreateConfig.CameraMode = CameraMode.LV_MODE;
                                 CreateConfig.Channel = ImageChannel.One;
                             }
                             if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
                             {
+                                CreateConfig.CameraMode = CameraMode.CV_MODE;
                                 CreateConfig.Channel = ImageChannel.Three;
                             }
                         }
@@ -81,11 +84,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show("找不到可以添加的相机");
             }
-
-
-
-            ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
-                                           select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
@@ -105,31 +103,27 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CreateConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
             }
 
-            ComboxCameraType.SelectionChanged += (s, e) =>
+            ComboxCameraMode.SelectionChanged += (s, e) =>
             {
-                if (ComboxCameraType.SelectedValue is CameraType type)
-                {
-                    if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          where e1 != ImageChannel.Three
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                        ComboxCameraChannel.SelectedValue = ImageChannel.One;
-                    }
-                    else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          where e1 != ImageChannel.One
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                        ComboxCameraChannel.SelectedValue = ImageChannel.Three;
-                    }
 
-                    else
-                    {
-                        ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
-                                                          select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                    };
+                if (CreateConfig.CameraMode == CameraMode.LV_MODE)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.Three
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
                 }
+                else if (CreateConfig.CameraMode == CameraMode.BV_MODE)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.One
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                }
+                else
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                }
+
             };
 
 

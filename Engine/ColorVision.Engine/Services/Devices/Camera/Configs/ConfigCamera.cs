@@ -24,8 +24,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged();} }
         private string _CameraID;
+        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        private CameraType _CameraType;
 
-        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged();  } }
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged(); } }
         private CameraMode _CameraMode;
 
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; NotifyPropertyChanged();  } }
@@ -62,7 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         [JsonIgnore]
         public bool IsExpThree
         {
-            get => TakeImageMode != TakeImageMode.Live;
+            get => TakeImageMode != TakeImageMode.Live && (CameraMode == CameraMode.CV_MODE);
             set => NotifyPropertyChanged();
         }
         [JsonIgnore]
