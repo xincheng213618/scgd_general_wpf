@@ -194,15 +194,16 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => spectrumLoopNode.DeviceCode = name, spectrumLoopNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
             }
-
-
+            if (STNodeEditorMain.ActiveNode is FlowEngineLib.CamMotorNode camMotorNode)
+            {
+                AddStackPanel(name => camMotorNode.AutoFocusTemp = name, camMotorNode.AutoFocusTemp, "相机模板", new TemplateAutoFocus());
+            }
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
             {
                 AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
                 if (reuslt?.PhyCamera!=null)
                     AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-                AddStackPanel(name => commCaeraNode.FocusTempName = name, commCaeraNode.FocusTempName, "聚焦模板", new TemplateAutoFocus());
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 
