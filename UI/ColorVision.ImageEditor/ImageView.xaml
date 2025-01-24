@@ -330,18 +330,8 @@
                                 </DockPanel>
                                 <Button Content="计算"  Click="Threshold_Click"/>
                             </StackPanel>
-
                         </StackPanel>
                     </Border>
-
-                    <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
-                    </ToggleButton>
-                    <ToggleButton  Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
-                    <ToggleButton Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
-                    </ToggleButton>
-
                 </StackPanel>
             </ScrollViewer>
             <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">
