@@ -57,7 +57,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
-            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.AutoFocusConfig));
             EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
         }
         private void Button_Click(object sender, RoutedEventArgs e)

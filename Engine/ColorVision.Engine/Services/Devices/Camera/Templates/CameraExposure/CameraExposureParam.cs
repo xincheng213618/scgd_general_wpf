@@ -20,17 +20,17 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
         private int _ExpTime = 10;
 
 
-        [Category("CameraExp"), DisplayName("ExpTime3"), Description("ExpTime1")]
+        [Category("CameraExp"), Description("ExpTime1")]
         public int ExpTimeR { get => GetValue(_ExpTimeR); set { SetProperty(ref _ExpTimeR, value); } }
         private int _ExpTimeR = 10;
 
 
-        [Category("CameraExp"),DisplayName("ExpTime2"), Description("ExpTime2")]
+        [Category("CameraExp"), Description("ExpTime2")]
         public int ExpTimeG { get => GetValue(_ExpTimeG); set { SetProperty(ref _ExpTimeG, value); } }
         private int _ExpTimeG = 10;
 
 
-        [Category("CameraExp"), DisplayName("ExpTime3"), Description("ExpTime3")]
+        [Category("CameraExp") ,Description("ExpTime3")]
         public int ExpTimeB { get => GetValue(_ExpTimeB); set { SetProperty(ref _ExpTimeB, value); } }
         private int _ExpTimeB = 10;
 
