@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Globalization;
 using System.Linq;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -40,6 +41,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
+                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                     DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
 
                 }
@@ -54,13 +56,18 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
+            DebounceTimer.AddOrResetTimerDispatcher("GridlineLayoutUpdated", 50, LayoutUpdated);
+        }
+
+        public void LayoutUpdated()
+        {
             if (Radio != ZoomboxSub.ContentMatrix.M11)
             {
                 Radio = ZoomboxSub.ContentMatrix.M11;
                 DrawImage();
             }
-
         }
+
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1; set { DefalutTextAttribute.Defalut.ActualLength = value; } }
         public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.PhysicalUnit : "Px"; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
 
