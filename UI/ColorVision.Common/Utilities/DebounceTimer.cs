@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Timers;
+using System.Windows;
 
 namespace ColorVision.Common.Utilities
 {
@@ -8,10 +9,15 @@ namespace ColorVision.Common.Utilities
     {
         private static readonly ConcurrentDictionary<string, Timer> _timers = new();
 
+        public static void AddOrResetTimer<T,T1>(string actionType, int delayMilliseconds, Action<T,T1> action, T parameter, T1 parameter1)
+        {
+            ElapsedEventHandler handler = (s, e) => action(parameter, parameter1);
+            AddOrResetTimer(actionType, delayMilliseconds, handler);
+        }
 
         public static void AddOrResetTimer<T>(string actionType, int delayMilliseconds, Action<T> action, T parameter)
         {
-            ElapsedEventHandler handler = (sender, args) => action(parameter);
+            ElapsedEventHandler handler = (s, e) => action(parameter);
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
         /// <summary>
@@ -19,9 +25,17 @@ namespace ColorVision.Common.Utilities
         /// </summary>
         public static void AddOrResetTimer(string actionType, int delayMilliseconds, Action action)
         {
-            ElapsedEventHandler handler = (sender, args) => action();
+            ElapsedEventHandler handler = (s, e) => action();
             AddOrResetTimer(actionType, delayMilliseconds, handler);
         }
+
+        public static void AddOrResetTimerDispatcher(string actionType, int delayMilliseconds, Action action)
+        {
+            ElapsedEventHandler handler = (s, e) => Application.Current?.Dispatcher.Invoke(action);
+            AddOrResetTimer(actionType, delayMilliseconds, handler);
+        }
+
+
 
 
         /// <summary>
