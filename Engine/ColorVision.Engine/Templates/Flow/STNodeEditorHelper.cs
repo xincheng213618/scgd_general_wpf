@@ -46,6 +46,7 @@ using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -199,13 +200,13 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
-
-                AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+                if (reuslt?.PhyCamera!=null)
+                    AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
                 AddStackPanel(name => commCaeraNode.FocusTempName = name, commCaeraNode.FocusTempName, "聚焦模板", new TemplateAutoFocus());
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
+                AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 
                 // Usage
-                AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateCameraExposure());
                 AddStackPanel(name => commCaeraNode.POITempName = name, commCaeraNode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
@@ -225,8 +226,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
-                
-                AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+
+                if (reuslt?.PhyCamera != null)
+                    AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
             }
 
             if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
@@ -286,7 +288,8 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
-                AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+                if (reuslt?.PhyCamera != null)
+                    AddStackPanel(name => cvCameraNode.CalibTempName = name, cvCameraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
                 AddStackPanel(name => cvCameraNode.POITempName = name, cvCameraNode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => cvCameraNode.POIFilterTempName = name, cvCameraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
@@ -299,7 +302,8 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
-                AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
+                if (reuslt?.PhyCamera != null)
+                    AddStackPanel(name => lcCameranode.CaliTempName = name, lcCameranode.CaliTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
 
                 AddStackPanel(name => lcCameranode.POITempName = name, lcCameranode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
