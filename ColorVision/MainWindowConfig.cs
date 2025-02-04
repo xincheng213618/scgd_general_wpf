@@ -120,96 +120,38 @@ namespace ColorVision
         }
     }
 
-    public class ExportMenuViewMax :IMenuItemMeta
+    public class ExportMenuViewMax :MenuItemBase
     {
-        public string? OwnerGuid => "View";
-        public string? GuidId => "MenuViewSidebar";
-        public int Order => 1;
-        public string? Header => "全屏";
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => "全屏";
 
-        public MenuItem MenuItem
-        {
-            get
-            {
-                MenuItem menuItem = new() { Header = Header };
-                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsFull)));
-                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
-                menuItem.DataContext = MainWindowConfig.Instance;
-                return menuItem;
-            }
-        }
-        public string? InputGestureText => null;
-        public object? Icon => null;
-        public ICommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
-        public static void Execute()
+        public override void Execute()
         {
             MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
         }
-
-
     }
 
 
-    public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
+    public class ExportMenuViewStatusBar : MenuItemBase,IHotKey
     {
-        public string? OwnerGuid => "View";
-        public string? GuidId => "MenuViewStatusBar";
-        public int Order => 2;
-        public string? Header => Properties.Resources.MenuViewStatusBar;
-        public MenuItem MenuItem
-        {
-            get
-            {
-                MenuItem menuItem = new() { Header = Header };
-                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
-                menuItem.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
-                menuItem.DataContext = MainWindowConfig.Instance;
-                return menuItem;
-            }
-        }
-        public string? InputGestureText => null;
-        public object? Icon => null;
-        public ICommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => Properties.Resources.MenuViewStatusBar;
 
         public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
-        public static void Execute()
+        public override void Execute()
         {
             MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
         }
 
     }
-    public class ExportMenuViewSidebar : IMenuItemMeta, IHotKey
+    public class ExportMenuViewSidebar : MenuItemBase, IHotKey
     {
-        public string? OwnerGuid => "View";
-        public string? GuidId => "MenuViewSidebar";
-        public int Order => 1;
-        public string? Header => Properties.Resources.MenuViewSidebar;
-        public MenuItem MenuItem
-        {
-            get
-            {
-                MenuItem menuItem = new() { Header = Header };
-                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenSidebar)));
-                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
-                menuItem.DataContext = MainWindowConfig.Instance;
-                return menuItem;
-            }
-        }
-
-
-
-
-        public string? InputGestureText => null;
-        public object? Icon => null;
-        public ICommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
-
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => Properties.Resources.MenuViewSidebar;
         public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
-        public static void Execute()
+        public override void Execute()
         {
             MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
         }

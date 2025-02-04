@@ -22,6 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -65,6 +66,11 @@ namespace ColorVision.Engine.Templates.Flow
         public DisplayFlow()
         {
             InitializeComponent();
+            CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => RunFlow(), (s, e) =>
+            {
+                if (flowControl != null)
+                    e.CanExecute = flowControl.IsFlowRun;
+            }));
         }
 
 
@@ -93,6 +99,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s,e) => Refresh();
+            flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
         }
 
 
@@ -356,8 +363,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void RunFlow()
         {
-            flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
-
             if (flowControl.IsFlowRun)
             {
                 log.Info("流程正在运行");

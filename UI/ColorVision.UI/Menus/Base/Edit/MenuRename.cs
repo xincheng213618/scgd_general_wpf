@@ -11,6 +11,5 @@ namespace ColorVision.UI.Menus.Base.Edit
 
         public override ICommand Command => Commands.ReName;
         public override string InputGestureText => "F2";
-
     }
 }
