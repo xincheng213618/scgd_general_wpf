@@ -32,7 +32,7 @@ namespace ColorVision.Engine
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.StopExecutionCommand;
-        public override string InputGestureText => "F10";
+        public override string InputGestureText => "F6";
     }
 
     public class MenuTakePhotoCommand : MenuItemBase
@@ -43,7 +43,7 @@ namespace ColorVision.Engine
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.TakePhotoCommand;
-        public override string InputGestureText => "Ctrl+P";
+        public override string InputGestureText => "Ctrl+T";
     }
 
 
@@ -54,27 +54,12 @@ namespace ColorVision.Engine
         /// <summary>
         /// 开始执行
         /// </summary>
-        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand(
-            "开始执行(_S)",
-            "开始执行(_S)",
-            typeof(EngineCommands),
-            new InputGestureCollection(new[] { new KeyGesture(Key.F5, ModifierKeys.None, "F5") })
-        );
-        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand(
-    "停止执行(_S)",
-    "停止执行(_S)",
-    typeof(EngineCommands),
-    new InputGestureCollection(new[] { new KeyGesture(Key.F10, ModifierKeys.None, "F10") })
-);
+        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand("开始执行(_S)", "开始执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F5, ModifierKeys.None, "F5") }));
+        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand("停止执行(_S)", "停止执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F6, ModifierKeys.Control, "F6") }));
 
         /// <summary>
         /// 拍照
         /// </summary>
-        public static RoutedUICommand TakePhotoCommand { get; set; } = new RoutedUICommand(
-            "拍照(_P)",
-            "拍照(_P)",
-            typeof(EngineCommands),
-            new InputGestureCollection(new[] { new KeyGesture(Key.P, ModifierKeys.Control, "Ctrl+P") })
-        );
+        public static RoutedUICommand TakePhotoCommand { get; set; } = new RoutedUICommand("拍照(_P)", "拍照(_P)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.T, ModifierKeys.Control, "Crtl+T") }));
     }
 }

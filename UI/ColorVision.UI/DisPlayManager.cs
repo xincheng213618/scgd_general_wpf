@@ -4,6 +4,7 @@ using ColorVision.Themes;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.UI
@@ -36,6 +37,8 @@ namespace ColorVision.UI
             UpdateDisPlayBorder();
 
             if (disPlayControl is UserControl userControl)
+            {
+                userControl.Focusable = true;
                 userControl.MouseDown += (s, e) =>
                 {
                     if (userControl.Parent is StackPanel stackPanel)
@@ -45,7 +48,10 @@ namespace ColorVision.UI
                         stackPanel.Tag = userControl;
                         disPlayControl.IsSelected = true;
                     }
+                    userControl.Focus();
                 };
+            }
+
         }
     }
 

@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(100);
             _timer.Tick += Timer_Tick;
-            CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => GetData(), (s, e) => e.CanExecute = Device.Config.DeviceStatus == DeviceStatusType.Opened));
+            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, GetData_Click, (s, e) => e.CanExecute = Device.Config.DeviceStatus == DeviceStatusType.Opened));
         }
 
 
@@ -239,7 +239,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void GetData_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is not Button button) return;
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
             TakePhotoButton.Visibility = Visibility.Hidden;
@@ -269,7 +268,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.Instance.TakePictureDelay;
             logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.Instance.TakePictureDelay}");
 
-            ServicesHelper.SendCommand(button, msgRecord);
+            ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
                 ButtonProgressBarGetData.Stop();

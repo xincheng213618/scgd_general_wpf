@@ -69,8 +69,15 @@ namespace ColorVision.Engine.Templates.Flow
             CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => RunFlow(), (s, e) =>
             {
                 if (flowControl != null)
+                    e.CanExecute = !flowControl.IsFlowRun;
+            }));
+            CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => StopFlow(), (s, e) =>
+            {
+                if (flowControl != null)
                     e.CanExecute = flowControl.IsFlowRun;
             }));
+
+            
         }
 
 
@@ -473,6 +480,11 @@ namespace ColorVision.Engine.Templates.Flow
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
+        {
+            StopFlow();
+        }
+
+        private void StopFlow()
         {
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;

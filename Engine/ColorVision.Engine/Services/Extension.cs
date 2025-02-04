@@ -3,6 +3,7 @@ using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services
 {
