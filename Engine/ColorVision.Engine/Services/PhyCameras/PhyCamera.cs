@@ -891,6 +891,10 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void SaveConfig()
         {
+            //加这个是因为陈宏那边没有解析IsUseCFW，要删除掉
+            if (!Config.CFW.IsUseCFW)
+                Config.CFW.ChannelCfgs.Clear();
+
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
