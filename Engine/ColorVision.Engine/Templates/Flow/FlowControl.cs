@@ -17,8 +17,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         string svrName = "FlowControl";
         string devName = "DEV01";
-        public FlowControlData FlowControlData { get; set; }
-
         private MQTTControl MQTTControl;
         private FlowEngineControl flowEngine;
 
@@ -140,19 +138,17 @@ namespace ColorVision.Engine.Templates.Flow
                     FlowControlData json = JsonConvert.DeserializeObject<FlowControlData>(Msg);
                     if (json == null)
                         return Task.CompletedTask;
-                    FlowControlData = json;
                     IsFlowRun = false;
-                    Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
-                    if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                    Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(json, new EventArgs()));
+                    if (json.EventName == "Completed" || json.EventName == "Canceled" || json.EventName == "OverTime" || json.EventName == "Failed")
                     {
-                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(FlowControlData, new EventArgs()));
+                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(json, new EventArgs()));
                     }
                     FlowConfig.Instance.FlowRun = false;
                     return Task.CompletedTask;
                 }
                 catch (Exception ex)
                 {
-
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }
