@@ -20,6 +20,7 @@ using System.Windows.Input;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Flow;
 using System.Linq;
+using CVCommCore;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             Device = device;
             InitializeComponent();
+            CommandBindings.Add(new CommandBinding(EngineCommands.TakePhotoCommand, (s,e) => device.DisplayCameraControlLazy.Value.GetData_Click(s,e), (s, e) => e.CanExecute = Device.Config.DeviceStatus == DeviceStatusType.Opened));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

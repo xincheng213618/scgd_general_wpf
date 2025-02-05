@@ -1381,6 +1381,10 @@
           <source>编辑(_E)</source>
           <target state="new">Modifier(E)</target>
         </trans-unit>
+        <trans-unit id="MenuEngine" translate="yes" xml:space="preserve">
+          <source>引擎(_N)</source>
+          <target state="new">Moteur (_N)</target>
+        </trans-unit>
         <trans-unit id="MenuFOV" translate="yes" xml:space="preserve">
           <source>_FOV模板设置</source>
           <target state="new">Paramètres du modèle FOV (B)" ;</target>

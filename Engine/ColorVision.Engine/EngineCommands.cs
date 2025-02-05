@@ -12,8 +12,8 @@ namespace ColorVision.Engine
     public class MenuEngine : MenuItemMenuBase
     {
         public override string GuidId => EngineCommands.EngineGuidId;
-        public override string Header => "Engine";
-        public override int Order => 4;
+        public override string Header => ColorVision.Engine.Properties.Resources.MenuEngine;
+        public override int Order => 2;
     }
     public class MenuStartExecutionCommand : MenuItemBase
     {
@@ -22,7 +22,7 @@ namespace ColorVision.Engine
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.StartExecutionCommand;
-        public override string InputGestureText => "F5";
+        public override string InputGestureText => "F6";
     }
 
     public class MenuStopExecutionCommand : MenuItemBase
@@ -30,9 +30,8 @@ namespace ColorVision.Engine
         public override string OwnerGuid => EngineCommands.EngineGuidId;
         public override string Header => "停止执行(_S)";
         public override int Order => 99;
-
         public override ICommand Command => EngineCommands.StopExecutionCommand;
-        public override string InputGestureText => "F6";
+        public override string InputGestureText => "F7";
     }
 
     public class MenuTakePhotoCommand : MenuItemBase
@@ -54,8 +53,8 @@ namespace ColorVision.Engine
         /// <summary>
         /// 开始执行
         /// </summary>
-        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand("开始执行(_S)", "开始执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F5, ModifierKeys.None, "F5") }));
-        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand("停止执行(_S)", "停止执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F6, ModifierKeys.Control, "F6") }));
+        public static RoutedUICommand StartExecutionCommand { get; set; } = new RoutedUICommand("开始执行(_S)", "开始执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F6, ModifierKeys.None, "F6") }));
+        public static RoutedUICommand StopExecutionCommand { get; set; } = new RoutedUICommand("停止执行(_S)", "停止执行(_S)", typeof(EngineCommands), new InputGestureCollection(new[] { new KeyGesture(Key.F7, ModifierKeys.None, "F7") }));
 
         /// <summary>
         /// 拍照

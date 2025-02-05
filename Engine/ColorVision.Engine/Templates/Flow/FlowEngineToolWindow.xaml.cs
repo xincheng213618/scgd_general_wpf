@@ -175,7 +175,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     Save();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.F5 || (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
+                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Refresh();
                 }

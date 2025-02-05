@@ -1078,6 +1078,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 引擎(_N) 的本地化字符串。
+        /// </summary>
+        public static string MenuEngine {
+            get {
+                return ResourceManager.GetString("MenuEngine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {

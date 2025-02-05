@@ -15,12 +15,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     }
 
     [DisplayName("电机配置")]
-    public class MotorConfig : ViewModelBase
+    public class MotorConfigBase: ViewModelBase
     {
-        [DisplayName("相机联动")]
-        public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
-        private bool _IsCameraLinkage = true;
-
         [DisplayName("配置电机")]
         public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
         private bool _IsUseMotor;
@@ -32,11 +28,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
-        [DisplayName("串口"),PropertyEditorType(PropertyEditorType.TextSerialPort)]
+        [DisplayName("串口"), PropertyEditorType(PropertyEditorType.TextSerialPort)]
         public string SzComName { get => _szComName; set { _szComName = value; NotifyPropertyChanged(); } }
         private string _szComName = "COM1";
 
-        [DisplayName("波特率") ,PropertyEditorType(PropertyEditorType.TextBaudRate)]
+        [DisplayName("波特率"), PropertyEditorType(PropertyEditorType.TextBaudRate)]
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 115200;
 
@@ -92,5 +88,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("电机移动区间上限")]
         public int MaxPosition { get => _MaxPosition; set { _MaxPosition = value; NotifyPropertyChanged(); } }
         private int _MaxPosition = 7800;
+    }
+
+    [DisplayName("电机配置")]
+    public class MotorConfig : MotorConfigBase
+    {
+        [DisplayName("相机联动")]
+        public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
+        private bool _IsCameraLinkage = true;
     }
 }

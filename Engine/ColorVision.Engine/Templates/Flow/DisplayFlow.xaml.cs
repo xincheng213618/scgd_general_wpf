@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Templates.Flow
             this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
-
+            View.DisplayFlow = this;
             ComboBoxFlow.ItemsSource = FlowParam.Params;
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
@@ -107,6 +107,7 @@ namespace ColorVision.Engine.Templates.Flow
             this.Loaded += FlowDisplayControl_Loaded;
             View.RefreshFlow += (s,e) => Refresh();
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
         }
 
 
@@ -196,7 +197,7 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private FlowControl flowControl;
+        public FlowControl flowControl { get; set; }
 
         bool LastCompleted = true;
 
@@ -438,26 +439,20 @@ namespace ColorVision.Engine.Templates.Flow
                 flowControl.Start(sn);
                 string name = string.Empty;
                 if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-                BeginNewBatch(sn, name);
+
+                BatchResultMasterModel batch = new();
+                batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+                batch.Code = sn;
+                batch.CreateDate = DateTime.Now;
+                batch.TenantId = 0;
+                BatchResultMasterDao.Instance.Save(batch);
+                this.Focus();
             }
             else
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
             }
         }
-
-
-
-        public static void BeginNewBatch(string sn, string name)
-        {
-            BatchResultMasterModel batch = new();
-            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-            batch.Code = sn;
-            batch.CreateDate = DateTime.Now;
-            batch.TenantId = 0;
-            BatchResultMasterDao.Instance.Save(batch);
-        }
-
 
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
@@ -484,7 +479,7 @@ namespace ColorVision.Engine.Templates.Flow
             StopFlow();
         }
 
-        private void StopFlow()
+        public void StopFlow()
         {
             ButtonRun.Visibility = Visibility.Visible;
             ButtonStop.Visibility = Visibility.Collapsed;

@@ -799,4 +799,7 @@
   <data name="IsEnable" xml:space="preserve">
     <value>启用</value>
   </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>引擎(_N)</value>
+  </data>
 </root>

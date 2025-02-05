@@ -237,7 +237,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
-        private void GetData_Click(object sender, RoutedEventArgs e)
+        public void GetData_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 

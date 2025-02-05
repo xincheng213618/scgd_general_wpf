@@ -819,4 +819,7 @@
   <data name="Symbol" xml:space="preserve">
     <value>상징</value>
   </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>엔진(_N)</value>
+  </data>
 </root>

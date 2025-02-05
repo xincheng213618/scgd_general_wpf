@@ -8,6 +8,7 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -44,6 +45,8 @@ namespace ColorVision.Engine.Services.Flow
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode = true;
 
+        public DisplayFlow DisplayFlow { get; set; }
+
         public ViewFlow()
         {
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
@@ -62,6 +65,18 @@ namespace ColorVision.Engine.Services.Flow
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
+            CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
+            {
+                if (DisplayFlow.flowControl != null)
+                    e.CanExecute = !DisplayFlow.flowControl.IsFlowRun;
+            }));
+            CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => DisplayFlow.StopFlow(), (s, e) =>
+            {
+                if (DisplayFlow.flowControl != null)
+                    e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
+            }));
+
+
         }
         #region ActionCommand
 
@@ -165,10 +180,6 @@ namespace ColorVision.Engine.Services.Flow
                         var node = STNodeEditorMain.ActiveNode;
                         STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
                     }
-                }
-                if (e.KeyCode == System.Windows.Forms.Keys.F5 ||( e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
-                {
-                    Refresh();
                 }
                 if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
