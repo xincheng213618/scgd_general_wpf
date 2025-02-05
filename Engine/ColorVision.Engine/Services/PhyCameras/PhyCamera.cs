@@ -64,6 +64,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand RefreshLicenseCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
+        public RelayCommand CopyConfigCommand { get; set; }
 
         public RelayCommand ProductBrochureCommand { get; set; }
 
@@ -100,6 +101,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             },a => AccessControl.Check(PermissionMode.Administrator));
+
+            CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
             ResourceManagerCommand = new RelayCommand(a =>
@@ -885,12 +888,20 @@ namespace ColorVision.Engine.Services.PhyCameras
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuCopy, Command = CopyConfigCommand });
         }
 
         public event EventHandler<ConfigPhyCamera> ConfigChanged;
 
         public void SaveConfig()
         {
+            //加这个是因为陈宏那边没有解析IsUseCFW，要清除掉ChannelCfgs,以及IsCOM的配置。具体的是因为SDK中串口和滤轮是分离的，所以在配置中需要单独处理
+            if (!Config.CFW.IsUseCFW)
+            {
+                Config.CFW.ChannelCfgs.Clear();
+                Config.CFW.IsCOM = false;
+            }
+
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 

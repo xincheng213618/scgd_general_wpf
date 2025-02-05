@@ -1,5 +1,7 @@
 ﻿using ColorVision.Engine.Templates;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 {
@@ -13,5 +15,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
             Code = "auto_exp_time";
             TemplateParams = Params;
         }
+
     }
 }
