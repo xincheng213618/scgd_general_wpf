@@ -3,6 +3,7 @@ using cvColorVision;
 using ColorVision.Common.MVVM;
 using System.ComponentModel;
 using ColorVision.UI.PropertyEditor;
+using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {

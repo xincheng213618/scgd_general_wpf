@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;

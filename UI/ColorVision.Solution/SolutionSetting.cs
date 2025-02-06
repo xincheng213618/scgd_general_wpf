@@ -8,7 +8,7 @@ using System.Windows;
 namespace ColorVision.Solution
 {
 
-    public class SolutionProvider : IConfigSettingProvider, IStatusBarIconProvider
+    public class SolutionProvider : IConfigSettingProvider, IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -18,13 +18,13 @@ namespace ColorVision.Solution
             };
         }
 
-        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
             Action action = new Action(() => {  });
              
-            return new List<StatusBarIconMetadata>
+            return new List<StatusBarMeta>
             {
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = "IsLackWarning",
                     Description = "IsLackWarning",

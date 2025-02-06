@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.PropertyEditor;
 using cvColorVision;
 using FlowEngineLib;
@@ -72,12 +73,25 @@ namespace ColorVision.Engine.Services.PhyCameras
                     ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                       where e1 != ImageChannel.Three
                                                       select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    EditConfig.CFW.IsUseCFW = false;
+                    EditConfig.Channel = ImageChannel.One;
+                               
                 }
                 else if (EditConfig.CameraMode == CameraMode.BV_MODE)
                 {
                     ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                       where e1 != ImageChannel.One
                                                       select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    EditConfig.CFW.IsUseCFW = false;
+                    EditConfig.Channel = ImageChannel.Three;
+                }
+                else if (EditConfig.CameraMode == CameraMode.CV_MODE)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.One
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    EditConfig.Channel = ImageChannel.Three;
+                    EditConfig.CFW.IsUseCFW = true;
                 }
                 else
                 {
@@ -122,6 +136,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             TextBaudRate1.ItemsSource = BaudRates;
             TextSerial1.ItemsSource = Serials;
 
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraCfg));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 
@@ -176,23 +191,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
-        }
-
-
-        private void FileBasePath_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.FolderBrowserDialog dialog = new();
-            dialog.UseDescriptionForTitle = true;
-            dialog.Description = "为相机路径选择位置";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                if (string.IsNullOrEmpty(dialog.SelectedPath))
-                {
-                    MessageBox.Show("文件夹路径不能为空", "提示");
-                    return;
-                }
-                EditConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
-            }
         }
     }
 }

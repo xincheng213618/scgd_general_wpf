@@ -1,7 +1,5 @@
-﻿#pragma warning disable
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Themes;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
@@ -13,7 +11,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.UI.PropertyEditor
+namespace ColorVision.UI
 {
     public static class PropertyEditorHelper
     {
@@ -365,24 +363,25 @@ namespace ColorVision.UI.PropertyEditor
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
                     if (browsableAttr?.Browsable ?? true)
                     {
+
                         DockPanel dockPanel = new DockPanel();
                         if (property.PropertyType == typeof(bool))
                         {
                             dockPanel = GenBoolProperties(property, obj);
                         }
-                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+                        else if (property.PropertyType == typeof(int) || property.PropertyType ==(typeof(float))|| property.PropertyType == (typeof(Rect)) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
                         {
                             dockPanel = GenTextboxProperties(property, obj);
                         }
                         else if (property.PropertyType.IsEnum)
                         {
                             dockPanel = GenEnumProperties(property, obj);
-
                         }
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
                         }
+
                         stackPanel.Children.Add(dockPanel);
                     }
 

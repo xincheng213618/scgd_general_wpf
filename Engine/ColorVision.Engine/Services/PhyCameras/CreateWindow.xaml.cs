@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
+using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;
 using Newtonsoft.Json;
@@ -33,7 +34,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         private void Window_Initialized(object sender, EventArgs e)
         {
             DataContext = this;
-
 
             this.CreateConfig = new ConfigPhyCamera
             {
@@ -125,43 +125,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
 
             };
-
-
-            List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
-            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
-
-            TextBaudRate.ItemsSource = BaudRates;
-
-
-            TextSerial.ItemsSource = Serials;
-
-
-            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
-                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-            int index = 0;
-            ComboxMotorType.SelectionChanged += (s, e) =>
-            {
-                if (index++ < 1)
-                    return;
-                switch (CreateConfig.MotorConfig.eFOCUSCOMMUN)
-                {
-                    case FOCUS_COMMUN.VID_SERIAL:
-                        CreateConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.CANON_SERIAL:
-                        CreateConfig.MotorConfig.BaudRate = 38400;
-                        break;
-                    case FOCUS_COMMUN.NED_SERIAL:
-                        CreateConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.LONGFOOT_SERIAL:
-                        CreateConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    default:
-                        break;
-                }
-            };
-
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.CameraCfg));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.MotorConfig));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.FileServerCfg));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -199,22 +165,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             RCFileUpload.GetInstance().CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
             Close();
-        }
-
-        private void FileBasePath_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.FolderBrowserDialog dialog = new();
-            dialog.UseDescriptionForTitle = true;
-            dialog.Description = "为相机路径选择位置";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                if (string.IsNullOrEmpty(dialog.SelectedPath))
-                {
-                    MessageBox.Show("文件夹路径不能为空", "提示");
-                    return;
-                }
-                CreateConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
-            }
         }
     }
 }

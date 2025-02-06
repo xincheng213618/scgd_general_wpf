@@ -202,7 +202,7 @@ namespace ColorVision
             StatusBarGrid.ContextMenu = contextMenu;
 
 
-            void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
+            void AddStatusBarIconMetadata(StatusBarMeta statusBarIconMetadata)
             {
                 if (statusBarIconMetadata.Type == StatusBarType.Icon)
                 {
@@ -288,13 +288,13 @@ namespace ColorVision
 
             }
 
-            var allSettings = new List<StatusBarIconMetadata>();
+            var allSettings = new List<StatusBarMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarIconProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IStatusBarIconProvider configSetting)
+                    if (Activator.CreateInstance(type) is IStatusBarProvider configSetting)
                     {
                         allSettings.AddRange(configSetting.GetStatusBarIconMetadata());
                     }

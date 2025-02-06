@@ -6,7 +6,7 @@
         Text
     }
 
-    public class StatusBarIconMetadata
+    public class StatusBarMeta
     {
         public string Name { get; set; }
         /// <summary>
@@ -32,8 +32,8 @@
         public Action Action { get; set; }
     }
 
-    public interface IStatusBarIconProvider
+    public interface IStatusBarProvider
     {
-        IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata();
+        IEnumerable<StatusBarMeta> GetStatusBarIconMetadata();
     }
 }

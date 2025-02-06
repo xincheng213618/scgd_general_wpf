@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Windows.Data;
 
-namespace ColorVision.UI.PropertyEditor
+///这里划到xi
+namespace System.ComponentModel
 {
     public enum PropertyEditorType
     {
@@ -24,14 +26,12 @@ namespace ColorVision.UI.PropertyEditor
 
         protected PropertyEditorType PropertyEditorTypeValue { get; set; }
 
-        public PropertyEditorTypeAttribute()
-            : this(PropertyEditorType.Default)
-        {
-        }
-
         public PropertyEditorTypeAttribute(PropertyEditorType  propertyEditorType)
         {
             PropertyEditorTypeValue = propertyEditorType;
+        }
+        public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default)
+        {
         }
 
         public override bool Equals([NotNullWhen(true)] object? obj)

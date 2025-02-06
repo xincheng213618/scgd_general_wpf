@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
+using ColorVision.UI;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
 
-            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

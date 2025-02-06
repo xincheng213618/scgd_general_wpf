@@ -2,7 +2,7 @@
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
-using cvColorVision;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,7 +57,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
-            EditStackPanel.Children.Add(UI.PropertyEditor.PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.VideoConfig));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ZBDebayer));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

@@ -11,7 +11,7 @@ namespace ColorVision.Engine.MQTT
 {
     public delegate void UseMQTTHandler(bool IsUseMQTT);
 
-    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarIconProvider
+    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -28,16 +28,16 @@ namespace ColorVision.Engine.MQTT
                 }
             };
         }
-        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
             Action action = new Action(() =>
             {
                 new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             });
 
-            return new List<StatusBarIconMetadata>
+            return new List<StatusBarMeta>
             {
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = "启用MQTT",
                     Description = "启用MQTT",

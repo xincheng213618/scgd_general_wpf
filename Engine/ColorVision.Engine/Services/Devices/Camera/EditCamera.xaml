@@ -38,20 +38,11 @@
                                 <TextBlock Text="设备自动连接" Width="120"/>
                                 <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
 
-
-                    <GroupBox Header="配置信息" Margin="0,5">
-                        <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <Button Content="应用参数" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
                                 <TextBlock Text="物理相机Code" Width="120"/>
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="相机类型" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraType}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="相机型号" Width="120"/>
@@ -73,135 +64,18 @@
                                 <TextBlock Text="默认图像位数" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding ImageBpp}"/>
                             </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
 
-                    <GroupBox Header="ZBDebayer">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,0,0,5">
-                                <TextBlock Text="启用" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding ZBDebayer.IsEnabled}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,0,0,5" Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
-                                <TextBlock Text="Method" Width="120"/>
-                                <TextBox Text="{Binding ZBDebayer.Method}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel Visibility="{Binding ZBDebayer.IsEnabled,Converter={StaticResource bool2VisibilityConverter}}">
-                                <TextBlock Text="Channeltype" Width="120"/>
-                                <TextBox Text="{Binding ZBDebayer.Channeltype}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Header="默认参数" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel>
-                                <TextBlock Text="最大曝光时间" Width="120"/>
-                                <TextBox Text="{Binding ExpTimeMax}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="最小曝光时间" Width="120"/>
-                                <TextBox Text="{Binding ExpTimeMin}" Style="{StaticResource TextBox.Small}"/>
-                            </DockPanel>
-                            <StackPanel Margin="0,2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel>
-                                    <TextBlock  Text="默认曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
-                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Minimum="{Binding ExpTimeMin}"  Maximum="{Binding ExpTimeMax}">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认R通道曝光(ms)" Width="120"/>
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeR}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认G通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeG}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认B通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeB}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Minimum="{Binding ExpTimeMin}" Maximum="{Binding ExpTimeMax}">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="视频模式" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <GroupBox Header="视频串流配置" Margin="0,5">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="串流指定IP:" Width="120"/>
-                                        <TextBox Text="{Binding VideoConfig.Host}" />
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="串流指定端口:" Width="120"/>
-                                        <TextBox Text="{Binding VideoConfig.Port}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="缩放比例:" Width="120"/>
-                                        <TextBox Text="{Binding VideoConfig.ResizeRatio}"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="缓存" Margin="0,5" >
-                        <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="启用:" Width="120"/>
+                                <TextBlock Text="文件缓存:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
                             </DockPanel>
                             <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}">
                                 <TextBlock Text="CVCIE文件保存:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
                             </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="缓存大小(Byte):" Width="120"/>
-                                <TextBox  Text="{Binding VideoConfig.CapacityInput}"/>
-                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="数据文件服务配置" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="数据目录:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.DataBasePath}" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口地址:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口范围:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.PortRange}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="保存天数:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
-                            </DockPanel>                            
-                        </StackPanel>
-                    </GroupBox>
+
                 </StackPanel>
             </Border>
         </ScrollViewer>

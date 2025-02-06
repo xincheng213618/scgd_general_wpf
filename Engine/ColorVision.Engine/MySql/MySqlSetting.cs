@@ -11,7 +11,7 @@ namespace ColorVision.Engine.MySql
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
 
-    public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarIconProvider
+    public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -36,16 +36,16 @@ namespace ColorVision.Engine.MySql
                             }
             };
         }
-        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
             Action action = new Action(() =>
             {
                 new MySqlConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             });
 
-            return new List<StatusBarIconMetadata>
+            return new List<StatusBarMeta>
             {
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = Properties.Resources.EnableDatabase,
                     Description = Properties.Resources.EnableDatabase,
