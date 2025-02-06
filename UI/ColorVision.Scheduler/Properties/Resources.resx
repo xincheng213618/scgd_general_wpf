@@ -118,4 +118,7 @@
   <data name="Shutdown" xml:space="preserve">
     <value>关闭</value>
   </data>
+  <data name="CronExpression" xml:space="preserve">
+    <value>Cron表达式</value>
+  </data>
 </root>

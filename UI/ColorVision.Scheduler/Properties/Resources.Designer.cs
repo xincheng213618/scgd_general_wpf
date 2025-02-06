@@ -79,6 +79,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Cron表达式 的本地化字符串。
+        /// </summary>
+        public static string CronExpression {
+            get {
+                return ResourceManager.GetString("CronExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 暂停所有 的本地化字符串。
         /// </summary>
         public static string PauseAll {

@@ -138,4 +138,7 @@
   <data name="Shutdown" xml:space="preserve">
     <value>종료</value>
   </data>
+  <data name="CronExpression" xml:space="preserve">
+    <value>크론 표현식</value>
+  </data>
 </root>

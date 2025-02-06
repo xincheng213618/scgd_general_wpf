@@ -138,4 +138,7 @@
   <data name="Shutdown" xml:space="preserve">
     <value>Выключение</value>
   </data>
+  <data name="CronExpression" xml:space="preserve">
+    <value>КронВыражение</value>
+  </data>
 </root>

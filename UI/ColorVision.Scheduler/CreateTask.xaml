@@ -75,7 +75,7 @@
                 <StackPanel Visibility="{Binding IsCron ,Converter={StaticResource bool2VisibilityConverter}}">
                     <DockPanel Margin="2">
                         <Button Content="在线Cron表达式生成器" DockPanel.Dock="Right"  Style="{StaticResource ButtonDefault.Small}" Click="Button_Click_1" Margin="5,0,0,0"/>
-                        <TextBlock Text="CronExpression" Width="100" />
+                        <TextBlock Text="{x:Static properties:Resources.CronExpression}" Width="100" />
                         <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
                     </DockPanel>
                     <DockPanel Margin="2" >
