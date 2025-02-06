@@ -4,9 +4,6 @@ using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Configs;
-using System.Collections.ObjectModel;
-using System.Windows;
-using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs

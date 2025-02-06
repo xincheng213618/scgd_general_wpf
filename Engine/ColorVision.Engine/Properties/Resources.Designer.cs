@@ -187,6 +187,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新视图 的本地化字符串。
+        /// </summary>
+        public static string AutoRefreshView {
+            get {
+                return ResourceManager.GetString("AutoRefreshView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动切换选中视图 的本地化字符串。
         /// </summary>
         public static string AutoSwitchSelectedView {
@@ -871,6 +880,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在开头插入 的本地化字符串。
+        /// </summary>
+        public static string InsertAtBeginning {
+            get {
+                return ResourceManager.GetString("InsertAtBeginning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件启动时打开服务 的本地化字符串。
         /// </summary>
         public static string IsDefaultOpenService {
@@ -894,6 +912,15 @@ namespace ColorVision.Engine.Properties {
         public static string IsRetorePlayControls {
             get {
                 return ResourceManager.GetString("IsRetorePlayControls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否显示列表视图 的本地化字符串。
+        /// </summary>
+        public static string IsShowListView {
+            get {
+                return ResourceManager.GetString("IsShowListView", resourceCulture);
             }
         }
         
@@ -1735,6 +1762,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 搜索条数限制 的本地化字符串。
+        /// </summary>
+        public static string SearchLimit {
+            get {
+                return ResourceManager.GetString("SearchLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 选择项目保存位置 的本地化字符串。
         /// </summary>
         public static string SelectProjectSaveLocation {
@@ -2118,6 +2154,15 @@ namespace ColorVision.Engine.Properties {
         public static string ViewCamera_图像数据文件 {
             get {
                 return ResourceManager.GetString("ViewCamera_图像数据文件", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看图像读取延迟 的本地化字符串。
+        /// </summary>
+        public static string ViewImageReadDelay {
+            get {
+                return ResourceManager.GetString("ViewImageReadDelay", resourceCulture);
             }
         }
         

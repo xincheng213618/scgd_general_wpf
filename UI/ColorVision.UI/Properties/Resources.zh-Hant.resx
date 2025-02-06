@@ -276,4 +276,7 @@
   <data name="MenuClose" xml:space="preserve">
     <value>關閉(_C)</value>
   </data>
+  <data name="IsAutoSelect" xml:space="preserve">
+    <value>自動選擇嗎</value>
+  </data>
 </root>

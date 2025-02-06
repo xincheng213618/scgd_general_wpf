@@ -822,4 +822,19 @@
   <data name="MenuEngine" xml:space="preserve">
     <value>エンジン（_N）</value>
   </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>検索制限</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>先頭に挿入</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>自動更新ビュー</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>リストビューを表示するか</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>画像表示遅延</value>
+  </data>
 </root>

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {

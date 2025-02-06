@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.PropertyEditor;
 using System.ComponentModel;
 using System.Windows;

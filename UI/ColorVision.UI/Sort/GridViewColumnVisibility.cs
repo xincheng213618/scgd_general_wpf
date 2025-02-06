@@ -18,8 +18,6 @@ namespace ColorVision.UI.Sorts
         public static void AdjustGridViewColumn(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
 
         public static void AdjustGridViewColumnAuto(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
-
-
         public static void CopyToGridView(this ObservableCollection<GridViewColumnVisibility> source, ObservableCollection<GridViewColumnVisibility> target)
         {
             // 使用字典来加速查找过程

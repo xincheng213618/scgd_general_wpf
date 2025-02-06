@@ -27,15 +27,36 @@
             </Grid.ColumnDefinitions>
             <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.FilterSupportsRegex}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
             <StackPanel Grid.Column="1"  Orientation="Horizontal">
-                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoScrollToEnd" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
-                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
-                <ComboBox Name="cmlogLoadState"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLoadState}" SelectionChanged="cmlogLoadState_SelectionChanged"/>
-                <TextBlock Text="{x:Static properties:Resources.LogLevel}"  Margin="0,0,5,0"/>
+                <ToggleButton Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoScrollToEnd}" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
+                <ToggleButton Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
                 <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
                 <Button Content="{x:Static properties:Resources.Clear}" Click="Clear_Click" Margin="5,0,0,0"/>
+                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform21"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
+
             </StackPanel>
         </Grid>
+        <RichTextBox x:Name="logRichTextBox" Grid.Row="1" Visibility="Collapsed" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <FlowDocument>
+                <Paragraph>
 
+                </Paragraph>
+            </FlowDocument>
+        </RichTextBox>
         <TextBox x:Name="logTextBox" TextWrapping="Wrap" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
         <TextBox x:Name="logTextBoxSerch" TextWrapping="Wrap" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
     </Grid>

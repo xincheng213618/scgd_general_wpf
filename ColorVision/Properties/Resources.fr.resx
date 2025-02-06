@@ -297,4 +297,7 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Télécharger des fichiers</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Modifier(E)</value>
+  </data>
 </root>

@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using log4net;
 using System.Diagnostics;

@@ -214,6 +214,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动选择 的本地化字符串。
+        /// </summary>
+        public static string IsAutoSelect {
+            get {
+                return ResourceManager.GetString("IsAutoSelect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日语 的本地化字符串。
         /// </summary>
         public static string ja {

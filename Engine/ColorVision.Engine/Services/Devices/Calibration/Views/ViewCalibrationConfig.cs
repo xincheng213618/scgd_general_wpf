@@ -29,11 +29,10 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
-        [DisplayName("显示数据列"), Category("Control")]
+        [Category("Control")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
 
-        [DisplayName("打开图像超时")]
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 

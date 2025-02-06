@@ -15,7 +15,6 @@ using ColorVision.ImageEditor.Tif;
 using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
 using log4net;

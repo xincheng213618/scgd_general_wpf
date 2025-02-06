@@ -1,4 +1,7 @@
-﻿namespace ColorVision.UI.Configs
+﻿using System;
+using System.Collections.Generic;
+
+namespace ColorVision.UI
 {
     public enum StatusBarType
     {

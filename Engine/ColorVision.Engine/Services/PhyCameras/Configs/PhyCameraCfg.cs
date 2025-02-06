@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using System.Windows;
 using System.ComponentModel;
-using OpenCvSharp.Tracking;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {

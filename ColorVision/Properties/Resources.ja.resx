@@ -297,4 +297,7 @@
   <data name="UploadFile" xml:space="preserve">
     <value>ファイルをアップロードする</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>編集する (_E)</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-﻿namespace ColorVision.UI.Configs
+﻿namespace ColorVision.UI
 {
     public enum ConfigSettingType
     {

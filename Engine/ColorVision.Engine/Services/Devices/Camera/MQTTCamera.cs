@@ -4,17 +4,14 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Extension;
 using cvColorVision;
 using CVCommCore;
-using CVCommCore.CVImage;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 
 namespace ColorVision.Engine.Services.Devices.Camera

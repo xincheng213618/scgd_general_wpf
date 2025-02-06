@@ -8,7 +8,6 @@ using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;

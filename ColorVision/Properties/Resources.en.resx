@@ -297,4 +297,7 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Upload files</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>_Edit</value>
+  </data>
 </root>

@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
-        Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="500" Width="1108" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
             <Style.Triggers>

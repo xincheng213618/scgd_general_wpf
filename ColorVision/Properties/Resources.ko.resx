@@ -297,4 +297,7 @@
   <data name="UploadFile" xml:space="preserve">
     <value>파일 업로드</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>편집 (_E)</value>
+  </data>
 </root>

@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.PropertyEditor;
 using cvColorVision;
 using System;
 using System.ComponentModel;

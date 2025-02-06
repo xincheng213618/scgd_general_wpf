@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -15,9 +16,32 @@ namespace ColorVision.UI
 {
     public static class PropertyEditorHelper
     {
+        public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new ConcurrentDictionary<Type, Lazy<ResourceManager?>>();
+
         public static StackPanel GenPropertyEditorControl(ViewModelBase obj)
         {
-             void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+            Type type = obj.GetType();
+            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                string namespaceName = t.Assembly.GetName().Name;
+                string resourceClassName = $"{namespaceName}.Properties.Resources";
+                Type resourceType = t.Assembly.GetType(resourceClassName);
+
+                if (resourceType != null)
+                {
+                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (resourceManagerProperty != null)
+                    {
+                        return (ResourceManager)resourceManagerProperty.GetValue(null);
+                    }
+                }
+
+                return null;
+            }));
+            ResourceManager? resourceManager = lazyResourceManager.Value;
+
+
+            void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
             {
                 if (e.Key == Key.Enter)
                 {
@@ -71,7 +95,7 @@ namespace ColorVision.UI
                 var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
 
                 string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
 
                 var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
                 var textBlock = new TextBlock
@@ -96,7 +120,6 @@ namespace ColorVision.UI
                 return dockPanel;
             }
 
-
             DockPanel GenEnumProperties(PropertyInfo property, object obj)
             {
                 var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
@@ -106,7 +129,7 @@ namespace ColorVision.UI
                 PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
                 string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
                 var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
 
                 var textBlock = new TextBlock
@@ -152,7 +175,7 @@ namespace ColorVision.UI
                 PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
                 string displayName = displayNameAttr?.DisplayName ?? property.Name;
-                displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+                displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
                 var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
 
                 var textBlock = new TextBlock
@@ -391,6 +414,7 @@ namespace ColorVision.UI
             return PropertyPanel;
 
         }
+
 
 
 

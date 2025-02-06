@@ -225,6 +225,10 @@
           <source>正常</source>
           <target state="new">正常</target>
         </trans-unit>
+        <trans-unit id="IsAutoSelect" translate="yes" xml:space="preserve">
+          <source>自动选择</source>
+          <target state="new">自動選択かどうか</target>
+        </trans-unit>
         <trans-unit id="Language" translate="yes" xml:space="preserve">
           <source>用户界面语言</source>
           <target state="new">言語</target>

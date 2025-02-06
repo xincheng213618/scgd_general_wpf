@@ -822,4 +822,19 @@
   <data name="MenuEngine" xml:space="preserve">
     <value>엔진(_N)</value>
   </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>검색 제한</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>삽입_처음에</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>자동 새로고침 뷰</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>리스트 보기 표시 여부</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>이미지읽기지연</value>
+  </data>
 </root>

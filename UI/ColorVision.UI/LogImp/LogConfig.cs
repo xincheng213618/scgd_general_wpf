@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Configs;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
+using Newtonsoft.Json;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -13,13 +14,18 @@ namespace ColorVision.UI
         private static readonly ILog log = LogManager.GetLogger(typeof(LogConfig));
         public static LogConfig Instance => ConfigService.Instance.GetRequiredService<LogConfig>();
 
+        [JsonIgnore]
+        public RelayCommand EditCommand { get; set; }
+        public LogConfig()
+        {
+            EditCommand = new RelayCommand(a => new PropertyEditor.PropertyEditorWindow(this) {  Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
+
         public static readonly List<string> LogLevels = new() { "all", "debug", "info", "warning", "error", "none" };
         public static IEnumerable<Level> GetAllLevels()
         {
             return new List<Level> { Level.All, Level.Trace, Level.Debug, Level.Info, Level.Warn, Level.Error, Level.Critical, Level.Alert, Level.Fatal, Level.Off };
         }
-
-
         private Level _LogLevel = Level.Info;
         public Level LogLevel
         {
@@ -42,8 +48,6 @@ namespace ColorVision.UI
 
         public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value; NotifyPropertyChanged(); } }
         private bool _AutoScrollToEnd = true;
-
-
 
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
         private bool _AutoRefresh = true;

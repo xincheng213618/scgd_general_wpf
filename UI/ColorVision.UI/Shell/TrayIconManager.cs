@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Configs;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;

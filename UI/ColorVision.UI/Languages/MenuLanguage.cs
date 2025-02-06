@@ -5,11 +5,11 @@ using System.Windows.Input;
 
 namespace ColorVision.UI.Languages
 {
-    public class ExportLanguage : IMenuItemMeta
+    public class MenuLanguage : IMenuItemMeta
     {
         public string? OwnerGuid => "Tool";
 
-        public string? GuidId => "MenuMenuLanguage";
+        public string? GuidId => "MenuLanguage";
 
         public int Order => 1001;
 

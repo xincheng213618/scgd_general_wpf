@@ -1,5 +1,6 @@
-﻿using System.Windows.Controls;
-namespace ColorVision.UI.Configs
+﻿using System.Collections.Generic;
+using System.Windows.Controls;
+namespace ColorVision.UI
 {
     public class ConfigSettingMetadata
     {

@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.FloatingBall;
-using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
@@ -98,11 +96,11 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            if (WindowConfig.IsExist)
+            if (WindowIniSetting.IsExist)
             {
-                if (WindowConfig.Icon != null)
-                    Icon = WindowConfig.Icon;
-                Title = WindowConfig.Title ?? Title;
+                if (WindowIniSetting.Icon != null)
+                    Icon = WindowIniSetting.Icon;
+                Title = WindowIniSetting.Title ?? Title;
             }
             ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
@@ -115,8 +113,8 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.LastViewCount = e;
+            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 

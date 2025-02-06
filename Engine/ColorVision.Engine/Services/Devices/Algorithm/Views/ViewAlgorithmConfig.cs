@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
-using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System;
@@ -29,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
-        [DisplayName("显示数据列"),Category("Control")]
+        [Category("Control")]
         public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
         private bool _IsShowListView = true;
 

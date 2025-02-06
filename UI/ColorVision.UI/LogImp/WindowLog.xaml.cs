@@ -1,6 +1,4 @@
 ﻿using ColorVision.Themes;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Menus;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
@@ -13,33 +11,11 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class WindowLogExport : MenuItemBase, IHotKey
-    {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => "WindowLog";
-        public override int Order => 10005;
-        public override string Header => Properties.Resources.Log;
-        public override string InputGestureText => Hotkey.ToString();
-
-        public static Hotkey Hotkey { get; set; } = new Hotkey(Key.F2, ModifierKeys.Control);
-        public HotKeys HotKeys => new(Properties.Resources.Log, Hotkey, Execute);
-        public override void Execute()
-        {
-            new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-    }
-
-    public enum LogLoadState
-    {
-        AllToday,
-        SinceStartup,
-        None
-    }
+    public class WindowLogConfig : WindowConfig { }
 
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
@@ -53,28 +29,27 @@ namespace ColorVision.UI
             InitializeComponent();
             this.ApplyCaption();
         }
-
+        TextBoxAppender TextBoxAppender { get; set; }
+        Hierarchy Hierarchy { get; set; }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            var hierarchy = (Hierarchy)LogManager.GetRepository();
-            //hierarchy.Root.RemoveAllAppenders();
-            // 创建一个输出到TextBox的Appender
-            var textBoxAppender = new TextBoxAppender(logTextBox);
+            Hierarchy = (Hierarchy)LogManager.GetRepository();
+            TextBoxAppender = new TextBoxAppender(logTextBox);
+            TextBoxAppender.Layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
+            Hierarchy.Root.AddAppender(TextBoxAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
-            // 设置布局格式
-            var layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
-            textBoxAppender.Layout = layout;
-            // 将Appender添加到Logger中
-            hierarchy.Root.AddAppender(textBoxAppender);
-
-            // 配置并激活log4net
-            log4net.Config.BasicConfigurator.Configure(hierarchy);
+            this.Closed += (s, e) =>
+            {
+                Hierarchy.Root.RemoveAppender(TextBoxAppender);
+                log4net.Config.BasicConfigurator.Configure(Hierarchy);
+            };
             this.DataContext = LogConfig.Instance;
+
             cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
             SearchBar1Brush = SearchBar1.BorderBrush;
 
-            cmlogLoadState.ItemsSource = Enum.GetValues(typeof(LogLoadState)).Cast<LogLoadState>().Select(state => new KeyValuePair<LogLoadState, string>(state, state.ToString()));
-
+            LoadLogHistory();
         }
         private static string? GetLogFilePath()
         {
@@ -83,10 +58,6 @@ namespace ColorVision.UI
             return fileAppender?.File;
         }
 
-        private void cmlogLoadState_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            LoadLogHistory();
-        }
 
         private void LoadLogHistory()
         {
@@ -192,6 +163,7 @@ namespace ColorVision.UI
         private void Clear_Click(object sender, RoutedEventArgs e)
         {
             logTextBox.Text = string.Empty;
+            logTextBoxSerch.Text = string.Empty;
         }
 
 

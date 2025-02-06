@@ -38,14 +38,13 @@ namespace ColorVision.Engine.MQTT
         private void Window_Initialized(object sender, EventArgs e)
         {
             Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
-            MQTTControl.MQTTMsgChanged += ShowLog;
+            MQTTControl.MQTTLogChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             DataContext = MQTTSetting.Instance;
-            this.Closed += (s,e) => MQTTControl.MQTTMsgChanged -= ShowLog;
+            this.Closed += (s,e) => MQTTControl.MQTTLogChanged -= ShowLog;
         }
 
-
-        private void ShowLog(MQMsg resultData_MQTT)
+        private void ShowLog(MQTTLog resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {

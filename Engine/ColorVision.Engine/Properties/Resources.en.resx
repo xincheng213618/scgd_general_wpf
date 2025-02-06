@@ -822,4 +822,19 @@
   <data name="MenuEngine" xml:space="preserve">
     <value>E_ngine</value>
   </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>SearchLimit</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>InsertAtBeginning</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>AutoRefreshView</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>IsShowListView</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>ViewImageReadDelay</value>
+  </data>
 </root>

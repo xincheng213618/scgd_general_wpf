@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

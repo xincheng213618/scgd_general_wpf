@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Resources;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -27,15 +28,76 @@ namespace ColorVision.UI.PropertyEditor
         public ViewModelBase EditConfig { get; set; }
 
         public bool IsEdit { get; set; } = true;
+        public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
 
+        ResourceManager? resourceManager;
         public PropertyEditorWindow(ViewModelBase config ,bool isEdit = true)
         {
+            Type type = config.GetType();
+            var lazyResourceManager = PropertyEditorHelper.ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                string namespaceName = t.Assembly.GetName().Name;
+                string resourceClassName = $"{namespaceName}.Properties.Resources";
+                Type resourceType = t.Assembly.GetType(resourceClassName);
+
+                if (resourceType != null)
+                {
+                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (resourceManagerProperty != null)
+                    {
+                        return (ResourceManager)resourceManagerProperty.GetValue(null);
+                    }
+                }
+
+                return null;
+            })
+            {
+
+            });
+            resourceManager = lazyResourceManager.Value;
+
             IsEdit = isEdit;
             Config = config;
             InitializeComponent();
             this.ApplyCaption();
         }
-        public Dictionary<string, List<PropertyInfo>> categoryGroups { get; set; } = new Dictionary<string, List<PropertyInfo>>();
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = Config;
+
+
+            if (IsEdit)
+            {
+                DisplayProperties(Config);
+            }
+            else
+            {
+                EditConfig = Config.Clone();
+                DisplayProperties(EditConfig);
+            }
+        }
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsEdit)
+                EditConfig.CopyTo(Config);
+            Submited?.Invoke(sender, new EventArgs());
+            this.Close();
+        }
+
+        private void Reset_Click(object sender, RoutedEventArgs e)
+        {
+            if (!IsEdit)
+            {
+                Config.CopyTo(EditConfig);
+                PropertyPanel.Children.Clear();
+                DisplayProperties(EditConfig);
+            }
+            else
+            {
+                Config.Reset();
+            }
+        }
+
 
         public void GenCategoryGroups(ViewModelBase source)
         {
@@ -125,26 +187,22 @@ namespace ColorVision.UI.PropertyEditor
 
                 }
             }
-
-
-
         }
 
-  
-        public DockPanel GenBoolProperties(PropertyInfo property,object obj)
+        public DockPanel GenBoolProperties(PropertyInfo property, object obj)
         {
             var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
             var descriptionAttr = property.GetCustomAttribute<DescriptionAttribute>();
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
 
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
             var textBlock = new TextBlock
             {
                 Text = displayName,
                 MinWidth = 120,
-                Foreground = (Brush)FindResource("GlobalTextBrush")
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
 
@@ -162,7 +220,6 @@ namespace ColorVision.UI.PropertyEditor
             return dockPanel;
         }
 
-
         public DockPanel GenEnumProperties(PropertyInfo property, object obj)
         {
             var displayNameAttr = property.GetCustomAttribute<DisplayNameAttribute>();
@@ -172,14 +229,14 @@ namespace ColorVision.UI.PropertyEditor
             PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
 
             var textBlock = new TextBlock
             {
                 Text = displayName,
                 MinWidth = 120,
-                Foreground = (Brush)FindResource("GlobalTextBrush")
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
 
@@ -187,7 +244,7 @@ namespace ColorVision.UI.PropertyEditor
             {
                 Margin = new Thickness(5, 0, 0, 0),
                 MinWidth = 150,
-                Style = (Style)FindResource("ComboBox.Small"),
+                Style = (Style)Application.Current.FindResource("ComboBox.Small"),
             };
 
             // Populate ComboBox with Enum values
@@ -218,14 +275,14 @@ namespace ColorVision.UI.PropertyEditor
             PropertyEditorType propertyEditorType = PropertyEditorTypeAttr?.PropertyEditorType ?? PropertyEditorType.Default;
 
             string displayName = displayNameAttr?.DisplayName ?? property.Name;
-            displayName = Properties.Resources.ResourceManager.GetString(displayName, CultureInfo.CurrentCulture) ?? displayName;
+            displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
             var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
 
             var textBlock = new TextBlock
             {
                 Text = displayName,
                 MinWidth = 120,
-                Foreground = (Brush)FindResource("GlobalTextBrush")
+                Foreground = (Brush)Application.Current.FindResource("GlobalTextBrush")
             };
             dockPanel.Children.Add(textBlock);
 
@@ -256,7 +313,7 @@ namespace ColorVision.UI.PropertyEditor
                 var textbox = new TextBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("TextBox.Small")
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
                 };
                 var binding = new Binding(property.Name)
                 {
@@ -300,7 +357,7 @@ namespace ColorVision.UI.PropertyEditor
                 var textbox = new TextBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("TextBox.Small")
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
                 };
                 var binding = new Binding(property.Name)
                 {
@@ -339,7 +396,7 @@ namespace ColorVision.UI.PropertyEditor
                 var cronTextBox = new TextBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("TextBox.Small")
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
                 };
                 var cronBinding = new Binding(property.Name)
                 {
@@ -352,11 +409,11 @@ namespace ColorVision.UI.PropertyEditor
             }
             else if (propertyEditorType == PropertyEditorType.TextSerialPort)
             {
-                List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+                List<string> Serials = new List<string>() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10", "COM11", "COM12", "COM13", "COM14", "COM15", "COM16" };
                 HandyControl.Controls.ComboBox serialPortComboBox = new HandyControl.Controls.ComboBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("ComboBox.Small"),
+                    Style = (Style)Application.Current.FindResource("ComboBox.Small"),
                     IsEditable = true,
                 };
                 serialPortComboBox.ItemsSource = Serials;
@@ -372,11 +429,11 @@ namespace ColorVision.UI.PropertyEditor
             }
             else if (propertyEditorType == PropertyEditorType.TextBaudRate)
             {
-                List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+                List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600, 230400, 460800, 921600 };
                 HandyControl.Controls.ComboBox baudRateComboBox = new HandyControl.Controls.ComboBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("ComboBox.Small"),
+                    Style = (Style)Application.Current.FindResource("ComboBox.Small"),
                     IsEditable = true,
                 };
                 baudRateComboBox.ItemsSource = BaudRates;
@@ -385,7 +442,7 @@ namespace ColorVision.UI.PropertyEditor
                     Source = obj,
                     Mode = BindingMode.TwoWay
                 };
-                HandyControl.Controls.InfoElement.SetShowClearButton(baudRateComboBox,true);
+                HandyControl.Controls.InfoElement.SetShowClearButton(baudRateComboBox, true);
                 baudRateComboBox.SetBinding(ComboBox.TextProperty, baudRateBinding);
                 dockPanel.Children.Add(baudRateComboBox);
             }
@@ -394,7 +451,7 @@ namespace ColorVision.UI.PropertyEditor
                 var textbox = new TextBox
                 {
                     Margin = new Thickness(5, 0, 0, 0),
-                    Style = (Style)FindResource("TextBox.Small")
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
                 };
                 textbox.PreviewKeyDown += TextBox_PreviewKeyDown;
                 var binding = new Binding(property.Name)
@@ -408,50 +465,12 @@ namespace ColorVision.UI.PropertyEditor
             return dockPanel;
         }
 
-
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
                 Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
-            }
-        }
-
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            this.DataContext = Config;
-            if (IsEdit)
-            {
-                DisplayProperties(Config);
-            }
-            else
-            {
-                EditConfig = Config.Clone();
-                DisplayProperties(EditConfig);
-            }
-        }
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsEdit)
-                EditConfig.CopyTo(Config);
-            Submited?.Invoke(sender, new EventArgs());
-            this.Close();
-        }
-
-        private void Reset_Click(object sender, RoutedEventArgs e)
-        {
-            if (!IsEdit)
-            {
-                Config.CopyTo(EditConfig);
-                PropertyPanel.Children.Clear();
-                DisplayProperties(EditConfig);
-            }
-            else
-            {
-                Config.Reset();
             }
         }
     }

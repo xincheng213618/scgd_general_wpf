@@ -9,10 +9,6 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using log4net;
 using MQTTMessageLib.Calibration;
-using MQTTMessageLib.Camera;
-using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,7 +22,6 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.Flow;
 using System.Linq;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views

@@ -7,7 +7,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using ColorVision.UI.Shell;
-using System.Windows.Input;
 
 namespace ColorVision.Solution
 {

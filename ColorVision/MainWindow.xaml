@@ -21,7 +21,7 @@
         <Border Grid.Row="0"  Height="27" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
             <Grid>
                 <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
-                    <MenuItem Header="编辑(_E)">
+                    <MenuItem Header="{x:Static properties:Resources.MenuEdit}">
                         <MenuItem  Header="UndoHistoy" Command="{x:Static ui:Commands.UndoHistory}" CommandParameter="{Binding RelativeSource={RelativeSource Self}}">
                             <MenuItem.ItemTemplate>
                                 <DataTemplate>

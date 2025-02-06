@@ -5,7 +5,6 @@ using System.Windows.Input;
 using System.Globalization;
 using System.Linq;
 using ColorVision.Common.Utilities;
-using Gu.Wpf.Geometry;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {

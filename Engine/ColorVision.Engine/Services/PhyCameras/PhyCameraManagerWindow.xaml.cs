@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
@@ -18,15 +19,19 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
     }
 
+    public class PhyCameraManagerWindowConfig: WindowConfig { }
     /// <summary>
     /// PhyCameraManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class PhyCameraManagerWindow : Window
     {
+        public static PhyCameraManagerWindowConfig Config  => ConfigService.Instance.GetRequiredService<PhyCameraManagerWindowConfig>();
         public PhyCameraManagerWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
+            Config.SetWindow(this);
+            SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
 

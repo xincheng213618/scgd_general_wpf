@@ -2,7 +2,6 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Ghost;

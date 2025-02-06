@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Properties;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;

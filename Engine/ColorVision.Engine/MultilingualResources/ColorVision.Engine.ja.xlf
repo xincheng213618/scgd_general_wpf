@@ -921,6 +921,10 @@
   <file datatype="xml" source-language="zh-Hans" target-language="ja" original="ENGINE/COLORVISION.ENGINE/PROPERTIES/RESOURCES.RESX">
     <body>
       <group id="ENGINE/COLORVISION.ENGINE/PROPERTIES/RESOURCES.RESX" datatype="resx">
+        <trans-unit id="" translate="yes" xml:space="preserve">
+          <source>IsShowListView</source>
+          <target state="new"></target>
+        </trans-unit>
         <trans-unit id="About" translate="yes" xml:space="preserve">
           <source>关于</source>
           <target state="new">について</target>
@@ -976,6 +980,10 @@
         <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
           <source>自动曝光</source>
           <target state="new">自動露出</target>
+        </trans-unit>
+        <trans-unit id="AutoRefreshView" translate="yes" xml:space="preserve">
+          <source>自动刷新视图</source>
+          <target state="new">自動更新ビュー</target>
         </trans-unit>
         <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
           <source>自动切换选中视图</source>
@@ -1281,6 +1289,10 @@
           <source>查询</source>
           <target state="new">お問い合わせ</target>
         </trans-unit>
+        <trans-unit id="InsertAtBeginning" translate="yes" xml:space="preserve">
+          <source>在开头插入</source>
+          <target state="new">先頭に挿入</target>
+        </trans-unit>
         <trans-unit id="IsDefaultOpenService" translate="yes" xml:space="preserve">
           <source>软件启动时打开服务</source>
           <target state="new">デフォルトオープンサービス</target>
@@ -1292,6 +1304,10 @@
         <trans-unit id="IsRetorePlayControls" translate="yes" xml:space="preserve">
           <source>恢复上次关闭时采集窗口</source>
           <target state="new">再生コントロールを復元するかどうか</target>
+        </trans-unit>
+        <trans-unit id="IsShowListView" translate="yes" xml:space="preserve">
+          <source>是否显示列表视图</source>
+          <target state="new">リストビューを表示するか</target>
         </trans-unit>
         <trans-unit id="LaunchSoftwareWithLocalService" translate="yes" xml:space="preserve">
           <source>软件启动时打开本地服务</source>
@@ -1665,6 +1681,10 @@
           <source>搜索</source>
           <target state="new">検索</target>
         </trans-unit>
+        <trans-unit id="SearchLimit" translate="yes" xml:space="preserve">
+          <source>搜索条数限制</source>
+          <target state="new">検索制限</target>
+        </trans-unit>
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>
           <target state="new">プロジェクトを保存する場所を選択します</target>
@@ -1836,6 +1856,10 @@
         <trans-unit id="ViewCamera_图像数据文件" translate="yes" xml:space="preserve">
           <source>图像数据文件</source>
           <target state="new">画像データファイル</target>
+        </trans-unit>
+        <trans-unit id="ViewImageReadDelay" translate="yes" xml:space="preserve">
+          <source>查看图像读取延迟</source>
+          <target state="new">画像表示遅延</target>
         </trans-unit>
         <trans-unit id="ViewReceivedData" translate="yes" xml:space="preserve">
           <source>查看接受数据</source>

@@ -74,6 +74,7 @@
         <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
           <source>启用数据库</source>
           <target state="new">Включить базу данных</target>
+          <note from="MultilingualBuild">MenuEdit</note>
         </trans-unit>
         <trans-unit id="ErrorOccurred" translate="yes" xml:space="preserve">
           <source>发生错误</source>
@@ -122,6 +123,10 @@
         <trans-unit id="MenuAbout" translate="yes" xml:space="preserve">
           <source>关于(_A)</source>
           <target state="new">Об</target>
+        </trans-unit>
+        <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
+          <source>编辑(_E)</source>
+          <target state="new">Изменить (Е)</target>
         </trans-unit>
         <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
           <source>选项(_O)</source>

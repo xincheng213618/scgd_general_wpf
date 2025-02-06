@@ -331,6 +331,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 编辑(_E) 的本地化字符串。
+        /// </summary>
+        public static string MenuEdit {
+            get {
+                return ResourceManager.GetString("MenuEdit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 选项(_O) 的本地化字符串。
         /// </summary>
         public static string MenuOptions {

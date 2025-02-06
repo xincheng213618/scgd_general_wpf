@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Windows.Data;
 
 ///这里划到xi
 namespace System.ComponentModel
@@ -26,13 +25,19 @@ namespace System.ComponentModel
 
         protected PropertyEditorType PropertyEditorTypeValue { get; set; }
 
-        public PropertyEditorTypeAttribute(PropertyEditorType  propertyEditorType)
+        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType)
         {
             PropertyEditorTypeValue = propertyEditorType;
         }
         public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default)
         {
         }
+        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType, object[] itemSourse)
+        {
+            PropertyEditorTypeValue = propertyEditorType;
+            ItemSourse = itemSourse;
+        }
+        public object[] ItemSourse { get; set; }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {

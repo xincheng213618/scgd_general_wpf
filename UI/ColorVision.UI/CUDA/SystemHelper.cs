@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Configs;
 using Microsoft.Win32;
 using System.Reflection;
 using System.Windows.Forms;
 
 
-namespace ColorVision.UI.CUDA  
+namespace ColorVision.UI.CUDA
 {
     public class SystemHelper : ViewModelBase, IConfig, IConfigSettingProvider
     {

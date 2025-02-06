@@ -170,6 +170,8 @@
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>启用数据库</value>
+    <comment>MenuEdit
+</comment>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
@@ -296,5 +298,8 @@
   </data>
   <data name="UploadFile" xml:space="preserve">
     <value>上传文件</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>编辑(_E)</value>
   </data>
 </root>

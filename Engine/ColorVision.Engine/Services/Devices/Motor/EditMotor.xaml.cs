@@ -2,10 +2,8 @@
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using ColorVision.UI;
-using cvColorVision;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
