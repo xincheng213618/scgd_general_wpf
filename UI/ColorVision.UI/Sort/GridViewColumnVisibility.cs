@@ -20,12 +20,12 @@ namespace ColorVision.UI.Sorts
         public static void AdjustGridViewColumnAuto(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
         public static void CopyToGridView(this ObservableCollection<GridViewColumnVisibility> source, ObservableCollection<GridViewColumnVisibility> target)
         {
-            // 使用字典来加速查找过程
-            var targetDict = target.ToDictionary(item => item.ColumnName);
+            // 使用 Lookup 来处理可能的重复项
+            var targetLookup = target.ToLookup(item => item.ColumnName);
 
             foreach (var sourceItem in source)
             {
-                if (targetDict.TryGetValue(sourceItem.ColumnName, out var targetItem))
+                foreach (var targetItem in targetLookup[sourceItem.ColumnName])
                 {
                     targetItem.IsVisible = sourceItem.IsVisible;
                     targetItem.IsSortD = sourceItem.IsSortD;
