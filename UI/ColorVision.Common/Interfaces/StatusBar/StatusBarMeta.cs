@@ -3,11 +3,6 @@ using System.Collections.Generic;
 
 namespace ColorVision.UI
 {
-    public enum StatusBarType
-    {
-        Icon,
-        Text
-    }
 
     public class StatusBarMeta
     {
@@ -33,10 +28,5 @@ namespace ColorVision.UI
         public object Source { get; set; }
 
         public Action Action { get; set; }
-    }
-
-    public interface IStatusBarProvider
-    {
-        IEnumerable<StatusBarMeta> GetStatusBarIconMetadata();
     }
 }
