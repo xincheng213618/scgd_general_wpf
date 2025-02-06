@@ -15,12 +15,4 @@ namespace ColorVision.UI
             throw new System.NotImplementedException();
         }
     }
-
-    public interface IInitializer
-    {
-        public string Name { get; }
-        IEnumerable<string> Dependencies { get; }
-        public int Order { get; }
-        Task InitializeAsync();
-    }
 }

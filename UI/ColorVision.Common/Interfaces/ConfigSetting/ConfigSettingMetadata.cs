@@ -33,9 +33,4 @@ namespace ColorVision.UI
         /// </summary>
         public ComboBox ComboBox { get; set; }
     }
-
-    public interface IConfigSettingProvider
-    {
-        IEnumerable<ConfigSettingMetadata> GetConfigSettings();
-    }
 }
