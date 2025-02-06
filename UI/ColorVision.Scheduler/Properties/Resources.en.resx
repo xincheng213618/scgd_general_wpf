@@ -126,4 +126,16 @@
   <data name="CreateTask" xml:space="preserve">
     <value>Create Task</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>PauseAll</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>ResumeAll</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>Shutdown</value>
+  </data>
 </root>

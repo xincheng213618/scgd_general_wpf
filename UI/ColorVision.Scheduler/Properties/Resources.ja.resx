@@ -126,4 +126,16 @@
   <data name="CreateTask" xml:space="preserve">
     <value>タスクの作成</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>開始</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>一時停止すべて</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>再開すべて</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>シャットダウン</value>
+  </data>
 </root>

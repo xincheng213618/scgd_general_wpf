@@ -1,27 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Properties;
-using ColorVision.UI.PropertyEditor;
-using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.UI.Views
 {
-    public class ViewConfigSettingProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = Resources.AutoSwitchSelectedView,
-                                Description = Resources.AutoSwitchSelectedView,
-                                Type = ConfigSettingType.Bool,
-                                BindingName = nameof(ViewConfig.IsAutoSelect),
-                                Source = ViewConfig.Instance
-                            }
-            };
-        }
-    }
 
     public class ViewConfig : ViewModelBase, IConfig
     {

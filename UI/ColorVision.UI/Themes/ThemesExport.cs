@@ -10,7 +10,7 @@ namespace ColorVision.Themes
 {
     public class ThemesExport : IHotKey,IMenuItemMeta
     {
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => MenuItemConstants.Tool;
 
         public string? GuidId => "MenuTheme";
 

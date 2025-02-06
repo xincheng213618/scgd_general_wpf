@@ -79,6 +79,42 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 暂停所有 的本地化字符串。
+        /// </summary>
+        public static string PauseAll {
+            get {
+                return ResourceManager.GetString("PauseAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 继续全部 的本地化字符串。
+        /// </summary>
+        public static string ResumeAll {
+            get {
+                return ResourceManager.GetString("ResumeAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Shutdown {
+            get {
+                return ResourceManager.GetString("Shutdown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始 的本地化字符串。
+        /// </summary>
+        public static string Start {
+            get {
+                return ResourceManager.GetString("Start", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 任务计划程序 的本地化字符串。
         /// </summary>
         public static string TaskViewerWindow {

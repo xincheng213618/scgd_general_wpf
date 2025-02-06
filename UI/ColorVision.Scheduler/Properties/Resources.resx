@@ -106,4 +106,16 @@
   <data name="CreateTask" xml:space="preserve">
     <value>创建任务</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>开始</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>暂停所有</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>继续全部</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>关闭</value>
+  </data>
 </root>

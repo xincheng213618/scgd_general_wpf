@@ -126,4 +126,16 @@
   <data name="CreateTask" xml:space="preserve">
     <value>Créer des tâches</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>PauseTout</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>ReprendreTout</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>Arrêt</value>
+  </data>
 </root>

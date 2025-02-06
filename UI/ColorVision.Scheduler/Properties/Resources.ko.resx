@@ -126,4 +126,16 @@
   <data name="CreateTask" xml:space="preserve">
     <value>작업 만들기</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>시작</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>일시정지 모두</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>이력서 전체보기</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>종료</value>
+  </data>
 </root>
