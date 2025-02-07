@@ -1025,7 +1025,7 @@ namespace ColorVision.ImageEditor
             if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
             var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
-            if (bitmapSource.Format == PixelFormats.Gray8)
+            if (bitmapSource.Format.Masks.Count ==1)
             {
                 HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
                 histogramChartWindow.Show();

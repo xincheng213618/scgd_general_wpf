@@ -62,10 +62,12 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 
     if (image.depth() == CV_16U) {
 
-        // 应用自适应直方图均衡化
-        cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-        clahe->setClipLimit(10.0); // 设置对比度限制
-        clahe->apply(image, image);
+        ///2025.02.07 16为图像做直方图时，不做直方图均衡化，这会导致图像变形，这个效果可以通过调节Gammma实现
+        //// 应用自适应直方图均衡化
+        //cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+        ////这里设置高了，四个角会被扩散掉，
+        //clahe->setClipLimit(1.0); // 设置对比度限制
+        //clahe->apply(image, image);
 
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}

@@ -27,14 +27,13 @@ namespace ColorVision.ImageEditor
     /// </summary>
     public partial class HistogramChartWindow : Window
     {
-        int[] RedHistogram;
+        int[] channe1;
         int[] GreenHistogram;
         int[] BlueHistogram;
-        int[] GrayHistogram; // 灰度直方图
 
         double? MaxY;
 
-        private LineSeries<int> redSeries;
+        private LineSeries<int> Serieschannel1;
         private LineSeries<int> greenSeries;
         private LineSeries<int> blueSeries;
         private LineSeries<int> graySeries; // 灰度直方图
@@ -42,25 +41,25 @@ namespace ColorVision.ImageEditor
         public HistogramChartWindow(int[] redHistogram, int[] greenHistogram ,int[] blueHistogram)
         {
             //对数缩放
-            RedHistogram = redHistogram;
+            channe1 = redHistogram;
             GreenHistogram = greenHistogram;
             BlueHistogram = blueHistogram;
 
-            MaxY = (RedHistogram.Sum() + GreenHistogram.Sum() + BlueHistogram.Sum()) / 100;
+            MaxY = (channe1.Sum() + GreenHistogram.Sum() + BlueHistogram.Sum()) / 100;
 
             InitializeComponent();
             this.ApplyCaption();
-            DrawHistograms(HistogramChart, RedHistogram, GreenHistogram, BlueHistogram);
+            DrawHistograms(HistogramChart, channe1, GreenHistogram, BlueHistogram);
 
         }
 
         public HistogramChartWindow(int[] graySeries)
         {
-            GrayHistogram = graySeries;
+            channe1 = graySeries;
 
             InitializeComponent();
             this.ApplyCaption();
-            DrawHistograms(HistogramChart, GrayHistogram);
+            DrawHistograms(HistogramChart, channe1);
 
         }
 
@@ -70,7 +69,7 @@ namespace ColorVision.ImageEditor
             {
                 new Axis
                 {
-                    MaxLimit = 255,
+                    MaxLimit = channe1.Length,
                     MinLimit =0,
                     Labels = Enumerable.Range(0, 256).Select(x => x.ToString()).ToArray() // 确保显示0到255的每个标签
                 }
@@ -115,7 +114,7 @@ namespace ColorVision.ImageEditor
             var greenValues = new List<int>(greenHistogram);
             var blueValues = new List<int>(blueHistogram);
 
-            redSeries = new LineSeries<int>
+            Serieschannel1 = new LineSeries<int>
             {
                 Values = redValues,
                 Name = "Red",
@@ -144,11 +143,11 @@ namespace ColorVision.ImageEditor
                 LineSmoothness = 10,
                 GeometrySize = 0,
             };
-            SeriesCollection = new ISeries[] { redSeries, greenSeries, blueSeries };
+            SeriesCollection = new ISeries[] { Serieschannel1, greenSeries, blueSeries };
             chart.Series = SeriesCollection;
 
             // 复选框控制逻辑
-            AddCheckBoxForChannel("Red", redSeries);
+            AddCheckBoxForChannel("Red", Serieschannel1);
             AddCheckBoxForChannel("Green", greenSeries);
             AddCheckBoxForChannel("Blue", blueSeries);
         }
