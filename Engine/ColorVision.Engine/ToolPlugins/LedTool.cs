@@ -42,10 +42,8 @@ namespace ColorVision.Engine.ToolPlugins
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
 
-        public override string GuidId => nameof(LedTool);
-
         public override string Header => nameof(LedTool);
-
+        public override int Order => 100;
 
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();
         public (int pointIndex, int listIndex) FindNearbyPoints(int mousex, int mousey)

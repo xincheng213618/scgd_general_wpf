@@ -5,10 +5,12 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<VersionPrefix>1.1.9.30</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile></PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -51,5 +53,13 @@
 		<Resource Include="Assets\Image\归档查询.png" />
 		<Resource Include="Assets\Image\综合查询.png" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="README.md">
+	    <PackagePath>\</PackagePath>
+	    <Pack>True</Pack>
+	  </None>
+	</ItemGroup>
+	
 
 </Project>

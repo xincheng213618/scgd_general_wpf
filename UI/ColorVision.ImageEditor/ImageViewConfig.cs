@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
@@ -36,15 +37,28 @@ namespace ColorVision.ImageEditor
             }
             return default;
         }
-
+        private string FormatValue(object? value)
+        {
+            if (value is IEnumerable enumerable && value is not string)
+            {
+                var items = new List<string>();
+                foreach (var item in enumerable)
+                {
+                    items.Add(item?.ToString() ?? "null");
+                }
+                return $"[{string.Join(", ", items)}]";
+            }
+            return value?.ToString() ?? "null";
+        }
         public string GetPropertyString()
         {
             var sb = new StringBuilder();
             foreach (var item in Properties)
             {
-                sb.AppendLine($"{item.Key}:{item.Value}");
+                sb.AppendLine($"{item.Key}:{FormatValue(item.Value)}");
             }
             return sb.ToString();
+
         }
         public double MaxZoom { get => _MaxZoom; set { _MaxZoom = value; NotifyPropertyChanged(); } }
         private double _MaxZoom = 10;

@@ -77,11 +77,6 @@
     <SolidColorBrush x:Key="ContextMenuBackground" Color="#F6F6F6" />
     <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#CCCEDB" />
     <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#F6F6F6" />
-
-
-
-
-
 </ResourceDictionary>
 
 

@@ -12,18 +12,9 @@ using System.Windows.Input;
 
 namespace ColorVision
 {
-    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider, IFullScreenState
+    public class MainWindowConfig : WindowConfig, IConfigSettingProvider, IFullScreenState
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));
-
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
-
-        public bool IsRestoreWindow { get; set; } = true;
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
@@ -37,37 +28,6 @@ namespace ColorVision
 
         public Version? LastOpenVersion { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private Version? _Version = new Version(0, 0, 0, 0);
-
-
-
-        public void SetWindow(Window window)
-        {
-            if (IsRestoreWindow && Height != 0 && Width != 0)
-            {
-                window.Top = Top;
-                window.Left = Left;
-                window.Height = Height;
-                window.Width = Width;
-                window.WindowState = (WindowState)WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    window.Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    window.Height = SystemParameters.WorkArea.Height;
-                }
-            }
-        }
-        public void SetConfig(Window window)
-        {
-            Top = window.Top;
-            Left = window.Left;
-            Height = window.Height;
-            Width = window.Width;
-            WindowState = (int)window.WindowState;
-        }
 
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); } }
         private bool _OpenFloatingBall;
@@ -104,15 +64,6 @@ namespace ColorVision
                     BindingName = nameof(IsRestoreWindow),
                     Source = Instance
                 }
-            };
-        }
-
-
-        public IEnumerable<MenuItemMetadata> GetMenuItems()
-        {
-            return new List<MenuItemMetadata>
-            {
-
             };
         }
     }

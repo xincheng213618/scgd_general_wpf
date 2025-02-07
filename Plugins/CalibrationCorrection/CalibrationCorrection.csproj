@@ -5,6 +5,7 @@
     <UseWPF>true</UseWPF>
 	<UseWindowsForms>True</UseWindowsForms>
 	<ImplicitUsings>disable</ImplicitUsings>
+	<VersionPrefix>1.1.0.1</VersionPrefix>
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

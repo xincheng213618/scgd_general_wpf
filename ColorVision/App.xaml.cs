@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -76,6 +77,8 @@ namespace ColorVision
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
             parser.AddArgument("input", false, "i");
             parser.AddArgument("export", false, "e");
             parser.Parse();
