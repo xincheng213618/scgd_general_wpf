@@ -170,7 +170,7 @@ namespace ColorVision.Engine.Media
         public int Rows { get => _CVCIEFile.rows; }
         public int Cols { get => _CVCIEFile.cols; }
         public int Channels { get => _CVCIEFile.channels; }
-        public int Gain { get => _CVCIEFile.gain; }
+        public float Gain { get => _CVCIEFile.gain; }
         public float[] Exp { get => _CVCIEFile.exp; }
 
         public ImageFormat ExportImageFormat { get; set; } = ImageFormat.Tiff;
