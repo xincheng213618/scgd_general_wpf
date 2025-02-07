@@ -10,6 +10,7 @@
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
