@@ -27,7 +27,7 @@ namespace ColorVision.Common.Utilities
             }
         }
 
-        public static (int[] R, int[] G, int[] B) RenderHistogram(BitmapSource bitmapSource)
+        public static (int[] c1, int[] c2, int[] c3) RenderHistogram(BitmapSource bitmapSource)
         {
             int width = bitmapSource.PixelWidth;
             int height = bitmapSource.PixelHeight;
@@ -35,20 +35,29 @@ namespace ColorVision.Common.Utilities
             byte[] pixelData = new byte[height * stride];
             bitmapSource.CopyPixels(pixelData, stride, 0);
 
-            int[] redHistogram = new int[256];
-            int[] greenHistogram = new int[256];
-            int[] blueHistogram = new int[256];
+            int[] Channel1 = new int[256];
+            int[] Channel2 = new int[256];
+            int[] Channel3 = new int[256];
 
             if (bitmapSource.Format == PixelFormats.Gray8)
             {
                 for (int i = 0; i < pixelData.Length; i++)
                 {
                     byte gray = pixelData[i];
-                    redHistogram[gray]++;
-                    greenHistogram[gray]++;
-                    blueHistogram[gray]++;
+                    Channel1[gray]++;
+                    Channel2[gray]++;
+                    Channel3[gray]++;
                 }
-            }else if (bitmapSource.Format == PixelFormats.Bgr24)
+            }
+            if (bitmapSource.Format == PixelFormats.Gray16)
+            {
+                for (int i = 0; i < pixelData.Length; i+=2)
+                {
+                    ushort gray = BitConverter.ToUInt16(pixelData, i);
+                    Channel1[gray >> 8]++;
+                }
+            }
+            else if (bitmapSource.Format == PixelFormats.Bgr24)
             {
                 for (int i = 0; i < pixelData.Length; i += 3)
                 {
@@ -56,9 +65,9 @@ namespace ColorVision.Common.Utilities
                     byte green = pixelData[i + 1];
                     byte red = pixelData[i + 2];
 
-                    redHistogram[red]++;
-                    greenHistogram[green]++;
-                    blueHistogram[blue]++;
+                    Channel1[red]++;
+                    Channel2[green]++;
+                    Channel3[blue]++;
                 }
             }else if (bitmapSource.Format == PixelFormats.Bgra32 || bitmapSource.Format == PixelFormats.Bgr32)
             {
@@ -68,9 +77,9 @@ namespace ColorVision.Common.Utilities
                     byte green = pixelData[i + 1];
                     byte red = pixelData[i + 2];
 
-                    redHistogram[red]++;
-                    greenHistogram[green]++;
-                    blueHistogram[blue]++;
+                    Channel1[red]++;
+                    Channel2[green]++;
+                    Channel3[blue]++;
                 }
             }
             else if (bitmapSource.Format == PixelFormats.Rgb48)
@@ -82,13 +91,13 @@ namespace ColorVision.Common.Utilities
                     ushort blue = BitConverter.ToUInt16(pixelData, i + 4);
 
                     // Map 16-bit values to 8-bit range
-                    redHistogram[red >> 8]++;
-                    greenHistogram[green >> 8]++;
-                    blueHistogram[blue >> 8]++;
+                    Channel1[red >> 8]++;
+                    Channel2[green >> 8]++;
+                    Channel3[blue >> 8]++;
                 }
             }
 
-            return (redHistogram, greenHistogram, blueHistogram);
+            return (Channel1, Channel2, Channel3);
         }
 
 
