@@ -1,8 +1,9 @@
-﻿using System.Windows;
+﻿using ColorVision.Common.MVVM;
+using System.Windows;
 
 namespace ColorVision.UI
 {
-    public abstract class WindowConfig : IConfig
+    public abstract class WindowConfig : ViewModelBase, IConfig
     {
         public bool IsRestoreWindow { get; set; } = true;
         public double Width { get; set; }
