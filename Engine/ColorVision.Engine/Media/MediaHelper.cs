@@ -1,5 +1,7 @@
 ﻿using ColorVision.Net;
 using ColorVision.Themes.Controls;
+using log4net;
+using log4net.Util;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Windows;
@@ -10,6 +12,7 @@ namespace ColorVision.Engine.Media
 {
     public static class MediaHelper
     {
+        private static ILog log = LogManager.GetLogger(typeof(MediaHelper));
         public static bool UpdateWriteableBitmap(this CVCIEFile fileInfo, WriteableBitmap writeableBitmap)
         {   
             OpenCvSharp.Mat? src = null;
@@ -159,6 +162,7 @@ namespace ColorVision.Engine.Media
             }
             catch (Exception ex)
             {
+                log.Error(ex);
                 MessageBox1.Show(Application.Current.GetActiveWindow(), $"打开文件失败:{ex.Message} ", "ColorVision");
                 return null;
             }
