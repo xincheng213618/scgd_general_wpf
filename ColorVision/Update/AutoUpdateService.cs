@@ -35,7 +35,7 @@ namespace ColorVision.Update
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                await autoUpdater.CheckAndUpdateV1();
+                await autoUpdater.CheckAndUpdateV1(false);
             });
         }
 

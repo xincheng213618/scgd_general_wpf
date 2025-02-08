@@ -188,7 +188,7 @@ namespace ColorVision.Update
             });
         }
 
-        public async Task CheckAndUpdateV1()
+        public async Task CheckAndUpdateV1(bool detection = true)
         {
             // 获取本地版本
             try
@@ -230,11 +230,13 @@ namespace ColorVision.Update
                 }
                 else
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    if (detection)
                     {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
-                    });
-
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                        });
+                    }
                 }
             }
             catch (Exception ex)
