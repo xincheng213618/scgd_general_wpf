@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
@@ -18,6 +19,8 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public override void Execute()
         {
+            string sql = "ALTER TABLE `t_scgd_sys_config_archived`\r\nADD COLUMN `excluding_images` tinyint(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;";
+            MySqlControl.GetInstance().ExecuteNonQuery(sql);
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
             {
@@ -45,6 +48,12 @@ namespace ColorVision.Engine.DataHistory.Dao
         [Column("data_save_days"), DisplayName("数据保存天数"),]
         public int DataSaveDays { get => _DataSaveDays; set { _DataSaveDays = value; NotifyPropertyChanged(); } }
         private int _DataSaveDays;
+
+        [Column("excluding_images"), DisplayName("归档不包含图像"),]
+        public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; NotifyPropertyChanged(); } }
+        private bool _Excludingimages = false;
+
+        
     }
 
     public class ConfigArchivedDao : BaseTableDao<ConfigArchivedModel>
