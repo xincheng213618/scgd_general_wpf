@@ -160,8 +160,6 @@ def find_latest_zip(directory, version):
 
         if len(parts) >= 4:
             major_version = int(parts[2])
-            minor_version = int(parts[3].split('-')[0])  # 处理可能存在的后缀
-
             if major_version == target_major_version:
                 matching_files.append(file)
 
