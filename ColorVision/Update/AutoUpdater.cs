@@ -258,6 +258,12 @@ namespace ColorVision.Update
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
+                    if (IsIncrement && LatestVersion.Build != Version.Build)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "版本差异大，请使用全量更新");
+                        return;
+                    }
+
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
