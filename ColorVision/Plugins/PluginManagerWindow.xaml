@@ -32,28 +32,28 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="名称">
+                        <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding Plugin.Header,Mode=OneWay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Version">
+                        <GridViewColumn Header="{x:Static properties:Resources.Version}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding AssemblyVersion}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Date">
+                        <GridViewColumn Header="{x:Static properties:Resources.BuildDate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="命令">
+                        <GridViewColumn Header="{x:Static properties:Resources.Command}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <StackPanel Orientation="Horizontal">

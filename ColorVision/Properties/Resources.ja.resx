@@ -306,4 +306,16 @@
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>プラグインマネージャーウィンドウ</value>
   </data>
+  <data name="Version" xml:space="preserve">
+    <value>バージョン</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>プラグイン名</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>ビルド日</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>プロジェクト名</value>
+  </data>
 </root>

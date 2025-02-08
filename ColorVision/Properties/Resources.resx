@@ -170,8 +170,6 @@
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>启用数据库</value>
-    <comment>MenuEdit
-</comment>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>恢复上次退出时窗口的大小和位置</value>
@@ -307,5 +305,17 @@
   </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>插件管理器窗口</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>插件名称</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>构建日期</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>项目名称</value>
   </data>
 </root>

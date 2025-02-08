@@ -97,6 +97,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 构建日期 的本地化字符串。
+        /// </summary>
+        public static string BuildDate {
+            get {
+                return ResourceManager.GetString("BuildDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
@@ -439,6 +448,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件名称 的本地化字符串。
+        /// </summary>
+        public static string PluginName {
+            get {
+                return ResourceManager.GetString("PluginName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {
@@ -453,6 +471,15 @@ namespace ColorVision.Properties {
         public static string ProjectManagerWindow {
             get {
                 return ResourceManager.GetString("ProjectManagerWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 项目名称 的本地化字符串。
+        /// </summary>
+        public static string ProjectName {
+            get {
+                return ResourceManager.GetString("ProjectName", resourceCulture);
             }
         }
         
@@ -606,6 +633,15 @@ namespace ColorVision.Properties {
         public static string UploadFile {
             get {
                 return ResourceManager.GetString("UploadFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 版本 的本地化字符串。
+        /// </summary>
+        public static string Version {
+            get {
+                return ResourceManager.GetString("Version", resourceCulture);
             }
         }
         
