@@ -141,4 +141,34 @@
   <data name="CronExpression" xml:space="preserve">
     <value>CronExpression</value>
   </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>GroupName</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>JobName</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>RunCount</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>NextFireTime</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>PreviousFireTime</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>recovery</value>
+  </data>
 </root>

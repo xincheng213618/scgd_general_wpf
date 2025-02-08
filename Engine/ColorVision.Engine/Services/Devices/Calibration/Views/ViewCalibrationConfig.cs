@@ -3,9 +3,9 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Text.Json.Serialization;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
@@ -22,7 +22,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             ClearListCommand = new RelayCommand(a => ViewResults.Clear());
         }
 
-
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
@@ -38,3 +37,4 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
     }
 }
+  

@@ -16,10 +16,10 @@
         <DockPanel>
             <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CreateTask}" Click="CreateTaskButton_Click" Margin="5"/>
             <StackPanel Orientation="Horizontal">
-                <Button  Content="Start" Command="{Binding StartCommand}"  Margin="5"/>
-                <Button  Content="PauseAll" Command="{Binding PauseAllCommand}"  Margin="5"/>
-                <Button  Content="ResumeAll" Command="{Binding ResumeAllCommand}"  Margin="5"/>
-                <Button  Content="Shutdown" Command="{Binding ShutdownCommand}"  Margin="5"/>
+                <Button  Content="{x:Static properties:Resources.Start}" Command="{Binding StartCommand}"  Margin="5"/>
+                <Button  Content="{x:Static properties:Resources.PauseAll}" Command="{Binding PauseAllCommand}"  Margin="5"/>
+                <Button  Content="{x:Static properties:Resources.ResumeAll}" Command="{Binding ResumeAllCommand}"  Margin="5"/>
+                <Button  Content="{x:Static properties:Resources.Shutdown}" Command="{Binding ShutdownCommand}"  Margin="5"/>
             </StackPanel>
         </DockPanel>
 
@@ -33,55 +33,55 @@
                             <Setter Property="Background" Value="Transparent"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn Header="GroupName">
+                    <GridViewColumn Header="{x:Static properties:Resources.GroupName}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding GroupName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="JobName">
+                    <GridViewColumn Header="{x:Static properties:Resources.JobName}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding JobName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="RunCount">
+                    <GridViewColumn Header="{x:Static properties:Resources.RunCount}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding RunCount}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Status">
+                    <GridViewColumn Header="{x:Static properties:Resources.Status}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding Status}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="NextFireTime">
+                    <GridViewColumn Header="{x:Static properties:Resources.NextFireTime}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding NextFireTime}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="PreviousFireTime">
+                    <GridViewColumn Header="{x:Static properties:Resources.PreviousFireTime}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding PreviousFireTime}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Command">
+                    <GridViewColumn Header="{x:Static properties:Resources.Command}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="Stop" Command="{Binding  PausedCommand}"/>
-                                    <Button Content="Resume" Command="{Binding ResumeJobCommand}"/>
-                                    <Button Content="Delete" Command="{Binding DeleteCommand}"/>
+                                    <Button Content="{x:Static properties:Resources.Stop}" Command="{Binding  PausedCommand}"/>
+                                    <Button Content="{x:Static properties:Resources.Resume}" Command="{Binding ResumeJobCommand}"/>
+                                    <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteCommand}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

@@ -60,15 +60,21 @@ namespace ColorVision
 
             parser.AddArgument("debug", true, "d");
             parser.AddArgument("restart", true, "r");
-            parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
 
             IsDebug = Debugger.IsAttached || parser.GetFlag("debug");
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-            //加载Engine
-            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+            //加载DLL
+            if (File.Exists("ColorVision.Engine.dll"))
+                Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+            if (File.Exists("ColorVision.Scheduler.dll"))
+                Assembly.LoadFrom("ColorVision.Scheduler.dll"); ;
+            if (File.Exists("ColorVision.ImageEditor.dll"))
+                Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
+            if (File.Exists("ColorVision.Solution.dll"))
+                Assembly.LoadFrom("ColorVision.Solution.dll"); ;
 
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();

@@ -77,7 +77,7 @@ namespace ColorVision.Scheduler
             Scheduler = await StdSchedulerFactory.GetDefaultScheduler();
             PauseAllCommand = new RelayCommand(async a => await PauseAll(), a => Scheduler.IsStarted);
             ResumeAllCommand = new RelayCommand(async a => await ResumeAll(), a => Scheduler.IsStarted);
-            StartCommand = new RelayCommand(async a => await Scheduler.Start(), a => Scheduler.IsShutdown);
+            StartCommand = new RelayCommand(async a => await Scheduler.Start(), a => true);
             ShutdownCommand = new RelayCommand(async a => await Scheduler.Shutdown(), a => Scheduler.IsStarted);
 
             // 创建调度器

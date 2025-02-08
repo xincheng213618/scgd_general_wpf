@@ -53,15 +53,17 @@ namespace ColorVision.Solution
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
             var solutionpath = parser.GetValue("solutionpath");
-            if (solutionpath != null)
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                su = OpenSolution(solutionpath);
-            }
-
-            else if (SolutionHistory.RecentFiles.Count > 0)
-            {
-                su =OpenSolution(SolutionHistory.RecentFiles[0]);
-            }
+                if (solutionpath != null)
+                {
+                    su = OpenSolution(solutionpath);
+                }
+                else if (SolutionHistory.RecentFiles.Count > 0)
+                {
+                    su = OpenSolution(SolutionHistory.RecentFiles[0]);
+                }
+            });
             JumpListManager jumpListManager = new JumpListManager();
             jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
             if (!su)

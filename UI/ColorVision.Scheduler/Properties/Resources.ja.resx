@@ -141,4 +141,34 @@
   <data name="CronExpression" xml:space="preserve">
     <value>CronExpression（クロンクロノ式）</value>
   </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>グループ名</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>ジョブ名</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>ステータス</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>実行回数</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>次回の発火時間</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>前回の発火時間</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>回復</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>削除</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>命令</value>
+  </data>
 </root>

@@ -1,3 +1,4 @@
+using IWshRuntimeLibrary;
 using System;
 using System.Diagnostics;
 using System.Windows;
@@ -11,8 +12,9 @@ namespace ColorVision.Common.Utilities
         /// 打开文件夹
         /// </summary>
         /// <param name="folder">路径</param>
-        public static void OpenFolder(string folder)
+        public static void OpenFolder(string? folder)
         {
+            if (folder == null) return;
             folder = folder.Replace("\\\\", "\\");
             if (OperatingSystem.IsWindows())
             {
@@ -31,6 +33,8 @@ namespace ColorVision.Common.Utilities
         }
         public static void OpenFolderAndSelectFile(string filePath)
         {
+            if (filePath == null) return;
+
             filePath = filePath.Replace("\\\\", "\\");
 
             var psi = new ProcessStartInfo
@@ -50,6 +54,7 @@ namespace ColorVision.Common.Utilities
         /// <param name="filename">文件名</param>
         public static void Open(string filename)
         {
+            if (filename == null) return;
             try
             {
                 if (OperatingSystem.IsWindows())

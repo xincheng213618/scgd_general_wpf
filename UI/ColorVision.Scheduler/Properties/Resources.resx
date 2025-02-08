@@ -121,4 +121,34 @@
   <data name="CronExpression" xml:space="preserve">
     <value>Cron表达式</value>
   </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>组</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>任务名称</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>运行计数</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>下次触发时间</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>上次触发时间</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>恢复</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>命令</value>
+  </data>
 </root>

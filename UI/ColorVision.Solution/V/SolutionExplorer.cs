@@ -236,7 +236,7 @@ namespace ColorVision.Solution.V
         
         public FileInfo ConfigFileInfo { get; set; }
 
-        public  SolutionExplorer(string FullPath)
+        public SolutionExplorer(string FullPath)
         {
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {

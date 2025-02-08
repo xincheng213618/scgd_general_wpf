@@ -141,4 +141,34 @@
   <data name="CronExpression" xml:space="preserve">
     <value>크론 표현식</value>
   </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>그룹명</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>작업 이름</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>실행 횟수</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>다음 실행 시간</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>이전발화시간</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>정지</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>회복</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>명령</value>
+  </data>
 </root>

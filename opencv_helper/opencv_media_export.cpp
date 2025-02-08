@@ -213,23 +213,20 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-
-	cv::Mat grayMat;
-
 	// 如果是彩色图像，转换为灰度图
 	if (mat.channels() == 3 || mat.channels() == 4)  // 判断是否为彩色图（BGR 或 BGRA）
 	{
-		cv::cvtColor(mat, grayMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
+		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // 转换为灰度图
 	}
 	else
 	{
-		mat.convertTo(grayMat, CV_8U);  // 如果已经是灰度图，则直接转换
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 
 	// 目标分辨率设置
 	int targetPixels = targetPixelsX * targetPixelsY; // 目标像素数（可以调整）
-	int originalWidth = grayMat.cols;
-	int originalHeight = grayMat.rows;
+	int originalWidth = mat.cols;
+	int originalHeight = mat.rows;
 
 	// 计算初始比例因子
 	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
@@ -254,10 +251,10 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 		{
 			int oldX = x * scaleFactor;
 			int oldY = y * scaleFactor;
-			int oldIndex = oldY * grayMat.cols + oldX;
+			int oldIndex = oldY * mat.cols + oldX;
 
 			// 将像素值存储到 rowGrayPixels
-			row[x] = grayMat.data[oldIndex];
+			row[x] = mat.data[oldIndex];
 		}
 	}
 

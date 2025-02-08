@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.FloatingBall;
+using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
@@ -120,7 +121,7 @@ namespace ColorVision
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
+            
             //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
