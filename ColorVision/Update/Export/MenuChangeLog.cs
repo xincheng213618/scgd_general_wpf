@@ -3,12 +3,11 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Update.Export
+namespace ColorVision.Update
 {
     public class MenuChangeLog : MenuItemBase
     {
-        public override string OwnerGuid => "Update";
-        public override string GuidId => "ChangeLog";
+        public override string OwnerGuid => nameof(MenuUpdate);
         public override string Header => Resources.ChangeLog;
         public override int Order => 1;
 

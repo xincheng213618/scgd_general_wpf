@@ -2,12 +2,11 @@
 using ColorVision.UI.Menus;
 using System.Threading.Tasks;
 
-namespace ColorVision.Update.Export
+namespace ColorVision.Update
 {
     public class MenuForceUpdate : MenuItemBase
     {
-        public override string OwnerGuid => "Update";
-        public override string GuidId => "ForceUpdate";
+        public override string OwnerGuid => nameof(MenuUpdate);
         public override string Header => Resources.ForceUpdate;
         public override int Order => 100;
 

@@ -300,4 +300,10 @@
   <data name="MenuEdit" xml:space="preserve">
     <value>Modifier(E)</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>FenêtreGestionProjet</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>FenêtreGestionnaireDePlugins</value>
+  </data>
 </root>

@@ -300,4 +300,10 @@
   <data name="MenuEdit" xml:space="preserve">
     <value>편집 (_E)</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>프로젝트 관리자 창</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>플러그인 관리자 창</value>
+  </data>
 </root>

@@ -9,28 +9,32 @@ namespace ColorVision.Update
 
     public class ExportIncrementUpdate : MenuItemBase
     {
-        public HotKeys HotKeys => new(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
-
-        public override string OwnerGuid => "Update";
-
-        public override string GuidId => "IncrementUpdate";
+        public override string OwnerGuid => nameof(MenuUpdate);
 
         public override int Order => 10004;
         public override Visibility Visibility => Visibility.Visible;
 
-        public override string Header => "增量更新(测试)";
+        public override string Header => "增量更新";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate(true,true);
     }
 
-    public class ExportUpdate: MenuItemBase, IHotKey
+    public class MemuCheckAndUpdate : MenuItemBase
     {
-        public HotKeys HotKeys => new(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public override string OwnerGuid => nameof(MenuUpdate);
+        public override int Order => 10003;
+        public override string Header => "检查更新";
 
-        public override string OwnerGuid => "Help";
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
+    }
 
-        public override string GuidId => "MenuUpdate";
+    public class MenuCheckAndUpdateV1: MenuItemBase, IHotKey
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+
+        public override string OwnerGuid => MenuItemConstants.Help;
 
         public override int Order => 10003;
         public override Visibility Visibility => Visibility.Visible;
@@ -39,8 +43,7 @@ namespace ColorVision.Update
 
         public override string InputGestureText => "Ctrl + U";
 
-
         [RequiresPermission(PermissionMode.Administrator)]
-        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
+        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdateV1();
     }
 }

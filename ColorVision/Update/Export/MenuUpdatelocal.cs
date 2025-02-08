@@ -1,12 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 
-namespace ColorVision.Update.Export
+namespace ColorVision.Update
 {
     public class MenuUpdatelocal : MenuItemBase
     {
-        public override string OwnerGuid => "Update";
-        public override string GuidId => nameof(MenuUpdatelocal);
+        public override string OwnerGuid => nameof(MenuUpdate);
         public override string Header => "本地下载";
         public override int Order => 10;
 
@@ -19,8 +18,7 @@ namespace ColorVision.Update.Export
 
     public class MenuUpdateBaidu : MenuItemBase
     {
-        public override string OwnerGuid => "Update";
-        public override string GuidId => nameof(MenuUpdateBaidu);
+        public override string OwnerGuid => nameof(MenuUpdate);
         public override string Header => "百度云盘下载";
         public override int Order => 11;
 

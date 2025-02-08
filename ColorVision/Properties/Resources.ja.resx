@@ -300,4 +300,10 @@
   <data name="MenuEdit" xml:space="preserve">
     <value>編集する (_E)</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>プロジェクトマネージャーウィンドウ</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>プラグインマネージャーウィンドウ</value>
+  </data>
 </root>

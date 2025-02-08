@@ -188,6 +188,63 @@ namespace ColorVision.Update
             });
         }
 
+        public async Task CheckAndUpdateV1()
+        {
+            // 获取本地版本
+            try
+            {
+                // 获取服务器版本
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                var Version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (LatestVersion > Version)
+                {
+                    bool IsIncrement = false;
+                    if (LatestVersion.Build == Version.Build)
+                        IsIncrement = true;
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
+                    Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
+                    if (match.Success)
+                    {
+                        // 如果找到匹配项，提取变更日志
+                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                    });
+
+                }
+            }
+            catch (Exception ex)
+            {
+                LatestVersion = CurrentVersion ?? new Version();
+                log.Info(ex);
+            }
+        }
+
+
         // 调用函数以删除所有更新文件
         public async Task CheckAndUpdate(bool detection = true,bool IsIncrement = false)
         {
@@ -202,7 +259,6 @@ namespace ColorVision.Update
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
-
                     if (match.Success)
                     {
                         // 如果找到匹配项，提取变更日志
@@ -240,7 +296,7 @@ namespace ColorVision.Update
             catch (Exception ex)
             {
                 LatestVersion = CurrentVersion??new Version();
-                Console.WriteLine("An error occurred while updating: " + ex.Message);
+                log.Info(ex);
             }
         }
 

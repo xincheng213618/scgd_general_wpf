@@ -430,11 +430,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 插件管理器窗口 的本地化字符串。
+        /// </summary>
+        public static string PluginManagerWindow {
+            get {
+                return ResourceManager.GetString("PluginManagerWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {
             get {
                 return ResourceManager.GetString("Project", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 项目管理器窗口 的本地化字符串。
+        /// </summary>
+        public static string ProjectManagerWindow {
+            get {
+                return ResourceManager.GetString("ProjectManagerWindow", resourceCulture);
             }
         }
         

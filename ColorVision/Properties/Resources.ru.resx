@@ -300,4 +300,10 @@
   <data name="MenuEdit" xml:space="preserve">
     <value>Изменить (Е)</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>ОкноМенеджераПроекта</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>ОкноМенеджераПлагинов</value>
+  </data>
 </root>
