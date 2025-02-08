@@ -160,6 +160,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 命令 的本地化字符串。
+        /// </summary>
+        public static string Command {
+            get {
+                return ResourceManager.GetString("Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置结束 的本地化字符串。
         /// </summary>
         public static string ConfigurationComplete {

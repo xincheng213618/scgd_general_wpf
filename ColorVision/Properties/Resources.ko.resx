@@ -318,4 +318,7 @@
   <data name="ProjectName" xml:space="preserve">
     <value>프로젝트명</value>
   </data>
+  <data name="Command" xml:space="preserve">
+    <value>명령</value>
+  </data>
 </root>

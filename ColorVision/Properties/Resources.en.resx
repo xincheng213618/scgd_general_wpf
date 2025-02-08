@@ -318,4 +318,7 @@
   <data name="ProjectName" xml:space="preserve">
     <value>Name</value>
   </data>
+  <data name="Command" xml:space="preserve">
+    <value>Command</value>
+  </data>
 </root>
