@@ -25,18 +25,32 @@
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
             <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Orientation="Horizontal" Margin="3">
-                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="0,0,3,0"/>
-                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="0,0,3,0"/>
+                <Button Command="ApplicationCommands.New" Content="新建" Margin="0,0,3,0"/>
+                <Button Command="ApplicationCommands.Open" Content="{x:Static properties:Resources.Open}" Margin="0,0,3,0"/>
+                <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding SettingCommand}" Padding="2" Height="25" Width="25" >
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform2"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Button>
             </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" >
             <hc:SearchBar x:Name="SearchBar1"  Margin="3,0,3,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
         </Grid>
-
-
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  	x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="-3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
+            <TreeView  x:Name="SolutionTreeView" Style="{StaticResource TreeView.Small}"  BorderThickness="0" Padding="0" Margin="-3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
                 <TreeView.Resources>
                     <local:TreeViewItemMarginConverter x:Key="TreeViewItemMarginConverter" />
                 </TreeView.Resources>

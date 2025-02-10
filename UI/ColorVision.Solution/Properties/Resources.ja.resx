@@ -228,4 +228,10 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>コピー(C)</value>
   </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>新しいフォルダー</value>
+  </data>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>およびそのすべての内容が永久に削除されます。</value>
+  </data>
 </root>

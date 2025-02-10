@@ -228,4 +228,10 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>복사(C)</value>
   </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>새 폴더</value>
+  </data>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>모두 삭제됩니다.</value>
+  </data>
 </root>

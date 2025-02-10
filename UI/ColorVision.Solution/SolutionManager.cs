@@ -38,8 +38,7 @@ namespace ColorVision.Solution
         public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
-        public RelayCommand SolutionOpenCommand { get; set; }
-        public RelayCommand SolutionCreateCommand { get; set; }
+        public RelayCommand SettingCommand { get; set; }
 
         public SolutionManager()
         {
@@ -77,10 +76,7 @@ namespace ColorVision.Solution
                     Directory.CreateDirectory(DefaultSolution);
                 var SolutionPath = CreateSolution(DefaultSolution);
             }
-
-
-            SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
-            SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
+            SettingCommand = SolutionSetting.Instance.EditCommand;
         }
 
 
@@ -92,18 +88,26 @@ namespace ColorVision.Solution
             OpenFile?.Invoke(this, userControl);
         }
 
+        public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
 
         private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
         {
             if (sender is string solutionConfig)
             {
+                if (File.Exists(solutionConfig))
+                {
+                    FileInfo fileInfo = new FileInfo(solutionConfig);
+                    SolutionEnvironments.SolutionDir = Directory.GetParent(fileInfo.FullName).FullName;
+                    SolutionEnvironments.SolutionPath = fileInfo.FullName;
+                    SolutionEnvironments.SolutionExt = fileInfo.Extension;
+                    SolutionEnvironments.SolutionName = fileInfo.Name;
+                    SolutionEnvironments.SolutionFileName = Path.GetFileName(solutionConfig);
+                }
                 SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig);
+                CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
             }
         }
-
-
         public DirectoryInfo? SolutionDirectory { get; private set; }
 
         public bool OpenSolution(string FullPath)
@@ -130,7 +134,8 @@ namespace ColorVision.Solution
 
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
-            new SolutionConfig().ToJsonNFile(slnName);
+
+            new CVSolutionConfig().ToJsonNFile(slnName);
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);

@@ -19,11 +19,11 @@ namespace ColorVision.Solution.V.Files
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
 
 
-        public VFile(IFileMeta fileMeta)
+        public VFile(IFileMeta fileMeta) 
         {
             FileMeta = fileMeta;
-            Name = fileMeta.Name;
             ToolTip = fileMeta.ToolTip;
+            Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
             AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
             OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileInfo.FullName}"), a=> FileInfo.Exists);
@@ -33,10 +33,11 @@ namespace ColorVision.Solution.V.Files
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCut, Command = ApplicationCommands.Cut, CommandParameter = this });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopy, Command = ApplicationCommands.Copy,CommandParameter = this });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
 
-            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter = this });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
+
+            MenuItem menuItemReName = new() { Header = "ReName", Command = Commands.ReName };
+            ContextMenu.Items.Add(menuItemReName);
 
             if (fileMeta is IContextMenuProvider menuItemProvider)
             {
@@ -101,7 +102,7 @@ namespace ColorVision.Solution.V.Files
         public override void Delete()
         {
             File.Delete(FileInfo.FullName);
-            Parent.RemoveChild(this);
+            base.Delete();
         }
         public override bool ReName(string name)
         {

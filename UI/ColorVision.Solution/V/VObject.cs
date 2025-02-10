@@ -26,7 +26,6 @@ namespace ColorVision.Solution.V
             vObject.Parent = this;
             AddChildEventHandler?.Invoke(this, new EventArgs());
             VisualChildren.SortedAdd(vObject);
-
         }
         public event EventHandler RemoveChildEventHandler;
         public virtual void RemoveChild(VObject vObject)
@@ -38,17 +37,17 @@ namespace ColorVision.Solution.V
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public virtual string Name { get => _Name; set
+        public virtual string Name { get => Name1; set
             { 
-                if (_Name == value) return; 
+                if (Name1 == value) return; 
                 if (!IsEditMode || ReName(value))
                 {
-                    _Name = value;
+                    Name1 = value;
                 }
                 NotifyPropertyChanged();  
             } 
         }
-        private string _Name = string.Empty;
+        protected string Name1 { get; set; } = string.Empty;
 
         public virtual string FullPath { get => _FullPath; set { _FullPath = value; NotifyPropertyChanged(); } }
         private string _FullPath = string.Empty;
@@ -72,10 +71,10 @@ namespace ColorVision.Solution.V
 
         public RelayCommand AttributesCommand { get; set; }
 
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
         public ContextMenu ContextMenu { get; set; }

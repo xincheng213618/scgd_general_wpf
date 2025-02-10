@@ -228,4 +228,10 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>Копировать (С)</value>
   </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>НоваяПапка</value>
+  </data>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>и все его содержимое будет удалено навсегда.</value>
+  </data>
 </root>

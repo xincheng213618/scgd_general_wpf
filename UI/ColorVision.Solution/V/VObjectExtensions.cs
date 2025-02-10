@@ -16,6 +16,19 @@
             return This.Parent.GetAncestor<T>();
         }
 
+        public static void SortByName(this VObject vObject)
+        {
+            var sortedList = vObject.VisualChildren.OrderBy(v => v.Name).ToList();
+
+            vObject.VisualChildren.Clear();
+
+            // 添加排序后的项回到集合中
+            foreach (var item in sortedList)
+            {
+                vObject.VisualChildren.Add(item);
+            }
+        }
+
         public static IEnumerable<VObject> GetAllVisualChildren(this IEnumerable<VObject> visualChildren)
         {
             foreach (var child in visualChildren)

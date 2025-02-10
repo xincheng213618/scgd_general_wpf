@@ -160,6 +160,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 及其所有内容讲永久删除。 的本地化字符串。
+        /// </summary>
+        public static string FolderDeleteSign {
+            get {
+                return ResourceManager.GetString("FolderDeleteSign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入 的本地化字符串。
         /// </summary>
         public static string Import {
@@ -210,6 +219,15 @@ namespace ColorVision.Solution.Properties {
         public static string MenuOpenFileInExplorer {
             get {
                 return ResourceManager.GetString("MenuOpenFileInExplorer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建文件夹 的本地化字符串。
+        /// </summary>
+        public static string NewFolder {
+            get {
+                return ResourceManager.GetString("NewFolder", resourceCulture);
             }
         }
         

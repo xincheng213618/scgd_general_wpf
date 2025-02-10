@@ -208,4 +208,10 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>复制(_C)</value>
   </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>新建文件夹</value>
+  </data>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>及其所有内容讲永久删除。</value>
+  </data>
 </root>

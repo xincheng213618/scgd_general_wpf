@@ -228,4 +228,10 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>Copie(C)</value>
   </data>
+  <data name="NewFolder" xml:space="preserve">
+    <value>NouveauDossier</value>
+  </data>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>et tout son contenu sera définitivement supprimé.</value>
+  </data>
 </root>

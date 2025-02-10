@@ -51,10 +51,8 @@ namespace ColorVision.Solution
             SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
 
             SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
-
             IniCommand();
         }
-        
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -110,7 +108,6 @@ namespace ColorVision.Solution
 
         private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
-        private TreeViewItem? LastSelectedTreeViewItem;
 
 
         //第一次的点击逻辑
@@ -125,28 +122,17 @@ namespace ColorVision.Solution
                 TreeViewItem item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                     return;
-                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject viewModeBase)
+                if (item.DataContext is VObject vObject)
                 {
-                    viewModeBase.IsEditMode = false;
-                    if (LastSelectedTreeViewItem?.DataContext is VObject VObject)
-                    {
-                        viewModeBase.IsSelected = true;
-                        VObject.IsSelected = true;
-
-                    }
+                    vObject.IsSelected = true;
+                }
+                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject vobj)
+                {
+                    vobj.IsEditMode = false;
                 }
                 SelectedTreeViewItem = item;
-
-                LastSelectedTreeViewItem = item;
-
-
-                if (SolutionManager.SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
-                {
-
-                }
                 if (e.ClickCount == 2)
                 {
-
                 }
             }
             else
