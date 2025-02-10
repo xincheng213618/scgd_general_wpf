@@ -260,8 +260,7 @@ namespace ColorVision.Update
                 {
                     if (IsIncrement && LatestVersion.Build != Version.Build)
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "版本差异大，请使用全量更新");
-                        return;
+                        LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
                     }
 
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);

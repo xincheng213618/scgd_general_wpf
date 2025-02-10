@@ -51,8 +51,10 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
+                log.Info("检测不到许可证，正在创建许可证");
                 UI.ACE.License.Create();
             }
             bool IsDebug = Debugger.IsAttached;
@@ -86,9 +88,7 @@ namespace ColorVision
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
             parser.AddArgument("input", false, "i");
-            parser.AddArgument("export", false, "e");
             parser.Parse();
-
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
@@ -99,7 +99,8 @@ namespace ColorVision
                     return;
                 }
             }
-
+            parser.AddArgument("export", false, "e");
+            parser.Parse();
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {
