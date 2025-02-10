@@ -9,6 +9,7 @@ namespace ProjectKB
         public static ProjectKBWindow WindowInstance { get; set; }
     }
 
+
     public class PluginKB: IProjectBase
     {
         public  override string? Header => "键盘测试";
