@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
+using ColorVision.UI.Menus.Base;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -136,9 +138,9 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
-        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView)
         {
-            return new List<MenuItem>();
+            return new List<MenuItemMetadata>();
         }
 
 

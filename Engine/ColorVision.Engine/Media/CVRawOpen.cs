@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor;
 using ColorVision.Net;
+using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
@@ -232,22 +234,24 @@ namespace ColorVision.Engine.Media
         }
         public float[] exp { get; set; }
 
-        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView)
         {
-            List<MenuItem> MenuItems = new List<MenuItem>();
-            void export()
+            return new List<MenuItemMetadata>()
             {
-                if (imageView.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                new MenuItemMetadata()
                 {
-                    new ExportCVCIE(FilePath).ShowDialog();
+                    Header = "导出",
+                    GuidId = "Export",
+                    Order = 150,
+                    Command = new RelayCommand(a =>
+                    {
+                        if (imageView.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                        {
+                            new ExportCVCIE(FilePath).ShowDialog();
+                        }
+                    })
                 }
-            }
-
-            MenuItem menuItem = new MenuItem() { Header = "导出" };
-            menuItem.Click += (s, e) => export();
-
-            MenuItems.Add(menuItem);
-            return MenuItems;
+            };
         }
 
 

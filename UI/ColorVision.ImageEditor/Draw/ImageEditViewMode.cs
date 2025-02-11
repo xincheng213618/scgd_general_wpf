@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
 using System;
@@ -93,10 +94,10 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-        public List<MenuItem> GetContextMenus() 
-        {
-            return GenContextMenu();
-        }
+
+        public ContextMenu ContextMenu { get; set; }
+        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
+        public IImageViewOpen IImageViewOpen { get; set; }
 
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
@@ -115,7 +116,6 @@ namespace ColorVision.ImageEditor.Draw
                 drawCanvas.Focus();
             };
 
-            
             ZoomboxSub = zoombox ?? throw new ArgumentNullException(nameof(zoombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
@@ -147,8 +147,135 @@ namespace ColorVision.ImageEditor.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
+
+            ContextMenu = new ContextMenu();
+            MenuItemMetadatas = new List<MenuItemMetadata>();
+            ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
+
+            EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    ContextMenu.Items.Clear();
+                }
+                else
+                {
+                    InitMenuItem();
+                    InitContextMenu();
+                }
+            };
         }
 
+
+        public virtual void InitContextMenu()
+        {
+            ContextMenu.Items.Clear();
+            var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
+
+            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
+            {
+                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                for (int i = 0; i < iMenuItems1.Count; i++)
+                {
+                    var iMenuItem = iMenuItems1[i];
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem;
+                    if (iMenuItem is IMenuItemMeta menuItemMeta)
+                    {
+                        menuItem = menuItemMeta.MenuItem;
+                    }
+                    else
+                    {
+                        menuItem = new MenuItem
+                        {
+                            Header = iMenuItem.Header,
+                            Icon = iMenuItem.Icon,
+                            InputGestureText = iMenuItem.InputGestureText,
+                            Command = iMenuItem.Command,
+                            Tag = iMenuItem,
+                            Visibility = iMenuItem.Visibility,
+                        };
+                        if (iMenuItem.Command is RelayCommand relayCommand)
+                        {
+                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+
+                        }
+                    }
+
+                    CreateMenu(menuItem, GuidId);
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+                    parentMenuItem.Items.Add(menuItem);
+                }
+                foreach (var item in iMenuItems1)
+                {
+                    iMenuItems.Remove(item);
+                }
+            }
+
+            var iMenuItemMetas = MenuItemMetadatas.Where(item => item.OwnerGuid == MenuItemConstants.Menu && item.Visibility == Visibility.Visible).OrderBy(item => item.Order).ToList();
+
+            for (int i = 0; i < iMenuItemMetas.Count; i++)
+            {
+                MenuItemMetadata menuItemMeta = iMenuItemMetas[i];
+                MenuItem menuItem = new MenuItem()
+                {
+                    Header = menuItemMeta.Header,
+                    Command = menuItemMeta.Command,
+                };
+                if (menuItemMeta.GuidId != null)
+                    CreateMenu(menuItem, menuItemMeta.GuidId);
+                if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
+                    ContextMenu.Items.Add(new Separator());
+
+                ContextMenu.Items.Add(menuItem);
+            }
+
+            MenuItem menuItemBitmapScalingMode = new() { Header = "點陣圖縮放模式" };
+            void UpdateBitmapScalingMode()
+            {
+                var ime = RenderOptions.GetBitmapScalingMode(Image);
+                menuItemBitmapScalingMode.Items.Clear();
+                foreach (var item in Enum.GetValues(typeof(BitmapScalingMode)).Cast<BitmapScalingMode>().GroupBy(mode => (int)mode).Select(group => group.First()))
+                {
+                    MenuItem menuItem1 = new() { Header = item.ToString() };
+                    if (ime != item)
+                    {
+                        menuItem1.Click += (s, e) =>
+                        {
+                            RenderOptions.SetBitmapScalingMode(Image, item);
+                        };
+                    }
+                    menuItem1.IsChecked = ime == item;
+                    menuItemBitmapScalingMode.Items.Add(menuItem1);
+                }
+            }
+            menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
+            UpdateBitmapScalingMode();
+        }
+
+        public virtual void InitMenuItem()
+        {
+            MenuItemMetadatas.Clear();
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = "缩放工具" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 1, Header = "放大" ,Command = ZoomIncrease });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 2, Header = "缩小", Command = ZoomDecrease });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 3, Header = "原始大小", Command = ZoomNone });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 4, Header = "适应屏幕", Command = ZoomUniform });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() {GuidId = "Rotate", Order = 101, Header = "图像旋转"});
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeftCommand", Order = 1, Header = "左旋转", Command = RotateLeftCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRightCommand", Order = 2, Header = "右旋转", Command = RotateRightCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontalCommand", Order = 3, Header = "水平翻转", Command = FlipHorizontalCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVerticalCommand", Order = 4, Header = "垂直翻转", Command = FlipVerticalCommand });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Max", Order = 105, Header = "全屏", Command = MaxCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 106, Header = "清空", Command = ClearImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 107, Header = "截屏", Command = SaveAsImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 107, Header = "截屏", Command = PrintImageCommand });
+        }
 
 
 
@@ -168,56 +295,6 @@ namespace ColorVision.ImageEditor.Draw
 
         }
 
-
-        public List<MenuItem> GenContextMenu()
-        {
-            List<MenuItem> ContextMenus = new List<MenuItem>();
-            MenuItem menuItemZoom = new() { Header = "缩放工具" };
-            menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
-            menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
-            menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
-            menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
-
-            ContextMenus.Add(menuItemZoom);
-            ContextMenus.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
-            ContextMenus.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
-            ContextMenus.Add(new MenuItem() { Header = "水平翻转", Command = FlipHorizontalCommand });
-            ContextMenus.Add(new MenuItem() { Header = "垂直翻转", Command = FlipVerticalCommand });
-            ContextMenus.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
-            ContextMenus.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-            ContextMenus.Add(new MenuItem() { Header = "截屏", Command = SaveAsImageCommand });  
-            ContextMenus.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
-
-
-
-            MenuItem menuItemBitmapScalingMode = new() { Header = "點陣圖縮放模式"};
-
-
-            void update()
-            {
-                var ime = RenderOptions.GetBitmapScalingMode(Image);
-
-                menuItemBitmapScalingMode.Items.Clear();
-                foreach (var item in Enum.GetValues(typeof(BitmapScalingMode)).Cast<BitmapScalingMode>().GroupBy(mode => (int)mode) .Select(group => group.First()))
-                {
-                    MenuItem menuItem1 = new() { Header = item.ToString() };
-                    if (ime != item)
-                    {
-                        menuItem1.Click += (s, e) =>
-                        {
-                            RenderOptions.SetBitmapScalingMode(Image, item);
-                        };
-                    }
-                    menuItem1.IsChecked = ime == item;
-                    menuItemBitmapScalingMode.Items.Add(menuItem1);
-                }
-            }
-
-            menuItemBitmapScalingMode.SubmenuOpened +=(s,e) => update();
-            update();
-            ContextMenus.Add(menuItemBitmapScalingMode);
-            return ContextMenus;
-        }
 
         public void FlipHorizontal()
         {

@@ -3,7 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -58,7 +60,6 @@ namespace ColorVision.ImageEditor
                 item.Execute(this);
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => Open(), (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = ImageShow.Source !=null; }));
-
         }
 
         public void Open()
@@ -71,10 +72,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private void Zoombox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
 
-        }
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             if (Config != null)
@@ -109,23 +107,12 @@ namespace ColorVision.ImageEditor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             ImageEditViewMode = new ImageEditViewMode(this,Zoombox1, ImageShow);
+            Zoombox1.ContextMenu = ImageEditViewMode.ContextMenu;
             ToolBar1.DataContext = ImageEditViewMode;
             ToolBarRight.DataContext = ImageEditViewMode;
             ToolBarBottom.DataContext = ImageEditViewMode;
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ImageEditViewMode.ClearImageEventHandler += Clear;
-            ImageEditViewMode.EditModeChanged += (s, e) =>
-            {
-                if (e.IsEditMode)
-                {
-                    Zoombox1.ContextMenu?.Items.Clear();
-
-                }
-                else
-                {
-                    RenderContextMenu();
-                }
-            };
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -889,25 +876,9 @@ namespace ColorVision.ImageEditor
 
             ImageShow.ImageInitialize();
             ImageEditViewMode.ToolBarScaleRuler.IsShow = true;
+        }
 
-            RenderContextMenu();
-        }
-        public void RenderContextMenu()
-        {
-            Zoombox1.ContextMenu ??= new ContextMenu();
-            Zoombox1.ContextMenu.Items.Clear();
-            foreach (var item in ImageEditViewMode.GetContextMenus())
-            {
-                Zoombox1.ContextMenu.Items.Add(item);
-            }
-            if (IImageViewOpen != null)
-            {
-                foreach (var item in IImageViewOpen.GetContextMenuItems(this))
-                {
-                    Zoombox1.ContextMenu.Items.Add(item);
-                }
-            }
-        }
+
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 

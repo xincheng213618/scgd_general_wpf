@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows.Controls;
 
@@ -8,7 +9,7 @@ namespace ColorVision.ImageEditor
     {
         public List<string> Extension { get; }
 
-        public List<MenuItem> GetContextMenuItems(ImageView imageView);
+        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView);
 
         public void OpenImage(ImageView imageView, string? filePath);
     }
