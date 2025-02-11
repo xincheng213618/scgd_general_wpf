@@ -238,7 +238,7 @@ namespace ColorVision.ImageEditor.Draw
                 ContextMenu.Items.Add(menuItem);
             }
 
-            MenuItem menuItemBitmapScalingMode = new() { Header = "ColorVision.ImageEditor.Properties.Resources.BitmapScalingMode };
+            MenuItem menuItemBitmapScalingMode = new() { Header = ColorVision.ImageEditor.Properties.Resources.BitmapScalingMode };
             void UpdateBitmapScalingMode()
             {
                 var ime = RenderOptions.GetBitmapScalingMode(Image);
