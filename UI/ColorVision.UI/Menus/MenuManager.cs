@@ -106,7 +106,7 @@ namespace ColorVision.UI.Menus
 
             foreach (var item in iMenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
             {
-                if (item.OwnerGuid == "Menu")
+                if (item.OwnerGuid == "Menu" && item.Header !=null)
                 {
                     MenuItem menuItem = new()
                     {
