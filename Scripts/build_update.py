@@ -168,7 +168,7 @@ def find_latest_zip(directory, version):
         return max(zip_files, key=os.path.getmtime)
 
     # 返回匹配的文件中最新的一个
-    latest_zip = max(matching_files, key=os.path.getmtime)
+    latest_zip = min(matching_files, key=os.path.getmtime)
     return latest_zip
 
 new_version_dir = 'C:\\Users\\17917\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Release\\net8.0-windows'

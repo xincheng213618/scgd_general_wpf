@@ -20,9 +20,7 @@ namespace ColorVision.Solution.Searches
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
             View = new View();
-            View.ViewIndexChangedEvent += View_ViewIndexChangedEvent;
-
-            MainFrame.Navigate(new HomePage(MainFrame));
+            MainFrame.Navigate(SolutionPageManager.Instance.GetPage("HomePage", MainFrame));
 
             if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
             {
@@ -34,15 +32,6 @@ namespace ColorVision.Solution.Searches
                 content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
                 BrowseForward.ContextMenu = content2;
             }
-            ContextMenu contextMenu = new();
-            MainSetting.ContextMenu = contextMenu;
-            MenuItem menuItem = new() { Header = "独立窗口" };
-            menuItem.Click += (s, e) =>
-            {
-                View.ViewIndex = -2;
-            };
-            contextMenu.Items.Add(menuItem);;
-
             SolutionManager.GetInstance().OpenFile += (s, e) =>
             {
                 var existingDocument = FindDocumentById(_layoutRoot, e.GuidId.ToString());
@@ -145,35 +134,6 @@ namespace ColorVision.Solution.Searches
                 }
             }
             return null;
-        }
-
-        private void View_ViewIndexChangedEvent(int oindex, int index)
-        {
-            if (index == -2)
-            {
-                ContextMenu contextMenu = new();
-                MenuItem menuItem = new() { Header = "还原" };
-                menuItem.Click += (s, e) =>
-                {
-                    View.ViewIndex = 0;
-                };
-                contextMenu.Items.Add(menuItem);
-                MainSetting.ContextMenu = contextMenu;
-                View.ViewGridManager?.SetViewIndex(this,-2);
-            }
-            if (index == 0)
-            {
-                ContextMenu contextMenu = new();
-                MenuItem menuItem = new() { Header = "独立窗口" };
-                menuItem.Click += (s, e) =>
-                {
-                    View.ViewIndex = -2;
-                };
-                contextMenu.Items.Add(menuItem);
-                MainSetting.ContextMenu = contextMenu;
-                View.ViewGridManager?.SetViewIndex(this, 0);
-
-            }
         }
     }
 }

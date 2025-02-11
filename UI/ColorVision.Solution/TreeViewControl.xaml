@@ -58,7 +58,7 @@
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle}">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                         <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
                         <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
                         <Setter Property="Template">

@@ -8,6 +8,10 @@ namespace ColorVision.Solution.V
     /// </summary>
     public class CVSolutionConfig : ViewModelBase
     {
+        public string FilePath { get; set; }
+
+        public string Vpath { get; set; }
+    
         public bool IsSetting { get; set; }
         public bool IsSetting1 { get; set; }
 

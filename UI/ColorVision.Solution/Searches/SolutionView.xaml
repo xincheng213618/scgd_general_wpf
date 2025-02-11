@@ -27,7 +27,7 @@
                 <xcad:LayoutPanel Orientation="Horizontal" >
                     <xcad:LayoutDocumentPaneGroup>
                         <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
-                            <xcad:LayoutDocument ContentId="SolutionPage" Title="  查询   " CanClose="False" >
+                            <xcad:LayoutDocument ContentId="SolutionPage" Title="  主页   ">
                                 <Grid Background="{DynamicResource GlobalBackground}">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>

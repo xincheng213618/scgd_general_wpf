@@ -62,20 +62,21 @@ namespace ColorVision.Solution
                 {
                     su = OpenSolution(SolutionHistory.RecentFiles[0]);
                 }
-            });
-            JumpListManager jumpListManager = new JumpListManager();
-            jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
-            if (!su)
-            {
-                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                if (!Directory.Exists(Default))
-                    Directory.CreateDirectory(Default);
+                JumpListManager jumpListManager = new JumpListManager();
+                jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
+                if (!su)
+                {
+                    string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                    if (!Directory.Exists(Default))
+                        Directory.CreateDirectory(Default);
 
-                string DefaultSolution = Default + "\\" + "Default";
-                if (Directory.Exists(DefaultSolution))
-                    Directory.CreateDirectory(DefaultSolution);
-                var SolutionPath = CreateSolution(DefaultSolution);
-            }
+                    string DefaultSolution = Default + "\\" + "Default";
+                    if (Directory.Exists(DefaultSolution))
+                        Directory.CreateDirectory(DefaultSolution);
+                    var SolutionPath = CreateSolution(DefaultSolution);
+                }
+            });
+
             SettingCommand = SolutionSetting.Instance.EditCommand;
         }
 
@@ -104,7 +105,7 @@ namespace ColorVision.Solution
                     SolutionEnvironments.SolutionFileName = Path.GetFileName(solutionConfig);
                 }
                 SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
+                CurrentSolutionExplorer = new  SolutionExplorer               (SolutionEnvironments);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
             }
         }

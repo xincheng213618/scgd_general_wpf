@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.UI;
 using System.Windows;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -19,27 +20,21 @@ namespace ColorVision.Solution.V.Files
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
 
 
-        public VFile(IFileMeta fileMeta) 
+        public VFile(IFileMeta fileMeta) :base()
         {
             FileMeta = fileMeta;
             ToolTip = fileMeta.ToolTip;
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
-            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
-            OpenContainingFolderCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", $"/select,{FileInfo.FullName}"), a=> FileInfo.Exists);
-            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
 
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCut, Command = ApplicationCommands.Cut, CommandParameter = this });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopy, Command = ApplicationCommands.Copy,CommandParameter = this });
 
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopyFullPath, Command = CopyFullPathCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
 
-            MenuItem menuItemReName = new() { Header = "ReName", Command = Commands.ReName };
-            ContextMenu.Items.Add(menuItemReName);
-
-            if (fileMeta is IContextMenuProvider menuItemProvider)
+            if (FileMeta is IContextMenuProvider menuItemProvider)
             {
                 var iMenuItems = new List<MenuItemMetadata>();
                 iMenuItems.AddRange(menuItemProvider.GetMenuItems());
@@ -84,13 +79,18 @@ namespace ColorVision.Solution.V.Files
                 }
 
                 CreateMenu(ContextMenu, null);
-            }  
+            }
+        }
 
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopyFullPath, Command = CopyFullPathCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
+        public override void InitContextMenu()
+        {
+            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
+            OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
+            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
+
+            base.InitContextMenu();
+
+
         }
 
 

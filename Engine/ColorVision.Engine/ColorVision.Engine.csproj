@@ -65,6 +65,7 @@
 	
 
   <ItemGroup>
+    <None Remove="Assets\Image\background0.png" />
     <None Remove="Assets\Image\CIE1931xy.ico" />
     <None Remove="Assets\Image\CIE1931xy.png" />
     <None Remove="Assets\Image\CIE1931xy1.png" />
@@ -74,6 +75,8 @@
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
+    <None Remove="Assets\Image\归档查询.png" />
+    <None Remove="Assets\Image\综合查询.png" />
     <None Remove="Assets\png\PowerToy.png" />
     <None Remove="Assets\Sounds\error.wav" />
     <None Remove="Assets\Sounds\success.wav" />
@@ -90,6 +93,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Image\background0.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\Image\CIE1931xy.ico" />
     <Resource Include="Assets\Image\CIE1931xy.png" />
     <Resource Include="Assets\Image\CIE1931xy1.png" />
@@ -99,6 +105,8 @@
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
+    <Resource Include="Assets\Image\归档查询.png" />
+    <Resource Include="Assets\Image\综合查询.png" />
     <Resource Include="Assets\png\PowerToy.png" />
     <Resource Include="Assets\Sounds\error.wav" />
     <Resource Include="Assets\Sounds\success.wav" />

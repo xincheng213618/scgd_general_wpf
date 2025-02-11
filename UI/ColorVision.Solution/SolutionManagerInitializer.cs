@@ -18,9 +18,9 @@ namespace ColorVision.Solution
 
         public override int Order => 1;
 
-        public override async Task InitializeAsync()
+        public override async Task InitializeAsync() 
         {
-            await Task.Delay(0);
+            await Task.Delay(0 );
 
             // 解析命令行参数
             bool su = false;
@@ -30,35 +30,7 @@ namespace ColorVision.Solution
             var solutionpath = parser.GetValue("solutionpath");
             _= Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                var solutionManager = SolutionManager.GetInstance();
-                if (solutionpath != null)
-                {
-                    su = solutionManager.OpenSolution(solutionpath);
-                }
-
-                // 检查默认解决方案目录
-                if (!su)
-                {
-                    if (solutionManager.SolutionHistory.RecentFiles.Count > 0)
-                    {
-                        su = solutionManager.OpenSolution(solutionManager.SolutionHistory.RecentFiles[0]);
-                    }
-
-                    JumpListManager jumpListManager = new JumpListManager();
-                    jumpListManager.AddRecentFiles(solutionManager.SolutionHistory.RecentFiles);
-
-                    if (!su)
-                    {
-                        string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                        if (!Directory.Exists(Default))
-                            Directory.CreateDirectory(Default);
-
-                        string DefaultSolution = Default + "\\" + "Default";
-                        if (!Directory.Exists(DefaultSolution))
-                            Directory.CreateDirectory(DefaultSolution);
-                        solutionManager.CreateSolution(DefaultSolution);
-                    }
-                }
+                SolutionManager.GetInstance();
             });
 
         }

@@ -4,6 +4,7 @@ using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
+using ScottPlot.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -424,7 +425,7 @@ namespace ColorVision.Update
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
+                    MessageBox.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
                     return;
                 }
 
@@ -435,6 +436,8 @@ namespace ColorVision.Update
                 var isMoreToRead = true;
 
                 stopwatch.Start();
+                SpeedValue = $"{totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
+                RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(0):hh\\:mm\\:ss}";
 
                 using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))

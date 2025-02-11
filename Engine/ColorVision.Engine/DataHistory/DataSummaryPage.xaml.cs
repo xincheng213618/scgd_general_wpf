@@ -12,6 +12,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
+
     public enum ArchiveStatus
     {
         NotArchived = -1,

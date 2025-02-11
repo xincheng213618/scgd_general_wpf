@@ -3,6 +3,7 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.PropertyEditor;
 using log4net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
@@ -27,6 +28,8 @@ namespace ColorVision.Solution.V
         public FileInfo ConfigFileInfo { get; set; }
         public override bool IsExpanded { get => true; set {  } }
 
+        public SolutionEnvironments SolutionEnvironments { get; set; }
+
         public SolutionExplorer(SolutionEnvironments solutionEnvironments) 
         {
             string FullPath = solutionEnvironments.SolutionPath;
@@ -45,20 +48,29 @@ namespace ColorVision.Solution.V
                 }
 
                var config = JsonConvert.DeserializeObject<CVSolutionConfig>(File.ReadAllText(FullPath));
-
-                if (config == null)
-                    MessageBox.Show("打开失败");
                 Config = config ?? new CVSolutionConfig();
+                ContextMenu = new ContextMenu();
+                OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+                ClearCacheCommand = new RelayCommand(a => { VisualChildren.Clear(); });
+                AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+                MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
+                ContextMenu.Items.Add(menuItem);
+                MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
+                ContextMenu.Items.Add(menuItem2);
+                MenuItem menuItem3 = new() { Header = "添加" };
+                MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
+                menuItem3.Items.Add(menuItem4);
+                ContextMenu.Items.Add(menuItem3);
+                JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
+                EditCommand = new RelayCommand(a => {
+                    new PropertyEditorWindow(this.Config).ShowDialog();
+                    Config.ToJsonNFile(FullPath);
+                });
+                ContextMenu.Items.Add(new MenuItem() { Header = "编辑", Command = EditCommand });
 
-                Config?.ToJsonNFile(FullPath);
+
             }
-            else if(Directory.Exists(FullPath))
-            {
-                DirectoryInfo = new DirectoryInfo(FullPath);
-                DirectoryInfo rootDirectory = DirectoryInfo.Root;
-                DriveInfo = new DriveInfo(rootDirectory.FullName);
-            }
-            GeneralContextMenu();
+
             DriveMonitor();
             if (DirectoryInfo !=null && DirectoryInfo.Exists)
             {
@@ -153,27 +165,5 @@ namespace ColorVision.Solution.V
         public DriveInfo DriveInfo { get; set; }
         public RelayCommand EditCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
-
-        public void GeneralContextMenu()
-        {
-            OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            ClearCacheCommand = new RelayCommand(a => { VisualChildren.Clear(); });
-            AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
-            ContextMenu = new ContextMenu();
-            MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
-            ContextMenu.Items.Add(menuItem);
-            MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
-            ContextMenu.Items.Add(menuItem2);
-            MenuItem menuItem3 = new() { Header = "添加" };
-            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
-            menuItem3.Items.Add(menuItem4);
-            ContextMenu.Items.Add(menuItem3);
-            EditCommand = new RelayCommand(a =>  new  PropertyEditorWindow(this.Config).ShowDialog());
-            ContextMenu.Items.Add( new MenuItem (){ Header = "编辑", Command = EditCommand });
-        }
-
-
-
-    
     }
 }

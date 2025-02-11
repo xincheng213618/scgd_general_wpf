@@ -7,6 +7,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
+using System.IO;
+using ColorVision.Solution.Properties;
+using ColorVision.UI;
 
 namespace ColorVision.Solution.V
 {
@@ -85,6 +88,19 @@ namespace ColorVision.Solution.V
             VisualChildren = new ObservableCollection<VObject>() { };
             OpenCommand = new RelayCommand((s) => Open());
             DeleteCommand = new RelayCommand(s =>Delete());
+            InitContextMenu();
+        }
+
+        public virtual void InitContextMenu()
+        {
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCut, Command = ApplicationCommands.Cut });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopy, Command = ApplicationCommands.Copy });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Paste });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName });
         }
 
         public virtual void Delete()
