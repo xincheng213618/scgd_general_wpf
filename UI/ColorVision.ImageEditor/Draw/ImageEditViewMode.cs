@@ -254,6 +254,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
             UpdateBitmapScalingMode();
+            ContextMenu.Items.Add(menuItemBitmapScalingMode);
         }
 
         public virtual void InitMenuItem()
@@ -271,10 +272,10 @@ namespace ColorVision.ImageEditor.Draw
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontalCommand", Order = 3, Header = "水平翻转", Command = FlipHorizontalCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVerticalCommand", Order = 4, Header = "垂直翻转", Command = FlipVerticalCommand });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Max", Order = 105, Header = "全屏", Command = MaxCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 106, Header = "清空", Command = ClearImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 107, Header = "截屏", Command = SaveAsImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 107, Header = "截屏", Command = PrintImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Max", Order = 200, Header = "全屏", Command = MaxCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 300, Header = "清空", Command = ClearImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = "截屏", Command = SaveAsImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = "打印", Command = PrintImageCommand });
         }
 
 

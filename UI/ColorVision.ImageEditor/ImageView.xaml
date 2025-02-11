@@ -77,7 +77,7 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
+                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.Row="1" Grid.RowSpan="2">
                     <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
