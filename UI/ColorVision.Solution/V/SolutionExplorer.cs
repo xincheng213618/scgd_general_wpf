@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution.Properties;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
 using log4net;
 using Newtonsoft.Json;
@@ -16,8 +18,8 @@ namespace ColorVision.Solution.V
         private static readonly ILog log  = LogManager.GetLogger(typeof(SolutionExplorer));
         public DirectoryInfo DirectoryInfo { get; set; }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
-        public RelayCommand ClearCacheCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
+        public RelayCommand CopyFullPathCommand { get; set; }
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
@@ -26,12 +28,16 @@ namespace ColorVision.Solution.V
         public CVSolutionConfig Config { get; set; }
         
         public FileInfo ConfigFileInfo { get; set; }
-        public override bool IsExpanded { get => true; set {  } }
 
         public SolutionEnvironments SolutionEnvironments { get; set; }
-
         public SolutionExplorer(SolutionEnvironments solutionEnvironments) 
         {
+            SolutionEnvironments = solutionEnvironments;
+            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(SolutionEnvironments.SolutionPath));
+
+            DisableExpanded = true;
+            IsExpanded = true;
+
             string FullPath = solutionEnvironments.SolutionPath;
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
@@ -46,30 +52,12 @@ namespace ColorVision.Solution.V
                         DriveInfo = new DriveInfo(rootDirectory.FullName);
                     }
                 }
-
-               var config = JsonConvert.DeserializeObject<CVSolutionConfig>(File.ReadAllText(FullPath));
-                Config = config ?? new CVSolutionConfig();
-                ContextMenu = new ContextMenu();
-                OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-                ClearCacheCommand = new RelayCommand(a => { VisualChildren.Clear(); });
-                AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
-                MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
-                ContextMenu.Items.Add(menuItem);
-                MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
-                ContextMenu.Items.Add(menuItem2);
-                MenuItem menuItem3 = new() { Header = "添加" };
-                MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
-                menuItem3.Items.Add(menuItem4);
-                ContextMenu.Items.Add(menuItem3);
-                JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings();
-                EditCommand = new RelayCommand(a => {
-                    new PropertyEditorWindow(this.Config).ShowDialog();
-                    Config.ToJsonNFile(FullPath);
-                });
-                ContextMenu.Items.Add(new MenuItem() { Header = "编辑", Command = EditCommand });
-
-
+                Config = JsonConvert.DeserializeObject<CVSolutionConfig>(File.ReadAllText(FullPath)) ?? new CVSolutionConfig();
             }
+
+            OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            EditCommand = new RelayCommand(a => { new PropertyEditorWindow(this.Config).ShowDialog(); Config.ToJsonNFile(FullPath); });
 
             DriveMonitor();
             if (DirectoryInfo !=null && DirectoryInfo.Exists)
@@ -123,6 +111,18 @@ namespace ColorVision.Solution.V
             log.Info($"工程初始化时间: {_stopwatch.Elapsed.TotalSeconds} 秒");
             AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
             SaveCommand = new RelayCommand(a => SaveConfig());
+        }
+
+
+        public override void InitMenuItem()
+        {
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Edit", Order = 50, Header = "编辑解决方案", Command = EditCommand, });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = "添加" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹", Command = AddDirCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = AttributesCommand, Header = Resources.Property });
         }
 
         public void SaveConfig()

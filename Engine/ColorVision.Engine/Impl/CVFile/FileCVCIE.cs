@@ -102,8 +102,7 @@ namespace ColorVision.Engine.Impl.CVFile
                 {
                     GuidId ="Export",
                     Header = Resources.Export,
-                    Order =1,
-                    Command = ExportCommand
+                    Order = 50
                 },
                 new MenuItemMetadata()
                 {

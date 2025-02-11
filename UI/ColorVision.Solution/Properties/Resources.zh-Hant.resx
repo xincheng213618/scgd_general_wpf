@@ -141,9 +141,6 @@
   <data name="Edit" xml:space="preserve">
     <value>編輯</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>刪除</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>創建</value>
   </data>
@@ -222,16 +219,13 @@
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
     <value>在檔案總管中開啟資料夾(X)</value>
   </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>剪切(T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>複製(C)</value>
-  </data>
   <data name="NewFolder" xml:space="preserve">
     <value>新資料夾</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>及其所有內容將永久刪除。</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>刪除</value>
   </data>
 </root>

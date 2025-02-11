@@ -10,6 +10,8 @@ using System.Runtime.Serialization;
 using System.IO;
 using ColorVision.Solution.Properties;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
+using System.Windows;
 
 namespace ColorVision.Solution.V
 {
@@ -77,31 +79,104 @@ namespace ColorVision.Solution.V
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
+        public virtual bool DisableExpanded { get => _DisableExpanded; set { _DisableExpanded = value; NotifyPropertyChanged(); } }
+        private bool _DisableExpanded;
+
         public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
+
+
+
         public ContextMenu ContextMenu { get; set; }
 
+        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
 
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
             OpenCommand = new RelayCommand((s) => Open());
+            MenuItemMetadatas = new List<MenuItemMetadata>();
             DeleteCommand = new RelayCommand(s =>Delete());
-            InitContextMenu();
+            ContextMenu = new ContextMenu();
+            ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
         }
 
         public virtual void InitContextMenu()
         {
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCut, Command = ApplicationCommands.Cut });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopy, Command = ApplicationCommands.Copy });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Paste });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName });
+            var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
+
+            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
+            {
+                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                for (int i = 0; i < iMenuItems1.Count; i++)
+                {
+                    var iMenuItem = iMenuItems1[i];
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem;
+                    if (iMenuItem is IMenuItemMeta menuItemMeta)
+                    {
+                        menuItem = menuItemMeta.MenuItem;
+                    }
+                    else
+                    {
+                        menuItem = new MenuItem
+                        {
+                            Header = iMenuItem.Header,
+                            Icon = iMenuItem.Icon,
+                            InputGestureText = iMenuItem.InputGestureText,
+                            Command = iMenuItem.Command,
+                            Tag = iMenuItem,
+                            Visibility = iMenuItem.Visibility,
+                        };
+                        if (iMenuItem.Command is RelayCommand relayCommand)
+                        {
+                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+   
+                        }
+                    }
+
+                    CreateMenu(menuItem, GuidId);
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+                    parentMenuItem.Items.Add(menuItem);
+                }
+                foreach (var item in iMenuItems1)
+                {
+                    iMenuItems.Remove(item);
+                }
+            }
+
+            var iMenuItemMetas = MenuItemMetadatas.Where(item=>item.OwnerGuid ==MenuItemConstants.Menu && item.Visibility==Visibility.Visible).OrderBy(item => item.Order).ToList();
+
+            for (int i = 0; i < iMenuItemMetas.Count; i++)
+            {
+                MenuItemMetadata  menuItemMeta = iMenuItemMetas[i];
+                MenuItem menuItem = new MenuItem() 
+                { 
+                    Header = menuItemMeta.Header, 
+                    Command = menuItemMeta.Command ,
+                };
+                if (menuItemMeta.GuidId != null)
+                    CreateMenu(menuItem, menuItemMeta.GuidId);
+                if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
+                    ContextMenu.Items.Add(new Separator());
+
+                ContextMenu.Items.Add(menuItem);
+            }
         }
+        public virtual void InitMenuItem()
+        {
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.Open });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename });
+        }
+
 
         public virtual void Delete()
         {

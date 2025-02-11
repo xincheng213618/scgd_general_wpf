@@ -15,6 +15,7 @@ namespace ColorVision.Solution
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+
             SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete,   (s,e)=>
             {
                 if (SelectedTreeViewItem?.DataContext is VObject baseObject) baseObject.Delete();

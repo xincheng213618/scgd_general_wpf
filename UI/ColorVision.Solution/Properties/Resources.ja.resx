@@ -141,9 +141,6 @@
   <data name="Edit" xml:space="preserve">
     <value>編集する</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>消去</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>作成する</value>
   </data>
@@ -222,16 +219,13 @@
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
     <value>ファイルマネージャーでフォルダーを開きます（X）</value>
   </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>カット(T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>コピー(C)</value>
-  </data>
   <data name="NewFolder" xml:space="preserve">
     <value>新しいフォルダー</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>およびそのすべての内容が永久に削除されます。</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>削除</value>
   </data>
 </root>

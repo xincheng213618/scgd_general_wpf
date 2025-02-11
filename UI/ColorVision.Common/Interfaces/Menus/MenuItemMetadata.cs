@@ -1,11 +1,12 @@
 ﻿using System.Windows;
+using System.Windows.Forms.Design;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
     public class MenuItemMetadata : IMenuItem
     {
-        public string? OwnerGuid { get; set; }
+        public string? OwnerGuid { get; set; } = MenuItemConstants.Menu;
 
         public string? GuidId { get; set; }
 

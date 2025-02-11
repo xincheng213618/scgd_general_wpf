@@ -82,6 +82,9 @@
                                         <Trigger SourceName="Bd" Property="UIElement.IsMouseOver" Value="true">
                                             <Setter TargetName="Bd" Value="{DynamicResource SecondaryRegionBrush}" Property="Background" />
                                         </Trigger>
+                                        <DataTrigger Binding="{Binding DisableExpanded}" Value="True">
+                                            <Setter TargetName="Expander" Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
                                         <Trigger Property="TreeViewItem.IsExpanded" Value="false">
                                             <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
                                         </Trigger>

@@ -141,9 +141,6 @@
   <data name="Edit" xml:space="preserve">
     <value>편집</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>삭제</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>만들다</value>
   </data>
@@ -222,16 +219,13 @@
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
     <value>파일 관리자(X)에서 폴더를 엽니다.</value>
   </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>컷(T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>복사(C)</value>
-  </data>
   <data name="NewFolder" xml:space="preserve">
     <value>새 폴더</value>
   </data>
   <data name="FolderDeleteSign" xml:space="preserve">
     <value>모두 삭제됩니다.</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>삭제</value>
   </data>
 </root>

@@ -82,7 +82,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="37"/>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemIGTColumnGroup"/>
-                    <ColumnDefinition Width="17"/>
                 </Grid.ColumnDefinitions>
                 <ContentPresenter x:Name="Icon" Margin="4 1 1 1" VerticalAlignment="Center" HorizontalAlignment="Center" ContentSource="Icon" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                 <Border x:Name="GlyphPanel" Background="{DynamicResource EnvironmentCommandBarSelectedIcon}" BorderThickness="0" Margin="3 2" Visibility="Hidden" Width="18" Height="18">
@@ -90,7 +89,7 @@
                 </Border>
                 <ContentPresenter Grid.Column="2" ContentSource="Header" VerticalAlignment="Center" Margin="{TemplateBinding MenuItem.Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                 <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="{TemplateBinding MenuItem.InputGestureText}" Margin="{TemplateBinding MenuItem.Padding}" Visibility="Collapsed"/>
-                <Path Grid.Column="5" x:Name="rightArrowPath" VerticalAlignment="Center" Margin="4,0,0,0" Fill="{TemplateBinding MenuItem.Foreground}" Data="{StaticResource RightArrow}"/>
+                <Path Grid.Column="4" x:Name="rightArrowPath" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="4,0,0,0" Fill="{TemplateBinding MenuItem.Foreground}" Data="{StaticResource RightArrow}"/>
             </Grid>
             <Popup x:Name="PART_Popup" AllowsTransparency="true" Placement="Right" VerticalOffset="-3" HorizontalOffset="-2" IsOpen="{Binding Path=IsSubmenuOpen,RelativeSource={RelativeSource TemplatedParent}}" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.MenuPopupAnimationKey}}">
                 <theme:SystemDropShadowChrome Name="Shdw"  Color="Transparent">
@@ -286,8 +285,9 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-        
-        
+
+
+
     </Style>
 
     

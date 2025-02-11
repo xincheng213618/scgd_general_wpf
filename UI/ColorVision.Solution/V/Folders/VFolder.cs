@@ -6,6 +6,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Properties;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -79,24 +80,22 @@ namespace ColorVision.Solution.V.Folders
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
             AttributesCommand = new RelayCommand(a => Common.NativeMethods.FileProperties.ShowFolderProperties(DirectoryInfo.FullName));
 
-            ContextMenu.Items.Add(new Separator());
-            MenuItem menuItem5 = new() { Header = "复制完整路径", Command = CopyFullPathCommand };
-            ContextMenu.Items.Add(menuItem5);
 
-            MenuItem menuItem3 = new() { Header = "添加" };
-            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
-            menuItem3.Items.Add(menuItem4);
-            ContextMenu.Items.Add(menuItem3);
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
         }
 
         public override void InitContextMenu()
         {
             base.InitContextMenu();
+        }
 
-
+        public override void InitMenuItem()
+        {
+            base.InitMenuItem();
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = "添加" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = AttributesCommand, Header = Resources.Property });
         }
 
 

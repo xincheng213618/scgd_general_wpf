@@ -178,29 +178,11 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制(_C) 的本地化字符串。
-        /// </summary>
-        public static string MenuCopy {
-            get {
-                return ResourceManager.GetString("MenuCopy", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 复制完整路径(_U) 的本地化字符串。
         /// </summary>
         public static string MenuCopyFullPath {
             get {
                 return ResourceManager.GetString("MenuCopyFullPath", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 剪切(_T) 的本地化字符串。
-        /// </summary>
-        public static string MenuCut {
-            get {
-                return ResourceManager.GetString("MenuCut", resourceCulture);
             }
         }
         

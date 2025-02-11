@@ -53,7 +53,7 @@ namespace ColorVision.Solution.V
 
         public List<string> ManagerObject { get; set; } = new List<string>();
 
-        public  async Task GeneralChild(VObject vObject, DirectoryInfo directoryInfo)
+        public async Task GeneralChild(VObject vObject, DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {

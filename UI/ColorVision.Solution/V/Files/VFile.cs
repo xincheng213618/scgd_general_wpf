@@ -8,6 +8,7 @@ using System.Windows.Input;
 using ColorVision.UI;
 using System.Windows;
 using ColorVision.Common.Utilities;
+using System.Collections.Generic;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -26,71 +27,18 @@ namespace ColorVision.Solution.V.Files
             ToolTip = fileMeta.ToolTip;
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
-
-
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuCopyFullPath, Command = CopyFullPathCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
-
-            if (FileMeta is IContextMenuProvider menuItemProvider)
-            {
-                var iMenuItems = new List<MenuItemMetadata>();
-                iMenuItems.AddRange(menuItemProvider.GetMenuItems());
-                iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
-
-                void CreateMenu(ItemsControl parentMenuItem, string? OwnerGuid)
-                {
-                    var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
-                    for (int i = 0; i < iMenuItems1.Count; i++)
-                    {
-                        var iMenuItem = iMenuItems1[i];
-                        string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                        MenuItem menuItem;
-                        if (iMenuItem is IMenuItemMeta menuItemMeta)
-                        {
-                            menuItem = menuItemMeta.MenuItem;
-                        }
-                        else
-                        {
-                            menuItem = new MenuItem
-                            {
-                                Header = iMenuItem.Header,
-                                Icon = iMenuItem.Icon,
-                                InputGestureText = iMenuItem.InputGestureText,
-                                Command = iMenuItem.Command,
-                                Tag = iMenuItem,
-                                Visibility = iMenuItem.Visibility,
-                            };
-                        }
-
-                        CreateMenu(menuItem, GuidId);
-                        if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == System.Windows.Visibility.Visible)
-                        {
-                            parentMenuItem.Items.Add(new Separator());
-                        }
-                        parentMenuItem.Items.Add(menuItem);
-                    }
-                    foreach (var item in iMenuItems1)
-                    {
-                        iMenuItems.Remove(item);
-                    }
-                }
-
-                CreateMenu(ContextMenu, null);
-            }
-        }
-
-        public override void InitContextMenu()
-        {
             AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
-
-            base.InitContextMenu();
-
-
+        }
+        public override void InitMenuItem()
+        {
+            base.InitMenuItem();
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenFileInExplorer, Command = OpenContainingFolderCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = AttributesCommand, Header = Resources.Property });
+            if (FileMeta is IContextMenuProvider menuItemProvider)
+                MenuItemMetadatas.AddRange(menuItemProvider.GetMenuItems());
         }
 
 
