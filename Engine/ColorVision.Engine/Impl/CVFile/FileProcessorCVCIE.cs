@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Impl.FileProcessor
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageEditViewMode.ClearImage();
+                    imageView.ImageViewModel.ClearImage();
                 }));
             }
         }

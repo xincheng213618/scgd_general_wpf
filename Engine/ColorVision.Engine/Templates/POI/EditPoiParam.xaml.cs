@@ -147,7 +147,7 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageEditViewMode = new ImageEditViewMode(ImageContentGrid, Zoombox1, ImageShow);
+            ImageEditViewMode = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
 
             ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageEditViewMode;
@@ -352,7 +352,7 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public ImageEditViewMode ImageEditViewMode { get; set; }
+        public ImageViewModel ImageEditViewMode { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {

@@ -688,7 +688,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
                         ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
                         string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-                        ImageView.ImageEditViewMode.Save(saveng);
+                        ImageView.ImageViewModel.Save(saveng);
                         break;
                     case AlgorithmResultType.FOV:
                         break;

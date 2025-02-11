@@ -71,11 +71,11 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
             this.ApplyCaption();
         }
-        public ImageEditViewMode ToolBarTop { get; set; }
+        public ImageViewModel ToolBarTop { get; set; }
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ToolBarTop = new ImageEditViewMode(this, Zoombox1, ImageShow);
+            ToolBarTop = new ImageViewModel(this, Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ToolBarTop.CrosshairFunction = true;

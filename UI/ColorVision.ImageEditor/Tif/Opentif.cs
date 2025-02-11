@@ -46,7 +46,7 @@ namespace ColorVision.ImageEditor.Tif
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageEditViewMode.ClearImage();
+                    imageView.ImageViewModel.ClearImage();
                 }));
             }
         }

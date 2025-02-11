@@ -12,9 +12,9 @@ namespace ColorVision.ImageEditor.Draw
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public ImageEditViewMode Paraent { get; set; }
+        public ImageViewModel Paraent { get; set; }
 
-        public BezierCurveImp(ImageEditViewMode imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public BezierCurveImp(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             DrawCanvas = drawCanvas;

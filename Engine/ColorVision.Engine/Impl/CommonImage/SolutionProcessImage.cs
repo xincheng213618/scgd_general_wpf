@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Impl.CommonImage
 
         public void Close()
         {
-            ImageView.ImageEditViewMode.ClearImage();
+            ImageView.ImageViewModel.ClearImage();
         }
 
         public virtual void Open()

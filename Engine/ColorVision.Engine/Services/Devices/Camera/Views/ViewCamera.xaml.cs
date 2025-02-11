@@ -52,9 +52,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             View = new View();
             ImageView.SetConfig(ViewCameraConfig.Instance.ImageViewConfig);
 
-            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
-            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
-            ImageView.ImageEditViewMode.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
+            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
+            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
+            ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
             {
                 if (s is DrawingVisualScaleHost host)
                 {

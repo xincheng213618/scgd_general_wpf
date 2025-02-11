@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Media
                             int ret = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal,imageView.Config.CVCIENum/2);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
-                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
                         else
                         {
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Media
                             int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum/2);
                             string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
                             string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
 
                         break;
@@ -91,14 +91,14 @@ namespace ColorVision.Engine.Media
                             int ret = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
-                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
                         else
                         {
                             int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
                             string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
                             string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
-                            imageView.ImageEditViewMode.MouseMagnifier.DrawImage(imageInfo, text1, text2);
+                            imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
 
                         break;
@@ -109,9 +109,9 @@ namespace ColorVision.Engine.Media
 
             }
 
-            imageView.ImageEditViewMode.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
+            imageView.ImageViewModel.MouseMagnifier.ClearEventInvocations("MouseMoveColorHandler");
 
-            imageView.ImageEditViewMode.ClearImageEventHandler += (s, e) =>
+            imageView.ImageViewModel.ClearImageEventHandler += (s, e) =>
             {
                 int result = ConvertXYZ.CM_ReleaseBuffer(imageView.Config.ConvertXYZhandle);
             };
@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Media
                     CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
                     int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
                     log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
-                    imageView.ImageEditViewMode.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+                    imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
 
                     if (!File.Exists(meta.srcFileName))
                         meta.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.srcFileName);

@@ -38,7 +38,7 @@ namespace ColorVision.ImageEditor.Draw
         public ResizeMode ResizeMode { get; set; }
     }
 
-    public class ImageEditViewMode : ViewModelBase,IDisposable
+    public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniformCommand { get; set; }
@@ -101,7 +101,7 @@ namespace ColorVision.ImageEditor.Draw
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
         public IImageOpen IImageViewOpen { get; set; }
 
-        public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
+        public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));

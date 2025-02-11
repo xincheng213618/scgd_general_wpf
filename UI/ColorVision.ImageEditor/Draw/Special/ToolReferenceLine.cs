@@ -25,9 +25,9 @@ namespace ColorVision.Util.Draw.Special
         public RelayCommand Select1Command { get; set; }
         public RelayCommand Select2Command { get; set; }
 
-        public ImageEditViewMode Paraent { get; set; }
+        public ImageViewModel Paraent { get; set; }
 
-        public ToolReferenceLine(ImageEditViewMode imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolReferenceLine(ImageViewModel imageEditViewMode, ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
