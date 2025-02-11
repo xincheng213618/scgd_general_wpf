@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
 {
-    public interface IImageViewOpen
+    public interface IImageOpen
     {
         public List<string> Extension { get; }
 

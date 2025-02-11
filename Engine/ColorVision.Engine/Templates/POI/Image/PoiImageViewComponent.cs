@@ -16,7 +16,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.POI.Image
 {
-    public class PoiImageViewComponent : IImageViewComponent
+    public class PoiImageViewComponent : IImageComponent
     {
         public void Execute(ImageView imageView)
         {

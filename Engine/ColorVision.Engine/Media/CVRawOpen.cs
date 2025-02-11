@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Media
         }
     }
 
-    public class CVRawOpen : IImageViewOpen
+    public class CVRawOpen : IImageOpen
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
 

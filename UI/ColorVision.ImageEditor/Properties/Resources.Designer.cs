@@ -59,5 +59,158 @@ namespace ColorVision.ImageEditor.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   查找类似 位图缩放模式 的本地化字符串。
+        /// </summary>
+        public static string BitmapScalingMode {
+            get {
+                return ResourceManager.GetString("BitmapScalingMode", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 清空 的本地化字符串。
+        /// </summary>
+        public static string Clear {
+            get {
+                return ResourceManager.GetString("Clear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 水平翻转 的本地化字符串。
+        /// </summary>
+        public static string FlipHorizontal {
+            get {
+                return ResourceManager.GetString("FlipHorizontal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 垂直翻转 的本地化字符串。
+        /// </summary>
+        public static string FlipVertical {
+            get {
+                return ResourceManager.GetString("FlipVertical", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 全屏 的本地化字符串。
+        /// </summary>
+        public static string FullScreen {
+            get {
+                return ResourceManager.GetString("FullScreen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开 的本地化字符串。
+        /// </summary>
+        public static string Open {
+            get {
+                return ResourceManager.GetString("Open", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打印 的本地化字符串。
+        /// </summary>
+        public static string Print {
+            get {
+                return ResourceManager.GetString("Print", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 属性 的本地化字符串。
+        /// </summary>
+        public static string Property {
+            get {
+                return ResourceManager.GetString("Property", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像旋转 的本地化字符串。
+        /// </summary>
+        public static string Rotate {
+            get {
+                return ResourceManager.GetString("Rotate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 左旋转 的本地化字符串。
+        /// </summary>
+        public static string RotateLeft {
+            get {
+                return ResourceManager.GetString("RotateLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 右旋转 的本地化字符串。
+        /// </summary>
+        public static string RotateRight {
+            get {
+                return ResourceManager.GetString("RotateRight", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 截屏 的本地化字符串。
+        /// </summary>
+        public static string SaveAsImage {
+            get {
+                return ResourceManager.GetString("SaveAsImage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缩放工具 的本地化字符串。
+        /// </summary>
+        public static string Zoom {
+            get {
+                return ResourceManager.GetString("Zoom", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 放大 的本地化字符串。
+        /// </summary>
+        public static string ZoomIn {
+            get {
+                return ResourceManager.GetString("ZoomIn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 原始大小 的本地化字符串。
+        /// </summary>
+        public static string ZoomNone {
+            get {
+                return ResourceManager.GetString("ZoomNone", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 缩小 的本地化字符串。
+        /// </summary>
+        public static string ZoomOut {
+            get {
+                return ResourceManager.GetString("ZoomOut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 适应屏幕 的本地化字符串。
+        /// </summary>
+        public static string ZoomUniform {
+            get {
+                return ResourceManager.GetString("ZoomUniform", resourceCulture);
+            }
+        }
     }
 }

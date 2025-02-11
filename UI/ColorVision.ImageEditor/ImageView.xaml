@@ -135,7 +135,7 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBar1"  DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                         <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -143,16 +143,16 @@
                         <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
                         </ToggleButton>
-                        <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                        <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                        <Button Command="{Binding ZoomInCommand}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
                         </Button>
-                        <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                        <Button  Command="{Binding ZoomOutCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                        <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                         </Button>
                         <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
@@ -175,22 +175,21 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-
                         <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                             <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                         </ToggleButton>
                     </ToolBar>
                 </ToolBarTray>
-                <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <Button Click="Button_Click" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                        <Button Command="{Binding OpenImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" />
                         </Button>
-                        <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
+                        <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}" />
                         </Button>
-                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
+                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}" />
                         </Button>
                     </ToolBar>
                 </ToolBarTray>

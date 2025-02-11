@@ -370,7 +370,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             View.ImageView.ImageShow.Source = bmp;
             if (!isfist)
             {
-                View.ImageView.ImageEditViewMode.ZoomUniform.Execute(this);
+                View.ImageView.ImageEditViewMode.ZoomUniformCommand.Execute(this);
             }
             isfist = true;
         }

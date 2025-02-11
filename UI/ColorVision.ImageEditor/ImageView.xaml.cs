@@ -56,10 +56,8 @@ namespace ColorVision.ImageEditor
             View = new View();
             InitializeComponent();
             SetConfig(Config);
-            foreach (var item in ImageViewComponentManager.GetInstance().IImageViewComponents)
+            foreach (var item in ImageComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => Open(), (s, e) => { e.CanExecute = true; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = ImageShow.Source !=null; }));
         }
 
         public void Open()
@@ -113,6 +111,7 @@ namespace ColorVision.ImageEditor
             ToolBarBottom.DataContext = ImageEditViewMode;
             ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ImageEditViewMode.ClearImageEventHandler += Clear;
+            ImageEditViewMode.OpenImageEventHandler += (s, e) => OpenImage(e);
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -777,7 +776,7 @@ namespace ColorVision.ImageEditor
             _handlers.Clear();
         }
 
-        public IImageViewOpen? IImageViewOpen { get; set; }
+        public IImageOpen? IImageOpen { get; set; }
 
         public async void OpenImage(string? filePath)
         {
@@ -795,11 +794,11 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                IImageViewOpen = ImageViewComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (IImageViewOpen != null)
+                IImageOpen = ImageComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
+                if (IImageOpen != null)
                 {
-                    Config.AddProperties("ImageViewOpen", IImageViewOpen);
-                    IImageViewOpen.OpenImage(this, filePath);
+                    Config.AddProperties("ImageViewOpen", IImageOpen);
+                    IImageOpen.OpenImage(this, filePath);
                     return;
                 }
 

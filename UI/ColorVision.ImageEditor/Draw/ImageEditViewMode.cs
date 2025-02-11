@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
@@ -18,7 +19,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Draw
 {
-
     public class EditModeChangedEventArgs : EventArgs
     {
         public EditModeChangedEventArgs() { }   
@@ -41,18 +41,17 @@ namespace ColorVision.ImageEditor.Draw
     public class ImageEditViewMode : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
-        public RelayCommand ZoomUniform { get; set; }
-        public RelayCommand ZoomIncrease { get; set; }
-        public RelayCommand ZoomDecrease { get; set; }
-        public RelayCommand ZoomNone { get; set; }
-        public RelayCommand MaxCommand { get; set; }
+        public RelayCommand ZoomUniformCommand { get; set; }
+        public RelayCommand ZoomInCommand { get; set; }
+        public RelayCommand ZoomOutCommand { get; set; }
+        public RelayCommand ZoomNoneCommand { get; set; }
 
+
+        public RelayCommand FullCommand { get; set; }
         public RelayCommand RotateLeftCommand { get; set; }
         public RelayCommand RotateRightCommand { get; set; }
-
         public RelayCommand FlipHorizontalCommand { get; set; }
         public RelayCommand FlipVerticalCommand { get; set; }
-
 
         public RelayCommand SaveAsImageCommand { get; set; }
         public RelayCommand ExportImageCommand { get; set; }
@@ -60,17 +59,19 @@ namespace ColorVision.ImageEditor.Draw
         public RelayCommand ClearImageCommand { get; set; }
 
         public event EventHandler ClearImageEventHandler;
+        public event EventHandler<string> OpenImageEventHandler;
 
         public RelayCommand PrintImageCommand { get; set; }
 
         public RelayCommand OpenProperty { get; set; }
+
+        public RelayCommand OpenImageCommand { get; set; }
 
         private ZoomboxSub ZoomboxSub { get; set; }
 
         private DrawCanvas Image { get; set; }
 
         private BezierCurveImp BezierCurveImp { get; set; }
-
 
         public MouseMagnifier MouseMagnifier { get; set; }
 
@@ -87,6 +88,7 @@ namespace ColorVision.ImageEditor.Draw
 
         public DrawingVisual? SelectDrawingVisual { get; set; }
 
+
         public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
 
         public static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
@@ -97,12 +99,15 @@ namespace ColorVision.ImageEditor.Draw
 
         public ContextMenu ContextMenu { get; set; }
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
-        public IImageViewOpen IImageViewOpen { get; set; }
+        public IImageOpen IImageViewOpen { get; set; }
 
         public ImageEditViewMode(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
+            drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
+            drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => ClearImage(), (s, e) => { e.CanExecute = Image.Source != null; }));
+            OpenImageCommand = new RelayCommand(a => OpenImage());
 
             this.Parent = Parent;
             drawCanvas.PreviewMouseDown += (s, e) =>
@@ -129,10 +134,10 @@ namespace ColorVision.ImageEditor.Draw
             BezierCurveImp = new BezierCurveImp(this, zoombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image != null && Image.Source != null);
-            ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
-            ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
-            ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null &&  Image.Source != null);
-            ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
+            ZoomUniformCommand = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image != null && Image.Source != null);
+            ZoomInCommand = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image != null && Image.Source != null);
+            ZoomOutCommand = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image != null &&  Image.Source != null);
+            ZoomNoneCommand = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image != null && Image.Source != null);
 
             FlipHorizontalCommand = new RelayCommand(a => FlipHorizontal(), a => Image != null && Image.Source != null);
             FlipVerticalCommand = new RelayCommand(a =>FlipVertical(), a => Image != null && Image.Source != null);
@@ -143,11 +148,10 @@ namespace ColorVision.ImageEditor.Draw
             PrintImageCommand = new RelayCommand(a => Print(), a => Image != null && Image.Source != null);
 
             ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image != null && Image.Source != null);
-            MaxCommand = new RelayCommand(a => MaxImage());
+            FullCommand = new RelayCommand(a => MaxImage());
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
-
             ContextMenu = new ContextMenu();
             MenuItemMetadatas = new List<MenuItemMetadata>();
             ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
@@ -165,6 +169,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
             };
         }
+
 
 
         public virtual void InitContextMenu()
@@ -233,7 +238,7 @@ namespace ColorVision.ImageEditor.Draw
                 ContextMenu.Items.Add(menuItem);
             }
 
-            MenuItem menuItemBitmapScalingMode = new() { Header = "點陣圖縮放模式" };
+            MenuItem menuItemBitmapScalingMode = new() { Header = "ColorVision.ImageEditor.Properties.Resources.BitmapScalingMode };
             void UpdateBitmapScalingMode()
             {
                 var ime = RenderOptions.GetBitmapScalingMode(Image);
@@ -260,25 +265,35 @@ namespace ColorVision.ImageEditor.Draw
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = "缩放工具" });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 1, Header = "放大" ,Command = ZoomIncrease });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 2, Header = "缩小", Command = ZoomDecrease });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 3, Header = "原始大小", Command = ZoomNone });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIncrease", Order = 4, Header = "适应屏幕", Command = ZoomUniform });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Zoom", Order = 100, Header = Properties.Resources.Zoom });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomIn", Order = 1, Header = Properties.Resources.ZoomIn, Command = ZoomInCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomOut", Order = 2, Header = Properties.Resources.ZoomOut, Command = ZoomOutCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomNone", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.ZoomNone, Command = ZoomNoneCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Zoom", GuidId = "ZoomUniform", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.ZoomUniform, Command = ZoomUniformCommand });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() {GuidId = "Rotate", Order = 101, Header = "图像旋转"});
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeftCommand", Order = 1, Header = "左旋转", Command = RotateLeftCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRightCommand", Order = 2, Header = "右旋转", Command = RotateRightCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontalCommand", Order = 3, Header = "水平翻转", Command = FlipHorizontalCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVerticalCommand", Order = 4, Header = "垂直翻转", Command = FlipVerticalCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() {GuidId = "Rotate", Order = 101, Header = ColorVision.ImageEditor.Properties.Resources.Rotate});
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateLeft", Order = 1, Header = ColorVision.ImageEditor.Properties.Resources.RotateLeft, Command = RotateLeftCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "RotateRight", Order = 2, Header = ColorVision.ImageEditor.Properties.Resources.RotateRight, Command = RotateRightCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipHorizontal", Order = 3, Header = ColorVision.ImageEditor.Properties.Resources.FlipHorizontal, Command = FlipHorizontalCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Rotate", GuidId = "FlipVertical", Order = 4, Header = ColorVision.ImageEditor.Properties.Resources.FlipVertical, Command = FlipVerticalCommand });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Max", Order = 200, Header = "全屏", Command = MaxCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 300, Header = "清空", Command = ClearImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = "截屏", Command = SaveAsImageCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = "打印", Command = PrintImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Full", Order = 200, Header = ColorVision.ImageEditor.Properties.Resources.FullScreen, Command = FullCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "SaveAsImage", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.SaveAsImage, Command = SaveAsImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Print", Order = 300, Header = ColorVision.ImageEditor.Properties.Resources.Print, Command = PrintImageCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = OpenProperty, Header = ColorVision.ImageEditor.Properties.Resources.Property });
         }
 
-
+        public void OpenImage()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                OpenImageEventHandler?.Invoke(this, openFileDialog.FileName);
+            }
+        }
 
         public void Print()
         {
@@ -691,12 +706,12 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Add || e.Key == Key.I))
                 {
-                    ZoomIncrease.RaiseExecute(e);
+                    ZoomInCommand.RaiseExecute(e);
                     e.Handled = true;
                 }
                 else if (Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Subtract || e.Key == Key.O))
                 {
-                    ZoomDecrease.RaiseExecute(e);
+                    ZoomOutCommand.RaiseExecute(e);
                     e.Handled = true;
                 }
                 else if( Keyboard.IsKeyDown(Key.LeftCtrl) && (e.Key == Key.Left || e.Key == Key.A))
@@ -742,12 +757,12 @@ namespace ColorVision.ImageEditor.Draw
             {
                 if (e.Key == Key.Add)
                 {
-                    ZoomIncrease.RaiseExecute(e);
+                    ZoomInCommand.RaiseExecute(e);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Subtract)
                 {
-                    ZoomDecrease.RaiseExecute(e);
+                    ZoomOutCommand.RaiseExecute(e);
                     e.Handled = true;
                 }
                 else if (e.Key == Key.Left)

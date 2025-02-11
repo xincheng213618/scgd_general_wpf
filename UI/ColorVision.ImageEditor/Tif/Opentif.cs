@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
-    public class Opentif : IImageViewOpen, IFileProcessor
+    public class Opentif : IImageOpen, IFileProcessor
     {
         public string GetExtension() => "图像文件 (*.tif)|*.tif";
 

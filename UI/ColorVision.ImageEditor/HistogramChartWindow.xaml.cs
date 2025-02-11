@@ -22,6 +22,7 @@ namespace ColorVision.ImageEditor
         public static HistogramChartConfig Instance => ConfigService.Instance.GetRequiredService<HistogramChartConfig>();
 
     }
+
     /// <summary>
     /// HistogramChartWindow.xaml 的交互逻辑
     /// </summary>
