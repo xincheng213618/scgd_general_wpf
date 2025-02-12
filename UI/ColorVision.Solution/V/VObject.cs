@@ -170,7 +170,6 @@ namespace ColorVision.Solution.V
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen , Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Crtl+X" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Crtl+C" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Crtl+V" });
