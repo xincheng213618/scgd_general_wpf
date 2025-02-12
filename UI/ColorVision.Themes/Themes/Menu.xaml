@@ -284,15 +284,21 @@
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="Background"   Value="{DynamicResource SubMenuBrushKey}" />
         <Setter Property="BorderBrush" Value="{DynamicResource SubMenuBorderBrushKey}"/>
-        <Setter Property="Opacity" Value="1"/>
+        <Setter Property="Opacity" Value="0.975"/>
         <Setter Property="Grid.IsSharedSizeScope"  Value="true" />
         <Setter Property="HasDropShadow" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ContextMenu}">
-                    <Border x:Name="Border"  Background="{TemplateBinding Background}"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="3" Opacity="{TemplateBinding Opacity}">
-                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" Margin="1,2"/>
-                    </Border>
+                    <Grid >
+                        <Border x:Name="Border"  Background="{TemplateBinding Background}"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="3" Opacity="{TemplateBinding Opacity}">
+                        </Border>
+                        <Border Background="Transparent"  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="3">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle"  Margin="1,2"/>
+                        </Border>
+
+                    </Grid>
+ 
                     <ControlTemplate.Triggers>
                         <Trigger Property="HasDropShadow" Value="true">
                             <Setter TargetName="Border" Property="Padding" Value="1,1,1,1" />
