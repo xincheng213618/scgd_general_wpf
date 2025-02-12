@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI.Properties;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus.Base.File
@@ -9,6 +10,7 @@ namespace ColorVision.UI.Menus.Base.File
         public override string Header => Resources.MenuPrint;
         public override int Order => 50;
         public override string InputGestureText => "Ctrl+P";
+        public override object? Icon => Application.Current.TryFindResource("DIPrint");
         public override ICommand Command => ApplicationCommands.Print;
     }
 }

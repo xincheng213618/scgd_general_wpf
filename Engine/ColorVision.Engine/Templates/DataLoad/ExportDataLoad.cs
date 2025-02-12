@@ -1,9 +1,7 @@
 ﻿namespace ColorVision.Engine.Templates.DataLoad
 {
-    public class ExportDataLoad : ExportTemplateBase
+    public class ExportDataLoad : MenuITemplateAlgorithmBase
     {
-        public override string OwnerGuid => "TemplateAlgorithm";
-        public override string GuidId => "DataLoad";
         public override string Header => "数据加载模板设置";
         public override int Order => 0;
         public override ITemplate Template => new TemplateDataLoad();

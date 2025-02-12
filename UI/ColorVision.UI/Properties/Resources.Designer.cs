@@ -403,6 +403,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重做(_R) 的本地化字符串。
+        /// </summary>
+        public static string MenuRedo {
+            get {
+                return ResourceManager.GetString("MenuRedo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重命名(_M) 的本地化字符串。
         /// </summary>
         public static string MenuRename {

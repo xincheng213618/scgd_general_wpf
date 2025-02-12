@@ -27,20 +27,21 @@ namespace ColorVision.Solution.V.Files
             ToolTip = fileMeta.ToolTip;
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
-            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfo.FullName), a => true);
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
         }
         public override void InitMenuItem()
         {
             base.InitMenuItem();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" , Icon = Application.Current.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenFileInExplorer, Command = OpenContainingFolderCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = AttributesCommand, Header = Resources.Property });
             if (FileMeta is IContextMenuProvider menuItemProvider)
                 MenuItemMetadatas.AddRange(menuItemProvider.GetMenuItems());
         }
-
+        public override void ShowProperty()
+        {
+            FileProperties.ShowFileProperties(FileInfo.FullName);
+        }
 
         public override void Open()
         {

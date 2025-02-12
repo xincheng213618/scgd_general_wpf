@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI.Properties;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus.Base.Edit
@@ -7,9 +8,9 @@ namespace ColorVision.UI.Menus.Base.Edit
     {
         public override string GuidId => "Paste";
         public override string Header => Resources.MenuPaste;
-        public override int Order => 20;
-
+        public override int Order => 22;
         public override ICommand Command => ApplicationCommands.Paste;
+        public override object? Icon => Application.Current.TryFindResource("DIPaste");
         public override string InputGestureText => "Ctrl+V";
 
     }

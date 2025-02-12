@@ -1,9 +1,7 @@
 ﻿namespace ColorVision.Engine.Templates.POI.POIOutput
 {
-    public class ExportPoiOutput : ExportTemplateBase
+    public class MenuPoiOutput : MenuTemplatePoiBase
     {
-        public override string OwnerGuid => "TemplatePOI";
-        public override string GuidId => "PoiOutput";
         public override string Header => "Poi文件输出模板设置";
         public override int Order => 4;
 

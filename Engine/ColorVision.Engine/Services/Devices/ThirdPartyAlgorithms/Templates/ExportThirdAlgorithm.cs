@@ -8,10 +8,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public class ExportMenuItemThirdPartyAlgorithms: MenuItemBase
+    public class MenuThirdPartyAlgorithms: MenuItemBase
     {
-        public override string OwnerGuid => "Template";
-        public override string GuidId => "ThirdPartyAlgorithms";
+        public override string OwnerGuid => nameof(MenuTemplate);
         public override string Header => ColorVision.Engine.Properties.Resources.EditThirdPartyAlgorithmTemplate;
         public override int Order => 4;
     }
@@ -28,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 MenuItemMetadata menuitemdll = new MenuItemMetadata();
                 menuitemdll.Header = dll.Name;
                 menuitemdll.GuidId = dll.Code;
-                menuitemdll.OwnerGuid = "ThirdPartyAlgorithms";
+                menuitemdll.OwnerGuid = nameof(MenuThirdPartyAlgorithms);
                 items.Add(menuitemdll);
 
                 var mods = ThirdPartyAlgorithmsDao.Instance.GetAllByPid(dll.Id);

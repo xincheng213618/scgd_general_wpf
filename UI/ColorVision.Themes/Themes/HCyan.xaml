@@ -1,5 +1,8 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:system="clr-namespace:System;assembly=mscorlib">
 
+    <Color x:Key="defaultgrey">#212121</Color>
+
+
     <Color x:Key="LightPrimaryColor">#D1E8EB</Color>
     <Color x:Key="PrimaryColor">#00ACC1</Color>
     <!-- 强调色 -->

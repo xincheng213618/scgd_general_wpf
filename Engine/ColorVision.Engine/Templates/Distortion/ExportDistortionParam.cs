@@ -1,9 +1,7 @@
 ﻿namespace ColorVision.Engine.Templates.Distortion
 {
-    public class ExportDistortionParam : ExportTemplateBase
+    public class ExportDistortionParam : MenuITemplateAlgorithmBase
     {
-        public override string OwnerGuid => "TemplateAlgorithm";
-        public override string GuidId => "DistortionParam";
         public override string Header => Properties.Resources.MenuDistortion;
         public override int Order => 3;
         public override ITemplate Template => new TemplateDistortionParam();

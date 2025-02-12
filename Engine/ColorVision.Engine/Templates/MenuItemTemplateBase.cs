@@ -4,9 +4,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates
 {
-    public abstract class ExportTemplateBase: MenuItemBase
+    public abstract class MenuItemTemplateBase: MenuItemBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => nameof(MenuTemplate);
 
         public override void Execute()
         {

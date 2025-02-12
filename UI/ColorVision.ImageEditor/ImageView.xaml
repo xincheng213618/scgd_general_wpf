@@ -155,7 +155,7 @@
                         <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                         </Button>
-                        <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
+                        <ToggleButton Command="{Binding FullCommand}" Margin="1,0" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                         </ToggleButton>
                         <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>

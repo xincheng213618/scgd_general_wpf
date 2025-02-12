@@ -279,4 +279,7 @@
   <data name="IsAutoSelect" xml:space="preserve">
     <value>자동 선택 여부</value>
   </data>
+  <data name="MenuRedo" xml:space="preserve">
+    <value>다시 하기</value>
+  </data>
 </root>

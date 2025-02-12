@@ -385,7 +385,6 @@ namespace ColorVision.Engine.Templates.POI
         }
 
 
-        private LedPicData ledPicData;
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -411,8 +410,6 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    ledPicData ??= new LedPicData();
-                    ledPicData.picUrl = filePath;
                     OpenImage(filePath);
                     PoiConfig.BackgroundFilePath = filePath;
                 }

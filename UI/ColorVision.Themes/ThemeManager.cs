@@ -57,11 +57,8 @@ namespace ColorVision.Themes
             ApplyActTheme(app,theme);
         }
 
-        public static List<string> ResourceDictionaryDark { get; set; } = new List<string>()
+        public static List<string> ResourceDictionaryBase { get; set; } = new List<string>()
         {
-            "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
-            "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Themes;component/Themes/Dark.xaml",
             "/ColorVision.Themes;component/Themes/Base.xaml",
             "/ColorVision.Themes;component/Themes/Menu.xaml",
             "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
@@ -69,16 +66,18 @@ namespace ColorVision.Themes
             "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
+        public static List<string> ResourceDictionaryDark { get; set; } = new List<string>()
+        {
+            "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision.Themes;component/Themes/Dark.xaml",
+        };
+
         public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
         {
             "/HandyControl;component/Themes/basic/colors/colors.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Themes;component/Themes/White.xaml",
-            "/ColorVision.Themes;component/Themes/Base.xaml",
-            "/ColorVision.Themes;component/Themes/Menu.xaml",
-            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Themes;component/Themes/Icons.xaml",
-            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
         public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
@@ -87,11 +86,6 @@ namespace ColorVision.Themes
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Themes;component/Themes/White.xaml",
             "/ColorVision.Themes;component/Themes/Pink.xaml",
-            "/ColorVision.Themes;component/Themes/Base.xaml",
-            "/ColorVision.Themes;component/Themes/Menu.xaml",
-            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Themes;component/Themes/Icons.xaml",
-            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
         public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
         {
@@ -99,11 +93,6 @@ namespace ColorVision.Themes
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Themes;component/Themes/White.xaml",
             "/ColorVision.Themes;component/Themes/Cyan.xaml",
-            "/ColorVision.Themes;component/Themes/Base.xaml",
-            "/ColorVision.Themes;component/Themes/Menu.xaml",
-            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Themes;component/Themes/Icons.xaml",
-            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
         private void ApplyActTheme(Application app, Theme theme)
@@ -127,6 +116,11 @@ namespace ColorVision.Themes
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
                     }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.Dark:
                     var dark = new Wpf.Ui.Markup.ThemesDictionary();
@@ -135,6 +129,11 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
                     foreach (var item in ResourceDictionaryDark)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    foreach (var item in ResourceDictionaryBase)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
@@ -151,6 +150,11 @@ namespace ColorVision.Themes
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
                     }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.Cyan:
                     var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
@@ -162,12 +166,18 @@ namespace ColorVision.Themes
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
                     }
+                    foreach (var item in ResourceDictionaryBase)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
                     break;
                 case Theme.UseSystem:
                     break;
                 default:
                     break;
             }
+
             CurrentUITheme = theme;
         }
 

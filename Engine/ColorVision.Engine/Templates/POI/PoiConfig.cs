@@ -60,7 +60,6 @@ namespace ColorVision.Engine.Templates.POI
         private float _Threshold = 50;
     }
 
-
     public class PoiConfig : ViewModelBase
     {
         public RelayCommand SetPoiFileCommand { get; set; }
@@ -80,7 +79,6 @@ namespace ColorVision.Engine.Templates.POI
 
         public string? TemplateMatchingFilePath { get => _TemplateMatchingFilePath; set { _TemplateMatchingFilePath = value; NotifyPropertyChanged(); } }
         private string? _TemplateMatchingFilePath;
-
 
         public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
         private string? _PoiFixFilePath;

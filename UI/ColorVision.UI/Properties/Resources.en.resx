@@ -279,4 +279,7 @@
   <data name="IsAutoSelect" xml:space="preserve">
     <value>IsAutoSelect</value>
   </data>
+  <data name="MenuRedo" xml:space="preserve">
+    <value> _Redo</value>
+  </data>
 </root>

@@ -8,22 +8,19 @@ namespace ColorVision.Engine.Templates.Validate
 {
     public class ExportComply : MenuItemBase
     {
-        public override string OwnerGuid => "Template";
-        public override string GuidId => "Validate";
+        public override string OwnerGuid => nameof(MenuTemplate);
         public override int Order => 4;
         public override string Header => Properties.Resources.MenuValidue;
     }
     public class ExportComplyPoint : MenuItemBase
     {
-        public override string OwnerGuid => "Validate";
-        public override string GuidId => "ExportComplyPoint";
+        public override string OwnerGuid => nameof(ExportComply);
         public override int Order => 2;
         public override string Header => "点";
     }
     public class ExportComplyPointList : MenuItemBase
     {
-        public override string OwnerGuid => "Validate";
-        public override string GuidId => "ExportComplyPointList";
+        public override string OwnerGuid => nameof(ExportComply);
         public override int Order => 2;
         public override string Header => "点集";
     }
@@ -41,7 +38,7 @@ namespace ColorVision.Engine.Templates.Validate
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
                 menuItemMetadata.Order = 1;
                 menuItemMetadata.Header = item.Name;
-                menuItemMetadata.OwnerGuid = "ExportComplyPoint";
+                menuItemMetadata.OwnerGuid = nameof(ExportComplyPoint);
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
                     new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -55,7 +52,7 @@ namespace ColorVision.Engine.Templates.Validate
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
                 menuItemMetadata.Order = 20;
                 menuItemMetadata.Header = item.Name;
-                menuItemMetadata.OwnerGuid = "ExportComplyPointList";
+                menuItemMetadata.OwnerGuid = nameof(ExportComplyPointList);
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
                     new TemplateEditorWindow(new TemplateComplyParam(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -69,7 +66,7 @@ namespace ColorVision.Engine.Templates.Validate
                 MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
                 menuItemMetadata.Order = 50;
                 menuItemMetadata.Header = item.Name;
-                menuItemMetadata.OwnerGuid = "ExportComplyPoint";
+                menuItemMetadata.OwnerGuid = nameof(ExportComplyPoint);
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
                     new TemplateEditorWindow(new TemplateComplyParam(item.Code, 1)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

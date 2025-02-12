@@ -5,7 +5,6 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
-using ColorVision.UI.Menus;
 using CVCommCore;
 using Newtonsoft.Json;
 using System;
@@ -18,22 +17,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-    public class MenuFlowMeta : MenuItemBase
-    {
-        public override string OwnerGuid => "Template";
-        public override string GuidId => nameof(MenuFlowMeta);
-        public override int Order => 0;
-        public override string Header => Properties.Resources.MenuFlow;
-        public override void Execute()
-        {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new TemplateEditorWindow(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-    }
 
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {

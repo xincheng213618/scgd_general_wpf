@@ -2,9 +2,9 @@
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 {
-    public class ExportAutoExpTime : ExportTemplateBase
+    public class ExportAutoExpTime : MenuItemTemplateBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => nameof(MenuTemplate);
         public override string GuidId => "AutoExpTime";
         public override string Header => Properties.Resources.AutoExploreTemplate;
         public override int Order => 23;

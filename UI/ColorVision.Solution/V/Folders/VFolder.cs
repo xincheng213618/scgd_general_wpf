@@ -3,10 +3,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -78,9 +80,6 @@ namespace ColorVision.Solution.V.Folders
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
-            AttributesCommand = new RelayCommand(a => Common.NativeMethods.FileProperties.ShowFolderProperties(DirectoryInfo.FullName));
-
-
         }
 
         public override void InitContextMenu()
@@ -93,11 +92,14 @@ namespace ColorVision.Solution.V.Folders
             base.InitMenuItem();
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = "添加" });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径"  });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = AttributesCommand, Header = Resources.Property });
         }
 
+        public override void ShowProperty()
+        {
+            FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
+        }
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
 

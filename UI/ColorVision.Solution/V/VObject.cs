@@ -74,7 +74,7 @@ namespace ColorVision.Solution.V
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
 
-        public RelayCommand AttributesCommand { get; set; }
+        public RelayCommand PropertyCommand { get; set; }
 
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
@@ -98,6 +98,7 @@ namespace ColorVision.Solution.V
             OpenCommand = new RelayCommand((s) => Open());
             MenuItemMetadatas = new List<MenuItemMetadata>();
             DeleteCommand = new RelayCommand(s =>Delete());
+            PropertyCommand = new RelayCommand(s => ShowProperty());
             ContextMenu = new ContextMenu();
             ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
         }
@@ -158,6 +159,7 @@ namespace ColorVision.Solution.V
                 { 
                     Header = menuItemMeta.Header, 
                     Command = menuItemMeta.Command ,
+                    Icon  = menuItemMeta.Icon
                 };
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
@@ -169,12 +171,20 @@ namespace ColorVision.Solution.V
         }
         public virtual void InitMenuItem()
         {
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.Open });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.Open , Icon = Application.Current.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = Application.Current.TryFindResource("DICut") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = Application.Current.TryFindResource("DICopy")});
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =Application.Current.TryFindResource("DIPaste")});
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = Application.Current.TryFindResource("DIDelete") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = Application.Current.TryFindResource("DIRename") });
+
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = Resources.Property, Icon = Application.Current.TryFindResource("DIProperty") });
+
+        }
+
+        public virtual void ShowProperty()
+        {
+
         }
 
 

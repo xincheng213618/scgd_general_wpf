@@ -6,11 +6,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
 {
-    public class ExportDicSensor : MenuItemBase
+    public class MenuEditDicSensor : MenuItemBase
     {
-        public override string OwnerGuid => "TemplateSensor";
-
-        public override string GuidId => "TemplateSensorEdit";
+        public override string OwnerGuid => nameof(MenuTemplateSensor);
         public override int Order => 99;
         public override string Header => "编辑默认传感器字典";
 

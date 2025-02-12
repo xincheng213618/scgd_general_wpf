@@ -259,4 +259,7 @@
   <data name="IsAutoSelect" xml:space="preserve">
     <value>自动选择</value>
   </data>
+  <data name="MenuRedo" xml:space="preserve">
+    <value>重做(_R)</value>
+  </data>
 </root>

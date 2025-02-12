@@ -7,9 +7,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
     public class ExportCameraExp : MenuItemBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => nameof(MenuTemplate);
 
-        public override string GuidId => "CameraExposureParam";
         public override int Order => 22;
         public override string Header => "相机模板";   
 
