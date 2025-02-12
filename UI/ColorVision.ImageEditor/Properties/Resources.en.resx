@@ -121,10 +121,10 @@
     <value>Zoom</value>
   </data>
   <data name="ZoomIn" xml:space="preserve">
-    <value>Zoom In</value>
+    <value>ZoomIn</value>
   </data>
   <data name="ZoomOut" xml:space="preserve">
-    <value>Zoom Out</value>
+    <value>ZoomOut</value>
   </data>
   <data name="ZoomNone" xml:space="preserve">
     <value>Original</value>
@@ -133,34 +133,34 @@
     <value>Uniform</value>
   </data>
   <data name="Property" xml:space="preserve">
-    <value>Attribute</value>
+    <value>P_roperty</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>open</value>
+    <value>_Open</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>clear</value>
+    <value>_Close</value>
   </data>
   <data name="Rotate" xml:space="preserve">
-    <value>Image rotation</value>
+    <value>Rotate</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
-    <value>rotate left</value>
+    <value>RotateLeft</value>
   </data>
   <data name="RotateRight" xml:space="preserve">
-    <value>turn right</value>
+    <value>RotateRight</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>horizontal flip</value>
+    <value>Flip_Horizontal</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>vertical flip</value>
+    <value>Flip_Vertical</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
     <value>Fullscreen</value>
   </data>
   <data name="Print" xml:space="preserve">
-    <value>print</value>
+    <value>Print</value>
   </data>
   <data name="SaveAsImage" xml:space="preserve">
     <value>screenshot</value>

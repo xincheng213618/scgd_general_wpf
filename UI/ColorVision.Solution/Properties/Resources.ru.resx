@@ -228,4 +228,13 @@
   <data name="Delete" xml:space="preserve">
     <value>удалить</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>открыть</value>
+  </data>
+  <data name="MenuProperty" xml:space="preserve">
+    <value>атрибут(_R)</value>
+  </data>
+  <data name="MenuAdd" xml:space="preserve">
+    <value>добавить</value>
+  </data>
 </root>

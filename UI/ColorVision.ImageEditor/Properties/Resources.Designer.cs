@@ -70,7 +70,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清空 的本地化字符串。
+        ///   查找类似 清空(_C) 的本地化字符串。
         /// </summary>
         public static string Clear {
             get {
@@ -79,7 +79,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 水平翻转 的本地化字符串。
+        ///   查找类似 水平翻转(_H) 的本地化字符串。
         /// </summary>
         public static string FlipHorizontal {
             get {
@@ -88,7 +88,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 垂直翻转 的本地化字符串。
+        ///   查找类似 垂直翻转(_V) 的本地化字符串。
         /// </summary>
         public static string FlipVertical {
             get {
@@ -106,7 +106,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 打开 的本地化字符串。
+        ///   查找类似 打开(_O) 的本地化字符串。
         /// </summary>
         public static string Open {
             get {
@@ -124,7 +124,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 属性 的本地化字符串。
+        ///   查找类似 属性(_R) 的本地化字符串。
         /// </summary>
         public static string Property {
             get {
@@ -142,7 +142,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 左旋转 的本地化字符串。
+        ///   查找类似 左旋转(_L) 的本地化字符串。
         /// </summary>
         public static string RotateLeft {
             get {
@@ -151,7 +151,7 @@ namespace ColorVision.ImageEditor.Properties {
         }
         
         /// <summary>
-        ///   查找类似 右旋转 的本地化字符串。
+        ///   查找类似 右旋转(_R) 的本地化字符串。
         /// </summary>
         public static string RotateRight {
             get {

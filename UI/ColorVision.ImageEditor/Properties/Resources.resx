@@ -113,28 +113,28 @@
     <value>适应屏幕</value>
   </data>
   <data name="Property" xml:space="preserve">
-    <value>属性</value>
+    <value>属性(_R)</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>打开</value>
+    <value>打开(_O)</value>
   </data>
   <data name="Clear" xml:space="preserve">
-    <value>清空</value>
+    <value>清空(_C)</value>
   </data>
   <data name="Rotate" xml:space="preserve">
     <value>图像旋转</value>
   </data>
   <data name="RotateLeft" xml:space="preserve">
-    <value>左旋转</value>
+    <value>左旋转(_L)</value>
   </data>
   <data name="RotateRight" xml:space="preserve">
-    <value>右旋转</value>
+    <value>右旋转(_R)</value>
   </data>
   <data name="FlipHorizontal" xml:space="preserve">
-    <value>水平翻转</value>
+    <value>水平翻转(_H)</value>
   </data>
   <data name="FlipVertical" xml:space="preserve">
-    <value>垂直翻转</value>
+    <value>垂直翻转(_V)</value>
   </data>
   <data name="FullScreen" xml:space="preserve">
     <value>全屏</value>

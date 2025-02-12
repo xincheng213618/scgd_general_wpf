@@ -46,9 +46,9 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" >
+        <Grid Grid.Row="1"  Margin="0,3,0,0">
             <DockPanel>
-                <Button Grid.Column="1" Margin="5,1,5,0" DockPanel.Dock="Right" Command="{Binding SettingCommand}" Padding="2" Height="25" Width="25" >
+                <Button Grid.Column="1" Margin="3,0,3,0" DockPanel.Dock="Right" Command="{Binding SettingCommand}" Padding="2" Height="28" Width="28" >
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
                             <BeginStoryboard>
@@ -65,7 +65,7 @@
                     </TextBlock>
                 </Button>
 
-                <hc:SearchBar x:Name="SearchBar1"  Margin="3,0,3,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
+                <hc:SearchBar x:Name="SearchBar1"  Margin="5,0,0,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
 
             </DockPanel>
         </Grid>

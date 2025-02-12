@@ -178,11 +178,29 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加(_D) 的本地化字符串。
+        /// </summary>
+        public static string MenuAdd {
+            get {
+                return ResourceManager.GetString("MenuAdd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制完整路径(_U) 的本地化字符串。
         /// </summary>
         public static string MenuCopyFullPath {
             get {
                 return ResourceManager.GetString("MenuCopyFullPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开(_O) 的本地化字符串。
+        /// </summary>
+        public static string MenuOpen {
+            get {
+                return ResourceManager.GetString("MenuOpen", resourceCulture);
             }
         }
         
@@ -201,6 +219,15 @@ namespace ColorVision.Solution.Properties {
         public static string MenuOpenFileInExplorer {
             get {
                 return ResourceManager.GetString("MenuOpenFileInExplorer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 属性(_R) 的本地化字符串。
+        /// </summary>
+        public static string MenuProperty {
+            get {
+                return ResourceManager.GetString("MenuProperty", resourceCulture);
             }
         }
         

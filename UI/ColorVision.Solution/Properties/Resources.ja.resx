@@ -228,4 +228,13 @@
   <data name="Delete" xml:space="preserve">
     <value>削除</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>開ける</value>
+  </data>
+  <data name="MenuProperty" xml:space="preserve">
+    <value>属性(_R)</value>
+  </data>
+  <data name="MenuAdd" xml:space="preserve">
+    <value>追加</value>
+  </data>
 </root>

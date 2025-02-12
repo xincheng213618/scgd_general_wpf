@@ -118,7 +118,7 @@ namespace ColorVision.Solution.V
         {
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Edit", Order = 50, Header = "编辑解决方案", Command = EditCommand, });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = "添加" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹", Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" , Icon = MenuItemIcon.TryFindResource("DICopyFullPath") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });   

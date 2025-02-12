@@ -170,13 +170,13 @@ namespace ColorVision.Solution.V
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.Open , Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen , Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy")});
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste")});
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename") });
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = Resources.Property, Icon = MenuItemIcon.TryFindResource("DIProperty") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
 
         }
 

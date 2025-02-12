@@ -133,7 +133,7 @@
     <value>適應螢幕</value>
   </data>
   <data name="Property" xml:space="preserve">
-    <value>屬性</value>
+    <value>屬性(_R)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>打開</value>

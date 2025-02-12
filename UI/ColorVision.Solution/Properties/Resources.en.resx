@@ -228,4 +228,13 @@
   <data name="Delete" xml:space="preserve">
     <value>Delete</value>
   </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>_Open</value>
+  </data>
+  <data name="MenuProperty" xml:space="preserve">
+    <value>P_roperty</value>
+  </data>
+  <data name="MenuAdd" xml:space="preserve">
+    <value>_Add</value>
+  </data>
 </root>
