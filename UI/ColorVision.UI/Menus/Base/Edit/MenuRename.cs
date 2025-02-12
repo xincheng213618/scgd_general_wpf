@@ -10,7 +10,7 @@ namespace ColorVision.UI.Menus.Base.Edit
         public override string Header => Resources.MenuRename;
         public override int Order => 99;
         public override ICommand Command => Commands.ReName;
-        public override object? Icon => Application.Current.TryFindResource("DIRename");
+        public override object? Icon => MenuItemIcon.TryFindResource("DIRename");
 
         public override string InputGestureText => "F2";
     }

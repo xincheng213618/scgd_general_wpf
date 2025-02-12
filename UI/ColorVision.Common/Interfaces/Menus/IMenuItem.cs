@@ -1,8 +1,23 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace ColorVision.UI.Menus
 {
+    public static class MenuItemIcon
+    {
+        public static object? TryFindResource(object resourceKey)
+        {
+            if (Application.Current.TryFindResource(resourceKey) is Brush brush)
+            {
+                return new Viewbox() { Height = 16, Width = 16, Child = new Rectangle() { Fill = brush, Height = 16, Width = 16 } };
+            }
+            return null;
+        }
+    }
+
     public static class MenuItemConstants
     {
         public const string Menu = "Menu";

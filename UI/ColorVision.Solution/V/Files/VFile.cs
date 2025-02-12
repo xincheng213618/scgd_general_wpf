@@ -33,7 +33,7 @@ namespace ColorVision.Solution.V.Files
         public override void InitMenuItem()
         {
             base.InitMenuItem();
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" , Icon = Application.Current.TryFindResource("DICopyFullPath") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenFileInExplorer, Command = OpenContainingFolderCommand });
             if (FileMeta is IContextMenuProvider menuItemProvider)
                 MenuItemMetadatas.AddRange(menuItemProvider.GetMenuItems());

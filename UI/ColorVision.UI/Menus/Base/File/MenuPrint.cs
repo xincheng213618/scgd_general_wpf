@@ -10,7 +10,7 @@ namespace ColorVision.UI.Menus.Base.File
         public override string Header => Resources.MenuPrint;
         public override int Order => 50;
         public override string InputGestureText => "Ctrl+P";
-        public override object? Icon => Application.Current.TryFindResource("DIPrint");
+        public override object? Icon => MenuItemIcon.TryFindResource("DIPrint");
         public override ICommand Command => ApplicationCommands.Print;
     }
 }

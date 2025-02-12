@@ -13,7 +13,7 @@ namespace ColorVision.UI.Menus.Base.Edit
         public override string Header => Resources.MenuCut;
         public override int Order => 20;
         public override ICommand Command => ApplicationCommands.Cut;
-        public override object? Icon => Application.Current.TryFindResource("DICut");
+        public override object? Icon => MenuItemIcon.TryFindResource("DICut");
         public override string InputGestureText => "Ctrl+X";
 
     }
