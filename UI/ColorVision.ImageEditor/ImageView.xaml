@@ -159,7 +159,7 @@
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                         </ToggleButton>
                         <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-                        <Button   Command="{Binding OpenProperty}" Margin="1,0" Padding="5">
+                        <Button   Command="{Binding PropertyCommand}" Margin="1,0" Padding="5">
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>

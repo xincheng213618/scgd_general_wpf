@@ -15,7 +15,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
-                    <Grid SnapsToDevicePixels="true" UseLayoutRounding="False" Margin="0 1 0 0">
+                    <Grid SnapsToDevicePixels="true" UseLayoutRounding="False" Margin="0 1 0 1">
                         <Rectangle Height="1" Fill="{DynamicResource MenuItemSeparatorFillTop}"/>
                     </Grid>
                 </ControlTemplate>
