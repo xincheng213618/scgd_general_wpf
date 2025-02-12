@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -12,7 +13,10 @@ namespace ColorVision.UI.Menus
         {
             if (Application.Current.TryFindResource(resourceKey) is Brush brush)
             {
-                return new Viewbox() { Height = 16, Width = 16, Child = new Rectangle() { Fill = brush, Height = 16, Width = 16 } };
+                var rectangle = new Rectangle() { Height = 16, Width = 16 };
+                rectangle.SetResourceReference(Rectangle.FillProperty, resourceKey);
+                return new Viewbox() { Height = 16, Width = 16, Child = rectangle };
+
             }
             return null;
         }

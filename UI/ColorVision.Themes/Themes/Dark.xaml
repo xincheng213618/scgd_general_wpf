@@ -1,7 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Color x:Key="defaultgreyColor">#BDBDBD</Color>
+    <Color x:Key="defaultgreyColor">#EFEFEF</Color>
 
     <SolidColorBrush x:Key="IconSolidColorBrush" Color="#FFFFFFFF"/>
     <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FF000000"/>
