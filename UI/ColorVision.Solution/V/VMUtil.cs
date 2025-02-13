@@ -53,7 +53,7 @@ namespace ColorVision.Solution.V
 
         public List<string> ManagerObject { get; set; } = new List<string>();
 
-        public async Task GeneralChild(VObject vObject, DirectoryInfo directoryInfo)
+        public async Task GeneralChild(IObject vObject, DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
@@ -61,10 +61,9 @@ namespace ColorVision.Solution.V
                 {
                     continue;
                 }
-                BaseFolder folder = new(item);
+                BaseFolder folder = new BaseFolder(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
-                await GeneralChild(vFolder, item);
             }
 
             foreach (var item in directoryInfo.GetFiles())
@@ -83,7 +82,7 @@ namespace ColorVision.Solution.V
         }
 
         int i;
-        public async Task CreateDir(VObject vObject, DirectoryInfo directoryInfo)
+        public async Task CreateDir(IObject vObject, DirectoryInfo directoryInfo)
         {
             if (VMUtil.Instance.ManagerObject.Contains(directoryInfo.FullName))
                 return;
@@ -131,8 +130,7 @@ namespace ColorVision.Solution.V
             return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
         }
 
-
-        public void CreateFile(VObject vObject, FileInfo fileInfo)
+        public void CreateFile(IObject vObject, FileInfo fileInfo)
         {
             if (fileInfo.Extension.Contains("cvsln")) return;
             if (VMUtil.Instance.ManagerObject.Contains(fileInfo.FullName))

@@ -1,11 +1,15 @@
 ﻿using System.Windows.Media;
 using System.IO;
 using ColorVision.Common.MVVM;
+using System.Configuration;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.V.Files
 {
     public interface IFileMeta
     {
+        string Extension { get; }
+        IEnumerable<MenuItemMetadata> GetMenuItems();
         int Order { get; }
         string Name { get; set; }
 
@@ -15,9 +19,9 @@ namespace ColorVision.Solution.V.Files
 
         ImageSource? Icon { get; set; }
 
-        string Extension { get; }
 
         void Open();
+
     }
 
 
@@ -32,6 +36,11 @@ namespace ColorVision.Solution.V.Files
         public virtual void Open()
         {
 
+        }
+
+        public virtual IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            return new List<MenuItemMetadata>();
         }
 
     }

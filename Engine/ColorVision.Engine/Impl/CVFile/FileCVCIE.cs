@@ -18,7 +18,7 @@ using System.Drawing;
 namespace ColorVision.Engine.Impl.CVFile
 {
 
-    public class FileCVCIE : FileMetaBase, IContextMenuProvider
+    public class FileCVCIE : FileMetaBase
     {
         public override int Order => 99;
         public override string Extension { get => ".cvraw|.cvcie"; }
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Impl.CVFile
         }
 
 
-        public IEnumerable<MenuItemMetadata> GetMenuItems()
+        public override IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             return new List<MenuItemMetadata>()
             {

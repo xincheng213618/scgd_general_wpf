@@ -1,4 +1,7 @@
-﻿namespace ColorVision.Solution.V
+﻿using ColorVision.Solution.V.Files;
+using ColorVision.Solution.V.Folders;
+
+namespace ColorVision.Solution.V
 {
     public static class VObjectExtensions
     {
@@ -14,6 +17,23 @@
                 return null;
 
             return This.Parent.GetAncestor<T>();
+        }
+
+        public static bool HasFile(this VObject vObject)
+        {
+            for (int i = 0; i < vObject.VisualChildren.Count; i++)
+            {
+                if (vObject.VisualChildren[i] is VFile file1)
+                {
+                    return true;
+                }
+                if (vObject.VisualChildren[i] is VFolder vFolder)
+                {
+                    bool result = vFolder.HasFile();
+                    if (result) return true;
+                }
+            }
+            return false;
         }
 
         public static void SortByName(this VObject vObject)

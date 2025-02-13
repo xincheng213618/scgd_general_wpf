@@ -15,9 +15,17 @@ using System.Windows;
 
 namespace ColorVision.Solution.V
 {
+    public interface IObject
+    {
+        public VObject Parent { get; set; }
+        public ObservableCollection<VObject> VisualChildren { get; set; }
+        public abstract void AddChild(VObject vObject);
+        public abstract void RemoveChild(VObject vObject);
+    }
+
 
     [DataContract]
-    public class VObject : INotifyPropertyChanged
+    public class VObject : INotifyPropertyChanged, IObject
     {
         public VObject Parent { get; set; }
 

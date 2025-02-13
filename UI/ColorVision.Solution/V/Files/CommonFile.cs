@@ -8,12 +8,11 @@ using System.Windows.Media;
 
 namespace ColorVision.Solution.V.Files
 {
-    public class CommonFile : ViewModelBase, IFileMeta
+    public class CommonFile : FileMetaBase
     {
+        public override string Extension { get => ".*"; }
+        public override int Order => 1;
         public CommonFile() { }
-        public FileInfo FileInfo { get; set; }
-        public ContextMenu ContextMenu { get; set; }
-        public string Extension { get => ".*"; }
         public CommonFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
@@ -21,16 +20,7 @@ namespace ColorVision.Solution.V.Files
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
 
-        public string Name { get; set; }
-        public string ToolTip { get; set; }
-        public ImageSource Icon { get; set; }
-
-        public int Order { get; set; } = 1;
-
-        public string FileSize { get => _FileSize; set { _FileSize = value; NotifyPropertyChanged(); } }
-        private string _FileSize;
-
-        public void Open()
+        public override void Open()
         {
             PlatformHelper.Open(FileInfo.FullName);
         }

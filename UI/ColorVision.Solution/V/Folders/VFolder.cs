@@ -14,17 +14,18 @@ namespace ColorVision.Solution.V.Folders
 {
     public class VFolder : VObject
     {
-        public IFolder Folder { get; set; }
+        public IFolderMeta FolderMeta { get; set; }
 
-        public DirectoryInfo DirectoryInfo { get => Folder.DirectoryInfo; set { Folder.DirectoryInfo = value; } }
+        public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
         FileSystemWatcher FileSystemWatcher { get; set; }
+        public bool HasFile { get => this.HasFile(); }
 
-        public VFolder(IFolder folder) :base()
+        public VFolder(IFolderMeta folder) :base()
         {
-            Folder = folder;
+            FolderMeta = folder;
             ToolTip = folder.ToolTip;
             Name1 = folder.Name;
             FullPath = folder.DirectoryInfo.FullName;
@@ -79,6 +80,16 @@ namespace ColorVision.Solution.V.Folders
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            Task.Run(() => GeneralChild());
+            AddChildEventHandler +=(s,e) => NotifyPropertyChanged(nameof(HasFile));
+        }
+
+        public virtual void GeneralChild()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+            });
         }
 
         public override void InitContextMenu()
@@ -86,10 +97,10 @@ namespace ColorVision.Solution.V.Folders
             base.InitContextMenu();
         }
 
-
         public override void InitMenuItem()
         {
             base.InitMenuItem();
+            MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = ColorVision.Solution.Properties.Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" ,Icon = MenuItemIcon.TryFindResource("DICopy") });
@@ -101,7 +112,7 @@ namespace ColorVision.Solution.V.Folders
             FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
         }
 
-        public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
+        public override ImageSource Icon {get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
 
         public override void Open()
         {

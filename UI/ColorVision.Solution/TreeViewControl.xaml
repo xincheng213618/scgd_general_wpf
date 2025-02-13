@@ -99,6 +99,7 @@
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle}">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <!--<Setter Property="Visibility" Value="{Binding HasFile,Mode=OneWay,Converter={StaticResource bool2VisibilityConverter}}"/>-->
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                         <Setter Property="Padding" Value="0"/>
                         <Setter Property="Margin" Value="0"/>

@@ -32,11 +32,10 @@ namespace ColorVision.Solution.V.Files
         public override void InitMenuItem()
         {
             base.InitMenuItem();
+            MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = ColorVision.Solution.Properties.Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
-            if (FileMeta is IContextMenuProvider menuItemProvider)
-                MenuItemMetadatas.AddRange(menuItemProvider.GetMenuItems());
         }
         public override void ShowProperty()
         {
