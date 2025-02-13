@@ -34,7 +34,6 @@ namespace ColorVision.Solution.V
                 }
                 Directory.CreateDirectory(newName);
                 DirectoryInfo directoryInfo = new DirectoryInfo(newName);
-                VMUtil.Instance.ManagerObject.Add(directoryInfo.FullName);
                 VFolder vFolder = new VFolder(new BaseFolder(directoryInfo));
                 vObject.AddChild(vFolder);
                 vObject.SortByName();
@@ -50,8 +49,6 @@ namespace ColorVision.Solution.V
                 MessageBox.Show(ex.Message);
             }
         }
-
-        public List<string> ManagerObject { get; set; } = new List<string>();
 
         public async Task GeneralChild(IObject vObject, DirectoryInfo directoryInfo)
         {
@@ -84,9 +81,6 @@ namespace ColorVision.Solution.V
         int i;
         public async Task CreateDir(IObject vObject, DirectoryInfo directoryInfo)
         {
-            if (VMUtil.Instance.ManagerObject.Contains(directoryInfo.FullName))
-                return;
-            VMUtil.Instance.ManagerObject.Add(directoryInfo.FullName);
             BaseFolder folder = new(directoryInfo);
             var vFolder = new VFolder(folder);
             vObject.AddChild(vFolder);
@@ -133,11 +127,6 @@ namespace ColorVision.Solution.V
         public void CreateFile(IObject vObject, FileInfo fileInfo)
         {
             if (fileInfo.Extension.Contains("cvsln")) return;
-            if (VMUtil.Instance.ManagerObject.Contains(fileInfo.FullName))
-            {
-                return;
-            }
-            VMUtil.Instance.ManagerObject.Add(fileInfo.FullName);
 
             string extension = fileInfo.Extension;
             if (fileInfo.Extension.Contains("lnk"))

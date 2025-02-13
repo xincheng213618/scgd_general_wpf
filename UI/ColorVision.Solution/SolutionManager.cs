@@ -43,9 +43,6 @@ namespace ColorVision.Solution
         public SolutionManager()
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
-
-            SolutionLoaded += SolutionManager_SolutionLoaded;
-
             bool su = false;
             var parser = ArgumentParser.GetInstance();
 
@@ -91,34 +88,24 @@ namespace ColorVision.Solution
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
 
-        private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
-        {
-            if (sender is string solutionConfig)
-            {
-                if (File.Exists(solutionConfig))
-                {
-                    FileInfo fileInfo = new FileInfo(solutionConfig);
-                    SolutionEnvironments.SolutionDir = Directory.GetParent(fileInfo.FullName).FullName;
-                    SolutionEnvironments.SolutionPath = fileInfo.FullName;
-                    SolutionEnvironments.SolutionExt = fileInfo.Extension;
-                    SolutionEnvironments.SolutionName = fileInfo.Name;
-                    SolutionEnvironments.SolutionFileName = Path.GetFileName(solutionConfig);
-                }
-                SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new  SolutionExplorer               (SolutionEnvironments);
-                SolutionExplorers.Add(CurrentSolutionExplorer);
-            }
-        }
-        public DirectoryInfo? SolutionDirectory { get; private set; }
-
         public bool OpenSolution(string FullPath)
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                FileInfo fileInfo = new(FullPath);
-                SolutionDirectory = fileInfo.Directory;
+                FileInfo fileInfo = new FileInfo(FullPath);
                 SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(FullPath, new EventArgs());
+                if (File.Exists(FullPath))
+                {
+                    SolutionEnvironments.SolutionDir = Directory.GetParent(fileInfo.FullName).FullName;
+                    SolutionEnvironments.SolutionPath = fileInfo.FullName;
+                    SolutionEnvironments.SolutionExt = fileInfo.Extension;
+                    SolutionEnvironments.SolutionName = fileInfo.Name;
+                    SolutionEnvironments.SolutionFileName = Path.GetFileName(FullPath);
+                }
+                SolutionExplorers.Clear();
+                CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
+                SolutionExplorers.Add(CurrentSolutionExplorer);
                 return true;
             }
             else
@@ -142,15 +129,6 @@ namespace ColorVision.Solution
             OpenSolution(slnName);
             return true;
         }
-
-
-
-        public void CreateShortcut(string FileName)
-        {
-            if (SolutionDirectory!=null)
-                Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
-        }
-
         public void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

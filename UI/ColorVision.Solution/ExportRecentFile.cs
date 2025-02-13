@@ -13,7 +13,7 @@ namespace ColorVision.Solution
 
         public string? GuidId => "RecentFiles";
 
-        public int Order => 2;
+        public int Order => 80;
 
         public string? Header => Resources.RecentFiles;
 
@@ -53,13 +53,13 @@ namespace ColorVision.Solution
                 RecentListMenuItem.ItemContainerStyle.Setters.Add(new EventSetter
                 {
                     Event = MenuItem.ClickEvent,
-                    Handler = new RoutedEventHandler(UndoToCommandHandler)
+                    Handler = new RoutedEventHandler(OpenSolutionCommandHandler)
                 });
                 return RecentListMenuItem;
             }
         }
 
-        private void UndoToCommandHandler(object sender, RoutedEventArgs e)
+        private void OpenSolutionCommandHandler(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Header is string item)
             {
