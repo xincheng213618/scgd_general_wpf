@@ -1,12 +1,13 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-    public class MenuDicModParam : MenuITemplateAlgorithm
+    public class MenuDicModParam : MenuItemBase
     {
-
+        public override string OwnerGuid => nameof(MenuITemplateAlgorithm);
         public override int Order => 99;
         public override string Header => "编辑默认算法字典";
 

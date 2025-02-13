@@ -1,15 +1,15 @@
-﻿using ColorVision.UI.Authorizations;
+﻿using ColorVision.Properties;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Plugins
 {
-    public class PluginManagerExport : MenuItemBase
+    public class MenuPluginManager : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => nameof(PluginManagerExport);
+        public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 10000;
-        public override string Header => "插件管理";
+        public override string Header => Resources.PluginManagerWindow;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

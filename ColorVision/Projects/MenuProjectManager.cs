@@ -1,15 +1,15 @@
-﻿using ColorVision.UI.Authorizations;
+﻿using ColorVision.Properties;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Projects
 {
-    public class ProjectManagerExport : MenuItemBase
+    public class MenuProjectManager : MenuItemBase
     {
-        public override string OwnerGuid => "Help";
-        public override string GuidId => nameof(ProjectManagerExport);
+        public override string OwnerGuid => MenuItemConstants.Help;
         public override int Order => 10000;
-        public override string Header => "项目管理";
+        public override string Header => Resources.ProjectManagerWindow;
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
