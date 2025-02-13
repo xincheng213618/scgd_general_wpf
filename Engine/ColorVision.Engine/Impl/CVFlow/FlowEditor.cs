@@ -1,0 +1,22 @@
+﻿using ColorVision.Engine.Templates.Flow;
+using ColorVision.Solution;
+using ColorVision.UI;
+using System;
+using System.Windows.Controls;
+
+
+namespace ColorVision.Engine.Impl.FileProcessor
+{
+    public class FlowEditor : IEditorBase
+    {
+        public override string Extension => ".stn|.cvflow";
+        public override Control? Open(string FilePath)
+        {
+            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
+            flowEngineToolWindow.OpenFlow(FilePath);
+            flowEngineToolWindow.Show();
+            return null;
+        }
+    }
+
+}

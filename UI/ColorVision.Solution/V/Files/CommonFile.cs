@@ -23,6 +23,7 @@ namespace ColorVision.Solution.V.Files
         public override void Open()
         {
             PlatformHelper.Open(FileInfo.FullName);
+
         }
 
     }

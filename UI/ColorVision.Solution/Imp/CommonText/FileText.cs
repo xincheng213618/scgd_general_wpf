@@ -23,14 +23,6 @@ namespace ColorVision.Solution.Imp.CommonText
             Name = FileInfo.Name;
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
-
-
-        public override void Open()
-        {
-            SolutionProcessText textFileOpen = new SolutionProcessText() { Name = FileInfo.Name, FullName = FileInfo.FullName };
-            SolutionManager.GetInstance().OpenFileWindow(textFileOpen);
-        }
-
     }
 
 }

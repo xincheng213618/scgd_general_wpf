@@ -131,20 +131,6 @@ namespace ColorVision.Engine.Impl.CVFile
             };
 
         }
-
-        public override void Open()
-        {
-            if (File.Exists(FileInfo.FullName))
-            {
-                SolutionProcessCVCIE fileControl = new SolutionProcessCVCIE() { Name = Name, FullName = FileInfo.FullName, IconSource = Icon };
-                SolutionManager.GetInstance().OpenFileWindow(fileControl);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
-            }
-
-        }
     }
 
 

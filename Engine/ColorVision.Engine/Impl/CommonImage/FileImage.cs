@@ -22,11 +22,6 @@ namespace ColorVision.Solution.Imp.CommonImage
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
 
-        public void Open()
-        {
-            SolutionProcessImage fileControl = new SolutionProcessImage() { Name = Name, FullName = FileInfo.FullName, IconSource = Icon };
-            SolutionManager.GetInstance().OpenFileWindow(fileControl);
-        }
     }
 
 }

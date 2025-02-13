@@ -13,7 +13,7 @@ namespace ColorVision.Solution.Searches
             {
                 foreach (var type in assembly.GetTypes())
                 {
-                    if (typeof(ISolutionPage).IsAssignableFrom(type) && !type.IsInterface)
+                    if (typeof(ISolutionPage).IsAssignableFrom(type) && !type.IsInterface &&!type.IsAbstract)
                     {
                         if (Activator.CreateInstance(type) is ISolutionPage page)
                         {

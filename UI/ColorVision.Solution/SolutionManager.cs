@@ -79,11 +79,17 @@ namespace ColorVision.Solution
 
 
         public event EventHandler<ISolutionProcess> OpenFile;
+        public event EventHandler<VObject> OpenFilePath;
 
 
         public void OpenFileWindow(ISolutionProcess userControl)
         {
             OpenFile?.Invoke(this, userControl);
+        }
+
+        public void OpenView(VObject vobject)
+        {
+            OpenFilePath?.Invoke(this, vobject);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();

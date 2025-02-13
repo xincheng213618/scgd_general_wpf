@@ -28,7 +28,7 @@ namespace ColorVision.Solution.V.Folders
             FolderMeta = folder;
             ToolTip = folder.ToolTip;
             Name1 = folder.Name;
-            FullPath = folder.DirectoryInfo.FullName;
+            FullPath = DirectoryInfo.FullName;
             if (DirectoryInfo != null && DirectoryInfo.Exists)
             {
                 FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);

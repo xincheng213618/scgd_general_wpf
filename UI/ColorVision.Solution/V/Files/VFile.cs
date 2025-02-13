@@ -26,6 +26,7 @@ namespace ColorVision.Solution.V.Files
             ToolTip = fileMeta.ToolTip;
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
+            FullPath = FileInfo.FullName;
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
         }
@@ -44,7 +45,7 @@ namespace ColorVision.Solution.V.Files
 
         public override void Open()
         {
-            FileMeta.Open();
+            SolutionManager.GetInstance().OpenView(this);
         }
 
         public override void Delete()

@@ -17,21 +17,6 @@ namespace ColorVision.Engine.Impl.CVFlow
             Name = FileInfo.Name;
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
-        public override void Open()
-        {
-            foreach (var item in Application.Current.Windows)
-            {
-                if (item is FlowEngineToolWindow WindowFlowEngine)
-                {
-                    WindowFlowEngine.OpenFlow(FileInfo.FullName);
-                    WindowFlowEngine.Activate();
-                    return;
-                }
-            }
-            var window = new FlowEngineToolWindow() { Owner = null };
-            window.OpenFlow(FileInfo.FullName);
-            window.Show();
-        }
     }
 
 
