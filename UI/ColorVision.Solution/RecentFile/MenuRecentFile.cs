@@ -7,9 +7,9 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
-    public class ExportRecentFile : IMenuItemMeta
+    public class MenuRecentFile : IMenuItemMeta
     {
-        public string? OwnerGuid => "File";
+        public string? OwnerGuid => MenuItemConstants.File;
 
         public string? GuidId => "RecentFiles";
 

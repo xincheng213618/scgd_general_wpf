@@ -16,7 +16,6 @@ namespace ColorVision.Solution
                     Description = "IsLackWarning",
                     Order =4,
                     BindingName = nameof(SolutionSetting.IsLackWarning),
-                    VisibilityBindingName = nameof(SolutionSetting.IsShowLackWarning),
                     ButtonStyleName ="ButtonDrawingImageHardDisk",
                     Source = SolutionSetting.Instance,
                     Action =action
