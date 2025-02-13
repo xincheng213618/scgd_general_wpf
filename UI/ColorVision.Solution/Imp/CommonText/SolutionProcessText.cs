@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Impl.SolutionProcess
+namespace ColorVision.Solution.Imp.CommonText
 {
     public class SolutionProcessText : ISolutionProcess
     {
@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Impl.SolutionProcess
         {
 
         }
-        private RichTextBox richTextBox = new RichTextBox();
+        private RichTextBox richTextBox = new RichTextBox() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
 
         public void Open()
         {

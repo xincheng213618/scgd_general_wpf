@@ -115,7 +115,7 @@ namespace ColorVision.Solution.V
             {
                 foreach (var type in assembly.GetTypes())
                 {
-                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface)
+                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
                     {
                         if (Activator.CreateInstance(type) is IFileMeta page)
                         {

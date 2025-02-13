@@ -20,6 +20,11 @@
             </StackPanel>
         </DataTemplate>
         <Style x:Key="DocumentContextMenu" TargetType="ContextMenu"  BasedOn="{StaticResource ContextMenu.Small}"/>
+        <Style x:Key="ToolBar.ButtonStyleKey" TargetType="Button"  BasedOn="{StaticResource  ButtonDefault}" >
+            <Style.Setters >
+                <Setter Property="Background" Value="Red"/>
+            </Style.Setters>
+        </Style>
     </UserControl.Resources>
     <Grid>
         <xcad:DockingManager BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}" Background="Transparent" Theme="{Binding ElementName=_themeCombo, Path=SelectedItem.Tag}" Padding="0" Margin="0">
@@ -37,7 +42,7 @@
                                         <Border x:Name="MainSetting"  BorderBrush="{DynamicResource BorderBrush}" Background="#01FFFFFF" BorderThickness="0,0,0,1"/>
                                         <StackPanel Height="40" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
                                             <Button x:Name="BackStack"  Width="30" Background="#01FFFFFF" BorderThickness="0" Command="NavigationCommands.BrowseBack"  CommandTarget="{Binding ElementName=MainFrame}">
-                                                <Path  Stretch="Uniform" Data="{StaticResource LeftGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
+                                                <Path Stretch="Uniform" Data="{StaticResource LeftGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
                                             </Button>
                                             <Button x:Name="BrowseForward" Width="30" Background="#01FFFFFF"  BorderThickness="0"  Command="NavigationCommands.BrowseForward"  CommandTarget="{Binding ElementName=MainFrame}">
                                                 <Path  Stretch="Uniform" Data="{StaticResource RightGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />

@@ -25,36 +25,16 @@ namespace ColorVision.Solution.V.Files
         public string ToolTip { get; set; }
         public ImageSource Icon { get; set; }
 
+        public int Order { get; set; } = 1;
+
         public string FileSize { get => _FileSize; set { _FileSize = value; NotifyPropertyChanged(); } }
         private string _FileSize;
-
-
-        public void Copy()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Delete()
-        {
-            try
-            {
-                File.Delete(FileInfo.FullName);
-            }
-            catch(Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-        }
 
         public void Open()
         {
             PlatformHelper.Open(FileInfo.FullName);
         }
 
-        public void ReName()
-        {
-            throw new System.NotImplementedException();
-        }
     }
 
 }

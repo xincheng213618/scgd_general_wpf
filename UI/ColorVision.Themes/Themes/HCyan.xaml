@@ -44,5 +44,4 @@
     <Color x:Key="DarkAccentColor">#00796B</Color>
     <Color x:Key="DarkMaskColor">#20000000</Color>
     <Color x:Key="DarkOpacityColor">#40000000</Color>
-    <system1:UInt32 x:Key="BlurGradientValue" xmlns:system1="clr-namespace:System;assembly=System.Private.CoreLib">0x99FFFFFF</system1:UInt32>
 </ResourceDictionary>

@@ -54,7 +54,7 @@ namespace ColorVision.Solution.Searches
                 }
                 else
                 {
-                    LayoutDocument layoutDocument = new LayoutDocument() { IconSource =e.IconSource, ContentId = e.GuidId.ToString(), Title = e.Name };
+                    LayoutDocument layoutDocument = new LayoutDocument() { ContentId = e.GuidId.ToString(), Title = e.Name };
                     layoutDocument.Content = e.UserControl;
                     ;
                     e.Open();

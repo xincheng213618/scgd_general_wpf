@@ -20,7 +20,6 @@ namespace ColorVision.Solution.V.Files
 
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
 
-
         public VFile(IFileMeta fileMeta) :base()
         {
             FileMeta = fileMeta;
@@ -51,8 +50,15 @@ namespace ColorVision.Solution.V.Files
 
         public override void Delete()
         {
-            File.Delete(FileInfo.FullName);
-            base.Delete();
+            try
+            {
+                File.Delete(FileInfo.FullName);
+                base.Delete();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
         public override bool ReName(string name)
         {

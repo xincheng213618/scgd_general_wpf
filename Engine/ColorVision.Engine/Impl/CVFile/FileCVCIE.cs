@@ -13,15 +13,16 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using System.Drawing;
 
 namespace ColorVision.Engine.Impl.CVFile
 {
 
-    public class FileCVCIE : ViewModelBase, IFileMeta, IContextMenuProvider
+    public class FileCVCIE : FileMetaBase, IContextMenuProvider
     {
-        public FileInfo FileInfo { get; set; }
-
-        public string Extension { get => ".cvraw|.cvcie"; }
+        public override int Order => 99;
+        public override string Extension { get => ".cvraw|.cvcie"; }
+        public override string Name { get; set; }
 
         public FileCVCIE()
         {
@@ -35,37 +36,28 @@ namespace ColorVision.Engine.Impl.CVFile
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
-            FullName = FileInfo.FullName;
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
-
             ExportCommand = new RelayCommand(a => Export(), a => true);
             ExportBMPCommand = new RelayCommand(a => ExportAS(ImageFormat.Bmp), A => true);
             ExportTIFFCommand = new RelayCommand(a => ExportAS(ImageFormat.Tiff), A => true);
             ExportPNGCommand = new RelayCommand(a => ExportAS(ImageFormat.Png), A => true);
         }
 
-        public string Name { get; set; }
-        public string FullName { get; set; }
-        public string ToolTip { get; set; }
-        public ImageSource? Icon { get; set; }
-
-        public string FileSize { get => FileInfo.Length.ToString(); set { NotifyPropertyChanged(); } }
-
         public void Export()
         {
-            new ExportCVCIE(FullName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new ExportCVCIE(FileInfo.FullName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public void ExportAS(ImageFormat imageFormat)
         {
-            int index = CVFileUtil.ReadCIEFileHeader(FullName, out CVCIEFile cvcie);
+            int index = CVFileUtil.ReadCIEFileHeader(FileInfo.FullName, out CVCIEFile cvcie);
             if (index < 0) return;
-            cvcie.FileExtType = FullName.Contains(".cvraw") ? CVType.Raw : FullName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
+            cvcie.FileExtType = FileInfo.FullName.Contains(".cvraw") ? CVType.Raw : FileInfo.FullName.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
 
-            CVFileUtil.ReadCIEFileData(FullName, ref cvcie, index);
+            CVFileUtil.ReadCIEFileData(FileInfo.FullName, ref cvcie, index);
             var src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
 
             System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.FileName = Path.GetFileNameWithoutExtension(FullName) + $".{imageFormat}";
+            dialog.FileName = Path.GetFileNameWithoutExtension(FileInfo.FullName) + $".{imageFormat}";
             dialog.Filter = "Bitmap Image|*.bmp|PNG Image|*.png|JPEG Image|*.jpg;*.jpeg|TIFF Image|*.tiff|All Files|*.*";
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -140,7 +132,7 @@ namespace ColorVision.Engine.Impl.CVFile
 
         }
 
-        public void Open()
+        public override void Open()
         {
             if (File.Exists(FileInfo.FullName))
             {
@@ -153,24 +145,6 @@ namespace ColorVision.Engine.Impl.CVFile
             }
 
         }
-
-
-        public void Copy()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void Delete()
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public void ReName()
-        {
-            throw new System.NotImplementedException();
-        }
-
-
     }
 
 

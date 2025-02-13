@@ -76,7 +76,6 @@ namespace ColorVision.Solution.V.Folders
 
             }
 
-
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
@@ -86,6 +85,7 @@ namespace ColorVision.Solution.V.Folders
         {
             base.InitContextMenu();
         }
+
 
         public override void InitMenuItem()
         {
@@ -105,24 +105,7 @@ namespace ColorVision.Solution.V.Folders
 
         public override void Open()
         {
-            if (this is VFolder vFolder)
-            {
-                if (vFolder.Folder is IFolder folder)
-                {
-                    folder.Open();
-                }
-            }
-        }
 
-        public override void Copy()
-        {
-            if (this is VFolder vFolder)
-            {
-                if (vFolder.Folder is IFolder folder)
-                {
-                    folder.Copy();
-                }
-            }
         }
 
         public override bool ReName(string name)
@@ -170,7 +153,6 @@ namespace ColorVision.Solution.V.Folders
         {
             if (MessageBox.Show(Application.Current.GetActiveWindow(),$"\"{Name}\"{ColorVision.Solution.Properties.Resources.FolderDeleteSign}","ColorVision",MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
-                Folder.Delete();
                 base.Delete();
             }
         }

@@ -4,7 +4,7 @@ using ColorVision.Solution;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Impl.CommonImage
+namespace ColorVision.Solution.Imp.CommonImage
 {
     public class SolutionProcessImage : ISolutionProcess
     {

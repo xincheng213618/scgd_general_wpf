@@ -10,7 +10,31 @@
     <SolidColorBrush x:Key="light-teal" Color="#006758" Opacity="1" />
     <SolidColorBrush x:Key="light-blue" Color="#005dba" Opacity="1" />
     <System:Double x:Key="cls-1">0.75</System:Double>
-
+    <DrawingBrush x:Key="DIScrollbarArrowDownRight" Stretch="None">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup >
+                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M16,16H0V0H16Z" />
+                </DrawingGroup>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M10.5,10H6l-.354-.854,4.5-4.5L11,5V9.5Z" />
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+    <DrawingBrush x:Key="DIScrollbarArrowCollapsed" Stretch="None">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <DrawingGroup >
+                    <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M16,16H0V0H16Z" />
+                </DrawingGroup>
+                <DrawingGroup>
+                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M9.5,8l-3,3V5Z" />
+                    <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M6.854,11.354,6,11V5l.854-.354,3,3v.708ZM7,6.207V9.793L8.793,8Z" />
+                </DrawingGroup>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
     <DrawingBrush x:Key="DICut" Stretch="None">
         <DrawingBrush.Drawing>
             <DrawingGroup>
