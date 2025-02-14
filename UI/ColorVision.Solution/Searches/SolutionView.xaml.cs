@@ -52,7 +52,6 @@ namespace ColorVision.Solution.Searches
                             window.Activate();
                         }
                     }
-
                 }
                 else
                 {

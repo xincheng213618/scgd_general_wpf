@@ -15,9 +15,18 @@
             <ToolBar >
                 <Button Content="Open" Command="ApplicationCommands.Open"/>
                 <Button Content="Save" Command="ApplicationCommands.Save"/>
-
+                <Button Height="25" Width="25" Padding="0" Background="Transparent" BorderThickness="0" Command="ApplicationCommands.Undo">
+                    <Viewbox Height="20" Width="20" >
+                        <Rectangle Height="16" Width="16" Fill="{StaticResource DIUndo}"/>
+                    </Viewbox>
+                </Button>
+                <Button Height="25" Width="25" Padding="0" Background="Transparent" BorderThickness="0" Command="ApplicationCommands.Redo">
+                    <Viewbox Height="20" Width="20" >
+                        <Rectangle Height="16" Width="16" Fill="{StaticResource DIRedo}"/>
+                    </Viewbox>
+                </Button>
             </ToolBar>
         </ToolBarPanel>
-        <RichTextBox x:Name="RichTextBox" Grid.Row="1" BorderThickness="0" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"/>
+        <RichTextBox x:Name="RichTextBox" Grid.Row="1" BorderThickness="0"  VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Visible"/>
     </Grid>
 </UserControl>

@@ -28,7 +28,30 @@ namespace ColorVision.Solution.Editor
             FilePath = filePath;
             InitializeComponent();
         }
+        private void TreeViewControl_Drop(object sender, DragEventArgs e)
+        {
+            var b = e.Data.GetDataPresent(DataFormats.FileDrop);
 
+            if (b)
+            {
+                var sarr = e.Data.GetData(DataFormats.FileDrop);
+                var a = sarr as string[];
+                var fn = a?.First();
+
+                if (File.Exists(fn))
+                {
+                    if (fn.Contains(".txt|.dat"))
+                    {
+                        FilePath = fn;
+                        OpenFile(fn);
+                    }
+                    else
+                    {
+                        MessageBox.Show("文件的格式不受支持");
+                    }
+                }
+            }
+        }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, Open_Executed));
