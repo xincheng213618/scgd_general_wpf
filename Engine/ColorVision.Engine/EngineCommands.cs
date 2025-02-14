@@ -17,6 +17,8 @@ namespace ColorVision.Engine
         public override int Order => 99;
 
         public override ICommand Command => EngineCommands.StartExecutionCommand;
+        public override object? Icon => MenuItemIcon.TryFindResource("DIRun");
+
         public override string InputGestureText => "F6";
     }
 
@@ -26,6 +28,7 @@ namespace ColorVision.Engine
         public override string Header => "停止执行(_S)";
         public override int Order => 99;
         public override ICommand Command => EngineCommands.StopExecutionCommand;
+        public override object? Icon => MenuItemIcon.TryFindResource("DIRunPaused");
         public override string InputGestureText => "F7";
     }
 
