@@ -93,36 +93,4 @@ namespace ColorVision.Solution
             return null;
         }
     }
-
-    public class TextEditor : IEditorBase
-    {
-        public override string Extension => ".txt|.cs|.json|.java|.go|.md|.py";
-
-        public override string Name => "文本编辑器";
-        public override Control? Open(string FilePath)
-        {
-
-            if (File.Exists(FilePath))
-            {
-                const int bufferSize = 1024; // 每次读取的字节数，可以根据需要调整
-                var RichTextBox = new RichTextBox() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-                TextRange textRange = new TextRange(RichTextBox.Document.ContentStart, RichTextBox.Document.ContentEnd);
-                using (FileStream fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
-                {
-                    using (StreamReader reader = new StreamReader(fileStream))
-                    {
-                        char[] buffer = new char[bufferSize];
-                        int charsRead;
-                        while ((charsRead = reader.Read(buffer, 0, bufferSize)) > 0)
-                        {
-                            string text = new string(buffer, 0, charsRead);
-                            RichTextBox.AppendText(text);
-                        }
-                    }
-                }
-                return RichTextBox;
-            }
-            return null;
-        }
-    }
 }
