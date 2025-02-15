@@ -45,6 +45,10 @@ namespace ColorVision.Engine.Services.Types
         LumFourColor = 39,
         [Description("多色")]
         LumMultiColor = 40,
+        [Description("LineArity")]
+        LineArity = 41,
+        [Description("ColorDiff")]
+        ColorDiff = 42,
         Group = 1000,
         SpCalibration =201,
         PhyCamera =101,

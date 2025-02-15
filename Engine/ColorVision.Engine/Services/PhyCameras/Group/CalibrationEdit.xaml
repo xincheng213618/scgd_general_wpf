@@ -128,10 +128,20 @@
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDistortion" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"    hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
-                            <DockPanel>
+                            <DockPanel  Margin="0,0,0,5">
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Uniformity.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxUniformity" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
+                            </DockPanel>
+                            <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="LineArity" Width="80"  />
+                                <hc:ComboBox  x:Name="ComboBoxLineArity" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding LineArity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
+                            </DockPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
+                                <TextBlock DockPanel.Dock="Left" Text="ColorDiff" Width="80"  />
+                                <hc:ComboBox  x:Name="ComboBoxColorDiff" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding ColorDiff}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                         </StackPanel>
                     </Border>
