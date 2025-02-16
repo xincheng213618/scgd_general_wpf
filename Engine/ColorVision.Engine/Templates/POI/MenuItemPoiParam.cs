@@ -2,8 +2,7 @@
 {
     public class MenuItemPoiParam : MenuItemTemplateBase
     {
-        public override string GuidId => nameof(MenuTemplatePoi);
-        public override string Header => Properties.Resources.MenuPoi;
+        public override string Header => "关注点模板";
         public override int Order => 1;
         public override ITemplate Template { get; } = new TemplatePoi();
     }

@@ -2,6 +2,7 @@
 using ColorVision.Solution;
 using ColorVision.UI;
 using System;
+using System.Windows;
 using System.Windows.Controls;
 
 
@@ -12,7 +13,7 @@ namespace ColorVision.Engine.Impl.FileProcessor
         public override string Extension => ".stn|.cvflow";
         public override Control? Open(string FilePath)
         {
-            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
+            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow() { Owner = Application.Current.GetActiveWindow() };
             flowEngineToolWindow.OpenFlow(FilePath);
             flowEngineToolWindow.Show();
             return null;

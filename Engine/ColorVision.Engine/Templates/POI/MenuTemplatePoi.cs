@@ -7,6 +7,7 @@ namespace ColorVision.Engine.Templates.POI
         public override string OwnerGuid => nameof(MenuTemplate);
         public override string Header => "关注点相关算法模板设置";
         public override int Order => 2;
+
     }
 
     public abstract class MenuTemplatePoiBase: MenuItemTemplateBase
