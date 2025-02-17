@@ -9,8 +9,10 @@ namespace ColorVision
         private const string LibPath = "opencv_helper.dll";
 
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int M_FindLuminousArea(HImage img);
+        public static extern void FreeResult(IntPtr str);
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_FindLuminousArea(HImage img, string config, out IntPtr str);
         /// <summary>
         /// 伪彩色
         /// </summary>

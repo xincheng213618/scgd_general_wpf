@@ -123,8 +123,6 @@
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
                         <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
-                        <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
-
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -255,6 +253,25 @@
                                     <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" >
+                                        <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
+                                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransform21"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </DockPanel>
                                     <DockPanel  Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="中心点"  MinWidth="50"/>
                                         <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />

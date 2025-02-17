@@ -817,4 +817,7 @@
   <data name="ViewImageReadDelay" xml:space="preserve">
     <value>查看图像读取延迟</value>
   </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>阈值</value>
+  </data>
 </root>

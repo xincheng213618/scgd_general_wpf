@@ -343,17 +343,39 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 	return 0;
 }
 
-COLORVISIONCORE_API int M_FindLuminousArea(HImage img)
+COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	// ºÏ≤È ‰»ÎÕºœÒ «∑ÒŒ™ø’
 	if (mat.empty()) {
 		return -1;
 	}
-	cv::Rect LuminousArea;
-	findLuminousArea(mat,LuminousArea);
 
-	return 0;
+	if (!config || !result) {
+		return -1; 
+	}        
+	json j = json::parse(config);
+	int threshold = j.at("Threshold").get<int>();
+
+
+	cv::Rect LuminousArea;
+	
+	findLuminousArea(mat, LuminousArea, threshold);
+
+	json outputJson;
+	outputJson["X"] = LuminousArea.x;
+	outputJson["Y"] = LuminousArea.y;
+	outputJson["Width"] = LuminousArea.width;
+	outputJson["Height"] = LuminousArea.height;
+
+	std::string output = outputJson.dump();
+	size_t length = output.length() + 1;
+	*result = new char[length];
+	if (!*result) {
+		return -2; // ¥ÌŒÛ£∫ƒ⁄¥Ê∑÷≈‰ ß∞‹
+	}
+	std::strcpy(*result, output.c_str());
+	return static_cast<int>(length);
 }
 
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)

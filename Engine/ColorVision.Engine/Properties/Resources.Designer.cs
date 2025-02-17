@@ -2041,6 +2041,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 阈值 的本地化字符串。
+        /// </summary>
+        public static string Threshold {
+            get {
+                return ResourceManager.GetString("Threshold", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 剩余时间： 的本地化字符串。
         /// </summary>
         public static string TimeLeft {

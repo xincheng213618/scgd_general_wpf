@@ -60,17 +60,29 @@ namespace ColorVision.Engine.Templates.POI
         private float _Threshold = 50;
     }
 
+    public class FindLuminousArea : ViewModelBase
+    {
+        [DisplayName("Threshold")]
+        public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value;NotifyPropertyChanged(); } }
+        private int _Threshold = 100;
+
+    }
+
     public class PoiConfig : ViewModelBase
     {
         public RelayCommand SetPoiFileCommand { get; set; }
         public RelayCommand ValidateCIECommand { get; set; }
         public RelayCommand OpenPoiCIEFileCommand { get; set; }
 
+        public RelayCommand FindLuminousAreaEditCommand { get; set; }
+
         public PoiConfig()
         {
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
+            FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
+        public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }
         private string _BackgroundFilePath;

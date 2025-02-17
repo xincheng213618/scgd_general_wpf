@@ -13,7 +13,7 @@
 using namespace cv;
 
 
-int findLuminousArea(cv::Mat& src, cv::Rect& largestRect)
+int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold)
 {
     // 检查输入图像是否为空
     if (src.empty()) {
@@ -35,7 +35,7 @@ int findLuminousArea(cv::Mat& src, cv::Rect& largestRect)
 
     // 阈值分割
     Mat thresh;
-    threshold(gray, thresh, 100, 255, THRESH_BINARY);
+    cv::threshold(gray, thresh, threshold, 255, THRESH_BINARY);
 
     // 形态学操作：膨胀
     Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));

@@ -15,6 +15,7 @@ using ColorVision.ImageEditor.Tif;
 using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
 using log4net;
@@ -27,6 +28,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1919,15 +1921,44 @@ namespace ColorVision.Engine.Templates.POI
             }));
         }
 
+        class JsonConfig
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int Width { get; set; }
+            public int Height { get; set; }
+        }
+
         private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 if (HImageCache != null)
                 {
+                    string re = PoiConfig.FindLuminousArea.ToJsonN();
                     Task.Run(() =>
                     {
-                        int ret = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache);
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        if (length > 0)
+                        {
+                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            Console.WriteLine("Result: " + result);
+                            OpenCVMediaHelper.FreeResult(resultPtr);
+                            JsonConfig rect = Newtonsoft.Json.JsonConvert.DeserializeObject<JsonConfig>(result);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                PoiConfig.AreaRectWidth = rect.Width;
+                                PoiConfig.AreaRectHeight = rect.Height;
+                                PoiConfig.CenterX = rect.X + rect.Width / 2;
+                                PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                            });
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error occurred, code: " + length);
+                        }
                     });
                 };
             }));
