@@ -138,12 +138,10 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
-        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView)
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
         {
             return new List<MenuItemMetadata>();
         }
-
-
     }
 
 }

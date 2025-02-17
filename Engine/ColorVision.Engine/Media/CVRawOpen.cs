@@ -234,18 +234,18 @@ namespace ColorVision.Engine.Media
         }
         public float[] exp { get; set; }
 
-        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView)
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
         {
             return new List<MenuItemMetadata>()
             {
                 new MenuItemMetadata()
                 {
                     Header = "导出",
-                    GuidId = "Export",
-                    Order = 150,
+                    GuidId = "CVCIEExport",
+                    Order = 301,
                     Command = new RelayCommand(a =>
                     {
-                        if (imageView.Config.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
+                        if (imageView.GetProperties<string>("FilePath") is string FilePath && File.Exists(FilePath))
                         {
                             new ExportCVCIE(FilePath).ShowDialog();
                         }

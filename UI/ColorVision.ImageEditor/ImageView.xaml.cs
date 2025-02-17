@@ -47,28 +47,17 @@ namespace ColorVision.ImageEditor
 
         public View View { get; set; }
 
-        public ImageViewConfig Config { get => _Config; set { _Config = value;  } }
-        private ImageViewConfig _Config;
+        public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
 
         public ImageView()
         {
-            Config = new ImageViewConfig();
             View = new View();
             InitializeComponent();
             SetConfig(Config);
-            foreach (var item in ImageComponentManager.GetInstance().IImageComponents)
+            foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
         }
 
-        public void Open()
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                OpenImage(openFileDialog.FileName);
-            }
-        }
 
 
         public void SetConfig(ImageViewConfig imageViewConfig)
@@ -111,7 +100,7 @@ namespace ColorVision.ImageEditor
             ToolBarBottom.DataContext = ImageViewModel;
             ImageViewModel.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ImageViewModel.ClearImageEventHandler += Clear;
-            ImageViewModel.OpenImageEventHandler += (s, e) => OpenImage(e);
+            ImageViewModel.OpeningImage += (s, e) => OpenImage(e);
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -218,7 +207,6 @@ namespace ColorVision.ImageEditor
         }
 
         private DrawingVisual SelectRect = new DrawingVisual();
-        private DrawingVisual SelectRect1 = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;
@@ -715,18 +703,6 @@ namespace ColorVision.ImageEditor
             }
         }
 
-
-        private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-        }
-
-        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
-        {
-        }
-
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)
@@ -776,8 +752,6 @@ namespace ColorVision.ImageEditor
             _handlers.Clear();
         }
 
-        public IImageOpen? IImageOpen { get; set; }
-
         public async void OpenImage(string? filePath)
         {
             //如果文件已经打开，不会重复打开
@@ -794,11 +768,11 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                IImageOpen = ImageComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (IImageOpen != null)
+                ImageViewModel.IImageOpen = ComponentManager.GetInstance().IImageOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
+                if (ImageViewModel.IImageOpen != null)
                 {
-                    Config.AddProperties("ImageViewOpen", IImageOpen);
-                    IImageOpen.OpenImage(this, filePath);
+                    Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
+                    ImageViewModel.IImageOpen.OpenImage(this, filePath);
                     return;
                 }
 
@@ -874,7 +848,9 @@ namespace ColorVision.ImageEditor
             ImageShow.Source = ViewBitmapSource;
 
             ImageShow.ImageInitialize();
+            ImageViewModel.Opened();
             ImageViewModel.ToolBarScaleRuler.IsShow = true;
+
         }
 
 
@@ -937,40 +913,6 @@ namespace ColorVision.ImageEditor
                 };
             });
         }
-
-
-        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
-        {
-            e.Handled = true;
-        }
-
-
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && DrawingVisualLists[listView.SelectedIndex] is Visual visual)
-            {
-                if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
-                {
-                    viewModelBase.PropertyChanged -= (s, e) =>
-                    {
-                        PropertyGrid2.Refresh();
-                    };
-                }
-
-                PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                drawingVisual.BaseAttribute.PropertyChanged += (s, e) =>
-                {
-                    PropertyGrid2.Refresh();
-                };
-                ImageShow.TopVisual(visual);
-            }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            Open();
-        }
-
 
 
         public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
@@ -1057,21 +999,17 @@ namespace ColorVision.ImageEditor
 
         }
         bool IsUpdateZoomAndScale = true;
-
         public void UpdateZoomAndScale()
         {
             if (IsUpdateZoomAndScale)
             {
-                Task.Run(() => {
-                    Application.Current?.Dispatcher.BeginInvoke(() =>
-                    {
-                        Zoombox1.ZoomUniform();
-                        ImageViewModel.ToolBarScaleRuler.Render();
-                    });
+                Application.Current?.Dispatcher.BeginInvoke(() =>
+                {
+                    Zoombox1.ZoomUniform();
+                    ImageViewModel.ToolBarScaleRuler.Render();
                 });
                 IsUpdateZoomAndScale = false;
             }
-
         }
 
         private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)

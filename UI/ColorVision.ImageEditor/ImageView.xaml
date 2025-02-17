@@ -78,7 +78,7 @@
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
                 <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.Row="1" Grid.RowSpan="2">
-                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
+                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
                 <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">

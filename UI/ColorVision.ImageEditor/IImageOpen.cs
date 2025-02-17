@@ -9,7 +9,7 @@ namespace ColorVision.ImageEditor
     {
         public List<string> Extension { get; }
 
-        public List<MenuItemMetadata> GetContextMenuItems(ImageView imageView);
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView);
 
         public void OpenImage(ImageView imageView, string? filePath);
     }

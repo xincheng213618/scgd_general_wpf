@@ -54,12 +54,13 @@ namespace ColorVision.ImageEditor.Draw
         public RelayCommand FlipVerticalCommand { get; set; }
 
         public RelayCommand SaveAsImageCommand { get; set; }
-        public RelayCommand ExportImageCommand { get; set; }
 
         public RelayCommand ClearImageCommand { get; set; }
 
         public event EventHandler ClearImageEventHandler;
-        public event EventHandler<string> OpenImageEventHandler;
+        public event EventHandler<string> OpenedImage;
+        public event EventHandler<string> OpeningImage;
+
 
         public RelayCommand PrintImageCommand { get; set; }
 
@@ -96,10 +97,11 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
+        public ImageViewConfig Config { get; set; } = new ImageViewConfig();
 
         public ContextMenu ContextMenu { get; set; }
         public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
-        public IImageOpen IImageViewOpen { get; set; }
+        public IImageOpen? IImageOpen { get; set; }
 
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
@@ -154,8 +156,8 @@ namespace ColorVision.ImageEditor.Draw
             RotateRightCommand = new RelayCommand(a => RotateRight());
             ContextMenu = new ContextMenu();
             MenuItemMetadatas = new List<MenuItemMetadata>();
-            ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
-
+            ContextMenu.Initialized += (s, e) => Opened();
+            OpenedImage += (s, e) => Opened();
             EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
@@ -164,12 +166,16 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else
                 {
-                    InitMenuItem();
-                    InitContextMenu();
+                    Opened();
                 }
             };
         }
 
+        public void Opened()
+        {
+            InitMenuItem(); 
+            InitContextMenu();
+        }
 
 
         public virtual void InitContextMenu()
@@ -262,6 +268,9 @@ namespace ColorVision.ImageEditor.Draw
         public virtual void InitMenuItem()
         {
             MenuItemMetadatas.Clear();
+            if (IImageOpen != null)
+                MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
+
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand , Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });
            
@@ -289,7 +298,7 @@ namespace ColorVision.ImageEditor.Draw
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                OpenImageEventHandler?.Invoke(this, openFileDialog.FileName);
+                OpeningImage?.Invoke(this, openFileDialog.FileName);
             }
         }
 
