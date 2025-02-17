@@ -51,9 +51,15 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         [Column("excluding_images"), DisplayName("归档不包含图像"),]
         public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; NotifyPropertyChanged(); } }
-        private bool _Excludingimages = false;
+        private bool _Excludingimages;
 
-        
+        [Column("del_local_file"), DisplayName("删除本地文件"),]
+        public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; NotifyPropertyChanged(); } }
+        private bool _DellocalFile;
+
+        [Column("data_save_hours"), DisplayName("数据保存小时数"),]
+        public bool DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; NotifyPropertyChanged(); } }
+        private bool _DataSaveHours ;
     }
 
     public class ConfigArchivedDao : BaseTableDao<ConfigArchivedModel>
