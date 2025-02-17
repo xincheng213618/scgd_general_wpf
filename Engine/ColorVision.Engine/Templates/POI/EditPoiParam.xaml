@@ -123,6 +123,8 @@
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
                         <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
+                        <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"  DockPanel.Dock="Right" Visibility="{Binding PoiConfig.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
+
                     </StackPanel>
                 </StackPanel>
             </Border>

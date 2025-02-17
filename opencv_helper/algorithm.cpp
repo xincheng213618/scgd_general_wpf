@@ -12,6 +12,65 @@
 #include <ctime>
 using namespace cv;
 
+
+int findLuminousArea(cv::Mat& src, cv::Rect& largestRect)
+{
+    // 检查输入图像是否为空
+    if (src.empty()) {
+        return -1;
+    }
+    Mat gray;
+    if (src.channels() != 1) {
+        // 转换为灰度图
+        cvtColor(src, gray, COLOR_BGR2GRAY);
+    }
+    else {
+        gray = src;
+    }
+    if (gray.depth() == CV_16U) {
+        cv::normalize(gray, gray, 0, 255, cv::NORM_MINMAX, CV_8U);
+    }
+    // 高斯模糊
+    GaussianBlur(gray, gray, Size(5, 5), 0);
+
+    // 阈值分割
+    Mat thresh;
+    threshold(gray, thresh, 100, 255, THRESH_BINARY);
+
+    // 形态学操作：膨胀
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+    dilate(thresh, thresh, kernel);
+
+    // 查找轮廓
+    std::vector< std::vector<Point>> contours;
+    findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    contours.erase(std::remove_if(contours.begin(), contours.end(),
+        [&](const std::vector<cv::Point>& contour) {
+            cv::Rect rect = cv::boundingRect(contour);
+            return rect.x == 0 || rect.y == 0 ||
+                rect.x + rect.width == src.cols ||
+                rect.y + rect.height == src.rows;
+        }), contours.end());
+
+
+    if (contours.size()==0)
+    {
+        return -2;
+    }
+
+    double maxArea = 0;
+    for (size_t i = 0; i < contours.size(); i++) {
+        double area = contourArea(contours[i]);
+        if (area > maxArea) {
+            maxArea = area;
+            largestRect = boundingRect(contours[i]);
+        }
+    }
+
+    return 0;
+}
+
 int drawPoiImage(cv::Mat& src, cv::Mat& dst, int radius, int* points, int pointCount,int thickness)
 {
     int depth = src.depth();

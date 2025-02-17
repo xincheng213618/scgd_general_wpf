@@ -343,6 +343,19 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 	return 0;
 }
 
+COLORVISIONCORE_API int M_FindLuminousArea(HImage img)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	// 检查输入图像是否为空
+	if (mat.empty()) {
+		return -1;
+	}
+	cv::Rect LuminousArea;
+	findLuminousArea(mat,LuminousArea);
+
+	return 0;
+}
+
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

@@ -1877,7 +1877,7 @@ namespace ColorVision.Engine.Templates.POI
         }
         public void RenderPseudo()
         {
-            Application.Current.Dispatcher.Invoke((Action)(() =>
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 if (Pseudo.IsChecked == false)
                 {
@@ -1919,6 +1919,20 @@ namespace ColorVision.Engine.Templates.POI
             }));
         }
 
+        private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (HImageCache != null)
+                {
+                    Task.Run(() =>
+                    {
+                        int ret = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache);
+                    });
+                };
+            }));
+
+        }
     }
 
 }

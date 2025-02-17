@@ -8,6 +8,8 @@ namespace ColorVision
     {
         private const string LibPath = "opencv_helper.dll";
 
+        [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
+        public static extern int M_FindLuminousArea(HImage img);
 
         /// <summary>
         /// 伪彩色
@@ -20,6 +22,8 @@ namespace ColorVision
         /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.Cdecl)]
         public static extern int M_PseudoColor(HImage image, out HImage hImage, uint min, uint max, ColormapTypes colormapTypes ,int channel);
+
+
 
         /// <summary>
         /// 自动对比度
