@@ -19,7 +19,7 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public override void Execute()
         {
-            string sql = "ALTER TABLE `t_scgd_sys_config_archived`\r\nADD COLUMN `excluding_images` tinyint(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;";
+            string sql = "ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `excluding_images` TINYINT(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `del_local_file` tinyint(1) NOT NULL DEFAULT '0';  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `data_save_hours` int(11) NOT NULL DEFAULT '0';";
             MySqlControl.GetInstance().ExecuteNonQuery(sql);
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
