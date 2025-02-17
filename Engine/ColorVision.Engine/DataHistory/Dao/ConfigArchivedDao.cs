@@ -49,6 +49,10 @@ namespace ColorVision.Engine.DataHistory.Dao
         public int DataSaveDays { get => _DataSaveDays; set { _DataSaveDays = value; NotifyPropertyChanged(); } }
         private int _DataSaveDays;
 
+        [Column("data_save_hours"), DisplayName("数据保存小时数"),]
+        public int DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; NotifyPropertyChanged(); } }
+        private int _DataSaveHours;
+
         [Column("excluding_images"), DisplayName("归档不包含图像"),]
         public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; NotifyPropertyChanged(); } }
         private bool _Excludingimages;
@@ -57,9 +61,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; NotifyPropertyChanged(); } }
         private bool _DellocalFile;
 
-        [Column("data_save_hours"), DisplayName("数据保存小时数"),]
-        public bool DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; NotifyPropertyChanged(); } }
-        private bool _DataSaveHours ;
+
     }
 
     public class ConfigArchivedDao : BaseTableDao<ConfigArchivedModel>
