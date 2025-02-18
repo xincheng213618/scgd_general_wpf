@@ -1952,6 +1952,7 @@ namespace ColorVision.Engine.Templates.POI
                                 PoiConfig.AreaRectHeight = rect.Height;
                                 PoiConfig.CenterX = rect.X + rect.Width / 2;
                                 PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                                RenderPoiConfig();
                             });
 
                         }

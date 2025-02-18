@@ -159,7 +159,7 @@ void LampBeadDetection(cv::Mat image,int rows, int cols)
 
     //缺少的点
     std::cout << blackcenters.size() << std::endl;
-    for (const auto& contour : blackcenters)
+    for (const auto& contour : blackcenters)  
     {
         std::cout << contour << std::endl;
         cv::circle(image8bit, contour, 5, cv::Scalar(0, 0, 255), 1);
