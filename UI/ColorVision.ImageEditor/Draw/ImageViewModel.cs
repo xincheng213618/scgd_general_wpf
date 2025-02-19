@@ -154,6 +154,7 @@ namespace ColorVision.ImageEditor.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
+
             ContextMenu = new ContextMenu();
             MenuItemMetadatas = new List<MenuItemMetadata>();
             ContextMenu.Initialized += (s, e) => Opened();
@@ -173,14 +174,13 @@ namespace ColorVision.ImageEditor.Draw
 
         public void Opened()
         {
+            MenuItemMetadatas.Clear();
+            ContextMenu.Items.Clear();
             InitMenuItem(); 
             InitContextMenu();
         }
-
-
         public virtual void InitContextMenu()
         {
-            ContextMenu.Items.Clear();
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
 
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
@@ -231,7 +231,7 @@ namespace ColorVision.ImageEditor.Draw
                     Header = menuItemMeta.Header,
                     Command = menuItemMeta.Command,
                     Icon = menuItemMeta.Icon,
-                    InputGestureText =menuItemMeta.InputGestureText,
+                    InputGestureText = menuItemMeta.InputGestureText,
                 };
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
@@ -267,7 +267,6 @@ namespace ColorVision.ImageEditor.Draw
 
         public virtual void InitMenuItem()
         {
-            MenuItemMetadatas.Clear();
             if (IImageOpen != null)
                 MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
 

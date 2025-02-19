@@ -104,20 +104,24 @@
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,3" >
-                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" MinWidth="50"/>
-                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="{Binding Config.ExpTimeMaxLog}"/>
-                        </DockPanel>
-
-                        <DockPanel Margin="0,0,0,3" >
                             <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain, StringFormat=F2}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged1"  Value="{Binding Config.Gain}" Minimum="0" Maximum="100"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                         </DockPanel>
                     </StackPanel>
 
                     <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}"  >
+                            <DockPanel Margin="0,0,0,3" >
+                                <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain, StringFormat=F2}" MinWidth="50"/>
+                                <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged1"  Value="{Binding Config.Gain}" Minimum="0" Maximum="100"/>
+                            </DockPanel>
                             <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                 <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50"  />

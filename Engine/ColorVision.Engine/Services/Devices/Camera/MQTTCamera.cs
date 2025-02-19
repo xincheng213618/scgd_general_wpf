@@ -294,6 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             Params.Add("ScaleFactor", Config.ScaleFactor);
+            Params.Add("Gain", Config.Gain);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 40000);

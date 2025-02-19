@@ -48,8 +48,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; NotifyPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
 
-        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private int _Gain = 10;
+        public float Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private float _Gain = 10;
 
         public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; NotifyPropertyChanged(); } }
         private double _ScaleFactor = 1.0;
