@@ -2,9 +2,9 @@
 
 namespace ColorVision.UI.Menus
 {
-    public interface IMenuItemMeta : IMenuItem
+    public abstract class IMenuItemMeta : MenuItemBase
     {
-        public MenuItem MenuItem { get; }
+        public virtual MenuItem MenuItem { get; }
     }
 
 }

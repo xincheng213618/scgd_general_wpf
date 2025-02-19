@@ -48,8 +48,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; NotifyPropertyChanged(); } }
         private bool _IsCVCIEFileSave = true;
 
-        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private int _Gain = 10;
+        public float Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private float _Gain = 10;
 
         public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; NotifyPropertyChanged(); } }
         private double _ScaleFactor = 1.0;
@@ -73,33 +73,34 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool IsAutoExpose { get => _IsAutoExpose; set { _IsAutoExpose =value; NotifyPropertyChanged(); } }
         private bool _IsAutoExpose;
 
-        public float ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeLog)); } }
-        private float _ExpTime = 10;
+        public double ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeLog)); } }
+        private double _ExpTime = 10;
 
-        public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeLog { get => Math.Log(ExpTime); set { ExpTime = Math.Pow(Math.E, value); } }
 
         public double ExpTimeMax { get => _ExpTimeMax; set { _ExpTimeMax = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMaxLog)); } }
         private double _ExpTimeMax = 60000;
 
-        public double ExpTimeMaxLog { get => Math.Log(ExpTimeMax); set { ExpTimeMax = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeMaxLog { get => Math.Log(ExpTimeMax); set { ExpTimeMax = Math.Pow(Math.E, value); } }
 
         public double ExpTimeMin { get => _ExpTimeMin; set { _ExpTimeMin = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeMinLog)); } }
         private double _ExpTimeMin = 1;
 
-        public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeMinLog { get => Math.Log(ExpTimeMin); set { ExpTimeMin = Math.Pow(Math.E, value); } }
 
-        public float ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
-        private float _ExpTimeR = 10;
+        public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeRLog)); } }
+        private double _ExpTimeR = 10;
 
-        public double ExpTimeRLog { get => Math.Log(ExpTimeR); set { ExpTimeR = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeRLog { get => Math.Log(ExpTimeR); set { ExpTimeR = Math.Pow(Math.E, value); } }
 
-        public float ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeGLog)); } }
-        private float _ExpTimeG = 10;
-        public double ExpTimeGLog { get => Math.Log(ExpTimeG); set { ExpTimeG = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeG { get => _ExpTimeG; set { _ExpTimeG = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeGLog)); } }
+        private double _ExpTimeG = 10;
+        public double ExpTimeGLog { get => Math.Log(ExpTimeG); set { ExpTimeG = Math.Pow(Math.E, value); } }
 
-        public float ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeBLog)); } }
-        private float _ExpTimeB = 10;
-        public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = (int)Math.Pow(Math.E, value); } }
+        public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeBLog)); } }
+        private double _ExpTimeB = 10;
+
+        public double ExpTimeBLog { get => Math.Log(ExpTimeB); set { ExpTimeB = Math.Pow(Math.E, value); } }
 
 
         public double Saturation { get => _Saturation; set { _Saturation = value; NotifyPropertyChanged(); } }

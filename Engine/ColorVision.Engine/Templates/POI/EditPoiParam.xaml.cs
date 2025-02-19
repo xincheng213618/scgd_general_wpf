@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Templates.POI
             ToolBarRight.DataContext = ImageEditViewMode;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
-                if (e.IsEditMode)
+                if (e)
                 {
                     PoiParam.PoiConfig.IsShowDatum = false;
                     PoiParam.PoiConfig.IsShowPoiConfig = false;
@@ -1685,17 +1685,18 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ComboBoxBorderType11.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
                 {
-                    startU = bitmapImage.PixelHeight * startU / 100;
-                    startD = bitmapImage.PixelHeight * startD / 100;
+                    startU = PoiParam.PoiConfig.AreaRectHeight * startU / 100;
+                    startD = PoiParam.PoiConfig.AreaRectHeight * startD / 100;
 
-                    startL = bitmapImage.PixelWidth * startL / 100;
-                    startR = bitmapImage.PixelWidth * startR / 100;
+                    startL = PoiParam.PoiConfig.AreaRectWidth * startL / 100;
+                    startR = PoiParam.PoiConfig.AreaRectWidth * startR / 100;
                 }
 
-                PoiParam.PoiConfig.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
-                PoiParam.PoiConfig.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
+                PoiParam.PoiConfig.AreaRectWidth = PoiParam.PoiConfig.AreaRectWidth - (int)startR - (int)startL;
+                PoiParam.PoiConfig.AreaRectHeight = PoiParam.PoiConfig.AreaRectHeight - (int)startD - (int)startD;
             }
             ImportMarinPopup1.IsOpen = false;
+            RenderPoiConfig();
         }
 
         private void ButtonImportMarin1_Click(object sender, RoutedEventArgs e)
@@ -1794,7 +1795,7 @@ namespace ColorVision.Engine.Templates.POI
 
             Int32Rect region = new Int32Rect();
             region.X = PoiParam.PoiConfig.CenterX - PoiParam.PoiConfig.AreaRectWidth/2;
-            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectWidth /2;
+            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectHeight / 2;
             region.Width = PoiParam.PoiConfig.AreaRectWidth;
             region.Height = PoiParam.PoiConfig.AreaRectHeight;
 
@@ -1825,12 +1826,13 @@ namespace ColorVision.Engine.Templates.POI
             // Show save file dialog
             if (saveFileDialog.ShowDialog() == true)
             {
-                SetImageSource(new WriteableBitmap(croppedBitmap));
                 using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create))
                 {
                     encoder.Save(fileStream);
                 }
                 PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
+                PoiParam.PoiConfig.BackgroundFilePath = saveFileDialog.FileName;
+                OpenImage(saveFileDialog.FileName);
             }
         }
 
@@ -1948,10 +1950,21 @@ namespace ColorVision.Engine.Templates.POI
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                PoiConfig.AreaRectWidth = rect.Width;
-                                PoiConfig.AreaRectHeight = rect.Height;
-                                PoiConfig.CenterX = rect.X + rect.Width / 2;
-                                PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                                if (rect.Width ==0)
+                                {
+                                    PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
+                                    PoiConfig.AreaRectHeight = (int)ViewBitmapSource.Height;
+                                    PoiConfig.CenterX = (int)ViewBitmapSource.Width /2;
+                                    PoiConfig.CenterY = (int)ViewBitmapSource.Height /2;
+                                }
+                                else
+                                {
+                                    PoiConfig.AreaRectWidth = rect.Width;
+                                    PoiConfig.AreaRectHeight = rect.Height;
+                                    PoiConfig.CenterX = rect.X + rect.Width / 2;
+                                    PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                                }
+
                                 RenderPoiConfig();
                             });
 

@@ -14,25 +14,29 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
         {
 
         }
+        [Category("Gain"), Description("增益")]
+        public float Gain { get => GetValue(_Gain); set { SetProperty(ref _Gain, value); } }
+        private float _Gain = 0;
+
 
         [Category("CameraExp"), Description("ExpTime")]
-        public int ExpTime { get => GetValue(_ExpTime); set { SetProperty(ref _ExpTime, value); } }
-        private int _ExpTime = 10;
+        public float ExpTime { get => GetValue(_ExpTime); set { SetProperty(ref _ExpTime, value); } }
+        private float _ExpTime = 10;
 
 
         [Category("CameraExp"), Description("ExpTime1")]
-        public int ExpTimeR { get => GetValue(_ExpTimeR); set { SetProperty(ref _ExpTimeR, value); } }
-        private int _ExpTimeR = 10;
+        public float ExpTimeR { get => GetValue(_ExpTimeR); set { SetProperty(ref _ExpTimeR, value); } }
+        private float _ExpTimeR = 10;
 
 
         [Category("CameraExp"), Description("ExpTime2")]
-        public int ExpTimeG { get => GetValue(_ExpTimeG); set { SetProperty(ref _ExpTimeG, value); } }
-        private int _ExpTimeG = 10;
+        public float ExpTimeG { get => GetValue(_ExpTimeG); set { SetProperty(ref _ExpTimeG, value); } }
+        private float _ExpTimeG = 10;
 
 
         [Category("CameraExp") ,Description("ExpTime3")]
-        public int ExpTimeB { get => GetValue(_ExpTimeB); set { SetProperty(ref _ExpTimeB, value); } }
-        private int _ExpTimeB = 10;
+        public float ExpTimeB { get => GetValue(_ExpTimeB); set { SetProperty(ref _ExpTimeB, value); } }
+        private float _ExpTimeB = 10;
 
 
         [Category("Focus"), Description("焦距")]

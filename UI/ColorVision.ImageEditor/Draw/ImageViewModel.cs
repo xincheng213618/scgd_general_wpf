@@ -19,25 +19,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class EditModeChangedEventArgs : EventArgs
-    {
-        public EditModeChangedEventArgs() { }   
-        public EditModeChangedEventArgs(bool isEditMode) { IsEditMode = isEditMode; }
-        public bool IsEditMode { get; set; }
-    }
-
-    public class WindowStatus
-    {
-        public object Root { get; set; }
-        public Panel Parent { get; set; }
-        public ContentControl ContentParent { get; set; }
-        public WindowStyle WindowStyle { get; set; }
-
-        public WindowState WindowState { get; set; }
-
-        public ResizeMode ResizeMode { get; set; }
-    }
-
     public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
@@ -154,13 +135,18 @@ namespace ColorVision.ImageEditor.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
+
             ContextMenu = new ContextMenu();
             MenuItemMetadatas = new List<MenuItemMetadata>();
             ContextMenu.Initialized += (s, e) => Opened();
-            OpenedImage += (s, e) => Opened();
+            OpenedImage += (s, e) =>
+            {
+                IsInitContextMenu = false;
+                Opened();
+            };
             EditModeChanged += (s, e) =>
             {
-                if (e.IsEditMode)
+                if (e)
                 {
                     ContextMenu.Items.Clear();
                 }
@@ -171,16 +157,17 @@ namespace ColorVision.ImageEditor.Draw
             };
         }
 
+        private bool IsInitContextMenu;
+
         public void Opened()
         {
+            if (IsInitContextMenu) return;
+            IsInitContextMenu = true;
             InitMenuItem(); 
             InitContextMenu();
         }
-
-
         public virtual void InitContextMenu()
         {
-            ContextMenu.Items.Clear();
             var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
 
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
@@ -191,22 +178,16 @@ namespace ColorVision.ImageEditor.Draw
                     var iMenuItem = iMenuItems1[i];
                     string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
                     MenuItem menuItem;
-                    if (iMenuItem is IMenuItemMeta menuItemMeta)
+
+                    menuItem = new MenuItem
                     {
-                        menuItem = menuItemMeta.MenuItem;
-                    }
-                    else
-                    {
-                        menuItem = new MenuItem
-                        {
-                            Header = iMenuItem.Header,
-                            Icon = iMenuItem.Icon,
-                            InputGestureText = iMenuItem.InputGestureText,
-                            Command = iMenuItem.Command,
-                            Tag = iMenuItem,
-                            Visibility = iMenuItem.Visibility,
-                        };
-                    }
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                        Visibility = iMenuItem.Visibility,
+                    };
 
                     CreateMenu(menuItem, GuidId);
                     if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
@@ -231,7 +212,7 @@ namespace ColorVision.ImageEditor.Draw
                     Header = menuItemMeta.Header,
                     Command = menuItemMeta.Command,
                     Icon = menuItemMeta.Icon,
-                    InputGestureText =menuItemMeta.InputGestureText,
+                    InputGestureText = menuItemMeta.InputGestureText,
                 };
                 if (menuItemMeta.GuidId != null)
                     CreateMenu(menuItem, menuItemMeta.GuidId);
@@ -262,7 +243,7 @@ namespace ColorVision.ImageEditor.Draw
             }
             menuItemBitmapScalingMode.SubmenuOpened += (s, e) => UpdateBitmapScalingMode();
             UpdateBitmapScalingMode();
-            ContextMenu.Items.Add(menuItemBitmapScalingMode);
+            ContextMenu.Items.Insert(4, menuItemBitmapScalingMode);
         }
 
         public virtual void InitMenuItem()
@@ -395,7 +376,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        private WindowStatus OldWindowStatus { get; set; }
+        private ImageWindowStatus OldWindowStatus { get; set; }
         public bool IsMax { get; set; }
         public void MaxImage()
         {
@@ -414,7 +395,7 @@ namespace ColorVision.ImageEditor.Draw
                 IsMax = true;
                 if (Parent.Parent is Panel p)
                 {
-                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus = new ImageWindowStatus();
                     OldWindowStatus.Parent = p;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;
@@ -431,7 +412,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else if (Parent.Parent is ContentControl content)
                 {
-                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus = new ImageWindowStatus();
                     OldWindowStatus.ContentParent = content;
                     OldWindowStatus.WindowState = window.WindowState;
                     OldWindowStatus.WindowStyle = window.WindowStyle;
@@ -858,7 +839,7 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
 
-        public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
+        public EventHandler<bool> EditModeChanged { get; set; }
 
         private bool _ImageEditMode;
 
@@ -871,7 +852,7 @@ namespace ColorVision.ImageEditor.Draw
                 if (value) ShowImageInfo = false;
                 _ImageEditMode = value;
 
-                EditModeChanged?.Invoke(this, new EditModeChangedEventArgs() { IsEditMode = value });
+                EditModeChanged?.Invoke(this, _ImageEditMode);
 
                 if (_ImageEditMode)
                 {

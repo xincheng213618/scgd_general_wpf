@@ -8,22 +8,18 @@ using System.Windows.Input;
 
 namespace ColorVision.Themes
 {
-    public class ThemesExport : IHotKey,IMenuItemMeta
+    public class ThemesExport : IMenuItemMeta, IHotKey
     {
-        public string? OwnerGuid => MenuItemConstants.Tool;
+        public override string OwnerGuid => MenuItemConstants.Tool;
 
-        public string? GuidId => "MenuTheme";
+        public override string GuidId => "MenuTheme";
 
-        public int Order => 1000;
-        public Visibility Visibility => Visibility.Visible;
+        public override int Order => 1000;
 
-        public string? Header => Properties.Resources.MenuTheme;
+        public override  string Header => Properties.Resources.MenuTheme;
 
-        public string? InputGestureText => "Ctrl + Shift + T";
-
-        public object? Icon => null;
-        public ICommand? Command => null;
-        public MenuItem MenuItem { get
+        public override string InputGestureText => "Ctrl + Shift + T";
+        public override MenuItem MenuItem { get
             { 
                 MenuItem MenuTheme = new() { Header = Header,InputGestureText =InputGestureText };
 
@@ -54,7 +50,7 @@ namespace ColorVision.Themes
 
         public HotKeys HotKeys => new(Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
-        private void Execute()
+        public override void Execute()
         {
             // 获取当前主题的索引
             int currentThemeIndex = (int)(ThemeManager.Current.CurrentTheme ?? Theme.UseSystem);

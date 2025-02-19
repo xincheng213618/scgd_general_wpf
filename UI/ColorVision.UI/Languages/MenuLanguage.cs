@@ -7,21 +7,15 @@ namespace ColorVision.UI.Languages
 {
     public class MenuLanguage : IMenuItemMeta
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => MenuItemConstants.Tool;
 
-        public string? GuidId => "MenuLanguage";
+        public override int Order => 1001;
 
-        public int Order => 1001;
+        public override string Header => Properties.Resources.MenuLanguage;
 
-        public string? Header => Properties.Resources.MenuLanguage;
+        public override string InputGestureText => "Ctrl + Shift + L";
 
-        public string? InputGestureText => "Ctrl + Shift + L";
-
-        public object? Icon => null;
-        public ICommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
-
-        public MenuItem MenuItem
+        public override MenuItem MenuItem
         {
             get
             {

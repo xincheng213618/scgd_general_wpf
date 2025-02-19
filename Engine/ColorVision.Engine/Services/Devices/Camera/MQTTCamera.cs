@@ -59,19 +59,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     {
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                         {
-                                            Config.ExpTimeR = (int)msg.Data[i].result;
-                                            Config.SaturationR = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeR = msg.Data[i].result;
+                                            Config.SaturationR = msg.Data[i].resultSaturation;
                                         }
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                         {
-                                            Config.ExpTimeG = (int)msg.Data[i].result;
-                                            Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeG = msg.Data[i].result;
+                                            Config.SaturationG = msg.Data[i].resultSaturation;
                                         }
 
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                         {
-                                            Config.ExpTimeB = (int)msg.Data[i].result;
-                                            Config.SaturationB = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeB = msg.Data[i].result;
+                                            Config.SaturationB = msg.Data[i].resultSaturation;
                                         }
                                     }
 
@@ -82,8 +82,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 }
                                 else
                                 {
-                                    Config.ExpTime = (int)msg.Data[0].result;
-                                    Config.Saturation = (int)msg.Data[0].resultSaturation;
+                                    Config.ExpTime = msg.Data[0].result;
+                                    Config.Saturation = msg.Data[0].resultSaturation;
 
                                     string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
@@ -294,6 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             Params.Add("ScaleFactor", Config.ScaleFactor);
+            Params.Add("Gain", Config.Gain);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 40000);

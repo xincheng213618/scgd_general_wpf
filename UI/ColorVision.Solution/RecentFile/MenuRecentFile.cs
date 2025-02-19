@@ -9,22 +9,15 @@ namespace ColorVision.Solution
 {
     public class MenuRecentFile : IMenuItemMeta
     {
-        public string? OwnerGuid => MenuItemConstants.File;
+        public override string OwnerGuid => MenuItemConstants.File;
 
-        public string? GuidId => "RecentFiles";
+        public override string GuidId => "RecentFiles";
 
-        public int Order => 80;
+        public override int Order => 80;
 
-        public string? Header => Resources.RecentFiles;
+        public override string Header => Resources.RecentFiles;
 
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-        public ICommand Command => null;
-
-        public Visibility Visibility => Visibility.Visible;
-
-        public MenuItem MenuItem
+        public override MenuItem MenuItem
         {
             get
             {
@@ -64,7 +57,6 @@ namespace ColorVision.Solution
             if (sender is MenuItem menuItem && menuItem.Header is string item)
             {
                 SolutionManager.GetInstance().OpenSolution(item);
-
             }
         }
     }
