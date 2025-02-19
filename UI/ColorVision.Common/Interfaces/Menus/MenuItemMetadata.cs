@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
-    public class MenuItemMetadata : IMenuItem
+    public  class MenuItemMetadata : IMenuItem
     {
         public string? OwnerGuid { get; set; } = MenuItemConstants.Menu;
 

@@ -178,22 +178,16 @@ namespace ColorVision.ImageEditor.Draw
                     var iMenuItem = iMenuItems1[i];
                     string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
                     MenuItem menuItem;
-                    if (iMenuItem is IMenuItemMeta menuItemMeta)
+
+                    menuItem = new MenuItem
                     {
-                        menuItem = menuItemMeta.MenuItem;
-                    }
-                    else
-                    {
-                        menuItem = new MenuItem
-                        {
-                            Header = iMenuItem.Header,
-                            Icon = iMenuItem.Icon,
-                            InputGestureText = iMenuItem.InputGestureText,
-                            Command = iMenuItem.Command,
-                            Tag = iMenuItem,
-                            Visibility = iMenuItem.Visibility,
-                        };
-                    }
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                        Visibility = iMenuItem.Visibility,
+                    };
 
                     CreateMenu(menuItem, GuidId);
                     if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
