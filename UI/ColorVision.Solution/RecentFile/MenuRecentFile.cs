@@ -64,7 +64,6 @@ namespace ColorVision.Solution
             if (sender is MenuItem menuItem && menuItem.Header is string item)
             {
                 SolutionManager.GetInstance().OpenSolution(item);
-
             }
         }
     }

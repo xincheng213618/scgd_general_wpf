@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Templates.POI
             ToolBarRight.DataContext = ImageEditViewMode;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
-                if (e.IsEditMode)
+                if (e)
                 {
                     PoiParam.PoiConfig.IsShowDatum = false;
                     PoiParam.PoiConfig.IsShowPoiConfig = false;
