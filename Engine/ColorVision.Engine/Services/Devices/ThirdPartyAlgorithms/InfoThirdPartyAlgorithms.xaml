@@ -86,11 +86,11 @@
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <Grid Margin="5">
                             <UniformGrid Margin="5" Columns="4" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
-                                <Button Content="配置第三方算法" Margin="5" Height="100" Width="180" Command="{Binding ThirdPartyAlgorithmsManagerCommand}"/>
-                                <Button Content="上传第三方插件" Margin="5" Height="100" Width="180" Command="{Binding UploadPluginCommand}"/>
-                                <Button Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}"  Command="{Binding EditCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RestartService}" Command="{Binding RefreshCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="配置第三方算法" Command="{Binding ThirdPartyAlgorithmsManagerCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="上传第三方插件" Command="{Binding UploadPluginCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </Grid>
                     </TabItem>

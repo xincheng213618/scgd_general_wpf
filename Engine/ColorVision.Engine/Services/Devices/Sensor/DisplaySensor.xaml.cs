@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Sensor.Templates;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using CVCommCore;
@@ -112,7 +113,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
             {
                 SensorCmd cmd = new() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000, Delay = 0, RetryCount = 1 };
-                DeviceService.ExecCmd(cmd);
+                MsgRecord msgRecord = DeviceService.ExecCmd(cmd);
+                msgRecord.MsgRecordStateChanged += (s) =>
+                {
+                    MessageBox.Show(s.ToString());
+                };
             }
         }
 

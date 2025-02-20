@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         /// 发送单个指令
         /// </summary>
         /// <param name="command"></param>
-        public void ExecCmd(SensorCmd command)
+        public MsgRecord ExecCmd(SensorCmd command)
         {
             SensorExecCmdParam req = new();
             req.Cmd = command;
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = req,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
         /// <summary>
         /// 发送模板
