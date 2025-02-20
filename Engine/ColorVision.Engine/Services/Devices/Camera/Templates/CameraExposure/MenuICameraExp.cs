@@ -5,12 +5,13 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
-    public class ExportCameraExp : MenuItemBase
+
+    public class MenuICameraExp : MenuItemBase
     {
-        public override string OwnerGuid => nameof(MenuTemplate);
+        public override string OwnerGuid => nameof(MenuItemCamera);
 
         public override int Order => 22;
-        public override string Header => "相机模板";   
+        public override string Header => "相机参数模板";   
 
         public override void Execute()
         {

@@ -14,9 +14,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
         {
 
         }
-        [Category("Gain"), Description("增益")]
+
+        [Category("Gain"),DisplayName("增益"), Description("增益")]
         public float Gain { get => GetValue(_Gain); set { SetProperty(ref _Gain, value); } }
-        private float _Gain = 0;
+        private float _Gain;
 
 
         [Category("CameraExp"), Description("ExpTime")]
