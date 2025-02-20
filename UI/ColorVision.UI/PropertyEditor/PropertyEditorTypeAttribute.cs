@@ -15,6 +15,21 @@ namespace System.ComponentModel
         TextBaudRate,
         CronExpression
     }
+    [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)] 
+    public sealed class CommandDisplayAttribute : Attribute
+    {
+        public static readonly CommandDisplayAttribute Default;
+        public string DisplayName { get; }
+
+        public CommandDisplayAttribute(string displayName) 
+        {
+            DisplayName = displayName; 
+        }
+    }
+
+
+
+
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]
     public class PropertyEditorTypeAttribute : Attribute

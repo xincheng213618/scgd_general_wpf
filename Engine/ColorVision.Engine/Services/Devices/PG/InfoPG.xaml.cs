@@ -1,8 +1,11 @@
 ﻿using ColorVision.UI.Extension;
 using System;
+using System.ComponentModel;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
@@ -21,6 +24,27 @@ namespace ColorVision.Engine.Services.Devices.PG
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DevicePG;
+
+            var properties = DevicePG.GetType().GetProperties();
+
+            foreach (var property in properties)
+            {
+                var attribute = property.GetCustomAttribute<CommandDisplayAttribute>();
+                if (attribute != null)
+                {
+                    var command = property.GetValue(DevicePG) as ICommand;
+                    if (command != null)
+                    {
+                        var button = new Button
+                        {
+                            Style = (Style)FindResource("ButtonCommand"),
+                            Content = attribute.DisplayName,
+                            Command = command
+                        };
+                        CommandGrid.Children.Add(button);
+                    }
+                }
+            }
         }
 
         private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)

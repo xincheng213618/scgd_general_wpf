@@ -18,6 +18,14 @@ namespace ColorVision.UI
     {
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new ConcurrentDictionary<Type, Lazy<ResourceManager?>>();
 
+
+        public static void GenCommand(ViewModelBase obj, UniformGrid uniformGrid)
+        {
+
+
+        }
+
+
         public static StackPanel GenPropertyEditorControl(ViewModelBase obj)
         {
             Type type = obj.GetType();

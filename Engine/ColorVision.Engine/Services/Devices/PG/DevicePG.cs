@@ -8,12 +8,15 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.PG.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
     public class DevicePG : DeviceService<ConfigPG>
     {
         public MQTTPG DService { get; set; }
+
+        [CommandDisplayAttribute("PG模板配置")]
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 

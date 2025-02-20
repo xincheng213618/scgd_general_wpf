@@ -15,6 +15,7 @@ using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,6 +47,8 @@ namespace ColorVision.Engine.Services
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand RefreshCommand { get; set; }
+
+        [CommandDisplayAttribute("ModifyConfiguration")]
         public RelayCommand EditCommand { get; set; }
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
