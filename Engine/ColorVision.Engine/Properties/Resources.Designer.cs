@@ -1249,7 +1249,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用传感器模板设置(_S) 的本地化字符串。
+        ///   查找类似 传感器模板(_S) 的本地化字符串。
         /// </summary>
         public static string MenuSensor {
             get {

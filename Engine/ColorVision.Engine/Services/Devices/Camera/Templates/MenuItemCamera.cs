@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates
     {
         public override string OwnerGuid => nameof(MenuTemplate);
         public override int Order => 10;
-        public override string Header => "相机模板";
+        public override string Header => "相机";
 
     }
 

@@ -4,7 +4,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU.Templates
 {
     public class MenuSMUParam : MenuItemBase
     {

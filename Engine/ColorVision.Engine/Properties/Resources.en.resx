@@ -400,7 +400,7 @@
     <value>Administrator _Service Configuration</value>
   </data>
   <data name="MenuSensor" xml:space="preserve">
-    <value>Generic sensor template settings(_H)</value>
+    <value>Sensor Template (_H)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
     <value>Rena_me</value>

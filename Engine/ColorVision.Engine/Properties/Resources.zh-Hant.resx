@@ -400,7 +400,7 @@
     <value>管理員服務配置(_S)</value>
   </data>
   <data name="MenuSensor" xml:space="preserve">
-    <value>通用感測器模板設定(_H)</value>
+    <value>感測器模板(_H)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
     <value>重命名(_M)</value>
