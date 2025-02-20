@@ -85,9 +85,8 @@
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
                             <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Button Content="{x:Static properties:Resources.RestartService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
-                                <Button Content="资源组管理" Margin="5" Height="100" Width="150" Command="{Binding ResourceManagerCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}" Command="{Binding EditCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RestartService}" Command="{Binding RefreshCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

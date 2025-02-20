@@ -25,6 +25,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
 using FlowEngineLib.Base;
+using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -191,7 +192,7 @@ namespace ColorVision.Projects.ProjectShiYuan
             {
                 if (FlowTemplate.SelectedIndex > -1)
                 {
-                    var tokens = ServiceManager.GetInstance().ServiceTokens;
+                    var tokens = MqttRCService.GetInstance().ServiceTokens;
                     foreach (var item in STNodeEditorMain.Nodes)
                     {
                         if (item is CVCommonNode algorithmNode)

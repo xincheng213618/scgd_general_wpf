@@ -48,8 +48,6 @@ namespace ColorVision.Engine.Services
 
         public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
-
-        public List<MQTTServiceInfo> ServiceTokens => MqttRCService.GetInstance().ServiceTokens;
         public ServiceManager()
         {
             if (MySqlControl.GetInstance().IsConnect)
