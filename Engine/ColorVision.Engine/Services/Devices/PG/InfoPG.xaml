@@ -90,6 +90,9 @@
                             <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                                 <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}"  Command="{Binding EditCommand}"/>
                                 <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RestartService}"  Command="{Binding RefreshCommand}"/>
+                                <Button Style="{StaticResource ButtonCommand}" Content="PG模板配置"  Command="{Binding EditPGTemplateCommand}"/>
+
+                                
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>
