@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             };
             PublishAsyncClient(msg);
         }
+
         /// <summary>
         /// 发送单个指令
         /// </summary>

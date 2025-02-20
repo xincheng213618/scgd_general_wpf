@@ -76,7 +76,9 @@
     <!-- 浅青色 -->
     <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#D1E8EB"/>
     <!-- 次要背景色 -->
-
+    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#EAB1C7"/>
+    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="Transparent"/>
+    
     <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#00ACC1"/>
     <!-- 深青色 -->
     <SolidColorBrush x:Key="environmentcommandbar"  Color="#B2EBF2"/>
