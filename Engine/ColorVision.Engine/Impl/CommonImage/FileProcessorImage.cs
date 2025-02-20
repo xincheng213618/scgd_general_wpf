@@ -4,7 +4,7 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.Engine.Impl.CommonImage
+namespace ColorVision.Solution.Imp.CommonImage
 {
     public class FileProcessorImage : IFileProcessor
     {

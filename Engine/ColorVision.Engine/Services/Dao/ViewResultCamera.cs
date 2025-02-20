@@ -139,7 +139,7 @@ namespace ColorVision.Engine.Services.Dao
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageEditViewMode.ClearImage();
+                    imageView.ImageViewModel.ClearImage();
                 }));
             }
             else

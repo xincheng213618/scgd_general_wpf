@@ -3,46 +3,32 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
+using ColorVision.Common.Utilities;
 using ColorVision.Solution.Properties;
+using ColorVision.UI;
+using ColorVision.UI.Menus;
+using Newtonsoft.Json.Linq;
 
 namespace ColorVision.Solution.V.Folders
 {
     public class VFolder : VObject
     {
-        public IFolder Folder { get; set; }
+        public IFolderMeta FolderMeta { get; set; }
 
-        public DirectoryInfo DirectoryInfo { get => Folder.DirectoryInfo; set { Folder.DirectoryInfo = value; } }
+        public DirectoryInfo DirectoryInfo { get => FolderMeta.DirectoryInfo; set { FolderMeta.DirectoryInfo = value; } }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand CopyFullPathCommand { get; set; }
         public RelayCommand AddDirCommand { get; set; }
         FileSystemWatcher FileSystemWatcher { get; set; }
+        public bool HasFile { get => this.HasFile(); }
 
-        public VFolder(IFolder folder)
+        public VFolder(IFolderMeta folder) :base()
         {
-            Folder = folder;
-            Name = folder.Name;
+            FolderMeta = folder;
             ToolTip = folder.ToolTip;
-            FullPath = folder.DirectoryInfo.FullName;
-            OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
-
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
-            AddDirCommand = new RelayCommand(a => VMCreate.Instance.AddDir(this, DirectoryInfo.FullName));
-
-            ContextMenu.Items.Add(new Separator());
-            MenuItem menuItem5 = new() { Header = "复制完整路径", Command = CopyFullPathCommand };
-            ContextMenu.Items.Add(menuItem5);
-
-            MenuItem menuItem3 = new() { Header = "添加" };
-            MenuItem menuItem4 = new() { Header = "添加文件夹", Command = AddDirCommand };
-            menuItem3.Items.Add(menuItem4);
-            ContextMenu.Items.Add(menuItem3);
-            ContextMenu.Items.Add(new Separator());
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
-
+            Name1 = folder.Name;
+            FullPath = DirectoryInfo.FullName;
             if (DirectoryInfo != null && DirectoryInfo.Exists)
             {
                 FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);
@@ -53,7 +39,7 @@ namespace ColorVision.Solution.V.Folders
                     {
                         Application.Current?.Dispatcher.Invoke(() =>
                         {
-                            VMCreate.Instance.CreateFile(this, new FileInfo(e.FullPath));
+                            VMUtil.Instance.CreateFile(this, new FileInfo(e.FullPath));
                         });
                         return;
                     }
@@ -61,7 +47,7 @@ namespace ColorVision.Solution.V.Folders
                     {
                         Application.Current?.Dispatcher.Invoke(async () =>
                         {
-                            await VMCreate.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
+                            await VMUtil.Instance.CreateDir(this, new DirectoryInfo(e.FullPath));
                         }); ;
                         return;
                     }
@@ -90,31 +76,47 @@ namespace ColorVision.Solution.V.Folders
                 FileSystemWatcher.EnableRaisingEvents = true;
 
             }
+
+            OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            Task.Run(() => GeneralChild());
+            AddChildEventHandler +=(s,e) => NotifyPropertyChanged(nameof(HasFile));
         }
 
+        public virtual void GeneralChild()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                VMUtil.Instance.GeneralChild(this, DirectoryInfo);
+            });
+        }
 
-        public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }
+        public override void InitContextMenu()
+        {
+            base.InitContextMenu();
+        }
+
+        public override void InitMenuItem()
+        {
+            base.InitMenuItem();
+            MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = ColorVision.Solution.Properties.Resources.MenuAdd });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" ,Icon = MenuItemIcon.TryFindResource("DICopy") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
+        }
+
+        public override void ShowProperty()
+        {
+            FileProperties.ShowFolderProperties(DirectoryInfo.FullName);
+        }
+
+        public override ImageSource Icon {get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
 
         public override void Open()
         {
-            if (this is VFolder vFolder)
-            {
-                if (vFolder.Folder is IFolder folder)
-                {
-                    folder.Open();
-                }
-            }
-        }
 
-        public override void Copy()
-        {
-            if (this is VFolder vFolder)
-            {
-                if (vFolder.Folder is IFolder folder)
-                {
-                    folder.Copy();
-                }
-            }
         }
 
         public override bool ReName(string name)
@@ -141,7 +143,7 @@ namespace ColorVision.Solution.V.Folders
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
 
                     this.VisualChildren.Clear();
-                    VMCreate.Instance.GeneralChild(this,this.DirectoryInfo);
+                    VMUtil.Instance.GeneralChild(this,this.DirectoryInfo);
                     if (FileSystemWatcher != null)
                     {
                         FileSystemWatcher.Path = DirectoryInfo.FullName;
@@ -158,12 +160,12 @@ namespace ColorVision.Solution.V.Folders
             }
         }
 
-
-
         public override void Delete()
         {
-            base.Delete();
-            Folder.Delete();
+            if (MessageBox.Show(Application.Current.GetActiveWindow(),$"\"{Name}\"{ColorVision.Solution.Properties.Resources.FolderDeleteSign}","ColorVision",MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            {
+                base.Delete();
+            }
         }
 
         public override bool CanReName { get => _CanReName; set { _CanReName = value; NotifyPropertyChanged(); } }

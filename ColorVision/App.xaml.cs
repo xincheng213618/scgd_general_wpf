@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -50,8 +51,10 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
+                log.Info("检测不到许可证，正在创建许可证");
                 UI.ACE.License.Create();
             }
             bool IsDebug = Debugger.IsAttached;
@@ -59,15 +62,21 @@ namespace ColorVision
 
             parser.AddArgument("debug", true, "d");
             parser.AddArgument("restart", true, "r");
-            parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
 
             IsDebug = Debugger.IsAttached || parser.GetFlag("debug");
 
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
-            //加载Engine
-            Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+            //加载DLL
+            if (File.Exists("ColorVision.Engine.dll"))
+                Assembly.LoadFrom("ColorVision.Engine.dll"); ;
+            if (File.Exists("ColorVision.Scheduler.dll"))
+                Assembly.LoadFrom("ColorVision.Scheduler.dll"); ;
+            if (File.Exists("ColorVision.ImageEditor.dll"))
+                Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
+            if (File.Exists("ColorVision.Solution.dll"))
+                Assembly.LoadFrom("ColorVision.Solution.dll"); ;
 
             ConfigHandler.GetInstance();
             Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
@@ -76,10 +85,10 @@ namespace ColorVision
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
-            parser.AddArgument("input", false, "i");
-            parser.AddArgument("export", false, "e");
-            parser.Parse();
 
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
+            parser.AddArgument("input", false, "i");
+            parser.Parse();
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
@@ -90,7 +99,8 @@ namespace ColorVision
                     return;
                 }
             }
-
+            parser.AddArgument("export", false, "e");
+            parser.Parse();
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
             {

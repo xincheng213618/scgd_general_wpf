@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Projects"
         d:DataContext="{d:DesignInstance local:ProjectManager}"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="ProjectManagerWindow" Height="450" Width="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.ProjectManagerWindow}" Height="450" Width="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -32,28 +33,28 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="名称">
+                        <GridViewColumn Header="{x:Static properties:Resources.ProjectName}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ProjectInfo}">
                                     <TextBlock Text="{Binding Project.Header,Mode=OneWay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Version">
+                        <GridViewColumn Header="{x:Static properties:Resources.Version}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ProjectInfo}">
                                     <TextBlock Text="{Binding AssemblyVersion}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Date">
+                        <GridViewColumn Header="{x:Static properties:Resources.BuildDate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ProjectInfo}">
                                     <TextBlock Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="命令">
+                        <GridViewColumn Header="{x:Static properties:Resources.Command}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ProjectInfo}">
                                     <StackPanel Orientation="Horizontal">

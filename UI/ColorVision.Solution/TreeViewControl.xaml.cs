@@ -21,7 +21,7 @@ namespace ColorVision.Solution
                 uIElement = (UIElement)VisualTreeHelper.GetParent(uIElement);
                 if (uIElement is TreeViewItem)
                 {
-                    num += 4.0;
+                    num += 12.0;
                 }
             }
 
@@ -49,14 +49,10 @@ namespace ColorVision.Solution
         {
             this.DataContext = SolutionManager;
             SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
-            SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
 
+            SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
             IniCommand();
-            Window window = Application.Current.MainWindow;
-            if (window != null)
-                window.Closing += Window_Closed;
         }
-        
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -112,13 +108,7 @@ namespace ColorVision.Solution
 
         private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
-        private TreeViewItem? LastSelectedTreeViewItem;
 
-
-        private void Window_Closed(object? sender, EventArgs e)
-        {
-
-        }
 
         //第一次的点击逻辑
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e)
@@ -132,28 +122,17 @@ namespace ColorVision.Solution
                 TreeViewItem item = ViewHelper.FindVisualParent<TreeViewItem>(result.VisualHit);
                 if (item == null)
                     return;
-                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject viewModeBase)
+                if (item.DataContext is VObject vObject)
                 {
-                    viewModeBase.IsEditMode = false;
-                    if (LastSelectedTreeViewItem?.DataContext is VObject VObject)
-                    {
-                        viewModeBase.IsSelected = true;
-                        VObject.IsSelected = true;
-
-                    }
+                    vObject.IsSelected = true;
+                }
+                if (SelectedTreeViewItem != null && SelectedTreeViewItem != item && SelectedTreeViewItem.DataContext is VObject vobj)
+                {
+                    vobj.IsEditMode = false;
                 }
                 SelectedTreeViewItem = item;
-
-                LastSelectedTreeViewItem = item;
-
-
-                if (SolutionManager.SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
-                {
-
-                }
                 if (e.ClickCount == 2)
                 {
-
                 }
             }
             else

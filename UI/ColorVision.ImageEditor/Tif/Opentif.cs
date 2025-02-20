@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
+using ColorVision.UI.Menus.Base;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,7 +13,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
-    public class Opentif : IImageViewOpen, IFileProcessor
+    public class Opentif : IImageOpen, IFileProcessor
     {
         public string GetExtension() => "图像文件 (*.tif)|*.tif";
 
@@ -44,7 +46,7 @@ namespace ColorVision.ImageEditor.Tif
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageEditViewMode.ClearImage();
+                    imageView.ImageViewModel.ClearImage();
                 }));
             }
         }
@@ -136,12 +138,10 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
-        public List<MenuItem> GetContextMenuItems(ImageView imageView)
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView)
         {
-            return new List<MenuItem>();
+            return new List<MenuItemMetadata>();
         }
-
-
     }
 
 }

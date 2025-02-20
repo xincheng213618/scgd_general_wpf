@@ -160,6 +160,15 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
+        ///   查找类似 及其所有内容讲永久删除。 的本地化字符串。
+        /// </summary>
+        public static string FolderDeleteSign {
+            get {
+                return ResourceManager.GetString("FolderDeleteSign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入 的本地化字符串。
         /// </summary>
         public static string Import {
@@ -169,11 +178,11 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 复制(_C) 的本地化字符串。
+        ///   查找类似 添加(_D) 的本地化字符串。
         /// </summary>
-        public static string MenuCopy {
+        public static string MenuAdd {
             get {
-                return ResourceManager.GetString("MenuCopy", resourceCulture);
+                return ResourceManager.GetString("MenuAdd", resourceCulture);
             }
         }
         
@@ -187,20 +196,11 @@ namespace ColorVision.Solution.Properties {
         }
         
         /// <summary>
-        ///   查找类似 剪切(_T) 的本地化字符串。
+        ///   查找类似 打开(_O) 的本地化字符串。
         /// </summary>
-        public static string MenuCut {
+        public static string MenuOpen {
             get {
-                return ResourceManager.GetString("MenuCut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 新建(_N) 的本地化字符串。
-        /// </summary>
-        public static string MenuNew {
-            get {
-                return ResourceManager.GetString("MenuNew", resourceCulture);
+                return ResourceManager.GetString("MenuOpen", resourceCulture);
             }
         }
         
@@ -219,6 +219,24 @@ namespace ColorVision.Solution.Properties {
         public static string MenuOpenFileInExplorer {
             get {
                 return ResourceManager.GetString("MenuOpenFileInExplorer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 属性(_R) 的本地化字符串。
+        /// </summary>
+        public static string MenuProperty {
+            get {
+                return ResourceManager.GetString("MenuProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 新建文件夹 的本地化字符串。
+        /// </summary>
+        public static string NewFolder {
+            get {
+                return ResourceManager.GetString("NewFolder", resourceCulture);
             }
         }
         

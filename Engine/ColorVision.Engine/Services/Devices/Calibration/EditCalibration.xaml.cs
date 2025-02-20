@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -44,6 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             CameraPhyID.SelectedValuePath = "Name";
             EditConfig = DeviceCalibration.Config.Clone();
             EditContent.DataContext = EditConfig;
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
 
 
         }

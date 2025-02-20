@@ -16,9 +16,9 @@ namespace ColorVision.Wizards
         Tile
     }
 
-    public class WizardConfig : ViewModelBase ,IConfig
+    public class WizardConfig : ViewModelBase, IConfig
     {
-        public static WizardConfig Instance =>ConfigService.Instance.GetRequiredService<WizardConfig>();
+        public static WizardConfig Instance => ConfigService.Instance.GetRequiredService<WizardConfig>();
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
         private bool _WizardCompletionKey;
 
@@ -28,15 +28,21 @@ namespace ColorVision.Wizards
         public bool IsList => WizardShowType == WizardShowType.List;
     }
 
+    public class WizardWindowConfig:UI.WindowConfig { }
+
     /// <summary>
     /// WizardWindow.xaml 的交互逻辑
     /// </summary>
     public partial class WizardWindow : Window
     {
+        public static WizardWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
+
         public WizardWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
+            WindowConfig.SetWindow(this);
+            this.SizeChanged +=(s,e)=> WindowConfig.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)

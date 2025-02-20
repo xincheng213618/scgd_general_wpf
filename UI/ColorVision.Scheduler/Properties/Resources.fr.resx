@@ -126,4 +126,49 @@
   <data name="CreateTask" xml:space="preserve">
     <value>Créer des tâches</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>Commencer</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>PauseTout</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>ReprendreTout</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>Arrêt</value>
+  </data>
+  <data name="CronExpression" xml:space="preserve">
+    <value>ExpressionCron</value>
+  </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>NomDuGroupe</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>NomDuPoste</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Statut</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>CompteurDeCourses</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>ProchaineHeureDeDéclenchement</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>HeureDuDernierDéclenchement</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>Arrêtez</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>rétablissement</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Commande</value>
+  </data>
 </root>

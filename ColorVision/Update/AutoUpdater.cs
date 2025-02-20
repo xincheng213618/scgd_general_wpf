@@ -3,8 +3,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using log4net;
+using ScottPlot.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -189,6 +189,65 @@ namespace ColorVision.Update
             });
         }
 
+        public async Task CheckAndUpdateV1(bool detection = true)
+        {
+            // 获取本地版本
+            try
+            {
+                // 获取服务器版本
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                var Version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (LatestVersion > Version)
+                {
+                    bool IsIncrement = false;
+                    if (LatestVersion.Build == Version.Build)
+                        IsIncrement = true;
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
+                    Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
+                    if (match.Success)
+                    {
+                        // 如果找到匹配项，提取变更日志
+                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    if (detection)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LatestVersion = CurrentVersion ?? new Version();
+                log.Info(ex);
+            }
+        }
+
+
         // 调用函数以删除所有更新文件
         public async Task CheckAndUpdate(bool detection = true,bool IsIncrement = false)
         {
@@ -200,10 +259,14 @@ namespace ColorVision.Update
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
+                    if (IsIncrement && LatestVersion.Build != Version.Build)
+                    {
+                        LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
+                    }
+
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
-
                     if (match.Success)
                     {
                         // 如果找到匹配项，提取变更日志
@@ -241,7 +304,7 @@ namespace ColorVision.Update
             catch (Exception ex)
             {
                 LatestVersion = CurrentVersion??new Version();
-                Console.WriteLine("An error occurred while updating: " + ex.Message);
+                log.Info(ex);
             }
         }
 
@@ -362,7 +425,7 @@ namespace ColorVision.Update
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
+                    MessageBox.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
                     return;
                 }
 
@@ -373,6 +436,8 @@ namespace ColorVision.Update
                 var isMoreToRead = true;
 
                 stopwatch.Start();
+                SpeedValue = $"{totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
+                RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(0):hh\\:mm\\:ss}";
 
                 using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
                 using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))

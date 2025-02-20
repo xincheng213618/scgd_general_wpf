@@ -8,15 +8,16 @@ namespace ColorVision.UI.Dump
 {
     public class MenuDump : IMenuItemMeta
     {
-        public string? OwnerGuid => "Help";
+        public override string OwnerGuid => MenuItemConstants.Help;
 
-        public string? GuidId => "MenuDumpConfig";
+        public override string GuidId => "MenuDumpConfig";
 
-        public int Order => 10000;
+        public override int Order => 10000;
 
-        public string? Header => "转储文件设置";
+        public override string Header => "转储文件设置";
+
         DumpConfig DumpConfig = new DumpConfig();
-        public MenuItem MenuItem
+        public override MenuItem MenuItem
         {
             get
             {
@@ -59,15 +60,6 @@ namespace ColorVision.UI.Dump
                 return MenuDump;
             }
         }
-
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public ICommand Command => null;
-
-        public Visibility Visibility => Visibility.Visible;
 
     }
 }

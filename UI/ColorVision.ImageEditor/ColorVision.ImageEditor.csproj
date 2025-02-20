@@ -5,10 +5,12 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
+		<VersionPrefix>1.1.10.6</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -74,7 +76,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.25.0" />
+		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.26.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 	</ItemGroup>
 
@@ -148,9 +150,22 @@
 		<Compile Update="HistogramChartWindow.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
+		<Compile Update="Properties\Resources.Designer.cs">
+		  <DesignTime>True</DesignTime>
+		  <AutoGen>True</AutoGen>
+		  <DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
 		<Compile Update="Window3D.xaml.cs">
 			<SubType>Code</SubType>
 		</Compile>
 	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Update="Properties\Resources.resx">
+	    <Generator>PublicResXFileCodeGenerator</Generator>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+	  </EmbeddedResource>
+	</ItemGroup>
+
 
 </Project>

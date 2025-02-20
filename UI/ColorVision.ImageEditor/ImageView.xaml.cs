@@ -3,7 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -41,26 +43,23 @@ namespace ColorVision.ImageEditor
         }
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
-        public ImageEditViewMode ImageEditViewMode { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
 
         public View View { get; set; }
 
-        public ImageViewConfig Config { get => _Config; set { _Config = value;  } }
-        private ImageViewConfig _Config;
+        public ImageViewConfig Config { get => ImageViewModel.Config; set { ImageViewModel.Config = value;  } }
 
         public ImageView()
         {
-            Config = new ImageViewConfig();
             View = new View();
             InitializeComponent();
             SetConfig(Config);
-            foreach (var item in ImageViewComponentManager.GetInstance().IImageViewComponents)
+            foreach (var item in ComponentManager.GetInstance().IImageComponents)
                 item.Execute(this);
         }
-        private void Zoombox1_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
 
-        }
+
+
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             if (Config != null)
@@ -72,7 +71,7 @@ namespace ColorVision.ImageEditor
             this.DataContext = this;
             ToolBarLeft.DataContext = Config;
             Zoombox1.DataContext = imageViewConfig;
-            ImageEditViewMode.OpenProperty = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
+            ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
             Config.ColormapTypesChanged += Config_ColormapTypesChanged;
             Config.BalanceChanged += ImageViewConfig_BalanceChanged;
@@ -87,31 +86,21 @@ namespace ColorVision.ImageEditor
 
         private void ImageViewConfig_BalanceChanged(object? sender, EventArgs e)
         {
-            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, () => AdjustWhiteBalance());
+            Common.Utilities.DebounceTimer.AddOrResetTimer("AdjustWhiteBalance", 30, AdjustWhiteBalance);
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ImageEditViewMode = new ImageEditViewMode(this,Zoombox1, ImageShow);
-            ToolBar1.DataContext = ImageEditViewMode;
-            ToolBarRight.DataContext = ImageEditViewMode;
-            ToolBarBottom.DataContext = ImageEditViewMode;
-            ImageEditViewMode.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
-            ImageEditViewMode.ClearImageEventHandler += Clear;
-            ImageEditViewMode.EditModeChanged += (s, e) =>
-            {
-                if (e.IsEditMode)
-                {
-                    Zoombox1.ContextMenu?.Items.Clear();
-
-                }
-                else
-                {
-                    RenderContextMenu();
-                }
-            };
+            ImageViewModel = new ImageViewModel(this,Zoombox1, ImageShow);
+            Zoombox1.ContextMenu = ImageViewModel.ContextMenu;
+            ToolBar1.DataContext = ImageViewModel;
+            ToolBarRight.DataContext = ImageViewModel;
+            ToolBarBottom.DataContext = ImageViewModel;
+            ImageViewModel.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
+            ImageViewModel.ClearImageEventHandler += Clear;
+            ImageViewModel.OpeningImage += (s, e) => OpenImage(e);
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
@@ -181,7 +170,7 @@ namespace ColorVision.ImageEditor
             }
             else if (e.Key == Key.E)
             {
-                ImageEditViewMode.ImageEditMode = !ImageEditViewMode.ImageEditMode;
+                ImageViewModel.ImageEditMode = !ImageViewModel.ImageEditMode;
             }
         }
 
@@ -204,16 +193,20 @@ namespace ColorVision.ImageEditor
             if (Config.IsLayoutUpdated)
             {
                 double scale = 1/ Zoombox1.ContentMatrix.M11;
-                foreach (var item in DrawingVisualLists)
-                {
-                    item.Pen.Thickness = scale;
-                    item.Render();
-                }
+                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender", 20, ()=>ImageLayoutUpdatedRender(scale));
+            }
+        }
+
+        public void ImageLayoutUpdatedRender(double scale)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                item.Pen.Thickness = scale;
+                item.Render();
             }
         }
 
         private DrawingVisual SelectRect = new DrawingVisual();
-        private DrawingVisual SelectRect1 = new DrawingVisual();
 
         private bool IsMouseDown;
         private Point MouseDownP;
@@ -230,12 +223,12 @@ namespace ColorVision.ImageEditor
 
         private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
         {
-            if (ImageEditViewMode.ImageEditMode)
+            if (ImageViewModel.ImageEditMode)
             {
                 var Point = Mouse.GetPosition(ImageShow);
                 var DrawingVisual = ImageShow.GetVisual(Point);
 
-                if (DrawingVisual != null && ImageEditViewMode.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
+                if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
                     Zoombox1.ContextMenu ??= new ContextMenu();
                     Zoombox1.ContextMenu.Items.Clear();
@@ -286,9 +279,9 @@ namespace ColorVision.ImageEditor
 
         public void SelectDrawingVisualsClear()
         {
-            if (ImageEditViewMode.SelectDrawingVisuals != null)
+            if (ImageViewModel.SelectDrawingVisuals != null)
             {
-                foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                foreach (var item in ImageViewModel.SelectDrawingVisuals)
                 {
                     if (item is IDrawingVisual id)
                     {
@@ -296,20 +289,20 @@ namespace ColorVision.ImageEditor
                         id.Render();
                     }
                 }
-                ImageEditViewMode.SelectDrawingVisuals = null;
+                ImageViewModel.SelectDrawingVisuals = null;
             }
         }
 
         public void SelectDrawingVisualClear()
         {
-            if (ImageEditViewMode.SelectDrawingVisual != null)
+            if (ImageViewModel.SelectDrawingVisual != null)
             {
-                if (ImageEditViewMode.SelectDrawingVisual is IDrawingVisual id)
+                if (ImageViewModel.SelectDrawingVisual is IDrawingVisual id)
                 {
                     id.Pen.Brush = Brushes.Red;
                     id.Render();
                 }
-                ImageEditViewMode.SelectDrawingVisual = null;
+                ImageViewModel.SelectDrawingVisual = null;
             }
         }
 
@@ -317,23 +310,23 @@ namespace ColorVision.ImageEditor
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
             {
-                if (ImageEditViewMode.Gridline.IsShow == true)
+                if (ImageViewModel.Gridline.IsShow == true)
                     return;
-                if (ImageEditViewMode.ConcentricCircle == true)
+                if (ImageViewModel.ConcentricCircle == true)
                     return;
 
                 drawCanvas.CaptureMouse();
                 MouseDownP = e.GetPosition(drawCanvas);
                 IsMouseDown = true;
 
-                if (ImageEditViewMode.EraseVisual)
+                if (ImageViewModel.EraseVisual)
                 {
-                    ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect,false);
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
+                    if (ImageViewModel.SelectDrawingVisuals != null)
                     {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
                         {
                             if (item is IDrawingVisual id)
                             {
@@ -341,12 +334,12 @@ namespace ColorVision.ImageEditor
                                 id.Render();
                             }
                         }
-                        ImageEditViewMode.SelectDrawingVisuals = null;
+                        ImageViewModel.SelectDrawingVisuals = null;
                     }
                     return;
                 }
 
-                if (ImageEditViewMode.DrawCircle)
+                if (ImageViewModel.DrawCircle)
                 {
                     DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
                     DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
@@ -359,7 +352,7 @@ namespace ColorVision.ImageEditor
                     return;
                 }
 
-                if (ImageEditViewMode.DrawRect)
+                if (ImageViewModel.DrawRect)
                 {
                     DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
@@ -372,7 +365,7 @@ namespace ColorVision.ImageEditor
                     return;
                 }
 
-                if (ImageEditViewMode.DrawPolygon)
+                if (ImageViewModel.DrawPolygon)
                 {
                     if (DrawingVisualPolygonCache == null)
                     {
@@ -403,25 +396,25 @@ namespace ColorVision.ImageEditor
                         PropertyGrid2.Refresh();
                     };
 
-                    if (ImageEditViewMode.ImageEditMode == true)
+                    if (ImageViewModel.ImageEditMode == true)
                     {
-                        if (ImageEditViewMode.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageEditViewMode.SelectDrawingVisuals.Contains(visual1))
+                        if (ImageViewModel.SelectDrawingVisuals != null && drawingVisual is DrawingVisual visual1 && ImageViewModel.SelectDrawingVisuals.Contains(visual1))
                             return;
 
 
 
                         if (drawingVisual is DrawingVisual visual)
                         {
-                            if (ImageEditViewMode.SelectDrawingVisual != visual)
+                            if (ImageViewModel.SelectDrawingVisual != visual)
                             {
-                                if (ImageEditViewMode.SelectDrawingVisual is IDrawingVisual id)
+                                if (ImageViewModel.SelectDrawingVisual is IDrawingVisual id)
                                 {
                                     id.Pen.Brush = Brushes.Red;
                                     id.Render();
                                 }
-                                ImageEditViewMode.SelectDrawingVisual = null;
+                                ImageViewModel.SelectDrawingVisual = null;
                             }
-                            ImageEditViewMode.SelectDrawingVisual = visual;
+                            ImageViewModel.SelectDrawingVisual = visual;
                             drawingVisual.Pen.Brush = Brushes.Yellow;
                             drawingVisual.Render();
 
@@ -429,16 +422,16 @@ namespace ColorVision.ImageEditor
                             //{
                             //    drawCanvas.AddVisual(SelectRect1,false);
                             //}
-                            //ImageEditViewMode.DrawSelectRect(SelectRect1, VisualTreeHelper.GetDescendantBounds(visual));
+                            //ImageViewModel.DrawSelectRect(SelectRect1, VisualTreeHelper.GetDescendantBounds(visual));
                         }
 
-                        if (ImageEditViewMode.SelectDrawingVisual is DVCircle Circl)
+                        if (ImageViewModel.SelectDrawingVisual is DVCircle Circl)
                         {
                             Circl.IsDrawing = true;
                         }
-                        if (ImageEditViewMode.SelectDrawingVisuals != null)
+                        if (ImageViewModel.SelectDrawingVisuals != null)
                         {
-                            foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
                             {
                                 if (item is IDrawingVisual id)
                                 {
@@ -446,14 +439,14 @@ namespace ColorVision.ImageEditor
                                     id.Render();
                                 }
                             }
-                            ImageEditViewMode.SelectDrawingVisuals = null;
+                            ImageViewModel.SelectDrawingVisuals = null;
                         }
                     }
                     return;
                 }
                 SelectDrawingVisualClear();
                 SelectDrawingVisualsClear();
-                ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect, false);
 
             }
@@ -466,7 +459,7 @@ namespace ColorVision.ImageEditor
             if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
             {
                 var point = e.GetPosition(drawCanvas);
-                if (ImageEditViewMode.DrawPolygon)
+                if (ImageViewModel.DrawPolygon)
                 {
                     if (DrawingVisualPolygonCache != null)
                     {
@@ -477,9 +470,9 @@ namespace ColorVision.ImageEditor
 
                 if (IsMouseDown)
                 {
-                    ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
+                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
 
-                    if (ImageEditViewMode.DrawCircle)
+                    if (ImageViewModel.DrawCircle)
                     {
                         if (DrawCircleCache != null)
                         {
@@ -488,7 +481,7 @@ namespace ColorVision.ImageEditor
                             DrawCircleCache.Render();
                         }
                     }
-                    else if (ImageEditViewMode.DrawRect)
+                    else if (ImageViewModel.DrawRect)
                     {
                         if (DrawingRectangleCache != null)
                         {
@@ -497,23 +490,23 @@ namespace ColorVision.ImageEditor
                         }
                     }
 
-                    if (ImageEditViewMode.SelectDrawingVisual != null)
+                    if (ImageViewModel.SelectDrawingVisual != null)
                     {
-                        if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                        if (ImageViewModel.SelectDrawingVisual is IRectangle rectangle)
                         {
                             var OldRect = rectangle.Rect;
                             rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                         }
-                        else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
+                        else if (ImageViewModel.SelectDrawingVisual is ICircle Circl)
                         {
                             Circl.Center += point - LastMouseMove;
                         }
                     }
 
 
-                    if (ImageEditViewMode.SelectDrawingVisuals != null)
+                    if (ImageViewModel.SelectDrawingVisuals != null)
                     {
-                        foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                        foreach (var item in ImageViewModel.SelectDrawingVisuals)
                         {
                             if (item is IRectangle rectangle)
                             {
@@ -532,13 +525,13 @@ namespace ColorVision.ImageEditor
 
                 if (IsRightButtonDown)
                 {
-                    if (ImageEditViewMode.SelectDrawingVisual is ICircle circle)
+                    if (ImageViewModel.SelectDrawingVisual is ICircle circle)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
                         circle.Radius = Radius;
                     }
 
-                    if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                    if (ImageViewModel.SelectDrawingVisual is IRectangle rectangle)
                     {
                         var OldRect = rectangle.Rect;
                         double x = OldRect.X;
@@ -570,12 +563,12 @@ namespace ColorVision.ImageEditor
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv ||  ImageEditViewMode.SelectDrawingVisuals == null || !ImageEditViewMode.SelectDrawingVisuals.Contains(dv))
+                    if (drawCanvas.GetVisual(MouseUpP) is not DrawingVisual dv ||  ImageViewModel.SelectDrawingVisuals == null || !ImageViewModel.SelectDrawingVisuals.Contains(dv))
                         SelectDrawingVisualsClear();
 
                     if (drawCanvas.ContainsVisual(SelectRect))
                     {
-                        if (ImageEditViewMode.EraseVisual)
+                        if (ImageViewModel.EraseVisual)
                         {
                             drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
                             drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
@@ -586,8 +579,8 @@ namespace ColorVision.ImageEditor
                         }
                         else
                         {
-                            ImageEditViewMode.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
-                            foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
+                            ImageViewModel.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                            foreach (var item in ImageViewModel.SelectDrawingVisuals)
                             {
                                 if (item is IDrawingVisual drawingVisual)
                                 {
@@ -596,15 +589,15 @@ namespace ColorVision.ImageEditor
                                 }
                             }
 
-                            if (ImageEditViewMode.SelectDrawingVisuals.Count == 0)
-                                ImageEditViewMode.SelectDrawingVisuals = null;
+                            if (ImageViewModel.SelectDrawingVisuals.Count == 0)
+                                ImageViewModel.SelectDrawingVisuals = null;
                         }
 
                         drawCanvas.RemoveVisual(SelectRect,false);
                     }
 
 
-                    if (ImageEditViewMode.DrawPolygon)
+                    if (ImageViewModel.DrawPolygon)
                     {
                         if (DrawingVisualPolygonCache != null)
                         {
@@ -614,7 +607,7 @@ namespace ColorVision.ImageEditor
                         }
 
                     }
-                    else if (ImageEditViewMode.DrawCircle)
+                    else if (ImageViewModel.DrawCircle)
                     {
                         if (DrawCircleCache.Attribute.Radius == DefalutRadius)
                             DrawCircleCache.Render();
@@ -637,7 +630,7 @@ namespace ColorVision.ImageEditor
                         DefalutRadius = DrawCircleCache.Radius;
 
                     }
-                    else if (ImageEditViewMode.DrawRect)
+                    else if (ImageViewModel.DrawRect)
                     {
                         if (DrawingRectangleCache.Attribute.Rect.Width == DefalutWidth && DrawingRectangleCache.Attribute.Rect.Height == DefalutHeight)
                             DrawingRectangleCache.Render();
@@ -664,15 +657,15 @@ namespace ColorVision.ImageEditor
 
                     drawCanvas.ReleaseMouseCapture();
 
-                    if (ImageEditViewMode.SelectDrawingVisual is DVCircle circle)
+                    if (ImageViewModel.SelectDrawingVisual is DVCircle circle)
                     {
                         circle.IsDrawing = false;
                         circle.Render();
                     }
 
-                    if (ImageEditViewMode.SelectDrawingVisual != null)
+                    if (ImageViewModel.SelectDrawingVisual != null)
                     {
-                        if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
+                        if (ImageViewModel.SelectDrawingVisual is IRectangle rectangle)
                         {
                             var l = MouseUpP - MouseDownP;
 
@@ -688,7 +681,7 @@ namespace ColorVision.ImageEditor
                             });
                             ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
                         }
-                        else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
+                        else if (ImageViewModel.SelectDrawingVisual is ICircle Circl)
                         {
                             var l = MouseUpP - MouseDownP;
                             Action undoaction = new Action(() =>
@@ -710,23 +703,11 @@ namespace ColorVision.ImageEditor
             }
         }
 
-
-        private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-        }
-
-        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
-        {
-        }
-        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
-        {
-        }
-
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton toggleButton)
             {
-                if (ImageEditViewMode.EraseVisual)
+                if (ImageViewModel.EraseVisual)
                 {
                     ToggleButtonDrag.IsChecked = true;
                     Zoombox1.ActivateOn = toggleButton.IsChecked == true ? ModifierKeys.Control : ModifierKeys.None;
@@ -771,10 +752,10 @@ namespace ColorVision.ImageEditor
             _handlers.Clear();
         }
 
-        public IImageViewOpen? IImageViewOpen { get; set; }
-
         public async void OpenImage(string? filePath)
         {
+            //如果文件已经打开，不会重复打开
+            if (filePath ==null || filePath.Equals(Config.FilePath, StringComparison.Ordinal)) return;
             Button1931.Visibility = Visibility.Collapsed;
             Config.AddProperties("FilePath", filePath);
             ClearSelectionChangedHandlers();
@@ -787,11 +768,11 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                IImageViewOpen = ImageViewComponentManager.GetInstance().IImageViewOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (IImageViewOpen != null)
+                ImageViewModel.IImageOpen = ComponentManager.GetInstance().IImageOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
+                if (ImageViewModel.IImageOpen != null)
                 {
-                    Config.AddProperties("ImageViewOpen", IImageViewOpen);
-                    IImageViewOpen.OpenImage(this, filePath);
+                    Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
+                    ImageViewModel.IImageOpen.OpenImage(this, filePath);
                     return;
                 }
 
@@ -867,26 +848,12 @@ namespace ColorVision.ImageEditor
             ImageShow.Source = ViewBitmapSource;
 
             ImageShow.ImageInitialize();
-            ImageEditViewMode.ToolBarScaleRuler.IsShow = true;
+            ImageViewModel.Opened();
+            ImageViewModel.ToolBarScaleRuler.IsShow = true;
 
-            RenderContextMenu();
         }
-        public void RenderContextMenu()
-        {
-            Zoombox1.ContextMenu ??= new ContextMenu();
-            Zoombox1.ContextMenu.Items.Clear();
-            foreach (var item in ImageEditViewMode.GetContextMenus())
-            {
-                Zoombox1.ContextMenu.Items.Add(item);
-            }
-            if (IImageViewOpen != null)
-            {
-                foreach (var item in IImageViewOpen.GetContextMenuItems(this))
-                {
-                    Zoombox1.ContextMenu.Items.Add(item);
-                }
-            }
-        }
+
+
         public ImageSource FunctionImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
@@ -948,44 +915,6 @@ namespace ColorVision.ImageEditor
         }
 
 
-        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
-        {
-            e.Handled = true;
-        }
-
-
-        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && DrawingVisualLists[listView.SelectedIndex] is Visual visual)
-            {
-                if (PropertyGrid2.SelectedObject is ViewModelBase viewModelBase)
-                {
-                    viewModelBase.PropertyChanged -= (s, e) =>
-                    {
-                        PropertyGrid2.Refresh();
-                    };
-                }
-
-                PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                drawingVisual.BaseAttribute.PropertyChanged += (s, e) =>
-                {
-                    PropertyGrid2.Refresh();
-                };
-                ImageShow.TopVisual(visual);
-            }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                OpenImage(openFileDialog.FileName);
-            }
-            
-        }
-
         public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
 
 
@@ -1008,7 +937,7 @@ namespace ColorVision.ImageEditor
             if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
             var (redHistogram, greenHistogram, blueHistogram) = ImageUtils.RenderHistogram(bitmapSource);
-            if (bitmapSource.Format == PixelFormats.Gray8)
+            if (bitmapSource.Format.Masks.Count ==1)
             {
                 HistogramChartWindow histogramChartWindow = new HistogramChartWindow(redHistogram);
                 histogramChartWindow.Show();
@@ -1069,16 +998,18 @@ namespace ColorVision.ImageEditor
             });
 
         }
-
+        bool IsUpdateZoomAndScale = true;
         public void UpdateZoomAndScale()
         {
-            Task.Run(() => {
-                Application.Current?.Dispatcher.Invoke(() =>
+            if (IsUpdateZoomAndScale)
+            {
+                Application.Current?.Dispatcher.BeginInvoke(() =>
                 {
                     Zoombox1.ZoomUniform();
-                    ImageEditViewMode.ToolBarScaleRuler.Render();
+                    ImageViewModel.ToolBarScaleRuler.Render();
                 });
-            });
+                IsUpdateZoomAndScale = false;
+            }
         }
 
         private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)
@@ -1110,13 +1041,12 @@ namespace ColorVision.ImageEditor
 
         public void AdjustWhiteBalance()
         {
-            Application.Current.Dispatcher.Invoke(() =>
+            if (HImageCache != null)
             {
-                if (HImageCache != null)
+                int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_GetWhiteBalance((HImage)HImageCache, out HImage hImageProcessed, Config.RedBalance, Config.GreenBalance, Config.BlueBalance);
-
-                    if (ret == 0)
+                    Application.Current?.Dispatcher.BeginInvoke(() =>
                     {
                         if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                         {
@@ -1127,11 +1057,9 @@ namespace ColorVision.ImageEditor
                             FunctionImage = image;
                         }
                         ImageShow.Source = FunctionImage;
-                    }
-                };
-            });
-
-
+                    });
+                }
+            };
         }
 
         private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
@@ -1205,8 +1133,8 @@ namespace ColorVision.ImageEditor
             {
                 if (disposing)
                 {
-                    ImageEditViewMode.ClearImageEventHandler -= Clear;
-                    ImageEditViewMode.Dispose();
+                    ImageViewModel.ClearImageEventHandler -= Clear;
+                    ImageViewModel.Dispose();
                     Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
                     ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
                     ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
@@ -1224,40 +1152,31 @@ namespace ColorVision.ImageEditor
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a => ApplyGammaCorrection(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("ApplyGammaCorrection", 50, a=> ApplyGammaCorrection(a), GammaSlider.Value);
         }
 
-        public void ApplyGammaCorrection()
+        public void ApplyGammaCorrection(double Gamma)
         {
+            if (HImageCache == null) return;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
+            int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (HImageCache == null) return;
-
-                // 首先获取滑动条的值，这需要在UI线程中执行
-                double Gamma = GammaSlider.Value;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"ImagePath，正在执行ApplyGammaCorrection,Gamma{Gamma}");
-                Task.Run(() =>
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_ApplyGammaCorrection((HImage)HImageCache, out HImage hImageProcessed, Gamma);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        FunctionImage = image;
+                    }
+                    ImageShow.Source = FunctionImage;
+                    stopwatch.Stop();
+                    log.Info($"ApplyGammaCorrection {stopwatch.Elapsed}");
+                }
             });
         }
 
@@ -1296,48 +1215,38 @@ namespace ColorVision.ImageEditor
 
         private void BrightnessSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
         }
         private void ContrastSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => AdjustBrightnessContrast(), e.NewValue);
+            DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, AdjustBrightnessContrast, ContrastSlider.Value, BrightnessSlider.Value);
         }
-        public void AdjustBrightnessContrast()
+        public void AdjustBrightnessContrast(double Contrast ,double Brightness)
         {
+            if (HImageCache == null) return;
+            //实现类似于PS的效果
+            Brightness = Brightness * 4 / 5;
+            Contrast = Contrast / 300 + 1;
+            Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
+            int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                if (HImageCache == null) return;
-
-                // 首先获取滑动条的值，这需要在UI线程中执行
-                double Brightness = BrightnessSlider.Value;
-                double Contrast = ContrastSlider.Value;
-                //实现类似于PS的效果
-                Brightness = Brightness * 4 / 5;
-                Contrast = Contrast / 300 + 1;
-                Brightness = HImageCache.Value.depth == 8 ? Brightness : Brightness * 255;
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-                log.Info($"ImagePath，正在执行AdjustBrightnessContrast,Brightness{Brightness},Contrast{Contrast}");
-                Task.Run(() =>
+                if (ret == 0)
                 {
-                    int ret = OpenCVMediaHelper.M_AdjustBrightnessContrast((HImage)HImageCache, out HImage hImageProcessed, Contrast, Brightness);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
                     {
-                        if (ret == 0)
-                        {
-                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
-                            {
-                                var image = hImageProcessed.ToWriteableBitmap();
-                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-                                FunctionImage = image;
-                            }
-                            ImageShow.Source = FunctionImage;
-                            stopwatch.Stop();
-                            log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
-                        }
-                    });
-                });
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
+                        FunctionImage = image;
+                    }
+                    ImageShow.Source = FunctionImage;
+                    stopwatch.Stop();
+                    log.Info($"AdjustBrightnessContrast {stopwatch.Elapsed}");
+                }
             });
         }
 

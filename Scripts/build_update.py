@@ -78,7 +78,8 @@ def get_file_version(file_path):
 def get_all_files(directory):
     """获取目录下的所有文件路径"""
     file_paths = []
-    for root, _, files in os.walk(directory):
+    for root, dirs, files in os.walk(directory):
+        dirs[:] = [d for d in dirs if d not in {'log', 'Plugins'}]
         for file in files:
             if not file.endswith('.pdb'):
                 file_paths.append(os.path.join(root, file))
@@ -137,12 +138,37 @@ def make_incremental_zip(old_zip, new_version_dir, incremental_zip):
             os.rmdir(os.path.join(root, name))
     os.rmdir(old_version_dir)
 
-def find_latest_zip(directory):
-    """在目录中找到最新的 ZIP 文件"""
+def find_latest_zip(directory, version):
+    """在目录中找到指定版本的最新 ZIP 文件"""
+    target_version_parts = version.split('.')
+    target_major_version = int(target_version_parts[2])  # 获取第三位版本号
+    target_minor_version = int(target_version_parts[3])  # 获取第四位版本号
+
+    # 调整基准版本号
+    if target_minor_version == 1:
+        target_major_version -= 1
+
     zip_files = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.zip')]
     if not zip_files:
         return None
-    latest_zip = max(zip_files, key=os.path.getmtime)
+
+    # 过滤出符合目标版本的 ZIP 文件
+    matching_files = []
+    for file in zip_files:
+        filename = os.path.basename(file)
+        parts = filename.split('.')
+
+        if len(parts) >= 4:
+            major_version = int(parts[2])
+            if major_version == target_major_version:
+                matching_files.append(file)
+
+    # 如果没有匹配的文件，返回最新的文件
+    if not matching_files:
+        return max(zip_files, key=os.path.getmtime)
+
+    # 返回匹配的文件中最新的一个
+    latest_zip = min(matching_files, key=os.path.getmtime)
     return latest_zip
 
 new_version_dir = 'C:\\Users\\17917\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Release\\net8.0-windows'
@@ -158,9 +184,9 @@ create_directory_if_not_exists(history_dir)
 create_directory_if_not_exists(update_dir)
 
 # 查找最新的全量包
-old_zip = find_latest_zip(history_dir)
+old_zip = find_latest_zip(history_dir,version)
+print(f"baseline Version{old_zip}")
 incremental_zip = os.path.join(update_dir, f'ColorVision-Update-[{version}].zip')
-
 
 if old_zip:
     print(f"创建增量包: {incremental_zip}")

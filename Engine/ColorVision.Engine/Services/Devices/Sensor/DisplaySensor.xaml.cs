@@ -118,7 +118,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void SendTemp_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxSensorTemplate.SelectedItem is TemplateModel<Templates.SensorParam> sensorHeYuan)
+            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorParam> sensorHeYuan)
             {
                 CVTemplateParam templateParam = new() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
                 DeviceService.ExecCmd(templateParam);

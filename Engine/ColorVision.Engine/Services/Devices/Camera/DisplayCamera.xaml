@@ -104,41 +104,45 @@
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,2">
                     <StackPanel Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
                         <DockPanel Margin="0,0,0,3" >
-                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
-                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="{Binding Config.ExpTimeMaxLog}"/>
-                        </DockPanel>
-
-                        <DockPanel Margin="0,0,0,3" >
                             <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}" MinWidth="50"/>
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain, StringFormat=F2}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged1"  Value="{Binding Config.Gain}" Minimum="0" Maximum="100"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                         </DockPanel>
                     </StackPanel>
 
                     <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <DockPanel Margin="0,0,0,3" >
+                            <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain, StringFormat=F2}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged1"  Value="{Binding Config.Gain}" Minimum="0" Maximum="100"/>
+                        </DockPanel>
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}"  >
                             <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                                 <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50"  />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" Width="50"/>
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime, StringFormat=F2}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="{Binding Config.ExpTimeMin}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                                 </DockPanel>
                             </StackPanel>
                             <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="60" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}" Width="50"/>
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR, StringFormat=F2}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeRLog}" Minimum="{Binding Config.ExpTimeMin}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="60" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}" Width="50"/>
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG, StringFormat=F2}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeGLog}" Minimum="{Binding Config.ExpTimeMin}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,0,0,3">
                                     <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="60" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}" Width="50"/>
+                                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB, StringFormat=F2}" Width="50"/>
                                     <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.001" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeBLog}" Minimum="{Binding Config.ExpTimeMin}" Maximum="{Binding Config.ExpTimeMaxLog}"/>
                                 </DockPanel>
                             </StackPanel>
@@ -231,27 +235,47 @@
                             </Grid>
                         </StackPanel>
                     </StackPanel>
-                    <GroupBox Header="电机操作" Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
-                        <StackPanel Margin="2">
-                            <Button Content="自动聚焦" Click="AutoFocus_Click"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}" />
-                            <DockPanel Margin="0,2">
-                                <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
-                                <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
-                                <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
-                                <TextBlock Text="位置"  Width="40"  />
-                                <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
-                            </DockPanel>
-                            <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
-                                <TextBlock Text="当前位置：" Width="80"/>
-                                <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
+                    <StackPanel Margin="2" Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel >
+                            <Button  DockPanel.Dock="Right" Content="自动聚焦" Click="AutoFocus_Click"   />
+                            <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}" RenderTransformOrigin="0.5,0.5">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform10" />
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="EditAutoFocus">
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform10" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                </Button>
+                            </Grid>
+                            <ComboBox x:Name="ComboxAutoFocus"   d:DataContext="{d:DesignInstance local:DisplayCameraConfig}" SelectedIndex="{Binding AutoFocusTemplateIndex}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
+                            <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
+                            <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
+                            <TextBlock Text="位置"  Width="40"  />
+                            <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                        </DockPanel>
+                        <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
+                            <TextBlock Text="当前位置：" Width="80"/>
+                            <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
+                        </DockPanel>
+                    </StackPanel>
+
 
                 </StackPanel>
                 <DockPanel Margin="0,0,0,0" >

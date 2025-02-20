@@ -1,55 +1,28 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Solution.Properties;
 using ColorVision.RecentFile;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Menus;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Menus.Base;
+using ColorVision.UI.Menus.Base.File;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using ColorVision.Themes.Controls;
 
 namespace ColorVision.Solution
 {
 
-    public class OpenSolution : IHotKey,IMenuItem
+    public class MenuOpenSolution : MenuItemFileBase
     {
-        public string? OwnerGuid => "MenuOpen";
+        public override string OwnerGuid => nameof(MenuOpen);
 
-        public string? GuidId => "OpenSolution";
+        public override string GuidId => nameof(MenuOpenSolution);
 
-        public int Order => 1;
+        public override int Order => 1;
 
-        public string? Header => "项目/解决方案(_P)...";
+        public override string Header => "项目/解决方案(_P)...";
 
-        public string? InputGestureText => "Ctrl + O";
-
-        public object? Icon
-        {
-            get
-            {
-                TextBlock text = new()
-                {
-                    Text = "\uE8E5", // 使用Unicode字符
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 15,
-                };
-                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                return text;
-            }
-        }
-
-        public Visibility Visibility => Visibility.Visible;
-
-        public ICommand Command => new RelayCommand(A => Execute());
-
-
-        public HotKeys HotKeys => new(Resources.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
-
-
-        private void Execute()
+        public override void Execute()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Show();

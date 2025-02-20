@@ -18,7 +18,7 @@ namespace ColorVision.Net
         public uint version;
 
         public CVType FileExtType;
-        public int rows;
+        public  int rows;
         public int cols;
         public int bpp;
         public readonly int Depth
@@ -36,7 +36,7 @@ namespace ColorVision.Net
             }
         }
         public int channels;
-        public int gain;
+        public float gain;
         public float[] exp;
         public string srcFileName;
         public byte[] data;

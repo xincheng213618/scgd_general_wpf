@@ -213,23 +213,20 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-
-	cv::Mat grayMat;
-
 	// 如果是彩色图像，转换为灰度图
 	if (mat.channels() == 3 || mat.channels() == 4)  // 判断是否为彩色图（BGR 或 BGRA）
 	{
-		cv::cvtColor(mat, grayMat, cv::COLOR_BGR2GRAY); // 转换为灰度图
+		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // 转换为灰度图
 	}
 	else
 	{
-		mat.convertTo(grayMat, CV_8U);  // 如果已经是灰度图，则直接转换
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 
 	// 目标分辨率设置
 	int targetPixels = targetPixelsX * targetPixelsY; // 目标像素数（可以调整）
-	int originalWidth = grayMat.cols;
-	int originalHeight = grayMat.rows;
+	int originalWidth = mat.cols;
+	int originalHeight = mat.rows;
 
 	// 计算初始比例因子
 	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
@@ -254,10 +251,10 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 		{
 			int oldX = x * scaleFactor;
 			int oldY = y * scaleFactor;
-			int oldIndex = oldY * grayMat.cols + oldX;
+			int oldIndex = oldY * mat.cols + oldX;
 
 			// 将像素值存储到 rowGrayPixels
-			row[x] = grayMat.data[oldIndex];
+			row[x] = mat.data[oldIndex];
 		}
 	}
 
@@ -344,6 +341,41 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 
 	MatToHImage(dst, outImage);
 	return 0;
+}
+
+COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	// 检查输入图像是否为空
+	if (mat.empty()) {
+		return -1;
+	}
+
+	if (!config || !result) {
+		return -1; 
+	}        
+	json j = json::parse(config);
+	int threshold = j.at("Threshold").get<int>();
+
+
+	cv::Rect LuminousArea;
+	
+	findLuminousArea(mat, LuminousArea, threshold);
+
+	json outputJson;
+	outputJson["X"] = LuminousArea.x;
+	outputJson["Y"] = LuminousArea.y;
+	outputJson["Width"] = LuminousArea.width;
+	outputJson["Height"] = LuminousArea.height;
+
+	std::string output = outputJson.dump();
+	size_t length = output.length() + 1;
+	*result = new char[length];
+	if (!*result) {
+		return -2; // 错误：内存分配失败
+	}
+	std::strcpy(*result, output.c_str());
+	return static_cast<int>(length);
 }
 
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)

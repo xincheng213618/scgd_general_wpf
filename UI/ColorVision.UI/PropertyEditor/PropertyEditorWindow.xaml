@@ -10,7 +10,6 @@
         mc:Ignorable="d"
         Title="配置"  Height="450" Width="450" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
-        
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>

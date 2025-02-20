@@ -83,6 +83,8 @@ namespace cvColorVision
         LumColor = 10,
         Distortion = 11,
         ColorShift = 12,
+        LineArity  =13,
+        ColorDiff,
         Empty_Num = 13,
     };
 

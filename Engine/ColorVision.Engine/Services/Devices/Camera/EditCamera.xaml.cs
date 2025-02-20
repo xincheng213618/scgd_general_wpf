@@ -2,7 +2,7 @@
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
-using cvColorVision;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,80 +54,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraCode);
             CameraPhyID.DisplayMemberPath = "Code";
 
-            var type = DeviceCamera.Config.CameraType;
-
-
-            ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
-                                         select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
-            //EditStackPanel.Children.Add(GenerateContent(EditConfig));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.VideoConfig));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.ZBDebayer));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+
         }
-
-        private static StackPanel GenerateContent(object config)
-        {
-            var stackPanel = new StackPanel();
-            var type = config.GetType();
-            var properties = type.GetProperties();
-
-            foreach (var property in properties)
-            {
-                if (!(property.CanWrite && property.CanRead)) continue; // Skip properties that cannot be set
-
-                var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 5) };
-                var textBlock = new TextBlock { Text = property.Name, Width = 120 };
-                dockPanel.Children.Add(textBlock);
-
-                if (property.PropertyType == typeof(string) ||
-                    property.PropertyType == typeof(int) ||
-                    property.PropertyType == typeof(double) ||
-                    property.PropertyType == typeof(float))
-                {
-                    var textBox = new TextBox
-                    {
-                        Text = property.GetValue(config)?.ToString(),
-                        Style = (Style)Application.Current.Resources["TextBox.Small"]
-                    };
-                    dockPanel.Children.Add(textBox);
-                }
-                else if (property.PropertyType == typeof(bool))
-                {
-                    var checkBox = new CheckBox
-                    {
-                        Content = "启用",
-                        IsChecked = (bool?)property.GetValue(config)
-                    };
-                    dockPanel.Children.Add(checkBox);
-                }
-                else if (property.PropertyType.IsEnum)
-                {
-                    var comboBox = new ComboBox
-                    {
-                        SelectedValue = property.GetValue(config),
-                        SelectedValuePath = "Key",
-                        DisplayMemberPath = "Value",
-                        Margin = new Thickness(0, 0, 10, 0)
-                    };
-
-                    comboBox.ItemsSource = Enum.GetValues(property.PropertyType)
-                                               .Cast<Enum>()
-                                               .Select(e => new KeyValuePair<Enum, string>(e, e.ToString()));
-                    dockPanel.Children.Add(comboBox);
-                }
-
-                stackPanel.Children.Add(dockPanel);
-            }
-
-            return stackPanel;
-        }
-    
-
-    private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             DeviceCamera.PhyCamera?.ReleaseDeviceCamera();
             EditConfig.CopyTo(DeviceCamera.Config);
-            if (DeviceCamera.PhyCamera !=null)
+            if (DeviceCamera.PhyCamera != null)
                 DeviceCamera.PhyCamera.ConfigChanged += DeviceCamera.PhyCameraConfigChanged;
 
 
@@ -150,7 +89,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
                 EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
 
-                EditConfig.CameraType = phyCamera.Config.CameraType;
                 EditConfig.CameraMode = phyCamera.Config.CameraMode;
                 EditConfig.CameraModel = phyCamera.Config.CameraModel;
                 EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
@@ -161,14 +99,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)
         {
             UpdateConfig();
-        }
-
-        private void RoiDelete_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem && menuItem.Tag is Int32RectViewModel int32RectViewModel)
-            {
-                EditConfig.ROIParams.Remove(int32RectViewModel);
-            }
         }
     }
 }

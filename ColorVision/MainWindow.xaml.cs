@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.FloatingBall;
-using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
@@ -85,6 +83,7 @@ namespace ColorVision
             InitializeComponent();
             Config.SetWindow(this);
             SizeChanged += (s, e) => Config.SetConfig(this);
+
             var IsAdministrator = Tool.IsAdministrator();
             //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             Title = "ColorVision";
@@ -98,11 +97,11 @@ namespace ColorVision
 
             this.DataContext = Config;
 
-            if (WindowConfig.IsExist)
+            if (WindowIniSetting.IsExist)
             {
-                if (WindowConfig.Icon != null)
-                    Icon = WindowConfig.Icon;
-                Title = WindowConfig.Title ?? Title;
+                if (WindowIniSetting.Icon != null)
+                    Icon = WindowIniSetting.Icon;
+                Title = WindowIniSetting.Title ?? Title;
             }
             ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
@@ -115,20 +114,19 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.LastViewCount = e;
+            ViewGridManager.SetViewGrid(ViewConfig.Instance.ViewMaxCount);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) => ViewConfig.Instance.ViewMaxCount = e;
 
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
+            
             //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
 
-            QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
             Task.Run(() =>
             {
@@ -203,7 +201,7 @@ namespace ColorVision
             StatusBarGrid.ContextMenu = contextMenu;
 
 
-            void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
+            void AddStatusBarIconMetadata(StatusBarMeta statusBarIconMetadata)
             {
                 if (statusBarIconMetadata.Type == StatusBarType.Icon)
                 {
@@ -289,13 +287,13 @@ namespace ColorVision
 
             }
 
-            var allSettings = new List<StatusBarIconMetadata>();
+            var allSettings = new List<StatusBarMeta>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarIconProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IStatusBarIconProvider configSetting)
+                    if (Activator.CreateInstance(type) is IStatusBarProvider configSetting)
                     {
                         allSettings.AddRange(configSetting.GetStatusBarIconMetadata());
                     }
@@ -311,17 +309,6 @@ namespace ColorVision
             {
                 AddStatusBarIconMetadata(item);
             }
-
-        }
-
-        private void ViewTab_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            ViewConfig.Instance.EditCommand.Execute(sender);
-        }
-
-        private void SolutionTab1_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            SolutionSetting.Instance.EditCommand.Execute(sender);
         }
     }
 }

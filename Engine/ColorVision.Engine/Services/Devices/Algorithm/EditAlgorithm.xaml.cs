@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
@@ -27,6 +28,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.DisplayMemberPath = "Code";
+
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {

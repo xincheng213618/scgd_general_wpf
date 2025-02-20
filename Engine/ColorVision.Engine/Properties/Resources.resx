@@ -380,7 +380,7 @@
     <value>管理员服务配置(_S)</value>
   </data>
   <data name="MenuSensor" xml:space="preserve">
-    <value>通用传感器模板设置(_S)</value>
+    <value>传感器模板(_S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
     <value>重命名(_M)</value>
@@ -798,5 +798,26 @@
   </data>
   <data name="IsEnable" xml:space="preserve">
     <value>启用</value>
+  </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>引擎(_N)</value>
+  </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>搜索条数限制</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>在开头插入</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>自动刷新视图</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>是否显示列表视图</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>查看图像读取延迟</value>
+  </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>阈值</value>
   </data>
 </root>

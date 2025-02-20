@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Configs;
+﻿using ColorVision.UI;
+using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using SystemMonitor.Properties;
 
 namespace ColorVision.Settings
 {
-    public class SystemMonitorProvider : IConfigSettingProvider,IStatusBarIconProvider,IMenuItemProvider
+    public class SystemMonitorProvider : IConfigSettingProvider,IStatusBarProvider,IMenuItemProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -47,11 +48,11 @@ namespace ColorVision.Settings
             };
         }
 
-        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
-            return new List<StatusBarIconMetadata>
+            return new List<StatusBarMeta>
             {
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = "Time",
                     Description = Resources.PerformanceTest,
@@ -61,7 +62,7 @@ namespace ColorVision.Settings
                     VisibilityBindingName ="Config.IsShowTime",
                     Source = SystemMonitors.GetInstance()
                 },
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = "RAM",
                     Description = Resources.PerformanceTest,

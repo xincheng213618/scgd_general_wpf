@@ -29,18 +29,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
-                if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                var MsgRecord = DService.CacheClear();
+                MsgRecord.MsgRecordStateChanged += (s) =>
                 {
-                    var MsgRecord = DService.CacheClear();
-                    MsgRecord.MsgSucessed += (s) =>
-                    {
-                        MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
-                        MsgRecord.ClearMsgRecordSucessChangedHandler();
-                    };
-                    ServicesHelper.SendCommand(button, MsgRecord);
-                }
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
+                    MsgRecord.ClearMsgRecordSucessChangedHandler();
+                };
             }
         }
 

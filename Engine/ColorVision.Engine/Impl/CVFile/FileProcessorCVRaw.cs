@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
             {
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    imageView.ImageEditViewMode.ClearImage();
+                    imageView.ImageViewModel.ClearImage();
                 }));
             }
         }

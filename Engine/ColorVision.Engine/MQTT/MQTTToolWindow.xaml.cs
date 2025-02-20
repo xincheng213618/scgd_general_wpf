@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.Engine.Properties;
 using ColorVision.Themes;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -14,14 +13,13 @@ namespace ColorVision.Engine.MQTT
 {
     public class ExportMQTTTool : MenuItemBase,IHotKey
     {
-        public override string OwnerGuid => "Log";
+        public override string OwnerGuid => nameof(ExportMQTTMenuItem);
         public override string GuidId => "MQTTLog";
         public override string Header => Resources.MQTTLog;
         public override int Order => 1;
 
         public HotKeys HotKeys => new(Resources.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MQTTToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
@@ -40,14 +38,13 @@ namespace ColorVision.Engine.MQTT
         private void Window_Initialized(object sender, EventArgs e)
         {
             Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
-            MQTTControl.MQTTMsgChanged += ShowLog;
+            MQTTControl.MQTTLogChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             DataContext = MQTTSetting.Instance;
-            this.Closed += (s,e) => MQTTControl.MQTTMsgChanged -= ShowLog;
+            this.Closed += (s,e) => MQTTControl.MQTTLogChanged -= ShowLog;
         }
 
-
-        private void ShowLog(MQMsg resultData_MQTT)
+        private void ShowLog(MQTTLog resultData_MQTT)
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {

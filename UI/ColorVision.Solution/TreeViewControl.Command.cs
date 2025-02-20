@@ -12,11 +12,22 @@ namespace ColorVision.Solution
     {
         private void IniCommand()
         {
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, ExecutedCommand, CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(Commands.ReName, ExecutedCommand, CanExecuteCommand));
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete,   (s,e)=>
+            {
+                if (SelectedTreeViewItem?.DataContext is VObject baseObject) baseObject.Delete();
+            }
+            , (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject && baseObject.CanDelete));
+
+
+            SolutionTreeView.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) =>
+            {
+                if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject)
+                    baseObject.IsEditMode = true;
+            }, (s, e) => e.CanExecute = SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject && baseObject.CanReName));
         }
 
         #region 通用命令执行函数
@@ -40,16 +51,6 @@ namespace ColorVision.Solution
                 {
                     e.CanExecute = true;
                 }
-                else if (e.Command == ApplicationCommands.Delete)
-                {
-
-
-                    e.CanExecute = baseObject.CanDelete;
-                }
-                else if (e.Command == Commands.ReName)
-                {
-                    e.CanExecute = baseObject.CanReName;
-                }
             }
             else if (SelectedTreeViewItem != null && SelectedTreeViewItem.DataContext is VObject baseObject1)
             {
@@ -69,18 +70,8 @@ namespace ColorVision.Solution
                 {
                     e.CanExecute = Clipboard.ContainsData("VObjectFormat");
                 }
-                else if (e.Command == ApplicationCommands.Delete)
-                {
-                    e.CanExecute = baseObject1.CanDelete;
-                }
-                else if (e.Command == Commands.ReName)
-                {
-                    e.CanExecute = baseObject1.CanReName;
-                }
             }
         }
-
-
 
         private void ExecutedCommand(object sender, ExecutedRoutedEventArgs e)
         {
@@ -116,57 +107,6 @@ namespace ColorVision.Solution
                         VObject baseObject = (VObject)serializer.ReadObject(memoryStream);
                     }
                 }
-            }
-            else if (e.Command == ApplicationCommands.Delete)
-            {
-                if (e.Parameter != null)
-                {
-                    if (e.Parameter is VObject baseObject)
-                    {
-                        baseObject.Parent.RemoveChild(baseObject);
-                    }
-                }
-                else
-                {
-                    if (SelectedTreeViewItem != null)
-                    {
-                        if (SelectedTreeViewItem.DataContext is VFile vFile)
-                        {
-                            vFile.Delete();
-                        }
-                        else if (SelectedTreeViewItem.DataContext is VObject baseObject)
-                        {
-                            baseObject.Parent?.RemoveChild(baseObject);
-                        }
-                    }
-                }
-            }
-            else if (e.Command == Commands.ReName)
-            {
-                if (e.Parameter != null)
-                {
-                    if (e.Parameter is VObject baseObject)
-                    {
-                        LastReNameObject = baseObject;
-                        baseObject.IsEditMode = true;
-                    }
-                }
-                else
-                {
-                    //没有数据的时候通过点击确认
-                    if (SelectedTreeViewItem != null)
-                    {
-                        if (SelectedTreeViewItem.DataContext is VObject baseObject)
-                        {
-                            LastReNameObject = baseObject;
-                            baseObject.IsEditMode = true;
-                        }
-                    }
-                }
-            }
-            else
-            {
-
             }
 
         }

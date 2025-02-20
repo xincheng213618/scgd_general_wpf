@@ -297,4 +297,28 @@
   <data name="UploadFile" xml:space="preserve">
     <value>Загрузить файлы</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Изменить (Е)</value>
+  </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>ОкноМенеджераПроекта</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>ОкноМенеджераПлагинов</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>Версия</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>название плагина</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>ДатаСборки</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>НазваниеПроекта</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Команда</value>
+  </data>
 </root>

@@ -36,6 +36,8 @@ namespace ColorVision.UI
             UpdateDisPlayBorder();
 
             if (disPlayControl is UserControl userControl)
+            {
+                userControl.Focusable = true;
                 userControl.MouseDown += (s, e) =>
                 {
                     if (userControl.Parent is StackPanel stackPanel)
@@ -45,7 +47,10 @@ namespace ColorVision.UI
                         stackPanel.Tag = userControl;
                         disPlayControl.IsSelected = true;
                     }
+                    userControl.Focus();
                 };
+            }
+
         }
     }
 

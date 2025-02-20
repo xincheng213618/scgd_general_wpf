@@ -23,6 +23,6 @@ namespace ColorVision.Engine.Messages
 
         [JsonProperty("data")]
         public dynamic Data { get; set; }
-        public override string ToString() => JsonConvert.SerializeObject(this);
+        public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
     }
 }

@@ -205,19 +205,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 ImageFile.Text = openFileDialog.FileName;
             }
         }
-        private void doOpen(string fileName, FileExtType extType)
-        {
-            DeviceService.Open(fileName, extType);
-        }
-        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
-            {
-                MessageBox1.Show("请先选中图片");
-                return;
-            }
-            doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
-        }
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {

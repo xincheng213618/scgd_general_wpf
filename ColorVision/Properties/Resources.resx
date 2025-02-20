@@ -297,4 +297,28 @@
   <data name="UploadFile" xml:space="preserve">
     <value>上传文件</value>
   </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>编辑(_E)</value>
+  </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>项目管理器窗口</value>
+  </data>
+  <data name="PluginManagerWindow" xml:space="preserve">
+    <value>插件管理器窗口</value>
+  </data>
+  <data name="PluginName" xml:space="preserve">
+    <value>插件名称</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>构建日期</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>项目名称</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>命令</value>
+  </data>
 </root>

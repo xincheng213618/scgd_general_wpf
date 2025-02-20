@@ -216,17 +216,17 @@
 
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                         <StackPanel  Margin="5">
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
-                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
-                                <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
-                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
-                                <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
-                            </StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                 <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaCircle}" Width="60" Content="圆"/>
                                 <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaRect}" Width="60" Content="矩形"/>
                                 <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaMask}" Width="70" Content="四边形"/>
                                 <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding PoiConfig.IsAreaPolygon}" Width="60" Content="折线"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5" >
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Style="{StaticResource ToggleButtonSwitch}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="SetDefault_Click" IsChecked="{Binding PoiConfig.IsUserDraw}"/>
+                                <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加布点区域"/>
+                                <ToggleButton HorizontalAlignment="Left" Height="16" Margin="10,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
+                                <TextBlock   HorizontalAlignment="Left"  Text="布点区域显示"/>
                             </StackPanel>
                             <StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
@@ -253,6 +253,25 @@
                                     <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" >
+                                        <Button Content="寻找发光区" Margin="5,0,0,0" ToolTip="一次"  Click="FindLuminousArea_Click"   />
+                                        <Button Grid.Column="1" Margin="5,1,5,0" HorizontalAlignment="Left" Command="{Binding PoiConfig.FindLuminousAreaEditCommand}" Padding="2" Height="25" Width="25" >
+                                            <Button.Triggers>
+                                                <EventTrigger RoutedEvent="Button.Click">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Button.Triggers>
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                                <TextBlock.RenderTransform>
+                                                    <RotateTransform x:Name="rotateTransform21"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                        </Button>
+                                    </DockPanel>
                                     <DockPanel  Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="中心点"  MinWidth="50"/>
                                         <TextBox  Text="{Binding PoiConfig.CenterX}" Width="55"  />
@@ -478,7 +497,7 @@
             </ScrollViewer>
         </Grid>
 
-        <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
+        <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="{StaticResource  TransparentGridBrush}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition x:Name="FocusPointRowDefinition" Height="auto"/>
@@ -497,7 +516,7 @@
                 </ToolBar>
             </ToolBarTray>
             <GridSplitter Grid.Row="1" Panel.ZIndex="999" Background="#1FFFFFFF"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
-            <ToolBar x:Name="ToolBar1" Grid.Row="0"  d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
+            <ToolBar x:Name="ToolBar1" Grid.Row="0"  d:DataContext="{d:DesignInstance draw:ImageViewModel}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center" VerticalAlignment="Top">
                 <ToolBar.Resources>
                     <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
                 </ToolBar.Resources>

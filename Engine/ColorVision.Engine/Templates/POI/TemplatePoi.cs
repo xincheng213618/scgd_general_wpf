@@ -4,7 +4,6 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
-using OpenCvSharp;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;

@@ -1,26 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	
 	<PropertyGroup>
 		<TargetFrameworks>net8.0-windows;net6.0-windows</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<VersionPrefix>1.1.10.6</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile></PackageReadmeFile>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Remove="Assets\Image\background0.png" />
-		<None Remove="Assets\Image\ColorVision.ico" />
-		<None Remove="Assets\Image\ColorVision1.ico" />
-		<None Remove="Assets\Image\归档查询.png" />
-		<None Remove="Assets\Image\综合查询.png" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.1" />
+		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25103.5738" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -43,13 +37,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Resource Include="Assets\Image\background0.png">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</Resource>
-		<Resource Include="Assets\Image\ColorVision.ico" />
-		<Resource Include="Assets\Image\ColorVision1.ico" />
-		<Resource Include="Assets\Image\归档查询.png" />
-		<Resource Include="Assets\Image\综合查询.png" />
+	  <Folder Include="Assets\" />
 	</ItemGroup>
+	
 
 </Project>

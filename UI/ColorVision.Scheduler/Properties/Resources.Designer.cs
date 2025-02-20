@@ -61,6 +61,15 @@ namespace ColorVision.Scheduler.Properties {
         }
         
         /// <summary>
+        ///   查找类似 命令 的本地化字符串。
+        /// </summary>
+        public static string Command {
+            get {
+                return ResourceManager.GetString("Command", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 创建 的本地化字符串。
         /// </summary>
         public static string Create {
@@ -75,6 +84,132 @@ namespace ColorVision.Scheduler.Properties {
         public static string CreateTask {
             get {
                 return ResourceManager.GetString("CreateTask", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 Cron表达式 的本地化字符串。
+        /// </summary>
+        public static string CronExpression {
+            get {
+                return ResourceManager.GetString("CronExpression", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 删除 的本地化字符串。
+        /// </summary>
+        public static string Delete {
+            get {
+                return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 组 的本地化字符串。
+        /// </summary>
+        public static string GroupName {
+            get {
+                return ResourceManager.GetString("GroupName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 任务名称 的本地化字符串。
+        /// </summary>
+        public static string JobName {
+            get {
+                return ResourceManager.GetString("JobName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 下次触发时间 的本地化字符串。
+        /// </summary>
+        public static string NextFireTime {
+            get {
+                return ResourceManager.GetString("NextFireTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 暂停所有 的本地化字符串。
+        /// </summary>
+        public static string PauseAll {
+            get {
+                return ResourceManager.GetString("PauseAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上次触发时间 的本地化字符串。
+        /// </summary>
+        public static string PreviousFireTime {
+            get {
+                return ResourceManager.GetString("PreviousFireTime", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 恢复 的本地化字符串。
+        /// </summary>
+        public static string Resume {
+            get {
+                return ResourceManager.GetString("Resume", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 继续全部 的本地化字符串。
+        /// </summary>
+        public static string ResumeAll {
+            get {
+                return ResourceManager.GetString("ResumeAll", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 运行计数 的本地化字符串。
+        /// </summary>
+        public static string RunCount {
+            get {
+                return ResourceManager.GetString("RunCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭 的本地化字符串。
+        /// </summary>
+        public static string Shutdown {
+            get {
+                return ResourceManager.GetString("Shutdown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始 的本地化字符串。
+        /// </summary>
+        public static string Start {
+            get {
+                return ResourceManager.GetString("Start", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 状态 的本地化字符串。
+        /// </summary>
+        public static string Status {
+            get {
+                return ResourceManager.GetString("Status", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 停止 的本地化字符串。
+        /// </summary>
+        public static string Stop {
+            get {
+                return ResourceManager.GetString("Stop", resourceCulture);
             }
         }
         

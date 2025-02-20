@@ -15,7 +15,7 @@ using ColorVision.ImageEditor.Tif;
 using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
 using log4net;
@@ -28,6 +28,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -148,14 +149,14 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageEditViewMode = new ImageEditViewMode(ImageContentGrid, Zoombox1, ImageShow);
+            ImageEditViewMode = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
 
             ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
             ToolBar1.DataContext = ImageEditViewMode;
             ToolBarRight.DataContext = ImageEditViewMode;
             ImageEditViewMode.EditModeChanged += (s, e) =>
             {
-                if (e.IsEditMode)
+                if (e)
                 {
                     PoiParam.PoiConfig.IsShowDatum = false;
                     PoiParam.PoiConfig.IsShowPoiConfig = false;
@@ -353,7 +354,7 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public ImageEditViewMode ImageEditViewMode { get; set; }
+        public ImageViewModel ImageEditViewMode { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {
@@ -386,7 +387,6 @@ namespace ColorVision.Engine.Templates.POI
         }
 
 
-        private LedPicData ledPicData;
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
@@ -412,8 +412,6 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 else
                 {
-                    ledPicData ??= new LedPicData();
-                    ledPicData.picUrl = filePath;
                     OpenImage(filePath);
                     PoiConfig.BackgroundFilePath = filePath;
                 }
@@ -1687,17 +1685,18 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ComboBoxBorderType11.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
                 {
-                    startU = bitmapImage.PixelHeight * startU / 100;
-                    startD = bitmapImage.PixelHeight * startD / 100;
+                    startU = PoiParam.PoiConfig.AreaRectHeight * startU / 100;
+                    startD = PoiParam.PoiConfig.AreaRectHeight * startD / 100;
 
-                    startL = bitmapImage.PixelWidth * startL / 100;
-                    startR = bitmapImage.PixelWidth * startR / 100;
+                    startL = PoiParam.PoiConfig.AreaRectWidth * startL / 100;
+                    startR = PoiParam.PoiConfig.AreaRectWidth * startR / 100;
                 }
 
-                PoiParam.PoiConfig.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
-                PoiParam.PoiConfig.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
+                PoiParam.PoiConfig.AreaRectWidth = PoiParam.PoiConfig.AreaRectWidth - (int)startR - (int)startL;
+                PoiParam.PoiConfig.AreaRectHeight = PoiParam.PoiConfig.AreaRectHeight - (int)startD - (int)startD;
             }
             ImportMarinPopup1.IsOpen = false;
+            RenderPoiConfig();
         }
 
         private void ButtonImportMarin1_Click(object sender, RoutedEventArgs e)
@@ -1796,7 +1795,7 @@ namespace ColorVision.Engine.Templates.POI
 
             Int32Rect region = new Int32Rect();
             region.X = PoiParam.PoiConfig.CenterX - PoiParam.PoiConfig.AreaRectWidth/2;
-            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectWidth /2;
+            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectHeight / 2;
             region.Width = PoiParam.PoiConfig.AreaRectWidth;
             region.Height = PoiParam.PoiConfig.AreaRectHeight;
 
@@ -1827,12 +1826,13 @@ namespace ColorVision.Engine.Templates.POI
             // Show save file dialog
             if (saveFileDialog.ShowDialog() == true)
             {
-                SetImageSource(new WriteableBitmap(croppedBitmap));
                 using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create))
                 {
                     encoder.Save(fileStream);
                 }
                 PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
+                PoiParam.PoiConfig.BackgroundFilePath = saveFileDialog.FileName;
+                OpenImage(saveFileDialog.FileName);
             }
         }
 
@@ -1881,7 +1881,7 @@ namespace ColorVision.Engine.Templates.POI
         }
         public void RenderPseudo()
         {
-            Application.Current.Dispatcher.Invoke((Action)(() =>
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
             {
                 if (Pseudo.IsChecked == false)
                 {
@@ -1923,6 +1923,61 @@ namespace ColorVision.Engine.Templates.POI
             }));
         }
 
+        class JsonConfig
+        {
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int Width { get; set; }
+            public int Height { get; set; }
+        }
+
+        private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke((Action)(() =>
+            {
+                if (HImageCache != null)
+                {
+                    string re = PoiConfig.FindLuminousArea.ToJsonN();
+                    Task.Run(() =>
+                    {
+                        int length = OpenCVMediaHelper.M_FindLuminousArea((HImage)HImageCache, re,out IntPtr resultPtr);
+                        if (length > 0)
+                        {
+                            string result = Marshal.PtrToStringAnsi(resultPtr);
+                            Console.WriteLine("Result: " + result);
+                            OpenCVMediaHelper.FreeResult(resultPtr);
+                            JsonConfig rect = Newtonsoft.Json.JsonConvert.DeserializeObject<JsonConfig>(result);
+
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                if (rect.Width ==0)
+                                {
+                                    PoiConfig.AreaRectWidth = (int)ViewBitmapSource.Width;
+                                    PoiConfig.AreaRectHeight = (int)ViewBitmapSource.Height;
+                                    PoiConfig.CenterX = (int)ViewBitmapSource.Width /2;
+                                    PoiConfig.CenterY = (int)ViewBitmapSource.Height /2;
+                                }
+                                else
+                                {
+                                    PoiConfig.AreaRectWidth = rect.Width;
+                                    PoiConfig.AreaRectHeight = rect.Height;
+                                    PoiConfig.CenterX = rect.X + rect.Width / 2;
+                                    PoiConfig.CenterY = rect.Y + rect.Height / 2;
+                                }
+
+                                RenderPoiConfig();
+                            });
+
+                        }
+                        else
+                        {
+                            Console.WriteLine("Error occurred, code: " + length);
+                        }
+                    });
+                };
+            }));
+
+        }
     }
 
 }

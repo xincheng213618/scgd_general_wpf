@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace ColorVision.UI.PropertyEditor
+///这里划到xi
+namespace System.ComponentModel
 {
     public enum PropertyEditorType
     {
@@ -10,6 +11,8 @@ namespace ColorVision.UI.PropertyEditor
         Enum,
         TextSelectFolder,
         TextSelectFile,
+        TextSerialPort,
+        TextBaudRate,
         CronExpression
     }
 
@@ -22,15 +25,19 @@ namespace ColorVision.UI.PropertyEditor
 
         protected PropertyEditorType PropertyEditorTypeValue { get; set; }
 
-        public PropertyEditorTypeAttribute()
-            : this(PropertyEditorType.Default)
-        {
-        }
-
-        public PropertyEditorTypeAttribute(PropertyEditorType  propertyEditorType)
+        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType)
         {
             PropertyEditorTypeValue = propertyEditorType;
         }
+        public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default)
+        {
+        }
+        public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType, object[] itemSourse)
+        {
+            PropertyEditorTypeValue = propertyEditorType;
+            ItemSourse = itemSourse;
+        }
+        public object[] ItemSourse { get; set; }
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {

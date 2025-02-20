@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -7,12 +8,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ZBDebayer:ViewModelBase
     {
+        [DisplayName("ZBDebayerIsEnabled")]
         public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
         private bool _IsEnabled;
 
+        [DisplayName("ZBDebayerMethod")]
         public int Method { get => _Method; set { _Method = value; NotifyPropertyChanged(); } }
         private int _Method = 1;
-
+        [DisplayName("ZBDebayerChanneltype")]
         public int Channeltype { get => _Channeltype; set { _Channeltype = value; NotifyPropertyChanged(); } }
         private int _Channeltype = 3;
 

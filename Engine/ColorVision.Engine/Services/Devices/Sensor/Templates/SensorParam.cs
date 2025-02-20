@@ -1,5 +1,4 @@
-﻿
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
@@ -32,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             {
                 templatesParams = new ObservableCollection<TemplateModel<SensorParam>>();
                 TemplateParams = templatesParams;
-                Params.Add(Code,templatesParams);
+                Params.Add(Code, templatesParams);
             }
             IsUserControl = true;
         }
@@ -95,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
         }
 
-        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
+        public override string Title { get => Code + Properties.Resources.Edit; set { } }
 
         public EditTemplateSensor EditTemplateSensor { get; set; } = new EditTemplateSensor();
 
@@ -111,7 +110,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
             foreach (var index in SaveIndex)
             {
-                if(index >-1 && index < TemplateParams.Count)
+                if (index > -1 && index < TemplateParams.Count)
                 {
                     var item = TemplateParams[index];
 
@@ -129,7 +128,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         }
     }
 
-    public class SensorCommand:ViewModelBase
+    public class SensorCommand : ViewModelBase
     {
         public ModDetailModel Model { get; set; }
         public SensorCommand(ModDetailModel modDetailModel)
@@ -183,7 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public void GenerateRequestString()
         {
             Model.ValueA = $"{Request},{Response},{SensorCmdType},{Timeout}/{Delay},{RetryCount}";
-           NotifyPropertyChanged(nameof(OriginText));
+            NotifyPropertyChanged(nameof(OriginText));
         }
 
         public string? OriginText { get => Model.ValueA; set { } }
@@ -191,7 +190,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public SensorCmdType SensorCmdType { get => _SensorCmdType; set { _SensorCmdType = value; NotifyPropertyChanged(); GenerateRequestString(); } }
         private SensorCmdType _SensorCmdType = SensorCmdType.Ascii;
 
-        public string Request { get => _Request; set { _Request = value; NotifyPropertyChanged (); GenerateRequestString(); } }
+        public string Request { get => _Request; set { _Request = value; NotifyPropertyChanged(); GenerateRequestString(); } }
         private string _Request = string.Empty;
         public string Response { get => _Response; set { _Response = value; NotifyPropertyChanged(); GenerateRequestString(); } }
         private string _Response = string.Empty;
@@ -208,13 +207,13 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
 
 
-    public class SensorParam:ParamModBase
+    public class SensorParam : ParamModBase
     {
         public SensorParam() : base()
         {
 
         }
-       public ObservableCollection<SensorCommand> SensorCommands { get; set; }
+        public ObservableCollection<SensorCommand> SensorCommands { get; set; }
 
         public SensorParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
@@ -259,7 +258,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                             var newMod = (ModDetailModel)e.NewItems[i];
 
                             var commandToReplace = SensorCommands.FirstOrDefault(c => c.Model == oldMod);
-                            if (commandToReplace != null && newMod !=null)
+                            if (commandToReplace != null && newMod != null)
                             {
                                 // 替换为新的 SensorCommand
                                 int index = SensorCommands.IndexOf(commandToReplace);
@@ -282,4 +281,3 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
     }
 }
-  

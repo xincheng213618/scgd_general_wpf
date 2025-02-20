@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI;
+using log4net;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.ObjectModel;
@@ -18,6 +19,8 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
     {
+
+        private static ILog log = LogManager.GetLogger(typeof(FlowEngineToolWindow));
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
@@ -25,6 +28,9 @@ namespace ColorVision.Engine.Templates.Flow
         {
             InitializeComponent();
             this.ApplyCaption();
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
+            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
         }
 
         FlowParam FlowParam { get; set; }
@@ -35,11 +41,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             FlowParam = flowParam;
             OpenFlowBase64(flowParam);
-            ButtonOpen.Visibility = Visibility.Collapsed;
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
-            this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
         }
+
         #region ActionCommand
 
         public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
@@ -172,7 +175,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     Save();
                 }
-                if (e.KeyCode == System.Windows.Forms.Keys.F5 || (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
+                if (e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Refresh();
                 }
@@ -293,15 +296,24 @@ namespace ColorVision.Engine.Templates.Flow
             STNodeEditorMain.Nodes.Clear();
             if (!string.IsNullOrEmpty(flowParam.DataBase64))
             {
-                STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
-                foreach (var item in STNodeEditorMain.Nodes)
+                try
                 {
-                    if (item is STNode node)
+                    STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+                    foreach (var item in STNodeEditorMain.Nodes)
                     {
-                        node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                        node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                        if (item is STNode node)
+                        {
+                            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+                        }
                     }
                 }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                    MessageBox.Show(ex.Message);
+                }
+
             }
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }

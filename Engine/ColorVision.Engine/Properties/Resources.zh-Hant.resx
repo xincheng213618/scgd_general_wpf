@@ -400,7 +400,7 @@
     <value>管理員服務配置(_S)</value>
   </data>
   <data name="MenuSensor" xml:space="preserve">
-    <value>通用感測器模板設定(_H)</value>
+    <value>感測器模板(_H)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
     <value>重命名(_M)</value>
@@ -818,5 +818,26 @@
   </data>
   <data name="Symbol" xml:space="preserve">
     <value>象徵</value>
+  </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>引擎(_N)</value>
+  </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>搜尋條數限制</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>在開頭插入</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>自動刷新視圖</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>顯示列表視圖</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>檢視圖片讀取延遲</value>
+  </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>閾值</value>
   </data>
 </root>

@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -155,64 +156,68 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             VisualChildren.Add(DefectPoint);
             VisualChildren.Add(Uniformity);
             VisualChildren.Add(Distortion);
-            VisualChildren.Add(ColorShift);
+            VisualChildren.Add(ColorShift); 
+            VisualChildren.Add(LineArity);
+            VisualChildren.Add(ColorDiff);
             VisualChildren.Add(Luminance);
             VisualChildren.Add(LumOneColor);
             VisualChildren.Add(LumFourColor);
             VisualChildren.Add(LumMultiColor);
 
-            foreach (var item in VisualChildren)
+
+            foreach (var item in VisualChildren.OfType<CalibrationResource>())
             {
-                if (item is CalibrationResource calibrationResource)
-                {
-                    SysResourceDao.Instance.ADDGroup(SysResourceModel.Id, calibrationResource.SysResourceModel.Id);
-                }
+                SysResourceDao.Instance.ADDGroup(SysResourceModel.Id, item.SysResourceModel.Id);
             }
             base.Save();
         }
 
         public void SetCalibrationResource()
         {
-            foreach (var item in VisualChildren)
+            foreach (var item in VisualChildren.OfType<CalibrationResource>())
             {
-                if (item is CalibrationResource calibrationResource)
+                switch ((ServiceTypes)item.SysResourceModel.Type)
                 {
-                    switch ((ServiceTypes)calibrationResource.SysResourceModel.Type)
-                    {
-                        case ServiceTypes.DarkNoise:
-                            DarkNoise = calibrationResource;
-                            break;
-                        case ServiceTypes.DefectPoint:
-                            DefectPoint = calibrationResource;
-                            break;
-                        case ServiceTypes.DSNU:
-                            DSNU = calibrationResource;
-                            break;
-                        case ServiceTypes.Uniformity:
-                            Uniformity = calibrationResource;
-                            break;
-                        case ServiceTypes.Distortion:
-                            Distortion = calibrationResource;
-                            break;
-                        case ServiceTypes.ColorShift:
-                            ColorShift = calibrationResource;
-                            break;
-                        case ServiceTypes.Luminance:
-                            Luminance = calibrationResource;
-                            break;
-                        case ServiceTypes.LumOneColor:
-                            LumOneColor = calibrationResource;
-                            break;
-                        case ServiceTypes.LumFourColor:
-                            LumFourColor = calibrationResource;
-                            break;
-                        case ServiceTypes.LumMultiColor:
-                            LumMultiColor = calibrationResource;
-                            break;
-                        default:
-                            break;
-                    }
+                    case ServiceTypes.DarkNoise:
+                        DarkNoise = item;
+                        break;
+                    case ServiceTypes.DefectPoint:
+                        DefectPoint = item;
+                        break;
+                    case ServiceTypes.DSNU:
+                        DSNU = item;
+                        break;
+                    case ServiceTypes.Uniformity:
+                        Uniformity = item;
+                        break;
+                    case ServiceTypes.Distortion:
+                        Distortion = item;
+                        break;
+                    case ServiceTypes.ColorShift:
+                        ColorShift = item;
+                        break;
+                    case ServiceTypes.Luminance:
+                        Luminance = item;
+                        break;
+                    case ServiceTypes.LumOneColor:
+                        LumOneColor = item;
+                        break;
+                    case ServiceTypes.LumFourColor:
+                        LumFourColor = item;
+                        break;
+                    case ServiceTypes.LumMultiColor:
+                        LumMultiColor = item;
+                        break;
+                    case ServiceTypes.ColorDiff:
+                        ColorDiff = item;
+                        break;
+                    case ServiceTypes.LineArity:
+                        LineArity = item;
+                        break;
+                    default:
+                        break;
                 }
+
             }
         }
 
@@ -231,6 +236,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _Distortion;
         public CalibrationResource ColorShift { get => _ColorShift; set { _ColorShift = value; NotifyPropertyChanged(); } }
         private CalibrationResource _ColorShift;
+        public CalibrationResource LineArity { get => _LineArity; set { _LineArity = value; NotifyPropertyChanged(); } }
+        private CalibrationResource _LineArity;
+        public CalibrationResource ColorDiff { get => _ColorDiff; set { _ColorDiff = value; NotifyPropertyChanged(); } }
+        private CalibrationResource _ColorDiff;
+        
         public CalibrationResource Luminance { get => _Luminance; set { _Luminance = value; NotifyPropertyChanged(); } }
         private CalibrationResource _Luminance;
         public CalibrationResource LumOneColor { get => _LumOneColor; set { _LumOneColor = value; NotifyPropertyChanged(); } }
@@ -239,6 +249,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private CalibrationResource _LumFourColor;
         public CalibrationResource LumMultiColor { get => _LumMultiColor; set {    _LumMultiColor = value;  NotifyPropertyChanged(); } }
         private CalibrationResource _LumMultiColor;
+
+        
 
         public void ParseFileName(string fileName)
         {

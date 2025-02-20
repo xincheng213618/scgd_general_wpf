@@ -38,7 +38,29 @@ namespace ColorVision.Common.NativeMethods
 
         [DllImport("shell32.dll")]
         static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
+        public static void ShowFolderProperties(string folderPath)
+        {
+            SHELLEXECUTEINFO info = new SHELLEXECUTEINFO
+            {
+                cbSize = Marshal.SizeOf(typeof(SHELLEXECUTEINFO)),
+                fMask = SEE_MASK_INVOKEIDLIST,
+                hwnd = IntPtr.Zero,
+                lpVerb = "properties",
+                lpFile = folderPath,
+                lpParameters = string.Empty,
+                lpDirectory = string.Empty,
+                nShow = SW_SHOW,
+                hInstApp = IntPtr.Zero,
+                lpIDList = IntPtr.Zero,
+                lpClass = null,
+                hkeyClass = IntPtr.Zero,
+                dwHotKey = 0,
+                hIcon = IntPtr.Zero,
+                hProcess = IntPtr.Zero
+            };
 
+            ShellExecuteEx(ref info);
+        }
         public static void ShowFileProperties(string Filename)
         {
             SHELLEXECUTEINFO info = new();

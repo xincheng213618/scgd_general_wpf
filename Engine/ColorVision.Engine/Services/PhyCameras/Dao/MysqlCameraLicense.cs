@@ -4,7 +4,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
 {
     public class MysqlCameraLicense : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复Mysql Poi修正模板设置";
+        public string GetMysqlCommandName() => "恢复Mysql Camera设置";
 
         public string GetRecover()
         {

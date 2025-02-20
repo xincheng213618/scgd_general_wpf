@@ -819,4 +819,25 @@
   <data name="Symbol" xml:space="preserve">
     <value>Символ</value>
   </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>Двигатель (Н)</value>
+  </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>ОграничениеПоиска</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>ВставитьВНачало</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>АвтообновлениеПросмотра</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>ПоказатьСписокВидов</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>ЗадержкаЧтенияИзображения</value>
+  </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>порог</value>
+  </data>
 </root>

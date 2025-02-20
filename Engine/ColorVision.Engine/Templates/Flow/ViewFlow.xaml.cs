@@ -2,17 +2,12 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
 using ColorVision.UI.Views;
-using FlowEngineLib.End;
-using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -49,6 +44,8 @@ namespace ColorVision.Engine.Services.Flow
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode = true;
 
+        public DisplayFlow DisplayFlow { get; set; }
+
         public ViewFlow()
         {
             FlowEngineControl = new FlowEngineLib.FlowEngineControl(false);
@@ -59,10 +56,26 @@ namespace ColorVision.Engine.Services.Flow
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper.CheckFlow(); }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => { e.CanExecute = STNodeEditorMain.GetSelectedNode().Length>0; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(),(s,e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) => { e.CanExecute = UndoStack.Count > 0; if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
+            CommandBindings.Add(new CommandBinding(EngineCommands.StartExecutionCommand, (s, e) => DisplayFlow.RunFlow(), (s, e) =>
+            {
+                if (DisplayFlow.flowControl != null)
+                    e.CanExecute = !DisplayFlow.flowControl.IsFlowRun;
+            }));
+            CommandBindings.Add(new CommandBinding(EngineCommands.StopExecutionCommand, (s, e) => DisplayFlow.StopFlow(), (s, e) =>
+            {
+                if (DisplayFlow.flowControl != null)
+                    e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
+            }));
+
+
         }
         #region ActionCommand
 
@@ -166,15 +179,6 @@ namespace ColorVision.Engine.Services.Flow
                         var node = STNodeEditorMain.ActiveNode;
                         STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
                     }
-                }
-
-                if (e.KeyCode == System.Windows.Forms.Keys.S  && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                {
-                    Save();
-                }
-                if (e.KeyCode == System.Windows.Forms.Keys.F5 ||( e.KeyCode == System.Windows.Forms.Keys.R && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)))
-                {
-                    Refresh();
                 }
                 if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
@@ -307,15 +311,18 @@ namespace ColorVision.Engine.Services.Flow
 
                         e.Handled = true;
                     }
-                    if (e.Key == Key.Delete)
-                    {
-                        STNodeEditorMain.Nodes.Remove(item);
-
-                        e.Handled = true;
-                    }
                 }
             }
         }
+
+        public void Delete()
+        {
+            foreach (var item in STNodeEditorMain.GetSelectedNode())
+            {
+                STNodeEditorMain.Nodes.Remove(item);
+            }
+        }
+
 
         private bool IsMouseDown;
         private System.Drawing.Point lastMousePosition;

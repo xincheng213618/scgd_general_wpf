@@ -8,8 +8,8 @@ namespace ColorVision.UI.Menus
 
     public abstract class MenuItemBase : ViewModelBase,IMenuItem
     {
-        public abstract string OwnerGuid { get; }
-        public abstract string GuidId { get; }
+        public virtual string OwnerGuid => MenuItemConstants.Menu;
+        public virtual string GuidId  => GetType().Name;
         public virtual int Order => 1;
 
         public abstract string Header { get; }

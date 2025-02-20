@@ -38,80 +38,73 @@ namespace ColorVision.Solution
         public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
-        public RelayCommand SolutionOpenCommand { get; set; }
-        public RelayCommand SolutionCreateCommand { get; set; }
+        public RelayCommand SettingCommand { get; set; }
 
         public SolutionManager()
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
-
-            SolutionLoaded += SolutionManager_SolutionLoaded;
-
             bool su = false;
             var parser = ArgumentParser.GetInstance();
 
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
             var solutionpath = parser.GetValue("solutionpath");
-            if (solutionpath != null)
+            Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                su = OpenSolution(solutionpath);
-            }
+                if (solutionpath != null)
+                {
+                    su = OpenSolution(solutionpath);
+                }
+                else if (SolutionHistory.RecentFiles.Count > 0)
+                {
+                    su = OpenSolution(SolutionHistory.RecentFiles[0]);
+                }
+                JumpListManager jumpListManager = new JumpListManager();
+                jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
+                if (!su)
+                {
+                    string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                    if (!Directory.Exists(Default))
+                        Directory.CreateDirectory(Default);
 
-            else if (SolutionHistory.RecentFiles.Count > 0)
-            {
-                su =OpenSolution(SolutionHistory.RecentFiles[0]);
-            }
-            JumpListManager jumpListManager = new JumpListManager();
-            jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
-            if (!su)
-            {
-                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
-                if (!Directory.Exists(Default))
-                    Directory.CreateDirectory(Default);
+                    string DefaultSolution = Default + "\\" + "Default";
+                    if (Directory.Exists(DefaultSolution))
+                        Directory.CreateDirectory(DefaultSolution);
+                    var SolutionPath = CreateSolution(DefaultSolution);
+                }
+            });
 
-                string DefaultSolution = Default + "\\" + "Default";
-                if (Directory.Exists(DefaultSolution))
-                    Directory.CreateDirectory(DefaultSolution);
-                var SolutionPath = CreateSolution(DefaultSolution);
-            }
-
-
-            SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
-            SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
+            SettingCommand = SolutionSetting.Instance.EditCommand;
         }
 
 
-        public event EventHandler<ISolutionProcess> OpenFile;
+        public event EventHandler<VObject> OpenFilePath;
 
-
-        public void OpenFileWindow(ISolutionProcess userControl)
+        public void OpenView(VObject vobject)
         {
-            OpenFile?.Invoke(this, userControl);
+            OpenFilePath?.Invoke(this, vobject);
         }
 
-
-        private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
-        {
-            if (sender is string solutionConfig)
-            {
-                SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig);
-                SolutionExplorers.Add(CurrentSolutionExplorer);
-            }
-        }
-
-
-        public DirectoryInfo? SolutionDirectory { get; private set; }
+        public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
 
         public bool OpenSolution(string FullPath)
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                FileInfo fileInfo = new(FullPath);
-                SolutionDirectory = fileInfo.Directory;
+                FileInfo fileInfo = new FileInfo(FullPath);
                 SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(FullPath, new EventArgs());
+                if (File.Exists(FullPath))
+                {
+                    SolutionEnvironments.SolutionDir = Directory.GetParent(fileInfo.FullName).FullName;
+                    SolutionEnvironments.SolutionPath = fileInfo.FullName;
+                    SolutionEnvironments.SolutionExt = fileInfo.Extension;
+                    SolutionEnvironments.SolutionName = fileInfo.Name;
+                    SolutionEnvironments.SolutionFileName = Path.GetFileName(FullPath);
+                }
+                SolutionExplorers.Clear();
+                CurrentSolutionExplorer = new SolutionExplorer(SolutionEnvironments);
+                SolutionExplorers.Add(CurrentSolutionExplorer);
                 return true;
             }
             else
@@ -128,22 +121,14 @@ namespace ColorVision.Solution
 
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
-            new SolutionConfig().ToJsonNFile(slnName);
+
+            new CVSolutionConfig().ToJsonNFile(slnName);
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);
             return true;
         }
-
-
-
-        public void CreateShortcut(string FileName)
-        {
-            if (SolutionDirectory!=null)
-                Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
-        }
-
-        public static void OpenSolutionWindow()
+        public void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.ShowDialog();

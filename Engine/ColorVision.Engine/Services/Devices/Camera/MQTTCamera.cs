@@ -4,16 +4,15 @@ using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.Extension;
 using cvColorVision;
 using CVCommCore;
-using CVCommCore.CVImage;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -60,19 +59,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     {
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
                                         {
-                                            Config.ExpTimeR = (int)msg.Data[i].result;
-                                            Config.SaturationR = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeR = msg.Data[i].result;
+                                            Config.SaturationR = msg.Data[i].resultSaturation;
                                         }
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
                                         {
-                                            Config.ExpTimeG = (int)msg.Data[i].result;
-                                            Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeG = msg.Data[i].result;
+                                            Config.SaturationG = msg.Data[i].resultSaturation;
                                         }
 
                                         if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
                                         {
-                                            Config.ExpTimeB = (int)msg.Data[i].result;
-                                            Config.SaturationB = (int)msg.Data[i].resultSaturation;
+                                            Config.ExpTimeB = msg.Data[i].result;
+                                            Config.SaturationB = msg.Data[i].resultSaturation;
                                         }
                                     }
 
@@ -83,8 +82,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                 }
                                 else
                                 {
-                                    Config.ExpTime = (int)msg.Data[0].result;
-                                    Config.Saturation = (int)msg.Data[0].resultSaturation;
+                                    Config.ExpTime = msg.Data[0].result;
+                                    Config.Saturation = msg.Data[0].resultSaturation;
 
                                     string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
@@ -295,6 +294,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             Params.Add("ScaleFactor", Config.ScaleFactor);
+            Params.Add("Gain", Config.Gain);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 40000);
@@ -302,7 +302,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
-        public MsgRecord AutoFocus()
+        public MsgRecord AutoFocus(AutoFocusParam param)
         {
             var Params = new Dictionary<string, object>() { };
 
@@ -311,16 +311,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "AutoFocus",
                 Params = Params
             };
-            Params.Add("tAutoFocusCfg", Config.AutoFocusConfig.ToJsonN());
-            return PublishAsyncClient(msg, Config.AutoFocusConfig.nTimeout);
+            Params.Add("AutoFocusTemplate", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            return PublishAsyncClient(msg, param.nTimeout);
         }
 
         public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
             var Params = new Dictionary<string, object>() { };
-            if (autoExpTimeParam.Id >=0)
-                Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
-
+            Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = autoExpTimeParam.Name });
             MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
@@ -393,7 +391,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord CacheClear()
+        public MsgRecord ClearDataCache()
         {
             MsgSend msg = new()
             {
@@ -403,14 +401,5 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetChannel(int recId, CVImageChannelType chType)
-        {
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
-                Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
-            };
-            return PublishAsyncClient(msg);
-        }
     }
 }

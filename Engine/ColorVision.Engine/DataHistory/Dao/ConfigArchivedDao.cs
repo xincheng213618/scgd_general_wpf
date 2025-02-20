@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
@@ -18,6 +19,8 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public override void Execute()
         {
+            string sql = "ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `excluding_images` TINYINT(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `del_local_file` tinyint(1) NOT NULL DEFAULT '0';  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `data_save_hours` int(11) NOT NULL DEFAULT '0';";
+            MySqlControl.GetInstance().ExecuteNonQuery(sql);
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
             {
@@ -45,6 +48,20 @@ namespace ColorVision.Engine.DataHistory.Dao
         [Column("data_save_days"), DisplayName("数据保存天数"),]
         public int DataSaveDays { get => _DataSaveDays; set { _DataSaveDays = value; NotifyPropertyChanged(); } }
         private int _DataSaveDays;
+
+        [Column("data_save_hours"), DisplayName("数据保存小时数"),]
+        public int DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; NotifyPropertyChanged(); } }
+        private int _DataSaveHours;
+
+        [Column("excluding_images"), DisplayName("归档不包含图像"),]
+        public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; NotifyPropertyChanged(); } }
+        private bool _Excludingimages;
+
+        [Column("del_local_file"), DisplayName("删除本地文件"),]
+        public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; NotifyPropertyChanged(); } }
+        private bool _DellocalFile;
+
+
     }
 
     public class ConfigArchivedDao : BaseTableDao<ConfigArchivedModel>

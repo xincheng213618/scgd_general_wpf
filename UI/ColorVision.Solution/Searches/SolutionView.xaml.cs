@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Views;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -20,9 +21,7 @@ namespace ColorVision.Solution.Searches
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
             View = new View();
-            View.ViewIndexChangedEvent += View_ViewIndexChangedEvent;
-
-            MainFrame.Navigate(new HomePage(MainFrame));
+            MainFrame.Navigate(SolutionPageManager.Instance.GetPage("HomePage", MainFrame));
 
             if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
             {
@@ -34,20 +33,12 @@ namespace ColorVision.Solution.Searches
                 content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
                 BrowseForward.ContextMenu = content2;
             }
-            ContextMenu contextMenu = new();
-            MainSetting.ContextMenu = contextMenu;
-            MenuItem menuItem = new() { Header = "独立窗口" };
-            menuItem.Click += (s, e) =>
+            SolutionManager.GetInstance().OpenFilePath += (s, e) =>
             {
-                View.ViewIndex = -2;
-            };
-            contextMenu.Items.Add(menuItem);;
+                string GuidId = Tool.GetMD5(e.FullPath);
+                var existingDocument = FindDocumentById(_layoutRoot, GuidId.ToString());
 
-            SolutionManager.GetInstance().OpenFile += (s, e) =>
-            {
-                var existingDocument = FindDocumentById(_layoutRoot, e.GuidId.ToString());
-
-                if (existingDocument !=null)
+                if (existingDocument != null)
                 {
                     if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
                     {
@@ -56,27 +47,27 @@ namespace ColorVision.Solution.Searches
                     else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
                     {
                         var window = Window.GetWindow(layoutFloatingWindow);
-                        if (window!=null)
+                        if (window != null)
                         {
                             window.Activate();
                         }
                     }
-
                 }
                 else
                 {
-                    LayoutDocument layoutDocument = new LayoutDocument() { IconSource =e.IconSource, ContentId = e.GuidId.ToString(), Title = e.Name };
-                    layoutDocument.Content = e.UserControl;
-                    ;
-                    e.Open();
-                    layoutDocument.Closing += (s,e1) =>
+                    var IEditor = IEditorManager.Instance.GetEditor(e.FullPath);
+                    if (IEditor != null)
                     {
-                        e.Close();
-                    };
-                    LayoutDocumentPane.Children.Add(layoutDocument);
-                    LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
+                        Control control = IEditor.Open(e.FullPath);
+                        if(control != null)
+                        {
+                            LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = e.Name };
+                            layoutDocument.Content = control;
+                            LayoutDocumentPane.Children.Add(layoutDocument);
+                            LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
+                        }
+                    }
                 }
-
             };
         }
 
@@ -145,35 +136,6 @@ namespace ColorVision.Solution.Searches
                 }
             }
             return null;
-        }
-
-        private void View_ViewIndexChangedEvent(int oindex, int index)
-        {
-            if (index == -2)
-            {
-                ContextMenu contextMenu = new();
-                MenuItem menuItem = new() { Header = "还原" };
-                menuItem.Click += (s, e) =>
-                {
-                    View.ViewIndex = 0;
-                };
-                contextMenu.Items.Add(menuItem);
-                MainSetting.ContextMenu = contextMenu;
-                View.ViewGridManager?.SetViewIndex(this,-2);
-            }
-            if (index == 0)
-            {
-                ContextMenu contextMenu = new();
-                MenuItem menuItem = new() { Header = "独立窗口" };
-                menuItem.Click += (s, e) =>
-                {
-                    View.ViewIndex = -2;
-                };
-                contextMenu.Items.Add(menuItem);
-                MainSetting.ContextMenu = contextMenu;
-                View.ViewGridManager?.SetViewIndex(this, 0);
-
-            }
         }
     }
 }

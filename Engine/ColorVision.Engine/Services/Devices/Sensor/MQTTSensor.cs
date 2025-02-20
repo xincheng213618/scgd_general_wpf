@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             SensorExecCmdParam req = new();
             req.TemplateParam = temp;
-            req.Cmd = new SensorCmd() { CmdType= SensorCmdType.None };
+            req.Cmd = new SensorCmd() { CmdType = SensorCmdType.None };
             MsgSend msg = new()
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,

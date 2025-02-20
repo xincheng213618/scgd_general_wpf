@@ -819,4 +819,25 @@
   <data name="Symbol" xml:space="preserve">
     <value>Symbole</value>
   </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>Moteur (_N)</value>
+  </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>LimiteDeRecherche</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>InsérerAuDébut</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>VueAutoRafraîchissement</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>AffichageListe</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>DélaiLectureImageVue</value>
+  </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>Seuil</value>
+  </data>
 </root>

@@ -7,12 +7,25 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
+using System.IO;
+using ColorVision.Solution.Properties;
+using ColorVision.UI;
+using ColorVision.UI.Menus;
+using System.Windows;
 
 namespace ColorVision.Solution.V
 {
+    public interface IObject
+    {
+        public VObject Parent { get; set; }
+        public ObservableCollection<VObject> VisualChildren { get; set; }
+        public abstract void AddChild(VObject vObject);
+        public abstract void RemoveChild(VObject vObject);
+    }
+
 
     [DataContract]
-    public class VObject : INotifyPropertyChanged
+    public class VObject : INotifyPropertyChanged, IObject
     {
         public VObject Parent { get; set; }
 
@@ -26,7 +39,6 @@ namespace ColorVision.Solution.V
             vObject.Parent = this;
             AddChildEventHandler?.Invoke(this, new EventArgs());
             VisualChildren.SortedAdd(vObject);
-
         }
         public event EventHandler RemoveChildEventHandler;
         public virtual void RemoveChild(VObject vObject)
@@ -38,17 +50,17 @@ namespace ColorVision.Solution.V
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-        public virtual string Name { get => _Name; set
+        public virtual string Name { get => Name1; set
             { 
-                if (_Name == value) return; 
+                if (Name1 == value) return; 
                 if (!IsEditMode || ReName(value))
                 {
-                    _Name = value;
+                    Name1 = value;
                 }
                 NotifyPropertyChanged();  
             } 
         }
-        private string _Name = string.Empty;
+        protected string Name1 { get; set; } = string.Empty;
 
         public virtual string FullPath { get => _FullPath; set { _FullPath = value; NotifyPropertyChanged(); } }
         private string _FullPath = string.Empty;
@@ -70,23 +82,109 @@ namespace ColorVision.Solution.V
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
 
-        public RelayCommand AttributesCommand { get; set; }
+        public RelayCommand PropertyCommand { get; set; }
 
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        public virtual bool DisableExpanded { get => _DisableExpanded; set { _DisableExpanded = value; NotifyPropertyChanged(); } }
+        private bool _DisableExpanded;
+
+        public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
 
         public ContextMenu ContextMenu { get; set; }
 
+        public List<MenuItemMetadata> MenuItemMetadatas { get; set; }
 
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
             OpenCommand = new RelayCommand((s) => Open());
+            MenuItemMetadatas = new List<MenuItemMetadata>();
             DeleteCommand = new RelayCommand(s =>Delete());
+            PropertyCommand = new RelayCommand(s => ShowProperty());
+            ContextMenu = new ContextMenu();
+            ContextMenu.Initialized += (s, e) => { InitMenuItem(); InitContextMenu(); };
         }
+
+        public virtual void InitContextMenu()
+        {
+            ContextMenu.Items.Clear();
+            var iMenuItems = MenuItemMetadatas.OrderBy(item => item.Order).ToList();
+
+            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
+            {
+                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                for (int i = 0; i < iMenuItems1.Count; i++)
+                {
+                    var iMenuItem = iMenuItems1[i];
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem;
+                    menuItem = new MenuItem
+                    {
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                        Visibility = iMenuItem.Visibility,
+                    };
+
+                    CreateMenu(menuItem, GuidId);
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+                    parentMenuItem.Items.Add(menuItem);
+                }
+                foreach (var item in iMenuItems1)
+                {
+                    iMenuItems.Remove(item);
+                }
+            }
+
+            var iMenuItemMetas = MenuItemMetadatas.Where(item=>item.OwnerGuid ==MenuItemConstants.Menu && item.Visibility==Visibility.Visible).OrderBy(item => item.Order).ToList();
+
+            for (int i = 0; i < iMenuItemMetas.Count; i++)
+            {
+                MenuItemMetadata  menuItemMeta = iMenuItemMetas[i];
+                if (menuItemMeta.Icon is Viewbox viewbox)
+                {
+                    Viewbox viewbox1 = new Viewbox();
+
+                }
+                MenuItem menuItem = new MenuItem() 
+                { 
+                    Header = menuItemMeta.Header, 
+                    Command = menuItemMeta.Command ,
+                    Icon  = menuItemMeta.Icon
+                };
+                if (menuItemMeta.GuidId != null)
+                    CreateMenu(menuItem, menuItemMeta.GuidId);
+                if (i > 0 && menuItemMeta.Order - iMenuItemMetas[i - 1].Order > 4)
+                    ContextMenu.Items.Add(new Separator());
+
+                ContextMenu.Items.Add(menuItem);
+            }
+        }
+        public virtual void InitMenuItem()
+        {
+            MenuItemMetadatas.Clear();
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Cut", Order = 100, Command = ApplicationCommands.Cut, Header = UI.Properties.Resources.MenuCut ,Icon = MenuItemIcon.TryFindResource("DICut") ,InputGestureText = "Crtl+X" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Copy", Order = 101, Command = ApplicationCommands.Copy, Header = UI.Properties.Resources.MenuCopy, Icon = MenuItemIcon.TryFindResource("DICopy"), InputGestureText = "Crtl+C" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Paste", Order = 102, Command = ApplicationCommands.Paste, Header = UI.Properties.Resources.MenuPaste, Icon =MenuItemIcon.TryFindResource("DIPaste"), InputGestureText = "Crtl+V" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Delete", Order = 103, Command = ApplicationCommands.Delete, Header = UI.Properties.Resources.MenuDelete,Icon = MenuItemIcon.TryFindResource("DIDelete"), InputGestureText = "Del" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ReName", Order = 104, Command = Commands.ReName, Header = UI.Properties.Resources.MenuRename ,Icon = MenuItemIcon.TryFindResource("DIRename"), InputGestureText = "F2" });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Property", Order = 9999, Command = PropertyCommand, Header = ColorVision.Solution.Properties.Resources.MenuProperty, Icon = MenuItemIcon.TryFindResource("DIProperty") });
+
+        }
+
+        public virtual void ShowProperty()
+        {
+
+        }
+
 
         public virtual void Delete()
         {

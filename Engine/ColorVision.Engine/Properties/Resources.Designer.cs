@@ -187,6 +187,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新视图 的本地化字符串。
+        /// </summary>
+        public static string AutoRefreshView {
+            get {
+                return ResourceManager.GetString("AutoRefreshView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动切换选中视图 的本地化字符串。
         /// </summary>
         public static string AutoSwitchSelectedView {
@@ -871,6 +880,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在开头插入 的本地化字符串。
+        /// </summary>
+        public static string InsertAtBeginning {
+            get {
+                return ResourceManager.GetString("InsertAtBeginning", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 软件启动时打开服务 的本地化字符串。
         /// </summary>
         public static string IsDefaultOpenService {
@@ -894,6 +912,15 @@ namespace ColorVision.Engine.Properties {
         public static string IsRetorePlayControls {
             get {
                 return ResourceManager.GetString("IsRetorePlayControls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是否显示列表视图 的本地化字符串。
+        /// </summary>
+        public static string IsShowListView {
+            get {
+                return ResourceManager.GetString("IsShowListView", resourceCulture);
             }
         }
         
@@ -1078,6 +1105,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 引擎(_N) 的本地化字符串。
+        /// </summary>
+        public static string MenuEngine {
+            get {
+                return ResourceManager.GetString("MenuEngine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {
@@ -1213,7 +1249,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 通用传感器模板设置(_S) 的本地化字符串。
+        ///   查找类似 传感器模板(_S) 的本地化字符串。
         /// </summary>
         public static string MenuSensor {
             get {
@@ -1726,6 +1762,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 搜索条数限制 的本地化字符串。
+        /// </summary>
+        public static string SearchLimit {
+            get {
+                return ResourceManager.GetString("SearchLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 选择项目保存位置 的本地化字符串。
         /// </summary>
         public static string SelectProjectSaveLocation {
@@ -1996,6 +2041,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 阈值 的本地化字符串。
+        /// </summary>
+        public static string Threshold {
+            get {
+                return ResourceManager.GetString("Threshold", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 剩余时间： 的本地化字符串。
         /// </summary>
         public static string TimeLeft {
@@ -2109,6 +2163,15 @@ namespace ColorVision.Engine.Properties {
         public static string ViewCamera_图像数据文件 {
             get {
                 return ResourceManager.GetString("ViewCamera_图像数据文件", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 查看图像读取延迟 的本地化字符串。
+        /// </summary>
+        public static string ViewImageReadDelay {
+            get {
+                return ResourceManager.GetString("ViewImageReadDelay", resourceCulture);
             }
         }
         

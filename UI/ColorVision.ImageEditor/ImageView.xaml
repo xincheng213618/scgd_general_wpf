@@ -77,8 +77,8 @@
             <Grid Background="{StaticResource SmallGridLinesDrawingBrush}"  Visibility="Collapsed"/>
 
             <Grid x:Name="ZoomGrid" Background="{StaticResource TransparentGridBrush}">
-                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}"  ContextMenuOpening="Zoombox1_ContextMenuOpening" Grid.Row="1" Grid.RowSpan="2">
-                    <draw:DrawCanvas x:Name="ImageShow"   x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
+                <draw:ZoomboxSub x:Name="Zoombox1"  x:FieldModifier="public"  MaxZoom="{Binding MaxZoom}"  MinZoom="{Binding MinZoom}" Grid.Row="1" Grid.RowSpan="2">
+                    <draw:DrawCanvas x:Name="ImageShow"  x:FieldModifier="public" Initialized="ImageShow_Initialized"  FocusVisualStyle="{x:Null}"  PreviewMouseLeftButtonDown="ImageShow_PreviewMouseLeftButtonDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Auto" MouseMove="ImageShow_MouseMove">
                     </draw:DrawCanvas>
                 </draw:ZoomboxSub>
                 <ToolBarTray  x:Name="ToolBarLayers"  x:FieldModifier="public" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
@@ -96,7 +96,7 @@
                     </ToolBar>
                 </ToolBarTray>
 
-                <Border x:Name="ToolBarBottom" d:DataContext="{d:DesignInstance draw:ImageEditViewMode}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
+                <Border x:Name="ToolBarBottom"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}" Padding="2" CornerRadius="5" Background="{DynamicResource SecondaryRegionBrush}"  HorizontalAlignment="Center" VerticalAlignment="Bottom"  Margin="0,0,0,10">
                     <Grid>
                         <StackPanel Orientation="Horizontal" >
                             <ToggleButton  IsChecked="{Binding Measure}" Padding="5" Margin="0,0,2,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
@@ -135,7 +135,7 @@
                 </Border>
 
 
-                <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                <ToolBarTray x:Name="ToolBar1"  DataContext="{Binding ToolBarTop}" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2" Orientation="Horizontal" HorizontalAlignment="Center">
                     <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True">
                         <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -143,29 +143,23 @@
                         <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
                         </ToggleButton>
-                        <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                        <Button Command="{Binding ZoomUniformCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                        <Button Command="{Binding ZoomInCommand}"  Margin="1,0">
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
                         </Button>
-                        <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                        <Button  Command="{Binding ZoomOutCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
                         </Button>
-                        <Button Command="{Binding RotateLeftCommand}" Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalLeftIcon}"  Margin="-5"/>
-                        </Button>
-                        <Button Command="{Binding RotateRightCommand}" Margin="1,0">
-                            <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DIToolRotalRightIcon}"  Margin="-5"/>
-                        </Button>
-                        <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                        <Button Command="{Binding ZoomNoneCommand}"  Margin="1,0">
                             <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                         </Button>
-                        <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
+                        <ToggleButton Command="{Binding FullCommand}" Margin="1,0" >
                             <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                         </ToggleButton>
                         <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}"/>
-                        <Button   Command="{Binding OpenProperty}" Margin="1,0" Padding="5">
+                        <Button   Command="{Binding PropertyCommand}" Margin="1,0" Padding="5">
                             <Button.Triggers>
                                 <EventTrigger RoutedEvent="Button.Click">
                                     <BeginStoryboard>
@@ -181,22 +175,21 @@
                                 </TextBlock.RenderTransform>
                             </TextBlock>
                         </Button>
-
                         <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                             <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                         </ToggleButton>
                     </ToolBar>
                 </ToolBarTray>
-                <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+                <ToolBarTray x:Name="ToolBarRight" HorizontalAlignment="Left" Orientation="Vertical" Margin="2,50,0,0"  VerticalAlignment="Top">
                     <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                        <Button Click="Button_Click" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                        <Button Command="{Binding OpenImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" />
                         </Button>
-                        <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
+                        <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}" />
                         </Button>
-                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
-                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
+                        <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2" Padding="5">
+                            <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}" />
                         </Button>
                     </ToolBar>
                 </ToolBarTray>
@@ -330,24 +323,14 @@
                             <Button DockPanel.Dock="Right" Content="反相" Click="Button_Click_InvertImage" Margin="0,0,0,5"/>
                             <StackPanel>
                                 <DockPanel Margin="0,0,0,5">
-                                    <TextBlock  Text="对比度" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
+                                    <TextBlock  Text="阈值" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="50" />
                                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=thresholdSlider,Path=Value}" Style="{StaticResource TextBox.Small}" Width="50"/>
                                     <hc:PreviewSlider x:Name="thresholdSlider" TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10"  Value="0" Minimum="0" Maximum="65535" ValueChanged="thresholdSlider_ValueChanged"/>
                                 </DockPanel>
                                 <Button Content="计算"  Click="Threshold_Click"/>
                             </StackPanel>
-
                         </StackPanel>
                     </Border>
-
-                    <ToggleButton  Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
-                    </ToggleButton>
-                    <ToggleButton  Content="Lab" Padding="3,5" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
-                    <ToggleButton Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
-                    </ToggleButton>
-
                 </StackPanel>
             </ScrollViewer>
             <StackPanel VerticalAlignment="Bottom" Grid.Row="1" Margin="5"  Orientation="Horizontal">

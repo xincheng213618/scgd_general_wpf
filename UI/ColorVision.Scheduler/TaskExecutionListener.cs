@@ -4,6 +4,8 @@ using Quartz.Listener;
 
 namespace ColorVision.Scheduler
 {
+
+
     public class TaskExecutionListener : JobListenerSupport
     {
         public override string Name => "TaskExecutionListener";

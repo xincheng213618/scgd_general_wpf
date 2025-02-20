@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.PG.Templates
 {
     public class ExportPGParam : MenuItemBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => nameof(MenuTemplate);
 
         public override string GuidId => "PGParam";
         public override int Order => 11;

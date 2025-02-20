@@ -31,7 +31,6 @@ namespace ColorVision.Common.MVVM
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
         }
-
         public void Execute(object? parameter) => execute(parameter);
 
         public void RaiseExecute(object parameter) => execute(parameter);

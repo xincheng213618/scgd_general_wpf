@@ -4,6 +4,7 @@ using System.Windows.Media;
 using System.Windows.Input;
 using System.Globalization;
 using System.Linq;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.ImageEditor.Draw.Special
 {
@@ -40,6 +41,7 @@ namespace ColorVision.ImageEditor.Draw.Special
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
+                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                     DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
 
                 }
@@ -54,13 +56,21 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
-            if (Radio != ZoomboxSub.ContentMatrix.M11)
+            DebounceTimer.AddOrResetTimerDispatcher("GridlineLayoutUpdated", 50, LayoutUpdated);
+        }
+        Matrix MatrixBackup;
+        public void LayoutUpdated()
+        {
+            var currentMatrix = ZoomboxSub.ContentMatrix;
+
+            if (MatrixBackup != currentMatrix)
             {
-                Radio = ZoomboxSub.ContentMatrix.M11;
+                MatrixBackup = new Matrix(currentMatrix.M11, currentMatrix.M12, currentMatrix.M21, currentMatrix.M22, currentMatrix.OffsetX, currentMatrix.OffsetY);
+                Radio = currentMatrix.M11;
                 DrawImage();
             }
-
         }
+
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1; set { DefalutTextAttribute.Defalut.ActualLength = value; } }
         public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.PhysicalUnit : "Px"; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
 
@@ -71,15 +81,34 @@ namespace ColorVision.ImageEditor.Draw.Special
         {
             if (DrawCanvas.Source is BitmapSource bitmapSource)
             {
+
                 Brush brush = Brushes.Red;
                 FontFamily fontFamily = new("Arial");
                 double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
                 Pen pen = new(brush, ratio);
 
-                int lenindex = (int)(40 * ratio);
+                double lenindex = 40 * ratio;
+                if (lenindex > 1) lenindex = (int)lenindex;
                 double fontSize = 15 / ZoomboxSub.ContentMatrix.M11; 
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
-                for (int i = 0; i < bitmapSource.Height; i += lenindex)
+
+                double OffsetX = ZoomboxSub.ContentMatrix.OffsetX;
+                double OffsetY = ZoomboxSub.ContentMatrix.OffsetY;
+
+                double visibleX =  -OffsetX / Radio;
+                double visibleY = - OffsetY / Radio;
+                double visibleWidth = ZoomboxSub.ActualWidth / Radio;
+                double visibleHeight = ZoomboxSub.ActualHeight / Radio;
+                visibleWidth = visibleWidth + visibleX > bitmapSource.Width ? bitmapSource.Width : visibleWidth + visibleX;
+                visibleHeight = visibleHeight + visibleY > bitmapSource.Height ? bitmapSource.Height : visibleHeight + visibleY;
+                visibleX = visibleX < 0 ? 0 : visibleX;
+                visibleY = visibleY < 0 ? 0 : visibleY;
+   
+
+
+                Rect visibleRect = new Rect(visibleX, visibleY, visibleWidth, visibleHeight);
+
+                for (double i = visibleY; i < visibleHeight; i += lenindex)
                 {
                     string text = (i * ActualLength).ToString("F0") ;
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
@@ -94,10 +123,9 @@ namespace ColorVision.ImageEditor.Draw.Special
                         dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, i - 10 / ZoomboxSub.ContentMatrix.M11));
                     }
                     dc.DrawLine(pen, new Point(0, i), new Point(bitmapSource.Width, i));
-
                 }
 
-                for (int i = 0; i < bitmapSource.Width; i += lenindex)
+                for (double i = visibleX; i < visibleWidth; i += lenindex)
                 {
                     string text = (i * ActualLength).ToString("F0");
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
@@ -121,6 +149,7 @@ namespace ColorVision.ImageEditor.Draw.Special
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
+
         }
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);

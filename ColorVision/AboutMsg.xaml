@@ -93,10 +93,9 @@
 
 
             <StackPanel Grid.Row="1" VerticalAlignment="Bottom" Margin="5">
-                <TextBlock x:Name="TextBlockVision" Margin="5"  HorizontalAlignment="Center" TextWrapping = "Wrap"  Text="ColorVision (64位) -  1.0.0.0"/>
+                <TextBlock x:Name="TextBlockVision"   HorizontalAlignment="Center" TextAlignment="Center" TextWrapping = "Wrap"  Text="ColorVision (64位) -  1.0.0.0"/>
                 <TextBlock x:Name="TextCUDAVision" VerticalAlignment="Center" TextAlignment="Center" Text="CUDA" Visibility="Collapsed"/>
                 <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="CopyRight © 2024-2026 ColorVision All Rigths Reserved"/>
-                <TextBlock VerticalAlignment="Center" TextAlignment="Center" Text="{x:Static properties:Resources.ServiceAgreement}"/>
             </StackPanel>
 
 

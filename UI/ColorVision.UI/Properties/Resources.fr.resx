@@ -267,4 +267,19 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>Copie(C)</value>
   </data>
+  <data name="MenuPrint" xml:space="preserve">
+    <value>Imprimer</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Nouveau(N)</value>
+  </data>
+  <data name="MenuClose" xml:space="preserve">
+    <value>_Fermer</value>
+  </data>
+  <data name="IsAutoSelect" xml:space="preserve">
+    <value>SélectionAutomatique</value>
+  </data>
+  <data name="MenuRedo" xml:space="preserve">
+    <value>Refaire</value>
+  </data>
 </root>

@@ -1,6 +1,8 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <Color x:Key="defaultgreyColor">#212121</Color>
+
     <!-- Global colors -->
     <Color x:Key="GlobalBackgroundColor">#F9BCD3</Color>
     <Color x:Key="GlobalBroderBrushColor">#FAD1DF</Color>

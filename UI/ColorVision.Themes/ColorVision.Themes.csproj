@@ -23,7 +23,7 @@
 	<ItemGroup>
 		<PackageReference Include="HandyControl" Version="3.5.1" />
 		<PackageReference Include="Panuon.WPF.UI" Version="1.2.4.9" />
-		<PackageReference Include="WPF-UI" Version="3.0.5" />
+		<PackageReference Include="WPF-UI" Version="4.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -53,5 +53,15 @@
 	    <Generator>PublicResXFileCodeGenerator</Generator>
 	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Assets\images\Cut.svg">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </None>
+	  <None Update="README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
 	</ItemGroup>
 </Project>

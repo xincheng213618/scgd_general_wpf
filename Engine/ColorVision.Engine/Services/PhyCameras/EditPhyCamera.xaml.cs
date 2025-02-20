@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -59,42 +60,44 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
+            ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                              select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
 
             ComboxCameraMode.SelectionChanged += (s, e) =>
             {
-                InitComboxCameraChannel();
-                ComboxCameraChannel.SelectedIndex = 0;
-            };
-            ComboxCameraModel.SelectionChanged += (s, e) => 
-            {
-                InitComboxCameraChannel();
-                ComboxCameraChannel.SelectedIndex = 0;
-            };
-
-            InitComboxCameraChannel();
-            void InitComboxCameraChannel()
-            {
-                var type = EditConfig.CameraType;
-                if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
+                
+                if (EditConfig.CameraMode ==CameraMode.LV_MODE)
                 {
                     ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                       where e1 != ImageChannel.Three
                                                       select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-
+                    EditConfig.CFW.IsUseCFW = false;
+                    EditConfig.Channel = ImageChannel.One;
+                               
                 }
-                else if (type == CameraType.CV_Q || type == CameraType.BV_Q || type == CameraType.BV_H)
+                else if (EditConfig.CameraMode == CameraMode.BV_MODE)
                 {
                     ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                       where e1 != ImageChannel.One
                                                       select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    EditConfig.CFW.IsUseCFW = false;
+                    EditConfig.Channel = ImageChannel.Three;
+                }
+                else if (EditConfig.CameraMode == CameraMode.CV_MODE)
+                {
+                    ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
+                                                      where e1 != ImageChannel.One
+                                                      select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
+                    EditConfig.Channel = ImageChannel.Three;
+                    EditConfig.CFW.IsUseCFW = true;
                 }
                 else
                 {
                     ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                       select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-                };
-            }
+                }
 
+            };
 
 
             var ImageChannelTypeList = new[]{
@@ -128,38 +131,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
 
-
-            TextBaudRate.ItemsSource = BaudRates;
             TextBaudRate1.ItemsSource = BaudRates;
-
-            TextSerial.ItemsSource = Serials;
             TextSerial1.ItemsSource = Serials;
 
-            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
-                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-            int index = 0;
-            ComboxMotorType.SelectionChanged += (s, e) =>
-            {
-                if (index++ < 1)
-                    return;
-                switch (EditConfig.MotorConfig.eFOCUSCOMMUN)
-                {
-                    case FOCUS_COMMUN.VID_SERIAL:
-                        EditConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.CANON_SERIAL:
-                        EditConfig.MotorConfig.BaudRate = 38400;
-                        break;
-                    case FOCUS_COMMUN.NED_SERIAL:
-                        EditConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.LONGFOOT_SERIAL:
-                        EditConfig.MotorConfig.BaudRate = 115200;
-                        break;
-                    default:
-                        break;
-                }
-            };
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.CameraCfg));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.MotorConfig));
+            StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -211,23 +189,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
-        }
-
-
-        private void FileBasePath_Click(object sender, RoutedEventArgs e)
-        {
-            System.Windows.Forms.FolderBrowserDialog dialog = new();
-            dialog.UseDescriptionForTitle = true;
-            dialog.Description = "为相机路径选择位置";
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                if (string.IsNullOrEmpty(dialog.SelectedPath))
-                {
-                    MessageBox.Show("文件夹路径不能为空", "提示");
-                    return;
-                }
-                EditConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
-            }
         }
     }
 }

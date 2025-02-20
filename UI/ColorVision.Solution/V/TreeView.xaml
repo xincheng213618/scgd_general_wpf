@@ -75,7 +75,7 @@
 
     <HierarchicalDataTemplate DataType="{x:Type V:SolutionExplorer}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
-            <TextBlock Text="'"/>
+            <TextBlock Text=" '"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
             <TextBlock Text="'"/>
         </StackPanel>
@@ -83,13 +83,13 @@
 
     <HierarchicalDataTemplate DataType="{x:Type Files:VFile}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}">
-            <Image Source="{Binding Icon}" Height="18" Margin="0,0,1,0"/>
+            <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
     <HierarchicalDataTemplate DataType="{x:Type Folders:VFolder}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
-            <Image Source="{Binding Icon}" Height="18" Margin="0,0,1,0"/>
+            <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>

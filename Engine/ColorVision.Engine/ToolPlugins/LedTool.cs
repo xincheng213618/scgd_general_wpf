@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -12,9 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.ToolPlugins
@@ -48,10 +42,8 @@ namespace ColorVision.Engine.ToolPlugins
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
 
-        public override string GuidId => nameof(LedTool);
-
         public override string Header => nameof(LedTool);
-
+        public override int Order => 100;
 
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();
         public (int pointIndex, int listIndex) FindNearbyPoints(int mousex, int mousey)

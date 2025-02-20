@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.SFR;
 using System.Text;
 using System.Globalization;
 

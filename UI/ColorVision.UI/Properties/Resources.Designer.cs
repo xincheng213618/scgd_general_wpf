@@ -214,6 +214,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动选择 的本地化字符串。
+        /// </summary>
+        public static string IsAutoSelect {
+            get {
+                return ResourceManager.GetString("IsAutoSelect", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日语 的本地化字符串。
         /// </summary>
         public static string ja {
@@ -264,6 +273,15 @@ namespace ColorVision.UI.Properties {
         public static string LogLevel {
             get {
                 return ResourceManager.GetString("LogLevel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关闭(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuClose {
+            get {
+                return ResourceManager.GetString("MenuClose", resourceCulture);
             }
         }
         
@@ -340,6 +358,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建(_N) 的本地化字符串。
+        /// </summary>
+        public static string MenuNew {
+            get {
+                return ResourceManager.GetString("MenuNew", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开(_O) 的本地化字符串。
         /// </summary>
         public static string MenuOpen {
@@ -363,6 +390,24 @@ namespace ColorVision.UI.Properties {
         public static string MenuPaste {
             get {
                 return ResourceManager.GetString("MenuPaste", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打印(_P) 的本地化字符串。
+        /// </summary>
+        public static string MenuPrint {
+            get {
+                return ResourceManager.GetString("MenuPrint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 重做(_R) 的本地化字符串。
+        /// </summary>
+        public static string MenuRedo {
+            get {
+                return ResourceManager.GetString("MenuRedo", resourceCulture);
             }
         }
         

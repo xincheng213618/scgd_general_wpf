@@ -80,6 +80,8 @@ namespace ColorVision.Common.Utilities
         /// </summary>
         public static void SortedAdd<T>(this Collection<T> This, T item)
         {
+            if (This is null) return;
+
             int index = This.BinarySearch(item);
             if (index < 0) index = -index - 1;
             This.Insert(index, item);
@@ -151,6 +153,8 @@ namespace ColorVision.Common.Utilities
         /// </returns>
         public static int BinarySearch<T>(this Collection<T> This, T item)
         {
+            if (This is null) return -1;
+
             if (item is IComparable<T>)
             {
                 IComparable<T> _item = item as IComparable<T>;

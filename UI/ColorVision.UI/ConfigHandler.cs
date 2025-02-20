@@ -1,5 +1,4 @@
-﻿using ColorVision.UI;
-using log4net;
+﻿using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
@@ -175,16 +174,26 @@ namespace ColorVision.UI
             }
             foreach (var configPair in Configs)
             {
-                if (configPair.Value is IConfigSecure configSecure)
+                try
                 {
-                    configSecure.Encryption();
-                    jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
-                    configSecure.Decrypt();
+                    if (configPair.Value is IConfigSecure configSecure)
+                    {
+                        configSecure.Encryption();
+                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                        configSecure.Decrypt();
+                    }
+                    else
+                    {
+                        jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                    }
+
                 }
-                else
+                catch(Exception ex)
                 {
-                    jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
+                    log.Info(configPair.Key);
+                    log.Error(ex);
                 }
+
             }
 
             File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));

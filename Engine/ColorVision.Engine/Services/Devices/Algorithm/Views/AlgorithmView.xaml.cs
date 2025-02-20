@@ -88,8 +88,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-        }
 
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+        }
+        private void Delete()
+        {
+            if (listView1.SelectedItems.Count == listView1.Items.Count)
+                ViewResults.Clear();
+            else
+            {
+                listView1.SelectedIndex = -1;
+                foreach (var item in listView1.SelectedItems.Cast<AlgorithmResult>().ToList())
+                    ViewResults.Remove(item);
+            }
+
+
+        }
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
             if (arg.Code == 0 && arg.FileData.data != null)
@@ -111,7 +126,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public ObservableCollection<AlgorithmResult> ViewResults { get; set; } = new ObservableCollection<AlgorithmResult>();
+        public static ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -673,7 +688,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
                         ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
                         string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-                        ImageView.ImageEditViewMode.Save(saveng);
+                        ImageView.ImageViewModel.Save(saveng);
                         break;
                     case AlgorithmResultType.FOV:
                         break;

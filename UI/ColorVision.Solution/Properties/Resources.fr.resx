@@ -141,9 +141,6 @@
   <data name="Edit" xml:space="preserve">
     <value>modifier</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>supprimer</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>créer</value>
   </data>
@@ -164,9 +161,6 @@
   </data>
   <data name="NewProjectFormat" xml:space="preserve">
     <value>Nouveau format de projet</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>Nouveau(N)</value>
   </data>
   <data name="Reset" xml:space="preserve">
     <value>réinitialiser</value>
@@ -225,10 +219,22 @@
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
     <value>Ouvrez le dossier dans le gestionnaire de fichiers (X)</value>
   </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>Couper(T)</value>
+  <data name="NewFolder" xml:space="preserve">
+    <value>NouveauDossier</value>
   </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>Copie(C)</value>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>et tout son contenu sera définitivement supprimé.</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>ouvrir</value>
+  </data>
+  <data name="MenuProperty" xml:space="preserve">
+    <value>attribut(_R)</value>
+  </data>
+  <data name="MenuAdd" xml:space="preserve">
+    <value>ajouter</value>
   </data>
 </root>

@@ -400,7 +400,7 @@
     <value>Administrator _Service Configuration</value>
   </data>
   <data name="MenuSensor" xml:space="preserve">
-    <value>Generic sensor template settings(_H)</value>
+    <value>Sensor Template (_H)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
     <value>Rena_me</value>
@@ -818,5 +818,26 @@
   </data>
   <data name="Symbol" xml:space="preserve">
     <value>Symbol</value>
+  </data>
+  <data name="MenuEngine" xml:space="preserve">
+    <value>E_ngine</value>
+  </data>
+  <data name="SearchLimit" xml:space="preserve">
+    <value>SearchLimit</value>
+  </data>
+  <data name="InsertAtBeginning" xml:space="preserve">
+    <value>InsertAtBeginning</value>
+  </data>
+  <data name="AutoRefreshView" xml:space="preserve">
+    <value>AutoRefreshView</value>
+  </data>
+  <data name="IsShowListView" xml:space="preserve">
+    <value>IsShowListView</value>
+  </data>
+  <data name="ViewImageReadDelay" xml:space="preserve">
+    <value>ViewImageReadDelay</value>
+  </data>
+  <data name="Threshold" xml:space="preserve">
+    <value>Threshold</value>
   </data>
 </root>

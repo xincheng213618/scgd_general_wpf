@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Configs;
 
 namespace ColorVision.UI.CUDA
 {

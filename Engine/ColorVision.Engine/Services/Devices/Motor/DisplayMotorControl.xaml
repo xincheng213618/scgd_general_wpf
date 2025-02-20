@@ -48,7 +48,7 @@
             </Grid>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="2" >
+            <StackPanel   Margin="5" >
                 <Button x:Name="ButtonSwitch" Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <DockPanel Margin="0,2">
                     <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />

@@ -1,8 +1,8 @@
-﻿using ColorVision.UI.Configs;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Solution.Properties;
 using ColorVision.RecentFile;
+using ColorVision.UI;
 
 namespace ColorVision.Solution
 {

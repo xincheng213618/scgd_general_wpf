@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,7 +8,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCSettingProvider : IConfigSettingProvider,IStatusBarIconProvider
+    public class RCSettingProvider : IConfigSettingProvider,IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -27,16 +26,16 @@ namespace ColorVision.Engine.Services.RC
             };
         }
 
-        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
         {
             Action action = new Action(() =>
             {
                 new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             });
 
-            return new List<StatusBarIconMetadata>
+            return new List<StatusBarMeta>
             {
-                new StatusBarIconMetadata()
+                new StatusBarMeta()
                 {
                     Name = "RC",
                     Description = "RC",

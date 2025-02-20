@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.ImageEditor"
         xmlns:draw ="clr-namespace:ColorVision.ImageEditor.Draw"
-        d:DataContext="{d:DesignInstance Type=draw:ImageEditViewMode}"
+        d:DataContext="{d:DesignInstance Type=draw:ImageViewModel}"
         mc:Ignorable="d"
         Title="WindowCIE" Height="450" Width="400" Icon="/ColorVision.ImageEditor;component/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">
     <Grid>

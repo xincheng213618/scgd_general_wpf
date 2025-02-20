@@ -48,6 +48,12 @@ extern "C" COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh, double maxval, int type);
 
+extern "C" COLORVISIONCORE_API int M_FindLuminousArea(HImage img,const char* config, char** result);
+
+extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
+    delete[] result;
+    return 0;
+}
 
 
 

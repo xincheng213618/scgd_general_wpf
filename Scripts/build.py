@@ -106,7 +106,8 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
         print(f"Updated the release version to {latest_version}")
         try:
             # copy_with_progress(latest_file, target_directory)
-            upload_file(latest_file,"ColorVision")
+            # 这里先禁用掉，上传慢，走百度云会快很多
+            # upload_file(latest_file,"ColorVision")
             print(f"Upload {latest_file} ")
         except IOError as e:
             print(f"Upload {latest_file}: {e}")

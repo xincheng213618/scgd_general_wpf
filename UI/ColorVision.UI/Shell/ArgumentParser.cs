@@ -37,7 +37,7 @@
         public void Parse(string[] args)
         {
             CommandLineArgs = args;
-            if (args.Length == 1 && !args[0].StartsWith("-", StringComparison.CurrentCulture))
+            if (args.Length == 1 && !args[0].StartsWith("-" , StringComparison.CurrentCulture))
             {
                 // Handle the case where only a file path is provided
                 _parsedArguments["input"] = args[0];

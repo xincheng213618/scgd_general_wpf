@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Text;
 
 
@@ -81,8 +82,8 @@ namespace ColorVision.Net
             if (fileNameLen > 0 && (fs.Position + fileNameLen) <= fs.Length)
                 cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
 
-            cvcie.gain = br.ReadInt32();
-            cvcie.channels = br.ReadInt32();
+            cvcie.gain = br.ReadSingle();
+            cvcie.channels = (int)br.ReadUInt32();
 
             if ((fs.Position + cvcie.channels * 4) > fs.Length) return -1; // Not enough data for channel exposure times
 
@@ -92,9 +93,9 @@ namespace ColorVision.Net
                 cvcie.exp[i] = br.ReadSingle();
             }
 
-            cvcie.rows = br.ReadInt32();
-            cvcie.cols = br.ReadInt32();
-            cvcie.bpp = br.ReadInt32();
+            cvcie.rows = (int)br.ReadUInt32();
+            cvcie.cols = (int)br.ReadUInt32();
+            cvcie.bpp = (int)br.ReadUInt32();
 
             cvcie.FilePath = filePath;
             return (int)fs.Position;
@@ -128,16 +129,13 @@ namespace ColorVision.Net
             if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
 
             // Read the file name.
-            cvcie.srcFileName = Encoding.ASCII.GetString(fileData, startIndex, fileNameLength);
+            cvcie.srcFileName = Encoding.GetEncoding("GBK").GetString(fileData, startIndex, fileNameLength);
             startIndex += fileNameLength;
 
-            // Read additional fields with validation.
-            if (!TryReadInt32(fileData, ref startIndex, out cvcie.gain)) return -1;
-            if (!TryReadInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
-            if (!TryReadInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
-            if (!TryReadInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
-            if (!TryReadInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
 
+            // Read additional fields with validation.
+            if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain)) return -1;
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
             // Validate and read channel exposure times.
             if (startIndex + cvcie.channels * sizeof(float) > fileData.Length) return -1;
             cvcie.exp = new float[cvcie.channels];
@@ -146,6 +144,9 @@ namespace ColorVision.Net
                 cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
                 startIndex += sizeof(float);
             }
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
 
             return startIndex;
         }
@@ -198,7 +199,28 @@ namespace ColorVision.Net
 
             return false;
         }
-
+        private static bool TryReadUInt32(byte[] data, ref int startIndex, out  int value)
+        {
+            if (startIndex + sizeof(int) > data.Length)
+            {
+                value = 0;
+                return false;
+            }
+            value = (int)BitConverter.ToUInt32(data, startIndex);
+            startIndex += sizeof(int);
+            return true;
+        }
+        private static bool TryReadSingle(byte[] data, ref int startIndex, out float value)
+        {
+            if (startIndex + sizeof(int) > data.Length)
+            {
+                value = 0;
+                return false;
+            }
+            value = BitConverter.ToSingle(data, startIndex);
+            startIndex += sizeof(int);
+            return true;
+        }
         private static bool TryReadInt32(byte[] data, ref int startIndex, out int value)
         {
             if (startIndex + sizeof(int) > data.Length)

@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Plugins"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         d:DataContext="{d:DesignInstance local:PluginManager}"
         mc:Ignorable="d"
-        Title="PluginManagerWindow" Background="{DynamicResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.PluginManagerWindow}" Background="{DynamicResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -31,28 +32,28 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="名称">
+                        <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding Plugin.Header,Mode=OneWay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Version">
+                        <GridViewColumn Header="{x:Static properties:Resources.Version}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding AssemblyVersion}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Date">
+                        <GridViewColumn Header="{x:Static properties:Resources.BuildDate}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <TextBlock  Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="命令">
+                        <GridViewColumn Header="{x:Static properties:Resources.Command}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">
                                     <StackPanel Orientation="Horizontal">

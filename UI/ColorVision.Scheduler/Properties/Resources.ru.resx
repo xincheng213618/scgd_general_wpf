@@ -126,4 +126,49 @@
   <data name="CreateTask" xml:space="preserve">
     <value>Создание задач</value>
   </data>
+  <data name="Start" xml:space="preserve">
+    <value>Начать</value>
+  </data>
+  <data name="PauseAll" xml:space="preserve">
+    <value>ПаузаВсе</value>
+  </data>
+  <data name="ResumeAll" xml:space="preserve">
+    <value>ПродолжитьВсе</value>
+  </data>
+  <data name="Shutdown" xml:space="preserve">
+    <value>Выключение</value>
+  </data>
+  <data name="CronExpression" xml:space="preserve">
+    <value>КронВыражение</value>
+  </data>
+  <data name="GroupName" xml:space="preserve">
+    <value>НазваниеГруппы</value>
+  </data>
+  <data name="JobName" xml:space="preserve">
+    <value>НазваниеРаботы</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Статус</value>
+  </data>
+  <data name="RunCount" xml:space="preserve">
+    <value>КоличествоЗапусков</value>
+  </data>
+  <data name="NextFireTime" xml:space="preserve">
+    <value>СледующееВремяЗапуска</value>
+  </data>
+  <data name="PreviousFireTime" xml:space="preserve">
+    <value>ПредыдущееВремяСрабатывания</value>
+  </data>
+  <data name="Stop" xml:space="preserve">
+    <value>остановка</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>восстановление</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>удалить</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Команда</value>
+  </data>
 </root>

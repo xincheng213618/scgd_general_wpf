@@ -194,7 +194,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             return new ConfigPhyCamera
             {
-                CameraType = CameraType.LV_Q,
                 TakeImageMode = TakeImageMode.Measure_Normal,
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,

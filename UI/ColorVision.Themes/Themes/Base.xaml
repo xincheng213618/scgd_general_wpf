@@ -25,7 +25,13 @@
     <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
         <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
     </Style>
-    
+    <Style x:Key="ButtonCommand" TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Height" Value="80"/>
+        <Setter Property="Margin" Value="10"/>
+    </Style>
+
     <Style x:Key="TextBlock1" TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>

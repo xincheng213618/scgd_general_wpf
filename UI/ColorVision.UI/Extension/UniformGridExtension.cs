@@ -4,7 +4,7 @@ namespace ColorVision.UI.Extension
 {
     public static class UniformGridExtension
     {
-        public static void AutoUpdateLayout(this UniformGrid uniformGrid, double itemWidth =190)
+        public static void AutoUpdateLayout(this UniformGrid uniformGrid, double itemWidth =120)
         {
             double actualWidth = uniformGrid.ActualWidth;
             int childrenCount = uniformGrid.Children.Count;

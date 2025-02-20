@@ -22,6 +22,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 CalibrationType.LumOneColor => ServiceTypes.LumOneColor,
                 CalibrationType.LumFourColor => ServiceTypes.LumFourColor,
                 CalibrationType.LumMultiColor => ServiceTypes.LumMultiColor,
+                CalibrationType.ColorDiff => ServiceTypes.ColorDiff,
+                CalibrationType.LineArity => ServiceTypes.LineArity,
                 _ => ServiceTypes.DarkNoise,
             };
         }

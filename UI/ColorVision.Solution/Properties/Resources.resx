@@ -121,9 +121,6 @@
   <data name="Edit" xml:space="preserve">
     <value>编辑</value>
   </data>
-  <data name="Delete" xml:space="preserve">
-    <value>删除</value>
-  </data>
   <data name="Create" xml:space="preserve">
     <value>创建</value>
   </data>
@@ -144,9 +141,6 @@
   </data>
   <data name="NewProjectFormat" xml:space="preserve">
     <value>新建工程格式</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新建(_N)</value>
   </data>
   <data name="Reset" xml:space="preserve">
     <value>重置</value>
@@ -205,10 +199,22 @@
   <data name="MenuOpenFileInExplorer" xml:space="preserve">
     <value>在文件管理器中打开文件夹(_X)</value>
   </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>剪切(_T)</value>
+  <data name="NewFolder" xml:space="preserve">
+    <value>新建文件夹</value>
   </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>复制(_C)</value>
+  <data name="FolderDeleteSign" xml:space="preserve">
+    <value>及其所有内容讲永久删除。</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>删除</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>打开(_O)</value>
+  </data>
+  <data name="MenuProperty" xml:space="preserve">
+    <value>属性(_R)</value>
+  </data>
+  <data name="MenuAdd" xml:space="preserve">
+    <value>添加(_D)</value>
   </data>
 </root>

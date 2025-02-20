@@ -1,8 +1,12 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    
+
+
+    <Color x:Key="defaultgreyColor">#212121</Color>
+
     <SolidColorBrush x:Key="IconSolidColorBrush" Color="#AA000000"/>
     <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FFFFFFFF"/>
+    
 
 
     <Color x:Key="GlobalBackgroundColor">White</Color>
@@ -77,11 +81,6 @@
     <SolidColorBrush x:Key="ContextMenuBackground" Color="#F6F6F6" />
     <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#CCCEDB" />
     <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#F6F6F6" />
-
-
-
-
-
 </ResourceDictionary>
 
 

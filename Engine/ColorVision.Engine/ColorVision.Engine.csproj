@@ -26,17 +26,17 @@
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
 		<PackageReference Include="itext" Version="9.0.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.1" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
-		<PackageReference Include="MySql.Data" Version="9.1.0" />
+		<PackageReference Include="MySql.Data" Version="9.2.0" />
 		<PackageReference Include="MySqlConnector" Version="2.4.0" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
-		<PackageReference Include="ScottPlot.WPF" Version="5.0.48" />
-		<PackageReference Include="System.IO.Ports" Version="9.0.0" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
+		<PackageReference Include="ScottPlot.WPF" Version="5.0.54" />
+		<PackageReference Include="System.IO.Ports" Version="9.0.1" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.1" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 
@@ -65,6 +65,7 @@
 	
 
   <ItemGroup>
+    <None Remove="Assets\Image\background0.png" />
     <None Remove="Assets\Image\CIE1931xy.ico" />
     <None Remove="Assets\Image\CIE1931xy.png" />
     <None Remove="Assets\Image\CIE1931xy1.png" />
@@ -74,6 +75,8 @@
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
+    <None Remove="Assets\Image\归档查询.png" />
+    <None Remove="Assets\Image\综合查询.png" />
     <None Remove="Assets\png\PowerToy.png" />
     <None Remove="Assets\Sounds\error.wav" />
     <None Remove="Assets\Sounds\success.wav" />
@@ -90,6 +93,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Image\background0.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\Image\CIE1931xy.ico" />
     <Resource Include="Assets\Image\CIE1931xy.png" />
     <Resource Include="Assets\Image\CIE1931xy1.png" />
@@ -99,6 +105,8 @@
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
+    <Resource Include="Assets\Image\归档查询.png" />
+    <Resource Include="Assets\Image\综合查询.png" />
     <Resource Include="Assets\png\PowerToy.png" />
     <Resource Include="Assets\Sounds\error.wav" />
     <Resource Include="Assets\Sounds\success.wav" />
@@ -298,6 +306,7 @@
     <Folder Include="Rbac\Roles\" />
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
+    <Folder Include="Services\Devices\Spectrum\Templates\" />
   </ItemGroup>
 
 </Project>

@@ -13,12 +13,12 @@ namespace ColorVision.ImageEditor.Draw
     public partial class InkVisual : UserControl
     {
 
-        public ImageEditViewMode ToolBarTop { get; set; }
+        public ImageViewModel ToolBarTop { get; set; }
 
         public InkVisual()
         {
             InitializeComponent();
-            ToolBarTop = new ImageEditViewMode(this,Zoombox1,drawCanvas);
+            ToolBarTop = new ImageViewModel(this,Zoombox1,drawCanvas);
             TooBar1.DataContext = ToolBarTop;
         }
 

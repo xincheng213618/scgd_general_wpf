@@ -3,6 +3,7 @@
 #pragma warning(disable:4305 4244)
 
 #include <opencv2/opencv.hpp>
+int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
 
 int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 

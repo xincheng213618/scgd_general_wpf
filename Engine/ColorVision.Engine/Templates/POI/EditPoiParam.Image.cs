@@ -9,7 +9,6 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -258,7 +257,7 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ImageEditViewMode.EraseVisual)
                 {
-                    ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
 
                     SelectDrawingVisualsClear();
@@ -366,7 +365,7 @@ namespace ColorVision.Engine.Templates.POI
                 SelectDrawingVisualsClear();
                 SelectDrawingVisualClear();
 
-                ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
             }
         }
@@ -392,7 +391,7 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (IsMouseDown)
                 {
-                    ImageEditViewMode.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
+                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
 
                     if (ImageEditViewMode.DrawCircle && DrawCircleCache !=null)
                     {
