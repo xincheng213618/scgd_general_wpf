@@ -89,11 +89,12 @@ namespace ColorVision
                 inDegree[init.Name] = 0;
                 foreach (var dep in init.Dependencies)
                 {
-                    if (!inDegree.ContainsKey(dep))
+                    if (!inDegree.TryGetValue(dep, out int value))
                     {
-                        inDegree[dep] = 0;
+                        value = 0;
+                        inDegree[dep] = value;
                     }
-                    inDegree[dep]++;
+                    inDegree[dep] = ++value;
                 }
             });
 

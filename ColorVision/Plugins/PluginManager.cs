@@ -162,7 +162,7 @@ del ""%~f0"" & exit
         }
 
 
-        public void InstallPackage()
+        public static void InstallPackage()
         {
             // 打开文件选择对话框
             OpenFileDialog openFileDialog = new OpenFileDialog
