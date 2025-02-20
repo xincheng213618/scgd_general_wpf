@@ -50,7 +50,7 @@ namespace ColorVision.Themes
 
         public HotKeys HotKeys => new(Themes.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
-        public override void Execute()
+        private void Execute()
         {
             // 获取当前主题的索引
             int currentThemeIndex = (int)(ThemeManager.Current.CurrentTheme ?? Theme.UseSystem);
