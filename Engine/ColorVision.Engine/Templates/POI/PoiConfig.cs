@@ -87,11 +87,6 @@ namespace ColorVision.Engine.Templates.POI
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }
         private string _BackgroundFilePath;
 
-        public bool TemplateMatchingIsEnable => string.IsNullOrWhiteSpace(TemplateMatchingFilePath);
-
-        public string? TemplateMatchingFilePath { get => _TemplateMatchingFilePath; set { _TemplateMatchingFilePath = value; NotifyPropertyChanged(); } }
-        private string? _TemplateMatchingFilePath;
-
         public string? PoiFixFilePath { get => _PoiFixFilePath; set { _PoiFixFilePath =value; NotifyPropertyChanged(); } }
         private string? _PoiFixFilePath;
 

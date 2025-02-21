@@ -135,13 +135,8 @@
                             <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
-                        
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2" >
-                        <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="模板匹配路径" Width="80"/>
-                        <TextBox Text="{Binding PoiConfig.TemplateMatchingFilePath}" Margin="2,0"  Width="90"/>
-                    </StackPanel>
 
+                    </StackPanel>
 
                 </StackPanel>
             </Border>
@@ -300,8 +295,6 @@
 
                                     <Grid>
                                         <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-
-                                        <Button Content="模板匹配" Margin="3" Height="25" HorizontalAlignment="Center" Click="SplitImage_Click"/>
 
                                         <StackPanel  HorizontalAlignment="Right">
                                             <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>

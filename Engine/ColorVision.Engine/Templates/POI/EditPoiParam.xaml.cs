@@ -1788,55 +1788,6 @@ namespace ColorVision.Engine.Templates.POI
             PropertyGrid21.Height = FocusPointRowDefinition.ActualHeight;
         }
 
-        private void SplitImage_Click(object sender, RoutedEventArgs e)
-        {
-
-            if (ImageShow.Source is not WriteableBitmap sourceBitmap) return;
-
-            Int32Rect region = new Int32Rect();
-            region.X = PoiParam.PoiConfig.CenterX - PoiParam.PoiConfig.AreaRectWidth/2;
-            region.Y = PoiParam.PoiConfig.CenterY - PoiParam.PoiConfig.AreaRectHeight / 2;
-            region.Width = PoiParam.PoiConfig.AreaRectWidth;
-            region.Height = PoiParam.PoiConfig.AreaRectHeight;
-
-
-            // Validate region
-            if (region.X < 0 || region.Y < 0 ||
-                region.X + region.Width > sourceBitmap.PixelWidth ||
-                region.Y + region.Height > sourceBitmap.PixelHeight)
-            {
-                throw new ArgumentException("The specified region is out of bounds.");
-            }
-
-            // Create a cropped bitmap
-            var croppedBitmap = new CroppedBitmap(sourceBitmap, region);
-
-            // Encode cropped bitmap to TIFF
-            var encoder = new TiffBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(croppedBitmap));
-
-            SaveFileDialog saveFileDialog = new SaveFileDialog
-            {
-                Filter = "TIFF files (*.tif)|*.tif",
-                DefaultExt = "tif",
-                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
-                FileName = "output"
-            };
-
-            // Show save file dialog
-            if (saveFileDialog.ShowDialog() == true)
-            {
-                using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create))
-                {
-                    encoder.Save(fileStream);
-                }
-                PoiParam.PoiConfig.TemplateMatchingFilePath = saveFileDialog.FileName;
-                PoiParam.PoiConfig.BackgroundFilePath = saveFileDialog.FileName;
-                OpenImage(saveFileDialog.FileName);
-            }
-        }
-
-
         private void reference_Click(object sender, RoutedEventArgs e)
         {
             menuPop1.IsOpen = true;
