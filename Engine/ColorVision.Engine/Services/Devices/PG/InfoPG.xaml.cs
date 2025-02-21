@@ -27,13 +27,5 @@ namespace ColorVision.Engine.Services.Devices.PG
             DataContext = DevicePG;
             PropertyEditorHelper.GenCommand(DevicePG, CommandGrid);
         }
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-            {
-                uniformGrid.AutoUpdateLayout();
-            }
-        }
     }
 }

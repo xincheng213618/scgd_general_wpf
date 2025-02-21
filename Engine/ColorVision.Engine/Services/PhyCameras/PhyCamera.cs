@@ -33,6 +33,7 @@ using System.Windows.Media;
 using System.Net.Http;
 using System.Net.Http.Json;
 using ColorVision.UI.PropertyEditor;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -50,28 +51,30 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
         public ConfigPhyCamera Config { get; set; }
-
+        [CommandDisplay("上传校正文件",Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
+        [CommandDisplay("校正模板管理",Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
-
+        [CommandDisplay("校正模板设置",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
+        [CommandDisplay("资源组管理",Order =103)]
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand UploadLicenseCommand { get; set; }
-
+        [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
-
         public RelayCommand RefreshLicenseCommand { get; set; }
+
+        [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
+        [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
         public RelayCommand CopyConfigCommand { get; set; }
-
+        [CommandDisplay("手册")]
         public RelayCommand ProductBrochureCommand { get; set; }
-
-        public RelayCommand EditCameraCommand { get; set; }
-        public RelayCommand EditCalibrationCommand { get; set; }
+        [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
-
+        [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
 
@@ -127,8 +130,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseCommand = new RelayCommand(a => UploadLicense());
             RefreshLicenseCommand = new RelayCommand(a => RefreshLicense());
             RefreshLicense();
-            EditCameraCommand = new RelayCommand(a => DeviceCamera?.EditCommand.Execute(this) ,a=> DeviceCamera!=null && DeviceCamera.EditCommand.CanExecute(this));
-            EditCalibrationCommand = new RelayCommand(a => DeviceCalibration?.EditCommand.Execute(this), a => DeviceCalibration != null && DeviceCalibration.EditCommand.CanExecute(this));
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
             Name = Code ?? string.Empty;

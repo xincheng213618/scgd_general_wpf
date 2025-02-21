@@ -85,7 +85,7 @@
                     <TabItem Header="{x:Static properties:Resources.Manager}">
 
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
-                            <UniformGrid x:Name="CommandGrid" Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top" />
+                            <UniformGrid x:Name="CommandGrid" Margin="5" VerticalAlignment="Top" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="{x:Static properties:Resources.BasicInformation}">

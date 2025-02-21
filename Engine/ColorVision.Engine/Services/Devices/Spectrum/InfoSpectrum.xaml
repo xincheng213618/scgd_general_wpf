@@ -85,7 +85,7 @@
                 <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
-                            <UniformGrid x:Name="CommandGrid" Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                            <UniformGrid x:Name="CommandGrid" Margin="5" Columns="3" VerticalAlignment="Top">
                                 <hc:Badge Value="{Binding Count}"  Style="{StaticResource BadgeDanger}" >
                                     <Button Style="{StaticResource ButtonCommand}" Content="刷新设备"   Command="{Binding RefreshDeviceIdCommand}" />
                                 </hc:Badge>

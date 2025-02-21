@@ -29,21 +29,5 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
-
-
-        private void TextBlock_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (sender is TextBlock textBlock)
-            {
-                Common.NativeMethods.Clipboard.SetText(textBlock.Text);
-                MessageBox1.Show(textBlock.Text);
-            }
-        }
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
-        }
     }
 }

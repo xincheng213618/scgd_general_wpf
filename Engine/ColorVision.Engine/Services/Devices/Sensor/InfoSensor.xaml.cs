@@ -24,12 +24,5 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             DataContext = DeviceSensor;
             PropertyEditorHelper.GenCommand(DeviceSensor, CommandGrid);
         }
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
-
-        }
     }
 }

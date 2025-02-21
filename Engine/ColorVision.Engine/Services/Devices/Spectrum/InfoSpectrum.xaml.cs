@@ -63,12 +63,5 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
-        }
     }
 }

@@ -85,7 +85,7 @@
                 <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <Grid Margin="5">
-                            <UniformGrid x:Name="CommandGrid" Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                            <UniformGrid x:Name="CommandGrid" Margin="5"  VerticalAlignment="Top">
                             </UniformGrid>
                         </Grid>
                     </TabItem>

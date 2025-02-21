@@ -163,7 +163,7 @@ namespace ColorVision.Engine.Services
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 400, Icon = Icon, Title = Properties.Resources.Property };
+                Window window = new() { Width = 700, Height = 500, Icon = Icon, Title = Properties.Resources.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.IO;
@@ -21,6 +22,8 @@ namespace ColorVision.UI
 
         public static void GenCommand(ViewModelBase obj, UniformGrid uniformGrid)
         {
+            uniformGrid.SizeChanged +=(s,e) => uniformGrid.AutoUpdateLayout();
+
             Type type = obj.GetType();
             var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
             {

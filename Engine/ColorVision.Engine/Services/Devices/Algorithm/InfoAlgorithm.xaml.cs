@@ -30,18 +30,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -57,12 +45,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }
             }
-        }
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
         }
     }
 }
