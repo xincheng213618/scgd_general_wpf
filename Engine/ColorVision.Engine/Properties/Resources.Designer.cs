@@ -376,6 +376,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制 的本地化字符串。
+        /// </summary>
+        public static string Copy {
+            get {
+                return ResourceManager.GetString("Copy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制配置文件 的本地化字符串。
         /// </summary>
         public static string CopyConfigurationFile {

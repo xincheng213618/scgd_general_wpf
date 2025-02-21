@@ -41,28 +41,42 @@ namespace ColorVision.UI
             }));
             ResourceManager? resourceManager = lazyResourceManager.Value;
 
+            var commandDisplayAttributes = new List<(CommandDisplayAttribute, PropertyInfo)>();
             var properties = type.GetProperties();
             foreach (var property in properties)
             {
                 var attribute = property.GetCustomAttribute<CommandDisplayAttribute>();
-
                 if (attribute != null)
                 {
-                    var command = property.GetValue(obj) as ICommand;
-                    if (command != null)
-                    {
-                        string displayName = attribute?.DisplayName ?? property.Name;
-                        displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                        var button = new Button
-                        {
-                            Style = (Style)Application.Current.FindResource("ButtonCommand"),
-                            Content = displayName,
-                            Command = command
-                        };
-                        uniformGrid.Children.Add(button);
-                    }
+                    commandDisplayAttributes.Add((attribute, property));
                 }
             }
+
+            commandDisplayAttributes.Sort((a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
+
+            foreach (var (attribute, property) in commandDisplayAttributes)
+            {
+                var command = property.GetValue(obj) as ICommand;
+                if (command != null)
+                {
+                    string displayName = attribute.DisplayName ?? property.Name;
+                    displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                    var button = new Button
+                    {
+                        Style = (Style)Application.Current.FindResource("ButtonCommand"),
+                        Content = displayName,
+                        Command = command
+                    };
+                    if (attribute.CommandType == CommandType.Highlighted)
+                    {
+                        button.Foreground = Brushes.Red;
+                    }
+                    uniformGrid.Children.Add(button);
+                }
+            }
+
+
+
         }
 
 

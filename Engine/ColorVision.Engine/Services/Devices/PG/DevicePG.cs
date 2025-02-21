@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     {
         public MQTTPG DService { get; set; }
 
-        [CommandDisplayAttribute("PG模板配置")]
+        [CommandDisplayAttribute("PG模板配置",Order =100)]
         public RelayCommand EditPGTemplateCommand { get; set; }
 
 

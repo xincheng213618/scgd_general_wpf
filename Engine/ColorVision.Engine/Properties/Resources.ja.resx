@@ -840,4 +840,7 @@
   <data name="Threshold" xml:space="preserve">
     <value>しきい値</value>
   </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
 </root>

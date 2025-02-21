@@ -41,7 +41,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         }
 
 
-        [CommandDisplay("MenuSUM")]
+        [CommandDisplay("MenuSUM",Order =100)]
         public RelayCommand EditSMUTemplateCommand { get; set; }
 
         public static void EditSMUTemplate()

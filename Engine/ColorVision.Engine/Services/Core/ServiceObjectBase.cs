@@ -9,10 +9,11 @@ namespace ColorVision.Engine.Services.Core
 {
     public class ServiceObjectBase : ViewModelBase
     {
-        [CommandDisplay("删除")]
+
+        [CommandDisplay("Delete", CommandType = CommandType.Highlighted, Order = 99999)]
         public RelayCommand DeleteCommand { get; set; }
 
-        [CommandDisplay("保存")]
+        [CommandDisplay("Save",Order =-11)]
         public RelayCommand SaveCommand { get; set; }
 
         public ObservableCollection<ServiceObjectBase> VisualChildren { get; set; }

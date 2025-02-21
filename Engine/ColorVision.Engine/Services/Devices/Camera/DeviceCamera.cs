@@ -94,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        [CommandDisplay("AutoExploreTemplate")]
+        [CommandDisplay("AutoExploreTemplate",Order =100)]
         public RelayCommand EditAutoExpTimeCommand { get; set; }
 
         public static void EditAutoExpTime()
@@ -102,14 +102,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("自动聚焦模板")]
+        [CommandDisplay("自动聚焦模板",Order =100)]
         public RelayCommand EditAutoFocusCommand { get; set; }
         public static void EditAutoFocus()
         {
             var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
-        [CommandDisplay("相机参数模板")]
+        [CommandDisplay("相机参数模板",Order =100)]
         public RelayCommand EditCameraExpousureCommand { get; set; }
         
         public static void EditCameraExpousure()

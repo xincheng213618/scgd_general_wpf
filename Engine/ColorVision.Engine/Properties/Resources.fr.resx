@@ -840,4 +840,7 @@
   <data name="Threshold" xml:space="preserve">
     <value>Seuil</value>
   </data>
+  <data name="Copy" xml:space="preserve">
+    <value>copier</value>
+  </data>
 </root>

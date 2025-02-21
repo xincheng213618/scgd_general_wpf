@@ -15,16 +15,34 @@ namespace System.ComponentModel
         TextBaudRate,
         CronExpression
     }
+    public enum CommandType
+    {
+        /// <summary>
+        /// 普通
+        /// </summary>
+        Normal,
+        /// <summary>
+        /// 红色
+        /// </summary>
+        Highlighted,
+    }
+
+
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)] 
     public sealed class CommandDisplayAttribute : Attribute
     {
         public static readonly CommandDisplayAttribute Default;
         public string DisplayName { get; }
+        public int Order { get; set; }
+
+        public CommandType CommandType { get; set; } = CommandType.Normal;
 
         public CommandDisplayAttribute(string displayName) 
         {
             DisplayName = displayName; 
         }
+
+
     }
 
 

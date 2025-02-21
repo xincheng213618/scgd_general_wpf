@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
 
-        [CommandDisplay("编辑校正文件")]
+        [CommandDisplay("编辑校正文件",Order =100)]
         public RelayCommand EditCalibrationCommand { get; set; }
 
         public void EditCalibration()
