@@ -128,8 +128,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public void RefreshDeviceId()
         {
-            MsgRecord msgRecord = DService.GetAllCameraID();
-            msgRecord.MsgSucessed += (e) =>
+            MsgRecord msgRecord = DService.CM_GetAllSnID();
+            msgRecord.MsgRecordStateChanged += (e) =>
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
                 RefreshEmptySpectrum();

@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            Device.RefreshDeviceId();
         }
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)

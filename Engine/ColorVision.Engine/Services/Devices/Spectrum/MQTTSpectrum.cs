@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             return Task.CompletedTask;
         }
-        public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+        public MsgRecord CM_GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
         public void GetParam()
