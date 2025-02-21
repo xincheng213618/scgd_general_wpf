@@ -19,7 +19,7 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0"  Height="27" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
             <Grid>
-                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >
+                <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" VerticalAlignment="Center" >
 
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>

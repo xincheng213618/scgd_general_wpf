@@ -7,12 +7,12 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
 using ColorVision.UI;
 using cvColorVision;
-using CVCommCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -33,13 +33,14 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = this;
-
             this.CreateConfig = new ConfigPhyCamera
             {
                 TakeImageMode = TakeImageMode.Measure_Normal,
-                ImageBpp = ImageBpp.bpp8,
+                ImageBpp = ImageBpp.bpp16,
                 Channel = ImageChannel.One,
+                CameraMode = CameraMode.BV_MODE,
+                CFW = new CFWPORT() { BaudRate = 9600, CFWNum = 1, ChannelCfgs = new List<Configs.ChannelCfg>() },
+
             };
             var list = SysResourceDao.Instance.GetAllEmptyCameraId();
 
@@ -98,6 +99,29 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
                                            select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
+            var ImageChannelTypeList = new[]{
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
+                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
+            };
+            chType1.ItemsSource = ImageChannelTypeList;
+            chType2.ItemsSource = ImageChannelTypeList;
+            chType3.ItemsSource = ImageChannelTypeList;
+
+
+            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new()
+            {
+                { ImageChannelType.Gray_X, chType1 },
+                { ImageChannelType.Gray_Y, chType2 },
+                { ImageChannelType.Gray_Z, chType3 }
+            };
+
+            if (CreateConfig.CFW.ChannelCfgs.Count == 0)
+            {
+                CreateConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 0, Chtype = ImageChannelType.Gray_Y });
+                CreateConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 1, Chtype = ImageChannelType.Gray_X });
+                CreateConfig.CFW.ChannelCfgs.Add(new() { Cfwport = 2, Chtype = ImageChannelType.Gray_Z });
+            }
             while (CreateConfig.CFW.ChannelCfgs.Count < 9)
             {
                 CreateConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
@@ -128,6 +152,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.CameraCfg));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.MotorConfig));
             StackPanelInfo.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(CreateConfig.FileServerCfg));
+
+            DataContext = this;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -154,7 +180,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
-                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
+                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, 101, UserConfig.Instance.TenantId);
 
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
             int ret = SysResourceDao.Instance.Save(sysResourceModel);
