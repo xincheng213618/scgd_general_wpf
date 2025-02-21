@@ -17,6 +17,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -24,7 +25,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
     {
         public MQTTThirdPartyAlgorithms DService { get; set; }
         public ThirdPartyAlgorithmsView View { get; set; }
+
+        [CommandDisplay("上传第三方插件")]
         public RelayCommand UploadPluginCommand { get; set; }
+        [CommandDisplay("配置第三方算法")]
         public RelayCommand ThirdPartyAlgorithmsManagerCommand { get; set; }
 
         public DeviceThirdPartyAlgorithms(SysDeviceModel sysResourceModel) : base(sysResourceModel)

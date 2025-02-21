@@ -11,6 +11,7 @@ using ColorVision.UI.Authorizations;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -26,6 +27,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public ViewSpectrum View { get; set; }
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; } = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
         public RelayCommand RefreshDeviceIdCommand { get; set; }
+
+        [CommandDisplay("上传许可证")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
 
@@ -131,7 +134,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             MsgRecord msgRecord = DService.CM_GetAllSnID();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                if (msgRecord.MsgReturn != null)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                }
                 RefreshEmptySpectrum();
             };
         }

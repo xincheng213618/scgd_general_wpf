@@ -21,8 +21,48 @@ namespace ColorVision.UI
 
         public static void GenCommand(ViewModelBase obj, UniformGrid uniformGrid)
         {
+            Type type = obj.GetType();
+            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                string namespaceName = t.Assembly.GetName().Name;
+                string resourceClassName = $"{namespaceName}.Properties.Resources";
+                Type resourceType = t.Assembly.GetType(resourceClassName);
 
+                if (resourceType != null)
+                {
+                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (resourceManagerProperty != null)
+                    {
+                        return (ResourceManager)resourceManagerProperty.GetValue(null);
+                    }
+                }
 
+                return null;
+            }));
+            ResourceManager? resourceManager = lazyResourceManager.Value;
+
+            var properties = type.GetProperties();
+            foreach (var property in properties)
+            {
+                var attribute = property.GetCustomAttribute<CommandDisplayAttribute>();
+
+                if (attribute != null)
+                {
+                    var command = property.GetValue(obj) as ICommand;
+                    if (command != null)
+                    {
+                        string displayName = attribute?.DisplayName ?? property.Name;
+                        displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        var button = new Button
+                        {
+                            Style = (Style)Application.Current.FindResource("ButtonCommand"),
+                            Content = displayName,
+                            Command = command
+                        };
+                        uniformGrid.Children.Add(button);
+                    }
+                }
+            }
         }
 
 

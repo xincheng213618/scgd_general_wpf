@@ -14,6 +14,13 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using CVCommCore;
+using System.ComponentModel;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.PhyCameras.Group;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -24,10 +31,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public PhyCamera? PhyCamera { get; set; }
         public ViewCamera View { get; set; }
         public MQTTCamera DService { get; set; }
-        public RelayCommand UploadCalibrationCommand { get; set; }
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
-        public RelayCommand OpenCalibrationParamsCommand { get; set; }
+
 
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -39,9 +45,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
 
-            OpenCalibrationParamsCommand = new RelayCommand(a =>
-            {
-            });
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
 
@@ -62,8 +65,58 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
             ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
+
+            EditAutoExpTimeCommand = new RelayCommand(a => EditAutoExpTime());
+
+            EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
+            EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
+            EditCalibrationCommand = new RelayCommand(a => EditCalibration());
+
+        }
+        [CommandDisplay("编辑校正文件")]
+        public RelayCommand EditCalibrationCommand { get; set; }
+
+        public void EditCalibration()
+        {
+            if (PhyCamera == null)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(PhyCamera);
+            var windowTemplate = new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
         }
 
+
+        [CommandDisplay("AutoExploreTemplate")]
+        public RelayCommand EditAutoExpTimeCommand { get; set; }
+
+        public static void EditAutoExpTime()
+        {
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoExpTime()) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+        [CommandDisplay("自动聚焦模板")]
+        public RelayCommand EditAutoFocusCommand { get; set; }
+        public static void EditAutoFocus()
+        {
+            var windowTemplate = new TemplateEditorWindow(new TemplateAutoFocus()) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+        [CommandDisplay("相机参数模板")]
+        public RelayCommand EditCameraExpousureCommand { get; set; }
+        
+        public static void EditCameraExpousure()
+        {
+            var windowTemplate = new TemplateEditorWindow(new TemplateCameraExposure()) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
 
 
 
@@ -110,6 +163,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Save();
         }
 
+        [CommandDisplay("清理服务缓存")]
         public RelayCommand ServiceClearCommand { get; set; }
         [RequiresPermission(PermissionMode.Administrator)]
         private void ServiceClear()
@@ -133,7 +187,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             window.ShowDialog();
         }
-
+        [CommandDisplay("ManagePhysicalCamera")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -155,6 +209,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             phyCameraManager.Show();
         }
 
+        [CommandDisplay("刷新设备列表")]
         public RelayCommand RefreshDeviceIdCommand { get; set; }
 
         public void RefreshDeviceId()

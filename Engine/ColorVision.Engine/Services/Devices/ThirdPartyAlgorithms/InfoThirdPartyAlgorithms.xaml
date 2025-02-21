@@ -85,12 +85,7 @@
                 <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <Grid Margin="5">
-                            <UniformGrid Margin="5" Columns="4" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}"  Command="{Binding EditCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RestartService}" Command="{Binding RefreshCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="配置第三方算法" Command="{Binding ThirdPartyAlgorithmsManagerCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="上传第三方插件" Command="{Binding UploadPluginCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ResetService}" Foreground="Red" Command="{Binding ResetCommand}"/>
+                            <UniformGrid x:Name="CommandGrid" Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                             </UniformGrid>
                         </Grid>
                     </TabItem>

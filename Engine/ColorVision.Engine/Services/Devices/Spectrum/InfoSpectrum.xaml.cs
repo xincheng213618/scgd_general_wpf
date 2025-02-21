@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using System;
 using System.Windows;
@@ -29,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
             Device.RefreshDeviceId();
         }
 

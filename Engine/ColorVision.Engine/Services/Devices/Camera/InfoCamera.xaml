@@ -90,13 +90,7 @@
                 <TabControl  TabStripPlacement="Top" Background="Transparent" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <ScrollViewer Margin="-1,0"  HorizontalScrollBarVisibility="Disabled">
-                            <UniformGrid  SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}"  Command="{Binding EditCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RestartService}"  Command="{Binding RefreshCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="刷新设备列表"  Command="{Binding RefreshDeviceIdCommand}" />
-                                <Button Style="{StaticResource ButtonCommand}" Content="管理物理相机"  Command="{Binding OpenPhyCameraMangerCommand}"  />
-                                <Button Style="{StaticResource ButtonCommand}" Content="更新文件保存地址"  Command="{Binding UpdateFilecfgCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="清理服务缓存" Foreground="Red" Command="{Binding ServiceClearCommand }"/>
+                            <UniformGrid x:Name="CommandGrid" Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top" >
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

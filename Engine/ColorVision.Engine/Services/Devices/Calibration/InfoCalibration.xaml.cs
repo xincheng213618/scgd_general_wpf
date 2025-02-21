@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using System;
 using System.Windows;
@@ -24,6 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
 
 

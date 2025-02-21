@@ -83,13 +83,9 @@
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
+
                         <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
-                            <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Content="{x:Static properties:Resources.ModifyConfiguration}" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Button Content="更新文件保存地址" Margin="5" Height="100" Width="180" Command="{Binding UpdateFilecfgCommand}"/>
-                                <Button Content="{x:Static properties:Resources.RefreshService}" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
-                            
-                            </UniformGrid>
+                            <UniformGrid x:Name="CommandGrid" Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="{x:Static properties:Resources.BasicInformation}">

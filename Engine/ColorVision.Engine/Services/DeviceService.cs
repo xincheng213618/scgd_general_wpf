@@ -45,11 +45,15 @@ namespace ColorVision.Engine.Services
         public RelayCommand ExportCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
-        public RelayCommand ResetCommand { get; set; }
-        public RelayCommand RefreshCommand { get; set; }
 
+        [CommandDisplayAttribute("Reset")]
+        public RelayCommand ResetCommand { get; set; }
+        [CommandDisplayAttribute("RestartService")]
+        public RelayCommand RefreshCommand { get; set; }
         [CommandDisplayAttribute("ModifyConfiguration")]
         public RelayCommand EditCommand { get; set; }
+
+        [CommandDisplay("更新文件保存地址")]
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
