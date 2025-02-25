@@ -659,9 +659,9 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     foreach (var item in m_dic_all_type)
                     {
-                        if (values.ContainsKey(item.Value))
+                        if (values.TryGetValue(item.Value, out List<Type>? value1))
                         {
-                            values[item.Value].Add(item.Key);
+                            value1.Add(item.Key);
                         }
                         else
                         {

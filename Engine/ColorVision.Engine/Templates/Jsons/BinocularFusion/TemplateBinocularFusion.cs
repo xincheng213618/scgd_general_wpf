@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             return EditTemplateJson;
         }
         public override UserControl CreateUserControl() => new EditTemplateJson();
-        public override IMysqlCommand? GetMysqlCommand() => new TemplateBinocularFusion();
+        public override IMysqlCommand? GetMysqlCommand() => new MysqBinocularFusion();
 
     }
 

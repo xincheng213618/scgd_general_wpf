@@ -42,7 +42,7 @@ namespace ProjectKB
             for (int i = 0; i < KBItems.Items.Count; i++)
             {
                 string name = KBItems.Items[i].Name;
-                if (name.Contains(",") || name.Contains("\""))
+                if (name.Contains(',') || name.Contains('"'))
                 {
                     name = $"\"{name.Replace("\"", "\"\"")}\"";
                 }
