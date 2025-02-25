@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Projects.ProjectShiYuan"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:poi ="clr-namespace:ColorVision.Engine.Templates.POI.AlgorithmImp;assembly=ColorVision.Engine"
-        xmlns:compliance ="clr-namespace:ColorVision.Engine.Templates.Compliance;assembly=ColorVision.Engine"
+        xmlns:jnd ="clr-namespace:ColorVision.Engine.Templates.JND;assembly=ColorVision.Engine"
         d:DataContext="{d:DesignInstance local:ProjectShiYuanConfig}"
         mc:Ignorable="d"
         Title="ProjectShiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -52,28 +52,28 @@
                                     <TextBlock Text="测试结果" Foreground="Blue" FontWeight="Bold"/>
                                 </GridViewColumn.Header>
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                    <DataTemplate  DataType="{x:Type jnd:ViewRsultJND}">
                                         <TextBlock Text="{Binding Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="HJND" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                    <DataTemplate  DataType="{x:Type jnd:ViewRsultJND}">
                                         <TextBlock Text="{ Binding  DataValueH, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="VJND" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                    <DataTemplate  DataType="{x:Type jnd:ViewRsultJND}">
                                         <TextBlock Text="{ Binding  DataValueV, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="结果" Width="70">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type compliance:ComplianceJNDModel}">
+                                    <DataTemplate  DataType="{x:Type jnd:ViewRsultJND}">
                                         <TextBlock Text="{ Binding Validate}" Foreground="{Binding Validate,Converter={StaticResource ColorConverter}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

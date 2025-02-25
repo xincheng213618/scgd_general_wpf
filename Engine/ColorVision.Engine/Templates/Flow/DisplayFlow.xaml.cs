@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -294,7 +295,9 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
                     if (record != null)
+                    {
                         record.DateTimeStop = DateTime.Now;
+                    }
                 });
 
                 if (e != null)
