@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates.Jsons.LedCheck2;
+using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
@@ -25,8 +27,8 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         {
             return EditTemplateJson;
         }
-
         public override UserControl CreateUserControl() => new EditTemplateJson();
+        public override IMysqlCommand? GetMysqlCommand() => new TemplateBinocularFusion();
 
     }
 

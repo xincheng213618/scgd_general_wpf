@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using log4net;
@@ -144,6 +146,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             return EditTemplateJson;
         }
         public override UserControl CreateUserControl() => new EditKBTemplateJson();
+        public override IMysqlCommand? GetMysqlCommand() => new MysqKB();
+
 
     }
 
