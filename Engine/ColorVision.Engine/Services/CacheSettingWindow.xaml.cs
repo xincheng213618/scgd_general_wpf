@@ -92,16 +92,15 @@ namespace ColorVision.Engine.Services
             {
                 MessageBox.Show("没有服务需要配置缓存路径","ColorVision");
             }
-            var oldvalue = CacheSettingInfos[0].FileServerCfg.FileServerCfg.Clone();
             var Unifiedvalue = CacheSettingInfos[0].FileServerCfg.FileServerCfg.Clone();
 
 
             var window = new PropertyEditorWindow(Unifiedvalue, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             window.Closed += (s, e) =>
             {
-                if (!Unifiedvalue.EqualMax(oldvalue))
+                foreach (var item in CacheSettingInfos)
                 {
-                    foreach (var item in CacheSettingInfos)
+                    if(!Unifiedvalue.EqualMax(item.FileServerCfg.FileServerCfg))
                     {
                         item.FileServerCfg.FileServerCfg.CopyFrom(Unifiedvalue);
                         item.DeviceService.Save();
