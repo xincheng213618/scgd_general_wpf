@@ -36,10 +36,17 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="Path" Width="500">
+                        <GridViewColumn Header="Path" Width="300">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:CacheSettingInfo}">
                                     <TextBlock Text="{Binding FileServerCfg.FileServerCfg.DataBasePath,Mode=OneWay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="SaveDays" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:CacheSettingInfo}">
+                                    <TextBlock Text="{Binding FileServerCfg.FileServerCfg.SaveDays,Mode=OneWay}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

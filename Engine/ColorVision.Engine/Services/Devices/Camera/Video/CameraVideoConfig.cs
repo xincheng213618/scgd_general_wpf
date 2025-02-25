@@ -6,9 +6,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class CameraVideoConfig : ViewModelBase
     {
+        public CameraVideoConfig()
+        {
+            DeafutPort++;
+            _Port = Common.Utilities.Tool.GetFreePort(DeafutPort);
+        }
         [DisplayName("主机")]
         public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
         private string _Host = "127.0.0.1";
+
+        private static int DeafutPort { get; set; } = 9002;
 
 
         /// <summary>
@@ -24,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                 NotifyPropertyChanged();
             }
         }
-        private int _Port = Common.Utilities.Tool.GetFreePort(9002);
+        private int _Port;
 
         [Browsable(false)]
         public long Capacity
