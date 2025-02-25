@@ -18,14 +18,10 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
-    public delegate void MQTTSpectrumDataHandler(SpectrumData? colorPara);
-    public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
-        public event MQTTSpectrumDataHandler DataHandlerEvent;
-        public event MQTTAutoParamHandler AutoParamHandlerEvent;
-
+        public event EventHandler<SpectrumData> DataHandlerEvent;
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
         public DeviceSpectrum DeviceSpectrum { get; set; }
@@ -75,7 +71,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
                                 JObject data = json.Data;
                                 SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
-                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(this,colorParam));
                             }
 
 
@@ -86,7 +82,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                             SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
                             if (cmdMap.ContainsKey(json.MsgID))
                             {
-                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
+                                Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(this,colorParam));
                             }
                         }
                         else if (json.EventName == "Close")
@@ -95,7 +91,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         else if (json.EventName == "GetParam")
                         {
                             AutoIntTimeParam param = JsonConvert.DeserializeObject<AutoIntTimeParam>(JsonConvert.SerializeObject(json.Data));
-                            Application.Current.Dispatcher.Invoke(() => AutoParamHandlerEvent?.Invoke(param));
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                DeviceSpectrum.Config.BeginIntegralTime = param.fTimeB;
+                                DeviceSpectrum.Config.MaxIntegralTime = param.iLimitTime;
+                            });
                         }
                     }
                 }
@@ -106,7 +106,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             return Task.CompletedTask;
         }
-        public MsgRecord CM_GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+        public MsgRecord GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
         public void GetParam()

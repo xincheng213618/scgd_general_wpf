@@ -131,7 +131,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public void RefreshDeviceId()
         {
-            MsgRecord msgRecord = DService.CM_GetAllSnID();
+            MsgRecord msgRecord = DService.GetAllSnID();
             msgRecord.MsgRecordStateChanged += (e) =>
             {
                 if (msgRecord.MsgReturn != null)

@@ -25,7 +25,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             disposedObj = false;
             Device = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DService;
-            SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             InitializeComponent();
         }
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -33,12 +32,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
             Device.RefreshDeviceId();
-        }
-
-        private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
-        {
-            Device.Config.BeginIntegralTime = colorPara.fTimeB;
-            Device.Config.MaxIntegralTime = colorPara.iLimitTime;
         }
 
 
