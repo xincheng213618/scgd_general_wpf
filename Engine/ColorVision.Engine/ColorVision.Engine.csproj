@@ -299,6 +299,9 @@
     <Page Update="Services\PhyCameras\PhyCameraManagerWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="Templates\Jsons\BinocularFusion\DisplayBinocularFusion.xaml">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>
