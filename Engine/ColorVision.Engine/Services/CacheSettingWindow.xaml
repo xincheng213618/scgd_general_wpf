@@ -4,10 +4,75 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Services"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="缓存管理" Height="450" Width="800">
+        d:DataContext="{d:DesignInstance local:CacheSettingManager}"
+        Title="缓存管理" Height="450" Width="800" Background="{StaticResource GlobalBackground}"  Initialized="Window_Initialized">
     <Grid>
-        <StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="5">
+            <Button Content="统一编辑" Command="{Binding UnifiedEditCommand}" Margin="0,0,5,0"/>
         </StackPanel>
+        <Grid  Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="660"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ListView x:Name="ListViewProjects" Background="Transparent" Margin="5,0,5,5" SelectionChanged="ListViewProjects_SelectionChanged" ItemsSource="{Binding CacheSettingInfos}" Grid.Row="1" Padding="2">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="{x:Static properties:Resources.Name}">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:CacheSettingInfo}">
+                                    <TextBlock Text="{Binding Name,Mode=OneWay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Path" Width="500">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:CacheSettingInfo}">
+                                    <TextBlock Text="{Binding FileServerCfg.FileServerCfg.DataBasePath,Mode=OneWay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Command">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:CacheSettingInfo}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Edit" Command="{Binding EditCommand}" Margin="0,0,5,0"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+
+            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:CacheSettingInfo}" Grid.Column="1">
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="60"/>
+                    </Grid.RowDefinitions>
+                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Project.Header}" Grid.Row="0" HorizontalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBox  Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding FileServerCfg.FileServerCfg.DataBasePath,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
+                        <TextBox  Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding FileServerCfg.FileServerCfg.Endpoint,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
+                        <TextBox  Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding FileServerCfg.FileServerCfg.PortRange,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
+                        <TextBox Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding FileServerCfg.FileServerCfg.SaveDays,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
+                    </StackPanel>
+                
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

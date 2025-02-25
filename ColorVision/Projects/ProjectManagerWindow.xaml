@@ -83,11 +83,6 @@
                     <TextBox x:Name="TextBoxMsg" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Project.Description,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
                 </Grid>
             </Border>
-
-
-
         </Grid>
-
-
     </Grid>
 </Window>
