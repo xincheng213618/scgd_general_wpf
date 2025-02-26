@@ -44,6 +44,7 @@
                 <RowDefinition  Height="auto"/>
                 <RowDefinition  Height="auto"/>
                 <RowDefinition  Height="auto"/>
+                <RowDefinition  Height="auto"/>
                 <RowDefinition  Height="*"/>
             </Grid.RowDefinitions>
             <Border Margin="5,5,5,0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
@@ -126,8 +127,23 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
-
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
+                <StackPanel Margin="5">
+                    <StackPanel Margin="2"  Orientation="Horizontal" >
+                        <TextBlock Text="默认半径:" Width="55"/>
+                        <TextBox Text="{Binding PoiConfig.DefalutRadius}"  Width="55"  />
+                    </StackPanel>
+                    <StackPanel Margin="2"  Orientation="Horizontal" >
+                        <TextBlock Text="默认宽度:" Width="55"/>
+                        <TextBox Text="{Binding PoiConfig.DefalutWidth}"  Width="55"  />
+                        <TextBlock Text="默认高度:" Width="55" Margin="5,0,0,0"/>
+                        <TextBox Text="{Binding PoiConfig.DefalutHeight}"  Width="55"  />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+
+            <Border Grid.Row="2"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="2">
                     <StackPanel x:Name="PoiFixStackPanel" >
                         <StackPanel Orientation="Horizontal" Margin="0,2" >
@@ -141,7 +157,7 @@
                 </StackPanel>
             </Border>
 
-            <ScrollViewer x:Name="ScrollViewer1" Grid.Row="3" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="ScrollViewer1" Grid.Row="4" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="FunctionStackpanel" Margin="0" Grid.Row="0">
                     <Border  Style="{StaticResource BorderModuleArea}" Visibility="{Binding PoiConfig.IsShowDatum,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,0,5" CornerRadius="5">
                         <StackPanel x:Name="StackPanelPoiConfigPoints" Margin="5" >

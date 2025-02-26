@@ -81,6 +81,14 @@ namespace ColorVision.Engine.Templates.POI
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
             FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
+        public double DefalutWidth { get => _DefalutWidth; set { _DefalutWidth = value; NotifyPropertyChanged(); } } 
+        private double _DefalutWidth = 30;
+
+        public double DefalutHeight { get => _DefalutHeight; set { _DefalutHeight = value; NotifyPropertyChanged(); } }
+        private double _DefalutHeight = 30;
+        public double DefalutRadius { get => _DefalutRadius; set { _DefalutRadius = value; NotifyPropertyChanged(); } }
+        private double _DefalutRadius = 30;
+
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }
