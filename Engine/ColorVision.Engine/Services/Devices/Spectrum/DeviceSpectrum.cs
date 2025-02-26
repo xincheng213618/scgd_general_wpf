@@ -137,18 +137,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                    string a = msgRecord.MsgReturn?.Data;
+                    List<string> strings = new List<string>();
+                    foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
+                    {
+                        strings.Add(item.Code);
+                    }
+                    string result = string.Join(",", strings);
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "所有光谱仪设备信息" + Environment.NewLine + result);
                 }
                 RefreshEmptySpectrum();
 
-                string a = msgRecord.MsgReturn?.Data;
-                List<string> strings = new List<string>();
-                foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
-                {
-                    strings.Add(item.Code);
-                }
-                string result = string.Join(",", strings);
-                MessageBox.Show(Application.Current.GetActiveWindow(), "所有光谱仪设备信息" + Environment.NewLine + strings);
+
             };
         }
         public void RefreshEmptySpectrum()

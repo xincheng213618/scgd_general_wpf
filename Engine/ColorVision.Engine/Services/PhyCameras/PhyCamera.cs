@@ -63,6 +63,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
+        [CommandDisplay("查看缓存许可证")]
+        public RelayCommand OpenLicenseCacheCommand { get; set; }
         public RelayCommand RefreshLicenseCommand { get; set; }
 
         [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
@@ -141,6 +143,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
+            OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
+        }
+        public static void OpenLicenseCache()
+        {
+            string DirLicense = $"{Environments.DirAppData}\\Licenses";
+            if (!Directory.Exists(DirLicense))
+                Directory.CreateDirectory(DirLicense);
+            Common.Utilities.PlatformHelper.OpenFolder(DirLicense);
         }
 
         public void UpdateMotorConfig()
@@ -176,15 +186,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             // 设置请求的URL和数据
             string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
             var postData = new { macSn = Code };
-
             string DirLicense = $"{Environments.DirAppData}\\Licenses";
-
             if (!Directory.Exists(DirLicense))
                 Directory.CreateDirectory(DirLicense);
 
             string fileName = $"{DirLicense}\\{Code}-license.zip";
 
-            if (File.Exists(fileName))
+            if (File.Exists(fileName) && MessageBox.Show($"查询到本地保存的{Code}许可证，是否应用", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 SetLicense(fileName);
                 return;

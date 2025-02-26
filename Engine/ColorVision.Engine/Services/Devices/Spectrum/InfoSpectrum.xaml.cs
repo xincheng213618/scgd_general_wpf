@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             DataContext = Device;
             PropertyEditorHelper.GenCommand(Device, CommandGrid);
-            Device.RefreshDeviceId();
+            Device.RefreshEmptySpectrum();
         }
 
 

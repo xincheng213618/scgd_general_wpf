@@ -4,6 +4,7 @@
 
 #include <opencv2/opencv.hpp>
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
+void LampBeadDetection(cv::Mat image, int rows, int cols);
 
 int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 
