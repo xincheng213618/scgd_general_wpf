@@ -135,7 +135,16 @@ namespace ColorVision
         /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_Threshold(HImage image, out HImage hImage, double thresh, double maxval, int type);
-        
 
+        /// <summary>
+        /// 滤除摩尔纹
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_RemoveMoire(HImage image, out HImage hImage);
+
+       
     }
 }

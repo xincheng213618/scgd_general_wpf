@@ -329,6 +329,10 @@
                                 </DockPanel>
                                 <Button Content="计算"  Click="Threshold_Click"/>
                             </StackPanel>
+
+                            <StackPanel >
+                                <Button  Content="滤除摩尔纹"  Click="RemoveMoire_Click"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>

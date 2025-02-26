@@ -12,6 +12,30 @@
 #include <ctime>
 using namespace cv;
 
+cv::Mat removeMoire(const cv::Mat& image) {
+    // Step 1: Apply Gaussian Blur
+    cv::Mat blurred;
+    cv::GaussianBlur(image, blurred, cv::Size(5, 5), 0);
+
+    // Step 2: Downsample the image
+    cv::Mat downsampled;
+    cv::pyrDown(blurred, downsampled);
+
+    // Step 3: Apply Gaussian Blur again
+    cv::Mat blurredAgain;
+    cv::GaussianBlur(downsampled, blurredAgain, cv::Size(5, 5), 0);
+
+    // Step 4: Upsample the image
+    cv::Mat upsampled;
+    cv::pyrUp(blurredAgain, upsampled, image.size());
+
+    // Step 5: Sharpen the image
+    cv::Mat sharpened;
+    cv::addWeighted(image, 1.5, upsampled, -0.5, 0, sharpened);
+
+    return sharpened;
+}
+
 
 void LampBeadDetection(cv::Mat image, int rows, int cols)
 {
