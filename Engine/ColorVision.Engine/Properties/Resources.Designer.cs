@@ -682,7 +682,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 曝光 的本地化字符串。
+        ///   查找类似 曝光(ms) 的本地化字符串。
         /// </summary>
         public static string Exposure {
             get {
@@ -691,7 +691,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 曝光B 的本地化字符串。
+        ///   查找类似 曝光B(ms) 的本地化字符串。
         /// </summary>
         public static string ExposureB {
             get {
@@ -700,7 +700,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 曝光G 的本地化字符串。
+        ///   查找类似 曝光G(ms) 的本地化字符串。
         /// </summary>
         public static string ExposureG {
             get {
@@ -709,7 +709,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 曝光R 的本地化字符串。
+        ///   查找类似 曝光R(ms) 的本地化字符串。
         /// </summary>
         public static string ExposureR {
             get {

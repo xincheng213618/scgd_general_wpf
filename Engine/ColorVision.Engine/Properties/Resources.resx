@@ -536,16 +536,16 @@
     <value>失败</value>
   </data>
   <data name="ExposureR" xml:space="preserve">
-    <value>曝光R</value>
+    <value>曝光R(ms)</value>
   </data>
   <data name="ExposureG" xml:space="preserve">
-    <value>曝光G</value>
+    <value>曝光G(ms)</value>
   </data>
   <data name="ExposureB" xml:space="preserve">
-    <value>曝光B</value>
+    <value>曝光B(ms)</value>
   </data>
   <data name="Exposure" xml:space="preserve">
-    <value>曝光</value>
+    <value>曝光(ms)</value>
   </data>
   <data name="Export" xml:space="preserve">
     <value>导出</value>

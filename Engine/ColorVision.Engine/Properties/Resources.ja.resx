@@ -555,18 +555,6 @@
   <data name="Failure" xml:space="preserve">
     <value>失敗</value>
   </data>
-  <data name="ExposureR" xml:space="preserve">
-    <value>露出R</value>
-  </data>
-  <data name="ExposureG" xml:space="preserve">
-    <value>露出G</value>
-  </data>
-  <data name="ExposureB" xml:space="preserve">
-    <value>露出B</value>
-  </data>
-  <data name="Exposure" xml:space="preserve">
-    <value>暴露</value>
-  </data>
   <data name="Export" xml:space="preserve">
     <value>輸出</value>
   </data>
@@ -842,5 +830,17 @@
   </data>
   <data name="Copy" xml:space="preserve">
     <value>コピー</value>
+  </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>露出R</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>露出G</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>露出B</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>露出</value>
   </data>
 </root>

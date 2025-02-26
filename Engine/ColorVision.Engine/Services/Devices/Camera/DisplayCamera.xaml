@@ -264,8 +264,8 @@
                             <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
-                            <TextBlock Text="位置"  Width="40"  />
+                            <Button  DockPanel.Dock="Right" Content="调整光圈大小"  Click="Move1_Click" />
+                            <TextBlock Text="光圈f"  Width="40"  />
                             <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
                         </DockPanel>
                         <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />

@@ -41,39 +41,12 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class EditPoiParamConfig : ViewModelBase, IConfig, IConfigSettingProvider
+    public class EditPoiParamConfig : ViewModelBase, IConfig
     {
         public static EditPoiParamConfig Instance => ConfigService.Instance.GetRequiredService<EditPoiParamConfig>();
-
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
         public PoiPointParamType PoiPointParamType { get => _PoiPointParamType; set { _PoiPointParamType = value; NotifyPropertyChanged(); } }
         private PoiPointParamType _PoiPointParamType = PoiPointParamType.Empty;
-
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            ComboBox cmtype = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmtype.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(EditPoiParamConfig.PoiPointParamType)));
-
-            cmtype.ItemsSource = from e1 in Enum.GetValues(typeof(PoiPointParamType)).Cast<PoiPointParamType>()
-                                 select new KeyValuePair<PoiPointParamType, string>(e1, e1.ToString());
-
-            //cmtype.SelectionChanged += (s, e) => Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
-            cmtype.DataContext = EditPoiParamConfig.Instance;
-
-            return new List<ConfigSettingMetadata>
-            {
-                new ConfigSettingMetadata
-                {
-                    Name = "POIPointType",
-                    Description =  "POIPointType",
-                    Type = ConfigSettingType.ComboBox,
-                    BindingName = nameof(PoiPointParamType),
-                    Source = EditPoiParamConfig.Instance,
-                    ComboBox = cmtype
-                },
-            };
-        }
     }
 
 
@@ -81,9 +54,7 @@ namespace ColorVision.Engine.Templates.POI
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam));
         private string TagName { get; set; } = "P_";
-
         public PoiParam PoiParam { get; set; }
-
         public PoiConfig PoiConfig => PoiParam.PoiConfig;
 
         public EditPoiParam(PoiParam poiParam) 
