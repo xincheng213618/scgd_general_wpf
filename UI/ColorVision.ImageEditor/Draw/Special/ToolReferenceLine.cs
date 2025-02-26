@@ -54,6 +54,9 @@ namespace ColorVision.Util.Draw.Special
             }
         }
 
+        private double ActualWidth;
+        private double ActualHeight;
+
         public bool IsShow
         {
             get => _IsShow; set
@@ -64,7 +67,12 @@ namespace ColorVision.Util.Draw.Special
                 Image.ContextMenu = null;
                 if (value)
                 {
-                    RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    if (!(ActualWidth == Image.ActualWidth && ActualHeight == Image.ActualHeight))
+                    {
+                        ActualWidth = Image.ActualWidth;
+                        ActualHeight = Image.ActualHeight;
+                        RMouseDownP = new Point(Image.ActualWidth / 2, Image.ActualHeight / 2);
+                    }
                     Image.MouseMove += MouseMove;
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
@@ -74,7 +82,6 @@ namespace ColorVision.Util.Draw.Special
                 }
                 else
                 {
-                    PointLen = new Vector();
                     Image.MouseMove -= MouseMove;
                     Image.PreviewMouseLeftButtonDown -= PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown -= Image_PreviewMouseRightButtonDown;
@@ -268,15 +275,15 @@ namespace ColorVision.Util.Draw.Special
                 TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
-                if (IsRMouseDown)
+                double a = 20 / ZoomboxSub.ContentMatrix.M11;
+                if (IsRMouseDown || IsLMouseDown)
                 {
-                    double a = 20 / ZoomboxSub.ContentMatrix.M11;
                     FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 4 * a));
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
                 }
 
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
 
 
 
@@ -315,16 +322,15 @@ namespace ColorVision.Util.Draw.Special
 
                 TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown)
+                double a = 15 / ZoomboxSub.ContentMatrix.M11;
+                if (IsRMouseDown || IsLMouseDown)
                 {
-                    double a = 20 / ZoomboxSub.ContentMatrix.M11;
                     FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 4*a));
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2*a));
                 }
 
-
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
             else if (Mode == 2)
             {
@@ -345,20 +351,18 @@ namespace ColorVision.Util.Draw.Special
                 }
 
 
-
-
                 TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
-                if (IsRMouseDown)
+                double a = 15 / ZoomboxSub.ContentMatrix.M11;
+                if (IsRMouseDown|| IsLMouseDown)
                 {
-                    double a = 20 / ZoomboxSub.ContentMatrix.M11;
                     FormattedText formattedRText = new($"({(int)RMouseDownP.X},{(int)RMouseDownP.Y})", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 4 * a));
+                    dc.DrawText(formattedRText, RMouseDownP + new Vector(a, 2 * a));
                 }
 
 
                 FormattedText formattedText = new(angle.ToString("F3") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(a, a));
             }
 
 
