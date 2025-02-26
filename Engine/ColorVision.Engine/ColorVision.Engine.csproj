@@ -135,7 +135,7 @@
     <Compile Update="Templates\Matching\DisplayMatching.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\MTF\DisplayMTF.xaml.cs">
+    <Compile Update="Templates\ARVR\MTF\DisplayMTF.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\POI\AlgorithmImp\DisplayPOI.xaml.cs">
@@ -147,10 +147,10 @@
     <Compile Update="Templates\POI\POIOutput\EditPoiOutput.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\SFR\DisplaySFR.xaml.cs">
+    <Compile Update="Templates\ARVR\SFR\DisplaySFR.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Templates\SFR\EditSFR.xaml.cs">
+    <Compile Update="Templates\ARVR\SFR\EditSFR.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Devices\ThirdPartyAlgorithms\Templates\Manager\EditTemplateThird.xaml.cs">
