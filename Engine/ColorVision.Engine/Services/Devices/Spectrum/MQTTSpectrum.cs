@@ -15,6 +15,12 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using Google.Protobuf.WellKnownTypes;
+using iText.Commons.Bouncycastle.Asn1.X509;
+using ColorVision.Engine.Templates.POI;
+using FlowEngineLib;
+using MQTTMessageLib.Algorithm;
+using OpenTK.Compute.OpenCL;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -176,6 +182,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             PublishAsyncClient(msg);
             return true;
+        }
+        public MsgRecord SelfAdaptionInitDark()
+        {
+            var Params = new Dictionary<string, object>() { };
+            Params.Add("SpectrumSelfAdaptionInitDark",Config.SelfAdaptionInitDark);
+            MsgSend msg = new()
+            {
+                EventName = "InitAutoDark",
+                SerialNumber = Config.Code,
+                Params = Params
+            };
+            return PublishAsyncClient(msg);
         }
 
         public bool InitDark(float IntTime, int AveNum)

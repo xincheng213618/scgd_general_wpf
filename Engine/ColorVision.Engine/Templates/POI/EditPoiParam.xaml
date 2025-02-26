@@ -266,6 +266,7 @@
                                                 </TextBlock.RenderTransform>
                                             </TextBlock>
                                         </Button>
+                                    
                                     </DockPanel>
                                     <DockPanel  Margin="2" HorizontalAlignment="Left">
                                         <TextBlock Text="中心点"  MinWidth="50"/>

@@ -32,6 +32,12 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [CommandDisplay("上传许可证")]
         public RelayCommand UploadLincenseCommand { get; set; }
 
+        [CommandDisplay("自适应校零")]
+
+        public RelayCommand SelfAdaptionInitDarkCommand { get; set; }
+
+        [CommandDisplay("自适应校零设置")]
+        public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -54,6 +60,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
+
+            SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
+            SelfAdaptionInitDarkSettingCommand = new RelayCommand(a => SelfAdaptionInitDarkSetting());
+        }
+
+        public void SelfAdaptionInitDark()
+        {
+            MsgRecord msgRecord = DService.SelfAdaptionInitDark();
+            msgRecord.MsgRecordStateChanged +=(e) =>
+            {
+                if (msgRecord.MsgReturn != null)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Data);
+                }
+            };
+        }
+
+        public void SelfAdaptionInitDarkSetting()
+        {
+            new UI.PropertyEditor.PropertyEditorWindow(Config.SelfAdaptionInitDark) { , WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            SaveConfig();
         }
 
         public void UploadLincense()
