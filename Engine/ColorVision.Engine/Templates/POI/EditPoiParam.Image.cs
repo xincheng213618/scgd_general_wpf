@@ -257,7 +257,7 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ImageEditViewMode.EraseVisual)
                 {
-                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                    ImageViewModel.DrawSelectRect(SelectRect, new System.Windows.Rect(MouseDownP, MouseDownP)); ;
                     drawCanvas.AddVisual(SelectRect);
 
                     SelectDrawingVisualsClear();
@@ -288,7 +288,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Id = No;
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP,new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
+                    DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(MouseDownP, new Point(MouseDownP.X + DefalutWidth, MouseDownP.Y + DefalutHeight));
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
 
@@ -365,7 +365,7 @@ namespace ColorVision.Engine.Templates.POI
                 SelectDrawingVisualsClear();
                 SelectDrawingVisualClear();
 
-                ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
+                ImageViewModel.DrawSelectRect(SelectRect, new System.Windows.Rect(MouseDownP, MouseDownP)); ;
                 drawCanvas.AddVisual(SelectRect);
             }
         }
@@ -391,7 +391,7 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (IsMouseDown)
                 {
-                    ImageViewModel.DrawSelectRect(SelectRect, new Rect(MouseDownP, point));
+                    ImageViewModel.DrawSelectRect(SelectRect, new System.Windows.Rect(MouseDownP, point));
 
                     if (ImageEditViewMode.DrawCircle && DrawCircleCache !=null)
                     {
@@ -401,7 +401,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
                     else if (ImageEditViewMode.DrawRect && DrawingRectangleCache!=null)
                     {
-                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
+                        DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(MouseDownP, point);
                         DrawingRectangleCache.Render();
                     }
                     else if (ImageEditViewMode.DrawPolygon)
@@ -413,7 +413,7 @@ namespace ColorVision.Engine.Templates.POI
                         if (ImageEditViewMode.SelectDrawingVisual is IRectangle rectangle)
                         {
                             var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+                            rectangle.Rect = new System.Windows.Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                         }
                         else if (ImageEditViewMode.SelectDrawingVisual is ICircle Circl)
                         {
@@ -427,7 +427,7 @@ namespace ColorVision.Engine.Templates.POI
                             if (item is IRectangle rectangle)
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new System.Windows.Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
                             }
                             else if (item is ICircle Circl)
                             {
@@ -454,7 +454,7 @@ namespace ColorVision.Engine.Templates.POI
                         double height = OldRect.Height + point.Y - LastMouseMove.Y;
                         if (width >= 1 && height >= 1)
                         {
-                            rectangle.Rect = new Rect(x, y, width, height);
+                            rectangle.Rect = new System.Windows.Rect(x, y, width, height);
                         }
                     }
                 }
@@ -500,14 +500,14 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
                             drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                            foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
+                            foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP))))
                             {
                                 drawCanvas.RemoveVisual(item, false);
                             }
                         }
                         else
                         {
-                            ImageEditViewMode.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP)));
+                            ImageEditViewMode.SelectDrawingVisuals = drawCanvas.GetVisuals(new RectangleGeometry(new System.Windows.Rect(MouseDownP, MouseUpP)));
                             foreach (var item in ImageEditViewMode.SelectDrawingVisuals)
                             {
                                 if (item is IDrawingVisual drawingVisual)
@@ -572,12 +572,12 @@ namespace ColorVision.Engine.Templates.POI
                             Action undoaction = new Action(() =>
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new System.Windows.Rect(OldRect.X - l.X, OldRect.Y - l.Y, OldRect.Width, OldRect.Height);
                             });
                             Action redoaction = new Action(() =>
                             {
                                 var OldRect = rectangle.Rect;
-                                rectangle.Rect = new Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
+                                rectangle.Rect = new System.Windows.Rect(OldRect.X + l.X, OldRect.Y + l.Y, OldRect.Width, OldRect.Height);
                             });
                             ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动IRectangle" });
                         }

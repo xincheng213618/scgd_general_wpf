@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using LiveChartsCore.SkiaSharpView;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -139,6 +140,15 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
                 }
                 RefreshEmptySpectrum();
+
+                string a = msgRecord.MsgReturn?.Data;
+                List<string> strings = new List<string>();
+                foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
+                {
+                    strings.Add(item.Code);
+                }
+                string result = string.Join(",", strings);
+                MessageBox.Show(Application.Current.GetActiveWindow(), "所有光谱仪设备信息" + Environment.NewLine + strings);
             };
         }
         public void RefreshEmptySpectrum()

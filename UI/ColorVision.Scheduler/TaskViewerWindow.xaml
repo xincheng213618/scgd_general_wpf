@@ -7,7 +7,7 @@
         xmlns:properties="clr-namespace:ColorVision.Scheduler.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:QuartzSchedulerManager}"
-        Title="{x:Static properties:Resources.TaskViewerWindow}" Height="450" Width="1024" Background="{StaticResource BackgroundBrush}">
+        Title="{x:Static properties:Resources.TaskViewerWindow}" Height="450" Width="1024" Background="{StaticResource GlobalBackground}">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -23,8 +23,7 @@
             </StackPanel>
         </DockPanel>
 
-        <ListView x:Name="ListViewTask" Grid.Row="1"  BorderThickness="0">
-            
+        <ListView x:Name="ListViewTask" Grid.Row="1"  Background="Transparent" Margin="5,0,5,5" Padding="2">
             <ListView.View>
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>

@@ -65,7 +65,6 @@ namespace ColorVision.Engine.Templates.POI
         [DisplayName("Threshold")]
         public int Threshold { get => _Threshold; set { if (value > 255) value = 255; if (value < 0) value = 0; _Threshold = value;NotifyPropertyChanged(); } }
         private int _Threshold = 100;
-
     }
 
     public class PoiConfig : ViewModelBase

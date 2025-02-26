@@ -602,7 +602,7 @@ namespace ColorVision.Engine.Templates.POI
                         case RiPointTypes.Rect:
                             DVRectangleText Rectangle = new();
                             Rectangle.IsShowText = PoiParam.PoiConfig.IsShowText;
-                            Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Rect = new System.Windows.Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.Id = No;
@@ -813,7 +813,7 @@ namespace ColorVision.Engine.Templates.POI
                                 }
 
                                 DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
+                                Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                 Rectangle.Attribute.Id = start + i + 1;
@@ -969,7 +969,7 @@ namespace ColorVision.Engine.Templates.POI
                                     {
                                         DVRectangleText Rectangle = new();
                                         Rectangle.IsShowText = PoiParam.PoiConfig.IsShowText;
-                                        Rectangle.Attribute.Rect = new Rect(x1 - (double)PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
+                                        Rectangle.Attribute.Rect = new System.Windows.Rect(x1 - (double)PoiParam.PoiConfig.DefaultRectWidth / 2, y1 - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
@@ -1122,7 +1122,7 @@ namespace ColorVision.Engine.Templates.POI
                                     else
                                     {
                                         DVRectangleText Rectangle = new();
-                                        Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.PoiConfig.DefaultRectWidth / 2, point.Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
+                                        Rectangle.Attribute.Rect = new System.Windows.Rect(point.X - PoiParam.PoiConfig.DefaultRectWidth / 2, point.Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
@@ -1228,7 +1228,7 @@ namespace ColorVision.Engine.Templates.POI
                                     break;
                                 case RiPointTypes.Rect:
                                     DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Polygons[i].X + dx * j - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y + dy * j - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
+                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiParam.PoiConfig.Polygons[i].X + dx * j - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y + dy * j - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                     Rectangle.Attribute.Id = start + No;
@@ -1267,7 +1267,7 @@ namespace ColorVision.Engine.Templates.POI
                                     break;
                                 case RiPointTypes.Rect:
                                     DVRectangleText Rectangle = new();
-                                    Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Polygons[i].X - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
+                                    Rectangle.Attribute.Rect = new System.Windows.Rect(PoiParam.PoiConfig.Polygons[i].X - PoiParam.PoiConfig.DefaultRectWidth / 2, PoiParam.PoiConfig.Polygons[i].Y - PoiParam.PoiConfig.DefaultRectHeight / 2, PoiParam.PoiConfig.DefaultRectWidth, PoiParam.PoiConfig.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.PoiConfig.DefaultRectWidth / 30);
                                     Rectangle.Attribute.Id = start + i + 1;
@@ -1402,7 +1402,7 @@ namespace ColorVision.Engine.Templates.POI
                         double Width = PoiParam.PoiConfig.AreaRectWidth;
                         double Height = PoiParam.PoiConfig.AreaRectHeight;
                         DVDatumRectangle Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(PoiParam.PoiConfig.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.PoiConfig.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
+                        Rectangle.Attribute.Rect = new System.Windows.Rect(PoiParam.PoiConfig.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.PoiConfig.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Rectangle.Render();
@@ -1874,13 +1874,7 @@ namespace ColorVision.Engine.Templates.POI
             }));
         }
 
-        class JsonConfig
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int Width { get; set; }
-            public int Height { get; set; }
-        }
+
 
         private void FindLuminousArea_Click(object sender, RoutedEventArgs e)
         {
@@ -1897,7 +1891,7 @@ namespace ColorVision.Engine.Templates.POI
                             string result = Marshal.PtrToStringAnsi(resultPtr);
                             Console.WriteLine("Result: " + result);
                             OpenCVMediaHelper.FreeResult(resultPtr);
-                            JsonConfig rect = Newtonsoft.Json.JsonConvert.DeserializeObject<JsonConfig>(result);
+                            MRect rect = Newtonsoft.Json.JsonConvert.DeserializeObject<MRect>(result);
 
                             Application.Current.Dispatcher.Invoke(() =>
                             {

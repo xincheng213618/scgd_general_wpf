@@ -4,6 +4,14 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision
 {
+    public class MRect
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
     public static class OpenCVMediaHelper
     {
         private const string LibPath = "opencv_helper.dll";

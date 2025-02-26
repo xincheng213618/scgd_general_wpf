@@ -16,9 +16,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
     [DisplayName("电机配置")]
     public class MotorConfigBase: ViewModelBase
     {
-        [DisplayName("配置电机")]
-        public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
-        private bool _IsUseMotor;
+
 
         [DisplayName("查询方法")]
         public FindFuncModel FindFuncModel { get => _FindFuncModel; set { _FindFuncModel = value; NotifyPropertyChanged(); } }
@@ -95,5 +93,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("相机联动")]
         public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
         private bool _IsCameraLinkage = true;
+
+        [DisplayName("配置电机")]
+        public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
+        private bool _IsUseMotor;
     }
 }
