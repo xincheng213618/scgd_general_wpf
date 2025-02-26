@@ -19,14 +19,14 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         }
 
-        public void Open()
+        public MsgRecord Open()
         {
             MsgSend msg = new()
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } }
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
         /// <summary>

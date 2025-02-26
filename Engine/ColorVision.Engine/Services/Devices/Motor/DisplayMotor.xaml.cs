@@ -10,14 +10,14 @@ namespace ColorVision.Engine.Services.Devices.Motor
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayMotorControl : UserControl, IDisPlayControl
+    public partial class DisplayMotor : UserControl, IDisPlayControl
     {
 
         public DeviceMotor Device { get; set; }
         private MQTTMotor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
-        public DisplayMotorControl(DeviceMotor device)
+        public DisplayMotor(DeviceMotor device)
         {
             Device = device;
             InitializeComponent();

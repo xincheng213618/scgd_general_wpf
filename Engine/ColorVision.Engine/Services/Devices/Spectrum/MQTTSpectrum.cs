@@ -1,10 +1,10 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Messages;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -15,12 +15,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using Google.Protobuf.WellKnownTypes;
-using iText.Commons.Bouncycastle.Asn1.X509;
-using ColorVision.Engine.Templates.POI;
-using FlowEngineLib;
-using MQTTMessageLib.Algorithm;
-using OpenTK.Compute.OpenCL;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

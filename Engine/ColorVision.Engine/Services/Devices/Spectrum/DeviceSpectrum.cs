@@ -79,7 +79,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public void SelfAdaptionInitDarkSetting()
         {
-            new UI.PropertyEditor.PropertyEditorWindow(Config.SelfAdaptionInitDark) { , WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new UI.PropertyEditor.PropertyEditorWindow(Config.SelfAdaptionInitDark) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             SaveConfig();
         }
 

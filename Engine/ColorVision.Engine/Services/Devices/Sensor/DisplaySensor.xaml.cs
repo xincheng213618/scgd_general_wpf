@@ -87,6 +87,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     case DeviceStatusType.Opening:
                     default:
                         SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                 }
             }
@@ -104,7 +105,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-             DeviceService.Open();
+            MsgRecord msgRecord = DeviceService.Open();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+
+            };
         }
 
 
