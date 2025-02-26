@@ -2,8 +2,8 @@
 {
     public class ExportMenuItemMTF : MenuITemplateAlgorithmBase
     {
-        public override string Header => Properties.Resources.MenuMTF;
-        public override int Order => 2;
+        public override string Header => "MTF";
+        public override int Order => 1002;
         public override ITemplate Template => new TemplateMTF();
     }
 }

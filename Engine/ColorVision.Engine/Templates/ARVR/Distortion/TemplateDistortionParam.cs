@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public TemplateDistortionParam()
         {
-            Title = "畸变算法设置";
+            Title = "畸变评价";
             Code = "distortion";
             TemplateParams = Params;
         }

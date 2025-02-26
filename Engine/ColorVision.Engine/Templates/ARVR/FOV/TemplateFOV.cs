@@ -7,7 +7,7 @@ namespace ColorVision.Engine.Templates.FOV
         public static ObservableCollection<TemplateModel<FOVParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FOVParam>>();
         public TemplateFOV()
         {
-            Title = "FOVParam算法设置";
+            Title = "FOV算法设置";
             Code = "FOV";
             TemplateParams = Params;
         }

@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public TemplateLedCheck()
         {
-            Title = "LedCheckParam算法设置";
+            Title = "像素级灯珠检测";
             Code = "ledcheck";
             TemplateParams = Params;
         }

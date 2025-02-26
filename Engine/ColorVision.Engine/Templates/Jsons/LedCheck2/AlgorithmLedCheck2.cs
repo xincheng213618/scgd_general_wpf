@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public class AlgorithmLedCheck2 : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "灯珠检测2";
+        public string Name { get; set; } = "亚像素级灯珠检测";
         public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }

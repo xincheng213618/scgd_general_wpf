@@ -2,8 +2,8 @@
 {
     public class ExportSFRParam : MenuITemplateAlgorithmBase
     {
-        public override string Header => Properties.Resources.MenuSFR;
-        public override int Order => 2;
+        public override string Header => "SFR";
+        public override int Order => 1002;
         public override ITemplate Template => new TemplateSFR();
     }
 }

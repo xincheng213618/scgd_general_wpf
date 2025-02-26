@@ -2,8 +2,9 @@
 {
     public class ExportLedCheck2 : MenuITemplateAlgorithmBase
     {
-        public override string Header => "灯珠检测2";
-        public override int Order => 2;
+        public override string Header => "亚像素级灯珠检测";
+        public override int Order => 41325;
         public override ITemplate Template => new TemplateLedCheck2();
+
     }
 }

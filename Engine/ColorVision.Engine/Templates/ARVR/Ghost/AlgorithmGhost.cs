@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Templates.Ghost
 {
     public class AlgorithmGhost : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = Properties.Resources.GhostShadow;
+        public string Name { get; set; } = "鬼影";
         public int Order { get; set; } = 54;
 
         public DeviceAlgorithm Device { get; set; }

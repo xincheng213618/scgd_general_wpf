@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public TemplateLedCheck2()
         {
-            Title = "灯珠检测2";
+            Title = "亚像素级灯珠检测";
             Code = "LedCheck2";
             TemplateParams = Params;
             IsUserControl = true;

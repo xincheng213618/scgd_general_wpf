@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Templates.Distortion
 {
     public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "畸变";
+        public string Name { get; set; } = "畸变评价";
         public int Order { get; set; } = 55;
 
         public DeviceAlgorithm Device { get; set; }
