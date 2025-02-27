@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.SFR
 
         public TemplateSFR()
         {
-            Title = "SFRParam算法设置";
+            Title = "SFR模板管理";
             Code = "SFR";
             TemplateParams = Params;
             IsUserControl = true;

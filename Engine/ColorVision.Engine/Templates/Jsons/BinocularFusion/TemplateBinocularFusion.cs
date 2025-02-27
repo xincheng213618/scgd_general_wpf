@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
         public TemplateBinocularFusion()
         {
-            Title = "双目融合";
+            Title = "双目融合模板管理";
             Code = "ARVR.BinocularFusion";
             TemplateParams = Params;
             IsUserControl = true;

@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.MTF
 
         public TemplateMTF()
         {
-            Title = "MTFParam算法设置";
+            Title = "MTF模板管理";
             Code = "MTF";
             TemplateParams = TemplateMTF.Params;
         }

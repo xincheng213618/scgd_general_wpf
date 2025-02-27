@@ -129,7 +129,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateKB()
         {
-            Title = "KB算法设置";
+            Title = "KB模板管理";
             Code = "KB";
             TemplateParams = Params;
             IsUserControl = true;

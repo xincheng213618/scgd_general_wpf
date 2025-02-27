@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         public TemplateLEDStripDetection()
         {
-            Title = "灯条检测算法设置";
+            Title = "灯条检测模板管理";
             Code = "LEDStripDetection";
             TemplateParams = Params;
             IsUserControl = true;

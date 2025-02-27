@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.Matching
 
         public TemplateMatch()
         {
-            Title = "MTFParam算法设置";
+            Title = "模板匹配模板管理";
             Code = "MatchTemplate";
             TemplateParams = Params;
         }

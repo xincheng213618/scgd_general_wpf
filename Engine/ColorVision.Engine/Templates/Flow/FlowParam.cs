@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Flow
         public TemplateFlow()
         {
             IsSideHide = true;
-            Title = "流程引擎";
+            Title = "流程引擎模板管理";
             Code = "flow";
             TemplateParams = FlowParam.Params;
         }

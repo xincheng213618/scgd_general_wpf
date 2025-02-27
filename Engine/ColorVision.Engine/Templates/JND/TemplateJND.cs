@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Templates.JND
 
         public TemplateJND()
         {
-            Title = "JND";
+            Title = "JND模板管理";
             Code = "OLED.JND.CalVas";
             TemplateParams = Params;
         }
