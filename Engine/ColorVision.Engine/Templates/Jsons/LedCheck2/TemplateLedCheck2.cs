@@ -4,7 +4,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
-    public class TemplateLedCheck2 : ITemplateJson<TemplateJsonParam>
+    public class TemplateLedCheck2 : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
 

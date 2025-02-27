@@ -179,13 +179,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         public MsgRecord SelfAdaptionInitDark()
         {
-            var Params = new Dictionary<string, object>() { };
-            Params.Add("SpectrumSelfAdaptionInitDark",Config.SelfAdaptionInitDark);
             MsgSend msg = new()
             {
                 EventName = "InitAutoDark",
                 SerialNumber = Config.Code,
-                Params = Params
+                Params = Config.SelfAdaptionInitDark
             };
             return PublishAsyncClient(msg);
         }

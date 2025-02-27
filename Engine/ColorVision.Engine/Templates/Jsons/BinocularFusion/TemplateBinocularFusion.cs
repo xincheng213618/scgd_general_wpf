@@ -5,7 +5,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
-    public class TemplateBinocularFusion : ITemplateJson<TemplateJsonParam>
+    public class TemplateBinocularFusion : ITemplateJson<TemplateJsonParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
 
