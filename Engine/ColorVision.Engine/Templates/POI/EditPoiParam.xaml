@@ -299,20 +299,10 @@
                                             <TextBox x:Name="tbHeight" Width="55"  Text="{Binding PoiConfig.AreaRectHeight}" />
                                         </DockPanel>
                                     </UniformGrid>
-                                    <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
-                                    <UniformGrid  Columns="2" >
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="行数:"  MinWidth="50"/>
-                                            <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
-                                        </DockPanel>
-                                        <DockPanel Margin="2" HorizontalAlignment="Left">
-                                            <TextBlock Text="列数:" MinWidth="50"/>
-                                            <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
-                                        </DockPanel>
-                                    </UniformGrid>
+ 
 
-                                    <Grid>
-
+                                    <Grid >
+                                        <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                         <StackPanel  HorizontalAlignment="Right">
                                             <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
                                             <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
@@ -345,6 +335,16 @@
                                             </Popup>
                                         </StackPanel>
                                     </Grid>
+                                    <UniformGrid  Columns="2" >
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="行数:"  MinWidth="50"/>
+                                            <TextBox x:Name="tbX"  Width="55" Text="{Binding PoiConfig.AreaRectRow}"  />
+                                        </DockPanel>
+                                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                                            <TextBlock Text="列数:" MinWidth="50"/>
+                                            <TextBox x:Name="tbY" Width="55" Text="{Binding PoiConfig.AreaRectCol}" />
+                                        </DockPanel>
+                                    </UniformGrid>
                                 </StackPanel>
                                 <StackPanel  Margin="5" Visibility="{Binding PoiConfig.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
                                     <Grid>
