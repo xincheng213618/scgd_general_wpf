@@ -7,7 +7,6 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
@@ -17,7 +16,6 @@ using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -333,31 +331,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         AddPOIPoint(DrawPoiPoint);
                         break;
-                    case AlgorithmResultType.SFR:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultSFRModels)
-                            {
-                                var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                                var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                                for (int i = 0; i < Pdfrequencys.Length; i++)
-                                {
-                                    ViewResultSFR resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
-                                    result.ViewResults.Add(resultData);
-                                }
-                            };
-                        }
-                        header = new() { "pdfrequency", "pdomainSamplingData" };
-                        bdHeader = new() { "pdfrequency", "pdomainSamplingData" };
-
-                        if (result.ViewResults.Count > 0)
-                        {
-                            AddRect(new Rect(10, 10, 10, 10));
-                        }
-
-                        break;
                     case AlgorithmResultType.OLED_JND_CalVas:
                         if (result.ViewResults == null)
                         {
@@ -476,16 +449,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 Circle.Render();
                 ImageView.AddVisual(Circle);
             }
-        }
-
-        public void AddRect(Rect rect)
-        {
-            DVRectangleText Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-            Rectangle.Attribute.Brush = Brushes.Transparent;
-            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-            Rectangle.Render();
-            ImageView.AddVisual(Rectangle);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -679,8 +642,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 switch (result.ResultType)
                 {
-                    case AlgorithmResultType.POI:
-                        break;
+
                     case AlgorithmResultType.POI_XYZ:
                         var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
                         PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);

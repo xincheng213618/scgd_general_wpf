@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Templates.SFR
         public string? Pdfrequency { get; set; }
         public string? PdomainSamplingData { get; set; }
     }
+
     public class AlgResultSFRDao : BaseTableDao<AlgResultSFRModel>
     {
         public static AlgResultSFRDao Instance { get; set; } = new AlgResultSFRDao();
