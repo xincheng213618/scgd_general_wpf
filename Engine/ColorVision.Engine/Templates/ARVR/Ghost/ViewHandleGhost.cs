@@ -178,5 +178,8 @@ namespace ColorVision.Engine.Templates.Ghost
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
         }
+
+
+
     }
 }

@@ -26,6 +26,7 @@
         <TextBox  Grid.Row="0"  Text="{Binding JsonValue}" TextWrapping="Wrap" Margin="5" Padding="5" AcceptsReturn="True" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top"/>
         <StackPanel x:Name="FuncStackPanel"  Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,5,0,0">
             <Button Content="校验Json" Margin="0,0,5,0"/>
+            <Button Content="编辑工具" Click="OpenEdit_Click"/>
             <Button Content="重置" Command="{Binding ResetCommand}" />
         </StackPanel>
         
