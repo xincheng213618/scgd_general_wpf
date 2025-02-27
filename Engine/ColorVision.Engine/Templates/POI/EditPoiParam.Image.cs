@@ -83,7 +83,8 @@ namespace ColorVision.Engine.Templates.POI
         {
 
         }
-        bool IsRightButtonDown = false;
+
+        bool IsRightButtonDown;
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
