@@ -2,73 +2,14 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
-using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class RadiusConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            return value;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (double.TryParse(value.ToString(), out double result))
-            {
-                if (result % 1 == 0 || result % 1 == 0.5)
-                {
-                    return result;
-                }
-            }
-            return Binding.DoNothing;
-        }
-    }
-
-    public class RadiusValidationRule : ValidationRule
-    {
-        public override ValidationResult Validate(object value, CultureInfo cultureInfo)
-        {
-            if (double.TryParse(value.ToString(), out double result))
-            {
-                if (result % 1 == 0 || result % 1 == 0.5)
-                {
-                    return ValidationResult.ValidResult;
-                }
-            }
-            return new ValidationResult(false, "Value must be an integer or end with .5");
-        }
-    }
-
-    public class RoundToNearestHalfConverter : IValueConverter
-    {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is double doubleValue)
-            {
-                return Math.Round(doubleValue * 2, MidpointRounding.AwayFromZero) / 2;
-            }
-            return value;
-        }
-
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
-        {
-            if (value is double doubleValue)
-            {
-                return Math.Round(doubleValue * 2, MidpointRounding.AwayFromZero) / 2;
-            }
-            return value;
-        }
-    }
-
-
     public partial class EditPoiParam : Window
     {
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
