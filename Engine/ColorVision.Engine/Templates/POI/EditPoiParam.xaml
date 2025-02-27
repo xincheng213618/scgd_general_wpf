@@ -147,7 +147,7 @@
                 <StackPanel Margin="2">
                     <StackPanel x:Name="PoiFixStackPanel" >
                         <StackPanel Orientation="Horizontal" Margin="0,2" >
-                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="PoiFixFilePath" Width="80"/>
+                            <TextBlock DockPanel.Dock="Left" Margin="2,0" Text="数据修正文件路径" Width="120"/>
                             <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
@@ -468,7 +468,7 @@
                                         </DockPanel>
                                         <DockPanel Margin="2" HorizontalAlignment="Left">
                                             <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding PoiConfig.AreaPolygonUsNode}"/>
-                                            <TextBox  Text="是否使用结点" />
+                                            <TextBox  Text="是否使用节点" />
                                         </DockPanel>
                                     </UniformGrid>
                                     <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
