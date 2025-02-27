@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.Templates.POI.EditPoiParam"
+﻿<Window x:Class="ColorVision.Engine.Templates.POI.EditPoiParam1"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -662,6 +662,17 @@
                                     <TextBox Text="{Binding Attribute.Rect,StringFormat={}{0:F0}}" Width="200" Margin="5,0"/>
                                 </StackPanel>
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type local:PoiPointParam}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBox Width="40" Text="{Binding HaloOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding HaloThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding HaloScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding KeyOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding KeyThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding KeyScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="40" Text="{Binding Area}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                </StackPanel>
+                            </DataTemplate>
                         </ListView.Resources>
                         <ListView.ItemContainerStyle>
                             <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
@@ -698,10 +709,22 @@
                                         <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                     </GridViewColumn.CellTemplateSelector>
                                 </GridViewColumn>
+                                <GridViewColumn  Header="其他参数">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                            <ContentPresenter Content="{Binding BaseAttribute.Param}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
                     </ListView>
-
+                    <Grid Grid.Column="1">
+                        <StackPanel>
+                            <Button Content="编辑" Click="Button_Click_1"/>
+                        </StackPanel>
+                        
+                    </Grid>
                 </Grid>
             </Grid>
         </Grid>

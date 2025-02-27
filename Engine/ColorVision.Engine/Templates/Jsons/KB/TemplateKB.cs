@@ -58,12 +58,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public void ImportFormPoi()
         {
-            if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.KBParam)
-            {
-                MessageBox.Show("启用此功能请先设置PoiPointParamType 为KBParam");
-                return;
-            }
-
             if (_TemplatePoiSelectedIndex > -1)
             {
                 PoiParam poiParam = PoiParams[_TemplatePoiSelectedIndex].Value;

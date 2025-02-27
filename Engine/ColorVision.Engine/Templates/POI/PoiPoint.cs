@@ -68,18 +68,6 @@ namespace ColorVision.Engine.Templates.POI
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
-
-            if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
-            {
-                try
-                {
-                    Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
-                }
-                catch
-                {
-                    Param = new PoiPointParam();
-                }
-            }
         }
 
         public PoiPoint()
