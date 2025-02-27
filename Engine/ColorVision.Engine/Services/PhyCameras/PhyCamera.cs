@@ -887,7 +887,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     log.Error(ex);
                     Msg = ex.Message;
-                    MessageBox.Show(Application.Current.GetActiveWindow(),ex.Message);
                     await Task.Delay(200);
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
