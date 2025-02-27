@@ -18,9 +18,9 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.Ghost
 {
-    public class ViewHandleGhost : IResultHandle
+    public class  ViewHandleGhost : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
 
         public static void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Templates.Ghost
             return field;
         }
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)

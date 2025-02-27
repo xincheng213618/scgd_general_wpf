@@ -53,15 +53,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private NetFileUtil netFileUtil;
 
         public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
-        public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
+        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandle  algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase  algorithmResultRender)
                     {
                         ResultHandles.Add(algorithmResultRender);
                     }
@@ -669,6 +669,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(AlgorithmResult result,string selectedPath)
         {
+
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(ViewResults[listView1.SelectedIndex].ResultType));
+            if (ResultHandle != null)
+            {
+                ResultHandle.SideSave(result,selectedPath);
+                return;
+            }
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
             {

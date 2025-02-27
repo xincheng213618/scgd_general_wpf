@@ -14,12 +14,12 @@ using System.Globalization;
 
 namespace ColorVision.Engine.Templates.MTF
 {
-    public class ViewHandleMTF : IResultHandle
+    public class ViewHandleMTF : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.MTF};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.MTF};
 
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)

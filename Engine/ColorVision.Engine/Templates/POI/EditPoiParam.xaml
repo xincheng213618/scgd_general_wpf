@@ -371,7 +371,6 @@
                                             </DockPanel>
                                         </StackPanel>
                                         <StackPanel  HorizontalAlignment="Right">
-                                            <Button Content="从基准点导入" Margin="3" Height="25" Click="PoiConfigImport_Click"/>
                                             <Button x:Name="ButtonImportMarin" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
                                             <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">

@@ -1494,18 +1494,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             SavePoiParam();
         }
-        private void PoiConfigImport_Click(object sender, RoutedEventArgs e)
-        {
-            PoiParam.PoiConfig.Polygon1X = PoiParam.PoiConfig.X1X;
-            PoiParam.PoiConfig.Polygon1Y = PoiParam.PoiConfig.X1Y;
-            PoiParam.PoiConfig.Polygon2X = PoiParam.PoiConfig.X2X;
-            PoiParam.PoiConfig.Polygon2Y = PoiParam.PoiConfig.X2Y;
-            PoiParam.PoiConfig.Polygon3X = PoiParam.PoiConfig.X3X;
-            PoiParam.PoiConfig.Polygon3Y = PoiParam.PoiConfig.X3Y;
-            PoiParam.PoiConfig.Polygon4X = PoiParam.PoiConfig.X4X;
-            PoiParam.PoiConfig.Polygon4Y = PoiParam.PoiConfig.X4Y;
-        }
-
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
         {
             SettingPopup.IsOpen = true;
@@ -1625,22 +1613,22 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     startU = bitmapImage.PixelHeight * startU / 100;
                     startD = bitmapImage.PixelHeight * startD / 100;
-
                     startL = bitmapImage.PixelWidth * startL / 100;
                     startR = bitmapImage.PixelWidth * startR / 100;
                 }
-                PoiParam.PoiConfig.Polygon1X = (int)startL;
-                PoiParam.PoiConfig.Polygon1Y = (int)startU;
-                PoiParam.PoiConfig.Polygon2X = bitmapImage.PixelWidth - (int)startR;
-                PoiParam.PoiConfig.Polygon2Y = (int)startU;
-                PoiParam.PoiConfig.Polygon3X = bitmapImage.PixelWidth - (int)startR;
-                PoiParam.PoiConfig.Polygon3Y = bitmapImage.PixelHeight - (int)startD;
-                PoiParam.PoiConfig.Polygon4X = (int)startR;
-                PoiParam.PoiConfig.Polygon4Y = bitmapImage.PixelHeight - (int)startD;
-                
+
+                PoiParam.PoiConfig.Polygon1X += (int)startL;
+                PoiParam.PoiConfig.Polygon1Y += (int)startU;
+                PoiParam.PoiConfig.Polygon2X -= (int)startR;
+                PoiParam.PoiConfig.Polygon2Y += (int)startU;
+                PoiParam.PoiConfig.Polygon3X -= (int)startR;
+                PoiParam.PoiConfig.Polygon3Y -= (int)startD;
+                PoiParam.PoiConfig.Polygon4X += (int)startL;
+                PoiParam.PoiConfig.Polygon4Y -= (int)startD;
+
             }
             ImportMarinPopup.IsOpen =  false;
-
+            RenderPoiConfig();
         }
 
         private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;

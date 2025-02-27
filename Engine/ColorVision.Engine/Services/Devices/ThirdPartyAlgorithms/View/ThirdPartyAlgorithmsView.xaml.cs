@@ -48,16 +48,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         private NetFileUtil netFileUtil;
 
         public static ViewThirdPartyAlgorithmsConfig Config => ViewThirdPartyAlgorithmsConfig.Instance;
-        public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
+        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandle  algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase  algorithmResultRender)
                     {
                         ResultHandles.Add(algorithmResultRender);
                     }

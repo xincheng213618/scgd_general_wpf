@@ -9,14 +9,14 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
-    public class ViewHandleComplianceJND : IResultHandle
+    public class ViewHandleComplianceJND : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>()
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>()
         {
             AlgorithmResultType.Compliance_Math_JND,
         };
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)

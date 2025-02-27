@@ -10,12 +10,12 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.FOV
 {
-    public class ViewHandleFOV : IResultHandle
+    public class ViewHandleFOV : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
 
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)
