@@ -1320,6 +1320,42 @@ namespace ColorVision.ImageEditor
                 });
             });
         }
+        private void RemoveMoire_Click(object sender, RoutedEventArgs e)
+        {
+            RemoveMoire();
+        }
+
+        private void RemoveMoire()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                if (HImageCache == null) return;
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+                log.Info($"RemoveMoire");
+                Task.Run(() =>
+                {
+                    int ret = OpenCVMediaHelper.M_RemoveMoire((HImage)HImageCache, out HImage hImageProcessed);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (ret == 0)
+                        {
+                            if (!HImageExtension.UpdateWriteableBitmap(FunctionImage, hImageProcessed))
+                            {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+                                FunctionImage = image;
+                            }
+                            ImageShow.Source = FunctionImage;
+                            stopwatch.Stop();
+                            log.Info($"InvertImag {stopwatch.Elapsed}");
+                        }
+                    });
+                });
+            });
+        }
+
 
         private void Threshold_Click(object sender, RoutedEventArgs e)
         {
