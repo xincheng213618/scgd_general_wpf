@@ -88,33 +88,33 @@ namespace ColorVision.Engine.Templates.POI
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (PoiParam.PoiConfig.IsUserDraw)
+            if (PoiConfig.IsUserDraw)
             {
-                if (PoiParam.PoiConfig.IsAreaPolygon && ImageEditViewMode.DrawPolygon && DrawingPolygonCache != null) 
+                if (PoiConfig.IsAreaPolygon && ImageEditViewMode.DrawPolygon && DrawingPolygonCache != null) 
                 { 
                     ImageShow.RemoveVisual(DrawingPolygonCache);
-                    PoiParam.PoiConfig.Polygons.Clear();
+                    PoiConfig.Polygons.Clear();
                     foreach (var item in DrawingPolygonCache.Attribute.Points)
                     {
-                        PoiParam.PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
+                        PoiConfig.Polygons.Add(new PolygonPoint(item.X, item.Y));
                     }
                     DrawingPolygonCache = null;
                     RenderPoiConfig();
                 }
 
-                if (PoiParam.PoiConfig.IsAreaMask && ImageEditViewMode.DrawPolygon)
+                if (PoiConfig.IsAreaMask && ImageEditViewMode.DrawPolygon)
                 {
                     ImageShow.RemoveVisual(DrawingPolygonCache);
                     if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count == 4)
                     {
-                        PoiParam.PoiConfig.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
-                        PoiParam.PoiConfig.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
-                        PoiParam.PoiConfig.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
-                        PoiParam.PoiConfig.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
-                        PoiParam.PoiConfig.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
-                        PoiParam.PoiConfig.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
-                        PoiParam.PoiConfig.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
-                        PoiParam.PoiConfig.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
+                        PoiConfig.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
+                        PoiConfig.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
+                        PoiConfig.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
+                        PoiConfig.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
+                        PoiConfig.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
+                        PoiConfig.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
+                        PoiConfig.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
+                        PoiConfig.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
 
                         RenderPoiConfig();
                     }
@@ -178,17 +178,17 @@ namespace ColorVision.Engine.Templates.POI
                 IsMouseDown = true;
                 drawCanvas.CaptureMouse();
 
-                Brush brush = PoiParam.PoiConfig.IsUserDraw ? Brushes.Blue : Brushes.Red;
+                Brush brush = PoiConfig.IsUserDraw ? Brushes.Blue : Brushes.Red;
 
-                if (PoiParam.PoiConfig.IsUserDraw)
+                if (PoiConfig.IsUserDraw)
                 {
-                    if (PoiParam.PoiConfig.IsAreaCircle)
+                    if (PoiConfig.IsAreaCircle)
                         ImageEditViewMode.DrawCircle = true;
-                    if (PoiParam.PoiConfig.IsAreaRect)
+                    if (PoiConfig.IsAreaRect)
                         ImageEditViewMode.DrawRect = true;
-                    if (PoiParam.PoiConfig.IsAreaPolygon)
+                    if (PoiConfig.IsAreaPolygon)
                         ImageEditViewMode.DrawPolygon = true;
-                    if (PoiParam.PoiConfig.IsAreaMask)
+                    if (PoiConfig.IsAreaMask)
                         ImageEditViewMode.DrawPolygon = true;
                 }
 
@@ -408,22 +408,22 @@ namespace ColorVision.Engine.Templates.POI
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
 
-                    if (PoiParam.PoiConfig.IsUserDraw)
+                    if (PoiConfig.IsUserDraw)
                     {
-                        if (PoiParam.PoiConfig.IsAreaCircle && ImageEditViewMode.DrawCircle)
+                        if (PoiConfig.IsAreaCircle && ImageEditViewMode.DrawCircle)
                         {
-                            PoiParam.PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
-                            PoiParam.PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
-                            PoiParam.PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
+                            PoiConfig.CenterX = (int)DrawCircleCache.Attribute.Center.X;
+                            PoiConfig.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
+                            PoiConfig.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
                             drawCanvas.RemoveVisual(DrawCircleCache);
                         }
 
-                        if (PoiParam.PoiConfig.IsAreaRect && ImageEditViewMode.DrawRect)
+                        if (PoiConfig.IsAreaRect && ImageEditViewMode.DrawRect)
                         {
-                            PoiParam.PoiConfig.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
-                            PoiParam.PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
-                            PoiParam.PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
-                            PoiParam.PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
+                            PoiConfig.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width / 2 + DrawingRectangleCache.Attribute.Rect.X);
+                            PoiConfig.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
+                            PoiConfig.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
+                            PoiConfig.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
                             drawCanvas.RemoveVisual(DrawingRectangleCache);
                         }
                         RenderPoiConfig();

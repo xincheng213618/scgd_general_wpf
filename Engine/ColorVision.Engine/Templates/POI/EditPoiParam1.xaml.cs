@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.POI
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam1));
         private string TagName { get; set; } = "P_";
         public PoiParam PoiParam { get; set; }
-        public PoiConfig PoiConfig => PoiConfig;
+        public PoiConfig PoiConfig => PoiParam.PoiConfig;
 
         public EditPoiParam1(PoiParam poiParam) 
         {
