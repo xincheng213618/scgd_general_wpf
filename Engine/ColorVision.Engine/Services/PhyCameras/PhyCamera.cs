@@ -886,8 +886,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 catch(Exception ex)
                 {
                     log.Error(ex);
-                    Msg = "找不到配置文件";
-                    MessageBox.Show(ex.Message);
+                    Msg = ex.Message;
+                    MessageBox.Show(Application.Current.GetActiveWindow(),ex.Message);
                     await Task.Delay(200);
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
