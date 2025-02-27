@@ -45,8 +45,6 @@ namespace ColorVision.Engine.Templates.POI
     {
         public static EditPoiParam1Config Instance => ConfigService.Instance.GetRequiredService<EditPoiParam1Config>();
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        public PoiPointParamType PoiPointParamType { get => _PoiPointParamType; set { _PoiPointParamType = value; NotifyPropertyChanged(); } }
-        private PoiPointParamType _PoiPointParamType = PoiPointParamType.Empty;
     }
 
 
@@ -148,7 +146,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
-                        if (visual.BaseAttribute.Param ==null && EditPoiParam1Config.Instance.PoiPointParamType == PoiPointParamType.KBParam)
+                        if (visual.BaseAttribute.Param ==null)
                             visual.BaseAttribute.Param = new PoiPointParam();
 
                         DrawingVisualLists.Add(visual);
@@ -282,18 +280,15 @@ namespace ColorVision.Engine.Templates.POI
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
 
-            if (EditPoiParam1Config.Instance.PoiPointParamType == PoiPointParamType.KBParam)
-            {
-                AlgorithmKBLocal local = new AlgorithmKBLocal();
-                local.FilePath = PoiConfig.BackgroundFilePath;
-                local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a => a.Value == PoiParam));
+            AlgorithmKBLocal local = new AlgorithmKBLocal();
+            local.FilePath = PoiConfig.BackgroundFilePath;
+            local.TemplatePoiSelectedIndex = TemplatePoi.Params.IndexOf(TemplatePoi.Params.First(a => a.Value == PoiParam));
 
-                Border Margin = new Border() { Margin = new Thickness(0, 5, 0, 0), Style = (Style)FindResource("BorderModuleArea"), CornerRadius = new CornerRadius(5) };
-                StackPanel stackPanel = new StackPanel(){Margin = new Thickness(5)};
-                Margin.Child = stackPanel;
-                stackPanel.Children.Add(local.GetUserControl());
-                FunctionStackpanel.Children.Add(Margin);
-            }
+            Border Margin = new Border() { Margin = new Thickness(0, 5, 0, 0), Style = (Style)FindResource("BorderModuleArea"), CornerRadius = new CornerRadius(5) };
+            StackPanel stackPanel = new StackPanel() { Margin = new Thickness(5) };
+            Margin.Child = stackPanel;
+            stackPanel.Children.Add(local.GetUserControl());
+            FunctionStackpanel.Children.Add(Margin);
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -562,9 +557,8 @@ namespace ColorVision.Engine.Templates.POI
                             Circle.Attribute.Text = item.Name;
 
                             Circle.Attribute.Name = item.Id.ToString();
+                            Circle.Attribute.Param = item.Param;
 
-                            if (EditPoiParam1Config.Instance.PoiPointParamType != PoiPointParamType.Empty)
-                                Circle.Attribute.Param = item.Param;
 
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
@@ -579,9 +573,7 @@ namespace ColorVision.Engine.Templates.POI
                             Rectangle.Attribute.Id = No;
                             Rectangle.Attribute.Text = item.Name;
                             Rectangle.Attribute.Name = item.Id.ToString();
-
-                            if (EditPoiParam1Config.Instance.PoiPointParamType != PoiPointParamType.Empty)
-                                Rectangle.Attribute.Param = item.Param;
+                            Rectangle.Attribute.Param = item.Param;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             DBIndex.Add(Rectangle, item.Id);
@@ -1440,12 +1432,9 @@ namespace ColorVision.Engine.Templates.POI
                         PixHeight = circle.Radius * 2,
                         Name = circle.Text
                     };
-                    if (EditPoiParam1Config.Instance.PoiPointParamType != PoiPointParamType.Empty)
+                    if (circle.Param is PoiPointParam param)
                     {
-                        if (circle.Param is PoiPointParam param)
-                        {
-                            poiParamData.Param = param;
-                        }
+                        poiParamData.Param = param;
                     }
 
 
@@ -1464,12 +1453,9 @@ namespace ColorVision.Engine.Templates.POI
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
                     };
-                    if (EditPoiParam1Config.Instance.PoiPointParamType != PoiPointParamType.Empty)
+                    if (rectangle.Param is PoiPointParam param)
                     {
-                        if (rectangle.Param is PoiPointParam param)
-                        {
-                            poiParamData.Param = param;
-                        }
+                        poiParamData.Param = param;
                     }
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
