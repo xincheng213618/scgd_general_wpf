@@ -4,7 +4,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
@@ -331,25 +330,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         AddPOIPoint(DrawPoiPoint);
                         break;
-                    case AlgorithmResultType.OLED_JND_CalVas:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
-                                result.ViewResults.Add(new ViewRsultJND(item));
-                        }
-                        header = new() { "Name","位置", "大小", "形状", "h_jnd", "v_jnd" };
-                        bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
-
-                        foreach (var item in result.ViewResults)
-                        {
-                            if (item is PoiResultData poiResultData)
-                            {
-                                DrawPoiPoint.Add(poiResultData.Point);
-                            }
-                        }
-                        AddPOIPoint(DrawPoiPoint);
-                        break;
                     case AlgorithmResultType.Distortion:
                         if (result.ViewResults == null)
                         {
@@ -650,12 +630,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.POI_Y:
                         var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
                         PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
-                        break;
-                    case AlgorithmResultType.OLED_JND_CalVas:
-                        var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
-                        ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
-                        string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-                        ImageView.ImageViewModel.Save(saveng);
                         break;
                     default:
                         break;

@@ -106,6 +106,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             POIPointTypes.Circle or _ => "圆形 ",
         };
 
-        protected POIPoint POIPoint { get; set; }
+        public POIPoint POIPoint { get; set; }
     }
 }
