@@ -22,6 +22,31 @@ namespace ColorVision.Engine.Templates.Ghost
     {
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
 
+        public override void SideSave(AlgorithmResult result, string selectedPath)
+        {
+            var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
+            var csvBuilder = new StringBuilder();
+            List<string> headers = new List<string>();
+            headers.Add("id");
+            headers.Add("质心坐标");
+            headers.Add("光斑灰度");
+            headers.Add("鬼影灰度");
+            csvBuilder.AppendLine(string.Join(",", headers));
+
+            foreach (var item in ViewResults)
+            {
+                List<string> content = new List<string>();
+                content.Add(EscapeCsvField(item.Id.ToString()));
+                content.Add(EscapeCsvField(item.LEDCenters));
+                content.Add(EscapeCsvField(item.LEDBlobGray));
+                content.Add(EscapeCsvField(item.GhostAverageGray));
+                csvBuilder.AppendLine(string.Join(",", content));
+            }
+            csvBuilder.AppendLine();
+            csvBuilder.AppendLine();
+            File.AppendAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+        }
+
         public static void OpenGhostImage(ImageView ImageView,string? filePath, int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
             if (filePath == null)
@@ -55,29 +80,6 @@ namespace ColorVision.Engine.Templates.Ghost
             }
         }
 
-        public static void SaveCsv(IList<AlgResultGhostModel> algResultGhostModels,string FileName)
-        {
-            var csvBuilder = new StringBuilder();
-            List<string> headers = new List<string>();
-            headers.Add("id");
-            headers.Add("质心坐标");
-            headers.Add("光斑灰度");
-            headers.Add("鬼影灰度");
-            csvBuilder.AppendLine(string.Join(",", headers));
-
-            foreach (var item in algResultGhostModels)
-            {
-                List<string> content = new List<string>();
-                content.Add(EscapeCsvField(item.Id.ToString()));
-                content.Add(EscapeCsvField(item.LEDCenters));
-                content.Add(EscapeCsvField(item.LEDBlobGray));
-                content.Add(EscapeCsvField(item.GhostAverageGray));
-                csvBuilder.AppendLine(string.Join(",", content));
-            }
-            csvBuilder.AppendLine();
-            csvBuilder.AppendLine();
-            File.AppendAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
-        }
 
         private static string EscapeCsvField(string field)
         {

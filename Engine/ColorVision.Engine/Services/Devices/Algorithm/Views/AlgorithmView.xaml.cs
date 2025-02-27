@@ -4,10 +4,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
@@ -696,28 +694,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
                         string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
                         ImageView.ImageViewModel.Save(saveng);
-                        break;
-                    case AlgorithmResultType.FOV:
-                        break;
-                    case AlgorithmResultType.SFR:
-                        var ViewResultSFRs = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
-                        ViewResultSFR.SaveCsv(ViewResultSFRs, fileName);
-                        break;
-                    case AlgorithmResultType.MTF:
-                        var ViewResultMTFs = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
-                        ViewHandleMTF.SaveCsv(ViewResultMTFs, fileName);
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        var ViewResultGhosts = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
-                        ViewHandleGhost.SaveCsv(ViewResultGhosts, fileName);
-                        break;
-                    case AlgorithmResultType.LedCheck:
-                        break;
-                    case AlgorithmResultType.LightArea:
-                        break;
-                    case AlgorithmResultType.Distortion:
-                        break;
-                    case AlgorithmResultType.BuildPOI:
                         break;
                     default:
                         break;

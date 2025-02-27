@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Templates.SFR
 {
     public class ViewResultSFR : ViewModelBase, IViewResult
     {
+
         public static void SaveCsv(ObservableCollection<ViewResultSFR> ViewResultSFRs, string FileName)
         {
             var csvBuilder = new StringBuilder();

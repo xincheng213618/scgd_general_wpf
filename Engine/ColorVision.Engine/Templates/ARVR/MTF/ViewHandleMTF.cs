@@ -11,13 +11,39 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.Text;
 using System.Globalization;
+using ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.Templates.MTF
 {
     public class ViewHandleMTF : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.MTF};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.MTF };
 
+        public override void SideSave(AlgorithmResult result, string selectedPath)
+        {
+            var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
+
+            var csvBuilder = new StringBuilder();
+            List<string> properties = new() { "Name", "位置", "大小", "形状", "Articulation", };
+            // 写入列头
+            csvBuilder.AppendLine(string.Join(",", properties));
+            // 写入数据行
+            foreach (var item in ViewResults)
+            {
+                List<string> values = new()
+                {
+                    item.Point.Id.ToString()??string.Empty,
+                    item.Name,
+                    $"{item.Point.PixelX}|{item.Point.PixelY}" ,
+                    $"{item.Point.Width}|{item.Point.Height}",
+                    item.Shapes.ToString(),
+                    item.Articulation.ToString(),
+                };
+                csvBuilder.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+        }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
@@ -68,29 +94,6 @@ namespace ColorVision.Engine.Templates.MTF
                 view.listViewSide.ItemsSource = result.ViewResults;
             }
         }
-
-        public static void SaveCsv(ObservableCollection<ViewResultMTF> viewResultMTFs, string FileName)
-        {
-            var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Name", "位置", "大小", "形状", "Articulation", };
-            // 写入列头
-            csvBuilder.AppendLine(string.Join(",", properties));
-            // 写入数据行
-            foreach (var item in viewResultMTFs)
-            {
-                List<string> values = new()
-                {
-                    item.Point.Id?.ToString(CultureInfo.InvariantCulture),
-                    item.Name,
-                    $"{item.Point.PixelX}|{item.Point.PixelY}" ,
-                    $"{item.Point.Width}|{item.Point.Height}",
-                    item.Shapes.ToString(),
-                    item.Articulation.ToString(),
-                };
-                csvBuilder.AppendLine(string.Join(",", values));
-            }
-
-            File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
-        }
     }
+
 }
