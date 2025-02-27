@@ -6,8 +6,6 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DVDatumPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisualDatum
     {
-        public BaseProperties BaseAttribute => Attribute;
-
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public bool AutoAttributeChanged { get; set; } = true;

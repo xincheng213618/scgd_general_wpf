@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
     public class MenuDefalutDicAlg : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuITemplateAlgorithm);
-        public override int Order => 9999;
+        public override int Order => 999999;
         public override string Header => "编辑默认算法字典";
 
         [RequiresPermission(PermissionMode.Administrator)]
