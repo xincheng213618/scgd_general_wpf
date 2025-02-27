@@ -52,29 +52,6 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
-
-                    <GroupBox Header="配置信息" Margin="0,5">
-                        <StackPanel Margin="5">
-
-                            <DockPanel Margin="0,2">
-                                <TextBlock  Text="数据目录"  Width="120"/>
-                                <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock  Text="端口地址" Width="120"/>
-                                <TextBox  x:Name="TextBox_Endpoint" Text="{Binding FileServerCfg.Endpoint}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock  Text="端口范围" Width="120"/>
-                                <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="保存天数:" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
                 </StackPanel>
             </Border>
         </ScrollViewer>
