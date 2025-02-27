@@ -70,7 +70,6 @@ namespace ColorVision.Engine.Templates.POI
     public class PoiConfig : ViewModelBase
     {
         public RelayCommand SetPoiFileCommand { get; set; }
-        public RelayCommand ValidateCIECommand { get; set; }
         public RelayCommand OpenPoiCIEFileCommand { get; set; }
 
         public RelayCommand FindLuminousAreaEditCommand { get; set; }
