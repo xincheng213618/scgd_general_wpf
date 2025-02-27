@@ -277,7 +277,7 @@ namespace ColorVision.Engine.Services
                         deviceService.AddChild(groupResource);
                         GroupResources.Add(groupResource);
                     }
-                   else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                   else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 50)
                     {
                         CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
@@ -310,7 +310,7 @@ namespace ColorVision.Engine.Services
                     groupResource.AddChild(groupResource);
                     GroupResources.Add(groupResource);
                 }
-                else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
+                else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 50)
                 {
                     CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);

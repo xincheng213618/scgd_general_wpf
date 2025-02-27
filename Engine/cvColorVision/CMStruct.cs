@@ -85,7 +85,7 @@ namespace cvColorVision
         ColorShift = 12,
         LineArity  =13,
         ColorDiff,
-        Empty_Num = 13,
+        Empty_Num,
     };
 
     public enum TakeImageMode

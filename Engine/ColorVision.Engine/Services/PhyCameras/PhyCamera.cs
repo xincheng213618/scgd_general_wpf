@@ -616,10 +616,10 @@ namespace ColorVision.Engine.Services.PhyCameras
         public void UploadCalibration(object sender)
         {
             UploadList.Clear();
-            UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                UploadMsg uploadMsg = new(this);
+                UploadMsg uploadMsg = new UploadMsg(this);
                 uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
                 Task.Run(() => UploadData(uploadfilepath));
@@ -649,6 +649,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (!sss)
                 {
                     Msg = "解压失败";
+                    MessageBox.Show("解压失败");
                     await Task.Delay(100);
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     return;
@@ -722,13 +723,27 @@ namespace ColorVision.Engine.Services.PhyCameras
                                     case CalibrationType.ColorShift:
                                         FilePath = path + "\\Calibration\\" + "ColorShift\\" + calzzom.FileName;
                                         break;
+                                    case CalibrationType.ColorDiff:
+                                        FilePath = path + "\\Calibration\\" + "ColorDiff\\" + calzzom.FileName;
+                                        break;
+                                    case CalibrationType.LineArity:
+                                        FilePath = path + "\\Calibration\\" + "LineArity\\" + calzzom.FileName;
+                                        break;
                                     case CalibrationType.Empty_Num:
                                         break;
                                     default:
                                         break;
                                 }
+
                                 FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == calzzom.Title);
                                 uploadMeta.FilePath = FilePath;
+                                if (!File.Exists(FilePath))
+                                {
+                                    uploadMeta.UploadStatus = UploadStatus.Failed;
+                                    Msg = "找不到校正文件：" + calzzom.Title;
+                                    continue;
+
+                                }
                                 uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
                                 uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
                                 await Task.Delay(1);
@@ -788,7 +803,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 {
                                     uploadMeta.UploadStatus = UploadStatus.Failed;
                                 }
-
                             }
                         }
 
@@ -858,14 +872,22 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                     }
                     Msg = "上传结束";
-                    await Task.Delay(500);
-                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
+                    {
+                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
+                    }
+                    else
+                    {
+                        await Task.Delay(500);
+                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
+                        Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    }
                 }
                 catch(Exception ex)
                 {
                     log.Error(ex);
                     Msg = "找不到配置文件";
+                    MessageBox.Show(ex.Message);
                     await Task.Delay(200);
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));

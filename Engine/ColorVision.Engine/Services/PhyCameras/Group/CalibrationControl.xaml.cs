@@ -14,6 +14,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public bool DSNUIsSelected { get; set; }
         public bool DistortionIsSelected { get; set; }
         public bool ColorShiftIsSelected { get; set; }
+        public bool ColorDiffIsSelected { get; set; }
+        public bool LineArityIsSelected { get; set; }
+
         public bool UniformityIsSelected { get; set; }
         public bool LumFourColorIsSelected { get; set; }
         public bool LumOneColorIsSelected { get; set; }
@@ -74,6 +77,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             TempCache.DistortionIsSelected = calibrationParam.Normal.Distortion.IsSelected;
             TempCache.ColorShiftIsSelected = calibrationParam.Normal.ColorShift.IsSelected;
             TempCache.UniformityIsSelected = calibrationParam.Normal.Uniformity.IsSelected;
+            TempCache.ColorDiffIsSelected = calibrationParam.Normal.ColorDiff.IsSelected;
+            TempCache.LineArityIsSelected = calibrationParam.Normal.LineArity.IsSelected;
+
+            TempCache.UniformityIsSelected = calibrationParam.Normal.Uniformity.IsSelected;
             TempCache.LuminanceIsSelected = calibrationParam.Color.Luminance.IsSelected;
             TempCache.LumFourColorIsSelected = calibrationParam.Color.LumFourColor.IsSelected;
             TempCache.LumMultiColorIsSelected = calibrationParam.Color.LumMultiColor.IsSelected;
@@ -120,6 +127,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 CalibrationParam.Normal.Distortion.FilePath = string.Empty;
                 CalibrationParam.Normal.ColorShift.FilePath = string.Empty;
                 CalibrationParam.Normal.Uniformity.FilePath = string.Empty;
+                CalibrationParam.Normal.ColorDiff.FilePath = string.Empty;
+                CalibrationParam.Normal.LineArity.FilePath = string.Empty;
 
                 CalibrationParam.Color.Luminance.FilePath = string.Empty;
                 CalibrationParam.Color.LumFourColor.FilePath = string.Empty;
@@ -136,6 +145,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         CalibrationParam.Normal.Distortion.IsSelected = TempCache.DistortionIsSelected;
                         CalibrationParam.Normal.ColorShift.IsSelected = TempCache.ColorShiftIsSelected;
                         CalibrationParam.Normal.Uniformity.IsSelected = TempCache.UniformityIsSelected;
+                        CalibrationParam.Normal.ColorDiff.IsSelected = TempCache.ColorDiffIsSelected;
+                        CalibrationParam.Normal.LineArity.IsSelected = TempCache.LineArityIsSelected;
+
 
                         CalibrationParam.Color.Luminance.IsSelected = TempCache.LuminanceIsSelected;
                         CalibrationParam.Color.LumFourColor.IsSelected = TempCache.LumFourColorIsSelected;
@@ -150,6 +162,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         CalibrationParam.Normal.Distortion.IsSelected = false;
                         CalibrationParam.Normal.ColorShift.IsSelected = false;
                         CalibrationParam.Normal.Uniformity.IsSelected = false;
+                        CalibrationParam.Normal.ColorShift.IsSelected = false;
+                        CalibrationParam.Normal.LineArity.IsSelected = false;
+
 
                         CalibrationParam.Color.Luminance.IsSelected = false;
                         CalibrationParam.Color.LumFourColor.IsSelected = false;
@@ -179,6 +194,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     CalibrationParam.Color.LumMultiColor.Id = groupResource.LumMultiColor?.Id ?? 0;
                     CalibrationParam.Color.LumOneColor.FilePath = groupResource.LumOneColor?.Name ?? string.Empty;
                     CalibrationParam.Color.LumOneColor.Id = groupResource.LumOneColor?.Id ?? 0;
+
+                    CalibrationParam.Normal.ColorDiff.Id = groupResource.ColorDiff?.Id ?? 0;
+                    CalibrationParam.Normal.ColorDiff.FilePath = groupResource.ColorDiff?.Name ?? string.Empty;
+
+                    CalibrationParam.Normal.LineArity.Id = groupResource.LineArity?.Id ?? 0;
+                    CalibrationParam.Normal.LineArity.FilePath = groupResource.LineArity?.Name ?? string.Empty;
                 }
 
             }
