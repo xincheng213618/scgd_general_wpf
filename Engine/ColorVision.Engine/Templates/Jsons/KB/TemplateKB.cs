@@ -25,20 +25,32 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public RelayCommand ImportFormPoiCommand { get; set; }
         public RelayCommand OpenTemplatePoiCommand { get; set; }
         public RelayCommand EditTemplatePoiCommand { get; set; }
+        public RelayCommand EditCommand { get; set; }
 
+        public KBJson  KBJson { get => JsonConvert.DeserializeObject<KBJson>(JsonValue); set { JsonValue = JsonConvert.SerializeObject(value); NotifyPropertyChanged(); } }
 
         public TemplateJsonKBParam() : base()
         {
             ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
             EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
+            EditCommand = new RelayCommand(a => Edit());
         }
+
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
             ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
             EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
+            EditCommand = new RelayCommand(a => Edit());
+        }
+
+        public void Edit()
+        {
+            var EditWindow = new EditPoiParam(KBJson.poiParam) { Owner = Application.Current.GetActiveWindow() };
+            EditWindow.ShowDialog();
+            JsonValue = JsonConvert.SerializeObject(KBJson);
         }
 
         public static ObservableCollection<TemplateModel<PoiParam>> PoiParams => TemplatePoi.Params;

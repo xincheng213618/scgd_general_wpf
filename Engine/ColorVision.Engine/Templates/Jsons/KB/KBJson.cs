@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.POI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -109,5 +110,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         [JsonProperty("saveProcessData")]
         public bool SaveProcessData { get => _SaveProcessData; set { _SaveProcessData = value; NotifyPropertyChanged(); } }
         private bool _SaveProcessData;
+
+        public PoiParam poiParam { get => _PoiParam; set { _PoiParam = value; NotifyPropertyChanged(); } }
+        private PoiParam _PoiParam = new PoiParam();
     }
 }
