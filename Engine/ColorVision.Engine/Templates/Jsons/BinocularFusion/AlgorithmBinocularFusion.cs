@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 
             MsgSend msg = new()
             {
-                EventName = MQTTMessageLib.Algorithm.MQTTAlgorithmEventEnum.Event_OLED_FindDotsArrayMem_GetData,
+                EventName = "ARVR.BinocularFusion",
                 SerialNumber = sn,
                 Params = Params
             };
