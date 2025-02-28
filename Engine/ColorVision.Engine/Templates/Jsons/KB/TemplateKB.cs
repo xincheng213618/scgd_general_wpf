@@ -39,10 +39,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public void Edit()
         {
-            KBJson kBJson = KBJson;
-            var EditWindow = new EditPoiParam1(kBJson) { Owner = Application.Current.GetActiveWindow() };
+            var EditWindow = new EditPoiParam1(KBJson) { Owner = Application.Current.GetActiveWindow() };
+            EditWindow.Closed += (s, e) =>
+            {
+                JsonValue = JsonConvert.SerializeObject(EditWindow.KBJson);
+            };
             EditWindow.ShowDialog();
-            JsonValue = JsonConvert.SerializeObject(kBJson);
+            TemplateJsonDao.Instance.Save(TemplateJsonModel);
         }
     }
 

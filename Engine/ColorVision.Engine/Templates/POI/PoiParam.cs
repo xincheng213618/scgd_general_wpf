@@ -55,16 +55,6 @@ namespace ColorVision.Engine.Templates.POI
             Width = dbModel.Width ?? 0;
             Height = dbModel.Height ?? 0;
             Type = dbModel.Type ?? 0;
-            PoiConfig.X1X = dbModel.LeftTopX ?? 0;
-            PoiConfig.X1Y = dbModel.LeftTopY ?? 0;
-            PoiConfig.X2X = dbModel.RightTopX ?? 0;
-            PoiConfig.X2Y = dbModel.RightTopY ?? 0;
-            PoiConfig.X3X = dbModel.RightBottomX ?? 0;
-            PoiConfig.X3Y = dbModel.RightBottomY ?? 0;
-            PoiConfig.X4X = dbModel.LeftBottomX ?? 0;
-            PoiConfig.X4Y = dbModel.LeftBottomY ?? 0;
-            PoiConfig.CenterX = (PoiConfig.X2X - PoiConfig.X1X) / 2;
-            PoiConfig.CenterY = (PoiConfig.X4Y - PoiConfig.X1Y) / 2;
             CfgJson = dbModel.CfgJson ?? string.Empty;
             PoiConfig.IsPoiCIEFile = dbModel.IsDynamics ??false;
         }

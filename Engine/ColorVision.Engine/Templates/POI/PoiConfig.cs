@@ -80,13 +80,20 @@ namespace ColorVision.Engine.Templates.POI
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
             FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
-        public double DefalutWidth { get => _DefalutWidth; set { _DefalutWidth = value; NotifyPropertyChanged(); } } 
+
+        public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; NotifyPropertyChanged(); } }
+        private bool _LockDeafult;
+
+        public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; NotifyPropertyChanged(); } } 
         private double _DefalutWidth = 30;
 
-        public double DefalutHeight { get => _DefalutHeight; set { _DefalutHeight = value; NotifyPropertyChanged(); } }
+        public double DefalutHeight { get => _DefalutHeight; set { if (LockDeafult) return; _DefalutHeight = value; NotifyPropertyChanged(); } }
         private double _DefalutHeight = 30;
-        public double DefalutRadius { get => _DefalutRadius; set { _DefalutRadius = value; NotifyPropertyChanged(); } }
+        public double DefalutRadius { get => _DefalutRadius; set { if (LockDeafult) return; _DefalutRadius = value; NotifyPropertyChanged(); } }
         private double _DefalutRadius = 30;
+
+
+
 
         [JsonIgnore]
         public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
@@ -117,32 +124,8 @@ namespace ColorVision.Engine.Templates.POI
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
         private bool _IsLayoutUpdated = true;
 
-        public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
-        public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
 
-        public int X1X { get => _X1X; set { _X1X = value; NotifyPropertyChanged(); } }
-        private int _X1X = 100;
-        public int X1Y { get => _X1Y; set { _X1Y = value; NotifyPropertyChanged(); } }
-        private int _X1Y = 100;
-
-        public int X2X { get => _X2X; set { _X2X = value; NotifyPropertyChanged(); } }
-        private int _X2X = 300;
-
-        public int X2Y { get => _X2Y; set { _X2Y = value; NotifyPropertyChanged(); } }
-        private int _X2Y = 100;
-
-        public int X3X { get => _X3X; set { _X3X = value; NotifyPropertyChanged(); } }
-        private int _X3X = 300;
-
-        public int X3Y { get => _X3Y; set { _X3Y = value; NotifyPropertyChanged(); } }
-        private int _X3Y = 300;
-
-        public int X4X { get => _X4X; set { _X4X = value; NotifyPropertyChanged(); } }
-        private int _X4X = 100;
-
-        public int X4Y { get => _X4Y; set { _X4Y = value; NotifyPropertyChanged(); } }
-        private int _X4Y = 300;
 
         [JsonIgnore]
         public int CenterX { get => (int)Center.X; set { Center = new Point(value, Center.Y); NotifyPropertyChanged(); } }

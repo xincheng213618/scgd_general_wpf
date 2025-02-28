@@ -108,8 +108,6 @@ namespace ColorVision.Engine.Templates.POI
                 e[1].BaseAttribute.Name = old.ToString();
             };
 
-            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType.SelectedIndex = 0;
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -509,7 +507,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.Invoke(() => PoiConfig.IsShowPoiConfig = true);
             RenderPoiConfig();
-            DatumSet();
         }
 
         private Dictionary<IDrawingVisual, int> DBIndex = new Dictionary<IDrawingVisual, int>();
@@ -536,7 +533,7 @@ namespace ColorVision.Engine.Templates.POI
                     Rectangle.IsShowText = PoiConfig.IsShowText;
                     Rectangle.Attribute.Rect = new System.Windows.Rect(item.X , item.Y, item.Width, item.Height);
                     Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.Width / 30);
+                    Rectangle.Attribute.Pen = new Pen(Brushes.Red,  (double)item.Width / 30);
                     Rectangle.Attribute.Id = No;
                     Rectangle.Attribute.Text = item.Name;
                     Rectangle.Attribute.Name = No.ToString();
@@ -568,81 +565,6 @@ namespace ColorVision.Engine.Templates.POI
 
             }
         }
-
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-            if (RadioButtonBuildMode2.IsChecked == true)
-            {
-                if (ImageShow.Source is BitmapSource bitmapImage)
-                {
-                    if (!double.TryParse(TextBoxUp.Text, out double startU))
-                        startU = 0;
-
-                    if (!double.TryParse(TextBoxDown.Text, out double startD))
-                        startD = 0;
-
-                    if (!double.TryParse(TextBoxLeft.Text, out double startL))
-                        startL = 0;
-                    if (!double.TryParse(TextBoxRight.Text, out double startR))
-                        startR = 0;
-
-                    if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
-                    {
-                        startU = bitmapImage.PixelHeight * startU / 100;
-                        startD = bitmapImage.PixelHeight * startD / 100;
-
-                        startL = bitmapImage.PixelWidth * startL / 100;
-                        startR = bitmapImage.PixelWidth * startR / 100;
-                    }
-
-                    PoiConfig.X1X = (int)startL;
-                    PoiConfig.X1Y = (int)startU;
-                    PoiConfig.X2X = bitmapImage.PixelWidth - (int)startR;
-                    PoiConfig.X2Y = (int)startU;
-                    PoiConfig.X3X = bitmapImage.PixelWidth - (int)startR;
-                    PoiConfig.X3Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiConfig.X4X = (int)startR;
-                    PoiConfig.X4Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiConfig.CenterX = (int)bitmapImage.PixelWidth / 2;
-                    PoiConfig.CenterY = bitmapImage.PixelHeight / 2;
-                }
-            }
-            DatumSet();
-        }
-
-        private void DatumSet()
-        {
-            foreach (var item in DefaultPoint)
-            {
-                ImageShow.RemoveVisual(item);
-            }
-            DefaultPoint.Clear();
-            if (PoiConfig.IsShowDatum)
-            {
-                List<Point> Points = new()
-                {
-                    new Point(PoiConfig.X1X, PoiConfig.X1Y),
-                    new Point(PoiConfig.X2X, PoiConfig.X2Y),
-                    new Point(PoiConfig.X3X, PoiConfig.X3Y),
-                    new Point(PoiConfig.X4X, PoiConfig.X4Y),
-                    new Point(PoiConfig.CenterX, PoiConfig.CenterY),
-                };
-
-                for (int i = 0; i < Points.Count; i++)
-                {
-                    DVDatumCircle drawingVisual = new();
-                    drawingVisual.Attribute.Center = Points[i];
-                    drawingVisual.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
-                    drawingVisual.Attribute.Brush = Brushes.Blue;
-                    drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
-                    drawingVisual.Attribute.Id = i + 1;
-                    drawingVisual.Render();
-                    DefaultPoint.Add(drawingVisual);
-                    ImageShow.AddVisual(drawingVisual);
-                }
-            }
-        }
-
 
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
@@ -1242,36 +1164,37 @@ namespace ColorVision.Engine.Templates.POI
                     kBKeyRect.DoHalo = TemplateJsonKBParamCoveretConfig.Instance.DoHalo;
                     kBKeyRect.DoKeyY = TemplateJsonKBParamCoveretConfig.Instance.DoKey;
                     KBHalo kBHalo = new KBHalo();
-                    if (rectangle.Param is PoiPointParam param)
+                    if (rectangle.Param is not PoiPointParam param)
                     {
-                        kBHalo.HaloScale = param.HaloScale;
-                        kBHalo.OffsetX = param.HaloOffsetX;
-                        kBHalo.OffsetY = param.HaloOffsetY;
-                        kBHalo.HaloSize = param.HaloSize;
-                        kBHalo.ThresholdV = param.HaloThreadV;
-                        kBHalo.Move = param.HaloOutMOVE;
-                        kBKeyRect.KBHalo = kBHalo;
-
-
-                        KBKey kBKey = new KBKey();
-                        kBKey.KeyScale = param.KeyScale;
-                        kBKey.OffsetX = param.KeyOffsetX;
-                        kBKey.OffsetY = param.KeyOffsetY;
-                        kBKey.ThresholdV = param.KeyThreadV;
-                        kBKey.Move = param.KeyOutMOVE;
-                        kBKey.Area = param.Area;
-                        kBKeyRect.KBKey = kBKey;
-
-                        kBKeyRect.Height = (int)rectangle.Rect.Height;
-                        kBKeyRect.Width = (int)rectangle.Rect.Width;
-                        kBKeyRect.X = (int)rectangle.Rect.X;
-                        kBKeyRect.Y = (int)rectangle.Rect.Y;
-                        kBKeyRect.Name = rectangle.Text;
-
-                        kBKeyRect.DoKeyY = true;
-                        KBJson.KBKeyRects.Add(kBKeyRect);
+                        param = new PoiPointParam();
                     }
 
+                    kBHalo.HaloScale = param.HaloScale;
+                    kBHalo.OffsetX = param.HaloOffsetX;
+                    kBHalo.OffsetY = param.HaloOffsetY;
+                    kBHalo.HaloSize = param.HaloSize;
+                    kBHalo.ThresholdV = param.HaloThreadV;
+                    kBHalo.Move = param.HaloOutMOVE;
+                    kBKeyRect.KBHalo = kBHalo;
+
+
+                    KBKey kBKey = new KBKey();
+                    kBKey.KeyScale = param.KeyScale;
+                    kBKey.OffsetX = param.KeyOffsetX;
+                    kBKey.OffsetY = param.KeyOffsetY;
+                    kBKey.ThresholdV = param.KeyThreadV;
+                    kBKey.Move = param.KeyOutMOVE;
+                    kBKey.Area = param.Area;
+                    kBKeyRect.KBKey = kBKey;
+
+                    kBKeyRect.Height = (int)rectangle.Rect.Height;
+                    kBKeyRect.Width = (int)rectangle.Rect.Width;
+                    kBKeyRect.X = (int)rectangle.Rect.X;
+                    kBKeyRect.Y = (int)rectangle.Rect.Y;
+                    kBKeyRect.Name = rectangle.Text;
+
+                    kBKeyRect.DoKeyY = true;
+                    KBJson.KBKeyRects.Add(kBKeyRect);
                 }
             }
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
@@ -1599,6 +1522,11 @@ namespace ColorVision.Engine.Templates.POI
                     });
                 };
             }));
+
+        }
+
+        private void SetDefault_Click(object sender, RoutedEventArgs e)
+        {
 
         }
     }
