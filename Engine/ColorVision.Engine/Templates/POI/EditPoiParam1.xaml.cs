@@ -6,6 +6,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.KB;
 using ColorVision.Engine.Templates.POI.BuildPoi;
@@ -22,6 +23,7 @@ using ColorVision.Util.Draw.Rectangle;
 using log4net;
 using Microsoft.Win32;
 using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
@@ -31,6 +33,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -57,9 +60,12 @@ namespace ColorVision.Engine.Templates.POI
         public KBJson KBJson { get; set; }
         public PoiConfig PoiConfig => KBJson.PoiConfig;
 
-        public EditPoiParam1(KBJson poiParam) 
+        public TemplateJsonKBParam TemplateJsonKBParam { get; set; }
+
+        public EditPoiParam1(TemplateJsonKBParam poiParam) 
         {
-            KBJson = poiParam;
+            TemplateJsonKBParam = poiParam;
+            KBJson = TemplateJsonKBParam.KBJson;
             InitializeComponent();
             this.ApplyCaption();
             Task.Run(() => DelayClose());
@@ -1197,6 +1203,9 @@ namespace ColorVision.Engine.Templates.POI
                     KBJson.KBKeyRects.Add(kBKeyRect);
                 }
             }
+            TemplateJsonKBParam.JsonValue = JsonConvert.SerializeObject(KBJson);
+            TemplateJsonDao.Instance.Save(TemplateJsonKBParam.TemplateJsonModel);
+
             MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
         }
 

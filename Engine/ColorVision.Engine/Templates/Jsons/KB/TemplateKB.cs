@@ -29,24 +29,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateJsonKBParam() : base()
         {
-            EditCommand = new RelayCommand(a => Edit());
         }
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
-            EditCommand = new RelayCommand(a => Edit());
         }
 
-        public void Edit()
-        {
-            var EditWindow = new EditPoiParam1(KBJson) { Owner = Application.Current.GetActiveWindow() };
-            EditWindow.Closed += (s, e) =>
-            {
-                JsonValue = JsonConvert.SerializeObject(EditWindow.KBJson);
-            };
-            EditWindow.ShowDialog();
-            TemplateJsonDao.Instance.Save(TemplateJsonModel);
-        }
+
     }
 
 
@@ -60,7 +49,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             Title = "KB模板管理";
             Code = "KB";
             TemplateParams = Params;
-            IsUserControl = true;
+            IsSideHide = true;
+        }
+        public EditPoiParam1 EditWindow { get; set; }
+        public override void PreviewMouseDoubleClick(int index)
+        {
+            EditWindow = new EditPoiParam1(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            EditWindow.ShowDialog();
         }
 
         public override void SetUserControlDataContext(int index)
