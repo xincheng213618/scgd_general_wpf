@@ -5,7 +5,10 @@ using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.UI.Utilities;
+using System.Diagnostics;
+using System;
 using System.Windows;
+using System.IO;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
@@ -14,18 +17,41 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
     public class TemplateJsonParam : ParamModBase, IEditTemplateJson
     {
         public RelayCommand ResetCommand { get; set; }
+        public RelayCommand OpenEditToolCommand { get; set; }
+
 
         public ModThirdPartyAlgorithmsModel ModThirdPartyAlgorithmsModel { get; set; }
 
         public TemplateJsonParam() 
         {
             ResetCommand = new RelayCommand((a)=> ResetValue());
+            OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
         }
 
         public TemplateJsonParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
         {
             ModThirdPartyAlgorithmsModel = modThirdPartyAlgorithmsModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
+            OpenEditToolCommand = new RelayCommand(a=> OpenEditTool());
+        }
+
+        public void OpenEditTool()
+        {
+            Common.NativeMethods.Clipboard.SetText(JsonValue);
+            // 获取程序运行路径
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 相对文件路径
+            string relativePath = @"Assets/Tool/EditJson/Editjson.html";
+
+            // 合并路径并获取绝对路径
+            string absolutePath = Path.Combine(basePath, relativePath);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = absolutePath,
+                UseShellExecute = true // 使用默认应用程序打开
+            });
         }
 
         public void ResetValue()

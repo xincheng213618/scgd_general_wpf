@@ -2,7 +2,10 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
+using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons
@@ -19,16 +22,38 @@ namespace ColorVision.Engine.Templates.Jsons
         [Browsable(false)]
         public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.DicId);
 
+        public RelayCommand OpenEditToolCommand { get; set; }
+
         public TemplateJsonParam()
         {
             TemplateJsonModel = new TemplateJsonModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
+            OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
         }
 
         public TemplateJsonParam(TemplateJsonModel templateJsonModel)
         {
             TemplateJsonModel = templateJsonModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
+            OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
+        }
+        public void OpenEditTool()
+        {
+            Common.NativeMethods.Clipboard.SetText(JsonValue);
+            // 获取程序运行路径
+            string basePath = AppDomain.CurrentDomain.BaseDirectory;
+
+            // 相对文件路径
+            string relativePath = @"Assets/Tool/EditJson/Editjson.html";
+
+            // 合并路径并获取绝对路径
+            string absolutePath = Path.Combine(basePath, relativePath);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = absolutePath,
+                UseShellExecute = true // 使用默认应用程序打开
+            });
         }
 
         public void ResetValue()
