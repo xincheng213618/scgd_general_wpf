@@ -88,6 +88,14 @@ namespace ColorVision.Engine.Templates.POI
         public double DefalutRadius { get => _DefalutRadius; set { _DefalutRadius = value; NotifyPropertyChanged(); } }
         private double _DefalutRadius = 30;
 
+        [JsonIgnore]
+        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
+        [JsonIgnore]
+        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        [JsonIgnore]
+        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
+        public RiPointTypes DefaultPointType { set; get; }
+
         public FindLuminousArea FindLuminousArea { get; set; } = new FindLuminousArea();
 
         public string BackgroundFilePath { get => _BackgroundFilePath; set { _BackgroundFilePath = value; NotifyPropertyChanged(); } }

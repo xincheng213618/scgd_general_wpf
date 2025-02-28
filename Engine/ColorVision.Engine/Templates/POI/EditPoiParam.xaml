@@ -474,11 +474,11 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding IsPointCircle}" Content="圆形"/>
+                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="圆形"/>
                                 <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding IsPointRect}" Content="矩形"/>
                             </StackPanel>
 
-                            <StackPanel Margin="5" Visibility="{Binding IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
+                            <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="2"  HorizontalAlignment="Left">
                                     <TextBlock Text="半径:" Width="40"/>
                                     <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />

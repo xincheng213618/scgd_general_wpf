@@ -701,7 +701,7 @@ namespace ColorVision.Engine.Templates.POI
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
 
-                        switch (PoiParam.DefaultPointType)
+                        switch (PoiConfig.DefaultPointType)
                         {
                             case RiPointTypes.Circle:
 
@@ -799,7 +799,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition1)
                     {
-                        switch (PoiParam.DefaultPointType)
+                        switch (PoiConfig.DefaultPointType)
                         {
                             case RiPointTypes.Circle:
                                 switch (pOIPosition1)
@@ -887,7 +887,7 @@ namespace ColorVision.Engine.Templates.POI
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
 
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
                                     if (PoiConfig.IsPoiCIEFile)
@@ -1042,7 +1042,7 @@ namespace ColorVision.Engine.Templates.POI
 
                             Point point = new(x, y);
 
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
                                     if (PoiConfig.IsPoiCIEFile)
@@ -1160,7 +1160,7 @@ namespace ColorVision.Engine.Templates.POI
                         for (int j = 1; j < PoiConfig.Polygons[i].SplitNumber + 1; j++)
                         {
                             No++;
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
 
@@ -1198,7 +1198,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         if (PoiConfig.AreaPolygonUsNode)
                         {
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
 

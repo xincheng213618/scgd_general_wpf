@@ -110,13 +110,6 @@ namespace ColorVision.Engine.Templates.POI
 
         public PoiConfig PoiConfig { get; set; } = new PoiConfig();
 
-        [JsonIgnore]
-        public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public bool IsPointRect { get => DefaultPointType == RiPointTypes.Rect; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public bool IsPointMask { get => DefaultPointType == RiPointTypes.Mask; set { if (value) DefaultPointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
-        public RiPointTypes DefaultPointType { set; get; }
 
     }
 
