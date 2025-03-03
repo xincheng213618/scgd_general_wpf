@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0-windows;net6.0-windows</TargetFrameworks>
+		<TargetFrameworks>net8.0-windows</TargetFrameworks>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
@@ -77,7 +77,7 @@
 	<ItemGroup>
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="HelixToolkit.Core.Wpf" Version="2.26.0" />
-		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc5.4" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 	</ItemGroup>
 
 	<ItemGroup>
