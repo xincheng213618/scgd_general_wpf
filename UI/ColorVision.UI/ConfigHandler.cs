@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿#pragma warning disable CS8604
+using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;

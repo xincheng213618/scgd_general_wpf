@@ -111,7 +111,14 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public bool SaveProcessData { get => _SaveProcessData; set { _SaveProcessData = value; NotifyPropertyChanged(); } }
         private bool _SaveProcessData;
 
-        public PoiParam poiParam { get => _PoiParam; set { _PoiParam = value; NotifyPropertyChanged(); } }
-        private PoiParam _PoiParam = new PoiParam();
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width;
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height;
+
+        public PoiConfig PoiConfig { get => _PoiConfig; set { _PoiConfig = value; NotifyPropertyChanged(); } }
+        private PoiConfig _PoiConfig = new PoiConfig();
+
+
     }
 }

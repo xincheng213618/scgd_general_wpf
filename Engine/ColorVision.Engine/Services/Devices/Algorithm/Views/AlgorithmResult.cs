@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }
         public RelayCommand CopyToCommand { get; set; }
+        public RelayCommand OpenContainingFolderCommand { get; set; }
 
         public RelayCommand ExportToPoiCommand { get; set; }
 
@@ -39,9 +41,17 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
+            OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
+
             ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
+        }
+
+        public void OpenContainingFolder()
+        {
+            PlatformHelper.OpenFolderAndSelectFile(FilePath);
         }
 
 

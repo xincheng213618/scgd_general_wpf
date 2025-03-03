@@ -129,6 +129,7 @@
             </Border>
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
+                    <CheckBox Content="锁定" IsChecked="{Binding PoiConfig.LockDeafult}"/>
                     <StackPanel Margin="2"  Orientation="Horizontal" >
                         <TextBlock Text="默认半径:" Width="55"/>
                         <TextBox Text="{Binding PoiConfig.DefalutRadius}"  Width="55"  />
@@ -157,71 +158,6 @@
 
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="4" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="FunctionStackpanel" Margin="0" Grid.Row="0">
-                    <Border  Style="{StaticResource BorderModuleArea}" Visibility="{Binding PoiConfig.IsShowDatum,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,0,0,5" CornerRadius="5">
-                        <StackPanel x:Name="StackPanelPoiConfigPoints" Margin="5" >
-                            <DockPanel  Margin="2" HorizontalAlignment="Left">
-                                <TextBlock Text="X1"   MinWidth="40"/>
-                                <TextBox Text="{Binding PoiConfig.X1X}" Width="80" Margin="5,0" />
-                                <TextBox Text="{Binding PoiConfig.X1Y}" Width="80" Margin="5,0"   />
-                            </DockPanel>
-                            <DockPanel  Margin="2"  HorizontalAlignment="Left">
-                                <TextBlock Text="X2"  MinWidth="40"/>
-                                <TextBox  Text="{Binding PoiConfig.X2X}" Width="80" Margin="5,0"  />
-                                <TextBox   Text="{Binding PoiConfig.X2Y}" Width="80" Margin="5,0"  />
-                            </DockPanel>
-                            <DockPanel  Margin="2"  HorizontalAlignment="Left">
-                                <TextBlock  Text="X3"  MinWidth="40" />
-                                <TextBox  Text="{Binding PoiConfig.X3X}" Width="80" Margin="5,0"  />
-                                <TextBox   Text="{Binding PoiConfig.X3Y}" Width="80" Margin="5,0"  />
-                            </DockPanel>
-
-                            <DockPanel  Margin="2"  HorizontalAlignment="Left">
-                                <TextBlock Text="X4"   MinWidth="40"/>
-                                <TextBox  Text="{Binding PoiConfig.X4X}" Width="80" Margin="5,0"  />
-                                <TextBox   Text="{Binding PoiConfig.X4Y}" Width="80" Margin="5,0"  />
-                            </DockPanel>
-                            <DockPanel  Margin="2"  HorizontalAlignment="Left">
-                                <TextBlock Text="中心点"  MinWidth="40"/>
-                                <TextBox  Text="{Binding PoiConfig.CenterX}" Width="80" Margin="5,0"  />
-                                <TextBox  Text="{Binding PoiConfig.CenterY}" Width="80" Margin="5,0"  />
-                            </DockPanel>
-                            <StackPanel  Margin="0,5" Orientation="Horizontal" >
-                                <RadioButton x:Name="RadioButtonBuildMode1" Width="80" Content="手动添加"  IsChecked="True" />
-                                <RadioButton x:Name="RadioButtonBuildMode2" Width="80"  Content="边距计算"  />
-                                <RadioButton x:Name="RadioButtonBuildMode3" Width="80"  Content="自动计算"  />
-                            </StackPanel>
-                            <Button Content="设置基准点"  Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Visibility="{Binding ElementName=RadioButtonBuildMode1, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Click="SetDefault_Click"/>
-                            <StackPanel  Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode2, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                                <UniformGrid Columns="2" >
-                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="30"/>
-                                        <TextBox  x:Name="TextBoxUp" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="30"/>
-                                        <TextBox   x:Name="TextBoxLeft" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="30"/>
-                                        <TextBox  x:Name="TextBoxDown"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2" HorizontalAlignment="Left">
-                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="30"/>
-                                        <TextBox  x:Name="TextBoxRight"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
-                                    </DockPanel>
-                                </UniformGrid>
-                                <ComboBox x:Name="ComboBoxBorderType" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
-                                <Button Content="设置基准点" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="SetDefault_Click"/>
-                            </StackPanel>
-                            <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <DockPanel Margin="2" >
-                                    <TextBlock Text="阈值" Width="30"/>
-                                    <TextBox   Text="3" />
-                                </DockPanel>
-                                <Button Content="设置基准点" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="SetDefault_Click"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
 
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                         <StackPanel  Margin="5">
@@ -474,11 +410,11 @@
                             </StackPanel>
 
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding IsPointCircle}" Content="圆形"/>
+                                <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="圆形"/>
                                 <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding IsPointRect}" Content="矩形"/>
                             </StackPanel>
 
-                            <StackPanel Margin="5" Visibility="{Binding IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
+                            <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="2"  HorizontalAlignment="Left">
                                     <TextBlock Text="半径:" Width="40"/>
                                     <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />

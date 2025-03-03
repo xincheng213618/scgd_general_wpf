@@ -39,14 +39,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
             Type = poiParam.Type;
             Width = poiParam.Width;
             Height = poiParam.Height;
-            LeftTopX = poiParam.PoiConfig.X1X;
-            LeftTopY = poiParam.PoiConfig.X1Y;
-            RightTopX = poiParam.PoiConfig.X2X;
-            RightTopY = poiParam.PoiConfig.X2Y;
-            RightBottomX = poiParam.PoiConfig.X3X;
-            RightBottomY = poiParam.PoiConfig.X3Y;
-            LeftBottomX = poiParam.PoiConfig.X4X;
-            LeftBottomY = poiParam.PoiConfig.X4Y;
             IsDynamics = poiParam.PoiConfig.IsPoiCIEFile;
             CfgJson = poiParam.CfgJson;
             CreateDate = DateTime.Now;

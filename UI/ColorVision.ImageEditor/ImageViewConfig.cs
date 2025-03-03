@@ -37,7 +37,7 @@ namespace ColorVision.ImageEditor
             }
             return default;
         }
-        private string FormatValue(object? value)
+        private  static string FormatValue(object? value)
         {
             if (value is IEnumerable enumerable && value is not string)
             {
@@ -71,7 +71,7 @@ namespace ColorVision.ImageEditor
         private double _PoiCircleRadius = 1;
 
         public CVCIETYpe CVCIETYpe { get => _CVCIETYpe; set { _CVCIETYpe = value; NotifyPropertyChanged(); } }
-        public CVCIETYpe _CVCIETYpe;
+        private CVCIETYpe _CVCIETYpe;
 
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }

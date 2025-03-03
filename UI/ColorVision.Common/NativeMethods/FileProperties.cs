@@ -26,7 +26,7 @@ namespace ColorVision.Common.NativeMethods
             public IntPtr hInstApp;
             public IntPtr lpIDList;
             [MarshalAs(UnmanagedType.LPStr)]
-            public string lpClass;
+            public string? lpClass;
             public IntPtr hkeyClass;
             public uint dwHotKey;
             public IntPtr hIcon;

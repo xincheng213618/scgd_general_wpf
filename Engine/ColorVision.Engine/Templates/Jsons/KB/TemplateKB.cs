@@ -22,8 +22,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
     public class TemplateJsonKBParam : TemplateJsonParam
     {
         private static ILog log = LogManager.GetLogger(nameof(TemplateJsonKBParam));
-        public RelayCommand ImportFormPoiCommand { get; set; }
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
         public RelayCommand EditTemplatePoiCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
 
@@ -31,97 +29,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateJsonKBParam() : base()
         {
-            ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
-            EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
-            EditCommand = new RelayCommand(a => Edit());
         }
-
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
-            ImportFormPoiCommand = new RelayCommand(a => ImportFormPoi());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
-            EditTemplatePoiCommand = new RelayCommand(a => EditTemplatePoi());
-            EditCommand = new RelayCommand(a => Edit());
-        }
-
-        public void Edit()
-        {
-            var EditWindow = new EditPoiParam(KBJson.poiParam) { Owner = Application.Current.GetActiveWindow() };
-            EditWindow.ShowDialog();
-            JsonValue = JsonConvert.SerializeObject(KBJson);
-        }
-
-        public static ObservableCollection<TemplateModel<PoiParam>> PoiParams => TemplatePoi.Params;
-
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-        public void OpenTemplatePoi()
-        {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-
-        public void EditTemplatePoi()
-        {
-            new TemplatePoi().PreviewMouseDoubleClick(_TemplatePoiSelectedIndex);
-        }
-
-        public void ImportFormPoi()
-        {
-            if (_TemplatePoiSelectedIndex > -1)
-            {
-                PoiParam poiParam = PoiParams[_TemplatePoiSelectedIndex].Value;
-                poiParam.LoadPoiDetailFromDB();
-
-                KBJson kBJson = new KBJson();
-                foreach (var item in poiParam.PoiPoints)
-                {
-                    if (item.PointType == RiPointTypes.Rect)
-                    {
-                        KBKeyRect kBKeyRect = new KBKeyRect();
-                        kBKeyRect.DoHalo = TemplateJsonKBParamCoveretConfig.Instance.DoHalo;
-                        kBKeyRect.DoKeyY = TemplateJsonKBParamCoveretConfig.Instance.DoKey;
-                        KBHalo kBHalo = new KBHalo();
-                        kBHalo.HaloScale = item.Param.HaloScale;
-                        kBHalo.OffsetX = item.Param.HaloOffsetX;
-                        kBHalo.OffsetY = item.Param.HaloOffsetY;
-                        kBHalo.HaloSize = item.Param.HaloSize;
-                        kBHalo.ThresholdV = item.Param.HaloThreadV;
-                        kBHalo.Move = item.Param.HaloOutMOVE; ;
-                        kBKeyRect.KBHalo = kBHalo;
-
-                        KBKey kBKey = new KBKey();
-                        kBKey.KeyScale = item.Param.KeyScale;
-                        kBKey.OffsetX = item.Param.KeyOffsetX;
-                        kBKey.OffsetY = item.Param.KeyOffsetY;
-                        kBKey.ThresholdV = item.Param.KeyThreadV;
-                        kBKey.Move = item.Param.KeyOutMOVE;
-                        kBKey.Area = item.Param.Area;
-                        kBKeyRect.KBKey = kBKey;
-
-                        kBKeyRect.Height = (int)item.PixHeight;
-                        kBKeyRect.Width = (int)item.PixWidth;
-                        kBKeyRect.X = (int)(item.PixX - item.PixWidth / 2);
-                        kBKeyRect.Y = (int)(item.PixY - item.PixHeight / 2);
-                        kBKeyRect.Name = item.Name;
-
-                        kBKeyRect.DoKeyY = true;
-                        kBJson.KBKeyRects.Add(kBKeyRect);
-                    }
-                    else
-                    {
-                        log.Info($"只支持矩形导入{JsonConvert.SerializeObject(item)}");  
-                    }
-
-                }
-
-
-                JsonValue = JsonConvert.SerializeObject(kBJson);
-            }
-
-
         }
 
 
@@ -138,7 +49,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             Title = "KB模板管理";
             Code = "KB";
             TemplateParams = Params;
-            IsUserControl = true;
+            IsSideHide = true;
+        }
+        public EditPoiParam1 EditWindow { get; set; }
+        public override void PreviewMouseDoubleClick(int index)
+        {
+            EditWindow = new EditPoiParam1(Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            EditWindow.ShowDialog();
         }
 
         public override void SetUserControlDataContext(int index)

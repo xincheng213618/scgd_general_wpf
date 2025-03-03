@@ -164,7 +164,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    string a = msgRecord.MsgReturn?.Data;
                     List<string> strings = new List<string>();
                     foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
                     {

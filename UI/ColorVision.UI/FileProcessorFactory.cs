@@ -16,7 +16,7 @@ namespace ColorVision.UI
         public override string OwnerGuid => nameof(MenuOpen);
 
         public override string GuidId => nameof(MenuFileOpen);
-        public object? Icon
+        public override object? Icon
         {
             get
             {

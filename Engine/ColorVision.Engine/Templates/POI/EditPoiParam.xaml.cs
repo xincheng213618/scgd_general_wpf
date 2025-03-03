@@ -106,8 +106,6 @@ namespace ColorVision.Engine.Templates.POI
                 e[1].BaseAttribute.Name = old.ToString();
             };
 
-            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
-            ComboBoxBorderType.SelectedIndex = 0;
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -504,7 +502,6 @@ namespace ColorVision.Engine.Templates.POI
         {
             Application.Current.Dispatcher.Invoke(() => PoiConfig.IsShowPoiConfig = true);
             RenderPoiConfig();
-            DatumSet();
         }
 
         private Dictionary<IDrawingVisual, int> DBIndex = new Dictionary<IDrawingVisual, int>();
@@ -589,79 +586,6 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-            if (RadioButtonBuildMode2.IsChecked == true)
-            {
-                if (ImageShow.Source is BitmapSource bitmapImage)
-                {
-                    if (!double.TryParse(TextBoxUp.Text, out double startU))
-                        startU = 0;
-
-                    if (!double.TryParse(TextBoxDown.Text, out double startD))
-                        startD = 0;
-
-                    if (!double.TryParse(TextBoxLeft.Text, out double startL))
-                        startL = 0;
-                    if (!double.TryParse(TextBoxRight.Text, out double startR))
-                        startR = 0;
-
-                    if (ComboBoxBorderType.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
-                    {
-                        startU = bitmapImage.PixelHeight * startU / 100;
-                        startD = bitmapImage.PixelHeight * startD / 100;
-
-                        startL = bitmapImage.PixelWidth * startL / 100;
-                        startR = bitmapImage.PixelWidth * startR / 100;
-                    }
-
-                    PoiConfig.X1X = (int)startL;
-                    PoiConfig.X1Y = (int)startU;
-                    PoiConfig.X2X = bitmapImage.PixelWidth - (int)startR;
-                    PoiConfig.X2Y = (int)startU;
-                    PoiConfig.X3X = bitmapImage.PixelWidth - (int)startR;
-                    PoiConfig.X3Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiConfig.X4X = (int)startR;
-                    PoiConfig.X4Y = bitmapImage.PixelHeight - (int)startD;
-                    PoiConfig.CenterX = (int)bitmapImage.PixelWidth / 2;
-                    PoiConfig.CenterY = bitmapImage.PixelHeight / 2;
-                }
-            }
-            DatumSet();
-        }
-
-        private void DatumSet()
-        {
-            foreach (var item in DefaultPoint)
-            {
-                ImageShow.RemoveVisual(item);
-            }
-            DefaultPoint.Clear();
-            if (PoiConfig.IsShowDatum)
-            {
-                List<Point> Points = new()
-                {
-                    new Point(PoiConfig.X1X, PoiConfig.X1Y),
-                    new Point(PoiConfig.X2X, PoiConfig.X2Y),
-                    new Point(PoiConfig.X3X, PoiConfig.X3Y),
-                    new Point(PoiConfig.X4X, PoiConfig.X4Y),
-                    new Point(PoiConfig.CenterX, PoiConfig.CenterY),
-                };
-
-                for (int i = 0; i < Points.Count; i++)
-                {
-                    DVDatumCircle drawingVisual = new();
-                    drawingVisual.Attribute.Center = Points[i];
-                    drawingVisual.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
-                    drawingVisual.Attribute.Brush = Brushes.Blue;
-                    drawingVisual.Attribute.Pen = new Pen(Brushes.Blue, 2);
-                    drawingVisual.Attribute.Id = i + 1;
-                    drawingVisual.Render();
-                    DefaultPoint.Add(drawingVisual);
-                    ImageShow.AddVisual(drawingVisual);
-                }
-            }
-        }
 
 
         private async void Button2_Click(object sender, RoutedEventArgs e)
@@ -701,7 +625,7 @@ namespace ColorVision.Engine.Templates.POI
                         double x1 = PoiConfig.CenterX + PoiConfig.AreaCircleRadius * Math.Cos(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
                         double y1 = PoiConfig.CenterY + PoiConfig.AreaCircleRadius * Math.Sin(i * 2 * Math.PI / PoiConfig.AreaCircleNum + Math.PI / 180 * PoiConfig.AreaCircleAngle);
 
-                        switch (PoiParam.DefaultPointType)
+                        switch (PoiConfig.DefaultPointType)
                         {
                             case RiPointTypes.Circle:
 
@@ -799,7 +723,7 @@ namespace ColorVision.Engine.Templates.POI
 
                     if (ComboBoxBorderType2.SelectedValue is DrawingPOIPosition pOIPosition1)
                     {
-                        switch (PoiParam.DefaultPointType)
+                        switch (PoiConfig.DefaultPointType)
                         {
                             case RiPointTypes.Circle:
                                 switch (pOIPosition1)
@@ -887,7 +811,7 @@ namespace ColorVision.Engine.Templates.POI
                             double x1 = startL + StepCol * j;
                             double y1 = startU + StepRow * i;
 
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
                                     if (PoiConfig.IsPoiCIEFile)
@@ -1042,7 +966,7 @@ namespace ColorVision.Engine.Templates.POI
 
                             Point point = new(x, y);
 
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
                                     if (PoiConfig.IsPoiCIEFile)
@@ -1160,7 +1084,7 @@ namespace ColorVision.Engine.Templates.POI
                         for (int j = 1; j < PoiConfig.Polygons[i].SplitNumber + 1; j++)
                         {
                             No++;
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
 
@@ -1198,7 +1122,7 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         if (PoiConfig.AreaPolygonUsNode)
                         {
-                            switch (PoiParam.DefaultPointType)
+                            switch (PoiConfig.DefaultPointType)
                             {
                                 case RiPointTypes.Circle:
 
@@ -1840,6 +1764,11 @@ namespace ColorVision.Engine.Templates.POI
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
         }

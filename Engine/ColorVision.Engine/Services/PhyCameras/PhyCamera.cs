@@ -192,7 +192,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             string fileName = $"{DirLicense}\\{Code}-license.zip";
 
-            if (File.Exists(fileName) && MessageBox.Show($"查询到本地保存的{Code}许可证，是否应用", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            if (File.Exists(fileName) && MessageBox.Show(Application.Current.GetActiveWindow(),$"查询到本地保存的{Code}许可证，应用还是联网获取？", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 SetLicense(fileName);
                 return;
@@ -490,7 +490,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                             if (CameraLicenseModel == null)
                                 CameraLicenseModel = new LicenseModel();
-                            CameraLicenseModel.DevCameraId = SysResourceModel.Id;
                             CameraLicenseModel.LiceType = 0;
                             CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
                             using var stream = item.Open();
@@ -859,6 +858,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                             }
                                         }
                                         groupResource.SetCalibrationResource();
+                                        groupResource.Save();
                                     }
                                 });
                             }

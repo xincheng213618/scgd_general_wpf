@@ -17,7 +17,6 @@ namespace ColorVision.ImageEditor.Draw
             Attribute.Pen = new Pen(Brushes.Red,10);
         }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-        public BaseProperties BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
 
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength :1; set { DefalutTextAttribute.Defalut.ActualLength = value;} }
