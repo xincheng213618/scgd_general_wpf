@@ -53,7 +53,7 @@ namespace ColorVision.ImageEditor.Draw
         }
 
 
-        public List<Point> Control1(List<Point> list, int n)
+        public static List<Point> Control1(List<Point> list, int n)
         {
             List<Point> point = new List<Point>();
             point.Add(new Point());
@@ -87,19 +87,19 @@ namespace ColorVision.ImageEditor.Draw
             //MapCanvas.Children.Add(line);
             return point;
         }
-        public Point Average(Point x, Point y)
+        public static Point Average(Point x, Point y)
         {
             return new Point((x.X + y.X) / 2, (x.Y + y.Y) / 2);
         }
-        public Point Add(Point x, Point y)
+        public static Point Add(Point x, Point y)
         {
             return new Point(x.X + y.X, x.Y + y.Y);
         }
-        public Point Sub(Point x, Point y)
+        public static Point Sub(Point x, Point y)
         {
             return new Point(x.X - y.X, x.Y - y.Y);
         }
-        public Point Mul(Point x, Point y, double d)
+        public static Point Mul(Point x, Point y, double d)
         {
             Point temp = Sub(x, y);
             temp = new Point(temp.X * d, temp.Y * d);

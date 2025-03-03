@@ -28,7 +28,7 @@ namespace ColorVision.ImageEditor.Tif
 
         public bool CanProcess(string filePath)
         {
-            return Extension.Contains(System.IO.Path.GetExtension(filePath).ToLower());
+            return Extension.Contains(System.IO.Path.GetExtension(filePath).ToLower(System.Globalization.CultureInfo.CurrentCulture));
         }
 
         public void Process(string filePath)
@@ -56,7 +56,7 @@ namespace ColorVision.ImageEditor.Tif
 
         }
 
-        public int GetChannelCount(BitmapSource source)
+        public static int GetChannelCount(BitmapSource source)
         {
             PixelFormat format = source.Format;
 
@@ -99,6 +99,7 @@ namespace ColorVision.ImageEditor.Tif
         }
         public async void OpenImage(ImageView imageView, string? filePath)
         {
+            if (string.IsNullOrEmpty(filePath)) return;
             if (imageView.Config.IsShowLoadImage)
             {
                 imageView.WaitControl.Visibility = Visibility.Visible;
@@ -113,13 +114,13 @@ namespace ColorVision.ImageEditor.Tif
                         {
                             imageView.ComboBoxLayers.SelectedIndex = 0;
                             imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src" };
-                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayers_SelectionChanged);
+                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
                         }
                         else
                         {
                             imageView.ComboBoxLayers.SelectedIndex = 0;
                             imageView.ComboBoxLayers.ItemsSource = new List<string>() { "Src", "R", "G", "B" };
-                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayers_SelectionChanged);
+                            imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
                         }
 
 

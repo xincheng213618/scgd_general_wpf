@@ -263,7 +263,7 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        bool IsRightButtonDown = false;
+        bool IsRightButtonDown;
 
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -780,7 +780,7 @@ namespace ColorVision.ImageEditor
                 {
                     ComboBoxLayers.SelectedIndex = 0;
                     ComboBoxLayers.ItemsSource = ComboBoxLayerItems;
-                    AddSelectionChangedHandler(ComboBoxLayers_SelectionChanged);
+                    AddSelectionChangedHandler(ComboBoxLayersSelectionChanged);
 
                     if (Config.IsShowLoadImage && isLargeFile)
                     {
@@ -951,7 +951,7 @@ namespace ColorVision.ImageEditor
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src" ,"R","G","B" };
 
-        public void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public void ComboBoxLayersSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ComboBoxLayers.SelectedIndex < 0) return;
 
