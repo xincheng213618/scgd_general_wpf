@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         /// </summary>
         [DisplayName("积分起始时间")]
         public float BeginIntegralTime { get => _BeginIntegralTime; set { _BeginIntegralTime = value; NotifyPropertyChanged(); } }
-        private float _BeginIntegralTime = 0;
+        private float _BeginIntegralTime;
         /// <summary>
         /// 平均次数
         /// </summary>

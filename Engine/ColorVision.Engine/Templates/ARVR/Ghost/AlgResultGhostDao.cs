@@ -45,9 +45,9 @@ namespace ColorVision.Engine.Templates.Ghost
         [Column("ghost_pixels", Comment = "所有鬼影轮廓的坐标集")]
         public string GhostPixels { get; set; }
 
-        public List<List<Point1>> GhostPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
+        public List<List<Point1>>? GhostPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
 
-        public List<List<Point1>> LedPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(LEDPixels);
+        public List<List<Point1>>? LedPixel => JsonConvert.DeserializeObject<List<List<Point1>>>(LEDPixels);
 
 
     }

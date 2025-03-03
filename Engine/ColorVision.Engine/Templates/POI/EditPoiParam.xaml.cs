@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625
+﻿#pragma warning disable CS8625,CS8604,CS8602
 using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
@@ -6,7 +6,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.KB;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.ImageEditor;
@@ -19,7 +18,6 @@ using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
 using log4net;
-using Microsoft.Win32;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using System;
@@ -34,7 +32,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;

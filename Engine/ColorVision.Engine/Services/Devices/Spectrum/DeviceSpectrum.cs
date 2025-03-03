@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8601,CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
@@ -8,7 +9,6 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using LiveChartsCore.SkiaSharpView;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

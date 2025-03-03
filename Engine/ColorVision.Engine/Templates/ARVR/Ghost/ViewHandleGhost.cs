@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602
+﻿#pragma warning disable CS8602,CS8604
 
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
@@ -117,9 +117,10 @@ namespace ColorVision.Engine.Templates.Ghost
                     int[] Ghost_pixel_X;
                     int[] Ghost_pixel_Y;
                     List<Point1> Points = new();
-                    foreach (var item in viewResultGhost.GhostPixel)
-                        foreach (var item1 in item)
-                            Points.Add(item1);
+                    if (viewResultGhost.GhostPixel !=null)
+                        foreach (var item in viewResultGhost.GhostPixel)
+                            foreach (var item1 in item)
+                                Points.Add(item1);
 
                     if (Points != null)
                     {
@@ -141,9 +142,10 @@ namespace ColorVision.Engine.Templates.Ghost
                     int[] LED_pixel_Y;
 
                     Points.Clear();
-                    foreach (var item in viewResultGhost.LedPixel)
-                        foreach (var item1 in item)
-                            Points.Add(item1);
+                    if (viewResultGhost.LedPixel !=null)
+                        foreach (var item in viewResultGhost.LedPixel)
+                            foreach (var item1 in item)
+                                Points.Add(item1);
 
                     if (Points != null)
                     {

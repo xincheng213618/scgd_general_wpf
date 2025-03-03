@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8603,CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
 using ColorVision.Engine.Services.Devices.Camera;

@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1720
+﻿#pragma warning disable CA1720,CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8625
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1707,IDE1006
-
+﻿#pragma warning disable CA1707,IDE1006,CS8603
 using ColorVision.Common.MVVM;
 using System.Collections.Generic;
 using System.ComponentModel;

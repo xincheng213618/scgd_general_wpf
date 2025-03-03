@@ -1,4 +1,4 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629,CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;

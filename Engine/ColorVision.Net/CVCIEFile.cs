@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1501
-
+﻿#pragma warning disable CA1051
 namespace ColorVision.Net
 {
     public enum CVType

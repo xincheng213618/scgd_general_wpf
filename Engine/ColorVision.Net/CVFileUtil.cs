@@ -2,6 +2,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 
@@ -44,7 +45,7 @@ namespace ColorVision.Net
                 return fileHeader == MagicHeader;
 
             }
-            catch (Exception ex)
+            catch 
             {
                 return false;
             }

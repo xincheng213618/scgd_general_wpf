@@ -1,6 +1,6 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using log4net;

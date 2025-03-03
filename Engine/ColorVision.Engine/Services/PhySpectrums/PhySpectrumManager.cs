@@ -1,20 +1,14 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.PhySpectrums;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Themes.Controls.Uploads;
-using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.PhySpectrums

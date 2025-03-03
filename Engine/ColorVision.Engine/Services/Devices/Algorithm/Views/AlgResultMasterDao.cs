@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8601
+﻿#pragma warning disable CS8601,CS8603
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using MQTTMessageLib.Algorithm;

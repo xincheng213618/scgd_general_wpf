@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604,CS8629
+﻿#pragma warning disable CS8604,CS8629,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;

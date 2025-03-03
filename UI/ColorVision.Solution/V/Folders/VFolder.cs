@@ -1,14 +1,12 @@
-﻿using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
+﻿#pragma warning disable CS8602,CS8603,CS4014,CS8765
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Properties;
-using ColorVision.UI;
 using ColorVision.UI.Menus;
-using Newtonsoft.Json.Linq;
+using System.IO;
+using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.Solution.V.Folders
 {

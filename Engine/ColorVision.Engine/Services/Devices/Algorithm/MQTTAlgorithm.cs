@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
+﻿#pragma warning disable CS8602
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Messages;
 using ColorVision.Net;
 using CVCommCore;

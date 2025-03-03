@@ -106,7 +106,6 @@ namespace ColorVision.Solution
 
         private Point SelectPoint;
 
-        private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
 
 

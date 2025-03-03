@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Collections;
+﻿#pragma warning disable CS8601,CS8622,CA1822,CS8602
+using ColorVision.Common.Collections;
 using ColorVision.ImageEditor.Draw;
 using System;
 using System.Collections.ObjectModel;
@@ -64,6 +65,8 @@ namespace ColorVision.Engine.Templates.POI
             dataGridView1.Dock = DockStyle.Fill;
             this.Closed += (s,e) => UpdateDrawingVisualListsFromDataTable((DataTable)dataGridView1.DataSource);
         }
+        private static readonly string[] separator = new[] { "\r\n", "\r", "\n" };
+
         private void CreateOrUpdateDrawingVisual(DataRow row, IDrawingVisual drawingVisual)
         {
             drawingVisual.BaseAttribute.Id = row.Field<int>("Id");
@@ -120,7 +123,7 @@ namespace ColorVision.Engine.Templates.POI
             int startCol = dataGridView1.CurrentCell.ColumnIndex;
 
             string clipboardText = Clipboard.GetText();
-            string[] lines = clipboardText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            string[] lines = clipboardText.Split(separator, StringSplitOptions.None);
 
             DataTable table = (DataTable)dataGridView1.DataSource;
 
