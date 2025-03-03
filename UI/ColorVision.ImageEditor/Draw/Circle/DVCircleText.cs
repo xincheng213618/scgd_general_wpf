@@ -41,7 +41,6 @@ namespace ColorVision.ImageEditor.Draw
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public BaseProperties BaseAttribute => Attribute;
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }

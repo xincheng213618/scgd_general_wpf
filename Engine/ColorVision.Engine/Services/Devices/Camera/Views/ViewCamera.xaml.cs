@@ -98,8 +98,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-
-        NetFileUtil netFileUtil;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.DeviceCode != Device.Config.Code) return;

@@ -7,13 +7,13 @@ namespace ColorVision.Common.Adorners.ListViewAdorners
     /// <summary>
     /// Event arguments used by the ListViewDragDropManager.ProcessDrop event.
     /// </summary>
-    /// <typeparam name="ItemType">The type of data object being dropped.</typeparam>
-    public class ProcessDropEventArgs<ItemType> : EventArgs where ItemType : class
+    /// <typeparam name="T">The type of data object being dropped.</typeparam>
+    public class ProcessDropEventArgs<T> : EventArgs where T : class
     {
         #region Data
 
-        ObservableCollection<ItemType> itemsSource;
-        ItemType dataItem;
+        ObservableCollection<T> itemsSource;
+        T dataItem;
         int oldIndex;
         int newIndex;
         DragDropEffects allowedEffects = DragDropEffects.None;
@@ -24,8 +24,8 @@ namespace ColorVision.Common.Adorners.ListViewAdorners
         #region Constructor
 
         internal ProcessDropEventArgs(
-            ObservableCollection<ItemType> itemsSource,
-            ItemType dataItem,
+            ObservableCollection<T> itemsSource,
+            T dataItem,
             int oldIndex,
             int newIndex,
             DragDropEffects allowedEffects)
@@ -44,7 +44,7 @@ namespace ColorVision.Common.Adorners.ListViewAdorners
         /// <summary>
         /// The items source of the ListView where the drop occurred.
         /// </summary>
-        public ObservableCollection<ItemType> ItemsSource
+        public ObservableCollection<T> ItemsSource
         {
             get { return this.itemsSource; }
         }
@@ -52,7 +52,7 @@ namespace ColorVision.Common.Adorners.ListViewAdorners
         /// <summary>
         /// The data object which was dropped.
         /// </summary>
-        public ItemType DataItem
+        public T DataItem
         {
             get { return this.dataItem; }
         }

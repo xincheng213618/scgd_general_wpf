@@ -37,7 +37,6 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle
     {
-        public BaseProperties BaseAttribute => Attribute;
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }

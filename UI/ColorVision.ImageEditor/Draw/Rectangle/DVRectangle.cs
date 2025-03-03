@@ -6,7 +6,6 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisual, IRectangle
     {
-        public BaseProperties BaseAttribute => Attribute;
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public bool AutoAttributeChanged { get; set; } = true;

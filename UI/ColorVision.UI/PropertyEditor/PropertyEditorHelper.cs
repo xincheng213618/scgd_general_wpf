@@ -311,7 +311,7 @@ namespace ColorVision.UI
                     button.Click += (s, e) =>
                     {
                         var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                        folderDialog.SelectedPath = (string)property.GetValue(obj);
+                        folderDialog.SelectedPath = (string)property.GetValue(obj) ?? string.Empty;
                         if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
                             if (folderDialog.SelectedPath == null) return;

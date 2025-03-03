@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable CS8604
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;

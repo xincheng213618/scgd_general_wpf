@@ -6,7 +6,6 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual
     {
-        public BaseProperties BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }

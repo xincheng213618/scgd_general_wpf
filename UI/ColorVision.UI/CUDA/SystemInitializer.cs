@@ -15,6 +15,7 @@
 
         public override async Task InitializeAsync()
         {
+            await Task.Delay(1);
             _messageUpdater.Update("Debug Mode: " + SystemHelper.IsDebugMode());
             _messageUpdater.Update("OS Version: " + SystemHelper.GetOSVersion());
             _messageUpdater.Update(".NET Version: " + SystemHelper.GetDotNetVersion());
