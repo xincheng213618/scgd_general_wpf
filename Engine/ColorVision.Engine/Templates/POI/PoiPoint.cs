@@ -7,6 +7,12 @@ namespace ColorVision.Engine.Templates.POI
 {
     public class PoiPointParam : ViewModelBase
     {
+
+        public bool DoKey { get => _DoKey; set { _DoKey = value; NotifyPropertyChanged(); } }
+        private bool _DoKey = true;
+        public bool DoHalo { get => _DoHalo; set { _DoHalo = value; NotifyPropertyChanged(); } }
+        private bool _DoHalo = true;
+
         /// <summary>
         /// 结果缩放
         /// </summary>

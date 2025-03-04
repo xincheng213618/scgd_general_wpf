@@ -11,13 +11,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
-    public class TemplateJsonKBParamCoveretConfig:IConfig
-    {
-        public static TemplateJsonKBParamCoveretConfig Instance => ConfigService.Instance.GetRequiredService<TemplateJsonKBParamCoveretConfig>();
-        public bool DoKey { get; set; } = true;
-        public bool DoHalo { get; set; } = true;
-
-    }
 
     public class TemplateJsonKBParam : TemplateJsonParam
     {

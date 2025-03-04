@@ -843,4 +843,7 @@
   <data name="Copy" xml:space="preserve">
     <value>複製</value>
   </data>
+  <data name="Lock" xml:space="preserve">
+    <value>鎖定</value>
+  </data>
 </root>

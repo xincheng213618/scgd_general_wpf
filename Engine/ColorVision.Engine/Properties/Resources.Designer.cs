@@ -997,6 +997,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 锁定 的本地化字符串。
+        /// </summary>
+        public static string Lock {
+            get {
+                return ResourceManager.GetString("Lock", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 男 的本地化字符串。
         /// </summary>
         public static string Male {

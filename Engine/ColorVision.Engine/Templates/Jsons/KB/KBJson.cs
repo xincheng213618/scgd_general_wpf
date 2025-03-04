@@ -24,15 +24,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         [JsonProperty("key")]
         public KBKey KBKey { get => _KBKey; set { _KBKey = value; NotifyPropertyChanged(); } }
         private KBKey _KBKey;
+        [JsonProperty("doKey")]
+        public bool DoKey { get => _DoKey; set { _DoKey = value; NotifyPropertyChanged(); } }
+        private bool _DoKey = true;
 
         [JsonProperty("halo")]
         public KBHalo KBHalo { get => _KBHalo; set { _KBHalo = value; NotifyPropertyChanged(); } }
         private KBHalo _KBHalo;
-
-        [JsonProperty("doKey")]
-        public bool DoKeyY { get => _DoKeyY; set { _DoKeyY = value; NotifyPropertyChanged(); } }
-        private bool _DoKeyY = true;
-
         [JsonProperty("doHalo")]
         public bool DoHalo { get => _DoHalo; set { _DoHalo = value; NotifyPropertyChanged(); } }
         private bool _DoHalo = true;
@@ -116,8 +114,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
 
-        public PoiConfig PoiConfig { get => _PoiConfig; set { _PoiConfig = value; NotifyPropertyChanged(); } }
-        private PoiConfig _PoiConfig = new PoiConfig();
+        public KBPoiConfig PoiConfig { get => _PoiConfig; set { _PoiConfig = value; NotifyPropertyChanged(); } }
+        private KBPoiConfig _PoiConfig = new KBPoiConfig();
 
 
     }

@@ -843,4 +843,7 @@
   <data name="Exposure" xml:space="preserve">
     <value>露出</value>
   </data>
+  <data name="Lock" xml:space="preserve">
+    <value>ロックする</value>
+  </data>
 </root>

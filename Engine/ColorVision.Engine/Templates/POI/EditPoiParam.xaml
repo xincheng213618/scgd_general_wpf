@@ -39,14 +39,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="300"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Column="1"  Background="{DynamicResource GlobalBackground}">
-            <Grid.RowDefinitions>
-                <RowDefinition  Height="auto"/>
-                <RowDefinition  Height="auto"/>
-                <RowDefinition  Height="auto"/>
-                <RowDefinition  Height="auto"/>
-                <RowDefinition  Height="*"/>
-            </Grid.RowDefinitions>
+        <StackPanel Grid.Column="1"  Background="{DynamicResource GlobalBackground}">
             <Border Margin="5,5,5,0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                 <StackPanel Margin="3">
                     <DockPanel Margin="0,3">
@@ -129,7 +122,7 @@
             </Border>
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
-                    <CheckBox Content="锁定" IsChecked="{Binding PoiConfig.LockDeafult}"/>
+                    <CheckBox Content="{x:Static properties:Resources.Lock}" IsChecked="{Binding PoiConfig.LockDeafult}"/>
                     <StackPanel Margin="2"  Orientation="Horizontal" >
                         <TextBlock Text="默认半径:" Width="55"/>
                         <TextBox Text="{Binding PoiConfig.DefalutRadius}"  Width="55"  />
@@ -411,7 +404,7 @@
 
                             <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                 <RadioButton x:Name="RadioButtonCircle" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointCircle}" Content="圆形"/>
-                                <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding IsPointRect}" Content="矩形"/>
+                                <RadioButton x:Name="RadioButtonRect" Width="60"  GroupName="shape" IsChecked="{Binding PoiConfig.IsPointRect}" Content="矩形"/>
                             </StackPanel>
 
                             <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointCircle,Converter={StaticResource bool2VisibilityConverter}}" >
@@ -420,7 +413,7 @@
                                     <TextBox  Text="{Binding PoiConfig.DefaultCircleRadius}" Width="55" />
                                 </DockPanel>
                             </StackPanel>
-                            <StackPanel Margin="5" Visibility="{Binding IsPointRect,Converter={StaticResource bool2VisibilityConverter}}"  Orientation="Horizontal">
+                            <StackPanel Margin="5" Visibility="{Binding PoiConfig.IsPointRect,Converter={StaticResource bool2VisibilityConverter}}"  Orientation="Horizontal">
                                 <DockPanel Margin="2" >
                                     <TextBlock Text="宽度:" Width="40"/>
                                     <TextBox Text="{Binding PoiConfig.DefaultRectWidth}"  Width="55"  />
@@ -437,7 +430,7 @@
                     </Border>
                 </StackPanel>
             </ScrollViewer>
-        </Grid>
+        </StackPanel>
 
         <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="{StaticResource  TransparentGridBrush}">
             <Grid.RowDefinitions>

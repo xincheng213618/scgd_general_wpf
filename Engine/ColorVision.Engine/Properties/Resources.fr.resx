@@ -843,4 +843,7 @@
   <data name="Copy" xml:space="preserve">
     <value>copier</value>
   </data>
+  <data name="Lock" xml:space="preserve">
+    <value>verrouiller</value>
+  </data>
 </root>

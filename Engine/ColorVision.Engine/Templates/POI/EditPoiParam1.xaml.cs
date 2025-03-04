@@ -7,7 +7,6 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.KB;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Tif;
@@ -17,6 +16,7 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
+using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -28,6 +28,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -45,13 +46,32 @@ namespace ColorVision.Engine.Templates.POI
     }
 
 
+    public class KBPoiConfig : PoiConfig
+    {
+        /// <summary>
+        /// 校正文件
+        /// </summary>
+        public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
+        private string _LuminFile = string.Empty;
+        public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
+        private int _saveProcessData = 1;
+
+        public int Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
+        private int _Exp = 100;
+
+        public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
+        private string _SaveFolderPath;
+
+    }
+
+
     public partial class EditPoiParam1 : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(EditPoiParam1));
         private string TagName { get; set; } = "P_";
 
         public KBJson KBJson { get; set; }
-        public PoiConfig PoiConfig => KBJson.PoiConfig;
+        public KBPoiConfig PoiConfig => KBJson.PoiConfig;
 
         public TemplateJsonKBParam TemplateJsonKBParam { get; set; }
 
@@ -270,15 +290,6 @@ namespace ColorVision.Engine.Templates.POI
                 EditPoiParam1Config.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
-
-            AlgorithmKBLocal local = new AlgorithmKBLocal();
-            local.FilePath = PoiConfig.BackgroundFilePath;
-
-            Border Margin = new Border() { Margin = new Thickness(0, 5, 0, 0), Style = (Style)FindResource("BorderModuleArea"), CornerRadius = new CornerRadius(5) };
-            StackPanel stackPanel = new StackPanel() { Margin = new Thickness(5) };
-            Margin.Child = stackPanel;
-            stackPanel.Children.Add(local.GetUserControl());
-            FunctionStackpanel.Children.Add(Margin);
         }
 
         private ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -1160,14 +1171,14 @@ namespace ColorVision.Engine.Templates.POI
                         PixHeight = rectangle.Rect.Height,
                     };
                     KBKeyRect kBKeyRect = new KBKeyRect();
-                    kBKeyRect.DoHalo = TemplateJsonKBParamCoveretConfig.Instance.DoHalo;
-                    kBKeyRect.DoKeyY = TemplateJsonKBParamCoveretConfig.Instance.DoKey;
-                    KBHalo kBHalo = new KBHalo();
                     if (rectangle.Param is not PoiPointParam param)
                     {
                         param = new PoiPointParam();
                     }
+                    kBKeyRect.DoHalo = param.DoHalo;
+                    kBKeyRect.DoKey = param.DoKey;
 
+                    KBHalo kBHalo = new KBHalo();
                     kBHalo.HaloScale = param.HaloScale;
                     kBHalo.OffsetX = param.HaloOffsetX;
                     kBHalo.OffsetY = param.HaloOffsetY;
@@ -1192,7 +1203,7 @@ namespace ColorVision.Engine.Templates.POI
                     kBKeyRect.Y = (int)rectangle.Rect.Y;
                     kBKeyRect.Name = rectangle.Text;
 
-                    kBKeyRect.DoKeyY = true;
+                    kBKeyRect.DoKey = true;
                     KBJson.KBKeyRects.Add(kBKeyRect);
                 }
             }
@@ -1524,11 +1535,151 @@ namespace ColorVision.Engine.Templates.POI
                     });
                 };
             }));
-
         }
 
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
+
+        }
+
+        private void Cal_Click(object sender, RoutedEventArgs e)
+        {
+            InitialKBKey();
+        }
+
+        private void SetKBLocal_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void InitialKBKey()
+        {
+            string luminFile = PoiConfig.LuminFile;
+            if (luminFile ==null || !File.Exists(luminFile))
+            {
+                return;
+            }
+            string imgFileName = PoiConfig.BackgroundFilePath;
+            if (imgFileName == null || !File.Exists(imgFileName))
+            {
+                return;
+            }
+
+            OpenCvSharp.Mat image;
+            if (CVFileUtil.IsCIEFile(imgFileName))
+            {
+                int index = CVFileUtil.ReadCIEFileHeader(imgFileName, out CVCIEFile cvcie);
+                if (index > 0)
+                {
+                    CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
+                    if (cvcie.bpp == 16)
+                    {
+                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_16UC(cvcie.channels), cvcie.data);
+
+                    }
+                    else
+                    {
+                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                image = OpenCvSharp.Cv2.ImRead(imgFileName, OpenCvSharp.ImreadModes.Unchanged);
+            }
+
+            int width = image.Width;
+            int height = image.Height;
+            int channels = image.Channels();
+            int bpp = image.ElemSize() * 8;
+            IntPtr imgData = image.Data;
+            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 1);
+
+            string csvFilePath = PoiConfig.SaveFolderPath + "\\output.csv";
+            using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
+            {
+                writer.WriteLine("Name,rect,HaloGray,haloGray1,KeyGray,KeyGray1");
+                
+                foreach (var drawingVisual in DrawingVisualLists)
+                {
+                    BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
+                    if (drawAttributeBase is RectangleTextProperties rectangle && rectangle.Param is PoiPointParam poiPointParam)
+                    { 
+                        try
+                        {
+                            IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
+                            float haloGray = -1;
+                            uint haloGray1 = 0;
+                            uint Keygray1 = 0;
+                            if (poiPointParam.DoHalo)
+                            {
+                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGray1);
+                                haloGray = (float)(haloGray * poiPointParam.HaloScale);
+                            }
+                            float keyGray = -1;
+                            if (poiPointParam.DoKey)
+                            {
+                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygray1);
+                                keyGray = (float)(keyGray * poiPointParam.KeyScale);
+                            }
+                            string name = rectangle.Text;
+                            if (name.Contains(',') || name.Contains('\"'))
+                            {
+                                name = $"\"{name.Replace("\"", "\"\"")}\"";
+                            }
+                            writer.WriteLine($"{name},{rect},{haloGray},{haloGray1},{keyGray},{Keygray1}");
+                        }
+                        catch
+                        {
+
+                        }
+
+                    }
+                }
+            }
+
+            IntPtr pData = Marshal.AllocHGlobal(width * height * channels);
+
+            int rw = 0; int rh = 0; int rBpp = 0; int rChannel = 0;
+
+            byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * bpp];
+
+            int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
+            OpenCvSharp.Mat mat;
+            if (rBpp == 8)
+            {
+                mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_8UC(rChannel), pDst1);
+
+            }
+            else
+            {
+                mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_16UC(rChannel), pDst1);
+            }
+
+            string Imageresult = $"{PoiConfig.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
+            mat.SaveImage(Imageresult);
+
+            ImageView imageView = new();
+            Window window = new() { Title = Properties.Resources.QuickPreview };
+            if (Application.Current.MainWindow != window)
+            {
+                window.Owner = Application.Current.GetActiveWindow();
+            }
+            window.Content = imageView;
+            imageView.OpenImage(Imageresult);
+            window.Show();
+            if (Application.Current.MainWindow != window)
+            {
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
+                    imageView.ImageViewModel.ClearImage();
+                }));
+            }
 
         }
     }
