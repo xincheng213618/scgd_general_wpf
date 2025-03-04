@@ -31,10 +31,6 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             ComboxTemplate.ItemsSource = TemplateLedCheck2.Params;
             ComboxTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
-            ComboxPoiTemplate.SelectedIndex = 0;
-
-
             ComboxCVOLEDCOLOR.ItemsSource = from e1 in Enum.GetValues(typeof(CVOLEDCOLOR)).Cast<CVOLEDCOLOR>()
                                             select new KeyValuePair<string, CVOLEDCOLOR>(e1.ToString(), e1);
             ComboxCVOLEDCOLOR.SelectedIndex = 0;

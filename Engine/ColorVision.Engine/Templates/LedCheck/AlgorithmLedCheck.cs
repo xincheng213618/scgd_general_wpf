@@ -63,13 +63,14 @@ namespace ColorVision.Engine.Templates.LedCheck
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
            
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            if (param.Id == -1)
+
+            if (poiParam.Id == -1)
             {
                 Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = string.Empty });
             }
             else
             {
-                Params.Add("POITemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             }
 
             MsgSend msg = new()
