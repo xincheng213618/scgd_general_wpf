@@ -143,9 +143,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void Export()
         {
+
             if (FilePath != null)
             {
-                ExportCVCIE exportCVCIE = new(FilePath);
+                if (!CVFileUtil.IsCIEFile(FilePath))
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
+                    return;
+                }
+                ExportCVCIE exportCVCIE = new ExportCVCIE(FilePath);
                 exportCVCIE.Owner = Application.Current.GetActiveWindow();
                 exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 exportCVCIE.ShowDialog();
