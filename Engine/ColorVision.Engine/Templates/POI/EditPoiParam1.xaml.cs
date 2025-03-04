@@ -1657,13 +1657,13 @@ namespace ColorVision.Engine.Templates.POI
                             float haloGray = -1;
                             uint haloGray1 = 0;
                             uint Keygray1 = 0;
-                            if (poiPointParam.DoHalo)
+                            if (PoiConfig.DefaultDoHalo)
                             {
                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGray1);
                                 haloGray = (float)(haloGray * poiPointParam.HaloScale);
                             }
                             float keyGray = -1;
-                            if (poiPointParam.DoKey)
+                            if (PoiConfig.DefaultDoKey)
                             {
                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygray1);
                                 keyGray = (float)(keyGray * poiPointParam.KeyScale);
