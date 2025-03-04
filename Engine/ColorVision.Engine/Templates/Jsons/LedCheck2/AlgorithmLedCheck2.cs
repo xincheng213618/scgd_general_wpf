@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(ParamBase param, PoiParam poiParam, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, CVOLEDCOLOR cOLOR, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -73,7 +73,6 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
             Params.Add("Color", cOLOR);
             Params.Add("FDAType", CVOLEDFDAType);
 

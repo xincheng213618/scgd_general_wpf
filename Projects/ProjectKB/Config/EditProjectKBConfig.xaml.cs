@@ -110,7 +110,6 @@ namespace ProjectKB
                 string fileName = openFileDialog.FileName;
                 ConfigHandler.GetInstance().LoadConfigs(fileName);
             }
-
         }
     }
 }
