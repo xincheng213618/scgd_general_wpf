@@ -56,6 +56,12 @@ namespace ColorVision.Engine.Templates.POI
         /// </summary>
         public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
         private double _Area;
+
+        /// <summary>
+        /// 辉度
+        /// </summary>
+        public double Brightness { get => _Brightness; set { _Brightness = value; NotifyPropertyChanged(); } }
+        private double _Brightness;
     }
 
 

@@ -588,13 +588,14 @@
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type local:PoiPointParam}">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox Width="40" Text="{Binding HaloOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding HaloThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding HaloScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding KeyOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding KeyThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding KeyScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                                    <TextBox Width="40" Text="{Binding Area}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="80" Text="{Binding HaloOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="80" Text="{Binding HaloThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="50" Text="{Binding HaloScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="70" Text="{Binding KeyOutMOVE}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="70" Text="{Binding KeyThreadV}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="50" Text="{Binding KeyScale}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="50" Text="{Binding Area}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                    <TextBox Width="50" Text="{Binding Brightness}" Margin="0,0,10,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
                                 </StackPanel>
                             </DataTemplate>
                         </ListView.Resources>
@@ -621,19 +622,12 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn  Header="序号">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
-                                            <TextBlock Text="{Binding BaseAttribute.Id}" HorizontalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="值"  Width="400">
+                                <GridViewColumn  Header="   点的描述                         坐标"  Width="400">
                                     <GridViewColumn.CellTemplateSelector>
                                         <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                     </GridViewColumn.CellTemplateSelector>
                                 </GridViewColumn>
-                                <GridViewColumn  Header="其他参数">
+                                <GridViewColumn  Header="HaloOutMOVE  HaloThreadV HaloScale KeyOutMOVE KeyThreadV KeyScale  面积(mm^2)  辉度" Width="650">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
                                             <ContentPresenter Content="{Binding BaseAttribute.Param}" />
