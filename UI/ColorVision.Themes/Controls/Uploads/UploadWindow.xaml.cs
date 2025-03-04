@@ -29,7 +29,6 @@ namespace ColorVision.Themes.Controls.Uploads
             {
                 ButtonUpload.Visibility = Visibility.Visible;
             };
-            Task.Run(() => LoadImageAsync());
             this.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape)
@@ -55,18 +54,6 @@ namespace ColorVision.Themes.Controls.Uploads
                     }
                 }
             };
-        }
-        private async void LoadImageAsync()
-        {            
-            var imageSource = await Task.Run(() =>
-            {
-                return new BitmapImage(new Uri("/ColorVision.Themes;component/Assets/Image/uploadbg.avif", UriKind.Relative));
-            });
-            _ = Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                backImage.Source = imageSource;
-            });
-
         }
 
             private void Window_DragEnter(object sender, DragEventArgs e)
