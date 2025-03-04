@@ -48,11 +48,52 @@ namespace ColorVision.Engine.Templates.POI
 
     public class KBPoiConfig : PoiConfig
     {
+        public RelayCommand SelectLuminFileCommand { get; set; }
+        public RelayCommand SelcetSaveFilePathCommand { get; set; }
+
+        public KBPoiConfig() : base()
+        {
+            SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
+            SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
+        }
+        public void SelectLuminFile()
+        {
+            using (System.Windows.Forms.OpenFileDialog saveFileDialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                saveFileDialog.Filter = "标定文件 (*.dat)|*.dat";
+                saveFileDialog.Title = "选择标定文件";
+                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    LuminFile = saveFileDialog.FileName;
+                }
+            }
+        }
+        public void SelcetSaveFilePath()
+        {
+            using (System.Windows.Forms.FolderBrowserDialog folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog())
+            {
+                folderBrowserDialog.Description = "Select Folder";
+                folderBrowserDialog.SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                if (folderBrowserDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    SaveFolderPath = folderBrowserDialog.SelectedPath;
+                }
+            }
+        }
+
+        public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; NotifyPropertyChanged(); } }
+        private bool _DefaultDoKey = true;
+        public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; NotifyPropertyChanged(); } }
+        private bool _DefaultDoHalo = true;
+
         /// <summary>
         /// 校正文件
         /// </summary>
         public string LuminFile { get => _LuminFile; set { _LuminFile = value; NotifyPropertyChanged(); } }
         private string _LuminFile = string.Empty;
+
         public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
         private int _saveProcessData = 1;
 

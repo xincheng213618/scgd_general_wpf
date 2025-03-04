@@ -12,7 +12,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:kb ="ColorVision.Engine.Templates.Jsons.KB"
+        xmlns:kb ="clr-namespace:ColorVision.Engine.Templates.Jsons.KB"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance kb:KBJson}"
         Title="键盘模板编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -103,26 +103,23 @@
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
                     <DockPanel Margin="0,0,0,2">
-                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding SelectLuminFileCommand}" Margin="2,0" />
+                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SelectLuminFileCommand}" Margin="2,0" />
                         <TextBlock Text="luminFile" Width="60"/>
-                        <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding LuminFile}"/>
+                        <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding PoiConfig.LuminFile}"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
-                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding SelcetSaveFilePathCommand}" Margin="2,0" />
+                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SelcetSaveFilePathCommand}" Margin="2,0" />
                         <TextBlock Text="SavePath" Width="60"/>
-                        <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding SaveFolderPath}"/>
+                        <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding PoiConfig.SaveFolderPath}"/>
                     </DockPanel>
-                    <UniformGrid Columns="2" Margin="0,2">
-                        <CheckBox x:Name="CB_CalculateHalo" Content="CM_CalculateHalo" IsChecked="False" />
-                        <CheckBox x:Name="CB_CalculateKey" Content="CM_CalculateKey" IsChecked="True" />
+                    <UniformGrid Columns="3" Margin="0,2">
+                        <CheckBox Content="执行Halo" IsChecked="{Binding PoiConfig.DefaultDoHalo}" />
+                        <CheckBox Content="执行Key" IsChecked="{Binding PoiConfig.DefaultDoKey}" />
+                        <CheckBox Content="中间变量" IsChecked="{Binding PoiConfig.SaveProcessData}"/>
                     </UniformGrid>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="SaveProcessData" Width="100"/>
-                        <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding SaveProcessData}"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="Exp" Width="100"/>
-                        <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding Exp}"/>
+                        <TextBlock Text="Exp" Width="60"/>
+                        <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding PoiConfig.Exp}"/>
                     </StackPanel>
                     <Button Content="计算"  Margin="0,2,0,2" Click="Cal_Click"/>
                     <Button Content="设置"  Margin="0,2,0,0" Click="SetKBLocal_Click"/>
