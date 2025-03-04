@@ -29,7 +29,6 @@ namespace ColorVision.Engine.Templates.KB
         {
             DataContext = IAlgorithm;
             ComboxTemplate.ItemsSource = TemplatePoi.Params;
-            ComboxKBTemplate.ItemsSource = TemplateKB.Params;
         }
 
 
@@ -192,13 +191,6 @@ namespace ColorVision.Engine.Templates.KB
 
         private void Open_Raw_File(object sender, RoutedEventArgs e)
         {
-        }
-
-        private void GenTemplateKB_Click(object sender, RoutedEventArgs e)
-        {
-            TemplateJsonKBParamCoveretConfig.Instance.DoHalo = CB_CalculateHalo.IsChecked == true;
-            TemplateJsonKBParamCoveretConfig.Instance.DoKey = CB_CalculateKey.IsChecked == true;
-            new TemplateKB().OpenCreate();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

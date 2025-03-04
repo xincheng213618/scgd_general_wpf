@@ -41,24 +41,11 @@
                 <TextBlock Text="Exp" Width="100"/>
                 <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding Exp}"/>
             </StackPanel>
-            <TabControl BorderThickness="0" Background="Transparent">
-                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}"  IsSelected="True">
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="文件"  Width="40"/>
-                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" Text="{Binding FilePath}"  Width="110" Margin="0,0,2,0" HorizontalAlignment="Left" />
-                        <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
-                    </StackPanel>
-                </TabItem>
-            </TabControl>
-            <DockPanel Margin="0,5,0,2">
-                <TextBlock Text="KB" Width="40"/>
-                <ComboBox x:Name="ComboxKBTemplate"  Width="110"  SelectedIndex="{Binding TemplateSelectedIndex}" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
-                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}" Click="Button_Click"/>
-                </Grid>
-                <Button Content="生成KB模板" Click="GenTemplateKB_Click"/>
-            </DockPanel>
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="文件"  Width="40"/>
+                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" Text="{Binding FilePath}"  Width="110" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+            </StackPanel>
         </StackPanel>
     </Grid>
 </UserControl>

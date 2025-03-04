@@ -351,6 +351,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeviceCamera = deviceCamera;
             if (CameraLicenseModel != null)
             {
+
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();

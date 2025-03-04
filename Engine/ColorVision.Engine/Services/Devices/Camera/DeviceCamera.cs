@@ -235,6 +235,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
+
+                PhyCamera.Config.Channel = Config.Channel;
+                PhyCamera.Config.CFW.CopyFrom(Config.CFW);
+                PhyCamera.Config.MotorConfig.CopyFrom(Config.MotorConfig);
+                PhyCamera.Config.CameraID = Config.CameraID;
+                PhyCamera.Config.CameraMode = Config.CameraMode;
+                PhyCamera.Config.CameraType = Config.CameraType;
+                PhyCamera.Config.CameraModel = Config.CameraModel;
+                PhyCamera.Config.TakeImageMode = Config.TakeImageMode;
+                PhyCamera.Config.ImageBpp = Config.ImageBpp;
+
                 NotifyPropertyChanged(nameof(PhyCamera));
             }
             base.Save();

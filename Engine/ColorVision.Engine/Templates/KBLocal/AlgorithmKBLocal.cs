@@ -28,7 +28,6 @@ namespace ColorVision.Engine.Templates.KB
     {
         public string Name { get; set; } = "KB调试";
         public int Order { get; set; } = 99;
-        public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand SelectLuminFileCommand { get; set; }
         public RelayCommand SelcetSaveFilePathCommand { get; set; }
 
@@ -37,7 +36,6 @@ namespace ColorVision.Engine.Templates.KB
 
         public AlgorithmKBLocal()
         {
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
 
             SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
@@ -46,15 +44,8 @@ namespace ColorVision.Engine.Templates.KB
 
         public AlgorithmKBLocal(DeviceAlgorithm deviceAlgorithm)
         {
-            OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             SelectLuminFileCommand = new RelayCommand(a => SelectLuminFile());
             SelcetSaveFilePathCommand = new RelayCommand(a => SelcetSaveFilePath());
-        }
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplateKB(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplatePoiSelectedIndex;
