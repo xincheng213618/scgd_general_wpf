@@ -227,6 +227,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                     });
                 }
+          
             }
         }
 
