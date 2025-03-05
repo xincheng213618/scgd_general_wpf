@@ -207,7 +207,21 @@ namespace ColorVision.Engine.Templates.POI
                     if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                     {
                         if (visual.BaseAttribute.Param ==null)
-                            visual.BaseAttribute.Param = new PoiPointParam();
+                        {
+                            if (visual.BaseAttribute is RectangleTextProperties rectangle)
+                            {
+                                PoiPointParam poiPointParam = new PoiPointParam();
+                                poiPointParam.PropertyChanged += (s, e) =>
+                                {
+                                    if (e.PropertyName == "Area")
+                                    {
+                                        CalPoiPointParamB(rectangle);
+                                    }
+                                };
+
+                            }
+
+                        }
 
                         DrawingVisualLists.Add(visual);
                         visual.BaseAttribute.PropertyChanged += (s1, e1) =>
@@ -589,7 +603,7 @@ namespace ColorVision.Engine.Templates.POI
                     Rectangle.Attribute.Text = item.Name;
                     Rectangle.Attribute.Name = No.ToString();
 
-                    Rectangle.Attribute.Param = new PoiPointParam()
+                    PoiPointParam poiPointParam = new PoiPointParam()
                     {
                         HaloScale = item.KBHalo.HaloScale,
                         HaloOffsetX = item.KBHalo.OffsetX,
@@ -604,6 +618,19 @@ namespace ColorVision.Engine.Templates.POI
                         KeyOutMOVE = item.KBKey.Move,
                         Area = item.KBKey.Area,
                     };
+                    poiPointParam.PropertyChanged += (s, e) =>
+                    {
+                        if (e.PropertyName == "Area")
+                        {
+                            CalPoiPointParamB(Rectangle.Attribute);
+                        }
+                    };
+
+                    Rectangle.Attribute.Param = poiPointParam;
+
+
+
+
                     Rectangle.Render();
                     ImageShow.AddVisual(Rectangle);
                     DBIndex.Add(Rectangle, No);
@@ -1593,6 +1620,34 @@ namespace ColorVision.Engine.Templates.POI
 
         }
 
+        private void CalPoiPointParamB(RectangleTextProperties rectangle)
+        {
+            if (!IsInitialKB) return;
+            if (rectangle.Param is PoiPointParam poiPointParam)
+            {
+                IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
+                if (PoiConfig.DefaultDoKey)
+                {
+                    uint keyGray1 = 0;
+                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref keyGray1);
+                    keyGray = (float)(keyGray * poiPointParam.KeyScale);
+                    if (poiPointParam.Area != 0)
+                    {
+                        poiPointParam.Brightness = keyGray / poiPointParam.Area;
+                    }
+                    else
+                    {
+                        poiPointParam.Brightness = keyGray;
+                    }
+
+                }
+
+            }
+
+
+        }
+
+        bool IsInitialKB ;
         private void InitialKBKey()
         {
             string luminFile = PoiConfig.LuminFile;
@@ -1756,7 +1811,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 mat = OpenCvSharp.Mat.FromPixelData(rh, rw, OpenCvSharp.MatType.CV_16UC(rChannel), pDst1);
             }
-
+            IsInitialKB = true;
             string Imageresult = $"{PoiConfig.SaveFolderPath}\\{Path.GetFileName(imgFileName)}_{DateTime.Now:yyyyMMdd_HHmmss}.tif";
             mat.SaveImage(Imageresult);
 

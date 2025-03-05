@@ -230,6 +230,8 @@ namespace ColorVision.Engine.Templates.POI
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
 
+
+
                     drawCanvas.AddVisual(DrawingRectangleCache);
 
 

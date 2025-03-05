@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
             if (list ==null )
                 return;
-            
+            int old = TemplatePoi.Params.Count;
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
             templatePoi.ExportTemp.Height = 400;
@@ -83,6 +83,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
             templatePoi.OpenCreate();
+            int next = TemplatePoi.Params.Count;
+            if (next ==old + 1)
+            {
+                new EditPoiParam(TemplatePoi.Params[next-1].Value).ShowDialog();
+            }
+
         }
 
         public void CopyTo()
