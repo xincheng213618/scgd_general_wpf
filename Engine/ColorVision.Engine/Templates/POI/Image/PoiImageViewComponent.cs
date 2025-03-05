@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
@@ -97,6 +98,11 @@ namespace ColorVision.Engine.Templates.POI.Image
             void CalculPOI_Click(object sender, RoutedEventArgs e)
             {
                 if (!imageView.Config.GetProperties<bool>("IsCVCIE") == true)
+                {
+                    MessageBox1.Show("仅对CVCIE图像支持");
+                    return;
+                }
+                if (!(CVFileUtil.IsCIEFile(imageView.Config.FilePath) && CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile cVCIEFile) > 0 && cVCIEFile.FileExtType == CVType.CIE)) 
                 {
                     MessageBox1.Show("仅对CVCIE图像支持");
                     return;
