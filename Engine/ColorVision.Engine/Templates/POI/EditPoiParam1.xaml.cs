@@ -1628,16 +1628,18 @@ namespace ColorVision.Engine.Templates.POI
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
                 {
-                    uint keyGray1 = 0;
-                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref keyGray1);
+                    uint Keygraynum = 0;
+                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygraynum);
                     keyGray = (float)(keyGray * poiPointParam.KeyScale);
                     if (poiPointParam.Area != 0)
                     {
                         poiPointParam.Brightness = keyGray / poiPointParam.Area;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
                     }
                     else
                     {
                         poiPointParam.Brightness = keyGray;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
                     }
 
                 }
@@ -1756,25 +1758,27 @@ namespace ColorVision.Engine.Templates.POI
                         {
                             IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                             float haloGray = -1;
-                            uint haloGray1 = 0;
-                            uint Keygray1 = 0;
+                            uint haloGraynum = 0;
+                            uint Keygraynum = 0;
                             if (PoiConfig.DefaultDoHalo)
                             {
-                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGray1);
+                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGraynum);
                                 haloGray = (float)(haloGray * poiPointParam.HaloScale);
                             }
                             float keyGray = -1;
                             if (PoiConfig.DefaultDoKey)
                             {
-                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygray1);
+                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygraynum);
                                 keyGray = (float)(keyGray * poiPointParam.KeyScale);
                                 if (poiPointParam.Area != 0)
                                 {
                                     poiPointParam.Brightness = keyGray / poiPointParam.Area;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
                                 }
                                 else
                                 {
                                     poiPointParam.Brightness = keyGray;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
                                 }
 
                             }
@@ -1783,7 +1787,7 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 name = $"\"{name.Replace("\"", "\"\"")}\"";
                             }
-                            writer.WriteLine($"{name},{rect},{haloGray},{haloGray1},{keyGray},{Keygray1}");
+                            writer.WriteLine($"{name},{rect},{haloGray},{haloGraynum},{keyGray},{Keygraynum}");
                         }
                         catch
                         {
