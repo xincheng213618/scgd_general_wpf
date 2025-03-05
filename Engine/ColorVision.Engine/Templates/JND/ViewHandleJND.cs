@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.JND
 {
     public class ViewHandleJND : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.SFR };
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Compliance_Math_JND, AlgorithmResultType.OLED_JND_CalVas};
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {

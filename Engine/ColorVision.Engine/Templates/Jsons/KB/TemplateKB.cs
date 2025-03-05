@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateJsonKBParam(TemplateJsonModel templateJsonModel):base(templateJsonModel) 
         {
+
         }
 
 

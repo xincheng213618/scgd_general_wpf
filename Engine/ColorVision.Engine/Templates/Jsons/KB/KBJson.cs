@@ -110,9 +110,9 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         private bool _SaveProcessData;
 
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
-        private int _Width;
+        private int _Width = 5544;
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
-        private int _Height;
+        private int _Height = 3692;
 
         public KBPoiConfig PoiConfig { get => _PoiConfig; set { _PoiConfig = value; NotifyPropertyChanged(); } }
         private KBPoiConfig _PoiConfig = new KBPoiConfig();

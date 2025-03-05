@@ -519,7 +519,8 @@ namespace ColorVision.Update
 
                 string batchContent = $@"
 @echo off
-timeout /t 3
+taskkill /f /im ""{executableName}""
+timeout /t 4
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""
 rd /s /q ""{tempDirectory}""
