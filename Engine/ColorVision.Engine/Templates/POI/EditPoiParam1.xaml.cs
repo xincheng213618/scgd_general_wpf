@@ -101,7 +101,7 @@ namespace ColorVision.Engine.Templates.POI
         private int _Exp = 100;
 
         public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
-        private string _SaveFolderPath;
+        private string _SaveFolderPath =Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
 
     }
 
@@ -1610,24 +1610,70 @@ namespace ColorVision.Engine.Templates.POI
             if (CVFileUtil.IsCIEFile(imgFileName))
             {
                 int index = CVFileUtil.ReadCIEFileHeader(imgFileName, out CVCIEFile cvcie);
-                if (index > 0)
+                if (cvcie.FileExtType == CVType.CIE)
                 {
-                    CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
-                    if (cvcie.bpp == 16)
+                    string path = Path.GetDirectoryName(imgFileName);
+                    if (File.Exists(Path.Combine(path, cvcie.srcFileName)))
                     {
-                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_16UC(cvcie.channels), cvcie.data);
+                        int index1 = CVFileUtil.ReadCIEFileHeader(Path.Combine(path, cvcie.srcFileName), out CVCIEFile cvcie1);
 
+                        if (index1 > 0)
+                        {
+                            CVFileUtil.ReadCIEFileData(Path.Combine(path, cvcie.srcFileName), ref cvcie1, index1);
+                            if (cvcie1.bpp == 16)
+                            {
+                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.cols, cvcie1.rows, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.channels), cvcie1.data);
+                            }
+                            else if (cvcie1.bpp == 32)
+                            {
+                                OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie1.cols, cvcie1.rows, OpenCvSharp.MatType.MakeType(cvcie1.Depth, cvcie1.channels), cvcie1.data);
+                                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                                image = new OpenCvSharp.Mat();
+                                src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
+                            }
+                            else
+                            {
+                                image = OpenCvSharp.Mat.FromPixelData(cvcie1.cols, cvcie1.rows, OpenCvSharp.MatType.CV_8UC(cvcie1.channels), cvcie1.data);
+                            }
+                        }
+                        else
+                        {
+                            return;
+                        }
                     }
                     else
                     {
-                        image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
-
+                        return;
                     }
+                   
                 }
                 else
                 {
-                    return;
+                    if (index > 0)
+                    {
+                        CVFileUtil.ReadCIEFileData(imgFileName, ref cvcie, index);
+                        if (cvcie.bpp == 16)
+                        {
+                            image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                        }
+                        else if (cvcie.bpp == 32)
+                        {
+                            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                            OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                            image = new OpenCvSharp.Mat();
+                            src.ConvertTo(image, OpenCvSharp.MatType.CV_8U);
+                        }
+                        else
+                        {
+                            image = OpenCvSharp.Mat.FromPixelData(cvcie.cols, cvcie.rows, OpenCvSharp.MatType.CV_8UC(cvcie.channels), cvcie.data);
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
+
             }
             else
             {
@@ -1661,6 +1707,7 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGray1);
                                 haloGray = (float)(haloGray * poiPointParam.HaloScale);
+                                poiPointParam.Brightness = haloGray;
                             }
                             float keyGray = -1;
                             if (PoiConfig.DefaultDoKey)

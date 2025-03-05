@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
 
         public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
-        private double _Area;
+        private double _Area = 1;
 
         [JsonProperty("move")]
         public int Move { get => _Move; set { _Move = value; NotifyPropertyChanged(); } }

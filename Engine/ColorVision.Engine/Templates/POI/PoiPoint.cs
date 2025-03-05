@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Templates.POI
         /// 面积
         /// </summary>
         public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
-        private double _Area;
+        private double _Area = 1;
 
         /// <summary>
         /// 辉度
