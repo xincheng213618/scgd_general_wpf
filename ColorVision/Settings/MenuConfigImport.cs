@@ -1,5 +1,11 @@
 ﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
+using ColorVision.Update;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.Settings
 {
@@ -26,6 +32,9 @@ namespace ColorVision.Settings
                 ConfigHandler.GetInstance().LoadConfigs(fileName);
             }
 
+            AutoUpdater.RestartApplication(CurrentInstallFile);
         }
+        private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+        private static string CurrentInstallFile => Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AssemblyCompany), $"ColorVision-{Assembly.GetExecutingAssembly().GetName().Version}.exe");
     }
 }

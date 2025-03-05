@@ -15,6 +15,7 @@ namespace ColorVision.Update
         public override int Order => 10003;
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
         private static string CurrentInstallFile => Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{Assembly.GetExecutingAssembly().GetName().Version}.exe");
+        
         public override Visibility Visibility => Visibility.Visible;
         public override string Header => "重新安装当前版本";
         public override void Execute()
