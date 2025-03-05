@@ -211,6 +211,7 @@ namespace ColorVision.Engine.Templates.POI
                             if (visual.BaseAttribute is RectangleTextProperties rectangle)
                             {
                                 PoiPointParam poiPointParam = new PoiPointParam();
+                                visual.BaseAttribute.Param = poiPointParam;
                                 poiPointParam.PropertyChanged += (s, e) =>
                                 {
                                     if (e.PropertyName == "Area")
