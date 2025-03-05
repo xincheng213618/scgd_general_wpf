@@ -128,6 +128,23 @@ namespace ColorVision.Engine.Templates.POI
                 }
             };
 
+
+            if (PoiConfig.IsShowText)
+            {
+                DrawingVisualLists.CollectionChanged += (s, e) =>
+                {
+                    if (DrawingVisualLists.Count == 0)
+                    {
+                        FocusPointGrid.Visibility = Visibility.Collapsed;
+                        PropertyGrid21.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        FocusPointGrid.Visibility = Visibility.Visible;
+                        PropertyGrid21.Visibility = Visibility.Visible;
+                    }
+                };
+            }
             ImageShow.VisualsAdd += (s, e) =>
             {
                 if (!PoiConfig.IsShowText)
@@ -172,22 +189,7 @@ namespace ColorVision.Engine.Templates.POI
 
 
             };
-            if (PoiConfig.IsShowText)
-            {
-                DrawingVisualLists.CollectionChanged += (s, e) =>
-                {
-                    if (DrawingVisualLists.Count == 0)
-                    {
-                        FocusPointGrid.Visibility = Visibility.Collapsed;
-                        PropertyGrid21.Visibility = Visibility.Collapsed;
-                    }
-                    else
-                    {
-                        FocusPointGrid.Visibility = Visibility.Visible;
-                        PropertyGrid21.Visibility = Visibility.Visible;
-                    }
-                };
-            }
+
             //如果是不显示
             ImageShow.VisualsRemove += (s, e) =>
             {

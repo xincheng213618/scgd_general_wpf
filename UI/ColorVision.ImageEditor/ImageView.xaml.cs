@@ -188,16 +188,18 @@ namespace ColorVision.ImageEditor
             }
         }
 
+        Guid Guid { get; set; } = Guid.NewGuid();
+
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
             if (Config.IsLayoutUpdated)
             {
                 double scale = 1/ Zoombox1.ContentMatrix.M11;
-                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender", 20, ()=>ImageLayoutUpdatedRender(scale));
+                DebounceTimer.AddOrResetTimerDispatcher("ImageLayoutUpdatedRender" + Guid.ToString(), 20, ()=>ImageLayoutUpdatedRender(scale, DrawingVisualLists));
             }
         }
 
-        public void ImageLayoutUpdatedRender(double scale)
+        public static void ImageLayoutUpdatedRender(double scale, ObservableCollection<IDrawingVisual> DrawingVisualLists)
         {
             foreach (var item in DrawingVisualLists)
             {

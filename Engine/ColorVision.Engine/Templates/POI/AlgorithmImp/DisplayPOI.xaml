@@ -55,41 +55,52 @@
                     <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Command="{Binding OpenPoiFileCommand}" />
                 </StackPanel>
             </StackPanel>
-            <StackPanel   >
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0" Width="40"/>
-                    <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" HorizontalAlignment="Left" SelectedValuePath="Code"  DisplayMemberPath="Name" />
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <StackPanel Orientation="Horizontal" Width="70">
-                        <RadioButton IsChecked="True" GroupName="CIESrc"/>
-                        <Button Click="Button_Click_RawRefresh" Background="Transparent"  BorderThickness="0" >
-                            <Button.Triggers>
-                                <EventTrigger RoutedEvent="Button.Click">
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </EventTrigger>
-                            </Button.Triggers>
-                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
-                                <TextBlock.RenderTransform>
-                                    <RotateTransform x:Name="rotateTransform2" CenterX="7.5" CenterY="7.5"/>
-                                </TextBlock.RenderTransform>
-                            </TextBlock>
-                        </Button>
+            <TabControl BorderThickness="0" Background="Transparent">
+                <TabItem Background="Transparent" x:Name="LoaclFileTabItem" Header="{x:Static properties:Resources.Local}" >
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                        <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
                     </StackPanel>
+                </TabItem>
+                <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">
+                    <StackPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0" Width="40"/>
+                            <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" HorizontalAlignment="Left" SelectedValuePath="Code"  DisplayMemberPath="Name" />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <StackPanel Orientation="Horizontal" Width="70">
+                                <RadioButton IsChecked="True" GroupName="CIESrc"/>
+                                <Button Click="Button_Click_RawRefresh" Background="Transparent"  BorderThickness="0" >
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                    <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                        <TextBlock.RenderTransform>
+                                            <RotateTransform x:Name="rotateTransform2" CenterX="7.5" CenterY="7.5"/>
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Button>
+                            </StackPanel>
 
-                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
 
-                    <hc:ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.CIEImageFiles}" Width="160"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="CIESrc" Width="70"/>
-                    <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="160"/>
-                </DockPanel>
-            </StackPanel>
+                            <hc:ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.CIEImageFiles}" Width="160"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="CIESrc" Width="70"/>
+                            <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="160"/>
+                        </DockPanel>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
         </StackPanel>
     </Grid>
 </UserControl>

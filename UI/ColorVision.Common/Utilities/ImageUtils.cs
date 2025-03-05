@@ -276,7 +276,11 @@ namespace ColorVision.Common.Utilities
                     ushort gray16 = BitConverter.ToUInt16(pixelData, 0);
                     byte gray = (byte)(gray16 >> 8);
                     return Color.FromArgb(255, gray, gray, gray);
-
+                case PixelFormat fmt when fmt == PixelFormats.Gray32Float:
+                    // For Gray16 format, single channel is 16 bits
+                    float gray32Float = BitConverter.ToSingle(pixelData, 0);
+                    byte gray1 = (byte)(Math.Clamp(gray32Float * 255.0f, 0, 255));
+                    return Color.FromArgb(255, gray1, gray1, gray1);
                 default:
                     throw new NotSupportedException($"Pixel format {format} is not supported.");
             }
