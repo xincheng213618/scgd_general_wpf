@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,6 +47,16 @@ namespace ColorVision.Engine.Templates.SFR
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
+            if (TemplateSFR.Params.Where(x => x.Key == result.POITemplateName).FirstOrDefault() is TemplateModel<SFRParam> templateModel)
+            {
+                var rect = templateModel.Value.RECT;
+                DVRectangleText Rectangle = new();
+                Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
+                Rectangle.Attribute.Brush = Brushes.Transparent;
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
+                Rectangle.Render();
+                view.ImageView.AddVisual(Rectangle);
+            }
             if (result.ResultCode != 0)
             {
                 if (File.Exists(result.FilePath))
@@ -71,16 +82,6 @@ namespace ColorVision.Engine.Templates.SFR
                 };
             }
 
-            if (result.ViewResults.Count > 0)
-            {
-                var rect = new Rect(10, 10, 10, 10);
-                DVRectangleText Rectangle = new();
-                Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-                Rectangle.Attribute.Brush = Brushes.Transparent;
-                Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-                Rectangle.Render();
-                view.ImageView.AddVisual(Rectangle);
-            }
 
 
 
