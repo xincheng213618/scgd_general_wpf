@@ -10,9 +10,39 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
-    public class AlgorithmKBConfig : ViewModelBase, IConfig
+    public class AlgorithmKBConfig : ViewModelBase, IConfig,IConfigSettingProvider
     {
         public static AlgorithmKBConfig Instance =>ConfigService.Instance.GetRequiredService<AlgorithmKBConfig>();
+        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
+        private double _KBLVSacle = 0.006583904;
+
+        public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; NotifyPropertyChanged(); } }
+        private bool _KBCanDrag;
+
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = "KBLVSacle",
+                                Description = "KBLVSacle",
+                                Order = 2,
+                                Type = ConfigSettingType.Text,
+                                BindingName =nameof(KBLVSacle),
+                                Source = Instance,
+                            },
+                             new ConfigSettingMetadata
+                            {
+                                Name = "KBCanDrag",
+                                Description = "KBCanDrag",
+                                Order = 2,
+                                Type = ConfigSettingType.Bool,
+                                BindingName =nameof(KBCanDrag),
+                                Source = Instance,
+                            }
+            };
+        }
     }
 
     public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm

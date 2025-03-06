@@ -86,22 +86,6 @@ namespace ColorVision.Engine.Templates.POI
             DataContext = PoiParam;
 
             ListView1.ItemsSource = DrawingVisualLists;
-            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
-            listViewDragDropManager.ShowDragAdorner = false;
-            listViewDragDropManager.EventHandler += (s, e) =>
-            {
-                if (!DBIndex.ContainsKey(e[0]))
-                    DBIndex.Add(e[0], -1);
-                if (!DBIndex.ContainsKey(e[1]))
-                    DBIndex.Add(e[1], -1);
-
-                int old = DBIndex[e[0]];
-                DBIndex[e[0]] = DBIndex[e[1]];
-
-                e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
-                DBIndex[e[1]] = old;
-                e[1].BaseAttribute.Name = old.ToString();
-            };
 
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
