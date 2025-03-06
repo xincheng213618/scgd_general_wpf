@@ -1,26 +1,27 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
-using ColorVision.Engine.Services.Devices.Camera.Video;
-using ColorVision.Engine.Services.Devices.Camera.Views;
-using ColorVision.Engine.Messages;
-using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Themes.Controls;
-using ColorVision.UI.Authorizations;
-using ColorVision.UI;
-using log4net;
-using System;
-using System.Windows;
-using System.Windows.Controls;
-using CVCommCore;
-using System.ComponentModel;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
-using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using CVCommCore;
+using log4net;
+using System;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -236,15 +237,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 PhyCamera.SetDeviceCamera(this);
 
-                PhyCamera.Config.Channel = Config.Channel;
-                PhyCamera.Config.CFW.CopyFrom(Config.CFW);
-                PhyCamera.Config.MotorConfig.CopyFrom(Config.MotorConfig);
-                PhyCamera.Config.CameraID = Config.CameraID;
-                PhyCamera.Config.CameraMode = Config.CameraMode;
-                PhyCamera.Config.CameraType = Config.CameraType;
-                PhyCamera.Config.CameraModel = Config.CameraModel;
-                PhyCamera.Config.TakeImageMode = Config.TakeImageMode;
-                PhyCamera.Config.ImageBpp = Config.ImageBpp;
+                Config.Channel = PhyCamera.Config.Channel;
+                Config.CFW.CopyFrom(PhyCamera.Config.CFW);
+                Config.MotorConfig.CopyFrom(PhyCamera.Config.MotorConfig);
+                Config.CameraID = PhyCamera.Config.CameraID;
+                Config.CameraMode = PhyCamera.Config.CameraMode;
+                Config.CameraType = PhyCamera.Config.CameraType;
+                Config.CameraModel = PhyCamera.Config.CameraModel;
+                Config.TakeImageMode = PhyCamera.Config.TakeImageMode;
+                Config.ImageBpp = PhyCamera.Config.ImageBpp;
 
                 NotifyPropertyChanged(nameof(PhyCamera));
             }
