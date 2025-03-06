@@ -1,10 +1,17 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
@@ -69,17 +76,51 @@ namespace ColorVision.Engine.Templates.POI
 
     public class PoiConfig : ViewModelBase
     {
+        [JsonIgnore]
         public RelayCommand SetPoiFileCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenPoiCIEFileCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand FindLuminousAreaEditCommand { get; set; }
+        [JsonIgnore]
+        public RelayCommand EditCalibrationTemplateCommand { get; set; }
 
         public PoiConfig()
         {
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
             FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
         }
+        [JsonIgnore]
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams => DeviceCamera.PhyCamera?.CalibrationParams;
+        [JsonIgnore]
+        public DeviceCamera DeviceCamera => ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
+
+        public void OpenCalibrationTemplate()
+        {
+
+            if (DeviceCamera.PhyCamera == null)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(DeviceCamera.PhyCamera);
+            var windowTemplate = new TemplateEditorWindow(ITemplate, CalibrationTemplateIndex) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+
+
+
+        public int CalibrationTemplateIndex { get=> _CalibrationTemplateIndex; set { _CalibrationTemplateIndex = value; } }
+        private int _CalibrationTemplateIndex;
+
+
 
         public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; NotifyPropertyChanged(); } }
         private bool _LockDeafult;
@@ -146,6 +187,8 @@ namespace ColorVision.Engine.Templates.POI
 
         public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; NotifyPropertyChanged(); } }
         private bool _IsUserDraw;
+
+
 
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }
         private int _AreaCircleRadius = 100;

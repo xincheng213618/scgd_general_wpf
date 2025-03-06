@@ -5,6 +5,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.ImageEditor;
@@ -1244,8 +1246,8 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         param = new PoiPointParam();
                     }
-                    kBKeyRect.DoHalo = param.DoHalo;
-                    kBKeyRect.DoKey = param.DoKey;
+                    kBKeyRect.DoHalo = PoiConfig.DefaultDoHalo;
+                    kBKeyRect.DoKey = PoiConfig.DefaultDoKey ;
 
                     KBHalo kBHalo = new KBHalo();
                     kBHalo.HaloScale = param.HaloScale;
@@ -1654,14 +1656,53 @@ namespace ColorVision.Engine.Templates.POI
         bool IsInitialKB ;
         private void InitialKBKey()
         {
-            string luminFile = PoiConfig.LuminFile;
+           if (PoiConfig.CalibrationParams == null)
+            {
+                MessageBox.Show("请先设置校准模板");
+                return;
+            }
+            string luminFile;
+            if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
+            {
+                string path = templateModel.Value.Color.Luminance.FilePath;
+                if (string.IsNullOrEmpty(path))
+                {
+                    MessageBox.Show("找不到亮度校正模板");
+                    return;
+                }
+                var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id);
+
+                PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
+                string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
+                log.Info($"Lum:{filepath}");
+
+                if (File.Exists(filepath))
+                {
+                    luminFile = filepath;
+                }
+                else
+                {
+                    MessageBox.Show("找不到亮度校正模板");
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("请先设置校准模板");
+                return;
+            }
+
+
+
             if (luminFile ==null || !File.Exists(luminFile))
             {
+                MessageBox.Show("找不到亮度校正模板");
                 return;
             }
             string imgFileName = PoiConfig.BackgroundFilePath;
             if (imgFileName == null || !File.Exists(imgFileName))
             {
+                MessageBox.Show("背景图片");
                 return;
             }
 

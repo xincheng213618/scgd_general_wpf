@@ -102,10 +102,28 @@
             </Border>
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
-                    <DockPanel Margin="0,0,0,2">
-                        <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SelectLuminFileCommand}" Margin="2,0" />
-                        <TextBlock Text="luminFile" Width="60"/>
-                        <TextBox  BorderThickness="1" Style="{StaticResource TextBox.Small}" Text="{Binding PoiConfig.LuminFile}"/>
+            
+                    <DockPanel Margin="0,0">
+                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform4" CenterX="8" CenterY="8"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding PoiConfig.EditCalibrationTemplateCommand}">
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform4" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </Grid>
+                        <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
+                        <ComboBox x:Name="ComboxCalibrationTemplate" ItemsSource="{Binding PoiConfig.CalibrationParams}" SelectedIndex="{Binding PoiConfig.CalibrationTemplateIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <Button DockPanel.Dock="Right"  Content="..." Command="{Binding PoiConfig.SelcetSaveFilePathCommand}" Margin="2,0" />
