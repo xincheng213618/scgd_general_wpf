@@ -1750,7 +1750,6 @@ namespace ColorVision.Engine.Templates.POI
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
             {
                 writer.WriteLine("Name,rect,HaloGray,haloGraynum,KeyGray,Keygraynum");
-                
                 foreach (var drawingVisual in DrawingVisualLists)
                 {
                     BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
