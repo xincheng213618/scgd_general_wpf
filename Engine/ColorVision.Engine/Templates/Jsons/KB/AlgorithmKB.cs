@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;
 using System;
@@ -56,15 +57,22 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-     
+        public RelayCommand OpenFirstTemplateCommand { get; set; }
+
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
         {
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
+            OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());
         }
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplateKB(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        public void OpenFirstTemplate()
+        {
+            new EditPoiParam1(TemplateKB.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

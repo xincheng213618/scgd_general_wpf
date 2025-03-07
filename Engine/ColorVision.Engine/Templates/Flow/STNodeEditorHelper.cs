@@ -1,9 +1,17 @@
 ﻿#pragma warning disable CS8603,CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Calibration;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
-using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
@@ -11,43 +19,36 @@ using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
+using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
 using ColorVision.Engine.Templates.MTF;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.ROI;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
+using FlowEngineLib;
+using FlowEngineLib.Base;
+using FlowEngineLib.End;
+using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Windows.Controls;
-using ColorVision.Engine.Templates.Jsons;
-using System.Windows;
-using System.Windows.Media;
 using System.Reflection;
-using FlowEngineLib.End;
-using FlowEngineLib.Base;
-using FlowEngineLib.Node.Algorithm;
-using FlowEngineLib;
-using ColorVision.Engine.Services.PhyCameras.Group;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Services.Devices.Sensor;
-using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Services.Devices.Spectrum;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
-using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -218,7 +219,7 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => kbnode.DeviceCode = name, kbnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
-                AddStackPanel(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
+                AddStackPanelKB(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
 
             }
 
@@ -486,6 +487,118 @@ namespace ColorVision.Engine.Templates.Flow
             };
 
             dockPanel.Children.Add(comboBox);
+            SignStackPannel.Children.Add(dockPanel);
+        }
+
+        void AddStackPanelKB(Action<string> updateStorageAction, string tempName, string signName, TemplateKB template)
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 30, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
+                Width = 120
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = template.TemplateParams;
+            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is TemplateJsonKBParam templateModel)
+                {
+                    selectedName = templateModel.Name;
+                }
+                updateStorageAction(selectedName);
+                STNodePropertyGrid1.Refresh();
+            };
+
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                Margin = new Thickness(0, 0, 0, 0),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
+            };
+
+            // 创建 TextBlock
+            TextBlock textBlock = new TextBlock
+            {
+                Text = "\uE713",
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // 创建 Button
+            Button button = new Button
+            {
+                Width = 20,
+                BorderBrush = Brushes.Transparent,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+
+            button.Click += (s, e) =>
+            {
+                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            };
+
+            // 将控件添加到 Grid
+            grid.Children.Add(textBlock);
+            grid.Children.Add(button);
+
+
+
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(grid);
+
+            // Create a new Grid
+            Grid grid1 = new Grid
+            {
+                Width = 20,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            // Create an Image
+            Image image = new Image
+            {
+                Source = (ImageSource)Application.Current.Resources["DrawingImageEdit"], // Assuming the resource is defined
+                Width = 12,
+                Margin = new Thickness(0)
+            };
+
+            // Add the Image to the Grid
+            grid1.Children.Add(image);
+
+            // Create a Button
+            Button buttonEdit = new Button
+            {
+                Name = "ButtonEdit",
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+            buttonEdit.Click += (s, e) =>
+            {
+
+                if (comboBox.SelectedIndex >= 0)
+                {
+                    new EditPoiParam1(TemplateKB.Params[comboBox.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                }
+            };
+
+            // Add the Button to the Grid
+            grid1.Children.Add(buttonEdit);
+            dockPanel.Children.Add(grid1);
             SignStackPannel.Children.Add(dockPanel);
         }
 
