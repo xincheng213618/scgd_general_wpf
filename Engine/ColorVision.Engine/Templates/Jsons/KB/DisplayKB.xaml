@@ -14,10 +14,13 @@
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                 <TextBlock Text="KB" Width="60"/>
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
-                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip=""/>
-                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                <Grid Width="20" Margin="0,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
+                </Grid>
+                <Grid  Width="20" HorizontalAlignment="Left" >
+                    <Image Source="{StaticResource  DrawingImageEdit}" Width="12" Margin="0" />
+                    <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFirstTemplateCommand}"/>
                 </Grid>
             </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">

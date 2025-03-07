@@ -122,6 +122,7 @@ namespace ColorVision.Plugins
 
                                 string batchContent = $@"
 @echo off
+taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c PluginManagerExport
@@ -176,6 +177,7 @@ del ""%~f0"" & exit
 
             string batchContent = $@"
 @echo off
+taskkill /f /im ""{executableName}""
 timeout /t 3
 setlocal
 

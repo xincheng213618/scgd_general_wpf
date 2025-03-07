@@ -5,6 +5,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.ImageEditor;
@@ -86,7 +88,7 @@ namespace ColorVision.Engine.Templates.POI
         public bool DefaultDoKey { get => _DefaultDoKey; set { _DefaultDoKey = value; NotifyPropertyChanged(); } }
         private bool _DefaultDoKey = true;
         public bool DefaultDoHalo { get => _DefaultDoHalo; set { _DefaultDoHalo = value; NotifyPropertyChanged(); } }
-        private bool _DefaultDoHalo = true;
+        private bool _DefaultDoHalo;
 
         /// <summary>
         /// 校正文件
@@ -95,10 +97,10 @@ namespace ColorVision.Engine.Templates.POI
         private string _LuminFile = string.Empty;
 
         public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
-        private int _saveProcessData = 1;
+        private int _saveProcessData = 0;
 
         public int Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
-        private int _Exp = 100;
+        private int _Exp = 600;
 
         public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
         private string _SaveFolderPath =Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
@@ -123,6 +125,7 @@ namespace ColorVision.Engine.Templates.POI
             InitializeComponent();
             this.ApplyCaption();
             Task.Run(() => DelayClose());
+            this.Title = poiParam.Name + "-" + this.Title;
         }
 
         public async void DelayClose()
@@ -151,24 +154,26 @@ namespace ColorVision.Engine.Templates.POI
             DataContext = KBJson;
 
             ListView1.ItemsSource = DrawingVisualLists;
-            ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
-            listViewDragDropManager.ShowDragAdorner = true;
-            listViewDragDropManager.EventHandler += (s, e) =>
+            if (AlgorithmKBConfig.Instance.KBCanDrag)
             {
-                if (!DBIndex.ContainsKey(e[0]))
-                    DBIndex.Add(e[0], -1);
-                if (!DBIndex.ContainsKey(e[1]))
-                    DBIndex.Add(e[1], -1);
+                ListViewDragDropManager<IDrawingVisual> listViewDragDropManager = new Common.Adorners.ListViewAdorners.ListViewDragDropManager<IDrawingVisual>(ListView1);
+                listViewDragDropManager.ShowDragAdorner = true;
+                listViewDragDropManager.EventHandler += (s, e) =>
+                {
+                    if (!DBIndex.ContainsKey(e[0]))
+                        DBIndex.Add(e[0], -1);
+                    if (!DBIndex.ContainsKey(e[1]))
+                        DBIndex.Add(e[1], -1);
 
-                int old = DBIndex[e[0]];
-                DBIndex[e[0]] = DBIndex[e[1]];
+                    int old = DBIndex[e[0]];
+                    DBIndex[e[0]] = DBIndex[e[1]];
 
-                e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
-                DBIndex[e[1]] = old;
-                e[1].BaseAttribute.Name = old.ToString();
-            };
-
-
+                    e[0].BaseAttribute.Name = DBIndex[e[1]].ToString();
+                    DBIndex[e[1]] = old;
+                    e[1].BaseAttribute.Name = old.ToString();
+                };
+            }
+           
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -1244,8 +1249,8 @@ namespace ColorVision.Engine.Templates.POI
                     {
                         param = new PoiPointParam();
                     }
-                    kBKeyRect.DoHalo = param.DoHalo;
-                    kBKeyRect.DoKey = param.DoKey;
+                    kBKeyRect.DoHalo = PoiConfig.DefaultDoHalo;
+                    kBKeyRect.DoKey = PoiConfig.DefaultDoKey ;
 
                     KBHalo kBHalo = new KBHalo();
                     kBHalo.HaloScale = param.HaloScale;
@@ -1636,12 +1641,12 @@ namespace ColorVision.Engine.Templates.POI
                     if (poiPointParam.Area != 0)
                     {
                         poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum;
+                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
                     else
                     {
                         poiPointParam.Brightness = keyGray;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum;
+                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
 
                 }
@@ -1654,14 +1659,53 @@ namespace ColorVision.Engine.Templates.POI
         bool IsInitialKB ;
         private void InitialKBKey()
         {
-            string luminFile = PoiConfig.LuminFile;
+           if (PoiConfig.CalibrationParams == null)
+            {
+                MessageBox.Show("请先设置校准模板");
+                return;
+            }
+            string luminFile;
+            if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
+            {
+                string path = templateModel.Value.Color.Luminance.FilePath;
+                if (string.IsNullOrEmpty(path))
+                {
+                    MessageBox.Show("找不到亮度校正模板");
+                    return;
+                }
+                var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id);
+
+                PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
+                string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
+                log.Info($"Lum:{filepath}");
+
+                if (File.Exists(filepath))
+                {
+                    luminFile = filepath;
+                }
+                else
+                {
+                    MessageBox.Show("找不到亮度校正模板");
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("请先设置校准模板");
+                return;
+            }
+
+
+
             if (luminFile ==null || !File.Exists(luminFile))
             {
+                MessageBox.Show("找不到亮度校正模板");
                 return;
             }
             string imgFileName = PoiConfig.BackgroundFilePath;
             if (imgFileName == null || !File.Exists(imgFileName))
             {
+                MessageBox.Show("背景图片");
                 return;
             }
 
@@ -1750,7 +1794,6 @@ namespace ColorVision.Engine.Templates.POI
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
             {
                 writer.WriteLine("Name,rect,HaloGray,haloGraynum,KeyGray,Keygraynum");
-                
                 foreach (var drawingVisual in DrawingVisualLists)
                 {
                     BaseProperties drawAttributeBase = drawingVisual.BaseAttribute;
@@ -1778,12 +1821,12 @@ namespace ColorVision.Engine.Templates.POI
                                 if (poiPointParam.Area != 0)
                                 {
                                     poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                                 }
                                 else
                                 {
                                     poiPointParam.Brightness = keyGray;
-                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum;
+                                    poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                                 }
 
                             }
@@ -1841,6 +1884,24 @@ namespace ColorVision.Engine.Templates.POI
                 }));
             }
 
+        }
+
+        private void CreateCopy_Click(object sender, RoutedEventArgs e)
+        {
+            int index = TemplateKB.Params.IndexOf(TemplateKB.Params.First(x=>x.Value == TemplateJsonKBParam));
+
+            int oldindex = TemplateKB.Params.Count;
+            TemplateKB templateKB = new TemplateKB();
+            if (templateKB.CopyTo(index))
+            {
+                templateKB.OpenCreate();
+            }
+            int newindex = TemplateKB.Params.Count;
+            if (newindex!= oldindex)
+            {
+                this.Close();
+                new EditPoiParam1(TemplateKB.Params[newindex - 1].Value).ShowDialog();
+            }
         }
     }
 
