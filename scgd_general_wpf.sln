@@ -397,6 +397,7 @@ Global
 		{6446CF2C-3AA1-4294-AD99-49FDB05F0365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6446CF2C-3AA1-4294-AD99-49FDB05F0365}.Release|ARM64.ActiveCfg = Release|Any CPU
 		{6446CF2C-3AA1-4294-AD99-49FDB05F0365}.Release|x64.ActiveCfg = Release|x64
+		{6446CF2C-3AA1-4294-AD99-49FDB05F0365}.Release|x64.Build.0 = Release|x64
 		{6446CF2C-3AA1-4294-AD99-49FDB05F0365}.Release|x86.ActiveCfg = Release|Any CPU
 		{033EA18F-40A2-44CB-B294-13C751BC8DE1}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{033EA18F-40A2-44CB-B294-13C751BC8DE1}.Debug|Any CPU.Build.0 = Debug|x64
@@ -558,12 +559,12 @@ Global
 		{D45AF1EE-BBBA-4F98-9A06-08E408F78681} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = False
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = False
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal

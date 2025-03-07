@@ -19,9 +19,11 @@ namespace ColorVisonChat
 
         public RelayCommand EditCommand { get; set; }
 
+        public event EventHandler? ConfigChanged;
+
         public ChatGPTConfig()
         {
-            EditCommand = new RelayCommand(a => new ColorVision.UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a =>  new ColorVision.UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog() );
         }
 
         public string APiKey { get => _APiKey; set { _APiKey = value; NotifyPropertyChanged(); } }
@@ -99,12 +101,21 @@ namespace ColorVisonChat
             this.DataContext = ChatGPTConfig.Instance;
             ChatMsgs = new ObservableCollection<ChatMsg>();
             ListViewContent.ItemsSource = ChatMsgs;
+            if (ChatGPTConfig.Instance.APiKey != null)
+            {
+                Init();
+            }
+        }
+
+
+        private async void Init()
+        {
             ChatClient = new ChatClient(ChatGPTConfig.Instance.Model, ChatGPTConfig.Instance.APiKey);
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
             try
             {
-               
+
                 AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync("你现在是ColorVision的专属定制机器人，可以帮助用户解决一些专业问题，请使用专业的口吻回答问题,理解的话请回答 有什么可以帮你的吗");
                 await foreach (StreamingChatCompletionUpdate completionUpdate in completionUpdates)
                 {
@@ -116,6 +127,7 @@ namespace ColorVisonChat
                         });
                     }
                 }
+
             }
             catch (Exception ex)
             {
@@ -125,6 +137,7 @@ namespace ColorVisonChat
 
                 });
             }
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -139,9 +152,7 @@ namespace ColorVisonChat
 
         public async void ASK(string content)
         {
-            List<ChatMessage> ChatMessages = new List<ChatMessage>();
-
-            AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync(ChatMessages);
+            AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync(content);
             Console.Write($"[ASSISTANT]: ");
             try
             {
@@ -152,7 +163,6 @@ namespace ColorVisonChat
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
                             ChatMsgReturn.Content += completionUpdate.ContentUpdate[0].Text;
-
                         });
                     }
                 }
@@ -180,6 +190,11 @@ namespace ColorVisonChat
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            ChatClient.CompleteChatStreaming(ChatMsgReturn.Content);
         }
     }
 }

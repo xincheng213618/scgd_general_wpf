@@ -1297,14 +1297,26 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
+
+
+
+
             if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
                 {
                     if (measureImgResultModel.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl));
-                        PoiConfig.BackgroundFilePath = measureImgResultModel.FileUrl;
+                        foreach (var item in MeasureImgResultDao.Instance.GetByCreateDate(6))
+                        {
+                            if (!item.FileUrl.Contains("result"))
+                            {
+                                OpenImage(new NetFileUtil().OpenLocalCVFile(item.FileUrl));
+                                PoiConfig.BackgroundFilePath = item.FileUrl;
+                                return;
+                            }
+                        }
+                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
                     }
                     else
                     {

@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\ProjectKB.ico</ApplicationIcon>
-    <VersionPrefix>1.0.6.1</VersionPrefix>
+    <VersionPrefix>1.0.6.4</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,7 +36,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
-    <ProjectReference Include="..\..\UI\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
     <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 

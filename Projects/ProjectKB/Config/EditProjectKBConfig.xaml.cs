@@ -26,6 +26,7 @@ namespace ProjectKB
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            ConfigHandler.GetInstance().SaveConfigs();
             this.Close();
         }
 
