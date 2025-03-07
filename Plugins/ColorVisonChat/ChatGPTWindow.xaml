@@ -80,7 +80,7 @@
                     <TextBox x:Name="TextInput1"  BorderThickness="0" VerticalContentAlignment ="Top" AcceptsReturn="True" Margin="0,0,60,0"/>
                 </Border>
                 <Button  HorizontalAlignment="Right" Content="发送"  Click="Button_Click" Margin="10"/>
-                <Button  HorizontalAlignment="Right" Content="上传文件"  Click="Button_Click" Margin="10"/>
+                <Button  HorizontalAlignment="Right" Content="上传文件"  Click="Button1_Click" Margin="10"/>
             </Grid>
         </Grid>
 
