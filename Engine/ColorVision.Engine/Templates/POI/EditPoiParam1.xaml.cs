@@ -125,6 +125,7 @@ namespace ColorVision.Engine.Templates.POI
             InitializeComponent();
             this.ApplyCaption();
             Task.Run(() => DelayClose());
+            this.Title = poiParam.Name + "-" + this.Title;
         }
 
         public async void DelayClose()
@@ -1889,10 +1890,17 @@ namespace ColorVision.Engine.Templates.POI
         {
             int index = TemplateKB.Params.IndexOf(TemplateKB.Params.First(x=>x.Value == TemplateJsonKBParam));
 
+            int oldindex = TemplateKB.Params.Count;
             TemplateKB templateKB = new TemplateKB();
             if (templateKB.CopyTo(index))
             {
                 templateKB.OpenCreate();
+            }
+            int newindex = TemplateKB.Params.Count;
+            if (newindex!= oldindex)
+            {
+                this.Close();
+                new EditPoiParam1(TemplateKB.Params[newindex - 1].Value).ShowDialog();
             }
         }
     }

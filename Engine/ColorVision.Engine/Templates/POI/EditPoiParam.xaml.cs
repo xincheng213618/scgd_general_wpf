@@ -58,6 +58,8 @@ namespace ColorVision.Engine.Templates.POI
             InitializeComponent();
             this.ApplyCaption();
             Task.Run(() => DelayClose());
+
+            this.Title = poiParam.Name + "-" + this.Title;
         }
 
         public async void DelayClose()
