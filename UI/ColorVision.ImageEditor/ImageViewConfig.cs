@@ -107,7 +107,6 @@ namespace ColorVision.ImageEditor
 
         public event EventHandler BalanceChanged;
 
-
         public double RedBalance { get => _RedBalance; set { _RedBalance = value; NotifyPropertyChanged(); BalanceChanged?.Invoke(this, new EventArgs()); } }
         private double _RedBalance = 1;
 
