@@ -152,6 +152,8 @@ namespace ColorVisonChat
 
         public async void ASK(string content)
         {
+            List<string> chatMessages = new List<string>();
+
             AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync(content);
             Console.Write($"[ASSISTANT]: ");
             try
@@ -195,6 +197,11 @@ namespace ColorVisonChat
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             ChatClient.CompleteChatStreaming(ChatMsgReturn.Content);
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }
