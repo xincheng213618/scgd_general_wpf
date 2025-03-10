@@ -1680,33 +1680,64 @@ namespace ColorVision.Engine.Templates.POI
             if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
             {
                 string path = templateModel.Value.Color.Luminance.FilePath;
+
+
                 if (string.IsNullOrEmpty(path))
                 {
-                    MessageBox.Show("找不到亮度校正模板");
-                    return;
-                }
-                var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id);
+                    path = templateModel.Value.Color.LumFourColor.FilePath;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        MessageBox.Show("找不到亮度校正模板");
+                        return;
+                    }
+                    else
+                    {
+                        log.Info("执行四色校正");
+                        var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.LumFourColor.Id);
 
-                PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
-                string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
-                log.Info($"Lum:{filepath}");
+                        PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
+                        string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
+                        log.Info($"Lum:{filepath}");
 
-                if (File.Exists(filepath))
-                {
-                    luminFile = filepath;
+                        if (File.Exists(filepath))
+                        {
+                            luminFile = filepath;
+                        }
+                        else
+                        {
+                            MessageBox.Show("找不到亮度校正模板");
+                            return;
+                        }
+                    }
                 }
                 else
                 {
-                    MessageBox.Show("找不到亮度校正模板");
-                    return;
+                    log.Info("执行单通道校正");
+
+                    var resource = SysResourceDao.Instance.GetById(templateModel.Value.Color.Luminance.Id);
+
+                    PhyCamera phyCamera1 = PoiConfig.DeviceCamera.PhyCamera;
+                    string filepath = Path.Combine(phyCamera1.Config.FileServerCfg.FileBasePath, phyCamera1.Code, "cfg", resource.Value);
+                    log.Info($"Lum:{filepath}");
+
+                    if (File.Exists(filepath))
+                    {
+                        luminFile = filepath;
+                    }
+                    else
+                    {
+                        MessageBox.Show("找不到亮度校正模板");
+                        return;
+                    }
                 }
+
+
             }
             else
             {
                 MessageBox.Show("请先设置校准模板");
                 return;
             }
-
 
 
             if (luminFile ==null || !File.Exists(luminFile))
