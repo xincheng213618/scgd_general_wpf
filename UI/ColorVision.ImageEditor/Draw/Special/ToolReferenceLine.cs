@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ColorVision.Common.MVVM;
+using System.Windows.Controls;
 
 namespace ColorVision.Util.Draw.Special
 {
@@ -77,6 +78,7 @@ namespace ColorVision.Util.Draw.Special
                     Image.PreviewMouseLeftButtonDown += PreviewMouseLeftButtonDown;
                     Image.PreviewMouseRightButtonDown += Image_PreviewMouseRightButtonDown;
                     Image.PreviewMouseUp += PreviewMouseUp;
+                    Image.MouseDoubleClick += Image_MouseDoubleClick;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
 
                 }
@@ -89,6 +91,34 @@ namespace ColorVision.Util.Draw.Special
                     ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
                 }
             }
+        }
+        TextBox textBox;
+        private void Image_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            var canvas = sender as DrawCanvas;
+            if (canvas != null)
+            {
+                var position = Mouse.GetPosition(canvas);
+
+                textBox = new TextBox
+                {
+                    Width = 100, // Set desired width
+                    Height = 30, // Set desired height
+                    Background = Brushes.Transparent
+                };
+                textBox.Text = "2222";
+                
+                Canvas.SetLeft(textBox, position.X);
+                Canvas.SetTop(textBox, position.Y);
+
+                var parent = ViewHelper.GetParentOfType<Grid>(canvas);
+                if (parent != null)
+                {
+                    parent.Children.Add(textBox);
+                }
+            }
+
+
         }
 
         private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
@@ -115,6 +145,8 @@ namespace ColorVision.Util.Draw.Special
             IsRMouseDown = true;
             Render();
         }
+
+
         private void Image_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             LMouseDownP = Mouse.GetPosition(Image);

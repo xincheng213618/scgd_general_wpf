@@ -18,6 +18,7 @@ namespace ColorVision.ImageEditor.Draw
         public DrawCanvas()
         {
             this.Focusable = true;
+            this.MouseLeftButtonDown += OnMouseLeftButtonDown;
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, (s, e) => Undo(), (s, e) => { e.CanExecute = UndoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Redo, (s, e) => Redo(), (s, e) => { e.CanExecute = RedoStack.Count > 0; }));
             this.CommandBindings.Add(new CommandBinding(Commands.UndoHistory, null, (s, e) =>{ e.CanExecute = UndoStack.Count > 0;  if (e.Parameter is MenuItem m1 && m1.ItemsSource != UndoStack) m1.ItemsSource = UndoStack; }));
@@ -60,6 +61,30 @@ namespace ColorVision.ImageEditor.Draw
             }
         }
         #endregion
+
+        #region doubleClick
+        private DateTime lastClickTime;
+        private const int DoubleClickTime = 300; // Time in milliseconds
+
+        public static readonly RoutedEvent MouseDoubleClickEvent = EventManager.RegisterRoutedEvent("MouseDoubleClick", RoutingStrategy.Bubble, typeof(RoutedEventHandler), typeof(DrawCanvas));
+        public event RoutedEventHandler MouseDoubleClick
+        {
+            add { AddHandler(MouseDoubleClickEvent, value); }
+            remove { RemoveHandler(MouseDoubleClickEvent, value); }
+        }
+
+        private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            DateTime now = DateTime.Now;
+            if ((now - lastClickTime).TotalMilliseconds <= DoubleClickTime)
+            {
+                RaiseEvent(new RoutedEventArgs(MouseDoubleClickEvent));
+            }
+            lastClickTime = now;
+        }
+        #endregion
+
+
 
         protected override Visual GetVisualChild(int index) => visuals[index];
 

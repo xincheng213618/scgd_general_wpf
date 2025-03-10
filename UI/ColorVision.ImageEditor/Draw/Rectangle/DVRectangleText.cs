@@ -70,6 +70,10 @@ namespace ColorVision.ImageEditor.Draw
             }
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
+        public override Rect GetRect()
+        {
+            return Rect;
+        }
     }
 
 

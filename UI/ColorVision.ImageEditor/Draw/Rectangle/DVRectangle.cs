@@ -27,6 +27,10 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
+        public override Rect GetRect()
+        {
+            return Rect;
+        }
     }
 
 

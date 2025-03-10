@@ -4,6 +4,7 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
+
     public class EditBase : Stroke
     {
         public EditBase(StylusPointCollection points) : base(points)

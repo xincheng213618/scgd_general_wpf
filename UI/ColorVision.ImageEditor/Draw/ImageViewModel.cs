@@ -68,7 +68,52 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public DrawingVisual? SelectDrawingVisual { get; set; }
+        public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set { _SelectDrawingVisual = value; DoSelectEditorVisual(value); } }
+        private DrawingVisual? _SelectDrawingVisual;
+
+        public DrawingVisual SelectEditorVisual { get; set; }
+
+        public void DoSelectEditorVisual(DrawingVisual? drawingVisual)
+        {
+            Image.RemoveVisual(SelectEditorVisual, false);
+            Image.AddVisual(SelectEditorVisual, false);
+            using DrawingContext dc = SelectEditorVisual.RenderOpen();
+            if (SelectDrawingVisual != null)
+            {
+                if (drawingVisual is ISelectVisual drawing)
+                {
+                    Rect mainRect = drawing.GetRect();
+                    double thickness = 1 / ZoomboxSub.ContentMatrix.M11;
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), mainRect);
+                    // 小矩形的尺寸
+                    double smallRectWidth = 10* thickness;
+                    double smallRectHeight = 10* thickness;
+
+                    // 计算每个角落的小矩形
+                    Rect topLeft = new Rect(mainRect.Left, mainRect.Top, smallRectWidth, smallRectHeight);
+                    Rect topRight = new Rect(mainRect.Right - smallRectWidth, mainRect.Top, smallRectWidth, smallRectHeight);
+                    Rect bottomLeft = new Rect(mainRect.Left, mainRect.Bottom - smallRectHeight, smallRectWidth, smallRectHeight);
+                    Rect bottomRight = new Rect(mainRect.Right - smallRectWidth, mainRect.Bottom - smallRectHeight, smallRectWidth, smallRectHeight);
+
+                    // 计算每条边中间的小矩形
+                    Rect middleTop = new Rect(mainRect.Left + (mainRect.Width / 2) - (smallRectWidth / 2), mainRect.Top, smallRectWidth, smallRectHeight);
+                    Rect middleBottom = new Rect(mainRect.Left + (mainRect.Width / 2) - (smallRectWidth / 2), mainRect.Bottom - smallRectHeight, smallRectWidth, smallRectHeight);
+                    Rect middleLeft = new Rect(mainRect.Left, mainRect.Top + (mainRect.Height / 2) - (smallRectHeight / 2), smallRectWidth, smallRectHeight);
+                    Rect middleRight = new Rect(mainRect.Right - smallRectWidth, mainRect.Top + (mainRect.Height / 2) - (smallRectHeight / 2), smallRectWidth, smallRectHeight);
+
+                    // 绘制小矩形
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topLeft);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), topRight);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), bottomLeft);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), bottomRight);
+
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleTop);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleBottom);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleLeft);
+                    dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleRight);
+                }
+            }
+        }
 
 
         public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
@@ -86,6 +131,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
+            SelectEditorVisual = new DrawingVisual();
+
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));

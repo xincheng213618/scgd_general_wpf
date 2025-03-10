@@ -101,7 +101,7 @@ namespace ColorVisonChat
             this.DataContext = ChatGPTConfig.Instance;
             ChatMsgs = new ObservableCollection<ChatMsg>();
             ListViewContent.ItemsSource = ChatMsgs;
-            if (ChatGPTConfig.Instance.APiKey != null)
+            if (!string.IsNullOrWhiteSpace(ChatGPTConfig.Instance.APiKey))
             {
                 Init();
             }
@@ -191,7 +191,7 @@ namespace ColorVisonChat
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-
+            Init();
         }
 
         private void Button1_Click(object sender, RoutedEventArgs e)

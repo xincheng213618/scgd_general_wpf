@@ -16,6 +16,10 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
+            <ListView Background="Transparent" Padding="0">
+                
+            </ListView>
+            
             <StackPanel Grid.Row="1" Orientation="Horizontal">
                 <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
                     <Button.Triggers>

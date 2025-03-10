@@ -2,9 +2,23 @@
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Common.Utilities
+namespace System.Windows.Media
 {
-    public class ViewHelper
+    public static partial class ViewHelper
+    {
+        public static T GetParentOfType<T>(DependencyObject child) where T : DependencyObject
+        {
+            DependencyObject parent = VisualTreeHelper.GetParent(child);
+
+            while (parent != null && !(parent is T))
+            {
+                parent = VisualTreeHelper.GetParent(parent);
+            }
+            return parent as T;
+        }
+    }
+
+    public static partial class ViewHelper
     {
         public static T FindVisualChild<T>(DependencyObject obj) where T : DependencyObject
         {

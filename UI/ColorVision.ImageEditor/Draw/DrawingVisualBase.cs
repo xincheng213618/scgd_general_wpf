@@ -1,11 +1,12 @@
 ﻿#pragma warning disable CA1711,CA2211
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
-    public class DrawingVisualBase : DrawingVisual, INotifyPropertyChanged
+    public class DrawingVisualBase : DrawingVisual, INotifyPropertyChanged, ISelectVisual
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -14,6 +15,9 @@ namespace ColorVision.ImageEditor.Draw
         public virtual int ID { get; set; }
 
         public virtual void Render() { }
+
+        public virtual Rect GetRect() => new Rect();
+
     }
 
     public class DrawingVisualBase<T>: DrawingVisualBase where T : BaseProperties, new()

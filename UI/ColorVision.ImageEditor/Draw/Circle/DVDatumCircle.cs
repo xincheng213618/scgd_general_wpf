@@ -31,6 +31,12 @@ namespace ColorVision.ImageEditor.Draw
             using DrawingContext dc = RenderOpen();
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
         }
+
+        public override Rect GetRect()
+        {
+            return new Rect(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - Attribute.Radius, Attribute.Radius * 2, Attribute.Radius * 2);
+        }
+
     }
 
 

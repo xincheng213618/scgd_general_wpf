@@ -4,6 +4,9 @@ using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
 {
+
+
+
     public class DVPolygon : DrawingVisualBase<PolygonProperties>, IDrawingVisual
     {
 

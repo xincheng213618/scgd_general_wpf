@@ -3,9 +3,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.UI.Menus;
+using ColorVision.UI;
 using ColorVision.UI.Views;
-using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -93,6 +92,21 @@ namespace ColorVision.ImageEditor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            List<IToolCommand> IToolCommands = new List<IToolCommand>();
+
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IToolCommand).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IToolCommand iMenuItem)
+                    {
+                        IToolCommands.Add(iMenuItem);
+                    }
+                }
+            }
+
+
+
             ImageViewModel = new ImageViewModel(this,Zoombox1, ImageShow);
             Zoombox1.ContextMenu = ImageViewModel.ContextMenu;
             ToolBar1.DataContext = ImageViewModel;
