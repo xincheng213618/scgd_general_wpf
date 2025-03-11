@@ -400,7 +400,11 @@ namespace ColorVision.ImageEditor
                             return;
 
                         if (drawingVisual is DrawingVisual visual)
+                        {
                             ImageViewModel.SelectDrawingVisual = visual;
+                            if (!(ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP)))
+                                Zoombox1.Cursor = Cursors.Cross;
+                        }
 
                         if (ImageViewModel.SelectDrawingVisuals != null)
                         {
@@ -412,6 +416,7 @@ namespace ColorVision.ImageEditor
                                     id.Render();
                                 }
                             }
+
                             ImageViewModel.SelectDrawingVisuals = null;
                         }
                     }
@@ -504,7 +509,6 @@ namespace ColorVision.ImageEditor
                         }
                         ImageViewModel.SelectEditorVisual.SetRect();
                     }
-
 
                     if (ImageViewModel.SelectDrawingVisuals != null)
                     {
@@ -641,12 +645,6 @@ namespace ColorVision.ImageEditor
                     }
 
                     drawCanvas.ReleaseMouseCapture();
-
-                    if (ImageViewModel.SelectDrawingVisual is DVCircle circle)
-                    {
-                        circle.IsDrawing = false;
-                        circle.Render();
-                    }
 
                     if (ImageViewModel.SelectDrawingVisual != null)
                     {
