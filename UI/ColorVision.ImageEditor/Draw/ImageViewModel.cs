@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
+using HarfBuzzSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -150,6 +151,10 @@ namespace ColorVision.ImageEditor.Draw
             }
             Render();
         }
+        private void DrawLineWithIcon(DrawingContext dc, Rect rect, Vector direction)
+        {
+
+        }
 
         public void Render()
         {
@@ -185,6 +190,17 @@ namespace ColorVision.ImageEditor.Draw
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleBottom);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleLeft);
             dc.DrawRectangle(Brushes.Transparent, new Pen(Brushes.White, thickness), middleRight);
+
+            Point start = new Point(middleTop.Left + middleTop.Width / 2, middleTop.Top + middleTop.Height / 2);
+            Point end = start + new Vector(0, -40 * thickness);
+
+            // Draw line
+            dc.DrawLine(new Pen(Brushes.White, thickness), start, end);
+
+            // Draw rotation icon (simple circle for demonstration)
+            double iconSize = 10 * thickness;
+            Rect iconRect = new Rect(end.X - iconSize / 2, end.Y - iconSize / 2, iconSize, iconSize);
+            dc.DrawEllipse(Brushes.Transparent, new Pen(Brushes.White, thickness), end, iconSize / 2, iconSize / 2);
         }
 
     }
