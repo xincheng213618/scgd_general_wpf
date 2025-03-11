@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Templates.POI
             {
                 this.DelayClearImage((Action)(() => Application.Current.Dispatcher.Invoke((Action)(() =>
                 {
-                    ImageEditViewMode?.ClearImage();
+                    ImageViewModel?.ClearImage();
                     if (HImageCache != null)
                     {
                         HImageCache?.Dispose();
@@ -183,12 +183,12 @@ namespace ColorVision.Engine.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageEditViewMode = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
+            ImageViewModel = new ImageViewModel(ImageContentGrid, Zoombox1, ImageShow);
 
-            ImageEditViewMode.ToolBarScaleRuler.IsShow = false;
-            ToolBar1.DataContext = ImageEditViewMode;
-            ToolBarRight.DataContext = ImageEditViewMode;
-            ImageEditViewMode.EditModeChanged += (s, e) =>
+            ImageViewModel.ToolBarScaleRuler.IsShow = false;
+            ToolBar1.DataContext = ImageViewModel;
+            ToolBarRight.DataContext = ImageViewModel;
+            ImageViewModel.EditModeChanged += (s, e) =>
             {
                 if (e)
                 {
@@ -382,7 +382,7 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
-        public ImageViewModel ImageEditViewMode { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
 
         private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
         {

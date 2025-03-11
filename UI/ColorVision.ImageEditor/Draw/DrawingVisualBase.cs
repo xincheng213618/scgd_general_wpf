@@ -18,6 +18,11 @@ namespace ColorVision.ImageEditor.Draw
 
         public virtual Rect GetRect() => new Rect();
 
+        public virtual void SetRect(Rect rect)
+        {
+
+        }
+
     }
 
     public class DrawingVisualBase<T>: DrawingVisualBase where T : BaseProperties, new()

@@ -107,7 +107,11 @@ namespace ColorVision.Util.Draw.Special
                     Background = Brushes.Transparent
                 };
                 textBox.Text = "2222";
-                
+                textBox.PreviewKeyDown += (s, e) =>
+                {
+
+                };
+
                 Canvas.SetLeft(textBox, position.X);
                 Canvas.SetTop(textBox, position.Y);
 
