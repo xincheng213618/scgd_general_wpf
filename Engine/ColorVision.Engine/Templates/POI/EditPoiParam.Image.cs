@@ -247,11 +247,7 @@ namespace ColorVision.Engine.Templates.POI
                     return;
                 if (MouseVisual is IDrawingVisual drawingVisual)
                 {
-                    PropertyChangedEventHandler @event = (s, e) => PropertyGrid2.Refresh();
-                    if (PropertyGrid2.SelectedObject is BaseProperties viewModelBase)
-                        viewModelBase.PropertyChanged -= @event;
                     PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-                    drawingVisual.BaseAttribute.PropertyChanged += @event;
 
                     if (ImageViewModel.ImageEditMode == true)
                     {
@@ -394,7 +390,7 @@ namespace ColorVision.Engine.Templates.POI
                 {
                     IsMouseDown = false;
                     var MouseUpP = e.GetPosition(drawCanvas);
-
+                    PropertyGrid2.Refresh();
                     if (PoiConfig.IsUserDraw)
                     {
                         if (PoiConfig.IsAreaCircle && ImageViewModel.DrawCircle)
