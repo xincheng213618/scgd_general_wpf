@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Templates.POI
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
         }
         [JsonIgnore]
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams => DeviceCamera.PhyCamera?.CalibrationParams;
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams => DeviceCamera?.PhyCamera?.CalibrationParams;
         [JsonIgnore]
         public DeviceCamera DeviceCamera => ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().FirstOrDefault();
 

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Forms.Design;
 using System.Windows.Input;
 
@@ -8,7 +9,7 @@ namespace ColorVision.UI.Menus
     {
         public string? OwnerGuid { get; set; } = MenuItemConstants.Menu;
 
-        public string? GuidId { get; set; }
+        public string? GuidId { get; set; } = new Guid().ToString();
 
         public int Order { get; set; } = 1;
 
