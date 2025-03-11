@@ -99,8 +99,8 @@ namespace ColorVision.Engine.Templates.POI
         public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
         private int _saveProcessData = 0;
 
-        public int Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
-        private int _Exp = 600;
+        public float Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
+        private float _Exp = 600;
 
         public string SaveFolderPath { get => _SaveFolderPath; set { _SaveFolderPath = value; NotifyPropertyChanged(); } }
         private string _SaveFolderPath =Path.GetFullPath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
