@@ -74,6 +74,11 @@ namespace ColorVision.ImageEditor.Draw
         {
             return Rect;
         }
+        public override void SetRect(Rect rect)
+        {
+            Rect = rect;
+            Render();
+        }
     }
 
 

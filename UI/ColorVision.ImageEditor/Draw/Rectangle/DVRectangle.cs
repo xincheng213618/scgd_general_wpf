@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
 using System.Windows.Media;
 
 namespace ColorVision.ImageEditor.Draw
@@ -30,6 +31,11 @@ namespace ColorVision.ImageEditor.Draw
         public override Rect GetRect()
         {
             return Rect;
+        }
+        public override void SetRect(Rect rect)
+        {
+            Rect = rect;
+            Render();
         }
     }
 
