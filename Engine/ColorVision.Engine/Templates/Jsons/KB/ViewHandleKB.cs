@@ -53,8 +53,16 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                 return;
             }
 
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+            if (File.Exists(result.ResultImagFile))
+            {
+                view.ImageView.OpenImage(result.ResultImagFile);
+            }
+            else
+            {
+                if (File.Exists(result.FilePath))
+                    view.ImageView.OpenImage(result.FilePath);
+            }
+
 
             view.listViewSide.Visibility = Visibility.Collapsed;
 

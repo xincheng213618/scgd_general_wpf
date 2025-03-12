@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class ViewHandleRealPOI : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.RealPOI};
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_Y_V2};
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
