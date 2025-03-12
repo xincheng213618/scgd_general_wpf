@@ -72,8 +72,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             get
             {
-                if (POIPointResultModel.ValidateResult == null) return null;
-                return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(POIPointResultModel.ValidateResult);
+                if (POIPointResultModel.Value == null) return null;
+                return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(POIPointResultModel.Value);
             }
         }
 

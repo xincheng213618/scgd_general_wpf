@@ -280,7 +280,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             HYMesManager.GetInstance().LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.Invoke((Action)(() =>
             {
                 if (sender is FlowControlData FlowControlData)
                 {
@@ -334,7 +334,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                                         var ValidateSinglesmodel = complianceXYZModels.FirstOrDefault(a => a.Name == poiResultCIExyuvData1.Name);
 
-                                        poiResultCIExyuvData1.POIPointResultModel.ValidateResult = ValidateSinglesmodel?.ValidateResult;
+                                        poiResultCIExyuvData1.POIPointResultModel.Value = ValidateSinglesmodel?.ValidateResult;
 
                                         TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
                                         tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
@@ -477,7 +477,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                     HYMesManager.GetInstance().UploadNG("流程运行异常");
                     MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
                 }
-            });
+            }));
 
         }
         
