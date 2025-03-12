@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

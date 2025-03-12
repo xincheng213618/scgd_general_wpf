@@ -8,7 +8,6 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

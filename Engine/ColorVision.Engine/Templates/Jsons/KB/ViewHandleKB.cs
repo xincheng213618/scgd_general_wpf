@@ -1,20 +1,11 @@
 ﻿#pragma warning disable CS8604,CS8602
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.ImageEditor.Draw;
-using MQTTMessageLib.Algorithm;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.KB
 {
@@ -63,9 +54,18 @@ namespace ColorVision.Engine.Templates.Jsons.KB
                     view.ImageView.OpenImage(result.FilePath);
             }
 
-
-            view.listViewSide.Visibility = Visibility.Collapsed;
-
+            List<string> header;
+            List<string> bdHeader;
+            header = new() {  };
+            bdHeader = new() { };
+            if (view.listViewSide.View is GridView gridView)
+            {
+                view.LeftGridViewColumnVisibilitys.Clear();
+                gridView.Columns.Clear();
+                for (int i = 0; i < header.Count; i++)
+                    gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
+                view.listViewSide.ItemsSource = result.ViewResults;
+            }
         }
     }
 

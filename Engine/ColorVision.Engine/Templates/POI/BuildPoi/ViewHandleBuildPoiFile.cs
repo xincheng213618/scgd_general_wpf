@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

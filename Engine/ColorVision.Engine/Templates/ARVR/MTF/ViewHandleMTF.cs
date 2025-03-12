@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -10,8 +9,6 @@ using System.Windows.Data;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.Text;
-using System.Globalization;
-using ColorVision.Engine.Templates.SFR;
 
 namespace ColorVision.Engine.Templates.MTF
 {

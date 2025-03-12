@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;

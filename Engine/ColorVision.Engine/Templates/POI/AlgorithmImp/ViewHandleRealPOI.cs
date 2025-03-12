@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -14,7 +13,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class ViewHandleRealPOI : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_Y_V2};
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.KBREsult};
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
