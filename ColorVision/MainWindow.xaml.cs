@@ -11,6 +11,7 @@ using ColorVision.UI.Views;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
+using Panuon.WPF.UI;
 using ScottPlot;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ColorVision
 {
@@ -91,6 +93,7 @@ namespace ColorVision
             Title = "ColorVision";
             this.ApplyCaption();
             this.SetWindowFull(Config);
+            
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -148,6 +151,16 @@ namespace ColorVision
                 new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
             Searches = new ObservableCollection<IMenuItem>(MenuManager.GetInstance().GetIMenuItem());
+
+            // 设置快捷键 Ctrl + F
+            var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
+            var command = new RoutedCommand();
+            command.InputGestures.Add(gesture);
+            CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
+        }
+        private void FocusSearchBox(object sender, ExecutedRoutedEventArgs e)
+        {
+            Searchbox.Focus();
         }
 
         public static async void LoadIMainWindowInitialized() 

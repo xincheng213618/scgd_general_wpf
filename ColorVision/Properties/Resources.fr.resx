@@ -321,4 +321,7 @@
   <data name="Command" xml:space="preserve">
     <value>Commande</value>
   </data>
+  <data name="Search" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
 </root>

@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Net;
@@ -38,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ResultCode = item.ResultCode;
             TotalTime = item.TotalTime;
             ResultDesc = item.Result;
-
+            ResultImagFile = item.ResultImagFile;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
@@ -189,6 +190,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
         private string _ResultDesc;
+
+        public string ResultImagFile { get; set; }
 
         public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private long _TotalTime;
