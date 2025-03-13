@@ -1630,7 +1630,14 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Cal_Click(object sender, RoutedEventArgs e)
         {
-            InitialKBKey();
+            try
+            {
+                InitialKBKey();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void SetKBLocal_Click(object sender, RoutedEventArgs e)
@@ -1829,9 +1836,9 @@ namespace ColorVision.Engine.Templates.POI
             int width = image.Width;
             int height = image.Height;
             int channels = image.Channels();
-            int bpp = image.ElemSize() * 8;
+            int bpp = image.ElemSize() * 8 / channels;
             IntPtr imgData = image.Data;
-            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 1);
+            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 0);
 
             string csvFilePath = PoiConfig.SaveFolderPath + "\\output.csv";
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
@@ -1893,7 +1900,7 @@ namespace ColorVision.Engine.Templates.POI
 
             int rw = 0; int rh = 0; int rBpp = 0; int rChannel = 0;
 
-            byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * bpp];
+            byte[] pDst1 = new byte[image.Cols * image.Rows * bpp *channels];
 
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
             OpenCvSharp.Mat mat;

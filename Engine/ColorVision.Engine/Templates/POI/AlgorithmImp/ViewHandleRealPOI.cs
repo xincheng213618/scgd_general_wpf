@@ -5,7 +5,10 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -14,6 +17,31 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class ViewHandleRealPOI : IResultHandleBase
     {
         public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.KBREsult};
+
+        public override void SideSave(AlgorithmResult result, string selectedPath)
+        {
+            var csvBuilder = new StringBuilder();
+            List<string> properties = new() { "PoiName","Value" };
+
+            // 写入列头
+            csvBuilder.AppendLine(string.Join(",", properties));
+
+            // 写入数据行
+            foreach (var item in result.ViewResults.OfType<PoiPointResultModel>())
+            {
+                List<string> values = new()
+                {
+                    item.PoiName,
+                    item.Value
+                };
+
+                csvBuilder.AppendLine(string.Join(",", values));
+            }
+
+            File.WriteAllText(selectedPath +"//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
+
+
+        }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
