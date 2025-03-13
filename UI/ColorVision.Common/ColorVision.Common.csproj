@@ -11,6 +11,7 @@
 	  <PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 	  <IncludeSymbols>True</IncludeSymbols>
 	  <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,13 @@
 
   <ItemGroup>
     <Resource Include="Assets\Cursor\eraser.cur" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>true</Pack>
+    </None>
   </ItemGroup>
 
 
