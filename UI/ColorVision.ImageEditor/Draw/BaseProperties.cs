@@ -23,6 +23,10 @@ namespace ColorVision.ImageEditor.Draw
         private int? _Tag;
 
         [Browsable(false)]
+        public string? Msg { get => _Msg; set { _Msg = value; NotifyPropertyChanged(); } }
+        private string? _Msg;
+
+        [Browsable(false)]
         public object? Param { get => _Param; set { _Param = value; NotifyPropertyChanged(); } }
         private object? _Param;
 
