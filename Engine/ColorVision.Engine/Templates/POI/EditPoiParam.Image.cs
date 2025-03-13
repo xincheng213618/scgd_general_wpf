@@ -256,6 +256,8 @@ namespace ColorVision.Engine.Templates.POI
 
                         if (drawingVisual is DrawingVisual visual)
                         {
+                            ListView1.SelectedValue = visual;
+                            ListView1.ScrollIntoView(visual);
                             ImageViewModel.SelectDrawingVisual = visual;
                             if (!ImageViewModel.SelectEditorVisual.GetContainingRect(MouseDownP))
                                 Zoombox1.Cursor = Cursors.Cross;

@@ -247,6 +247,8 @@ namespace ColorVision.Engine.Templates.POI
                     return;
                 if (MouseVisual is IDrawingVisual drawingVisual)
                 {
+                    ListView1.SelectedValue = drawingVisual;
+                    ListView1.ScrollIntoView(drawingVisual);
                     PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
                     if (ImageViewModel.ImageEditMode == true)
                     {
