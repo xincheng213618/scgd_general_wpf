@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.UI.Authorizations;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -99,6 +100,7 @@ namespace ColorVision.UI
                 if (IsAutoSave)
                     SaveConfigs(ConfigFilePath);
             };
+            Authorization.Instance = GetRequiredService<Authorization>();
         }
         public bool IsAutoSave { get; set; } = true;
 
