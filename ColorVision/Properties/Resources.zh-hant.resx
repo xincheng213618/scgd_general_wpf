@@ -324,4 +324,10 @@
   <data name="Search" xml:space="preserve">
     <value>搜尋</value>
   </data>
+  <data name="Debugging" xml:space="preserve">
+    <value>偵錯中</value>
+  </data>
+  <data name="Bit" xml:space="preserve">
+    <value>位元</value>
+  </data>
 </root>

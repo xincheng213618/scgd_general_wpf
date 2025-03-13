@@ -324,4 +324,10 @@
   <data name="Search" xml:space="preserve">
     <value>Recherche</value>
   </data>
+  <data name="Debugging" xml:space="preserve">
+    <value>Débogage</value>
+  </data>
+  <data name="Bit" xml:space="preserve">
+    <value>Peu</value>
+  </data>
 </root>
