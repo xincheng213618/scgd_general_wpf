@@ -1,4 +1,7 @@
 ﻿using ColorVision.UI;
+using System;
+using System.Diagnostics;
+using System.IO;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons

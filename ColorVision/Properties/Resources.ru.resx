@@ -321,4 +321,13 @@
   <data name="Command" xml:space="preserve">
     <value>Команда</value>
   </data>
+  <data name="Search" xml:space="preserve">
+    <value>поиск</value>
+  </data>
+  <data name="Debugging" xml:space="preserve">
+    <value>Отладка</value>
+  </data>
+  <data name="Bit" xml:space="preserve">
+    <value>Кусочек</value>
+  </data>
 </root>

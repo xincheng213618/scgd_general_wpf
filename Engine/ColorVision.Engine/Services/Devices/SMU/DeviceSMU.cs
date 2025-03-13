@@ -7,6 +7,10 @@ using ColorVision.UI.Authorizations;
 using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
+using System.ComponentModel;
+using ColorVision.Engine.MySql;
+using ColorVision.Themes.Controls;
+using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
@@ -33,8 +37,25 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
 
-
+            EditSMUTemplateCommand = new RelayCommand(a => EditSMUTemplate());
         }
+
+
+        [CommandDisplay("MenuSUM",Order =100)]
+        public RelayCommand EditSMUTemplateCommand { get; set; }
+
+        public static void EditSMUTemplate()
+        {
+
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            new TemplateEditorWindow(new TemplateSMUParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+
+
         public override UserControl GetDeviceInfo() => new InfoSMU(this);
         public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
 

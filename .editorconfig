@@ -5,6 +5,10 @@ dotnet_diagnostic.WFAC010.severity = none
 # CA1305: 指定 IFormatProvider
 dotnet_diagnostic.CA1305.severity = none
 dotnet_diagnostic.CS8002.severity = none
+dotnet_diagnostic.CA2201.severity = none
+dotnet_diagnostic.NU5104.severity = none
+dotnet_diagnostic.NU1701.severity = none
+ 
 
 [*.cs]
 #### 命名样式 ####

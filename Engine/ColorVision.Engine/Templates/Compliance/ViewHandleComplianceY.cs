@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows.Controls;
@@ -9,9 +8,9 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.Compliance
 {
-    public class ViewHandleComplianceY : IResultHandle
+    public class ViewHandleComplianceY : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>()
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>()
         {
             AlgorithmResultType.Compliance_Contrast,
             AlgorithmResultType.Compliance_Math,
@@ -19,7 +18,7 @@ namespace ColorVision.Engine.Templates.Compliance
             AlgorithmResultType.Compliance_Math_CIE_Y,
         };
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)

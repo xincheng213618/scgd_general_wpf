@@ -5,55 +5,88 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVisonChat"
         mc:Ignorable="d"
-        Title="ChatGPTWindow" Height="450" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="100"/>
-        </Grid.RowDefinitions>
+        Title="ChatGPTWindow" Height="800" Width="900" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+    <Grid Margin="5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
         <Grid Grid.Row="0">
-            <Grid.Resources>
-                <DataTemplate x:Key="ChatMsgSendTemplate" DataType="{x:Type local:ChatMsgSend}" >
-                    <StackPanel  Orientation="Horizontal" >
-                        <TextBlock Text="{Binding Content}"  TextAlignment="Right" TextWrapping="Wrap" Width="600" />
-                    </StackPanel>
-                </DataTemplate>
-                <DataTemplate x:Key="ChatMsgReturnTemplate"  DataType="{x:Type local:ChatMsgReturn}">
-                    <StackPanel  Orientation="Horizontal" >
-                        <TextBlock Text="{Binding Content}" TextAlignment="Left" TextWrapping="Wrap" Width="600" />
-                    </StackPanel>
-                </DataTemplate> 
-                <local:MsgTemplateSelector x:Key="MsgTemplateSelector" ChatMsgSend="{StaticResource ChatMsgSendTemplate}" ChatMsgReturn="{StaticResource ChatMsgReturnTemplate}" />
-            </Grid.Resources>
-            <ListView x:Name="ListViewContent"   Padding="0">
-                <ListView.View>
-                    <GridView >
-                        <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </Style>
-                        </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  >
-                            <GridViewColumn.CellTemplateSelector>
-                                <local:MsgTemplateSelector ChatMsgSend="{StaticResource ChatMsgSendTemplate}" ChatMsgReturn="{StaticResource ChatMsgReturnTemplate}" />
-                            </GridViewColumn.CellTemplateSelector>
-                        </GridViewColumn>
-                    </GridView>
-                </ListView.View>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ListView Background="Transparent" Padding="0">
+                
             </ListView>
-
-        </Grid>
-
-        <Border Grid.Row="2" Height="90">
-            <StackPanel>
-                <Button  DockPanel.Dock="Right" Content="设置" Click="Button_Click_1"/>
-                <DockPanel  Margin="5">
-                    <Button  DockPanel.Dock="Right" Content="发送" Click="Button_Click"/>
-                    <TextBox x:Name="TextInput1"  VerticalContentAlignment ="Top"   AcceptsReturn="True" Height="60"  Margin="0,0,5,0"/>
-                </DockPanel>
+            
+            <StackPanel Grid.Row="1" Orientation="Horizontal">
+                <Button Grid.Column="1" Margin="0,0,5,0" HorizontalAlignment="Left" Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform21"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                </Button>
+                <Button Content="新的聊天" Click="Button_Click_1"/>
             </StackPanel>
 
-        </Border>
+        </Grid>
+        
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Margin="0,0,0,5">
+                <Grid.Resources>
+                    <DataTemplate x:Key="ChatMsgSendTemplate" DataType="{x:Type local:ChatMsgSend}">
+                        <Border Background="#E7F8FF" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2" CornerRadius="5" Margin="0,5" Width="400" HorizontalAlignment="Left">
+                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Background="Transparent" Margin="5"/>
+                        </Border>
+                    </DataTemplate>
+                    <DataTemplate x:Key="ChatMsgReturnTemplate"  DataType="{x:Type local:ChatMsgReturn}">
+                        <Border  Background="#F2F2F2" BorderBrush="{StaticResource BorderBrush}" BorderThickness="2"  CornerRadius="5" Margin="0,5" Width="400" HorizontalAlignment="Right" >
+                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap"  Background="Transparent" Margin="5"/>
+                        </Border>
+                    </DataTemplate>
+                    <local:MsgTemplateSelector x:Key="MsgTemplateSelector" ChatMsgSend="{StaticResource ChatMsgSendTemplate}" ChatMsgReturn="{StaticResource ChatMsgReturnTemplate}" />
+                </Grid.Resources>
+                <ListView x:Name="ListViewContent"  FocusVisualStyle="{x:Null}"  Padding="0" Background="Transparent">
+                    <ListView.View>
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  >
+                                <GridViewColumn.CellTemplateSelector>
+                                    <local:MsgTemplateSelector ChatMsgSend="{StaticResource ChatMsgSendTemplate}" ChatMsgReturn="{StaticResource ChatMsgReturnTemplate}" />
+                                </GridViewColumn.CellTemplateSelector>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </Grid>
+
+            <Grid Grid.Row="2" Height="60">
+                <Border BorderBrush="{StaticResource SecondaryBorderBrush}" BorderThickness="2" CornerRadius="5">
+                    <TextBox x:Name="TextInput1"  BorderThickness="0" VerticalContentAlignment ="Top" AcceptsReturn="True" Margin="0,0,60,0"/>
+                </Border>
+                <Button  HorizontalAlignment="Right" Content="发送"  Click="Button_Click" Margin="10"/>
+                <Button  HorizontalAlignment="Right" Content="上传文件"  Click="Button2_Click" Margin="60,10,60,10"/>
+            </Grid>
+        </Grid>
 
 
     </Grid>

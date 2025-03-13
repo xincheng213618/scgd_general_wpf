@@ -57,27 +57,14 @@
                 <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}" Background="Transparent">
                         <ScrollViewer Margin="-2,0">
-                            <UniformGrid SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Style="{StaticResource ButtonCommand}" Content="修改配置"  Command="{Binding EditCommand}"/>
+                            <UniformGrid x:Name="CommandGrid" VerticalAlignment="Top">
                                 <Button   Style="{StaticResource ButtonCommand}" Margin="10" Background="{Binding LicenseSolidColorBrush}" Command="{Binding UploadLicenseCommand}">
                                     <StackPanel  HorizontalAlignment="Center">
                                         <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
                                     </StackPanel>
                                 </Button>
-                                <Button Style="{StaticResource ButtonCommand}" Content="在线下载许可证"  Command="{Binding UploadLicenseNetCommand}" />
 
-                                <Button Style="{StaticResource ButtonCommand}"  Content="上传校正文件" Command="{Binding UploadCalibrationCommand}" />
-                                <Button Style="{StaticResource ButtonCommand}"  Content="校正模板设置" Command="{Binding CalibrationTemplateOpenCommand}" />
-                                <Button Style="{StaticResource ButtonCommand}"  Content="校正模板管理" Command="{Binding CalibrationEditCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}"  Content="资源组管理" Command="{Binding ResourceManagerCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}"  Content="修改电机配置" Command="{Binding UpdateMotorConfigCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}"  Content="配置逻辑相机" Command="{Binding EditCameraCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}"  Content="配置逻辑校正" Command="{Binding EditCalibrationCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}"  Content="手册"   Command="{Binding ProductBrochureCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="打开配置文件"  Command="{Binding OpenSettingDirectoryCommand}"/>
-
-                                <Button Style="{StaticResource ButtonCommand}"  Content="{x:Static properties:Resources.Reset}" Foreground="Red" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                         </ScrollViewer>
                     </TabItem>

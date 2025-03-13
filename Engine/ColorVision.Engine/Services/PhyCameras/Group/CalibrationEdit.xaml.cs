@@ -40,6 +40,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<CalibrationResource> LumOneColorList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LumFourColorList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> LumMultiColorList { get; set; } = new ObservableCollection<CalibrationResource>();
+        public ObservableCollection<CalibrationResource> ColorDiffList { get; set; } = new ObservableCollection<CalibrationResource>();
+        public ObservableCollection<CalibrationResource> LineArityList { get; set; } = new ObservableCollection<CalibrationResource>();
 
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -85,6 +87,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                         case ServiceTypes.LumMultiColor:
                             LumMultiColorList.Add(calibrationResource);
                             break;
+                        case ServiceTypes.ColorDiff:
+                            ColorDiffList.Add(calibrationResource);
+                            break;
+                        case ServiceTypes.LineArity:
+                            LineArityList.Add(calibrationResource);
+                            break;
                         default:
                             break;
                     }
@@ -108,6 +116,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ComboBoxLumOneColor.ItemsSource = LumOneColorList;
             ComboBoxLumFourColor.ItemsSource = LumFourColorList;
             ComboBoxLumMultiColor.ItemsSource = LumMultiColorList;
+            ComboBoxColorDiff.ItemsSource = ColorDiffList;
+            ComboBoxLineArity.ItemsSource = LineArityList;
 
             ListView1.SelectedIndex = Index;
 

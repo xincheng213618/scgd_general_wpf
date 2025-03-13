@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8625
+﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
+using HarfBuzzSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,6 +20,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Draw
 {
+
     public class ImageViewModel : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
@@ -26,7 +28,6 @@ namespace ColorVision.ImageEditor.Draw
         public RelayCommand ZoomInCommand { get; set; }
         public RelayCommand ZoomOutCommand { get; set; }
         public RelayCommand ZoomNoneCommand { get; set; }
-
 
         public RelayCommand FullCommand { get; set; }
         public RelayCommand RotateLeftCommand { get; set; }
@@ -68,7 +69,22 @@ namespace ColorVision.ImageEditor.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public DrawingVisual? SelectDrawingVisual { get; set; }
+        public DrawingVisual? SelectDrawingVisual { get => _SelectDrawingVisual  ; set 
+            {
+                _SelectDrawingVisual = value;
+                if (_SelectDrawingVisual is ISelectVisual selectVisual)
+                {
+                    SelectEditorVisual.SetRender(selectVisual);
+                }
+                else
+                {
+                    SelectEditorVisual.SetRender(null);
+                }
+            }
+        }
+        private DrawingVisual? _SelectDrawingVisual;
+
+        public SelectEditorVisual SelectEditorVisual { get; set; }
 
 
         public List<DrawingVisual>? SelectDrawingVisuals { get; set; }
@@ -86,6 +102,8 @@ namespace ColorVision.ImageEditor.Draw
 
         public ImageViewModel(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
+            SelectEditorVisual = new SelectEditorVisual(drawCanvas, zoombox);
+
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Print, (s, e) => Print(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.SaveAs, (s, e) => SaveAs(), (s, e) => { e.CanExecute = Image != null && Image.Source != null; }));
             drawCanvas.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, (s, e) => OpenImage(), (s, e) => { e.CanExecute = true; }));
@@ -516,9 +534,11 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(-2, 0);
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X -2, OldRect.Y, OldRect.Width, OldRect.Height);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -543,9 +563,11 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(2, 0);
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X +2, OldRect.Y, OldRect.Width, OldRect.Height);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -570,9 +592,11 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(0, -2);
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y - 2, OldRect.Width, OldRect.Height);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -597,9 +621,11 @@ namespace ColorVision.ImageEditor.Draw
                             Circl.Center += new Vector(0, 2);
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X, OldRect.Y + 2, OldRect.Width, OldRect.Height);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -617,16 +643,18 @@ namespace ColorVision.ImageEditor.Draw
                         if (item is IRectangle rectangle)
                         {
                             var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 1, OldRect.Height + 1);
+                            rectangle.Rect = new Rect(OldRect.X - 1, OldRect.Y - 1, OldRect.Width + 2, OldRect.Height + 2);
                         }
                         else if (item is ICircle Circl)
                         {
                             Circl.Radius += 2;
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X -1, OldRect.Y -1, OldRect.Width +2, OldRect.Height +2);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {
@@ -647,7 +675,7 @@ namespace ColorVision.ImageEditor.Draw
 
                             if (OldRect.Width > 1 && OldRect.Height > 1)
                             {
-                                rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1, OldRect.Height - 1);
+                                rectangle.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 2, OldRect.Height - 2);
                             }
                         }
                         else if (item is ICircle Circl)
@@ -658,9 +686,11 @@ namespace ColorVision.ImageEditor.Draw
                             }
                         }
                     }
-                    if (SelectDrawingVisual != null)
+                    if (SelectEditorVisual.SelectVisual != null)
                     {
-                        Move(SelectDrawingVisual);
+                        var OldRect = SelectEditorVisual.Rect;
+                        SelectEditorVisual.Rect = new Rect(OldRect.X + 1, OldRect.Y + 1, OldRect.Width - 1 , OldRect.Height - 1);
+                        SelectEditorVisual.SetRect();
                     }
                     if (SelectDrawingVisuals != null)
                     {

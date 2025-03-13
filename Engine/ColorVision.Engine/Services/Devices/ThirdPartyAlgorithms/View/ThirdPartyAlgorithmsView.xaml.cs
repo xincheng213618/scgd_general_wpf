@@ -1,4 +1,4 @@
-﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629,CA1822
 using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Engine.Media;
@@ -8,7 +8,6 @@ using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -48,16 +47,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
         private NetFileUtil netFileUtil;
 
         public static ViewThirdPartyAlgorithmsConfig Config => ViewThirdPartyAlgorithmsConfig.Instance;
-        public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
+        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandle  algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase  algorithmResultRender)
                     {
                         ResultHandles.Add(algorithmResultRender);
                     }

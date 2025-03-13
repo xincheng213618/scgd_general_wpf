@@ -92,6 +92,10 @@
                             <TextBlock Text="KBLVSacle " Width="120"/>
                             <TextBox Width="140"  Text="{Binding KBLVSacle}"/>
                         </StackPanel>
+                        <StackPanel  Margin="0,0,0,5" Orientation="Horizontal">
+                            <TextBlock Text="打开图像延迟 " Width="120"/>
+                            <TextBox Width="140"  Text="{Binding ViewImageReadDelay}"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
                 <Border Grid.Row="1" Background="{StaticResource GlobalBorderBrush}" BorderThickness="1" BorderBrush="{ StaticResource BorderBrush}" CornerRadius="5" Margin="0,0,0,5">
@@ -129,6 +133,9 @@
         </ScrollViewer>
         <Grid Grid.Row="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
+                <Button Content="保存配置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="SaveSetting_Click" Margin="5,0,0,0"/>
+                <Button Content="加载配置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="LoadSetting_Click" Margin="5,0,0,0"/>
+
                 <Button Content="重置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0"/>
                 <Button Content="关闭" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Close_Click" Margin="5,0,0,0"/>
             </StackPanel>

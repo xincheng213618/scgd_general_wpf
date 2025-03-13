@@ -17,13 +17,11 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.PhyCameras.Group;
-using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI;
-using FlowEngineLib;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -49,7 +47,8 @@ namespace ColorVision.Engine.Services
         public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
-        public List<MQTTServiceInfo> ServiceTokens => MqttRCService.GetInstance().ServiceTokens;
+        public event EventHandler ServiceChanged;
+
         public ServiceManager()
         {
             if (MySqlControl.GetInstance().IsConnect)
@@ -278,7 +277,7 @@ namespace ColorVision.Engine.Services
                         deviceService.AddChild(groupResource);
                         GroupResources.Add(groupResource);
                     }
-                   else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                   else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 50)
                     {
                         CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
@@ -295,6 +294,7 @@ namespace ColorVision.Engine.Services
             {
                 LoadgroupResource(groupResource);
             }
+            ServiceChanged?.Invoke(this, new EventArgs());
         }
 
         public void LoadgroupResource(GroupResource groupResource)
@@ -310,7 +310,7 @@ namespace ColorVision.Engine.Services
                     groupResource.AddChild(groupResource);
                     GroupResources.Add(groupResource);
                 }
-                else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
+                else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 50)
                 {
                     CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);

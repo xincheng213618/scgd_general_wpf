@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CS8602,CS8603,CS8601
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
@@ -134,6 +135,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
            
             if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= FlowParam.Params.Count) return;
+            if (ComboBoxFlow.SelectedIndex < 0) return;
             FlowParam flowParam = FlowParam.Params[ComboBoxFlow.SelectedIndex].Value;
 
             if (View == null) return;
@@ -294,7 +296,9 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     var record = View.FlowRecords.FirstOrDefault(a => a.Guid == algorithmNode.Guid);
                     if (record != null)
+                    {
                         record.DateTimeStop = DateTime.Now;
+                    }
                 });
 
                 if (e != null)

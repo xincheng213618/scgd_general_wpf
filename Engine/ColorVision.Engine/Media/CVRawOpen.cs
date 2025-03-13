@@ -159,7 +159,6 @@ namespace ColorVision.Engine.Media
                 }
             }
 
-
             if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
             {
 

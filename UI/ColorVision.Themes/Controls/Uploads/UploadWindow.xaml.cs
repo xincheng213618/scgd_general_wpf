@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Effects;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Themes.Controls.Uploads
 {
@@ -25,7 +29,6 @@ namespace ColorVision.Themes.Controls.Uploads
             {
                 ButtonUpload.Visibility = Visibility.Visible;
             };
-
             this.PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape)
@@ -53,7 +56,7 @@ namespace ColorVision.Themes.Controls.Uploads
             };
         }
 
-        private void Window_DragEnter(object sender, DragEventArgs e)
+            private void Window_DragEnter(object sender, DragEventArgs e)
         {
             e.Effects = DragDropEffects.Copy;
         }

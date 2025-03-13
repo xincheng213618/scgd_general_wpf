@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.UI.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
@@ -128,7 +129,7 @@ namespace ColorVision.Solution
             OpenSolution(slnName);
             return true;
         }
-        public void OpenSolutionWindow()
+        public static void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.ShowDialog();

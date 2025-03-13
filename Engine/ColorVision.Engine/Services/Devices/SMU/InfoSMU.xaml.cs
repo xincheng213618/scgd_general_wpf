@@ -1,4 +1,6 @@
-﻿using ColorVision.UI.Extension;
+﻿using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.UI;
+using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,12 +23,8 @@ namespace ColorVision.Engine.Services.Devices.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DeviceSMU;
-        }
+            PropertyEditorHelper.GenCommand(DeviceSMU, CommandGrid);
 
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
         }
     }
 }

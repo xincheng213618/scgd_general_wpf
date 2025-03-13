@@ -139,7 +139,16 @@ namespace ColorVision.Engine.Templates.Jsons
                 }
             }
         }
-
+        public override bool CopyTo(int index)
+        {
+            string fileContent = TemplateParams[index].Value.ToJsonN();
+            CreateTemp = JsonConvert.DeserializeObject<T>(fileContent);
+            if (CreateTemp != null)
+            {
+                CreateTemp.Id = -1;
+            }
+            return true;
+        }
 
         public override void Export(int index)
         {
@@ -220,7 +229,7 @@ namespace ColorVision.Engine.Templates.Jsons
             CreateDefault();
             try
             {
-                T Temp = JsonConvert.DeserializeObject<T>(fileContent);
+                CreateTemp = JsonConvert.DeserializeObject<T>(fileContent);
                 ExportTemp = CreateTemp;
                 return true;
             }

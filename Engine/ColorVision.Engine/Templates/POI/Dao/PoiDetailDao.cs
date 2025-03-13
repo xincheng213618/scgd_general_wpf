@@ -37,10 +37,6 @@ namespace ColorVision.Engine.Templates.POI.Dao
             PixY = (int)data.PixY;
             PixWidth = (int)data.PixWidth;
             PixHeight = (int)data.PixHeight;
-            if (EditPoiParamConfig.Instance.PoiPointParamType != PoiPointParamType.Empty)
-            {
-                Remark = JsonConvert.SerializeObject(data.Param);
-            }
         }
     }
 

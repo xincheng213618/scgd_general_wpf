@@ -74,6 +74,7 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
+                    
                     <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
                 </Grid>
             </Grid>

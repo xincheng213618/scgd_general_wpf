@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
@@ -97,6 +98,11 @@ namespace ColorVision.Engine.Templates.POI.Image
             void CalculPOI_Click(object sender, RoutedEventArgs e)
             {
                 if (!imageView.Config.GetProperties<bool>("IsCVCIE") == true)
+                {
+                    MessageBox1.Show("仅对CVCIE图像支持");
+                    return;
+                }
+                if (!(CVFileUtil.IsCIEFile(imageView.Config.FilePath) && CVFileUtil.ReadCIEFileHeader(imageView.Config.FilePath, out CVCIEFile cVCIEFile) > 0 && cVCIEFile.FileExtType == CVType.CIE)) 
                 {
                     MessageBox1.Show("仅对CVCIE图像支持");
                     return;
@@ -315,93 +321,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                 windowCIE.Activate();
             }
 
-            imageView.Button1931.Click += ButtonCIE1931_Click;
-
-
-            void CalculSFR()
-            {
-                if (imageView.ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
-                {
-                    MessageBox1.Show("需要配置关注点");
-                    return;
-                }
-                foreach (var item in imageView.DrawingVisualLists)
-                {
-                    BaseProperties drawAttributeBase = item.BaseAttribute;
-                    if (drawAttributeBase is CircleTextProperties circle)
-                    {
-                        PoiPoint poiParamData = new PoiPoint()
-                        {
-                            PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X,
-                            PixY = circle.Center.Y,
-                            PixWidth = circle.Radius * 2,
-                            PixHeight = circle.Radius * 2,
-                            Name = circle.Text
-                        };
-                        poiParams.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is CircleProperties circleProperties)
-                    {
-                        PoiPoint poiParamData = new PoiPoint()
-                        {
-                            PointType = RiPointTypes.Circle,
-                            PixX = circleProperties.Center.X,
-                            PixY = circleProperties.Center.Y,
-                            PixWidth = circleProperties.Radius * 2,
-                            PixHeight = circleProperties.Radius * 2,
-                            Name = circleProperties.Id.ToString()
-                        };
-                        poiParams.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is RectangleTextProperties rectangle)
-                    {
-                        PoiPoint poiParamData = new()
-                        {
-                            Name = rectangle.Text,
-                            PointType = RiPointTypes.Rect,
-                            PixX = rectangle.Rect.X + rectangle.Rect.Width / 2,
-                            PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
-                            PixWidth = rectangle.Rect.Width,
-                            PixHeight = rectangle.Rect.Height,
-                        };
-                        poiParams.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is RectangleProperties rectangleProperties)
-                    {
-                        PoiPoint poiParamData = new PoiPoint()
-                        {
-                            PointType = RiPointTypes.Rect,
-                            PixX = rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2,
-                            PixY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2,
-                            PixWidth = rectangleProperties.Rect.Width,
-                            PixHeight = rectangleProperties.Rect.Height,
-                        };
-                        poiParams.PoiPoints.Add(poiParamData);
-                    }
-                }
-
-
-                cvColorVision.HImage ToCHImage(HImage hImage)
-                {
-                    cvColorVision.HImage image = new cvColorVision.HImage() { nWidth = (uint)hImage.cols, nHeight = (uint)hImage.rows };
-                    image.pData = hImage.pData;
-                    image.nBpp = (uint)hImage.depth;
-                    return image;
-                };
-
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
-
-                    float[] pdfrequency = new float[10];
-                    float[] pdomainSamplingData = new float[10];
-                    int  i = cvCameraCSLib.SFRCalculation(ToCHImage((HImage)imageView.HImageCache),new CRECT() { x = pOIPoint.PixelX, y = pOIPoint.PixelY,cx = pOIPoint.Width,cy = pOIPoint.Height }, 1,pdfrequency, pdomainSamplingData,10);
-                }
-
-
-            }
-             
+            imageView.Button1931.Click += ButtonCIE1931_Click;             
         }
 
     }

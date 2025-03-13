@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.POI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -23,15 +24,13 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         [JsonProperty("key")]
         public KBKey KBKey { get => _KBKey; set { _KBKey = value; NotifyPropertyChanged(); } }
         private KBKey _KBKey;
+        [JsonProperty("doKey")]
+        public bool DoKey { get => _DoKey; set { _DoKey = value; NotifyPropertyChanged(); } }
+        private bool _DoKey = true;
 
         [JsonProperty("halo")]
         public KBHalo KBHalo { get => _KBHalo; set { _KBHalo = value; NotifyPropertyChanged(); } }
         private KBHalo _KBHalo;
-
-        [JsonProperty("doKey")]
-        public bool DoKeyY { get => _DoKeyY; set { _DoKeyY = value; NotifyPropertyChanged(); } }
-        private bool _DoKeyY = true;
-
         [JsonProperty("doHalo")]
         public bool DoHalo { get => _DoHalo; set { _DoHalo = value; NotifyPropertyChanged(); } }
         private bool _DoHalo = true;
@@ -50,7 +49,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
 
         public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
-        private double _Area;
+        private double _Area = 1;
 
         [JsonProperty("move")]
         public int Move { get => _Move; set { _Move = value; NotifyPropertyChanged(); } }
@@ -109,5 +108,15 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         [JsonProperty("saveProcessData")]
         public bool SaveProcessData { get => _SaveProcessData; set { _SaveProcessData = value; NotifyPropertyChanged(); } }
         private bool _SaveProcessData;
+
+        public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); } }
+        private int _Width = 5544;
+        public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
+        private int _Height = 3692;
+
+        public KBPoiConfig PoiConfig { get => _PoiConfig; set { _PoiConfig = value; NotifyPropertyChanged(); } }
+        private KBPoiConfig _PoiConfig = new KBPoiConfig();
+
+
     }
 }

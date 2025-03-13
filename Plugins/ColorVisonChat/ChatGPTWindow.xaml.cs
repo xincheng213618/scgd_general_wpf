@@ -1,7 +1,11 @@
-﻿using ChatGPT.Net;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
+using log4net;
+using OpenAI;
+using OpenAI.Chat;
+using System.ClientModel;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,11 +13,30 @@ using System.Windows.Input;
 
 namespace ColorVisonChat
 {
-    public static partial class GlobalConst
+    public class ChatGPTConfig : ViewModelBase,IConfig
     {
-        public const string ChatGPTConfig = "ChatGPT";
-        public const string BaseUrl = "https://api.openai.com/";
+        public static ChatGPTConfig Instance => ConfigService.Instance.GetRequiredService<ChatGPTConfig>();
+
+        public RelayCommand EditCommand { get; set; }
+
+        public event EventHandler? ConfigChanged;
+
+        public ChatGPTConfig()
+        {
+            EditCommand = new RelayCommand(a =>  new ColorVision.UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog() );
+        }
+
+        public string APiKey { get => _APiKey; set { _APiKey = value; NotifyPropertyChanged(); } }
+        private string _APiKey; 
+
+        public string BaseUrl { get => _BaseUrl; set { _BaseUrl = value; NotifyPropertyChanged(); } }
+        private string _BaseUrl = "https://api.openai.com/";
+
+        public string Model { get => _Model; set { _Model = value; NotifyPropertyChanged(); } }
+        private string _Model = "gpt-4o";
+
     }
+
 
     public class ExportColorVisonChat : IMenuItem
     {
@@ -62,26 +85,49 @@ namespace ColorVisonChat
 
     public partial class ChatGPTWindow : Window
     {
+        private static ILog log = LogManager.GetLogger(typeof(ChatGPTWindow));
         public ChatGPTWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
 
-        public ChatGpt bot { get; set; }
+        public ChatClient ChatClient { get; set; } 
 
         public ObservableCollection<ChatMsg> ChatMsgs { get; set; }
         private ChatMsgReturn ChatMsgReturn { get; set; }
         private async void Window_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = ChatGPTConfig.Instance;
             ChatMsgs = new ObservableCollection<ChatMsg>();
             ListViewContent.ItemsSource = ChatMsgs;
-            bot = new ChatGpt(ChatGPTConfig.Instance.APiKey, new ChatGPT.Net.DTO.ChatGPT.ChatGptOptions() { BaseUrl = GlobalConst.BaseUrl ,Model = "gpt-4o-2024-05-13" });
+            if (!string.IsNullOrWhiteSpace(ChatGPTConfig.Instance.APiKey))
+            {
+                Init();
+            }
+        }
+
+
+        private async void Init()
+        {
+            ChatClient = new ChatClient(ChatGPTConfig.Instance.Model, ChatGPTConfig.Instance.APiKey);
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
             try
             {
-                await bot.AskStream(Show, "你现在是ColorVision的专属定制机器人，可以帮助用户解决一些专业问题，请使用专业的口吻回答问题,理解的话请回答 有什么可以帮你的吗");
+
+                AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync("你现在是ColorVision的专属定制机器人，可以帮助用户解决一些专业问题，请使用专业的口吻回答问题,理解的话请回答 有什么可以帮你的吗");
+                await foreach (StreamingChatCompletionUpdate completionUpdate in completionUpdates)
+                {
+                    if (completionUpdate.ContentUpdate.Count > 0)
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            ChatMsgReturn.Content += completionUpdate.ContentUpdate[0].Text;
+                        });
+                    }
+                }
+
             }
             catch (Exception ex)
             {
@@ -90,33 +136,46 @@ namespace ColorVisonChat
                     ChatMsgs.Add(new ChatMsgSend() { Content = ex.Message });
 
                 });
-
             }
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             string content = TextInput1.Text;
-            ChatMsgs.Add(new ChatMsgSend() { Content =content});
+            ChatMsgs.Add(new ChatMsgSend() { Content = content});
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
-            Task.Run(() => { ASK(content); });
+            Task.Run(()=> ASK(content));
             TextInput1.Text = string.Empty;
         }
 
         public async void ASK(string content)
         {
-            string response =  await bot.AskStream(Show,content);
+            List<string> chatMessages = new List<string>();
+
+            AsyncCollectionResult<StreamingChatCompletionUpdate> completionUpdates = ChatClient.CompleteChatStreamingAsync(content);
+            Console.Write($"[ASSISTANT]: ");
+            try
+            {
+                await foreach (StreamingChatCompletionUpdate completionUpdate in completionUpdates)
+                {
+                    if (completionUpdate.ContentUpdate.Count > 0)
+                    {
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            ChatMsgReturn.Content += completionUpdate.ContentUpdate[0].Text;
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+
         }
 
-        public void Show(string response)
-        {
-            Application.Current.Dispatcher.Invoke(async () =>
-            {
-                await Task.Delay(100);
-                ChatMsgReturn.Content += response;
-            });
-        }
 
 
 
@@ -129,9 +188,20 @@ namespace ColorVisonChat
                 //e.Handled = true;
             };
         }
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            new ChatGPTConfigSetting().Show();
+            Init();
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+            ChatClient.CompleteChatStreaming(ChatMsgReturn.Content);
+        }
+
+        private void Button2_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

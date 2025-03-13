@@ -20,10 +20,7 @@ namespace ColorVision.Solution
 
         public override async Task InitializeAsync() 
         {
-            await Task.Delay(0 );
-
-            // 解析命令行参数
-            bool su = false;
+            await Task.Delay(0);
             var parser = ArgumentParser.GetInstance();
             parser.AddArgument("solutionpath", false, "s");
             parser.Parse();

@@ -718,16 +718,39 @@ namespace ProjectKB
 
                 string DrakestKey = minLKey?.Name;
                 string BrightestKey = maxKeyItem?.Name;
-
                 Task.Run(async () =>
                 {
-                    await Task.Delay(30);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    if (File.Exists(kBItem.ResultImagFile))
                     {
-                        if (File.Exists(kBItem.ResultImagFile))
+                        try
                         {
-                            ImageView.OpenImage(kBItem.ResultImagFile);
-                            ImageView.ImageShow.Clear();
+                            var fileInfo = new FileInfo(kBItem.ResultImagFile);
+                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
+                            if (fileInfo.Length > 0)
+                            {
+                                _=Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    ImageView.OpenImage(kBItem.ResultImagFile);
+                                    ImageView.ImageShow.Clear();
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            log.Warn("文件还在写入");
+                            await Task.Delay(ProjectKBConfig.Instance.ViewImageReadDelay);
+                            _=Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                ImageView.OpenImage(kBItem.ResultImagFile);
+                                ImageView.ImageShow.Clear();
+                            });
+                        }
+                        _=Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
                             foreach (var item in kBItem.Items)
                             {
                                 DVRectangle Rectangle = new();
@@ -755,9 +778,13 @@ namespace ProjectKB
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                             }
-                        }
-                    });
+
+
+                        });
+
+                    }
                 });
+
             }
         }
 

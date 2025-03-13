@@ -178,6 +178,9 @@ namespace ProjectKB
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
         private double _KBLVSacle = 0.006583904;
 
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        private int _ViewImageReadDelay = 1000;
+
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 

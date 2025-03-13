@@ -1,8 +1,11 @@
-﻿#pragma warning disable CS8604,CS8629
+﻿#pragma warning disable CS8604,CS8629,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Templates.Flow;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
@@ -13,15 +16,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Templates.Flow;
-using System.Linq;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -31,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
     /// </summary>
     public partial class ViewCalibration : UserControl, IView
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCalibration));
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewCalibration));
 
         public View View { get; set; }
 
@@ -157,12 +158,42 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResults[listView1.SelectedIndex];
+                if (string.IsNullOrWhiteSpace(data.FileUrl)) return;
+
                 if (data.FileUrl.Equals(ImageView.Config.FilePath, StringComparison.Ordinal)) return;
 
                 if (File.Exists(data.FileUrl))
                 {
-                    ImageView.OpenImage(data.FileUrl);
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(data.FileUrl);
+                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
+                            if (fileInfo.Length > 0)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ImageView.OpenImage(data.FileUrl);
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            log.Warn("文件还在写入");
+                            await Task.Delay(Config.ViewImageReadDelay);
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                ImageView.OpenImage(data.FileUrl);
+                            });
+                        }
+                    });
                 }
+
             }
         }
 

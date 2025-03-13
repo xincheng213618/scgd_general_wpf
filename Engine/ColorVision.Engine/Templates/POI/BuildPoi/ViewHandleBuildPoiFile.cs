@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
 using CsvHelper;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,9 +19,9 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
-    public class ViewHandleBuildPoiFile : IResultHandle
+    public class ViewHandleBuildPoiFile : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI_File};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI_File};
 
         public static void CovertPoiParam(PoiParam poiParam ,string fileName)
         {
@@ -108,7 +107,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
 
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             List<string> header = new();

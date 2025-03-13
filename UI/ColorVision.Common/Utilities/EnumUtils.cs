@@ -31,7 +31,7 @@ namespace ColorVision.Common.Utilities
                 Marshal.FreeHGlobal(buffer);                        // 释放从非托管内存中分配的内存
             }
         }
-        public static Object BytesToStruct(Byte[] bytes, Type strcutType)
+        public static Object? BytesToStruct(Byte[] bytes, Type strcutType)
         {
             Int32 size = Marshal.SizeOf(strcutType);
             IntPtr buffer = Marshal.AllocHGlobal(size);

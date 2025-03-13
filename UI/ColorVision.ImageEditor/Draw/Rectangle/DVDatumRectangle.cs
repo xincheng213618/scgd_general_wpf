@@ -5,7 +5,6 @@ namespace ColorVision.ImageEditor.Draw
 {
     public class DVDatumRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisualDatum, IRectangle
     {
-        public BaseProperties BaseAttribute => Attribute;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
 

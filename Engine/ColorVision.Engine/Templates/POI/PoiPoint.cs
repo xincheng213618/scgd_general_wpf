@@ -7,6 +7,12 @@ namespace ColorVision.Engine.Templates.POI
 {
     public class PoiPointParam : ViewModelBase
     {
+
+        public bool DoKey { get => _DoKey; set { _DoKey = value; NotifyPropertyChanged(); } }
+        private bool _DoKey = true;
+        public bool DoHalo { get => _DoHalo; set { _DoHalo = value; NotifyPropertyChanged(); } }
+        private bool _DoHalo = true;
+
         /// <summary>
         /// 结果缩放
         /// </summary>
@@ -49,7 +55,13 @@ namespace ColorVision.Engine.Templates.POI
         /// 面积
         /// </summary>
         public double Area { get => _Area; set { _Area = value; NotifyPropertyChanged(); } }
-        private double _Area;
+        private double _Area = 1;
+
+        /// <summary>
+        /// 辉度
+        /// </summary>
+        public double Brightness { get => _Brightness; set { _Brightness = value; NotifyPropertyChanged(); } }
+        private double _Brightness;
     }
 
 
@@ -68,18 +80,6 @@ namespace ColorVision.Engine.Templates.POI
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
-
-            if (EditPoiParamConfig.Instance.PoiPointParamType == PoiPointParamType.KBParam)
-            {
-                try
-                {
-                    Param = JsonConvert.DeserializeObject<PoiPointParam>(dbModel.Remark) ?? new PoiPointParam();
-                }
-                catch
-                {
-                    Param = new PoiPointParam();
-                }
-            }
         }
 
         public PoiPoint()

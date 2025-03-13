@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604
+﻿#pragma warning disable CS8604,CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Properties;
 using ColorVision.Themes.Controls;
@@ -519,6 +519,7 @@ namespace ColorVision.Update
 
                 string batchContent = $@"
 @echo off
+taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""

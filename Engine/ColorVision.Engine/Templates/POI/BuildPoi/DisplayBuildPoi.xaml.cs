@@ -61,7 +61,9 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 POILayoutTypes POILayoutReq;
                 if (CircleChecked.IsChecked  ==true)
                 {
-                    PointInt center = new PointInt(Convert.ToInt32(centerX.Text), Convert.ToInt32(centerY.Text));
+                    PointInt center = new PointInt( );
+                    center.X = Convert.ToInt32(centerX.Text);
+                    center.Y = Convert.ToInt32(centerY.Text);
                     Params.Add("LayoutCenter", center);
                     //CIEParams.Add("LayoutCenterX", centerX.Text);
                     //CIEParams.Add("LayoutCenterY", centerY.Text);
@@ -71,7 +73,9 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 }
                 else if (RectChecked.IsChecked == true)
                 {
-                    PointInt center = new PointInt(Convert.ToInt32(rect_centerX.Text), Convert.ToInt32(rect_centerY.Text));
+                    PointInt center = new PointInt();
+                    center.X = Convert.ToInt32(rect_centerX.Text);
+                    center.Y = Convert.ToInt32(rect_centerY.Text);
                     Params.Add("LayoutCenter", center);
                     //CIEParams.Add("LayoutCenterX", rect_centerX.Text);
                     //CIEParams.Add("LayoutCenterY", rect_centerY.Text);
@@ -172,15 +176,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
     }
 
-    public struct PointInt
+    public class PointInt
     {
-        public int X;
-        public int Y;
+        public int X { get; set; }
+        public int Y { get; set; }
 
-        public PointInt(int x, int y)
-        {
-            X = x;
-            Y = y;
-        }
     }
 }

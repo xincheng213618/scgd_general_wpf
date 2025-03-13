@@ -9,6 +9,11 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Templates;
+using System.ComponentModel;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -43,7 +48,29 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
                 PhyCamera.DeviceCalibration = this;
             }
+            EditCalibrationCommand = new RelayCommand(a => EditCalibration());
         }
+
+        [CommandDisplay("编辑校正文件",Order =100)]
+        public RelayCommand EditCalibrationCommand { get; set; }
+
+        public void EditCalibration()
+        {
+            if (PhyCamera == null)
+            {
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(PhyCamera);
+            var windowTemplate = new TemplateEditorWindow(ITemplate) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+
 
         private PhyCamera lastPhyCamera;
 
@@ -59,6 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             Save();
         }
 
+        [CommandDisplay("ManagePhysicalCamera")]
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]

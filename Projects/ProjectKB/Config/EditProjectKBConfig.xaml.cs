@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System.Windows;
 
 namespace ProjectKB
@@ -25,6 +26,7 @@ namespace ProjectKB
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
+            ConfigHandler.GetInstance().SaveConfigs();
             this.Close();
         }
 
@@ -70,6 +72,45 @@ namespace ProjectKB
         private void Open1_Click(object sender, RoutedEventArgs e)
         {
             ColorVision.Common.Utilities.PlatformHelper.OpenFolder(ProjectKBConfig.Instance.ResultSavePath1);
+        }
+
+        private void SaveSetting_Click(object sender, RoutedEventArgs e)
+        {
+            string defaultFileName = $"Exported-{DateTime.Now:yyyy-MM-dd}.cvsettings";
+
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "cvsettings files (*.cvsettings)|*.cvsettings|All files (*.*)|*.*",
+                DefaultExt = ".cvsettings",
+                Title = "选择导出文件位置",
+                FileName = defaultFileName // Set the default file name
+            };
+
+            // Show the dialog and get the selected file CurrentInstallFile
+            bool? result = saveFileDialog.ShowDialog();
+
+            if (result == true)
+            {
+                string fileName = saveFileDialog.FileName;
+                ConfigHandler.GetInstance().SaveConfigs(fileName);
+            }
+        }
+
+        private void LoadSetting_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "cvsettings files (*.cvsettings)|*.cvsettings|All files (*.*)|*.*",
+                Title = "选择导入文件"
+            };
+
+            bool? result = openFileDialog.ShowDialog();
+
+            if (result == true)
+            {
+                string fileName = openFileDialog.FileName;
+                ConfigHandler.GetInstance().LoadConfigs(fileName);
+            }
         }
     }
 }

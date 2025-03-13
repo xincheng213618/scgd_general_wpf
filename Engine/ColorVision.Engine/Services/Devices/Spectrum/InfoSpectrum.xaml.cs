@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using System;
 using System.Windows;
@@ -23,18 +25,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             disposedObj = false;
             Device = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DService;
-            SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             InitializeComponent();
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-        }
-
-        private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
-        {
-            Device.Config.BeginIntegralTime = colorPara.fTimeB;
-            Device.Config.MaxIntegralTime = colorPara.iLimitTime;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
+            Device.RefreshEmptySpectrum();
         }
 
 
@@ -58,13 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
         }
     }
 }

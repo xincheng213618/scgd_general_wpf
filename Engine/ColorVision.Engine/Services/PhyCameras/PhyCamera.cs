@@ -33,6 +33,7 @@ using System.Windows.Media;
 using System.Net.Http;
 using System.Net.Http.Json;
 using ColorVision.UI.PropertyEditor;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -50,28 +51,32 @@ namespace ColorVision.Engine.Services.PhyCameras
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
         public ConfigPhyCamera Config { get; set; }
-
+        [CommandDisplay("上传校正文件",Order =100)]
         public RelayCommand UploadCalibrationCommand { get; set; }
+        [CommandDisplay("校正模板管理",Order =102)]
         public RelayCommand CalibrationEditCommand { get; set; }
-
+        [CommandDisplay("校正模板设置",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
+        [CommandDisplay("资源组管理",Order =103)]
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand UploadLicenseCommand { get; set; }
-
+        [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
-
+        [CommandDisplay("查看缓存许可证")]
+        public RelayCommand OpenLicenseCacheCommand { get; set; }
         public RelayCommand RefreshLicenseCommand { get; set; }
+
+        [CommandDisplay("Reset", CommandType = CommandType.Highlighted,Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
+        [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
         public RelayCommand CopyConfigCommand { get; set; }
-
+        [CommandDisplay("手册")]
         public RelayCommand ProductBrochureCommand { get; set; }
-
-        public RelayCommand EditCameraCommand { get; set; }
-        public RelayCommand EditCalibrationCommand { get; set; }
+        [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
-
+        [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
 
@@ -127,8 +132,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseCommand = new RelayCommand(a => UploadLicense());
             RefreshLicenseCommand = new RelayCommand(a => RefreshLicense());
             RefreshLicense();
-            EditCameraCommand = new RelayCommand(a => DeviceCamera?.EditCommand.Execute(this) ,a=> DeviceCamera!=null && DeviceCamera.EditCommand.CanExecute(this));
-            EditCalibrationCommand = new RelayCommand(a => DeviceCalibration?.EditCommand.Execute(this), a => DeviceCalibration != null && DeviceCalibration.EditCommand.CanExecute(this));
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
             Name = Code ?? string.Empty;
@@ -140,6 +143,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
+            OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
+        }
+        public static void OpenLicenseCache()
+        {
+            string DirLicense = $"{Environments.DirAppData}\\Licenses";
+            if (!Directory.Exists(DirLicense))
+                Directory.CreateDirectory(DirLicense);
+            Common.Utilities.PlatformHelper.OpenFolder(DirLicense);
         }
 
         public void UpdateMotorConfig()
@@ -175,15 +186,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             // 设置请求的URL和数据
             string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
             var postData = new { macSn = Code };
-
             string DirLicense = $"{Environments.DirAppData}\\Licenses";
-
             if (!Directory.Exists(DirLicense))
                 Directory.CreateDirectory(DirLicense);
 
             string fileName = $"{DirLicense}\\{Code}-license.zip";
 
-            if (File.Exists(fileName))
+            if (File.Exists(fileName) && MessageBox.Show(Application.Current.GetActiveWindow(),$"查询到本地保存的{Code}许可证，应用还是联网获取？", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
             {
                 SetLicense(fileName);
                 return;
@@ -342,6 +351,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             DeviceCamera = deviceCamera;
             if (CameraLicenseModel != null)
             {
+
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
                 RefreshLicense();
@@ -481,7 +491,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
                             if (CameraLicenseModel == null)
                                 CameraLicenseModel = new LicenseModel();
-                            CameraLicenseModel.DevCameraId = SysResourceModel.Id;
                             CameraLicenseModel.LiceType = 0;
                             CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
                             using var stream = item.Open();
@@ -607,10 +616,10 @@ namespace ColorVision.Engine.Services.PhyCameras
         public void UploadCalibration(object sender)
         {
             UploadList.Clear();
-            UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-                UploadMsg uploadMsg = new(this);
+                UploadMsg uploadMsg = new UploadMsg(this);
                 uploadMsg.Show();
                 string uploadfilepath = e.UploadFilePath;
                 Task.Run(() => UploadData(uploadfilepath));
@@ -640,6 +649,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 if (!sss)
                 {
                     Msg = "解压失败";
+                    MessageBox.Show("解压失败");
                     await Task.Delay(100);
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     return;
@@ -713,13 +723,27 @@ namespace ColorVision.Engine.Services.PhyCameras
                                     case CalibrationType.ColorShift:
                                         FilePath = path + "\\Calibration\\" + "ColorShift\\" + calzzom.FileName;
                                         break;
+                                    case CalibrationType.ColorDiff:
+                                        FilePath = path + "\\Calibration\\" + "ColorDiff\\" + calzzom.FileName;
+                                        break;
+                                    case CalibrationType.LineArity:
+                                        FilePath = path + "\\Calibration\\" + "LineArity\\" + calzzom.FileName;
+                                        break;
                                     case CalibrationType.Empty_Num:
                                         break;
                                     default:
                                         break;
                                 }
+
                                 FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == calzzom.Title);
                                 uploadMeta.FilePath = FilePath;
+                                if (!File.Exists(FilePath))
+                                {
+                                    uploadMeta.UploadStatus = UploadStatus.Failed;
+                                    Msg = "找不到校正文件：" + calzzom.Title;
+                                    continue;
+
+                                }
                                 uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
                                 uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
                                 await Task.Delay(1);
@@ -779,7 +803,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 {
                                     uploadMeta.UploadStatus = UploadStatus.Failed;
                                 }
-
                             }
                         }
 
@@ -836,6 +859,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                             }
                                         }
                                         groupResource.SetCalibrationResource();
+                                        groupResource.Save();
                                     }
                                 });
                             }
@@ -849,14 +873,21 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                     }
                     Msg = "上传结束";
-                    await Task.Delay(500);
-                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    if (UploadList.Any(a => a.UploadStatus == UploadStatus.Failed))
+                    {
+                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
+                    }
+                    else
+                    {
+                        await Task.Delay(500);
+                        SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
+                        Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    }
                 }
                 catch(Exception ex)
                 {
                     log.Error(ex);
-                    Msg = "找不到配置文件";
+                    Msg = ex.Message;
                     await Task.Delay(200);
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));

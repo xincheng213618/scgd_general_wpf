@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,6 +19,35 @@ namespace ColorVision.UI.Menus
         public MenuManager()
         {
 
+        }
+
+        public List<IMenuItem> GetIMenuItem()
+        {
+            List<IMenuItem> iMenuItems = new();
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem && iMenuItem.Command !=null)
+                    {
+                        iMenuItems.Add(iMenuItem);
+                    }
+                }
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
+                    {
+                        foreach (var item in itemProvider.GetMenuItems())
+                        {
+                            if (item.Command != null && item.Header !=null)
+                            {
+                                iMenuItems.Add(item);
+                            }
+                        }
+                    }
+                }
+            }
+            return iMenuItems;
         }
         private bool Initialized;
         private List<MenuItem> MenuBack;

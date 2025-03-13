@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿#pragma warning disable CS8604
+using ColorVision.UI;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.Searches

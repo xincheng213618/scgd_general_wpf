@@ -26,10 +26,7 @@ namespace ProjectKB
         //"HOME", "END", "DELETE", "calculator", "(", ")", "MOON", "~", "1", "2", "3", "4",
         //"5", "6", "7", "8", "9", "0", "-", "=", "Backspace", "Num lock", "NUM /",
         //"NUM *", "NUM -", "Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[",
-        //"]", "\\", "Num 7", "Num 8", "Num 9", "Num +", "Capslk", "A", "S", "D", "F", "G",
-        //"H", "J", "K", "L", ";", "R68", "Enter", "Num 4", "Num 5", "Num 6", "L-Shift",
-        //"Z", "X", "C", "V", "B", "N", "M", "comma", ".", "/", "R-Shift", "Num 1", "Num 2",
-        //"Num 3", "Num enter", "L-ctrl", "Fn", "Win", "L-alt", "Space", "R-alt", "R-ctrl",
+        //"]", "\\", "Num 7", "Num 8", "Num 9", "Num +", "Capslk", "A", "S", "D", "F", "G", 
         //"Pgup", "Up", "Pgdn", "Num 0", "Num .", "LEFT", "DN", "RIGHT",
             List<string> properyties1 = new List<string>()
             { "LimitProfile",
@@ -42,7 +39,7 @@ namespace ProjectKB
             for (int i = 0; i < KBItems.Items.Count; i++)
             {
                 string name = KBItems.Items[i].Name;
-                if (name.Contains(",") || name.Contains("\""))
+                if (name.Contains(',') || name.Contains('"'))
                 {
                     name = $"\"{name.Replace("\"", "\"\"")}\"";
                 }

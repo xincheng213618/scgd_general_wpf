@@ -46,8 +46,7 @@ namespace ColorVision.Engine.Services.Devices.PG
             PGCategoryLib = new Dictionary<string, Dictionary<string, string>>();
             ReLoadCategoryLib();
 
-            //PGCategoryLib.Add("GXCLCM", new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" }, { "CM_SwitchUpPG", "Key UP\r" }, { "CM_SwitchDownPG", "Key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } });
-            //PGCategoryLib.Add("SkyCode", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
+
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -164,6 +163,9 @@ namespace ColorVision.Engine.Services.Devices.PG
             {
                 PGCategoryLib.Add(item.Key, item.Value.ConvertToMap());
             }
+            PGCategoryLib.Add("GXCLCM", new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" }, { "CM_SwitchUpPG", "Key UP\r" }, { "CM_SwitchDownPG", "Key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } });
+            PGCategoryLib.Add("SkyCode", new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } });
+
         }
 
         public void CustomPG(string text)

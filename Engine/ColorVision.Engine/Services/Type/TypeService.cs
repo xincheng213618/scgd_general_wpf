@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Services.Types
         Group = 1000,
         SpCalibration =201,
         PhyCamera =101,
+        PhySpectrums =103
     }
 
     public class TypeService : TerminalServiceBase

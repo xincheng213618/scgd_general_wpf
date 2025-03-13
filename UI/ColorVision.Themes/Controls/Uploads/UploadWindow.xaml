@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="上传" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
-        <Image Source="/ColorVision.Themes;component/Assets/Image/uploadbg.avif" Stretch="UniformToFill">
+        <Image x:Name="backImage" Stretch="UniformToFill">
             <Image.Effect>
                 <BlurEffect Radius="0"/>
             </Image.Effect>

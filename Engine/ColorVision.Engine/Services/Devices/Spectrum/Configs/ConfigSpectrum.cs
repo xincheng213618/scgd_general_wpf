@@ -74,5 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
+        public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
+
     }
 }

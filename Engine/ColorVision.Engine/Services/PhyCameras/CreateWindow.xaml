@@ -86,11 +86,11 @@
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport0"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[3].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport3"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[6].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport6"/>
                                     </DockPanel>
@@ -104,11 +104,11 @@
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport1"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[4].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport4"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[7].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport7"/>
                                     </DockPanel>
@@ -122,11 +122,11 @@
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport2"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[5].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport5"/>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                    <DockPanel Margin="0,2" Visibility="{Binding CreateConfig.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
                                         <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CreateConfig.CFW.ChannelCfgs[8].Cfwport}" Minimum="0"/>
                                         <TextBlock Text="cfwport8"/>
                                     </DockPanel>

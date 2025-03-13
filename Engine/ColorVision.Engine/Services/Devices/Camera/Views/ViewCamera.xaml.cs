@@ -21,6 +21,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Flow;
 using System.Linq;
 using CVCommCore;
+using ColorVision.ImageEditor;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -50,7 +51,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             this.DataContext = this ;
             View = new View();
-            ImageView.SetConfig(ViewCameraConfig.Instance.ImageViewConfig);
+
+            ImageView.SetConfig(new ImageViewConfig());
 
             ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
             ImageView.ImageViewModel.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
@@ -98,8 +100,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
         }
 
-
-        NetFileUtil netFileUtil;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.DeviceCode != Device.Config.Code) return;
@@ -229,6 +229,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                     });
                 }
+          
             }
         }
 

@@ -36,6 +36,7 @@ namespace ColorVision.UI.CUDA
 
         public override async Task InitializeAsync()
         {
+            await Task.Delay(0);
             Config.IsCudaSupported = CheckCudaSupport();
             if (Config.IsCudaSupported)
             {

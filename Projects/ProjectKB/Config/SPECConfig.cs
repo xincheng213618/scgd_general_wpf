@@ -12,10 +12,10 @@ namespace ProjectKB.Config
 
 
         public double MaxAvgLv { get => _MaxAvgLv; set { _MaxAvgLv = value; NotifyPropertyChanged(); } }
-        private double _MaxAvgLv = 0;
+        private double _MaxAvgLv;
 
         public double MinAvgLv { get => _MinAvgLv; set { _MinAvgLv = value; NotifyPropertyChanged(); } }
-        private double _MinAvgLv = 0;
+        private double _MinAvgLv;
         /// <summary>
         /// 亮度一致性
         /// </summary>

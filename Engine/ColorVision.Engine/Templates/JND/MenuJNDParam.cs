@@ -3,7 +3,7 @@
     public class MenuJNDParam : MenuITemplateAlgorithmBase
     {
         public override string Header => "JND";
-        public override int Order => 3;
+        public override int Order => 2003;
         public override ITemplate Template => new TemplateJND();
     }
 }

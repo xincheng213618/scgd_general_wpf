@@ -13,9 +13,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig, IFileServerCfg
     {
-        public ConfigCamera()
-        {
-        }
         public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
         private string? _CameraCode;
 

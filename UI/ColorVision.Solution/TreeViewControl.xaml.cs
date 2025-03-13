@@ -49,8 +49,9 @@ namespace ColorVision.Solution
         {
             this.DataContext = SolutionManager;
             SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            if (SolutionManager.SolutionExplorers.Count > 0)
+                SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
 
-            SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
             IniCommand();
         }
 
@@ -106,7 +107,6 @@ namespace ColorVision.Solution
 
         private Point SelectPoint;
 
-        private VObject LastReNameObject;
         private TreeViewItem? SelectedTreeViewItem;
 
 

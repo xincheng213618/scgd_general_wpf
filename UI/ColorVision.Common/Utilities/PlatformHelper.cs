@@ -31,7 +31,7 @@ namespace ColorVision.Common.Utilities
                 Process.Start("xdg-open", $"\"{folder}\"");
             }
         }
-        public static void OpenFolderAndSelectFile(string filePath)
+        public static void OpenFolderAndSelectFile(string? filePath)
         {
             if (filePath == null) return;
 

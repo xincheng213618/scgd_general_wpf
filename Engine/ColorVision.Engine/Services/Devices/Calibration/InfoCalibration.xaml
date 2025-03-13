@@ -83,13 +83,7 @@
                 <TabControl  TabStripPlacement="Top" Background="Transparent" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="{x:Static properties:Resources.Manager}">
                         <ScrollViewer Margin="-2,0"  HorizontalScrollBarVisibility="Disabled">
-                            <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ModifyConfiguration}" Command="{Binding EditCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.RefreshService}" Command="{Binding RefreshCommand}"/>
-                                <Button Style="{StaticResource ButtonCommand}" Content="{x:Static properties:Resources.ManagePhysicalCamera}"  Command="{Binding OpenPhyCameraMangerCommand}"  />
-                                <Button Style="{StaticResource ButtonCommand}" Content="更新文件保存地址" Command="{Binding UpdateFilecfgCommand}"/>
-
-                            </UniformGrid>
+                            <UniformGrid x:Name="CommandGrid" Margin="5"  VerticalAlignment="Top" />
                         </ScrollViewer>
                     </TabItem>
                     <TabItem Header="{x:Static properties:Resources.BasicInformation}">

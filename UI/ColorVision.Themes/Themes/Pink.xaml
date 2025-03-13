@@ -67,8 +67,6 @@
     <!-- Context Menu -->
     <SolidColorBrush x:Key="toplevelmenuheaderhoverborder" Color="Transparent" />
     <SolidColorBrush x:Key="toplevelmenuheaderhover" Color="#FADCE4"/>
-
-
     <!-- 次要背景色 -->
     <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#FADCE4"/>
     <!-- 次要背景色 -->

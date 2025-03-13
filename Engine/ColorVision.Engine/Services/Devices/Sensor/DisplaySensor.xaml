@@ -49,26 +49,6 @@
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="传感器未注册" Command="{Binding EditCommand}"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">
-                    <StackPanel  IsEnabled="False">
-                        <DockPanel Margin="0,5" IsEnabled="False">
-                            <RadioButton Content="TCPIP通讯" IsChecked="{Binding  Config.IsNet}"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" />
-                            <RadioButton Content="串口通讯"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}" />
-                            <TextBlock Margin="10,0,0,0" Text="{Binding Config.Category}"/>
-                        </DockPanel>
-                        <StackPanel>
-                            <DockPanel>
-                                <TextBlock  Text="IP地址" Width="60" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}"/>
-                                <TextBlock  Text="串口" Width="60" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Addr}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock  Text="端口" Width="60"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}"/>
-                                <TextBlock  Text="波特率" Width="60"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Port}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </StackPanel>
-
                     <Button x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
                     <Button x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
                     <DockPanel Margin="0,0,0,5">

@@ -321,4 +321,13 @@
   <data name="Command" xml:space="preserve">
     <value>命令</value>
   </data>
+  <data name="Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Debugging" xml:space="preserve">
+    <value>调试中</value>
+  </data>
+  <data name="Bit" xml:space="preserve">
+    <value>位</value>
+  </data>
 </root>

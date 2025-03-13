@@ -19,20 +19,21 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         }
 
-        public void Open()
+        public MsgRecord Open()
         {
             MsgSend msg = new()
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } }
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
+
         /// <summary>
         /// 发送单个指令
         /// </summary>
         /// <param name="command"></param>
-        public void ExecCmd(SensorCmd command)
+        public MsgRecord ExecCmd(SensorCmd command)
         {
             SensorExecCmdParam req = new();
             req.Cmd = command;
@@ -41,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = req,
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
         /// <summary>
         /// 发送模板

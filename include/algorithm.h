@@ -3,8 +3,40 @@
 #pragma warning(disable:4305 4244)
 
 #include <opencv2/opencv.hpp>
+
+/// <summary>
+/// Ä¦¶ûÎÆÂË³ý
+/// </summary>
+/// <param name="image"></param>
+/// <returns></returns>
+cv::Mat removeMoire(const cv::Mat& image);
+/// <summary>
+/// Ñ°ÕÒ·¢¹âÈ¥
+/// </summary>
+/// <param name="src"></param>
+/// <param name="largestRect"></param>
+/// <param name="threshold"></param>
+/// <returns></returns>
 int findLuminousArea(cv::Mat& src, cv::Rect& largestRect,int threshold);
 
+/// <summary>
+/// µÆÖé¼ì²â
+/// </summary>
+/// <param name="image"></param>
+/// <param name="rows"></param>
+/// <param name="cols"></param>
+void LampBeadDetection(cv::Mat image, int rows, int cols);
+
+/// <summary>
+/// »æÖÆpoi¹Ø×¢µã
+/// </summary>
+/// <param name="img"></param>
+/// <param name="dst"></param>
+/// <param name="radius"></param>
+/// <param name="points"></param>
+/// <param name="pointCount"></param>
+/// <param name="thickness"></param>
+/// <returns></returns>
 int drawPoiImage(cv::Mat& img, cv::Mat& dst, int radius, int* points, int pointCount,int thickness);
 
 /// <summary>

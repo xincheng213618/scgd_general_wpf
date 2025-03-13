@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI.Extension;
 using System.Collections.Concurrent;
 using System.ComponentModel;
 using System.IO;
@@ -17,6 +18,70 @@ namespace ColorVision.UI
     public static class PropertyEditorHelper
     {
         public static ConcurrentDictionary<Type, Lazy<ResourceManager?>> ResourceManagerCache { get; set; } = new ConcurrentDictionary<Type, Lazy<ResourceManager?>>();
+
+
+        public static void GenCommand(ViewModelBase obj, UniformGrid uniformGrid)
+        {
+            uniformGrid.SizeChanged +=(s,e) => uniformGrid.AutoUpdateLayout();
+
+            Type type = obj.GetType();
+            var lazyResourceManager = ResourceManagerCache.GetOrAdd(type, t => new Lazy<ResourceManager?>(() =>
+            {
+                string namespaceName = t.Assembly.GetName().Name;
+                string resourceClassName = $"{namespaceName}.Properties.Resources";
+                Type resourceType = t.Assembly.GetType(resourceClassName);
+
+                if (resourceType != null)
+                {
+                    var resourceManagerProperty = resourceType.GetProperty("ResourceManager", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (resourceManagerProperty != null)
+                    {
+                        return (ResourceManager)resourceManagerProperty.GetValue(null);
+                    }
+                }
+
+                return null;
+            }));
+            ResourceManager? resourceManager = lazyResourceManager.Value;
+
+            var commandDisplayAttributes = new List<(CommandDisplayAttribute, PropertyInfo)>();
+            var properties = type.GetProperties();
+            foreach (var property in properties)
+            {
+                var attribute = property.GetCustomAttribute<CommandDisplayAttribute>();
+                if (attribute != null)
+                {
+                    commandDisplayAttributes.Add((attribute, property));
+                }
+            }
+
+            commandDisplayAttributes.Sort((a, b) => a.Item1.Order.CompareTo(b.Item1.Order));
+
+            foreach (var (attribute, property) in commandDisplayAttributes)
+            {
+                var command = property.GetValue(obj) as ICommand;
+                if (command != null)
+                {
+                    string displayName = attribute.DisplayName ?? property.Name;
+                    displayName = resourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                    var button = new Button
+                    {
+                        Style = (Style)Application.Current.FindResource("ButtonCommand"),
+                        Content = displayName,
+                        Command = command
+                    };
+                    if (attribute.CommandType == CommandType.Highlighted)
+                    {
+                        button.Foreground = Brushes.Red;
+                    }
+                    uniformGrid.Children.Add(button);
+                }
+            }
+
+
+
+        }
+
 
         public static StackPanel GenPropertyEditorControl(ViewModelBase obj)
         {
@@ -246,7 +311,7 @@ namespace ColorVision.UI
                     button.Click += (s, e) =>
                     {
                         var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
-                        folderDialog.SelectedPath = (string)property.GetValue(obj);
+                        folderDialog.SelectedPath = (string)property.GetValue(obj) ?? string.Empty;
                         if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         {
                             if (folderDialog.SelectedPath == null) return;

@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             this.AddViewConfig(View,ComboxView);
 
-            SpectrumService.DataHandlerEvent += e =>
+            SpectrumService.DataHandlerEvent += (s,e) =>
             {
                 if (e != null)
                     View.SpectrumDrawPlot(e);

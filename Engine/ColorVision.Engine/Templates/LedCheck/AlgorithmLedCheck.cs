@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 {
     public class AlgorithmLedCheck : ViewModelBase, IDisplayAlgorithm
     {
-        public string Name { get; set; } = "灯珠检测1";
+        public string Name { get; set; } = "像素级灯珠检测";
         public int Order { get; set; } = 20;
 
         public DeviceAlgorithm Device { get; set; }
@@ -61,8 +61,17 @@ namespace ColorVision.Engine.Templates.LedCheck
             else sn = serialNumber;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+           
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+
+            if (poiParam.Id == -1)
+            {
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = string.Empty });
+            }
+            else
+            {
+                Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+            }
 
             MsgSend msg = new()
             {

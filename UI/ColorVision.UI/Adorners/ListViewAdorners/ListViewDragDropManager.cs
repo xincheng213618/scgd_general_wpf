@@ -1,4 +1,4 @@
-#pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601ColorVision.Common.Adorners.ListViewAdorners
+#pragma warning disable CS8625,CS8603,CA1822,CS8604,CS8601,CS8601
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,17 +9,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Common.Adorners.ListViewAdorners
 {
-
-
-
-    /// <summary>
-    /// Manages the dragging and dropping of ListViewItems in a ListView.
-    /// The T type parameter indicates the type of the objects in
-    /// the ListView's items source.  The ListView's ItemsSource must be
-    /// set to an instance of ObservableCollection of T, or an
-    /// Exception will be thrown.
-    /// </summary>
-    /// <typeparam name="T">The type of the ListView's items.</typeparam>
     public class ListViewDragDropManager<T> where T : class
     {
         #region Data

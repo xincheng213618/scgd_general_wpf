@@ -4,12 +4,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Ghost;
-using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.LedCheck;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
@@ -19,7 +15,6 @@ using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -53,15 +48,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private NetFileUtil netFileUtil;
 
         public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
-        public ObservableCollection<IResultHandle> ResultHandles { get; set; } = new ObservableCollection<IResultHandle>();
+        public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandle).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IResultHandleBase).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IResultHandle  algorithmResultRender)
+                    if (Activator.CreateInstance(type) is IResultHandleBase  algorithmResultRender)
                     {
                         ResultHandles.Add(algorithmResultRender);
                     }
@@ -335,50 +330,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         AddPOIPoint(DrawPoiPoint);
                         break;
-                    case AlgorithmResultType.SFR:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultSFRModels)
-                            {
-                                var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                                var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                                for (int i = 0; i < Pdfrequencys.Length; i++)
-                                {
-                                    ViewResultSFR resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
-                                    result.ViewResults.Add(resultData);
-                                }
-                            };
-                        }
-                        header = new() { "pdfrequency", "pdomainSamplingData" };
-                        bdHeader = new() { "pdfrequency", "pdomainSamplingData" };
-
-                        if (result.ViewResults.Count > 0)
-                        {
-                            AddRect(new Rect(10, 10, 10, 10));
-                        }
-
-                        break;
-                    case AlgorithmResultType.OLED_JND_CalVas:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
-                                result.ViewResults.Add(new ViewRsultJND(item));
-                        }
-                        header = new() { "Name","位置", "大小", "形状", "h_jnd", "v_jnd" };
-                        bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "JND.h_jnd", "JND.v_jnd" };
-
-                        foreach (var item in result.ViewResults)
-                        {
-                            if (item is PoiResultData poiResultData)
-                            {
-                                DrawPoiPoint.Add(poiResultData.Point);
-                            }
-                        }
-                        AddPOIPoint(DrawPoiPoint);
-                        break;
                     case AlgorithmResultType.Distortion:
                         if (result.ViewResults == null)
                         {
@@ -478,16 +429,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 Circle.Render();
                 ImageView.AddVisual(Circle);
             }
-        }
-
-        public void AddRect(Rect rect)
-        {
-            DVRectangleText Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-            Rectangle.Attribute.Brush = Brushes.Transparent;
-            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-            Rectangle.Render();
-            ImageView.AddVisual(Rectangle);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -669,13 +610,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(AlgorithmResult result,string selectedPath)
         {
+
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(ViewResults[listView1.SelectedIndex].ResultType));
+            if (ResultHandle != null)
+            {
+                ResultHandle.SideSave(result,selectedPath);
+                return;
+            }
             string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
             try
             {
                 switch (result.ResultType)
                 {
-                    case AlgorithmResultType.POI:
-                        break;
+
                     case AlgorithmResultType.POI_XYZ:
                         var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
                         PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
@@ -683,34 +630,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.POI_Y:
                         var PoiResultCIEYDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIEYData>();
                         PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
-                        break;
-                    case AlgorithmResultType.OLED_JND_CalVas:
-                        var ViewRsultJNDs = result.ViewResults.ToSpecificViewResults<ViewRsultJND>();
-                        ViewRsultJND.SaveCsv(ViewRsultJNDs, fileName);
-                        string saveng = System.IO.Path.Combine(selectedPath, $"{DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss")}.png");
-                        ImageView.ImageViewModel.Save(saveng);
-                        break;
-                    case AlgorithmResultType.FOV:
-                        break;
-                    case AlgorithmResultType.SFR:
-                        var ViewResultSFRs = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
-                        ViewResultSFR.SaveCsv(ViewResultSFRs, fileName);
-                        break;
-                    case AlgorithmResultType.MTF:
-                        var ViewResultMTFs = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
-                        ViewHandleMTF.SaveCsv(ViewResultMTFs, fileName);
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        var ViewResultGhosts = result.ViewResults.ToSpecificViewResults<AlgResultGhostModel>();
-                        ViewHandleGhost.SaveCsv(ViewResultGhosts, fileName);
-                        break;
-                    case AlgorithmResultType.LedCheck:
-                        break;
-                    case AlgorithmResultType.LightArea:
-                        break;
-                    case AlgorithmResultType.Distortion:
-                        break;
-                    case AlgorithmResultType.BuildPOI:
                         break;
                     default:
                         break;

@@ -15,6 +15,7 @@ using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -39,14 +40,23 @@ namespace ColorVision.Engine.Services
         private bool _IsExpanded = true;
 
         public ContextMenu ContextMenu { get; set; }
-
+        [CommandDisplayAttribute("Property", Order = -6)]
         public RelayCommand PropertyCommand { get; set; }
+        [CommandDisplayAttribute("Export", Order = -7)]
         public RelayCommand ExportCommand { get; set; }
+        [CommandDisplayAttribute("Import", Order = -8)]
         public RelayCommand ImportCommand { get; set; }
+        [CommandDisplayAttribute("Copy", Order = -10)]
         public RelayCommand CopyCommand { get; set; }
+
+        [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999)]
         public RelayCommand ResetCommand { get; set; }
+        [CommandDisplayAttribute("RestartService",Order =-2)]
         public RelayCommand RefreshCommand { get; set; }
+        [CommandDisplayAttribute("ModifyConfiguration",Order =-3)]
         public RelayCommand EditCommand { get; set; }
+
+        [CommandDisplay("文件保存路径",Order =-1)]
         public RelayCommand UpdateFilecfgCommand { get; set; }
 
         public virtual ImageSource Icon { get; set; }
@@ -125,7 +135,7 @@ namespace ColorVision.Engine.Services
             });
             ResetCommand = new RelayCommand(a =>
             {
-                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
+                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"确定要重置{Name}吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
             }, a => AccessControl.Check(PermissionMode.Administrator));
@@ -153,7 +163,7 @@ namespace ColorVision.Engine.Services
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 400, Icon = Icon, Title = Properties.Resources.Property };
+                Window window = new() { Width = 700, Height = 500, Icon = Icon, Title = Properties.Resources.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

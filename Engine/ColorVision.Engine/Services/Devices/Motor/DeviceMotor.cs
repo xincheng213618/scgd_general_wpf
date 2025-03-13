@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
 
         public override UserControl GetDeviceInfo() => new InfoMotor(this);
 
-        public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
+        public override UserControl GetDisplayControl() => new DisplayMotor(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {

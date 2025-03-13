@@ -11,8 +11,11 @@ using ColorVision.UI.Views;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
+using Panuon.WPF.UI;
+using ScottPlot;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -21,6 +24,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ColorVision
 {
@@ -89,6 +93,7 @@ namespace ColorVision
             Title = "ColorVision";
             this.ApplyCaption();
             this.SetWindowFull(Config);
+            
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -145,6 +150,17 @@ namespace ColorVision
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
+            Searches = new ObservableCollection<IMenuItem>(MenuManager.GetInstance().GetIMenuItem());
+
+            // 设置快捷键 Ctrl + F
+            var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
+            var command = new RoutedCommand();
+            command.InputGestures.Add(gesture);
+            CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
+        }
+        private void FocusSearchBox(object sender, ExecutedRoutedEventArgs e)
+        {
+            Searchbox.Focus();
         }
 
         public static async void LoadIMainWindowInitialized() 
@@ -308,6 +324,68 @@ namespace ColorVision
             foreach (var item in sortedSettings)
             {
                 AddStatusBarIconMetadata(item);
+            }
+        }
+        public ObservableCollection<IMenuItem> Searches { get; set; } = new ObservableCollection<IMenuItem>();
+        public List<IMenuItem> filteredResults { get; set; } = new List<IMenuItem>();
+
+        private readonly char[] Chars = new[] { ' ' };
+        private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (string.IsNullOrWhiteSpace(textBox.Text))
+                {
+                    SearchPopup.IsOpen = false;
+                }
+                else
+                {
+                    SearchPopup.IsOpen = true;
+                    var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+
+                    filteredResults = Searches
+                        .OfType<IMenuItem>()
+                        .Where(template => keywords.All(keyword =>
+                            template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                            template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                            ))
+                        .ToList();
+
+                    ListView1.ItemsSource = filteredResults;
+                    if (filteredResults.Count > 0)
+                    {
+                        ListView1.SelectedIndex = 0;
+                    }
+                }
+            }
+        }
+
+        private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+
+        private void Searchbox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                if (ListView1.SelectedIndex > -1)
+                {
+                    Searchbox.Text = string.Empty;
+                    filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
+                }
+            }
+            if (e.Key == System.Windows.Input.Key.Up)
+            {
+                if (ListView1.SelectedIndex > 0)
+                    ListView1.SelectedIndex -= 1;
+            }
+            if (e.Key == System.Windows.Input.Key.Down)
+            {
+                if (ListView1.SelectedIndex < filteredResults.Count - 1)
+                    ListView1.SelectedIndex += 1;
+
+
             }
         }
     }

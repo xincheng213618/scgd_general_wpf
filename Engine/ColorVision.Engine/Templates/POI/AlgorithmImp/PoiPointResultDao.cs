@@ -1,9 +1,10 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
-    public class PoiPointResultModel : PKModel
+    public class PoiPointResultModel : PKModel,IViewResult
     {
         [Column("pid")]
         public int? Pid { get; set; }
@@ -23,8 +24,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public int? PoiWidth { get; set; }
         [Column("poi_height")]
         public int? PoiHeight { get; set; }
-        [Column("validate_result")]
-        public string? ValidateResult { get; set; }
     }
 
     public class PoiPointResultDao : BaseTableDao<PoiPointResultModel>

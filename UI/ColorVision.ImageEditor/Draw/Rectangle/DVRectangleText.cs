@@ -37,7 +37,6 @@ namespace ColorVision.ImageEditor.Draw
 
     public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle
     {
-        public BaseProperties BaseAttribute => Attribute;
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
@@ -70,6 +69,15 @@ namespace ColorVision.ImageEditor.Draw
                 dc.DrawText(formattedText, new Point(Attribute.Rect.X + Attribute.Rect.Width /2 - formattedText.Width / 2, Attribute.Rect.Y+ Attribute.Rect.Height / 2 - formattedText.Height / 2));
             }
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
+        }
+        public override Rect GetRect()
+        {
+            return Rect;
+        }
+        public override void SetRect(Rect rect)
+        {
+            Rect = rect;
+            Render();
         }
     }
 

@@ -3,7 +3,6 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -12,12 +11,12 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
-    public class ViewHandleBuildPoi : IResultHandle
+    public class ViewHandleBuildPoi : IResultHandleBase
     {
-        public List<AlgorithmResultType> CanHandle { get; set; } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI};
+        public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.BuildPOI};
 
 
-        public void Handle(AlgorithmView view, AlgorithmResult result)
+        public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)

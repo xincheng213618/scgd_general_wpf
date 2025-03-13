@@ -79,7 +79,6 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
 
             ConfigHandler.GetInstance();
-            Authorization.Instance = ConfigService.Instance.GetRequiredService<Authorization>();
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
@@ -156,12 +155,12 @@ namespace ColorVision
                 }
                 _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
 
-                Task.Run( async () =>
+                Task.Run(async () =>
                 {
                     foreach (var item in _IComponentInitializers)
                     {
                         await item.InitializeAsync();
-                    }
+                    }  
                 });
 
 

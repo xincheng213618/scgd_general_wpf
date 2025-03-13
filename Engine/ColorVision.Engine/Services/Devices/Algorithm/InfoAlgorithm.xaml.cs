@@ -1,6 +1,8 @@
 ﻿using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using System;
+using System.ComponentModel.Design;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -24,7 +26,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            PropertyEditorHelper.GenCommand(Device, CommandGrid);
         }
+
+
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -40,12 +45,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }
             }
-        }
-
-        private void UniformGrid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (sender is UniformGrid uniformGrid)
-                uniformGrid.AutoUpdateLayout();
         }
     }
 }

@@ -86,6 +86,13 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             fileExtType = FileExtType.Tif;
             imgFileName = string.Empty;
 
+            if (LoaclFileTabItem.IsSelected)
+            {
+                imgFileName = ImageFile.Text;
+                fileExtType = FileExtType.CIE;
+                return true;
+            }
+
             if (BatchSelect.IsChecked == true)
             {
                 sn = BatchCode.Text;
@@ -110,6 +117,18 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_CIEImageFiles.Text, FileExtType.CIE);
+        }
+
+        private void Open_File(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.cvcie)|*.cvcie|All files (*.*)|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImageFile.Text = openFileDialog.FileName;
+            }
         }
     }
 }

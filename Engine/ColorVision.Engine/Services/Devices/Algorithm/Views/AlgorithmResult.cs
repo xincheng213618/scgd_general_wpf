@@ -1,5 +1,8 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8601
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Net;
@@ -21,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }
         public RelayCommand CopyToCommand { get; set; }
+        public RelayCommand OpenContainingFolderCommand { get; set; }
 
         public RelayCommand ExportToPoiCommand { get; set; }
 
@@ -35,13 +39,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ResultCode = item.ResultCode;
             TotalTime = item.TotalTime;
             ResultDesc = item.Result;
-
+            ResultImagFile = item.ResultImagFile;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
             ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
+            OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
+
             ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
+        }
+
+        public void OpenContainingFolder()
+        {
+            PlatformHelper.OpenFolderAndSelectFile(FilePath);
         }
 
 
@@ -50,7 +62,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
             if (list ==null )
                 return;
-            
+            int old = TemplatePoi.Params.Count;
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
             templatePoi.ExportTemp.Height = 400;
@@ -72,6 +84,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
             templatePoi.OpenCreate();
+            int next = TemplatePoi.Params.Count;
+            if (next ==old + 1)
+            {
+                new EditPoiParam(TemplatePoi.Params[next-1].Value).ShowDialog();
+            }
+
         }
 
         public void CopyTo()
@@ -132,9 +150,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void Export()
         {
+
             if (FilePath != null)
             {
-                ExportCVCIE exportCVCIE = new(FilePath);
+                if (!CVFileUtil.IsCIEFile(FilePath))
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
+                    return;
+                }
+                ExportCVCIE exportCVCIE = new ExportCVCIE(FilePath);
                 exportCVCIE.Owner = Application.Current.GetActiveWindow();
                 exportCVCIE.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 exportCVCIE.ShowDialog();
@@ -166,6 +190,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
         private string _ResultDesc;
+
+        public string ResultImagFile { get; set; }
 
         public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private long _TotalTime;

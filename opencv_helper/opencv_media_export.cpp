@@ -388,6 +388,16 @@ COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, 
 	MatToHImage(dst, outImage);
 	return 0;
 }
+COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat dst = removeMoire(mat);
+	MatToHImage(dst, outImage);
+	return 0;
+}
+
+
+
 
 
 

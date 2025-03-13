@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
     public class PhyCameraManagerWindowConfig: WindowConfig { }
     /// <summary>
-    /// PhyCameraManagerWindow.xaml 的交互逻辑
+    /// PhySpectrumManagerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class PhyCameraManagerWindow : Window
     {

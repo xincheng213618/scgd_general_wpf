@@ -26,7 +26,9 @@ namespace ColorVision.Util.Draw.Special
 
     public delegate void MouseMoveColorHandler(object sender, ImageInfo imageInfo);
 
-
+    /// <summary>
+    /// 后续优化调整，成为不同的图像格式显示不同的参数
+    /// </summary>
     public class MouseMagnifier
     {
         private ZoomboxSub ZoomboxSub { get; set; }

@@ -4,6 +4,14 @@ using System.Runtime.InteropServices;
 
 namespace ColorVision
 {
+    public class MRect
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
+    }
+
     public static class OpenCVMediaHelper
     {
         private const string LibPath = "opencv_helper.dll";
@@ -127,7 +135,16 @@ namespace ColorVision
         /// <returns></returns>
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_Threshold(HImage image, out HImage hImage, double thresh, double maxval, int type);
-        
 
+        /// <summary>
+        /// 滤除摩尔纹
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_RemoveMoire(HImage image, out HImage hImage);
+
+       
     }
 }

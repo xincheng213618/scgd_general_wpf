@@ -32,6 +32,9 @@ namespace ColorVision.Engine
             Task.Run(() => MQTTControl.GetInstance().Connect());
             ServiceManager.GetInstance().GenDeviceDisplayControl();
             TemplateControl.GetInstance();
+
+            MainWindow  mainWindow = new MainWindow();
+            mainWindow.Show();
         }
     }
 

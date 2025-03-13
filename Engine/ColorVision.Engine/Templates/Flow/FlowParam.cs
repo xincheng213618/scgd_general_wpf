@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA1822
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Templates.Flow
         public TemplateFlow()
         {
             IsSideHide = true;
-            Title = "流程引擎";
+            Title = "流程引擎模板管理";
             Code = "flow";
             TemplateParams = FlowParam.Params;
         }

@@ -10,6 +10,7 @@
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Remove="Assets\Image\background0.png" />
@@ -23,7 +24,7 @@
 	<ItemGroup>
 		<PackageReference Include="HandyControl" Version="3.5.1" />
 		<PackageReference Include="Panuon.WPF.UI" Version="1.2.4.9" />
-		<PackageReference Include="WPF-UI" Version="4.0.0" />
+		<PackageReference Include="WPF-UI" Version="4.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -59,7 +60,7 @@
 	  <None Update="Assets\images\Cut.svg">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </None>
-	  <None Update="README.md">
+	  <None Include="README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>

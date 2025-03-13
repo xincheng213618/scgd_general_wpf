@@ -840,4 +840,10 @@
   <data name="Threshold" xml:space="preserve">
     <value>임계값</value>
   </data>
+  <data name="Copy" xml:space="preserve">
+    <value>복사</value>
+  </data>
+  <data name="Lock" xml:space="preserve">
+    <value>잠금</value>
+  </data>
 </root>

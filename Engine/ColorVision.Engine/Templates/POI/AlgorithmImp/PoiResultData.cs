@@ -72,8 +72,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             get
             {
-                if (POIPointResultModel.ValidateResult == null) return null;
-                return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(POIPointResultModel.ValidateResult);
+                if (POIPointResultModel.Value == null) return null;
+                return JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(POIPointResultModel.Value);
             }
         }
 
@@ -106,6 +106,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             POIPointTypes.Circle or _ => "圆形 ",
         };
 
-        protected POIPoint POIPoint { get; set; }
+        public POIPoint POIPoint { get; set; }
     }
 }

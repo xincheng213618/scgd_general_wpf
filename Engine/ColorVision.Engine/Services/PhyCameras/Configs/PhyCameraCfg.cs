@@ -65,6 +65,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("目标温度")]
         public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; NotifyPropertyChanged(); } }
         private float _TargetTemp = 10.0f;
+        /// <summary>
+        /// 温度查询时间间隔
+        /// </summary>
+        [DisplayName("温度查询时间间隔(s)")]
+        public int TempSpanTime { get; set; } = 60;
 
         /// <summary>
         /// 传输速率
@@ -123,10 +128,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Height;
 
-        /// <summary>
-        /// 温度查询时间间隔
-        /// </summary>
-        [DisplayName("温度查询时间间隔"), Browsable(false)]
-        public int TempSpanTime { get; set; }
+
     }
 }

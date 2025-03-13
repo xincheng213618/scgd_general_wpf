@@ -3,12 +3,17 @@ using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Core
 {
     public class ServiceObjectBase : ViewModelBase
     {
+
+        [CommandDisplay("Delete", CommandType = CommandType.Highlighted, Order = 99999)]
         public RelayCommand DeleteCommand { get; set; }
+
+        [CommandDisplay("Save",Order =-11)]
         public RelayCommand SaveCommand { get; set; }
 
         public ObservableCollection<ServiceObjectBase> VisualChildren { get; set; }
