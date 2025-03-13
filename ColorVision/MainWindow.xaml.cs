@@ -385,6 +385,7 @@ namespace ColorVision
                 if (ListView1.SelectedIndex < filteredResults.Count - 1)
                     ListView1.SelectedIndex += 1;
 
+
             }
         }
     }

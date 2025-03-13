@@ -103,6 +103,12 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             };
+            // 设置快捷键 Ctrl + F
+            var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
+            var command = new RoutedCommand();
+            command.InputGestures.Add(gesture);
+            CommandBindings.Add(new CommandBinding(command, (s,e) => { Searchbox.Focus(); }));
+            ListView1.Focus();
         }
 
         public void ReName()
@@ -112,7 +118,6 @@ namespace ColorVision.Engine.Templates
                 templateModelBase.IsEditMode = true;
             }
         }
-
 
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -364,6 +369,42 @@ namespace ColorVision.Engine.Templates
 
 
 
+        }
+
+        private void Searchbox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                if (ListView1.SelectedIndex > -1)
+                {
+                    Searchbox.Text = string.Empty;
+                    ITemplate.PreviewMouseDoubleClick(ListView1.SelectedIndex);
+                }
+            }
+            if (e.Key == System.Windows.Input.Key.Up)
+            {
+                if (ListView1.SelectedIndex > 0)
+                    ListView1.SelectedIndex -= 1;
+            }
+            if (e.Key == System.Windows.Input.Key.Down)
+            {
+                if (ListView1.SelectedIndex < ITemplate.Count - 1)
+                    ListView1.SelectedIndex += 1;
+
+
+            }
+        }
+
+        private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                if (ListView1.SelectedIndex > -1)
+                {
+                    Searchbox.Text = string.Empty;
+                    ITemplate.PreviewMouseDoubleClick(ListView1.SelectedIndex);
+                }
+            }
         }
     }
 }

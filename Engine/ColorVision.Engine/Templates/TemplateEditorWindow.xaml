@@ -32,13 +32,38 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Border Grid.Row="0" Grid.RowSpan="2" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
-            <Grid Margin="5">
+            <Grid Margin="5,5,5,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Click="Setting_Click" Padding="2" Height="21" Width="21" >
+                <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
+                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                    <Rectangle Width="16 " Height="16" >
+                        <Rectangle.Resources>
+                            <SolidColorBrush x:Key="canvas" Opacity="0" />
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
+                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                        </Rectangle.Resources>
+                        <Rectangle.Fill>
+                            <DrawingBrush Stretch="None">
+                                <DrawingBrush.Drawing>
+                                    <DrawingGroup>
+                                        <DrawingGroup x:Name="canvas">
+                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                        </DrawingGroup>
+                                        <DrawingGroup x:Name="level_1">
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                        </DrawingGroup>
+                                    </DrawingGroup>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Viewbox>
+
+                <Button Grid.Column="1" Margin="5,0,0,0" HorizontalAlignment="Left" Click="Setting_Click" Padding="2" Height="20" Width="20" >
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
                             <BeginStoryboard>
@@ -57,7 +82,7 @@
 
             </Grid>
 
-            <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" PreviewKeyDown="ListView1_PreviewKeyDown" FocusVisualStyle="{x:Null}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2,0,2,2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">

@@ -97,7 +97,7 @@ namespace ColorVision.Engine.Templates.POI
         private string _LuminFile = string.Empty;
 
         public int SaveProcessData { get => _saveProcessData; set { _saveProcessData = value; NotifyPropertyChanged(); } }
-        private int _saveProcessData = 0;
+        private int _saveProcessData;
 
         public float Exp { get => _Exp; set { _Exp = value; NotifyPropertyChanged(); } }
         private float _Exp = 600;

@@ -48,6 +48,7 @@
                             </Rectangle.Fill>
                         </Rectangle>
                     </Viewbox>
+                
                 </Grid>
                 <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200" Height="500">
