@@ -245,7 +245,7 @@ namespace ColorVision.ImageEditor
                 var Point = Mouse.GetPosition(ImageShow);
                 var DrawingVisual = ImageShow.GetVisual(Point);
 
-                if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
+                if (DrawingVisual != null && ImageViewModel.SelectEditorVisual.SelectVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
                 {
                     Zoombox1.ContextMenu ??= new ContextMenu();
                     Zoombox1.ContextMenu.Items.Clear();
@@ -646,9 +646,9 @@ namespace ColorVision.ImageEditor
 
                     drawCanvas.ReleaseMouseCapture();
 
-                    if (ImageViewModel.SelectDrawingVisual != null)
+                    if (ImageViewModel.SelectEditorVisual.SelectVisual != null)
                     {
-                        if (ImageViewModel.SelectDrawingVisual is IRectangle rectangle)
+                        if (ImageViewModel.SelectEditorVisual.SelectVisual is IRectangle rectangle)
                         {
                             var l = MouseUpP - MouseDownP;
 
@@ -664,7 +664,7 @@ namespace ColorVision.ImageEditor
                             });
                             ImageShow.AddActionCommand(new ActionCommand(undoaction, redoaction) { Header = "移动矩形" });
                         }
-                        else if (ImageViewModel.SelectDrawingVisual is ICircle Circl)
+                        else if (ImageViewModel.SelectEditorVisual.SelectVisual is ICircle Circl)
                         {
                             var l = MouseUpP - MouseDownP;
                             Action undoaction = new Action(() =>

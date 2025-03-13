@@ -17,14 +17,8 @@ namespace ColorVision.ImageEditor.Draw
             ZoomboxSub = zoomboxSub;
         }
 
-        public Rect Rect { get => _Rect; set
-            { 
-                _Rect = value;
-            } 
-        }
+        public Rect Rect { get => _Rect; set {  _Rect = value; }  }
         private Rect _Rect;
-
-
 
         public ISelectVisual SelectVisual { get; set; }
 

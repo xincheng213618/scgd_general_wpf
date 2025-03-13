@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Templates.POI
             var Point = Mouse.GetPosition(ImageShow);
             var DrawingVisual = ImageShow.GetVisual(Point);
 
-            if (DrawingVisual != null && ImageViewModel.SelectDrawingVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
+            if (DrawingVisual != null && ImageViewModel.SelectEditorVisual.SelectVisual != DrawingVisual && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
 
