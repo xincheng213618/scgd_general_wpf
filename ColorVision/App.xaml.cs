@@ -156,12 +156,12 @@ namespace ColorVision
                 }
                 _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
 
-                Task.Run( async () =>
+                Task.Run(async () =>
                 {
                     foreach (var item in _IComponentInitializers)
                     {
                         await item.InitializeAsync();
-                    }
+                    }  
                 });
 
 

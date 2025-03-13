@@ -324,6 +324,10 @@ namespace ColorVision.Engine.Templates
                         SearchNoneText.Visibility = Visibility.Visible;
                         SearchNoneText.Text = $"未找到{textBox.Text}相关模板";
                     }
+                    else
+                    {
+                        ListView1.SelectedIndex = 0;
+                    }
                 }
             }
         }
