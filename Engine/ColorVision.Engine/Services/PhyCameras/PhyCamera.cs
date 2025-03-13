@@ -889,8 +889,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                     Msg = ex.Message;
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
-                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    Application.Current.Dispatcher.Invoke(() => 
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        UploadClosed.Invoke(this, new EventArgs());
+                    } );
                     return;
                 }
             }
