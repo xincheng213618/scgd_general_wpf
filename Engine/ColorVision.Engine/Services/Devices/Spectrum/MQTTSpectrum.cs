@@ -188,7 +188,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return PublishAsyncClient(msg);
         }
 
-        public bool InitDark(float IntTime, int AveNum)
+        public MsgRecord InitDark(float IntTime, int AveNum)
         {
             MsgSend msg = new()
             {
@@ -197,8 +197,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 Params = new Dictionary<string, object>() { { "IntegralTime", IntTime }, { "NumberOfAverage", AveNum } }
 
             };
-            PublishAsyncClient(msg);
-            return true;
+            return PublishAsyncClient(msg);
         }
 
         public void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)

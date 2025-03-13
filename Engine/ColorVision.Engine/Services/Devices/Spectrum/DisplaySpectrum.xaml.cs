@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Messages;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI;
 using CVCommCore;
@@ -162,7 +163,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_Init_Dark(object sender, RoutedEventArgs e)
         {
-            SpectrumService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            MsgRecord  msgRecord = SpectrumService.InitDark((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行结束", "ColorVision");
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                }
+            };
         }
 
         private void Button_Click_GetParam(object sender, RoutedEventArgs e)
