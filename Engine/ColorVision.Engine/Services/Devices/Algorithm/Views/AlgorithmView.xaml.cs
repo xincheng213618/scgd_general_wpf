@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private NetFileUtil netFileUtil;
 
-        public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
+        public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
         public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public static ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
+        public ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
