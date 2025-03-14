@@ -66,8 +66,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public float BeginIntegralTime { get => _TimeFrom; set { _TimeFrom = value; NotifyPropertyChanged(); } }
         private float _TimeFrom = 10;
 
-        public bool IsShutterEnable { get => _IsShutter; set { _IsShutter = value; NotifyPropertyChanged(); } } 
+        public bool IsShutterEnable { get => _IsShutter; set { if (value) IsAutoDark = false; _IsShutter = value; NotifyPropertyChanged(); } } 
         private bool _IsShutter;
+        public bool IsAutoDark { get => _IsAutoDark; set { if (value) IsShutterEnable = false; _IsAutoDark = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoDark;
 
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; NotifyPropertyChanged(); } }
         private ShutterConfig _ShutterCfg;

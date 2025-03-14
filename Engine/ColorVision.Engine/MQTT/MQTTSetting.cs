@@ -24,6 +24,15 @@ namespace ColorVision.Engine.MQTT
                     Type = ConfigSettingType.Bool,
                     BindingName = nameof(MQTTSetting.IsUseMQTT),
                     Source = MQTTSetting.Instance
+                },
+                new ConfigSettingMetadata
+                {
+                    Name = "MQTT超时",
+                    Description = "超时时间",
+                    Order =1,
+                    Type = ConfigSettingType.Text,
+                    BindingName = nameof(MQTTSetting.DefaultTimeout),
+                    Source = MQTTSetting.Instance
                 }
             };
         }
@@ -69,6 +78,9 @@ namespace ColorVision.Engine.MQTT
         /// </summary>
         public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } }
         private bool _IsUseMQTT = true;
+
+        public double DefaultTimeout { get => _DefaultTimeout; set { _DefaultTimeout = value; NotifyPropertyChanged(); } }
+        private double _DefaultTimeout = 30000;
 
 
         public MQTTConfig MQTTConfig { get; set; } = new MQTTConfig();
