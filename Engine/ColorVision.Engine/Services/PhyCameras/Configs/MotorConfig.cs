@@ -38,6 +38,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
         private int _Position;
 
+        [JsonIgnore]
+        [Browsable(false)]
+        public double VIDPosition { get => _VIDPosition; set { _VIDPosition = value; NotifyPropertyChanged(); } }
+        private double _VIDPosition ;
+
         [DisplayName("超时时间")]
         public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;

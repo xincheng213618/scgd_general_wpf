@@ -271,8 +271,9 @@
                         <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
                         <DockPanel>
                             <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
-                            <TextBlock Text="当前位置：" Width="80"/>
-                            <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
+                            <TextBlock Text="当前位置：" Width="60"/>
+                            <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0" Width="60"/>
+                            <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.VIDPosition}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
                         </DockPanel>
                     </StackPanel>
 
