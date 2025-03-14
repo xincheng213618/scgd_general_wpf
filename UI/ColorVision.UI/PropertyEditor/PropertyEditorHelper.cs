@@ -465,14 +465,22 @@ namespace ColorVision.UI
                         {
                             dockPanel = GenEnumProperties(property, obj);
                         }
+                        else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
+                        {
+                            // 如果属性是ViewModelBase的子类，递归解析
+                            var nestedObj = (ViewModelBase)property.GetValue(obj);
+                            if (nestedObj != null)
+                            {
+                                stackPanel.Children.Add(GenPropertyEditorControl(nestedObj));
+                                continue;
+                            }
+                        }
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
                         }
-
                         stackPanel.Children.Add(dockPanel);
                     }
-
                 }
             }
 

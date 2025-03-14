@@ -145,7 +145,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             return PublishAsyncClient(msg);
         }
 
-        public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
+        public MsgRecord GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             MsgSend msg = new()
@@ -162,9 +162,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     BUseAutoShutterDark = bUseAutoShutterDark,
                 }
             };
-            PublishAsyncClient(msg);
+            MsgRecord msgRecord= PublishAsyncClient(msg);
             cmdMap.Add(msg.MsgID.ToString(), msg);
-            return true;
+            return msgRecord;
         }
 
         public bool Close()

@@ -62,10 +62,9 @@ namespace ColorVision.Engine.Templates.Jsons.DataConvert
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
-
             MsgSend msg = new()
             {
-                EventName = "ARVR.BinocularFusion",
+                EventName = "Math.DataConvert",
                 SerialNumber = sn,
                 Params = Params
             };
