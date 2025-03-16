@@ -91,7 +91,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             this.AddViewConfig(View, ComboxView);
             View.DisplayFlow = this;
-            ComboBoxFlow.ItemsSource = FlowParam.Params;
+            ComboBoxFlow.ItemsSource = TemplateFlow.Params;
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
@@ -114,7 +114,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void FlowDisplayControl_Loaded(object sender, RoutedEventArgs e)
         {
-            var s = FlowParam.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
+            var s = TemplateFlow.Params.FirstOrDefault(a => a.Id == FlowConfig.Instance.LastSelectFlow);
             if (s != null)
             {
                 ComboBoxFlow.SelectedItem = s;
@@ -134,9 +134,9 @@ namespace ColorVision.Engine.Templates.Flow
                 MqttRCService.GetInstance().QueryServices();
             }
            
-            if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= FlowParam.Params.Count) return;
+            if (ComboBoxFlow.SelectedIndex  <0 && ComboBoxFlow.SelectedIndex >= TemplateFlow.Params.Count) return;
             if (ComboBoxFlow.SelectedIndex < 0) return;
-            FlowParam flowParam = FlowParam.Params[ComboBoxFlow.SelectedIndex].Value;
+            FlowParam flowParam = TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value;
 
             if (View == null) return;
             if (string.IsNullOrEmpty(flowParam.DataBase64))
@@ -512,7 +512,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void ButtonEdit_Click(object sender, RoutedEventArgs e)
         {
-            new FlowEngineToolWindow(FlowParam.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.Params[ComboBoxFlow.SelectedIndex].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
             Refresh();
         }
 
