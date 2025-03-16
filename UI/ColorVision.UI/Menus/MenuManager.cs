@@ -18,19 +18,19 @@ namespace ColorVision.UI.Menus
 
         public MenuManager()
         {
-
+            MenuItems = new List<IMenuItem>();
         }
 
         public List<IMenuItem> GetIMenuItem()
         {
-            List<IMenuItem> iMenuItems = new();
+            MenuItems.Clear();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IMenuItem iMenuItem && iMenuItem.Command !=null)
                     {
-                        iMenuItems.Add(iMenuItem);
+                        MenuItems.Add(iMenuItem);
                     }
                 }
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
@@ -41,14 +41,17 @@ namespace ColorVision.UI.Menus
                         {
                             if (item.Command != null && item.Header !=null)
                             {
-                                iMenuItems.Add(item);
+                                MenuItems.Add(item);
                             }
                         }
                     }
                 }
             }
-            return iMenuItems;
+            return MenuItems;
         }
+
+        public List<IMenuItem> MenuItems { get; set; }
+
         private bool Initialized;
         private List<MenuItem> MenuBack;
         public void LoadMenuItemFromAssembly()
@@ -68,10 +71,10 @@ namespace ColorVision.UI.Menus
             log.Info("LoadMenuItemFromAssembly");
             Menu.Items.Clear();
             var menuItems = new Dictionary<string, MenuItem>();
-            List<IMenuItem> iMenuItems = new();
+            MenuItems.Clear();
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
-                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                var iMenuItems1 = MenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
                 for (int i = 0; i < iMenuItems1.Count; i++)
                 {
                     var iMenuItem = iMenuItems1[i];
@@ -111,7 +114,7 @@ namespace ColorVision.UI.Menus
                 }
                 foreach (var item in iMenuItems1)
                 {
-                    iMenuItems.Remove(item);
+                    MenuItems.Remove(item);
                 }
             }
          
@@ -121,7 +124,7 @@ namespace ColorVision.UI.Menus
                 {
                     if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
                     {
-                        iMenuItems.Add(iMenuItem);
+                        MenuItems.Add(iMenuItem);
                     }
                 }
 
@@ -129,12 +132,12 @@ namespace ColorVision.UI.Menus
                 {
                     if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
                     {
-                        iMenuItems.AddRange(itemProvider.GetMenuItems());
+                        MenuItems.AddRange(itemProvider.GetMenuItems());
                     }
                 }
             }
 
-            foreach (var item in iMenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
+            foreach (var item in MenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
             {
                 if (item.OwnerGuid == "Menu" && item.Header !=null)
                 {
@@ -149,7 +152,7 @@ namespace ColorVision.UI.Menus
                     };
                     menuItems.Add(item.GuidId ?? Guid.NewGuid().ToString(), menuItem);  
                     Menu.Items.Add(menuItem);
-                    iMenuItems.Remove(item);
+                    MenuItems.Remove(item);
                 }
             }
 
@@ -158,8 +161,8 @@ namespace ColorVision.UI.Menus
                 CreateMenu(keyValuePair.Value, keyValuePair.Key);
             }
             
-            iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
-            foreach (var iMenuItem in iMenuItems)
+            MenuItems = MenuItems.OrderBy(item => item.Order).ToList();
+            foreach (var iMenuItem in MenuItems)
             {
                 string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
                 MenuItem menuItem = new()
