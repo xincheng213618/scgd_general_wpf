@@ -144,7 +144,18 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
         {
-            SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
+            MsgRecord msgRecord = SpectrumService.GetData((float)SpectrumSliderIntTime.Value, (int)SpectrumSliderAveNum.Value, AutoIntTime.IsChecked??false, AutoDark.IsChecked ?? false, AutoShutterDark.IsChecked ?? false);
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行结束", "ColorVision");
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "执行失败", "ColorVision");
+                }
+            };
         }
 
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)

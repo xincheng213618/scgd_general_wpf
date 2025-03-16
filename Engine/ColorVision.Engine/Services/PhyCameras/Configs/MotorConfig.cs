@@ -99,5 +99,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
         private bool _IsCameraLinkage = true;
 
+
+        [DisplayName("VID")]
+        public MotorVID VID { get => _VID; set { _VID = value; NotifyPropertyChanged(); } }
+        private MotorVID _VID = new MotorVID();
+
+    }
+
+
+    public class MotorVID : ViewModelBase
+    {
+        [DisplayName("IsUseVID")]
+        public bool IsUseVID { get => _IsUseVID; set { _IsUseVID = value; NotifyPropertyChanged(); } }
+        private bool _IsUseVID ;
+        [DisplayName("MappingFileName")]
+        public string MappingFileName { get=>_MappingFileName; set { _MappingFileName = value; NotifyPropertyChanged(); } }
+        private string _MappingFileName = string.Empty;
+        [DisplayName("Fit")]
+        public int Fit { get => _Fit; set { _Fit = value; NotifyPropertyChanged(); } } 
+        private int _Fit = 5;
     }
 }
