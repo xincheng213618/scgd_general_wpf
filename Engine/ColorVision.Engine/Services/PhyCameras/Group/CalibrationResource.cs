@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Authorizations;
-using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +22,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
 
 
-    public class CalibrationResource : ServiceFileBase, ISortID, ISortFilePath
+    public class CalibrationResource : ServiceFileBase
     {
         public static List<CalibrationResource> CalibrationResources { get; set; } = new List<CalibrationResource>();
 

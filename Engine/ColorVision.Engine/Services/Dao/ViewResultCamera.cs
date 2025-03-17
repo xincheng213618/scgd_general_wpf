@@ -16,7 +16,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    public class ViewResultCamera : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
+    public class ViewResultCamera : ViewModelBase, ISortID
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }

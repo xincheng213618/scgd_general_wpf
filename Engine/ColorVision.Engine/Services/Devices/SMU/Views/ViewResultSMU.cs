@@ -11,7 +11,7 @@ using ScottPlot.Plottables;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
-    public class ViewResultSMU : ViewModelBase, ISortable
+    public class ViewResultSMU : ViewModelBase
     {
         public ViewResultSMU(SmuScanModel item)
         {

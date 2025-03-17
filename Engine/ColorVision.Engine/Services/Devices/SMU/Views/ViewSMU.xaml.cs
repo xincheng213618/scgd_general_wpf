@@ -9,6 +9,10 @@ using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -21,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
     /// </summary>
     public partial class ViewSMU : UserControl, IView
     {
-        public ObservableCollection<ViewResultSMU> ViewResultSMUs { get; set; } = new ObservableCollection<ViewResultSMU>();
+        public ObservableCollection<ViewResultSMU> ViewResults { get; set; } = new ObservableCollection<ViewResultSMU>();
         public View View { get; set; }
 
         public ViewSMU()
@@ -39,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             View = new View();
             ViewGridManager.GetInstance().AddView(this);
 
-            listView1.ItemsSource = ViewResultSMUs;
+            listView1.ItemsSource = ViewResults;
 
             wpfplot1.Plot.Clear();
             wpfplot2.Plot.Clear();
@@ -96,7 +100,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                CsvWriter.WriteToCsv(ViewResultSMUs[listView1.SelectedIndex], dialog.FileName);
+                CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
 
         }
 
@@ -106,7 +110,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                listView2.ItemsSource = ViewResultSMUs[listView1.SelectedIndex].SMUDatas;
+                listView2.ItemsSource = ViewResults[listView1.SelectedIndex].SMUDatas;
             }
         }
 
@@ -129,12 +133,12 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 }
 
 
-                LastMulSelectComparsion = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
+                LastMulSelectComparsion = ViewResults[listView1.SelectedIndex].ScatterPlot;
                 LastMulSelectComparsion.LineWidth = 3;
                 LastMulSelectComparsion.MarkerSize = 3;
                 LastMulSelectComparsion.Color = Color.FromColor(System.Drawing.Color.Red);
 
-                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                if (ViewResults[listView1.SelectedIndex].IsSourceV)
                 {
                     wpfplot2.Plot.PlottableList.Add(LastMulSelectComparsion);
                     wpfplot2.Refresh();
@@ -149,17 +153,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             else
             {
                
-                var temp = ViewResultSMUs[listView1.SelectedIndex].ScatterPlot;
+                var temp = ViewResults[listView1.SelectedIndex].ScatterPlot;
                 temp.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                 temp.LineWidth = 1;
                 temp.MarkerSize = 1;
 
 
-                ToggleButtonChoice.IsChecked = ViewResultSMUs[listView1.SelectedIndex].IsSourceV;
+                ToggleButtonChoice.IsChecked = ViewResults[listView1.SelectedIndex].IsSourceV;
 
                 if (LastMulSelectComparsion != null)
                 {
-                    if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                    if (ViewResults[listView1.SelectedIndex].IsSourceV)
                     {
                         wpfplot2.Plot.PlottableList.Add(temp);
                         wpfplot1.Plot.Remove(LastMulSelectComparsion);
@@ -189,7 +193,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
 
             ViewResultSMU viewResultSMU = new(isSourceV? MeasurementType.Voltage: MeasurementType.Current, (float)endVal, VList, IList);
-            ViewResultSMUs.Add(viewResultSMU);
+            ViewResults.Add(viewResultSMU);
             ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
 
             if (viewResultSMU.MeasurementType == MeasurementType.Voltage)
@@ -239,17 +243,17 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             LastMulSelectComparsion = null;
             if (MulComparison)
             {
-                listView1.SelectedIndex = ViewResultSMUs.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < ViewResultSMUs.Count; i++)
+                listView1.SelectedIndex = ViewResults.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
+                for (int i = 0; i < ViewResults.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
-                    var plot = ViewResultSMUs[i].ScatterPlot;
+                    var plot = ViewResults[i].ScatterPlot;
                     plot.Color = Color.FromColor(System.Drawing.Color.DarkGoldenrod);
                     plot.LineWidth = 1;
                     plot.MarkerSize = 1;
 
-                    if (ViewResultSMUs[i].IsSourceV)
+                    if (ViewResults[i].IsSourceV)
                     {
                         wpfplot1.Plot.PlottableList.Add(plot);
                     }
@@ -274,7 +278,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
             if (selectedItems.Count <= 1)
             {
-                ViewResultSMUs.Clear();
+                ViewResults.Clear();
             }
             else
             {
@@ -290,12 +294,12 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 {
                     if (item is ViewResultSMU result)
                     {
-                        ViewResultSMUs.Remove(result);
+                        ViewResults.Remove(result);
                     }
                 }
             }
 
-            if (ViewResultSMUs.Count > 0)
+            if (ViewResults.Count > 0)
             {
                 listView1.SelectedIndex = 0;
             }
@@ -324,7 +328,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             {
                 int temp = listView1.SelectedIndex;
 
-                ViewResultSMUs.RemoveAt(listView1.SelectedIndex);
+                ViewResults.RemoveAt(listView1.SelectedIndex);
 
                 if (listView1.Items.Count > 0)
                 {
@@ -346,7 +350,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (listView1.SelectedIndex >= 0)
             {
-                if (ViewResultSMUs[listView1.SelectedIndex].IsSourceV)
+                if (ViewResults[listView1.SelectedIndex].IsSourceV)
                 {
                     wpfplot2.Plot.Remove(markerPlot1);
 
@@ -354,8 +358,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                     {
                         markerPlot1 = new Marker
                         {
-                            X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
-                            Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            X = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
+                            Y = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
                             MarkerShape = MarkerShape.FilledCircle,
                             MarkerSize = 10f,
                             Color = Color.FromColor(System.Drawing.Color.Orange),
@@ -372,8 +376,8 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                     {
                         markerPlot1 = new Marker
                         {
-                            X = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
-                            Y = ViewResultSMUs[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
+                            X = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Voltage,
+                            Y = ViewResults[listView1.SelectedIndex].SMUDatas[listView2.SelectedIndex].Current,
                             MarkerShape = MarkerShape.FilledCircle,
                             MarkerSize = 10f,
                             Color = Color.FromColor(System.Drawing.Color.Orange),
@@ -432,24 +436,24 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         MRSmuScanDao MRSmuScanDao = new();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultSMUs.Clear();
+            ViewResults.Clear();
             foreach (var item in MRSmuScanDao.GetAll())
             {
                 ViewResultSMU viewResultSMU = new(item);
-                ViewResultSMUs.Add(viewResultSMU);
+                ViewResults.Add(viewResultSMU);
                 ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
             }
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultSMUs.Clear();
+            ViewResults.Clear();
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && SearchTimeSart.SelectedDateTime==DateTime.MinValue)
             {
                 foreach (var item in MRSmuScanDao.GetAll())
                 {
                     ViewResultSMU viewResultSMU = new(item);
-                    ViewResultSMUs.Add(viewResultSMU);
+                    ViewResults.Add(viewResultSMU);
                 };
             }
             else
@@ -459,10 +463,10 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
                 foreach (var item in list)
                 {
                     ViewResultSMU viewResultSMU = new(item);
-                    ViewResultSMUs.Add(viewResultSMU);
+                    ViewResults.Add(viewResultSMU);
                 };
             }
-            if (ViewResultSMUs.Count > 0)
+            if (ViewResults.Count > 0)
             {
                 listView1.Visibility = Visibility.Visible;
                 listView1.SelectedIndex = 0;
@@ -512,30 +516,27 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilitys)
+                Type type = typeof(ViewResultSMU);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        switch (item.ColumnName)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            case "序号":
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultSMUs.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultSMUs.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultSMUs.SortByBatchID(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
-                        break;
                     }
                 }
             }

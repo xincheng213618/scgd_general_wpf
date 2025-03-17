@@ -1,17 +1,22 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
-    public class ViewArchiveResult : ViewModelBase, ISortID,ISortCreateTime
+    public class ViewArchiveResult : ViewModelBase, ISortID
     {
         public ViewArchiveResult(ArchivedMasterModel  archivedMasterModel)
         {
@@ -53,7 +58,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             listView1.ItemsSource = ViewResults;
             if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
         }
         private void KeyEnter(object sender, KeyEventArgs e)
         {
@@ -80,13 +85,13 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
 
         }
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
-                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilities);
+                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 
 
@@ -94,24 +99,25 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilities)
+                Type type = typeof(ViewResultCamera);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        switch (item.ColumnName)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            case "序号":
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
                                 item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByCreateTime(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
-                        break;
                     }
                 }
             }

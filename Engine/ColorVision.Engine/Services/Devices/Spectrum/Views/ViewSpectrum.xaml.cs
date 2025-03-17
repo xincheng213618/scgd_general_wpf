@@ -13,8 +13,12 @@ using ScottPlot.Plottables;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -28,7 +32,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
     /// </summary>
     public partial class ViewSpectrum : UserControl,IView
     {
-        public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
+        public ObservableCollection<ViewResultSpectrum> ViewResults { get; set; } = new ObservableCollection<ViewResultSpectrum>();
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
@@ -54,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             View = new View();
 
 
-            listView1.ItemsSource = ViewResultSpectrums;
+            listView1.ItemsSource = ViewResults;
 
             string title = "相对光谱曲线";
             wpfplot1.Plot.XLabel("波长[nm]");
@@ -214,7 +218,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (sender is ListView listview && listview.SelectedIndex > -1)
             {
                 DrawPlot();
-                listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
+                listView2.ItemsSource = ViewResults[listview.SelectedIndex].SpectralDatas;
             }
         }
 
@@ -226,8 +230,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (listView1.SelectedIndex < 0) return;
             wpfplot1.Plot.Axes.SetLimitsX(380, 780);
             wpfplot1.Plot.Axes.SetLimitsY(0, 1);
-            wpfplot1.Plot.Axes.Bottom.Min = ViewResultSpectrums[listView1.SelectedIndex].fSpect1;
-            wpfplot1.Plot.Axes.Bottom.Max = ViewResultSpectrums[listView1.SelectedIndex].fSpect2;
+            wpfplot1.Plot.Axes.Bottom.Min = ViewResults[listView1.SelectedIndex].fSpect1;
+            wpfplot1.Plot.Axes.Bottom.Max = ViewResults[listView1.SelectedIndex].fSpect2;
             wpfplot1.Plot.Axes.Left.Min = 0;
             wpfplot1.Plot.Axes.Left.Max = 1;
 
@@ -283,10 +287,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             viewResultSpectrum.Id = data.ID;
             viewResultSpectrum.V = data.V;
             viewResultSpectrum.I = data.I;
-            ViewResultSpectrums.Add(viewResultSpectrum);
+            ViewResults.Add(viewResultSpectrum);
 
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-            listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
+            listView1.SelectedIndex = ViewResults.Count - 1;
         }
 
         private List<Scatter> ScatterPlots { get; set; } = new List<Scatter>();
@@ -316,7 +320,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (MulComparison)
             {
                 listView1.SelectedIndex = listView1.Items.Count > 0 && listView1.SelectedIndex == -1 ? 0 : listView1.SelectedIndex;
-                for (int i = 0; i < ViewResultSpectrums.Count; i++)
+                for (int i = 0; i < ViewResults.Count; i++)
                 {
                     if (i == listView1.SelectedIndex)
                         continue;
@@ -342,7 +346,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             if(selectedItems.Count<1)
             {
-                ViewResultSpectrums.Clear();
+                ViewResults.Clear();
                 ScatterPlots.Clear();
             }
             else
@@ -359,13 +363,13 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 {
                     if (item is ViewResultSpectrum result)
                     {
-                        ViewResultSpectrums.Remove(result);
+                        ViewResults.Remove(result);
                         ScatterPlots.Remove(result.ScatterPlot);
                     }
                 }
             }
 
-            if (ViewResultSpectrums.Count > 0)
+            if (ViewResults.Count > 0)
             {
                 listView1.SelectedIndex = 0;
             }
@@ -393,7 +397,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                ViewResultSpectrums.RemoveAt(listView1.SelectedIndex);
+                ViewResults.RemoveAt(listView1.SelectedIndex);
 
 
                 if (listView1.Items.Count > 0)
@@ -420,7 +424,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 markerPlot1 = new Marker
                 {
                     X = listView2.SelectedIndex + 380,
-                    Y = ViewResultSpectrums[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
+                    Y = ViewResults[listView1.SelectedIndex].fPL[listView2.SelectedIndex * 10],
                     MarkerShape = MarkerShape.FilledCircle,
                     MarkerSize = 10f,
                     Color = Color.FromColor(System.Drawing.Color.Orange),
@@ -451,7 +455,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         public void Clear()
         {
-            ViewResultSpectrums.Clear();
+            ViewResults.Clear();
             ScatterPlots.Clear();
         }
 
@@ -459,14 +463,14 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         {
             viewResultSpectrum.V = float.NaN;
             viewResultSpectrum.I = float.NaN;
-            ViewResultSpectrums.Add(viewResultSpectrum);
+            ViewResults.Add(viewResultSpectrum);
             ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
-            listView1.SelectedIndex = ViewResultSpectrums.Count - 1;
+            listView1.SelectedIndex = ViewResults.Count - 1;
         }
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultSpectrums.Clear();
+            ViewResults.Clear();
             ScatterPlots.Clear();
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
@@ -476,7 +480,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     ViewResultSpectrum viewResultSpectrum = new(item);
                     viewResultSpectrum.V = float.NaN;
                     viewResultSpectrum.I = float.NaN;
-                    ViewResultSpectrums.Add(viewResultSpectrum);
+                    ViewResults.Add(viewResultSpectrum);
                     ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
                 };
             }
@@ -489,11 +493,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                     ViewResultSpectrum viewResultSpectrum = new(item);
                     viewResultSpectrum.V = float.NaN;
                     viewResultSpectrum.I = float.NaN;
-                    ViewResultSpectrums.Add(viewResultSpectrum);
+                    ViewResults.Add(viewResultSpectrum);
                     ScatterPlots.Add(viewResultSpectrum.ScatterPlot);
                 };
             }
-            if (ViewResultSpectrums.Count > 0)
+            if (ViewResults.Count > 0)
             {
                 listView1.Visibility = Visibility.Visible;
                 listView2.Visibility = Visibility.Visible;
@@ -510,27 +514,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
             SerchPopup.IsOpen = true;
             TextBoxId.Text = string.Empty;
-        }
-
-        private void Order_Click(object sender, RoutedEventArgs e)
-        {
-            OrderPopup.IsOpen = true;
-        }
-        private void Radio_Checked(object sender, RoutedEventArgs e)
-        {
-            if (RadioID?.IsChecked == true)
-            {
-                if (RadioUp?.IsChecked ==true)
-                {
-                    ViewResultSpectrums.SortByID();
-                }
-                if (RadioDown?.IsChecked == true)
-                {
-                    ViewResultSpectrums.SortByID(true);
-                }
-
-            }
-            OrderPopup.IsOpen = false;
         }
 
         private void ContextMenu_Click(object sender, RoutedEventArgs e)
@@ -644,30 +627,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilitys)
+                Type type = typeof(ViewResultCamera);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        switch (item.ColumnName)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            case "序号":
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultSpectrums.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultSpectrums.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultSpectrums.SortByBatchID(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
-                        break;
                     }
                 }
             }
