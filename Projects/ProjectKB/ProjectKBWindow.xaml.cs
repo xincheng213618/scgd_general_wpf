@@ -12,7 +12,6 @@ using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Config;
@@ -76,7 +75,7 @@ namespace ProjectKB
             {
                 if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
                 {
-                    string Name = FlowParam.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
+                    string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
                     if (ProjectKBConfig.Instance.SPECConfigs.TryGetValue(Name,out SPECConfig sPECConfig))
                     {
                         ProjectKBConfig.Instance.SPECConfig = sPECConfig;
@@ -140,7 +139,7 @@ namespace ProjectKB
                     item.nodeRunEvent -= UpdateMsg;
                 flowEngine.LoadFromBase64(string.Empty);
 
-                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
