@@ -297,6 +297,7 @@ namespace ProjectKB
                             kBItem.Model = FlowTemplate.Text;
                             kBItem.Id = Batch.Id;
                             kBItem.SN = SNtextBox.Text;
+
                             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
                             {
                                 if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
@@ -372,7 +373,6 @@ namespace ProjectKB
                                     }
                                 }
                             }
-
 
                             if (kBItem.Items.Count == 0)
                             {
