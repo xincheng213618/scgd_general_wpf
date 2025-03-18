@@ -681,18 +681,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 foreach (var property in properties)
                 {
                     var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
-                    if (attribute != null)
+                    string displayName = attribute?.DisplayName ?? property.Name;
+                    displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                    if (displayName == gridViewColumnHeader.Content.ToString())
                     {
-                        string displayName = attribute.DisplayName;
-                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
-                        if (displayName == gridViewColumnHeader.Content.ToString())
+                        var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                        if (item != null)
                         {
-                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
-                            if (item != null)
-                            {
-                                item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByProperty(property.Name, item.IsSortD);
-                            }
+                            item.IsSortD = !item.IsSortD;
+                            ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            break;
                         }
                     }
                 }
