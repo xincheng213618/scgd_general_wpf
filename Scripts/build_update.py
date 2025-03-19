@@ -171,11 +171,11 @@ def find_latest_zip(directory, version):
     latest_zip = min(matching_files, key=os.path.getmtime)
     return latest_zip
 
-new_version_dir = 'C:\\Users\\17917\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Release\\net8.0-windows'
-history_dir = 'C:\\Users\\17917\\Desktop\\History'
+new_version_dir = 'C:\\Users\\Xin\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Release\\net8.0-windows'
+history_dir = 'C:\\Users\\Xin\\Desktop\\History'
 update_dir = os.path.join(history_dir, 'update')
 
-exe_path = r'C:\Users\17917\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.exe'
+exe_path = r'C:\Users\Xin\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows\ColorVision.exe'
 version = get_file_version(exe_path)
 print("打包版本: " + version)
 
