@@ -49,8 +49,8 @@
                         </Button>
                     </ToolBar>
                     <ToolBar>
-                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                        <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Button Content="{x:Static properties:Resources.Inquire}" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
                         <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                             <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
                                 <StackPanel Margin="5">

@@ -78,6 +78,7 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
+                        
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
@@ -205,8 +206,15 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="ResultType" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  ResultType}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
-                            
+
                         </GridView>
                     </ListView.View>
                 </ListView>

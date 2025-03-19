@@ -7,6 +7,7 @@
              xmlns:ScottPlot="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewSMUConfig}"
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}"  Initialized="UserControl_Initialized">
@@ -69,7 +70,7 @@
                         </ToggleButton>
                         <Button  Content="交换" Click="Exchange_Click" Margin="0,0,2,0" />
 
-                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="0,0,2,0" />
+                        <Button Content="{x:Static properties:Resources.Inquire}" Click="SearchAdvanced_Click" Margin="0,0,2,0" />
                         <Button x:Name="Search" Content="高级查询" Click="Search1_Click"  />
                         <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
                             <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">

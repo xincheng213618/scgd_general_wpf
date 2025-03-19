@@ -32,7 +32,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Margin="2" Orientation="Horizontal">
+                <StackPanel x:Name="TemplateStackPanels" Grid.Row="0" Margin="2" Orientation="Horizontal">
                     <RadioButton Content="默认模板"  IsChecked="True" />
                 </StackPanel>
                 <DockPanel Grid.Row="1"  Margin="2" >

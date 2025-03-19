@@ -1,5 +1,7 @@
-﻿using System;
+﻿using ColorVision.UI;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,6 +13,7 @@ namespace ColorVision.Engine.Templates
     {
         public void SetParam(object param);
     }
+
 
     public partial class TemplateCreate : Window
     {
@@ -24,6 +27,23 @@ namespace ColorVision.Engine.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
+            if (!Directory.Exists(AssemblyCompanyFolder))
+                Directory.CreateDirectory(AssemblyCompanyFolder);
+
+            string TemplateFolders = Path.Combine(AssemblyCompanyFolder, "Templates");
+            if (!Directory.Exists(TemplateFolders))
+                Directory.CreateDirectory(TemplateFolders);
+            string TemplateFolder = Path.Combine(TemplateFolders, ITemplate.Code);
+            if (!Directory.Exists(TemplateFolder))
+                Directory.CreateDirectory(TemplateFolder);
+
+
+            foreach (var item in Directory.GetFiles(TemplateFolder))
+            {
+                TemplateStackPanels.Children.Add(new RadioButton() { Content = Path.GetFileName(item)});
+            }
+
             this.Title += "模板 " + ITemplate.Title;
             List<string> list =
             [

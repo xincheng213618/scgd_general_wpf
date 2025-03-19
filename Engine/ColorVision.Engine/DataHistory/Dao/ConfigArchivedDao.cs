@@ -26,7 +26,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         public int DataSaveHours { get => _DataSaveHours; set { _DataSaveHours = value; NotifyPropertyChanged(); } }
         private int _DataSaveHours;
 
-        [Column("excluding_images"), DisplayName("归档不包含图像"),]
+        [Column("excluding_images"), DisplayName("仅清除数据库")]
         public bool Excludingimages { get => _Excludingimages; set { _Excludingimages = value; NotifyPropertyChanged(); } }
         private bool _Excludingimages;
 

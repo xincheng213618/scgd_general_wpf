@@ -7,6 +7,7 @@ using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
+using FlowEngineLib;
 using MQTTMessageLib.Camera;
 using System;
 using System.ComponentModel;
@@ -40,7 +41,7 @@ namespace ColorVision.Engine.Services.Dao
             ResultMsg = measureImgResultModel.ResultMsg;
             ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
-
+            DeviceCode = measureImgResultModel.DeviceCode;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl));
             OpenCVCIECommand = new RelayCommand(a => Open(), a => File.Exists(FileUrl));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FileUrl));
@@ -172,6 +173,10 @@ namespace ColorVision.Engine.Services.Dao
 
         public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
+
+        [DisplayName("DeviceCode")]
+        public string DeviceCode { get => _DeviceCode; set { _DeviceCode = value; NotifyPropertyChanged(); } }
+        private string _DeviceCode;
 
         [DisplayName("Info")]
         public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }

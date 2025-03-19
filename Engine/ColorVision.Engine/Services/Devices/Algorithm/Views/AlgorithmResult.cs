@@ -186,6 +186,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
 
+        [DisplayName("ResultType")]
         public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
         private AlgorithmResultType _ResultType;
 
