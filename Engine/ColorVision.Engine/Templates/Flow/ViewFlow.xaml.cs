@@ -176,8 +176,7 @@ namespace ColorVision.Engine.Services.Flow
 
                     foreach (var item in STNodeEditorMain.GetSelectedNode())
                     {
-                        var node = STNodeEditorMain.ActiveNode;
-                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
+                        STNodeEditorMain.Nodes.Remove(item);
                     }
                 }
                 if (e.KeyCode == System.Windows.Forms.Keys.L && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
