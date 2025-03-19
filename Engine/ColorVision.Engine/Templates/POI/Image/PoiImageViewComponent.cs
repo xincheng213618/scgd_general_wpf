@@ -11,6 +11,7 @@ using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using System;
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,25 @@ namespace ColorVision.Engine.Templates.POI.Image
 {
     public class PoiImageViewComponent : IImageComponent
     {
+        public static string FormatMessage(string template, PoiResultCIExyuvData properties)
+        {
+            template = template.Replace("\\n", Environment.NewLine);
+            return Regex.Replace(template, @"@(\w+):([F\d]+)", match =>
+            {
+                var propertyName = match.Groups[1].Value;
+                var format = match.Groups[2].Value;
+
+                var propertyInfo = typeof(PoiResultCIExyuvData).GetProperty(propertyName);
+                if (propertyInfo != null)
+                {
+                    var value = propertyInfo.GetValue(properties);
+                    return string.Format($"{{0:{format}}}", value);
+                }
+                return match.Value;
+            });
+        }
+
+
         public void Execute(ImageView imageView)
         {
             imageView.ToolBarAl.Visibility  = Visibility.Visible;
@@ -171,21 +191,25 @@ namespace ColorVision.Engine.Templates.POI.Image
                         {
                             POIPoint pOIPoint = new POIPoint() { Name = circle.Text, PixelX = (int)circle.Center.X, PixelY = (int)circle.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circle.Radius * 2, Width = (int)circle.Radius * 2 };
                             var sss = GetCVCIE(pOIPoint);
-                            circle.Msg = $"X:{sss.X:F1} Y:{sss.Y:F1} z:{sss.Z:F1}{Environment.NewLine}x:{sss.x:F4} y:{sss.y:F4} u:{sss.u:F4} v:{sss.v:F4}{Environment.NewLine}CCT:{sss.CCT:F1} wave:{sss.Wave:F1}";
+                            if (CVCIEShowConfig.Instance.IsShowString)
+                                circle.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
                             PoiResultCIExyuvDatas.Add(sss);
                         }
                         else if (drawAttributeBase is CircleProperties circleProperties)
                         {
                             POIPoint pOIPoint = new POIPoint() { Name = circleProperties.Id.ToString(), PixelX = (int)circleProperties.Center.X, PixelY = (int)circleProperties.Center.Y, PointType = POIPointTypes.Circle, Height = (int)circleProperties.Radius * 2, Width = (int)circleProperties.Radius * 2 };
                             var sss = GetCVCIE(pOIPoint);
-                            circleProperties.Msg = $"X:{sss.X:F1} Y:{sss.Y:F1} z:{sss.Z:F1}{Environment.NewLine}x:{sss.x:F4} y:{sss.y:F4} u:{sss.u:F4} v:{sss.v:F4}{Environment.NewLine}CCT:{sss.CCT:F1} wave:{sss.Wave:F1}";
+                            if (CVCIEShowConfig.Instance.IsShowString)
+                                circleProperties.Msg = FormatMessage(CVCIEShowConfig.Instance.Template,sss);
                             PoiResultCIExyuvDatas.Add(sss);
                         }
                         else if (drawAttributeBase is RectangleTextProperties rectangle)
                         {
                             POIPoint pOIPoint = new POIPoint() { Name = rectangle.Id.ToString(), PixelX = (int)(rectangle.Rect.X + rectangle.Rect.Width / 2), PixelY = (int)(rectangle.Rect.Y + rectangle.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangle.Rect.Height, Width = (int)rectangle.Rect.Width };
                             var sss = GetCVCIE(pOIPoint);
-                            rectangle.Msg = $"X:{sss.X:F1} Y:{sss.Y:F1} z:{sss.Z:F1}{Environment.NewLine}x:{sss.x:F4} y:{sss.y:F4} u:{sss.u:F4} v:{sss.v:F4}{Environment.NewLine}CCT:{sss.CCT:F1} wave:{sss.Wave:F1}";
+                            if (CVCIEShowConfig.Instance.IsShowString)
+                                rectangle.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
+
                             PoiResultCIExyuvDatas.Add(sss);
                         }
                         else if (drawAttributeBase is RectangleProperties rectangleProperties)
@@ -193,7 +217,8 @@ namespace ColorVision.Engine.Templates.POI.Image
 
                             POIPoint pOIPoint = new POIPoint() { Name = rectangleProperties.Id.ToString(), PixelX = (int)(rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2), PixelY = (int)(rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2), PointType = POIPointTypes.Rect, Height = (int)rectangleProperties.Rect.Height, Width = (int)rectangleProperties.Rect.Width };
                             var sss = GetCVCIE(pOIPoint);
-                            rectangleProperties.Msg = $"X:{sss.X:F1} Y:{sss.Y:F1} z:{sss.Z:F1}{Environment.NewLine}x:{sss.x:F4} y:{sss.y:F4} u:{sss.u:F4} v:{sss.v:F4}{Environment.NewLine}CCT:{sss.CCT:F1} wave:{sss.Wave:F1}";
+                            if (CVCIEShowConfig.Instance.IsShowString)
+                                rectangleProperties.Msg = FormatMessage(CVCIEShowConfig.Instance.Template, sss);
                             PoiResultCIExyuvDatas.Add(sss);
                         }
                     }
