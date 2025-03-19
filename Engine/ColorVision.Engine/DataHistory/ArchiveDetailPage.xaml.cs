@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.PropertyEditor;
 
 #pragma warning disable CS8602
@@ -9,147 +10,40 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.DataHistory.Dao
-{
-    public class ViewArchiveDetailResult : ViewModelBase
-    {
-        public RelayCommand ExportCommand { get; set; }
-
-        public ContextMenu ContextMenu { get; set; }
-
-        public ViewArchiveDetailResult(ArchivedDetailModel  model)
-        {
-            ExportCommand = new RelayCommand(a => Export());
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
-            ArchivedDetailModel = model;
-        }
-
-        public ArchivedDetailModel ArchivedDetailModel { get; set; }
-
-
-        public string OutputValue => JsonConvert.SerializeObject(ArchivedDetailModel.OutputValue, Formatting.Indented);
-
-        public void Export()
-        {
-            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
-
-
-            switch (ArchivedDetailModel.DetailType)
-            {
-                case "Camera_Img":
-                    // 解析 JSON
-                    JObject json = JObject.Parse(ArchivedDetailModel.OutputValue);
-
-                    // 获取文件名
-                    string fileName = json["FileName"].ToString();
-                    string filepath = json["FilePath"].ToString();
-
-                    string fullName = Path.Combine(configArchivedModel.Path +"\\" + filepath, fileName );
-                    if (!File.Exists(fullName))
-                    {
-                        MessageBox.Show("找不到文件");
-                            return;
-                    }
-
-                    // 使用 SaveFileDialog 让用户选择导出路径
-                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
-                    {
-                        saveFileDialog.FileName = fileName;
-                        saveFileDialog.Filter = "All files (*.tif)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
-                        saveFileDialog.FileName = fileName;
-                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            string exportPath = saveFileDialog.FileName;
-                            File.Copy(fullName, exportPath);
-                        }
-                    }
-                    break;
-                case "Algorithm_Calibration":
-                    // 解析 JSON
-                    json = JObject.Parse(ArchivedDetailModel.OutputValue);
-
-                    // 获取文件名
-                    fileName = json["FileName"].ToString();
-                    filepath = json["FilePath"].ToString();
-
-                    fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
-                    if (!File.Exists(fullName))
-                    {
-                        MessageBox.Show("找不到文件");
-                        return;
-                    }
-
-                    // 使用 SaveFileDialog 让用户选择导出路径
-                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
-                    {
-                        saveFileDialog.FileName = fileName;
-                        saveFileDialog.Filter = "All files (*.tif)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
-                        saveFileDialog.FileName = fileName;
-                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            string exportPath = saveFileDialog.FileName;
-                            File.Copy(fullName, exportPath);
-                        }
-                    }
-                    break;
-                case "Algorithm_POI_XYZ":
-                    // 使用 SaveFileDialog 让用户选择导出路径
-                    using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
-                    {
-                        saveFileDialog.Filter = "All files (*.json)|*.*";
-                        saveFileDialog.Title = "选择导出文件位置";
-                        saveFileDialog.FileName = ArchivedDetailModel.Guid + ".json";
-                        if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        {
-                            string exportPath = saveFileDialog.FileName;
-                            File.WriteAllText(exportPath, ArchivedDetailModel.OutputValue);
-                        }
-                    }
-                    break;
-                default:
-                    MessageBox.Show(ArchivedDetailModel.DetailType);
-                    break;
-            }
-
-
-
-        }
-
-
-    }
-
-
+{ 
     /// <summary>
     /// ArchiveDetailPage.xaml 的交互逻辑
     /// </summary>
     public partial class ArchiveDetailPage : Page
     {
         public Frame Frame { get; set; }
-        public ViewArchiveResult ViewArchiveResult { get; set; }
-        public ArchiveDetailPage(Frame MainFrame , ViewArchiveResult viewArchiveResult)
+        public ArchivedMasterModel ArchivedMasterModel { get; set; }
+        public ArchiveDetailPage(Frame MainFrame , ArchivedMasterModel viewArchiveResult)
         {
             Frame = MainFrame;
-            ViewArchiveResult = viewArchiveResult;
+            ArchivedMasterModel = viewArchiveResult;
             InitializeComponent();
         }
 
 
-        public ObservableCollection<ViewArchiveDetailResult> ViewResults { get; set; } = new ObservableCollection<ViewArchiveDetailResult>();
+        public ObservableCollection<ArchivedDetailModel> ViewResults { get; set; } = new ObservableCollection<ArchivedDetailModel>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            if (ViewArchiveResult.ArchivedMasterModel.Code == null) return;
-            foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", ViewArchiveResult.ArchivedMasterModel.Code} }))
+            if (ArchivedMasterModel.Code == null) return;
+            foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", ArchivedMasterModel.Code} }))
             {
-                ViewResults.Add(new ViewArchiveDetailResult(item));
+                ViewResults.Add(item);
             }
         }
 
@@ -157,7 +51,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             listView1.ItemsSource = ViewResults;
             if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
         }
         private void KeyEnter(object sender, KeyEventArgs e)
         {
@@ -168,11 +62,11 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
 
         }
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
-                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilities);
+                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 
 
@@ -180,22 +74,25 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilities)
+                Type type = typeof(ArchivedDetailModel);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        switch (item.ColumnName)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            case "序号":
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
                                 item.IsSortD = !item.IsSortD;
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                break;
-                            default:
-                                break;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
-                        break;
                     }
                 }
             }

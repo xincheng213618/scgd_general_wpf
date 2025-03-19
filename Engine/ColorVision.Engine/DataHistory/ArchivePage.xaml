@@ -43,18 +43,18 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="code">
+                            <GridViewColumn  Header="Code">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding ArchivedMasterModel.Code}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
+                                        <TextBlock Text="{Binding Code}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
                             <GridViewColumn  Header="名称">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding ArchivedMasterModel.Name}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
+                                        <TextBlock Text="{Binding Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -62,24 +62,24 @@
 
                             <GridViewColumn  Header="Data">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding ArchivedMasterModel.Data}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
+                                        <TextBlock Text="{Binding Data}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
                             <GridViewColumn  Header="归档日期">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding ArchivedMasterModel.ArchDate}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
+                                        <TextBlock Text="{Binding ArchDate}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
                             <GridViewColumn  Header="创建日期">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding CreateTime}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedMasterModel}"  >
+                                        <TextBlock Text="{Binding CreateDate}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

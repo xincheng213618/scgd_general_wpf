@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
@@ -9,19 +10,19 @@ namespace ColorVision.Engine.DataHistory.Dao
 
     public class ArchivedMasterModel : PKModel
     {
-        [Column("code")]
+        [Column("code"),DisplayName("Code")]
         public string Code { get; set; }
-        [Column("name")]
+        [Column("name"),DisplayName("名称")]
         public string Name { get; set; }
-        [Column("data")]
+        [Column("data"),DisplayName("Data")]
         public string Data { get; set; }
         [Column("remark")]
         public string Remark { get; set; }
         [Column("tenant_id")]
         public int? TenantId { get; set; }
-        [Column("create_date")]
+        [Column("create_date"),DisplayName("创建日期")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        [Column("arch_date")]
+        [Column("arch_date"),DisplayName("归档日期")]
         public DateTime? ArchDate { get; set; } = DateTime.Now;
 
     }

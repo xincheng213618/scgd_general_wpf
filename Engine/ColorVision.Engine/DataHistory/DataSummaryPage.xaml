@@ -72,6 +72,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="TotalTime">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding TotalTime}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="归档" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}">

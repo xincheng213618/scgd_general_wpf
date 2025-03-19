@@ -43,38 +43,38 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="code">
+                            <GridViewColumn  Header="Guid">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBlock Text="{Binding ArchivedDetailModel.Guid}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding Guid}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="设备名称">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBlock Text="{Binding ArchivedDetailModel.DeviceCode}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding DeviceCode}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="输入参数">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBlock Text="{Binding ArchivedDetailModel.InputCfg}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding InputCfg}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="名称">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBlock Text="{Binding ArchivedDetailModel.PGuid}"/>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding PGuid}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
                             <GridViewColumn  Header="Data"  Width="600">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
                                         <TextBox IsReadOnly="True" BorderThickness="0" Text="{Binding OutputValue,Mode=OneWay}" Height="100" TextWrapping="WrapWithOverflow" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

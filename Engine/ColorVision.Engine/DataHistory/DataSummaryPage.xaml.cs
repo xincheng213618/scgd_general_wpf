@@ -37,7 +37,7 @@ namespace ColorVision.Engine.DataHistory.Dao
             CreateTime = batchResultMasterModel.CreateDate;
             TotalTime = TimeSpan.FromMilliseconds((double)(batchResultMasterModel.TotalTime??0));
         }
-
+        [DisplayName("序号")]
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
@@ -45,15 +45,16 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending || ArchiveStatus == ArchiveStatus.NotArchived;
 
-
+        [DisplayName("批次号")]
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
+        [DisplayName("BatchCode")]
         public string? BatchCode { get { return _BatchCode; } set { _BatchCode = value; NotifyPropertyChanged(); } }
         private string? _BatchCode;
-
+        [DisplayName("测量时间")]
         public DateTime? CreateTime { get=> _CreateTime;  set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
-
+        [DisplayName("TotalTime")]
         public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private TimeSpan? _TotalTime;
     }
@@ -130,7 +131,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ViewBatchResult);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)
@@ -174,6 +175,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             MqttRCService.GetInstance().ArchivedAll();
+            MessageBox.Show("全部归档指令已经发送");
         }
     }
 }

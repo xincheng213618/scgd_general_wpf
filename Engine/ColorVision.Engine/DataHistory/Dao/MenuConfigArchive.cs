@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Solution.Searches;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
 using System.Windows;
@@ -17,16 +18,17 @@ namespace ColorVision.Engine.DataHistory.Dao
 
     public class MenuArchiveManager : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override string OwnerGuid => nameof(MenuArchive);
 
-        public override string GuidId => nameof(MenuArchive);
 
         public override string Header => "归档管理";
 
         public override void Execute()
         {
-
-
+            SolutionView solutionView = new SolutionView();
+            Window window = new Window();
+            window.Content = solutionView;
+            window.Show();
         }
     }
 
@@ -34,8 +36,6 @@ namespace ColorVision.Engine.DataHistory.Dao
     public class MenuConfigArchive : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuArchive);
-
-        public override string GuidId => nameof(MenuConfigArchive);
 
         public override string Header => "归档配置";
 

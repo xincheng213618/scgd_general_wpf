@@ -16,16 +16,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
-    public class ViewArchiveResult : ViewModelBase, ISortID
-    {
-        public ViewArchiveResult(ArchivedMasterModel  archivedMasterModel)
-        {
-            ArchivedMasterModel = archivedMasterModel;
-        }
-        public ArchivedMasterModel ArchivedMasterModel { get; set; }
-        public int Id { get => ArchivedMasterModel.Id; set => throw new NotImplementedException(); }
-        public DateTime? CreateTime { get => ArchivedMasterModel.CreateDate; }
-    }
 
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑
@@ -42,15 +32,13 @@ namespace ColorVision.Engine.DataHistory.Dao
             Frame = MainFrame;
             InitializeComponent();
         }
-
-
-        public ObservableCollection<ViewArchiveResult> ViewResults { get; set; } = new ObservableCollection<ViewArchiveResult>();
+        public ObservableCollection<ArchivedMasterModel> ViewResults { get; set; } = new ObservableCollection<ArchivedMasterModel>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
             foreach (var item in ArchivedMasterDao.Instance.GetAll())
             {
-                ViewResults.Add(new ViewArchiveResult(item));
+                ViewResults.Add(item);
             }
         }
 
@@ -69,7 +57,7 @@ namespace ColorVision.Engine.DataHistory.Dao
             ViewResults.Clear();
             foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
             {
-                ViewResults.AddUnique(new ViewArchiveResult(item));
+                ViewResults.Add(item);
             }
         }
 
@@ -77,7 +65,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
             {
-                ViewResults.AddUnique(new ViewArchiveResult(item));
+                ViewResults.Add(item);
             }
         }
 
@@ -99,7 +87,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                Type type = typeof(ViewResultCamera);
+                Type type = typeof(ArchivedMasterModel);
 
                 var properties = type.GetProperties();
                 foreach (var property in properties)
