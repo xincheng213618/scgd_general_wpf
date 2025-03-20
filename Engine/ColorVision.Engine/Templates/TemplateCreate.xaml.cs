@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates
                 TemplateStackPanels.Children.Add(new RadioButton() { Content = Path.GetFileName(item)});
             }
 
-            this.Title += "模板 " + ITemplate.Title;
+            this.Title += ITemplate.Title + " "+"模板";
             List<string> list =
             [
                 ITemplate.NewCreateFileName(ITemplate.Code),
