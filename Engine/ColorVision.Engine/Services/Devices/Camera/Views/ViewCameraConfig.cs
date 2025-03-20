@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        [Browsable(false)]
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
         [ Category("Control")]

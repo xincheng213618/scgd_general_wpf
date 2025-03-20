@@ -66,15 +66,22 @@ namespace ColorVision.ImageEditor.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             if (IsShowText)
             {
                 TextAttribute.Text = Attribute.Text;
                 TextAttribute.Text = string.IsNullOrWhiteSpace(TextAttribute.Text) ? Attribute.Id.ToString() : TextAttribute.Text;
-                TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
                 FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(Attribute.Center.X - formattedText.Width / 2, Attribute.Center.Y - formattedText.Height / 2));
             }
             dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+
+            if (!string.IsNullOrWhiteSpace(Attribute.Msg))
+            {
+                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, new Point(Attribute.Center.X + formattedText.Width / 2 + Attribute.Pen.Thickness, Attribute.Center.Y - formattedText.Height / 2));
+            }
+
         }
         public override Rect GetRect()
         {

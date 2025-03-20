@@ -97,6 +97,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 位 的本地化字符串。
+        /// </summary>
+        public static string Bit {
+            get {
+                return ResourceManager.GetString("Bit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 构建日期 的本地化字符串。
         /// </summary>
         public static string BuildDate {
@@ -210,6 +219,15 @@ namespace ColorVision.Properties {
         public static string CurrentVersionIsUpToDate {
             get {
                 return ResourceManager.GetString("CurrentVersionIsUpToDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 调试中 的本地化字符串。
+        /// </summary>
+        public static string Debugging {
+            get {
+                return ResourceManager.GetString("Debugging", resourceCulture);
             }
         }
         

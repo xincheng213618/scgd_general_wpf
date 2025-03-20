@@ -26,6 +26,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
+        [Browsable(false)]
         public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
 
         [Category("Control")]
@@ -43,6 +44,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         [DisplayName("自动保存数据列")]
         public bool AutoSaveSideData { get => _AutoSaveSideData; set { _AutoSaveSideData = value; NotifyPropertyChanged(); } }
         private bool _AutoSaveSideData;
+
+        public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
+        private int _ViewImageReadDelay = 1000;
 
     }
 }

@@ -91,7 +91,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             {
                 varianceValues[property] = 0.0;
 
-
                 foreach (var item in poiResultCIExyuvDatas)
                 {
                     if (typeof(PoiResultCIExyuvData).GetProperty(property)?.GetValue(item) is double dd)
@@ -105,16 +104,19 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             // 将统计数据添加到CSV
             csvBuilder.AppendLine("\n统计信息");
-            csvBuilder.AppendLine("属性,最大值,最小值,平均值,方差");
+            csvBuilder.AppendLine("属性,最大值,最小值,平均值,方差,均匀性");
             foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
             {
+                double uniformity = (maxValues[property] != 0) ? (minValues[property] / maxValues[property]) * 100 : 0;
+
                 List<string> stats = new()
                 {
             property,
             maxValues[property].ToString(CultureInfo.InvariantCulture),
             minValues[property].ToString(CultureInfo.InvariantCulture),
             meanValues[property].ToString(CultureInfo.InvariantCulture),
-            varianceValues[property].ToString(CultureInfo.InvariantCulture)
+            varianceValues[property].ToString(CultureInfo.InvariantCulture),
+            uniformity.ToString("F2", CultureInfo.InvariantCulture) // 保留两位小数
         };
                 csvBuilder.AppendLine(string.Join(",", stats));
             }

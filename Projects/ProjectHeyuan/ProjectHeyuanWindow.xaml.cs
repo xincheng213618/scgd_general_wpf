@@ -24,7 +24,6 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Compliance;
-using MQTTMessageLib.Algorithm;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib.Base;
 
@@ -175,7 +174,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             ComboBoxSer.SelectedIndex = 0;
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
-            FlowTemplate.ItemsSource = FlowParam.Params;
+            FlowTemplate.ItemsSource = TemplateFlow.Params;
             FlowTemplate.SelectionChanged += (s, e) => Refresh();
 
             List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
@@ -187,6 +186,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             this.DataContext = HYMesManager.GetInstance();
 
             timer = new Timer(TimeRun, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
         }
 
         public void Refresh()
@@ -200,7 +200,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                     item.nodeRunEvent -= UpdateMsg;
 
                 flowEngine.LoadFromBase64(string.Empty);
-                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;

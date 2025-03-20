@@ -6,6 +6,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Serach;
 using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
 using log4net;
@@ -150,7 +151,7 @@ namespace ColorVision
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
-            Searches = new ObservableCollection<IMenuItem>(MenuManager.GetInstance().GetIMenuItem());
+            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
 
             // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
@@ -326,8 +327,8 @@ namespace ColorVision
                 AddStatusBarIconMetadata(item);
             }
         }
-        public ObservableCollection<IMenuItem> Searches { get; set; } = new ObservableCollection<IMenuItem>();
-        public List<IMenuItem> filteredResults { get; set; } = new List<IMenuItem>();
+        public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
+        public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
 
         private readonly char[] Chars = new[] { ' ' };
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
@@ -344,7 +345,7 @@ namespace ColorVision
                     var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = Searches
-                        .OfType<IMenuItem>()
+                        .OfType<ISearch>()
                         .Where(template => keywords.All(keyword =>
                             template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
                             template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
@@ -385,7 +386,15 @@ namespace ColorVision
                 if (ListView1.SelectedIndex < filteredResults.Count - 1)
                     ListView1.SelectedIndex += 1;
 
+            }
+        }
 
+        private void ListView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ListView1.SelectedIndex > -1)
+            {
+                Searchbox.Text = string.Empty;
+                filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
             }
         }
     }

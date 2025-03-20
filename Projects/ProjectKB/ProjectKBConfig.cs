@@ -29,7 +29,7 @@ namespace ProjectKB
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
-            TemplateItemSource = FlowParam.Params;
+            TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
@@ -132,7 +132,7 @@ namespace ProjectKB
 
         public void OpenFlowEngineTool()
         {
-            new FlowEngineToolWindow(FlowParam.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         [JsonIgnore]

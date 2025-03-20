@@ -11,13 +11,14 @@ using ColorVision.UI.Sorts;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-    public class AlgorithmResult : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
+    public class AlgorithmResult : ViewModelBase, ISortID
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
@@ -169,30 +170,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
 
-
+        [DisplayName("SerialNumber1")]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
-
+        [DisplayName("BatchNumber")]
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
-
+        [DisplayName("File")]
         public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;
-
+        [DisplayName("Template")]
         public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
         private string _POITemplateName;
-
+        [DisplayName("CreateTime")]
         public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
 
         public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
         private AlgorithmResultType _ResultType;
 
+        [DisplayName("ResultDesc")]
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
         private string _ResultDesc;
-
+        [DisplayName("img_result")]
         public string ResultImagFile { get; set; }
-
+        [DisplayName("Duration")]
         public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private long _TotalTime;
 

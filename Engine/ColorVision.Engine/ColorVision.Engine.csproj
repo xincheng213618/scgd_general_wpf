@@ -8,6 +8,7 @@
     <UseWindowsForms>True</UseWindowsForms>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <GenerateDocumentationFile>False</GenerateDocumentationFile>
+    <PackageReadmeFile></PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>

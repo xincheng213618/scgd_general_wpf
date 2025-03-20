@@ -11,6 +11,8 @@ namespace ColorVision.Engine.Services.PhySpectrums
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => "物理光谱仪";
         public override int Order => 0;
+
+        public override Visibility Visibility => Visibility.Hidden;
         public override void Execute()
         {
             new PhySpectrumManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();

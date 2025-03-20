@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Data);
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"自适应校零执行" + e.ToString(),"ColorVison");
                 }
             };
         }

@@ -9,13 +9,14 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Dao
 {
-    public class ViewResultCamera : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
+    public class ViewResultCamera : ViewModelBase, ISortID
     {
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand ExportCVCIECommand { get; set; }
@@ -148,7 +149,7 @@ namespace ColorVision.Engine.Services.Dao
             }
         }
 
-
+        [DisplayName("SerialNumber1")]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
@@ -156,26 +157,28 @@ namespace ColorVision.Engine.Services.Dao
         private string? _Batch;
         public string? FileUrl { get => _FileUrl; set { _FileUrl = value; NotifyPropertyChanged(); } }
         private string? _FileUrl;
+        [DisplayName("File")]
         public string? FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;
 
         public CameraFileType FileType { get => _FileType; set { _FileType = value; NotifyPropertyChanged(); } }
         private CameraFileType _FileType;
-
+        [DisplayName("Parameter")]
         public string ReqParams { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
         private string _Params;
-
+        [DisplayName("ImageInfo")]
         public string ImgFrameInfo { get => _ImgFrameInfo; set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
         private string _ImgFrameInfo;
 
         public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
 
+        [DisplayName("Info")]
         public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }
         private string? _ResultMsg;
         public int ResultCode { get => _resultCode; set { _resultCode = value; NotifyPropertyChanged(); } }
         private int _resultCode;
-
+        [DisplayName("Duration")]
         public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
         private long _totalTime;
 

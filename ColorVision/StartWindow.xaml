@@ -26,7 +26,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBox x:Name="TextBoxMsg" Grid.Row="0" Text="软件加载中" VerticalContentAlignment="Top"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
+                    <TextBox x:Name="TextBoxMsg" Grid.Row="0" Text="" VerticalContentAlignment="Top"  Foreground="White"  Background="Transparent" BorderThickness="0"  TextChanged="TextBoxMsg_TextChanged"/>
                     <ProgressBar Grid.Row="1" Style="{StaticResource ProgressBarDanger}" IsIndeterminate="True" Height="10"  Foreground="#B41515" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                 </Grid>
             </Border>

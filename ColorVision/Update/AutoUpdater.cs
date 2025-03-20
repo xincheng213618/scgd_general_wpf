@@ -200,8 +200,13 @@ namespace ColorVision.Update
                 if (LatestVersion > Version)
                 {
                     bool IsIncrement = false;
-                    if (LatestVersion.Build == Version.Build)
+                    if (LatestVersion.Minor == Version.Minor)
                         IsIncrement = true;
+                    if (IsIncrement && LatestVersion.Build != Version.Build)
+                    {
+                        LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
+                    }
+
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);

@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.Title += ITemplate.Title;
+            this.Title += "模板 " + ITemplate.Title;
             List<string> list =
             [
                 ITemplate.NewCreateFileName(ITemplate.Code),
@@ -39,21 +39,21 @@ namespace ColorVision.Engine.Templates
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
-                this.Height = 150;
+                this.Height = 250;
 
             }
             else if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);
-                this.Height = 150;
+                this.Height = 250;
                 UserControl userControl = ITemplate.CreateUserControl();
                 if (userControl is ITemplateUserControl templateUserControl)
                 {
                     GridProperty.Children.Add(userControl);
                     templateUserControl.SetParam(ITemplate.CreateDefault());
-                    this.Height = userControl.Height +150;
-                    this.Width = userControl.Width +40;
+                    this.Height = userControl.Height +250;
+                    this.Width = userControl.Width + 40;
                 }
             }
             else

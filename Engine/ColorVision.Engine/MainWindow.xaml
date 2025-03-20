@@ -16,5 +16,18 @@
         <Menu x:Name="Menu1">
 
         </Menu>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                <StackPanel x:Name="StackPanelSPD" Margin="-2,5,0,0">
+                </StackPanel>
+            </ScrollViewer>
+            <Grid Grid.Column="1" x:Name="MainContent">
+                <Grid x:Name="ViewGrid" Background="LightGray" />
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

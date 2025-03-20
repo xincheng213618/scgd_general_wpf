@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.NativeMethods;
 using System.Collections.ObjectModel;
+using System.Reflection;
 
 namespace ColorVision.UI.Sorts
 {
@@ -56,6 +57,44 @@ namespace ColorVision.UI.Sorts
         {
             var sortedItems = collection.ToList();
             sortedItems.Sort((x, y) => descending ? y.Id.CompareTo(x.Id) : x.Id.CompareTo(y.Id));
+            collection.UpdateCollection(sortedItems);
+        }
+
+        public static void SortByProperty<T>(this ObservableCollection<T> collection, string propertyName, bool descending = false)
+        {
+            var propertyInfo = typeof(T).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (propertyInfo == null)
+            {
+                throw new ArgumentException($"Property '{propertyName}' not found.");
+            }
+
+            var sortedItems = collection.ToList();
+
+            if (propertyInfo.PropertyType == typeof(string))
+            {
+                sortedItems.Sort((x, y) =>
+                {
+                    var xValue = (string)propertyInfo.GetValue(x) ?? string.Empty;
+                    var yValue = (string)propertyInfo.GetValue(y) ?? string.Empty;
+                    return descending ? Shlwapi.CompareLogical(yValue, xValue) : Shlwapi.CompareLogical(xValue, yValue);
+                });
+            }
+            else
+            {
+                sortedItems.Sort((x, y) =>
+                {
+                    var xValue = propertyInfo.GetValue(x) as IComparable;
+                    var yValue = propertyInfo.GetValue(y) as IComparable;
+
+                    if (xValue == null || yValue == null)
+                    {
+                        throw new InvalidOperationException("Property values must be comparable.");
+                    }
+
+                    return descending ? yValue.CompareTo(xValue) : xValue.CompareTo(yValue);
+                });
+            }
+
             collection.UpdateCollection(sortedItems);
         }
     }

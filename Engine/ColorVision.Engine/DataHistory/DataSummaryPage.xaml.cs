@@ -6,6 +6,10 @@ using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,7 +25,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         Failed = -2
     }
 
-    public class ViewBatchResult : ViewModelBase,ISortID,ISortCreateTime, ISortBatch
+    public class ViewBatchResult : ViewModelBase,ISortID
     {
         public BatchResultMasterModel BatchResultMasterModel { get; set; }
         public ViewBatchResult(BatchResultMasterModel batchResultMasterModel)
@@ -126,28 +130,25 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilities)
+                Type type = typeof(ViewResultCamera);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        switch (item.ColumnName)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            case "序号":
+                            var item = GridViewColumnVisibilities.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
                                 item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByBatch(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                                ViewBatchResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
-                        break;
                     }
                 }
             }

@@ -1226,6 +1226,7 @@ namespace ColorVision.Engine.Templates.POI
 
         private void SavePoiParam()
         {
+            KBJson.KBLVSacle = AlgorithmKBConfig.Instance.KBLVSacle;
             KBJson.KBKeyRects.Clear();
             foreach (var item in DrawingVisualLists)
             {
@@ -1630,7 +1631,14 @@ namespace ColorVision.Engine.Templates.POI
 
         private void Cal_Click(object sender, RoutedEventArgs e)
         {
-            InitialKBKey();
+            try
+            {
+                InitialKBKey();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         private void SetKBLocal_Click(object sender, RoutedEventArgs e)
@@ -1646,9 +1654,9 @@ namespace ColorVision.Engine.Templates.POI
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
                 {
-                    short Keygray = 0;
+                    ushort[] Keygray = new ushort[3];
                     uint keygraynum = 0;
-                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref Keygray,ref keygraynum);
+                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", Keygray, ref keygraynum);
                     keyGray = (float)(keyGray * poiPointParam.KeyScale);
                     if (poiPointParam.Area != 0)
                     {
@@ -1829,9 +1837,9 @@ namespace ColorVision.Engine.Templates.POI
             int width = image.Width;
             int height = image.Height;
             int channels = image.Channels();
-            int bpp = image.ElemSize() * 8;
+            int bpp = image.ElemSize() * 8 / channels;
             IntPtr imgData = image.Data;
-            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 1);
+            KeyBoardDLL.CM_InitialKeyBoardSrc(width, height, bpp, channels, imgData, PoiConfig.SaveProcessData, PoiConfig.SaveFolderPath, PoiConfig.Exp, luminFile, 0);
 
             string csvFilePath = PoiConfig.SaveFolderPath + "\\output.csv";
             using (StreamWriter writer = new StreamWriter(csvFilePath, false, Encoding.UTF8))
@@ -1847,19 +1855,19 @@ namespace ColorVision.Engine.Templates.POI
                             IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                             float haloGray = -1;
                             uint haloGraynum = 0;
-                            short haloGray1 = 0;
+                            ushort[] haloGray1 = new ushort[256];
                             uint Keygraynum = 0;
-                            short keygray1 = 0;
+                            ushort[] keygray1 = new ushort[256];
 
                             if (PoiConfig.DefaultDoHalo)
                             {
-                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref haloGray1,ref haloGraynum);
+                                haloGray = KeyBoardDLL.CM_CalculateHalo(rect, poiPointParam.HaloOutMOVE, poiPointParam.HaloThreadV, 15, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  haloGray1,ref haloGraynum);
                                 haloGray = (float)(haloGray * poiPointParam.HaloScale);
                             }
                             float keyGray = -1;
                             if (PoiConfig.DefaultDoKey)
                             {
-                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", ref keygray1 ,ref Keygraynum);
+                                keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  keygray1 ,ref Keygraynum);
                                 keyGray = (float)(keyGray * poiPointParam.KeyScale);
                                 if (poiPointParam.Area != 0)
                                 {
@@ -1878,7 +1886,7 @@ namespace ColorVision.Engine.Templates.POI
                             {
                                 name = $"\"{name.Replace("\"", "\"\"")}\"";
                             }
-                            writer.WriteLine($"{name},{rect},{haloGray},{haloGraynum},{keyGray},{Keygraynum}");
+                            writer.WriteLine($"{name},{rect},{haloGray},{haloGraynum},{keyGray},{Keygraynum},{keygray1[0]},{keygray1[1]},{keygray1[2]}");
                         }
                         catch
                         {
@@ -1893,7 +1901,7 @@ namespace ColorVision.Engine.Templates.POI
 
             int rw = 0; int rh = 0; int rBpp = 0; int rChannel = 0;
 
-            byte[] pDst1 = new byte[image.Cols * image.Rows * 3 * bpp];
+            byte[] pDst1 = new byte[image.Cols * image.Rows * bpp *channels];
 
             int result = KeyBoardDLL.CM_GetKeyBoardResult(ref rw, ref rh, ref rBpp, ref rChannel, pDst1);
             OpenCvSharp.Mat mat;

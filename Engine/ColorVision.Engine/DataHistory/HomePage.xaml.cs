@@ -23,7 +23,6 @@ namespace ColorVision.Engine.DataHistory
             Frame = frame;
             InitializeComponent();
         }
-
         private void Page_Initialized(object sender, EventArgs e) 
         {
             //ContentStackPanel.AddAdorners(this);
