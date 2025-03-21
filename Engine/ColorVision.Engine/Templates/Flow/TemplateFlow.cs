@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -144,22 +145,21 @@ namespace ColorVision.Engine.Templates.Flow
             ofd.Title = "导入流程";
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            if (TemplateParams.Any(a => a.Key.Equals(Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程名称已存在", "ColorVision");
-                return false;
-            }
-            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
-            string base64 = Convert.ToBase64String(fileBytes);
-            if (AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
-            {
-                param.DataBase64 = base64;
-                FlowParam.Save2DB(param);
-                var item = new TemplateModel<FlowParam>(param.Name ?? "default", param);
-                TemplateParams.Add(item);
-            }
-            return false;
+            return ImportFile(ofd.FileName);
         }
+
+        public override bool ImportFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            byte[] fileBytes = File.ReadAllBytes(filePath);
+            string base64 = Convert.ToBase64String(fileBytes);
+            FlowParam param = new FlowParam();
+            param.DataBase64 = base64;
+            ExportTemp = param;
+            return true;
+        }
+
+
 
         public override bool CopyTo(int index)
         {
@@ -185,6 +185,7 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     param.DataBase64 = ExportTemp.DataBase64;
                     param.Save();
+                    ExportTemp = null;
                 }
                 var a = new TemplateModel<FlowParam>(templateName, param);
                 TemplateParams.Add(a);

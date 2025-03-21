@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Rbac;
 using ColorVision.FloatingBall;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -396,6 +397,11 @@ namespace ColorVision
                 Searchbox.Text = string.Empty;
                 filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+           new UserInfoWindow().ShowDialog();
         }
     }
 }

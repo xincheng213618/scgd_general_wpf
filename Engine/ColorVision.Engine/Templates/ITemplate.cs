@@ -93,6 +93,10 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+        public virtual bool ImportFile(string filePath)
+        {
+            throw new NotImplementedException();
+        }
 
         public bool IsSideHide { get; set; }
 
@@ -100,6 +104,8 @@ namespace ColorVision.Engine.Templates
         {
 
         }
+
+        public virtual string InitialDirectory { get; set; } 
 
         public virtual void Load() { }
 
@@ -301,19 +307,20 @@ namespace ColorVision.Engine.Templates
                     }
                     VSysResourceDao.Instance.DeleteInCodes(codes);
                 }
-                TemplateParams.RemoveAt(index);
             }
 
             if (selectedCount <= 1)
             {
                 int id = TemplateParams[index].Value.Id;
                 DeleteSingle(id);
+                TemplateParams.RemoveAt(index);
             }
             else
             {
                 foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
                 {
                     DeleteSingle(item.Id);
+                    TemplateParams.Remove(item);
                 }
             }
         }
@@ -399,14 +406,14 @@ namespace ColorVision.Engine.Templates
             ofd.Title = "导入模板";
             ofd.RestoreDirectory = true;
             ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolutionExplorer.DirectoryInfo.FullName;
-
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(sfd.FileName), StringComparison.OrdinalIgnoreCase)))
-            //{
-            //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
-            //    return false;
-            //}
-            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
+            return ImportFile(ofd.FileName);
+
+        }
+        public override bool ImportFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            byte[] fileBytes = File.ReadAllBytes(filePath);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
             CreateDefault();
             try
@@ -416,7 +423,7 @@ namespace ColorVision.Engine.Templates
                 {
                     CreateTemp.ModDetailModels.First(a => a.SysPid == item.SysPid).ValueA = item.ValueA;
                 }
-                ExportTemp =CreateTemp;
+                ExportTemp = CreateTemp;
                 return true;
             }
             catch (JsonException ex)

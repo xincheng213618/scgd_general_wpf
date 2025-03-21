@@ -410,5 +410,10 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
+
+        private void CreateTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            ITemplate.Export(ListView1.SelectedIndex);
+        }
     }
 }

@@ -32,9 +32,8 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <StackPanel x:Name="TemplateStackPanels" Grid.Row="0" Margin="2" Orientation="Horizontal">
-                    <RadioButton Content="默认模板"  IsChecked="True" />
-                </StackPanel>
+                <UniformGrid x:Name="TemplateStackPanels" Grid.Row="0" Margin="2"  Columns="3">
+                </UniformGrid>
                 <DockPanel Grid.Row="1"  Margin="2" >
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>

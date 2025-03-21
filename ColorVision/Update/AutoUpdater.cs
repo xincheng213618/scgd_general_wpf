@@ -204,7 +204,7 @@ namespace ColorVision.Update
                         IsIncrement = true;
                     if (IsIncrement && LatestVersion.Build != Version.Build)
                     {
-                        LatestVersion = new Version(LatestVersion.Major, LatestVersion.Minor, LatestVersion.Build + 1, 1);
+                        LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
                     }
 
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);

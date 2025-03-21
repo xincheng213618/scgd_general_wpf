@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates
             ITemplate = template;
             InitializeComponent();
         }
-
+        private string TemplateFile { get; set;  }
         private void Window_Initialized(object sender, EventArgs e)
         {
             string AssemblyCompanyFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), Environments.AssemblyCompany);
@@ -38,10 +38,15 @@ namespace ColorVision.Engine.Templates
             if (!Directory.Exists(TemplateFolder))
                 Directory.CreateDirectory(TemplateFolder);
 
+            RadioButton radioButton = new RadioButton() { Content = "默认模板", IsChecked = true, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
+            radioButton.Checked += (s, e) => TemplateFile = string.Empty;
+            TemplateStackPanels.Children.Add(radioButton);
 
             foreach (var item in Directory.GetFiles(TemplateFolder))
             {
-                TemplateStackPanels.Children.Add(new RadioButton() { Content = Path.GetFileName(item)});
+                RadioButton radioButton1 = new RadioButton() { Content = Path.GetFileNameWithoutExtension(item) ,HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(3) };
+                radioButton1.Checked += (s, e) => TemplateFile = Path.GetFullPath(item);
+                TemplateStackPanels.Children.Add(radioButton1);
             }
 
             this.Title += ITemplate.Title + " "+"模板";
@@ -96,6 +101,11 @@ namespace ColorVision.Engine.Templates
             {
                 MessageBox.Show("已经存在改模板，请修改模板名称", "ColorVision");
                 return;
+            }
+
+            if (File.Exists(TemplateFile))
+            {
+                ITemplate.ImportFile(TemplateFile);
             }
 
             ITemplate.Create(CreateName);

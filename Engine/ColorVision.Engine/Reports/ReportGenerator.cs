@@ -8,35 +8,6 @@ using Microsoft.Win32;
 namespace ColorVision.Engine.Reports
 {
 
-    public class ExportReportGenerator : MenuItemBase
-    {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "ExportReportGenerator";
-        public override string Header => "导出报表";
-        public override int Order => 100;
-
-
-        public override void Execute()
-        {
-            // 创建并配置 SaveFileDialog
-            SaveFileDialog saveFileDialog = new SaveFileDialog
-            {
-                Filter = "PDF 文件 (*.pdf)|*.pdf",
-                DefaultExt = "pdf",
-                FileName = "CalibrationReport.pdf"
-            };
-
-            // 显示对话框并获取用户选择的文件路径
-            bool? result = saveFileDialog.ShowDialog();
-
-            if (result == true)
-            {
-                ReportGenerator.GenerateCalibrationReport(saveFileDialog.FileName);
-            }
-
-        }
-    }
-
     public static class ReportGenerator
     {
         public static void GenerateCalibrationReport(string filePath)
