@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         OLED_FindDotsArrayMem_File = 22,
         POI_XYZ_File = 23,
         POI_Y_File = 24,
-        KBREsult =25,
+        POI_XYZ_V2 = 25,
         OLED_FindDotsArrayOutFile = 26,
         OLED_JND_CalVas = 27,
         POI_CAD_Mapping = 28,
@@ -47,8 +47,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         AOI = 39,
         KB = 50,
         KB_Raw = 51,
+        KB_Output = 52,
         Compliance_Math_CIE_Y_Ex = 53,
-        BinocularFusion = 54
+        ARVR_BinocularFusion = 54,
+        KB_Output_Lv = 55,
+        KB_Output_CIE = 56,
+        Math_DataConvert = 70
     }
     public interface IResultHandle
     {

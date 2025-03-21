@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using log4net;
+using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Windows;
