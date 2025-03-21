@@ -39,6 +39,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         [CommandDisplay("自适应校零设置")]
         public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
 
+        [CommandDisplay("EmissionSP100设置")]
+        public RelayCommand EmissionSP100SettingCommand { get; set; }
+
+
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DService = new MQTTSpectrum(this);
@@ -63,6 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
             SelfAdaptionInitDarkSettingCommand = new RelayCommand(a => SelfAdaptionInitDarkSetting());
+            EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
         }
 
         public void SelfAdaptionInitDark()
@@ -80,6 +85,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public void SelfAdaptionInitDarkSetting()
         {
             new UI.PropertyEditor.PropertyEditorWindow(Config.SelfAdaptionInitDark) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            SaveConfig();
+        }
+        public void EmissionSP100Setting()
+        {
+            new UI.PropertyEditor.PropertyEditorWindow(Config.SetEmissionSP100Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             SaveConfig();
         }
 

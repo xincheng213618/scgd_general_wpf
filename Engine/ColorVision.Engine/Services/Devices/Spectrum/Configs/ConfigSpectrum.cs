@@ -1,7 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.Core;
+using ColorVision.UI.PropertyEditor;
 using Newtonsoft.Json;
+using System;
+using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
@@ -12,6 +16,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public RelayCommand SetWavelengthFileCommand { get; set; }
         [JsonIgnore]
         public RelayCommand SetMaguideFileCommand { get; set; }
+
         public ConfigSpectrum()
         {
             SetWavelengthFileCommand = new RelayCommand(a => SetWavelengthFile());
@@ -78,5 +83,23 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 
         public SelfAdaptionInitDark SelfAdaptionInitDark { get; set; } = new SelfAdaptionInitDark();
 
+        public SetEmissionSP100Config SetEmissionSP100Config { get; set; } = new SetEmissionSP100Config();
+    }
+
+    [DisplayName("EmissionSP100设置")]
+    public class SetEmissionSP100Config : ViewModelBase
+    {
+
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsEnabled = true;
+
+        public int nStartPos { get => _nStartPos; set { _nStartPos = value; NotifyPropertyChanged(); } }
+        private int _nStartPos = 1691;
+
+        public int nEndPos { get => _nEndPos; set { _nEndPos = value; NotifyPropertyChanged(); } }
+        private int _nEndPos = 2048;
+
+        public double dMeanThreshold { get => _dMeanThreshold; set { _dMeanThreshold = value; NotifyPropertyChanged(); } }
+        private double _dMeanThreshold = 80;
     }
 }
