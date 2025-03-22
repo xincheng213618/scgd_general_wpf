@@ -1,21 +1,20 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.RC;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.Engine.MySql
+
+namespace ColorVision.Engine.Services.RC
 {
-    public class RCWizardStep : IWizardStep
+    public class RCWizardStep : WizardStepBase
     {
-        public int Order => 11;
+        public override int Order => 3;
 
-        public string Header => "RC配置";
-        public string Description => "配置注册中心，如果已经正确配置服务可以点击服务配置即可不需要手动配置";
+        public override string Header => "RC配置";
+        public override string Description => "配置注册中心，如果已经正确配置服务可以点击服务配置即可不需要手动配置";
 
-        public RelayCommand RelayCommand => new RelayCommand(a =>
+        public override void Execute()
         {
-            RCServiceConnect rCServiceConnect = new() { Owner = Application.Current.GetActiveWindow()};
-            rCServiceConnect.ShowDialog();
-        });
+            new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
     }
 }

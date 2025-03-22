@@ -127,9 +127,9 @@ namespace ColorVision
             //代码先进入启动窗口
 
             bool IsReStart = parser.GetFlag("restart");
-            if (!WizardConfig.Instance.WizardCompletionKey)
+            if (!WizardWindowConfig.Instance.WizardCompletionKey)
             {
-                WizardWindow wizardWindow = new();
+                WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
             }

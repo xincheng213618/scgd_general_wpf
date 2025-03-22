@@ -11,17 +11,15 @@ namespace WindowsServicePlugin
 {
     public partial class SetServiceConfig
     {
-        public class SetMysqlConfig : IWizardStep
+        public class SetMysqlConfig : WizardStepBase
         {
-            public int Order => 8;
+            public override int Order => 8;
 
-            public string Header => "从服务中配置Mysql";
-            public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
-
-            public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+            public override string Header => "从服务中配置Mysql";
+            public override string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
 
             Dictionary<string, string> dic = new Dictionary<string, string>();
-            public void Execute()
+            public override void Execute()
             {
                 if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
                 {

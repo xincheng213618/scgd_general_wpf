@@ -1,15 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorizations;
+using System.Windows.Input;
 
 namespace ColorVision.UI
 {
     public interface IWizardStep
     {
-        public int Order { get; }
-        public string Header { get; }
-        public RelayCommand RelayCommand { get; }
+        int Order { get; }
+        string Header { get; }
+        ICommand? Command { get; }
+        string Description { get; }
+        bool ConfigurationStatus { get; set; }
 
-        public string Description { get; }
     }
 
     public abstract class WizardStepBase : ViewModelBase, IWizardStep
@@ -17,8 +18,11 @@ namespace ColorVision.UI
         public abstract string Header { get; }
         public abstract int Order { get; }
 
-        public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+        public virtual ICommand? Command => new RelayCommand(A => Execute());
         public abstract string Description { get; }
+
+        public virtual bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; NotifyPropertyChanged(); } }
+        private bool _ConfigurationStatus = true;
 
         public virtual void Execute()
         {

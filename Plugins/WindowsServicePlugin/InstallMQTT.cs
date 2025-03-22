@@ -8,15 +8,11 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallMQTT : MenuItemBase, IWizardStep
+    public class InstallMQTT :  WizardStepBase
     {
-        public override string OwnerGuid => "ServiceLog";
-
-        public override string GuidId => "InstallMQTT";
-
         public override int Order => 1;
         public override string Header => "下载并安装 MQTT";
-        public string Description => "安装本地的MQTT服务，如果使用其他机器作为转发请跳过";
+        public override string Description => "安装本地的MQTT服务，如果使用其他机器作为转发请跳过";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallMQTT()

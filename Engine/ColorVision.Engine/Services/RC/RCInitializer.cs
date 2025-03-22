@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using System.Collections.Generic;
+using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
-using System.ServiceProcess;
 
 namespace ColorVision.Engine.Services.RC
 {

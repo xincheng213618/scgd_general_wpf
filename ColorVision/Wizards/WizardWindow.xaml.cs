@@ -1,8 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Projects;
 using ColorVision.Themes;
 using ColorVision.UI;
+using log4net;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows;
@@ -16,9 +19,10 @@ namespace ColorVision.Wizards
         Tile
     }
 
-    public class WizardConfig : ViewModelBase, IConfig
+    public class WizardWindowConfig:WindowConfig 
     {
-        public static WizardConfig Instance => ConfigService.Instance.GetRequiredService<WizardConfig>();
+        public static WizardWindowConfig Instance => ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
+
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
         private bool _WizardCompletionKey;
 
@@ -28,14 +32,40 @@ namespace ColorVision.Wizards
         public bool IsList => WizardShowType == WizardShowType.List;
     }
 
-    public class WizardWindowConfig:UI.WindowConfig { }
-
-    /// <summary>
-    /// WizardWindow.xaml 的交互逻辑
-    /// </summary>
-    public partial class WizardWindow : Window
+    public class WizardManager : ViewModelBase
     {
-        public static WizardWindowConfig WindowConfig => ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectManager));
+        private static WizardManager _instance;
+        private static readonly object _locker = new();
+        public static WizardManager GetInstance() { lock (_locker) { _instance ??= new WizardManager(); return _instance; } }
+        public List<IWizardStep> IWizardSteps { get; private set; } = new List<IWizardStep>();
+
+        public WizardManager()
+        {
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IWizardStep fileHandler)
+                    {
+                        IWizardSteps.Add(fileHandler);
+                    }
+                }
+            }
+            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
+
+        }
+
+
+
+    }
+
+        /// <summary>
+        /// WizardWindow.xaml 的交互逻辑
+        /// </summary>
+        public partial class WizardWindow : Window
+    {
+        public static WizardWindowConfig WindowConfig => WizardWindowConfig.Instance;
 
         public WizardWindow()
         {
@@ -48,21 +78,10 @@ namespace ColorVision.Wizards
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             ComboBoxWizardType.ItemsSource = Enum.GetValues(typeof(WizardShowType)).Cast<WizardShowType>();
-            this.DataContext = WizardConfig.Instance;
+            this.DataContext = WindowConfig;
 
-            var IWizardSteps = new List<IWizardStep>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IWizardStep fileHandler)
-                    {
-                        IWizardSteps.Add(fileHandler);
-                    }
-                }
-            }
+            List<IWizardStep> IWizardSteps = WizardManager.GetInstance().IWizardSteps;
 
-            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
             ListWizard.ItemsSource = IWizardSteps;
             ListWizard.SelectionChanged += (s, e) =>
             {
@@ -74,7 +93,7 @@ namespace ColorVision.Wizards
             foreach (var step in IWizardSteps)
             {
                 Border border = new Border() { Margin = new Thickness(5, 5, 5, 5) };
-                border.Child = new Button() { Content = step.Header, Command = step.RelayCommand };
+                border.Child = new Button() { Content = step.Header, Command = step.Command };
                 WizardStackPanel.Children.Add(border);
             }
 
@@ -83,13 +102,31 @@ namespace ColorVision.Wizards
 
         private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
         {
-            WizardConfig.Instance.WizardCompletionKey = true;
+            bool result = true;
+            foreach (var item in WizardManager.GetInstance().IWizardSteps)
+            {
+                result = result && item.ConfigurationStatus;
+            }
+
+            WindowConfig.WizardCompletionKey = result;
             ConfigHandler.GetInstance().SaveConfigs();
 
-            //这里使用件的启动路径，启动主程序
-            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
-            Application.Current.Shutdown();
+            if (!result)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),"请完成所有配置项","ColorVision");
+                return;
+            }
 
+            if (Application.Current.MainWindow == this)
+            {
+                //这里使用件的启动路径，启动主程序
+                Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
+                Application.Current.Shutdown();
+            }
+            else
+            {
+                this.Close();
+            }
             //如果第一次启动需要以管理员权限启动
             //Tool.RestartAsAdmin();
         }

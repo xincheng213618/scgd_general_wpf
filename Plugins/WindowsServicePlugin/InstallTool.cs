@@ -98,6 +98,8 @@ namespace WindowsServicePlugin
                 await GetLatestReleaseVersion();
             }
         }
+        public bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; NotifyPropertyChanged(); } }
+        private bool _ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
 
         public async Task GetLatestReleaseVersion()
         {
@@ -248,6 +250,8 @@ namespace WindowsServicePlugin
                             CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser.SelectedPath + "\\InstallTool\\CVWinSMS.exe";
                         }
 
+                        ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
+
                         // 启动新的实例
                         ProcessStartInfo startInfo = new();
                         startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
@@ -317,6 +321,7 @@ namespace WindowsServicePlugin
             }
             try
             {
+                ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
                 Process.Start(CVWinSMSConfig.Instance.CVWinSMSPath);
             }
             catch (Exception ex)
@@ -324,5 +329,7 @@ namespace WindowsServicePlugin
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
         }
+
+
     }
 }

@@ -11,17 +11,15 @@ using System.Xml.Linq;
 
 namespace WindowsServicePlugin
 {
-    public partial class SetServiceConfigStep : IWizardStep
+    public partial class SetServiceConfigStep : WizardStepBase
     {
-        public int Order => 9;
+        public override int Order => 9;
 
-        public string Header => "更新服务配置";
-        public string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
-
-        public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+        public override string Header => "更新服务配置";
+        public override string Description => "如果已经正确配置服务管理工具，使用该命令会中读取配置的文件并应用";
 
         Dictionary<string, string> dic = new Dictionary<string, string>();
-        public void Execute()
+        public override void Execute()
         {
             if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
             {

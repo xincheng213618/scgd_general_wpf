@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         xmlns:settings ="clr-namespace:ColorVision.Settings"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:WizardConfig}"
+        d:DataContext="{d:DesignInstance local:WizardWindowConfig}"
         Title="{x:Static properties:Resources.SetupWizard}"  Height="550" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <PathGeometry x:Key="CheckMarkGeometry" Figures="M 1,3 C1,3 1,6 1,6 1,6 4,9 4,9 4,9 9,3 9,3 9,3 9,0 9,0 9,0 4,6 4,6 4,6 1,3 1,3 z" />
@@ -39,7 +39,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="5">
-            <TextBlock Text="初始化安装环境"/>
+            <TextBlock Text="请按照顺序配置启动项"/>
             <DockPanel HorizontalAlignment="Right">
                 <TextBlock Text="查看方式" Width="70"/>
                 <ComboBox x:Name="ComboBoxWizardType" SelectedValue="{Binding WizardShowType}" Width="100"/>
@@ -66,9 +66,10 @@
                         <GridViewColumn Width="250">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type ui:IWizardStep}">
-                                    <Grid>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding ConfigurationStatus}"/>
                                         <TextBlock Text="{Binding Header}"/>
-                                    </Grid>
+                                    </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

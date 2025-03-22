@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Themes;
-using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -11,18 +11,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class RCWizardStep : IWizardStep
-    {
-        public int Order => 3;
-
-        public string Header => "RC配置";
-        public string Description => "配置注册中心，如果已经正确配置服务可以点击服务配置即可不需要手动配置";
-
-        public RelayCommand RelayCommand => new RelayCommand(a =>
-        {
-            new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        });
-    }
 
     /// <summary>
     /// RCServiceConnect.xaml 的交互逻辑
