@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.UI;
+using System;
+using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -29,26 +31,43 @@ namespace ColorVision.Engine.MySql
 
                 if (!isConnect)
                 {
-                    if (MQTTControl.Config.Host == "127.0.0.1")
+                    if (MySqlControl.Config.Host == "127.0.0.1")
                     {
-                        _messageUpdater.Update("检测到本地数据库配置");
-                        if (!Common.Utilities.Tool.IsAdministrator())
+                        try
                         {
-                            if (Tool.ExecuteCommandAsAdmin("net start mysql"))
+
+                            ServiceController ServiceController = new ServiceController("MySQL");
+                            if (ServiceController != null)
                             {
-                                isConnect = await MQTTControl.GetInstance().Connect();
-                                if (isConnect) return;
+                                _messageUpdater.Update($"检测服务，状态{ServiceController.Status}，正在尝试启动服务");
+                                if (Tool.IsAdministrator())
+                                {
+                                    ServiceController.Start();
+                                    isConnect = await MySqlControl.GetInstance().Connect();
+                                    if (isConnect) return;
+                                }
+                                else
+                                {
+                                    if (Tool.ExecuteCommandAsAdmin("net start MySQL"))
+                                    {
+                                        isConnect = await MySqlControl.GetInstance().Connect();
+                                        if (isConnect) return;
+                                    }
+                                }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                            _messageUpdater.Update(ex.Message);
+                        }
                     }
-
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MySqlConnect mySqlConnect = new() { Owner = Application.Current.MainWindow };
                         mySqlConnect.ShowDialog();
                     });
                     }
-                }
+                
                 else
                 {
                     _messageUpdater.Update("已经跳过数据库连接");

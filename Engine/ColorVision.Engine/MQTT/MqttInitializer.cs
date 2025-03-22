@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using System;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
@@ -35,21 +36,31 @@ namespace ColorVision.Engine.MQTT
                 _messageUpdater.Update("检测到配置本机服务，正在尝试查找本机服务mosquitto");
                 try
                 {
+
                     ServiceController ServiceController = new ServiceController("Mosquitto Broker");
                     if (ServiceController != null)
                     {
+                        _messageUpdater.Update("检测到本地注册中心配置,正在尝试启动");
                         _messageUpdater.Update($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
-                        if (Tool.ExecuteCommandAsAdmin("net start mosquitto"))
+                        if (Tool.IsAdministrator())
                         {
+                            ServiceController.Start();
                             isConnect = await MQTTControl.GetInstance().Connect();
                             if (isConnect) return;
                         }
-                        //ServiceController.Start();
+                        else
+                        {
+                            if (Tool.ExecuteCommandAsAdmin("net start mosquitto"))
+                            {
+                                isConnect = await MQTTControl.GetInstance().Connect();
+                                if (isConnect) return;
+                            }
+                        }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
-
+                    _messageUpdater.Update(ex.Message);
                 }
             }
             Application.Current.Dispatcher.Invoke(() =>
