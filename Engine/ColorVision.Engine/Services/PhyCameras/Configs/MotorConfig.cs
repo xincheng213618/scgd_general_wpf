@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("IsUseVID")]
         public bool IsUseVID { get => _IsUseVID; set { _IsUseVID = value; NotifyPropertyChanged(); } }
         private bool _IsUseVID ;
-        [DisplayName("MappingFileName")]
+        [DisplayName("MappingFileName"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
         public string MappingFileName { get=>_MappingFileName; set { _MappingFileName = value; NotifyPropertyChanged(); } }
         private string _MappingFileName = string.Empty;
         [DisplayName("Fit")]
