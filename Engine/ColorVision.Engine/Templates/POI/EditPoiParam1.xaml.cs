@@ -1226,7 +1226,6 @@ namespace ColorVision.Engine.Templates.POI
 
         private void SavePoiParam()
         {
-            KBJson.KBLVSacle = AlgorithmKBConfig.Instance.KBLVSacle;
             KBJson.KBKeyRects.Clear();
             foreach (var item in DrawingVisualLists)
             {

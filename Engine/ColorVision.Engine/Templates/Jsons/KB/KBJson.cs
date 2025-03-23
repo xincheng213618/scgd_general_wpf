@@ -118,7 +118,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         private KBPoiConfig _PoiConfig = new KBPoiConfig();
 
         public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
-        private double _KBLVSacle = 0.006583904;
+        private double _KBLVSacle = AlgorithmKBConfig.Instance.KBLVSacle;
+
 
     }
 }
