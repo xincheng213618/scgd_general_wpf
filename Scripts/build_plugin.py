@@ -113,8 +113,8 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
 
 def build_project(project_name,type):
     print(f"Building project: {project_name}")
-    src_dir = rf'C:\Users\17917\Desktop\scgd_general_wpf\{type}\{project_name}\bin\x64\Release\net8.0-windows'
-    ref_dir = r'C:\Users\17917\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows'
+    src_dir = rf'C:\Users\Xin\Desktop\scgd_general_wpf\{type}\{project_name}\bin\x64\Release\net8.0-windows'
+    ref_dir = r'C:\Users\Xin\Desktop\scgd_general_wpf\ColorVision\bin\x64\Release\net8.0-windows'
     target_dir = rf"H:\ColorVision\{type}"
 
     # 获取 DLL 版本号

@@ -3,8 +3,8 @@
 	<PropertyGroup>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>1.0.0.1</VersionPrefix>
+		<ImplicitUsings>enable</ImplicitUsings>    
+		<VersionPrefix>1.1.11.1</VersionPrefix>
 	</PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
