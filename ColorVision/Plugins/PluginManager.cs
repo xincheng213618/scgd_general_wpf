@@ -129,7 +129,7 @@ namespace ColorVision.Plugins
 taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -203,7 +203,7 @@ del ""%~f0"" & exit
 taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
