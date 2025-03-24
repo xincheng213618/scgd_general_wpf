@@ -20,7 +20,7 @@
                     <TextBlock Text="ColorVision" HorizontalAlignment="Left" Foreground="White"  VerticalAlignment="Center"  FontSize="20"/>
                     <TextBlock x:Name="labelVersion" Text="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  />
                 </StackPanel>
-                <Image Source="/Assets/Image/ColorVision1.ico" Margin="14" HorizontalAlignment="Right"/>
+                <Image Source="/Assets/Image/ColorVision1.ico" Margin="14" HorizontalAlignment="Right" Opacity="0.9"/>
             </Grid>
 
         </Border>

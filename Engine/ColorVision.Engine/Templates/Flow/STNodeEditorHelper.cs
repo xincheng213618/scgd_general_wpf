@@ -143,21 +143,21 @@ namespace ColorVision.Engine.Templates.Flow
 
     public class STNodeEditorHelper:ViewModelBase
     {
-        public STNodeEditor STNodeEditorMain { get; set; }
+        public STNodeEditor STNodeEditor { get; set; }
 
         public STNodePropertyGrid STNodePropertyGrid1 { get; set; }
-        public StackPanel SignStackPannel { get; set; }
+        public StackPanel SignStackPanel { get; set; }
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
         public STNodeEditorHelper(STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
         {
-            STNodeEditorMain = sTNodeEditor;
+            STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
             STNodePropertyGrid1 = sTNodePropertyGrid;
-            SignStackPannel = stackPanel;
-            STNodeEditorMain.NodeAdded += StNodeEditor1_NodeAdded;
-            STNodeEditorMain.ActiveChanged += STNodeEditorMain_ActiveChanged;
+            SignStackPanel = stackPanel;
+            STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
+            STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
 
             STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
 
@@ -168,39 +168,41 @@ namespace ColorVision.Engine.Templates.Flow
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
         {
 
-            STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
-            SignStackPannel.Children.Clear();
+            STNodePropertyGrid1.SetNode(STNodeEditor.ActiveNode);
+            SignStackPanel.Children.Clear();
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
                 AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.SMUModelNode sMUModelNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.SMUModelNode sMUModelNode)
             {
                 AddStackPanel(name => sMUModelNode.DeviceCode = name, sMUModelNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
                 AddStackPanel(name => sMUModelNode.ModelName = name, sMUModelNode.ModelName, "SMUParam设置", new TemplateSMUParam());
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.SMUNode sMUNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.SMUNode sMUNode)
             {
                 AddStackPanel(name => sMUNode.DeviceCode = name, sMUNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSMU>().ToList());
                 AddStackPanel(name => sMUNode.NodeName = name, sMUNode.NodeName, "SMUParam设置", new TemplateSMUParam());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode spectrumNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode spectrumNode)
             {
                 AddStackPanel(name => spectrumNode.DeviceCode = name, spectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Spectum.SpectrumLoopNode spectrumLoopNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Spectum.SpectrumLoopNode spectrumLoopNode)
             {
                 AddStackPanel(name => spectrumLoopNode.DeviceCode = name, spectrumLoopNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.CamMotorNode camMotorNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.CamMotorNode camMotorNode)
             {
+                AddStackPanel(name => camMotorNode.DeviceCode = name, camMotorNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 AddStackPanel(name => camMotorNode.AutoFocusTemp = name, camMotorNode.AutoFocusTemp, "相机模板", new TemplateAutoFocus());
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Camera.CommCameraNode commCaeraNode)
             {
                 AddStackPanel(name => commCaeraNode.DeviceCode = name, commCaeraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
@@ -215,7 +217,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
+
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
             {
                 AddStackPanel(name => kbnode.DeviceCode = name, kbnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
@@ -224,7 +228,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
             {
                 AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
@@ -234,11 +238,11 @@ namespace ColorVision.Engine.Templates.Flow
                     AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
             {
                 void Refesh()
                 {
-                    SignStackPannel.Children.Clear();
+                    SignStackPanel.Children.Clear();
                     AddStackPanel(name => algorithmNode.DeviceCode = name, algorithmNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                     switch (algorithmNode.Algorithm)
@@ -286,7 +290,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.CVCameraNode cvCameraNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.CVCameraNode cvCameraNode)
             {
                 AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
@@ -301,7 +305,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.LVCameraNode lcCameranode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.LVCameraNode lcCameranode)
             {
                 AddStackPanel(name => lcCameranode.DeviceCode = name, lcCameranode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == lcCameranode.DeviceCode);
@@ -314,24 +318,24 @@ namespace ColorVision.Engine.Templates.Flow
 
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
             {
                 AddStackPanel(name => buidpoi.DeviceCode = name, buidpoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
             {
                 AddStackPanel(name => algDataLoadNode.DeviceCode = name, algDataLoadNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddStackPanel(name => algDataLoadNode.TempName = name, algDataLoadNode.TempName, "模板", new TemplateDataLoad());
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.OLED.OLEDImageCroppingNode OLEDImageCroppingNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.OLEDImageCroppingNode OLEDImageCroppingNode)
             {
                 AddStackPanel(name => OLEDImageCroppingNode.DeviceCode = name, OLEDImageCroppingNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => OLEDImageCroppingNode.TempName = name, OLEDImageCroppingNode.TempName, "参数模板", new TemplateImageCropping());
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.POINode poinode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.POINode poinode)
             {
                 AddStackPanel(name => poinode.DeviceCode = name, poinode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
@@ -340,16 +344,16 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => poinode.OutputTemplateName = name, poinode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
             }
 
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
             {
                 AddStackPanel(name => commonsendorNode.DeviceCode = name, commonsendorNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
                 AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
             }
-            if (STNodeEditorMain.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgComplianceMathNode algComplianceMathNode)
             {
                 void Refesh()
                 {
-                    SignStackPannel.Children.Clear();
+                    SignStackPanel.Children.Clear();
                     AddStackPanel(name => algComplianceMathNode.DeviceCode = name, algComplianceMathNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                     switch (algComplianceMathNode.ComplianceMath)
                     {
@@ -452,7 +456,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             dockPanel.Children.Add(myGrid);
             dockPanel.Children.Add(comboBox);
-            SignStackPannel.Children.Add(dockPanel);
+            SignStackPanel.Children.Add(dockPanel);
         }
 
 
@@ -487,7 +491,7 @@ namespace ColorVision.Engine.Templates.Flow
             };
 
             dockPanel.Children.Add(comboBox);
-            SignStackPannel.Children.Add(dockPanel);
+            SignStackPanel.Children.Add(dockPanel);
         }
 
         void AddStackPanelKB(Action<string> updateStorageAction, string tempName, string signName, TemplateKB template)
@@ -599,7 +603,7 @@ namespace ColorVision.Engine.Templates.Flow
             // Add the Button to the Grid
             grid1.Children.Add(buttonEdit);
             dockPanel.Children.Add(grid1);
-            SignStackPannel.Children.Add(dockPanel);
+            SignStackPanel.Children.Add(dockPanel);
         }
 
 
@@ -672,7 +676,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             dockPanel.Children.Add(comboBox);
             dockPanel.Children.Add(grid);
-            SignStackPannel.Children.Add(dockPanel);
+            SignStackPanel.Children.Add(dockPanel);
         }
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
@@ -743,7 +747,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             dockPanel.Children.Add(comboBox);
             dockPanel.Children.Add(grid);
-            SignStackPannel.Children.Add(dockPanel);
+            SignStackPanel.Children.Add(dockPanel);
         }
 
         #endregion
@@ -753,12 +757,12 @@ namespace ColorVision.Engine.Templates.Flow
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
         }
 
         public void AddContentMenu()
         {
-            STNodeEditorMain.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+            STNodeEditor.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             Type STNodeTreeViewtype = STNodeTreeView1.GetType();
 
             // 获取私有字段信息
@@ -801,18 +805,18 @@ namespace ColorVision.Engine.Templates.Flow
                                         if (sTNode1 != null)
                                         {
                                             sTNode1.Create();
-                                            var p = STNodeEditorMain.PointToClient(lastMousePosition);
-                                            p = STNodeEditorMain.ControlToCanvas(p);
+                                            var p = STNodeEditor.PointToClient(lastMousePosition);
+                                            p = STNodeEditor.ControlToCanvas(p);
                                             sTNode1.Left = p.X;
                                             sTNode1.Top = p.Y;
-                                            STNodeEditorMain.Nodes.Add(sTNode1);
+                                            STNodeEditor.Nodes.Add(sTNode1);
                                         }
                                     });
                                 }
                             }
 
                         }
-                        STNodeEditorMain.ContextMenuStrip.Items.Add(toolStripItem);
+                        STNodeEditor.ContextMenuStrip.Items.Add(toolStripItem);
 
                     }
 
@@ -820,14 +824,14 @@ namespace ColorVision.Engine.Templates.Flow
             }
 
 
-            STNodeEditorMain.ContextMenuStrip.Opening += (s, e) =>
+            STNodeEditor.ContextMenuStrip.Opening += (s, e) =>
             {
                 if (IsOptionDisConnected) e.Cancel = true;
                 if (IsHover())
                     e.Cancel = true;
                 IsOptionDisConnected = false;
             };
-            STNodeEditorMain.OptionDisConnected += (s, e) =>
+            STNodeEditor.OptionDisConnected += (s, e) =>
             {
                 IsOptionDisConnected = true;
             };
@@ -840,10 +844,10 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsHover()
         {
             lastMousePosition = System.Windows.Forms.Cursor.Position;
-            var p = STNodeEditorMain.PointToClient(System.Windows.Forms.Cursor.Position);
-            p = STNodeEditorMain.ControlToCanvas(p);
+            var p = STNodeEditor.PointToClient(System.Windows.Forms.Cursor.Position);
+            p = STNodeEditor.ControlToCanvas(p);
 
-            foreach (var item in STNodeEditorMain.Nodes)
+            foreach (var item in STNodeEditor.Nodes)
             {
                 if (item is STNode sTNode)
                 {
@@ -882,23 +886,23 @@ namespace ColorVision.Engine.Templates.Flow
 
         #region AutoLayout
         public ConnectionInfo[] ConnectionInfo { get; set; }
-        public float CanvasScale { get => STNodeEditorMain.CanvasScale; set { STNodeEditorMain.ScaleCanvas(value, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
+        public float CanvasScale { get => STNodeEditor.CanvasScale; set { STNodeEditor.ScaleCanvas(value, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2); NotifyPropertyChanged(); } }
         public void AutoSize()
         {
             // Calculate the centers
-            var boundsCenterX = STNodeEditorMain.Bounds.Width / 2;
-            var boundsCenterY = STNodeEditorMain.Bounds.Height / 2;
+            var boundsCenterX = STNodeEditor.Bounds.Width / 2;
+            var boundsCenterY = STNodeEditor.Bounds.Height / 2;
 
             // Calculate the scale factor to fit CanvasValidBounds within Bounds
-            var scaleX = (float)STNodeEditorMain.Bounds.Width / (float)STNodeEditorMain.CanvasValidBounds.Width;
-            var scaleY = (float)STNodeEditorMain.Bounds.Height / (float)STNodeEditorMain.CanvasValidBounds.Height;
+            var scaleX = (float)STNodeEditor.Bounds.Width / (float)STNodeEditor.CanvasValidBounds.Width;
+            var scaleY = (float)STNodeEditor.Bounds.Height / (float)STNodeEditor.CanvasValidBounds.Height;
             CanvasScale = Math.Min(scaleX, scaleY);
             CanvasScale = CanvasScale > 1 ? 1 : CanvasScale;
             // Apply the scale
-            STNodeEditorMain.ScaleCanvas(CanvasScale, STNodeEditorMain.CanvasValidBounds.X + STNodeEditorMain.CanvasValidBounds.Width / 2, STNodeEditorMain.CanvasValidBounds.Y + STNodeEditorMain.CanvasValidBounds.Height / 2);
+            STNodeEditor.ScaleCanvas(CanvasScale, STNodeEditor.CanvasValidBounds.X + STNodeEditor.CanvasValidBounds.Width / 2, STNodeEditor.CanvasValidBounds.Y + STNodeEditor.CanvasValidBounds.Height / 2);
 
-            var validBoundsCenterX = STNodeEditorMain.CanvasValidBounds.Width / 2;
-            var validBoundsCenterY = STNodeEditorMain.CanvasValidBounds.Height / 2;
+            var validBoundsCenterX = STNodeEditor.CanvasValidBounds.Width / 2;
+            var validBoundsCenterY = STNodeEditor.CanvasValidBounds.Height / 2;
 
             // Calculate the offsets to move CanvasValidBounds to the center of Bounds
             var offsetX = boundsCenterX - validBoundsCenterX * CanvasScale - 50 * CanvasScale;
@@ -906,13 +910,13 @@ namespace ColorVision.Engine.Templates.Flow
 
 
             // Move the canvas
-            STNodeEditorMain.MoveCanvas(offsetX, STNodeEditorMain.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
-            STNodeEditorMain.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
+            STNodeEditor.MoveCanvas(offsetX, STNodeEditor.CanvasOffset.Y, bAnimation: true, CanvasMoveArgs.Left);
+            STNodeEditor.MoveCanvas(offsetX, offsetY, bAnimation: true, CanvasMoveArgs.Top);
         }
 
         public void ApplyTreeLayout(int startX, int startY, int horizontalSpacing, int verticalSpacing)
         {
-            ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
+            ConnectionInfo = STNodeEditor.GetConnectionInfo();
             STNode rootNode = GetRootNode();
             if (rootNode == null) return;
             int currentY = startY;
@@ -1001,7 +1005,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void SetCof(STNode node, int verticalSpacing)
         {
-            foreach (var item in STNodeEditorMain.Nodes)
+            foreach (var item in STNodeEditor.Nodes)
             {
                 if (item is STNode onode)
                 {
@@ -1064,7 +1068,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public STNode GetRootNode()
         {
-            foreach (var item in STNodeEditorMain.Nodes)
+            foreach (var item in STNodeEditor.Nodes)
             {
                 if (item is STNode sTNode && sTNode is MQTTStartNode startNode)
                     return startNode;
@@ -1074,14 +1078,14 @@ namespace ColorVision.Engine.Templates.Flow
 
         public bool CheckFlow()
         {
-            ConnectionInfo = STNodeEditorMain.GetConnectionInfo();
+            ConnectionInfo = STNodeEditor.GetConnectionInfo();
 
             bool isContainsMQTTStartNode = false;
             bool isContainsCVEndNode = false;
             STNode startNode = null;
             STNode endNode = null;
 
-            foreach (var item in STNodeEditorMain.Nodes)
+            foreach (var item in STNodeEditor.Nodes)
             {
                 if (item is MQTTStartNode mqttStartNode)
                 {

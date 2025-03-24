@@ -53,6 +53,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="{x:Static properties:Resources.Version}">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
+                                    <TextBlock  Text="{Binding LastVersion}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn Header="{x:Static properties:Resources.Command}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfo}">

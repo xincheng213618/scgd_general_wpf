@@ -30,12 +30,14 @@ namespace ColorVision.Plugins
         public string? AssemblyPublicKeyToken { get; set; }
         public string? PackageName { get; set; }
 
+        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; NotifyPropertyChanged(); } }
+        private Version _LastVersion;
+
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
         DownloadFile DownloadFile { get; set; }
         public PluginInfo()
         {
-
         }
         public PluginInfo(IPlugin plugin, Assembly assembly)
         {
@@ -62,7 +64,16 @@ namespace ColorVision.Plugins
 
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "更新" + Plugin.Header;
+            Task.Run(() => CheckVersion());
         }
+
+        public async void CheckVersion()
+        {
+            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            LastVersion = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+        }
+
+
         string UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins";
         public async void Update()
         {

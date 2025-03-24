@@ -58,8 +58,6 @@ namespace ColorVision.Plugins
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}
         private string _SearchName;
-
-
         public async void DownloadPackage()
         {
             string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/" + SearchName + "/LATEST_RELEASE";
