@@ -67,7 +67,7 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallTool";
 
-        public override int Order => 4;
+        public override int Order => 1;
 
         public override string Header => Properties.Resources.ManagementService;
 

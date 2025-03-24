@@ -5,21 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        Title="StartWindow"  Height="240" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
+        Title="StartWindow"  Height="220" Width="600" BorderThickness="0" AllowsTransparency="True" Background="Transparent"  WindowStyle="None" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="20"/>
-            <RowDefinition Height="70"/>
+            <RowDefinition Height="0"/>
+            <RowDefinition Height="65"/>
             <RowDefinition Height="10"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Border  Grid.Row="1" CornerRadius="10,10,0,0" Background="#2D333A">
-            <StackPanel Margin="10">
-                <TextBlock Text="ColorVision" HorizontalAlignment="Left" Foreground="White"  VerticalAlignment="Center"  FontSize="20"/>
-                <TextBlock x:Name="labelVersion" Text="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  />
-            </StackPanel>
+            <Grid>
+                <StackPanel Margin="10">
+                    <TextBlock Text="ColorVision" HorizontalAlignment="Left" Foreground="White"  VerticalAlignment="Center"  FontSize="20"/>
+                    <TextBlock x:Name="labelVersion" Text="1.0.1.13" HorizontalAlignment="Left" Foreground="White"  />
+                </StackPanel>
+                <Image Source="/Assets/Image/ColorVision1.ico" Margin="14" HorizontalAlignment="Right"/>
+            </Grid>
+
         </Border>
+        
+        
+        
         <Rectangle Grid.Row="2" Fill="#22484d4f"/>
 
         <Border  Grid.Row="3"  CornerRadius="0,0,10,10" Background="#373B41">
