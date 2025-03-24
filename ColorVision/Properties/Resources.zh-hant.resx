@@ -330,4 +330,7 @@
   <data name="Bit" xml:space="preserve">
     <value>位元</value>
   </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>發佈日期</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.IO;
@@ -8,6 +9,7 @@ using System.Windows;
 namespace ColorVision.Update
 {
 
+
     public class MenuUpdateReInstall : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuUpdate);
@@ -16,7 +18,6 @@ namespace ColorVision.Update
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
         private static string CurrentInstallFile => Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{Assembly.GetExecutingAssembly().GetName().Version}.exe");
         
-        public override Visibility Visibility => Visibility.Visible;
         public override string Header => "重新安装当前版本";
         public override void Execute()
         {
@@ -26,7 +27,7 @@ namespace ColorVision.Update
             }
             else
             {
-                MessageBox1.Show("找不到当前安装的文件", "ColorVision");
+                AutoUpdater.GetInstance().Update(Assembly.GetExecutingAssembly().GetName().Version, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AssemblyCompany), false);
             }
         }
     }
@@ -35,7 +36,7 @@ namespace ColorVision.Update
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override string GuidId => nameof(MenuUpdateReInstallClear);
-        public override int Order => 10003;
+        public override int Order => 14;
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
         public override string Header => "清除安装包缓存";
         public override void Execute()

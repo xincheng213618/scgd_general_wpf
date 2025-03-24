@@ -50,6 +50,7 @@
                     </Viewbox>
                 
                 </Grid>
+           
                 <Popup x:Name="SearchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Searchbox}">
                     <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200" Height="500">
                         <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView1_SelectionChanged" MouseDoubleClick="ListView1_MouseDoubleClick">

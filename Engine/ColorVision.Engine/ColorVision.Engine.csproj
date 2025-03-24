@@ -37,6 +37,7 @@
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.54" />
 		<PackageReference Include="System.IO.Ports" Version="9.0.2" />
+		<PackageReference Include="System.Management" Version="9.0.3" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.2" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
