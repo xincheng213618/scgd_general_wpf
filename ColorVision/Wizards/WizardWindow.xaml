@@ -39,13 +39,18 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <Grid Grid.Row="1" Visibility="{Binding IsList,Converter={StaticResource bool2VisibilityConverter}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <ListView x:Name="ListWizard" Background="Transparent"  BorderThickness="0" Grid.Column="0">
+            <ListView x:Name="ListWizard" Background="Transparent"  BorderThickness="0" Grid.Column="0" Padding="5,0,5,5">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="Background" Value="{Binding ConfigurationStatus,Converter={StaticResource BooleanToBrushConverter}}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
                         <GridView.ColumnHeaderContainerStyle>
@@ -58,10 +63,8 @@
                         <GridViewColumn >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type ui:IWizardStep}">
-                                    <StackPanel Orientation="Horizontal" Background="{Binding ConfigurationStatus,Converter={StaticResource BooleanToBrushConverter}}">
-                                        <TextBlock Text="{Binding ConfigurationStatus}"/>
+                                    <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Header}"/>
-                                        <TextBlock Text="✔️"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -70,7 +73,7 @@
                 </ListView.View>
             </ListView>
 
-            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance ui:IWizardStep}" Grid.Column="1">
+            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,5,5,5" d:DataContext="{d:DesignInstance ui:IWizardStep}" Grid.Column="1">
                 <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="40"/>
@@ -87,7 +90,7 @@
         </Grid>
 
 
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="2" Margin="5,0,5,5">
             <Button  Content="{x:Static properties:Resources.ConfigurationComplete}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="ConfigurationComplete_Click"/>
         </Grid>
     </Grid>
