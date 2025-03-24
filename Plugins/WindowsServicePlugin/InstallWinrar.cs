@@ -8,8 +8,8 @@ namespace WindowsServicePlugin
 {
     public class InstallWinrar : WizardStepBase
     {
-        public override int Order => -1;
-        public override string Header => "InstallWinrar";
+        public override int Order => 99;
+        public override string Header => "安装压缩软件";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
@@ -18,7 +18,7 @@ namespace WindowsServicePlugin
         public InstallWinrar()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "InstallWinrar";
+            DownloadFile.DownloadTile = "下载Winrar";
         }
 
         private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Winrar/winrar-x64-700sc.exe";

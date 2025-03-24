@@ -2,7 +2,7 @@
 
 namespace WindowsServicePlugin.Menus
 {
-    public class ExportService : MenuItemBase
+    public class ServiceLog : MenuItemBase
     {
         public override string OwnerGuid => "Help";
         public override string GuidId => "ServiceLog";

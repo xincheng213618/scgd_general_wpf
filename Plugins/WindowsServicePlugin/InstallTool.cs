@@ -1,13 +1,17 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using iText.Layout.Element;
 using log4net;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
+using System.Xml.Linq;
 
 
 namespace WindowsServicePlugin
@@ -16,8 +20,45 @@ namespace WindowsServicePlugin
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
-        public string CVWinSMSPath { get => _CVWinSMSPath; set => _CVWinSMSPath = value; }
+        public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; Init(); } }
         private string _CVWinSMSPath = string.Empty;
+
+        [JsonIgnore]
+        public string BaseLocation { get
+            {
+                return dic["BaseLocation"];
+            }
+        }
+
+        [JsonIgnore]
+        Dictionary<string, string> dic = new Dictionary<string, string>();
+
+        public void Init()
+        {
+            string filePath = Directory.GetParent(CVWinSMSPath) + @"\config\App.config";
+            if (!File.Exists(filePath))
+            {
+                return;
+            }
+            XDocument config = XDocument.Load(filePath);
+            var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
+
+            if (appSettings != null)
+            {
+                foreach (var setting in appSettings)
+                {
+                    string key = setting.Attribute("key")?.Value;
+                    string value = setting.Attribute("value")?.Value;
+                    if (key != null && value != null)
+                    {
+                        if (!dic.TryAdd(key, value))
+                        {
+                            dic[key] = value;
+                        }
+                    }
+                }
+            }
+        }
 
         public string Version { get => _Version; set => _Version = value; }
         private string _Version = string.Empty;
@@ -67,11 +108,26 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallTool";
 
-        public override int Order => 4;
+        public override int Order => 1;
 
         public override string Header => Properties.Resources.ManagementService;
 
-        public string Description => "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
+        public string Description => GetDescription();
+
+        public string GetDescription()
+        {
+            string Description = "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
+            if (File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+            {
+                string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
+                if (File.Exists(filePath))
+                {
+                    Description += Environment.NewLine + "配置文件路径：" + filePath;
+                    Description += Environment.NewLine + File.ReadAllText(filePath);
+                }
+            }
+            return Description;
+        }
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 

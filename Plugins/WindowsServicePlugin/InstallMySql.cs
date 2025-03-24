@@ -10,8 +10,8 @@ namespace WindowsServicePlugin
     public class InstallMySql : WizardStepBase
     {
 
-        public override int Order => 2;
-        public override string Header => "下载 MySql压缩包";
+        public override int Order => 99;
+        public override string Header => "下载MySql";
 
         public override string Description => "下载mysql-5.7.37-winx64压缩包到本地，后续可以在管理工具中选择并安装";
 
