@@ -10,7 +10,7 @@ namespace ColorVision.Update
     {
         public override string OwnerGuid => nameof(MenuUpdate);
         public override string GuidId => nameof(MenuUpdateReInstallPath);
-        public override int Order => 10004;
+        public override int Order => 12;
         private static string AssemblyCompany => Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
         public override string Header => "打开缓存文件夹";
         public override void Execute()

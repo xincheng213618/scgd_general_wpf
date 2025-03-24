@@ -511,6 +511,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 发布日期 的本地化字符串。
+        /// </summary>
+        public static string ReleaseDate {
+            get {
+                return ResourceManager.GetString("ReleaseDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 向下还原 的本地化字符串。
         /// </summary>
         public static string Restore {
