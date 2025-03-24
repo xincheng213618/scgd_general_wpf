@@ -7,30 +7,27 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ColorVision.Wizards
 {
-    public enum WizardShowType
+    public sealed class BooleanToBrushConverter : IValueConverter
     {
-        List,
-        Tile
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value != null && (bool)value ? Brushes.Green : Brushes.Red;
+        }
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return value;
+        }
     }
 
-    public class WizardWindowConfig:WindowConfig 
-    {
-        public static WizardWindowConfig Instance => ConfigService.Instance.GetRequiredService<WizardWindowConfig>();
-
-        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
-        private bool _WizardCompletionKey;
-
-        public WizardShowType WizardShowType { get => _WizardShowType; set { _WizardShowType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsList)); } }
-        private WizardShowType _WizardShowType;
-
-        public bool IsList => WizardShowType == WizardShowType.List;
-    }
 
     public class WizardManager : ViewModelBase
     {
@@ -40,20 +37,21 @@ namespace ColorVision.Wizards
         public static WizardManager GetInstance() { lock (_locker) { _instance ??= new WizardManager(); return _instance; } }
         public List<IWizardStep> IWizardSteps { get; private set; } = new List<IWizardStep>();
 
-        public WizardManager()
+        public void Initialized()
         {
+            IWizardSteps.Clear();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IWizardStep fileHandler)
                     {
+                        log.Debug(type);
                         IWizardSteps.Add(fileHandler);
                     }
                 }
             }
             IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
-
         }
 
 
@@ -77,9 +75,8 @@ namespace ColorVision.Wizards
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxWizardType.ItemsSource = Enum.GetValues(typeof(WizardShowType)).Cast<WizardShowType>();
+            WizardManager.GetInstance().Initialized();
             this.DataContext = WindowConfig;
-
             List<IWizardStep> IWizardSteps = WizardManager.GetInstance().IWizardSteps;
 
             ListWizard.ItemsSource = IWizardSteps;
@@ -89,15 +86,6 @@ namespace ColorVision.Wizards
                 BorderContent.DataContext = IWizardSteps[ListWizard.SelectedIndex];
             };
             if (IWizardSteps.Count > 0) ListWizard.SelectedIndex = 0;
-
-            foreach (var step in IWizardSteps)
-            {
-                Border border = new Border() { Margin = new Thickness(5, 5, 5, 5) };
-                border.Child = new Button() { Content = step.Header, Command = step.Command };
-                WizardStackPanel.Children.Add(border);
-            }
-
-
         }
 
         private void ConfigurationComplete_Click(object sender, RoutedEventArgs e)
