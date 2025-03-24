@@ -108,7 +108,7 @@ namespace ColorVision.Wizards
             if (Application.Current.MainWindow == this)
             {
                 //这里使用件的启动路径，启动主程序
-                Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
+                Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"));
                 Application.Current.Shutdown();
             }
             else
