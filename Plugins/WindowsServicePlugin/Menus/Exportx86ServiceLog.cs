@@ -10,4 +10,6 @@ namespace WindowsServicePlugin.Menus
         public override int Order => 103;
         public override string Url => "http://localhost:8086/system/log";
     }
+
+
 }
