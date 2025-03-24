@@ -74,12 +74,8 @@ def copy_with_progress(src, dst):
             copied += len(chunk)
 
             elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                speed = copied / elapsed_time
-            else:
-                speed = 0
-
             progress = copied / file_size * 100
+            speed = copied / elapsed_time
 
             remaining_bytes = file_size - copied
             remaining_time = remaining_bytes / speed if speed > 0 else 0
@@ -117,12 +113,10 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
 
 def build_project(project_name,type):
     print(f"Building project: {project_name}")
-    script_path =  os.path.abspath(os.path.dirname(__file__))
-    base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
+    base_path = os.path.abspath(os.path.dirname(__file__))
     src_dir = os.path.join(base_path, type, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
     ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
-    target_dir = os.path.join("H:\\", 'ColorVision', type)
-    
+    target_dir = os.path.join(base_path, 'ColorVision', type)
 
     # 获取 DLL 版本号
     dll_path = os.path.join(src_dir, f'{project_name}.dll')
