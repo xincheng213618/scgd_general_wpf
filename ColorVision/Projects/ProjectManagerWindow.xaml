@@ -16,7 +16,7 @@
         <StackPanel Orientation="Horizontal" Margin="5">
             <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
             <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-            <TextBox Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" Width="100" Margin="0,0,5,0"/>
+            <TextBox Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,5,0"/>
             <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
             <Button Content="打开缓存文件夹" Command="{Binding OpenDownloadCacheCommand}" Margin="0,0,5,0"/>
         </StackPanel>
