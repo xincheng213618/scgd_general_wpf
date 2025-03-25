@@ -39,7 +39,7 @@ namespace ColorVision.Engine.ToolPlugins
 
     public class LedTool : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override string OwnerGuid => MenuItemConstants.View;
 
         public override string Header => nameof(LedTool);
         public override int Order => 100;
