@@ -33,17 +33,19 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => ITemplate.Save(), (s, e) => e.CanExecute = true));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
+                ITemplate.Save();
+                HandyControl.Controls.Growl.Success("保存成功");
+            } , (s, e) => e.CanExecute = true));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         public static TemplateSetting Config => TemplateSetting.Instance;
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            HandyControl.Controls.Growl.SetGrowlParent(this, true);
             if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -78,12 +80,12 @@ namespace ColorVision.Engine.Templates
                 }
                 if (!double.IsNaN(userControl.Width))
                 {
-                    Width = userControl.Width + 300;
+                    Width = userControl.Width + 450;
                     userControl.Width = double.NaN;
                 }
                 else
                 {
-                    Width = Width + 200;
+                    Width = Width + 350;
                 }
             }
 

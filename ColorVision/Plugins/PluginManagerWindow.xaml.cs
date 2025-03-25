@@ -1,6 +1,5 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
-using System.Collections.Generic;
 using System.Windows;
 
 namespace ColorVision.Plugins
@@ -24,7 +23,6 @@ namespace ColorVision.Plugins
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = PluginManager.GetInstance();
-            DefalutSearchComboBox.ItemsSource = new List<string> (){ "CalibrationCorrection", "ColorVisonChat" , "EventVWR", "ScreenRecorder", "SystemMonitor" , "WindowsServicePlugin" };
         }
 
         private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.MTF
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateMTF(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new TemplateEditorWindow(new TemplateMTF(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
         public void OpenTemplatePoi()
         {
