@@ -85,7 +85,7 @@
                                             </TextBlock.RenderTransform>
                                         </TextBlock>
                                     </Button>
-
+                                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
                                     <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
                                 </DockPanel>
                             </StackPanel>

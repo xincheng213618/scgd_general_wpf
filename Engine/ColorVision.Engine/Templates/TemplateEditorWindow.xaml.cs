@@ -62,8 +62,8 @@ namespace ColorVision.Engine.Templates
                 Grid.SetColumnSpan(CreateGrid, 2);
                 Grid.SetColumn(CreateGrid, 0);
 
-                MinWidth = 350;
-                Width = 350;
+                MinWidth = 370;
+                Width = 370;
             }
 
             if (ITemplate.IsUserControl)

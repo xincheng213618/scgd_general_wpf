@@ -303,5 +303,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
+
+        private void Button_Click_Open(object sender, RoutedEventArgs e)
+        {
+            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+                DeviceService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+        }
     }
 }

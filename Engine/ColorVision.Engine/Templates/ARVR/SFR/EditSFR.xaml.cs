@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.SFR
                 if (0<= index && index <  poiParam.PoiPoints.Count)
                 {
                     var PoiPoint = poiParam.PoiPoints[index];
-                    Param.RECT =  new System.Windows.Rect(PoiPoint.PixX - PoiPoint.PixWidth/2, PoiPoint.PixY - PoiPoint.PixHeight / 2, PoiPoint.PixWidth /2, PoiPoint.PixHeight);
+                    Param.RECT =  new System.Windows.Rect((int)(PoiPoint.PixX - PoiPoint.PixWidth/2), (int)(PoiPoint.PixY - PoiPoint.PixHeight / 2), PoiPoint.PixWidth, PoiPoint.PixHeight);
                 }
                 else
                 {
