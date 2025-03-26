@@ -180,7 +180,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
-        public TemplateCalibrationParam(ICalibrationService<ServiceObjectBase> device)
+        public TemplateCalibrationParam(PhyCamera device)
         {
             if (device.CalibrationParams.Count > 0)
             {
@@ -213,7 +213,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
         }
 
-        public ICalibrationService<ServiceObjectBase> Device { get; set; }
+        public PhyCamera Device { get; set; }
 
         public override IMysqlCommand? GetMysqlCommand() => new MysqlCalibrationParam();
 

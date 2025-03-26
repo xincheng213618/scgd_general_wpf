@@ -95,7 +95,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             groupResource.SetCalibrationResource();
         }
 
-        public static GroupResource? AddGroupResource(ICalibrationService<ServiceObjectBase> deviceService, string Name)
+        public static GroupResource? AddGroupResource(PhyCamera deviceService, string Name)
         {
             SysResourceModel sysResourceModel = new() { Name = Name, Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;

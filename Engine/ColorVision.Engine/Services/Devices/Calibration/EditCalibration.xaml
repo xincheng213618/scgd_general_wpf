@@ -46,10 +46,6 @@
                                 <TextBlock Text="物理相机Code" Width="120"/>
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectedValue="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="物理相机ID" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraID}"/>
-                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

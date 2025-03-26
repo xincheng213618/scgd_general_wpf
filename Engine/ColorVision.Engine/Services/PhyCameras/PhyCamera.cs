@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         Invalid
     }
 
-    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, ICalibrationService<ServiceObjectBase>, IIcon
+    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
@@ -331,6 +331,23 @@ namespace ColorVision.Engine.Services.PhyCameras
                     ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
                 });
             }
+        }
+
+        public override void Delete()
+        {
+            CalibrationParams.Clear();
+            this.VisualChildren.Clear();
+            SysResourceDao.Instance.DeleteAllByPid(Id, false);
+            foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+            {
+                ModDetailDao.Instance.DeleteAllByPid(item.Id, false);
+            }
+            ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
+
+
+            SysResourceModel.Value = null;
+            SysResourceDao.Instance.Save(SysResourceModel);
+            PhyCameraManager.GetInstance().PhyCameras.Remove(this);
         }
 
         public DeviceCamera? DeviceCamera { get; set; }
@@ -909,12 +926,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             UserControl ??= new InfoPhyCamera(this);
             return UserControl;
-        }
-        public override void Delete()
-        {
-            SysResourceModel.Value = null;
-            SysResourceDao.Instance.Save(SysResourceModel);
-            PhyCameraManager.GetInstance().PhyCameras.Remove(this);
         }
 
         public void ContentInit()

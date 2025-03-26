@@ -188,7 +188,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            RCFileUpload.GetInstance().CreatePhysicalCameraFloder(CreateConfig.Code);
+            PhyCameraManager.CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
             Close();
         }
