@@ -35,11 +35,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value;} }
         private CalibrationParam _CalibrationParam;
 
-        public PhyCamera CalibrationService { get; set; }
+        public PhyCamera PhyCamera { get; set; }
 
         public CalibrationControl(PhyCamera calibrationService)
         {
-            CalibrationService = calibrationService;
+            PhyCamera = calibrationService;
 
             InitializeComponent();
             CalibrationParam = new CalibrationParam();
@@ -50,23 +50,20 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public CalibrationControl(PhyCamera calibrationService, CalibrationParam calibrationParam)
         {
-            CalibrationService = calibrationService;
+            PhyCamera = calibrationService;
             InitializeComponent();
             CalibrationParam = calibrationParam;
             DataContext = CalibrationParam;
         }
 
-        public CalibrationParam calibrationParam1 { get; set; }
-
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
         TempCache TempCache { get; set; } = new TempCache();
 
-        public void Initializedsss(PhyCamera calibrationService, CalibrationParam calibrationParam)
+        public void Initializedsss(CalibrationParam calibrationParam)
         {
 
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 
-            CalibrationService = calibrationService;
             CalibrationParam = calibrationParam;
             DataContext = CalibrationParam;
 
@@ -86,25 +83,38 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             TempCache.LumMultiColorIsSelected = calibrationParam.Color.LumMultiColor.IsSelected;
             TempCache.LumOneColorIsSelected = calibrationParam.Color.LumOneColor.IsSelected;
 
-
             string CalibrationMode = calibrationParam.CalibrationMode;
 
             ComboBoxList.Text = CalibrationMode;
             ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
+
+            if (string.IsNullOrWhiteSpace(CalibrationMode)&& groupResources.Count > 0)
+            {
+                ComboBoxList.SelectedIndex = 0;
+            }
         }
 
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxList.ItemsSource = groupResources;
-            foreach (var item in CalibrationService.VisualChildren)
+            uploadbutton.DataContext = PhyCamera;
+
+            void UpdateDefaultStyle()   
             {
-                if (item is GroupResource groupResource)
+                groupResources.Clear();
+                ComboBoxList.ItemsSource = groupResources;
+                foreach (var item in PhyCamera.VisualChildren)
                 {
-                    groupResource.SetCalibrationResource();
-                    groupResources.Add(groupResource);
+                    if (item is GroupResource groupResource)
+                    {
+                        groupResource.SetCalibrationResource();
+                        groupResources.Add(groupResource);
+                    }
                 }
             }
+
+            PhyCamera.VisualChildren.CollectionChanged += (s, e) =>UpdateDefaultStyle();
+            UpdateDefaultStyle();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -207,11 +217,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            CalibrationEdit CalibrationEdit = new(CalibrationService, ComboBoxList.SelectedIndex);
+            CalibrationEdit CalibrationEdit = new(PhyCamera, ComboBoxList.SelectedIndex);
             CalibrationEdit.Closed += (s, e) =>
             {
                 groupResources.Clear();
-                foreach (var item in CalibrationService.VisualChildren)
+                foreach (var item in PhyCamera.VisualChildren)
                 {
                     if (item is GroupResource groupResource)
                         groupResources.Add(groupResource);

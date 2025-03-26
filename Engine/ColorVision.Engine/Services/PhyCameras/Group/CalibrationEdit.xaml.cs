@@ -16,13 +16,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     /// </summary>
     public partial class CalibrationEdit : Window
     {
-        public PhyCamera CalibrationService { get; set; }
+        public PhyCamera PhyCamera { get; set; }
 
         private int Index;
 
         public CalibrationEdit(PhyCamera calibrationService , int index = 0)
         {
-            CalibrationService = calibrationService;
+            PhyCamera = calibrationService;
             Index = index;
 
             InitializeComponent();
@@ -44,9 +44,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public ObservableCollection<CalibrationResource> LineArityList { get; set; } = new ObservableCollection<CalibrationResource>();
 
 
-        private void Window_Initialized(object sender, EventArgs e)
+        public void Init()
         {
-            foreach (var item in CalibrationService.VisualChildren)
+            foreach (var item in PhyCamera.VisualChildren)
             {
                 if (item is GroupResource groupResource)
                 {
@@ -120,7 +120,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ComboBoxLineArity.ItemsSource = LineArityList;
 
             ListView1.SelectedIndex = Index;
+        }
 
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            Init();
+            DataContext = PhyCamera;
+            PhyCamera.VisualChildren.CollectionChanged +=(s,e) => Init();
         }
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -134,7 +140,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
             string calue = NewCreateFileName("title");
-            var group = GroupResource.AddGroupResource(CalibrationService, calue);
+            var group = GroupResource.AddGroupResource(PhyCamera, calue);
             if (group != null)
             {
                 groupResources.Add(group);
@@ -177,7 +183,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 foreach (var item in itemsToRemove)
                 {
                     groupResources.Remove(item);
-                    CalibrationService.VisualChildren.Remove(item);
+                    PhyCamera.VisualChildren.Remove(item);
                 }
 
                 MessageBox.Show("删除成功");

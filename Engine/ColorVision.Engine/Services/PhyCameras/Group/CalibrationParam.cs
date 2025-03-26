@@ -210,7 +210,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public override void SetUserControlDataContext(int index)
         {
             if (index < 0 || index >= TemplateParams.Count) return;
-            CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
+            CalibrationControl.Initializedsss(TemplateParams[index].Value);
         }
 
         public PhyCamera Device { get; set; }
