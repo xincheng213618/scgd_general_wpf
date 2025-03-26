@@ -701,6 +701,7 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             Config.Properties.Clear();
+            Config.FilePath = string.Empty;
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;

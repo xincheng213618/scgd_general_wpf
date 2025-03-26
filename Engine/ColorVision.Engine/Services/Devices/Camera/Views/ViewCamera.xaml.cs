@@ -28,6 +28,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -109,6 +110,32 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.DeviceCode != Device.Config.Code) return;
+
+            if (arg.Code == 102)
+            {
+                switch (arg.EventName)
+                {
+                    case "AutoFocus":
+                        try
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Device.Config.MotorConfig.Position = arg.Data.Position;
+                                string Filepath = arg.Data.ImageTmpFile;
+                                ImageView.OpenImage(Filepath);
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                return;
+            }
 
             switch (arg.EventName)
             {

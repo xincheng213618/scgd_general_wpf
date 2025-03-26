@@ -90,7 +90,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("电机移动区间上限")]
         public int MaxPosition { get => _MaxPosition; set { _MaxPosition = value; NotifyPropertyChanged(); } }
         private int _MaxPosition = 7800;
+
+        [DisplayName("聚焦图片数量")]
+        public int AutoFocusSaveImageNum { get => _AutoFocusSaveImageNum; set { _AutoFocusSaveImageNum = value; NotifyPropertyChanged(); } }
+        private int _AutoFocusSaveImageNum = 2;
     }
+
 
     [DisplayName("电机配置")]
     public class MotorConfig : MotorConfigBase

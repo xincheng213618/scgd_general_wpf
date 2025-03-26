@@ -70,10 +70,10 @@ namespace ColorVision.Engine.Services.Core
                         MqttRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
-                    if (json.Code == 102)
-                    {
-                        return Task.CompletedTask;
-                    }
+                    //if (json.Code == 102)
+                    //{
+                    //    return Task.CompletedTask;
+                    //}
 
                     if (json.Code != 0 && json.Code != 1 && json.Code != -1&& json.Code != -401)
                     {
