@@ -192,12 +192,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             string fileName = $"{DirLicense}\\{Code}-license.zip";
 
-            if (File.Exists(fileName) && MessageBox.Show(Application.Current.GetActiveWindow(),$"查询到本地保存的{Code}许可证，应用还是联网获取？", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                SetLicense(fileName);
-                return;
-            }
-
             using (HttpClient client = new HttpClient())
             {
                 try

@@ -44,7 +44,7 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="物理相机Code" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectedValue="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True"  />
+                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
