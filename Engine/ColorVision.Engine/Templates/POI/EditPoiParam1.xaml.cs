@@ -837,8 +837,8 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
 
-                    double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
-                    double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
+                    double StepRow = (rows > 1) ? (bitmapImage.PixelHeight - startD - startU) / (rows - 1) : 0;
+                    double StepCol = (cols > 1) ? (bitmapImage.PixelWidth - startL - startR) / (cols - 1) : 0;
 
 
                     int all = rows * cols;
@@ -917,12 +917,13 @@ namespace ColorVision.Engine.Templates.POI
 
                     List<Point> points = Helpers.SortPolyPoints(pts_src);
 
+
                     cols = PoiConfig.AreaPolygonCol;
                     rows = PoiConfig.AreaPolygonRow;
 
+                    double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
+                    double columnStep = (cols > 1) ? 1.0 / (cols - 1) : 0;
 
-                    double rowStep = 1.0 / (rows - 1);
-                    double columnStep = 1.0 / (cols - 1);
                     for (int i = 0; i < rows; i++)
                     {
                         for (int j = 0; j < cols; j++)
@@ -1227,6 +1228,7 @@ namespace ColorVision.Engine.Templates.POI
         private void SavePoiParam()
         {
             KBJson.KBKeyRects.Clear();
+            Rect rect = new Rect(0, 0, KBJson.Width, KBJson.Height);
             foreach (var item in DrawingVisualLists)
             {
                 int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
@@ -1234,6 +1236,9 @@ namespace ColorVision.Engine.Templates.POI
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                if (drawAttributeBase is RectangleTextProperties rectangle)
                 {
+                    Rect rect1 = new Rect(rectangle.Rect.X, rectangle.Rect.Y, rectangle.Rect.Width, rectangle.Rect.Height);
+                    if (!rect.Contains(rect1))
+                        continue;
                     PoiPoint poiParamData = new()
                     {
                         Id = index,
