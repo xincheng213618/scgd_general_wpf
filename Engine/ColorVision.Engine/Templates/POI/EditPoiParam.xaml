@@ -122,7 +122,10 @@
             </Border>
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
-                    <CheckBox Content="{x:Static properties:Resources.Lock}" IsChecked="{Binding PoiConfig.LockDeafult}"/>
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Content="{x:Static properties:Resources.Lock}" IsChecked="{Binding PoiConfig.LockDeafult}" Margin="0,0,5,0"/>
+                        <CheckBox Content="中心" IsChecked="{Binding PoiConfig.UseCenter}"/>
+                    </StackPanel>
                     <StackPanel Margin="2"  Orientation="Horizontal" >
                         <TextBlock Text="默认半径:" Width="55"/>
                         <TextBox Text="{Binding PoiConfig.DefalutRadius}"  Width="55"  />

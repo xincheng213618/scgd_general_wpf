@@ -124,6 +124,8 @@ namespace ColorVision.Engine.Templates.POI
 
         public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; NotifyPropertyChanged(); } }
         private bool _LockDeafult;
+        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; NotifyPropertyChanged(); } }
+        private bool _UseCenter = false;
 
         public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; NotifyPropertyChanged(); } } 
         private double _DefalutWidth = 30;
