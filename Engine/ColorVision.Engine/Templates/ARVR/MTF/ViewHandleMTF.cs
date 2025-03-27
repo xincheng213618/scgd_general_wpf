@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Templates.MTF
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Name", "位置", "大小", "形状", "Articulation" };
+            List<string> properties = new() {"Id", "Name", "位置", "大小", "形状", "MTF" };
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
