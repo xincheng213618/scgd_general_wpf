@@ -1350,5 +1350,14 @@ namespace ColorVision.ImageEditor
         {
             DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
         }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Common.NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
+        }
     }
 }
