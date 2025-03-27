@@ -249,6 +249,7 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         case FlowEngineLib.Algorithm.AlgorithmType.MTF:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
+                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR", new TemplateSFR());
@@ -283,6 +284,7 @@ namespace ColorVision.Engine.Templates.Flow
                         default:
                             break;
                     }
+
                 }
                 algorithmNode.nodeEvent -= (s, e) => Refesh();
                 algorithmNode.nodeEvent += (s, e) => Refesh();
