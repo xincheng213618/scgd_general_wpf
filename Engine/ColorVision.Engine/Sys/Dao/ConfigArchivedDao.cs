@@ -34,7 +34,6 @@ namespace ColorVision.Engine.DataHistory.Dao
         public bool DellocalFile { get => _DellocalFile; set { _DellocalFile = value; NotifyPropertyChanged(); } }
         private bool _DellocalFile;
 
-
     }
 
     public class ConfigArchivedDao : BaseTableDao<ConfigArchivedModel>
@@ -45,4 +44,62 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
         }
     }
+    public class GlobleCfgdDao : BaseTableDao<GlobleCfgdModel>
+    {
+        public static GlobleCfgdDao Instance { get; set; } = new GlobleCfgdDao();
+
+        public GlobleCfgdDao() : base("t_scgd_sys_globle_cfg")
+        {
+        }
+
+        public GlobleCfgdModel? GetArchDB()
+        {
+            return GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "cfg_type", 10 } });
+        }
+    }
+
+
+    [DisplayName("数据库配置")]
+    public class GlobleCfgdModel : ViewModelBase, IPKModel
+    {
+        [Column("id"), Browsable(false)]
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
+        [Column("code"), DisplayName("code")]
+        public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string _Code;
+
+
+        [Column("name"), DisplayName("名称")]
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
+
+
+        [Column("cfg_type"), Browsable(false)]
+        public int CfgType { get => _CfgType; set { _CfgType = value; NotifyPropertyChanged(); } }
+        private int _CfgType;
+
+        [Column("cfg_value"), DisplayName("CFGValue")]
+        public string CfgValue { get => _CfgValue; set { _CfgValue = value; NotifyPropertyChanged(); } }
+        private string _CfgValue;
+
+        [Column("is_deleted")]
+        public bool IsDeleted { get => _IsDeleted; set { _IsDeleted = value ; NotifyPropertyChanged(); } }
+        private bool _IsDeleted;
+
+        [Column("is_enabled")]
+        public bool IsEnabled { get => _IsEnabled; set { _IsEnabled = value; NotifyPropertyChanged(); } }
+        private bool _IsEnabled;
+
+        [Column("remark")]
+        public string Remark { get => _Remark; set { _Remark = value; NotifyPropertyChanged(); } }
+        private string _Remark;
+
+        [Column("tenant_id")]
+        public int? TenantId { get; set; }
+
+    }
+
+
 }

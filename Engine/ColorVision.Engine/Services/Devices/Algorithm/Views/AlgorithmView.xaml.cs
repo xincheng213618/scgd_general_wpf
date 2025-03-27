@@ -566,7 +566,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     default:
                         break;
                 }
-
             }
         }
 

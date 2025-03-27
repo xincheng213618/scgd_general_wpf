@@ -32,6 +32,29 @@ namespace ColorVision.Engine.DataHistory.Dao
         }
     }
 
+    public class MenuGlobleCfg : MenuItemBase
+    {
+        public override string OwnerGuid => nameof(MenuArchive);
+
+        public override string Header => "归档服务器配置";
+
+        public override void Execute()
+        {
+            GlobleCfgdModel globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
+            if (globleCfgdModel == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到归档服务器配置，正在重置", "ColorVision");
+                string sql = "INSERT INTO `cv`.`t_scgd_sys_globle_cfg` (`id`, `code`, `name`, `cfg_type`, `cfg_value`, `is_deleted`, `is_enabled`, `remark`, `tenant_id`) VALUES (3, 'arch_db', '归档服务数据库', 10, '{\\\"Name\\\":null,\\\"Host\\\":\\\"localhost\\\",\\\"Port\\\":3306,\\\"UserName\\\":\\\"cv\\\",\\\"UserPwd\\\":\\\"9p9DMdywXwaTbAXt0oJkUnAb\\\",\\\"Database\\\":\\\"color_vision_arch_2025\\\"}', 0, 1, NULL, 0);\r\n";
+                MySqlControl.GetInstance().ExecuteNonQuery(sql);
+                globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
+            }
+
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            propertyEditorWindow.Submited += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };
+            propertyEditorWindow.ShowDialog();
+        }
+    }
+
 
     public class MenuConfigArchive : MenuItemBase
     {
