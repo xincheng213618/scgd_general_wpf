@@ -226,7 +226,7 @@ namespace ColorVision.UI
         }
 
         public void LoadConfigs() => LoadConfigs(ConfigFilePath);
-        private JObject jsonObject;
+        private JObject jsonObject = new JObject();
 
         public void LoadConfigs(string fileName)
         {
