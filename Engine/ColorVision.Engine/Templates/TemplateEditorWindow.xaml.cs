@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -62,8 +63,8 @@ namespace ColorVision.Engine.Templates
                 Grid.SetColumnSpan(CreateGrid, 2);
                 Grid.SetColumn(CreateGrid, 0);
 
-                MinWidth = 370;
-                Width = 370;
+                MinWidth = 360;
+                Width = 360;
             }
 
             if (ITemplate.IsUserControl)
@@ -80,13 +81,15 @@ namespace ColorVision.Engine.Templates
                 }
                 if (!double.IsNaN(userControl.Width))
                 {
-                    Width = userControl.Width + 450;
+                    Width = userControl.Width + 350;
                     userControl.Width = double.NaN;
                 }
                 else
                 {
                     Width = Width + 350;
                 }
+                TemplateGrid.MinWidth = 200;
+                ScrollInfo.HorizontalAlignment = HorizontalAlignment.Right;
             }
 
             Title = ITemplate.Title;

@@ -26,7 +26,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="1"  Margin="0,0,0,0" MinWidth="350" >
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="1"  Margin="0,0,0,0" MinWidth="340" >
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -135,10 +135,8 @@
                 </ListView.View>
             </ListView>
             <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
-            <ScrollViewer VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Grid.RowSpan="2" >
-                <StackPanel hc:Growl.GrowlParent="True"  VerticalAlignment="Top"  />
-            </ScrollViewer>
         </Grid>
+
         <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
 
         <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
@@ -148,6 +146,9 @@
                 <winf:PropertyGrid x:Name="PropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
+        <ScrollViewer x:Name="ScrollInfo" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Grid.ColumnSpan="2" Margin="0,20,0,0">
+            <StackPanel hc:Growl.GrowlParent="True" VerticalAlignment="Top"  />
+        </ScrollViewer>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <UniformGrid x:Name="FunctionGrid"    Columns="5">
