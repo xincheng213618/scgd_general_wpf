@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand OpenEditToolCommand { get; set; }
 
+        public RelayCommand CheckCommand { get; set; }
 
         public ModThirdPartyAlgorithmsModel ModThirdPartyAlgorithmsModel { get; set; }
 
@@ -26,6 +27,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
         {
             ResetCommand = new RelayCommand((a)=> ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
+            CheckCommand = new RelayCommand(a => Check());
         }
 
         public TemplateJsonParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
@@ -33,7 +35,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             ModThirdPartyAlgorithmsModel = modThirdPartyAlgorithmsModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a=> OpenEditTool());
+            CheckCommand = new RelayCommand(a => Check());
+
         }
+
+        public void Check()
+        {
+            JsonValueChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public event EventHandler JsonValueChanged;
 
         public void OpenEditTool()
         {
@@ -59,6 +70,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             if (ModThirdPartyAlgorithmsModel.PId is int pid && ThirdPartyAlgorithmsDao.Instance.GetById(pid)?.DefaultCfg is string str)
             {
                 JsonValue = str;
+                JsonValueChanged?.Invoke(this, EventArgs.Empty);
             }
             else
             {
@@ -77,6 +89,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
                 {
                     ModThirdPartyAlgorithmsModel.JsonVal = value;
                     NotifyPropertyChanged();
+                }
+                else
+                {
+                    JsonValueChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
         }

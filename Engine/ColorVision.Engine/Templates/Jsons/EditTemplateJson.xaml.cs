@@ -1,7 +1,10 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.UI;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons
@@ -24,11 +27,45 @@ namespace ColorVision.Engine.Templates.Jsons
             {
                 EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
             };
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            textEditor.ShowLineNumbers = true;
+            textEditor.TextChanged += (s, e) =>
+            {
+                DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
+            };
         }
+
+        public void EditTemplateJsonChanged()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (IEditTemplateJson != null)
+                {
+                    IEditTemplateJson.JsonValue = textEditor.Text;
+                }
+            });
+        }
+
+
+        private IEditTemplateJson IEditTemplateJson;
+
 
         public void SetParam(object param)
         {
-            this.DataContext = param;
+            if (param is IEditTemplateJson editTemplateJson)
+            {
+                this.DataContext = param; 
+                if (IEditTemplateJson !=null)
+                    IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
+                IEditTemplateJson = editTemplateJson;
+                textEditor.Text = IEditTemplateJson.JsonValue;
+                IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
+            }
+        }
+
+        private void IEditTemplateJson_JsonValueChanged(object? sender, EventArgs e)
+        {
+            textEditor.Text = IEditTemplateJson.JsonValue;
         }
     }
 }
