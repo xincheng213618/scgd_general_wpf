@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -26,6 +27,8 @@ namespace ColorVision.Engine.Templates.SFR
             DataContext = IAlgorithm;
             ComboxSFRTemplate.ItemsSource = TemplateSFR.Params;
             ComboxSFRTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
