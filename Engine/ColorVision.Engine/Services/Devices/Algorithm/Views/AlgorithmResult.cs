@@ -43,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ResultImagFile = item.ResultImagFile;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
-            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
+            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
             OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
 
             ContextMenu = new ContextMenu();
@@ -62,7 +62,43 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
             if (list ==null )
+            {
+                var list1 = ViewResults?.ToSpecificViewResults<PoiPointResultModel>();
+                if (list1 == null)
+                    return;
+
+                int old1 = TemplatePoi.Params.Count;
+                TemplatePoi templatePoi1 = new TemplatePoi();
+                templatePoi1.ExportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                templatePoi1.ExportTemp.Height = 400;
+                templatePoi1.ExportTemp.Width = 300;
+                templatePoi1.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+                foreach (var item in list1)
+                {
+                    PoiPoint poiPoint = new PoiPoint()
+                    {
+                        Name = item.PoiName,
+                        PixX = (double)item.PoiX,
+                        PixY = (double)item.PoiY,
+                        PixHeight = (double)item.PoiHeight,
+                        PixWidth = (double)item.PoiWidth,
+                        PointType = (RiPointTypes)item.PoiType,
+                        Id = -1
+                    };
+                    templatePoi1.ExportTemp.PoiPoints.Add(poiPoint);
+                }
+
+
+                templatePoi1.OpenCreate();
+                int next1 = TemplatePoi.Params.Count;
+                if (next1 == old1 + 1)
+                {
+                    new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                }
                 return;
+            }
+
+
             int old = TemplatePoi.Params.Count;
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
