@@ -30,6 +30,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             
             ComboxTemplate.ItemsSource = TemplateSFRFindROI.Params;
             ComboxTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {

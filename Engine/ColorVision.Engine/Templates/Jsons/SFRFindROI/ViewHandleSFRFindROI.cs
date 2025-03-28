@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultMTF>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "Id", "Name", "位置", "大小", "形状", "MTF" };
+            List<string> properties = new() { "Id", "Name", "位置", "大小", "形状"};
             csvBuilder.AppendLine(string.Join(",", properties));
 
             foreach (var item in ViewResults)
@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             $"{item.Point.PixelX}|{item.Point.PixelY}",
             $"{item.Point.Width}|{item.Point.Height}",
             item.Shapes.ToString(),
-            item.Articulation.ToString()
         };
                 csvBuilder.AppendLine(string.Join(",", values));
             }
@@ -174,7 +173,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
                             Circle.Attribute.Id = poiResultData.Id;
                             Circle.Attribute.Text = poiResultData.Name;
-                            Circle.Attribute.Msg = poiResultData.Articulation.ToString();
                             Circle.Render();
                             view.ImageView.AddVisual(Circle);
                             break;
@@ -185,7 +183,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                             Rectangle.Attribute.Id = poiResultData.Id;
                             Rectangle.Attribute.Text = poiResultData.Name;
-                            Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
                             Rectangle.Render();
                             view.ImageView.AddVisual(Rectangle);
                             break;
@@ -198,9 +195,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
             List<string> header;
             List<string> bdHeader;
-            header = new() { "Name", "位置", "大小", "形状", "MTF" };
-            bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Articulation" };
-
+            header = new() { "Name", "位置", "大小", "形状"};
+            bdHeader = new() { "Name", "PixelPos", "PixelSize", "Shapes" };
 
             if (view.listViewSide.View is GridView gridView)
             {

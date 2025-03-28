@@ -14,10 +14,17 @@
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
                 <TextBlock Text="SFR寻边" Width="60"/>
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
-                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip=""/>
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
+                </Grid>
+            </DockPanel>
+            <DockPanel Margin="0,2">
+                <TextBlock Text="POI" Width="60"/>
+                <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" SelectedIndex="{Binding TemplatePoiSelectedIndex}" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplatePoiCommand}"/>
                 </Grid>
             </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">
