@@ -2,6 +2,7 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -22,10 +23,10 @@ namespace ColorVision.Engine.Templates.SFR
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
+            var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "pdfrequency", "pdomainSamplingData" };
+            List<string> properties = new() { "id","RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
             // 写入数据行
@@ -33,8 +34,13 @@ namespace ColorVision.Engine.Templates.SFR
             {
                 List<string> values = new()
                 {
-                    item.pdfrequency.ToString(),
-                    item.pdomainSamplingData.ToString(),
+                    item.Id.ToString(),
+                    item.RoiX.ToString(),
+                    item.RoiY.ToString(),
+                    item.RoiWidth.ToString(),
+                    item.RoiHeight.ToString(),
+                    item.Pdfrequency.ToString(),
+                    item.PdomainSamplingData.ToString(),
                 };
 
                 csvBuilder.AppendLine(string.Join(",", values));
@@ -67,30 +73,31 @@ namespace ColorVision.Engine.Templates.SFR
                 view.ImageView.OpenImage(result.FilePath);
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultSFRModels)
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRDao.Instance.GetAllByPid(result.Id));
+            }
+            view.ImageView.ImageShow.Clear();
+
+            foreach (var item in result.ViewResults)
+            {
+                if (item is AlgResultSFRModel poiResultData)
                 {
-                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                    for (int i = 0; i < Pdfrequencys.Length; i++)
-                    {
-                        ViewResultSFR resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
-                        result.ViewResults.Add(resultData);
-                    }
-                };
+                    DVRectangleText Rectangle = new();
+                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX - (double)poiResultData.RoiWidth / 2, (double)poiResultData.RoiY - (double)poiResultData.RoiHeight / 2, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
+                    Rectangle.Attribute.Brush = Brushes.Transparent;
+                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    Rectangle.Attribute.Id = poiResultData.Id;
+                    Rectangle.Render();
+                    view.ImageView.AddVisual(Rectangle);
+                }
             }
 
-
-
-
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
-            List<string> header = new() { "pdfrequency", "pdomainSamplingData" };
-            List<string> bdHeader = new() { "pdfrequency", "pdomainSamplingData" };
-
+            List<string> header = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
+            List<string> bdHeader = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
 
             if (view.listViewSide.View is GridView gridView)
             {
+                view.listViewSide.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)

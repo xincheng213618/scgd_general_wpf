@@ -47,19 +47,6 @@
                                 </DockPanel>
                             </UniformGrid>
                         </DockPanel>
-                        <DockPanel Margin="0,0,0,5">
-                            <TextBlock Text="RECT"  MinWidth="60"  />
-                            <TextBox Text="{Binding RECT}" Style="{StaticResource TextBox.Small}" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                        </DockPanel>
-                        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
-
-                            <TextBlock Text="POI导入"  MinWidth="60"/>
-                            <ComboBox x:Name="ComboBoxPoi" Style="{StaticResource ComboBox.Small}" Width="80" Margin="0,0,5,0" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                            <TextBlock Text="index"   Margin="0,0,5,0"/>
-                            <TextBox x:Name="TextIndex"  Text="0" Width="40" HorizontalContentAlignment="Center" Style="{StaticResource TextBox.Small}" Margin="0,0,5,0" PreviewKeyDown="TextBox_PreviewKeyDown"/>
-                            <Button DockPanel.Dock="Right"  Content="导入" Click="Button_Click" />
-
-                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>
