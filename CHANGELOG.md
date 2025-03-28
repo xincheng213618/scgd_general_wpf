@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.1.17.12] 2025.03.28
+## [1.1.17.13] 2025.03.28
 
 1.引入AvalonEdit，替换之前的文本编辑器以及Json编辑器
 
@@ -16,7 +16,7 @@
 
 7.添加 ARVR_SFR_FindROI
 
-8.SFR 添加POI
+8.SFR 添加POI ,以及显示结果和输出逻辑的调整
 
 9.算法添加SFRFindRoi
 

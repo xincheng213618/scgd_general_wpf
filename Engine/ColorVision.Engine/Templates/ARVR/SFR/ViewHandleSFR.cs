@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604,CS8602
+﻿#pragma warning disable CS8604,CS8602,CS8629
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Templates.SFR
                 if (item is AlgResultSFRModel poiResultData)
                 {
                     DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX - (double)poiResultData.RoiWidth / 2, (double)poiResultData.RoiY - (double)poiResultData.RoiHeight / 2, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
+                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX, (double)poiResultData.RoiY, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
                     Rectangle.Attribute.Brush = Brushes.Transparent;
                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
                     Rectangle.Attribute.Id = poiResultData.Id;
