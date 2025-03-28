@@ -20,8 +20,6 @@ namespace ColorVision.Engine.Templates.MTF
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
-        public RelayCommand OpenTemplateCommand { get; set; }
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
 
         public AlgorithmMTF(DeviceAlgorithm deviceAlgorithm)
         {
@@ -30,19 +28,25 @@ namespace ColorVision.Engine.Templates.MTF
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
 
+        public RelayCommand OpenTemplateCommand { get; set; }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
+
         public void OpenTemplate()
         {
             new TemplateEditorWindow(new TemplateMTF(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
+
+        public RelayCommand OpenTemplatePoiCommand { get; set; }
+        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplatePoiSelectedIndex;
+
         public void OpenTemplatePoi()
         {
             new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
 
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
+
 
 
         public UserControl GetUserControl()
