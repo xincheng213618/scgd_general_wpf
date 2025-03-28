@@ -52,6 +52,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         ARVR_BinocularFusion = 54,
         KB_Output_Lv = 55,
         KB_Output_CIE = 56,
+        ARVR_SFR_FindROI = 60,
         Math_DataConvert = 70
     }
     public interface IResultHandle
