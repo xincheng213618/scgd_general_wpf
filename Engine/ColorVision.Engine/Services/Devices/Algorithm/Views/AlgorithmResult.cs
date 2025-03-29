@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public void ExportToPoi()
         {
             var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
-            if (list ==null )
+            if (list.Count ==0 )
             {
                 var list1 = ViewResults?.ToSpecificViewResults<PoiPointResultModel>();
                 if (list1 == null)
