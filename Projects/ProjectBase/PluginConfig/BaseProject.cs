@@ -1,14 +1,13 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.UI;
 using System.Windows;
 
 namespace ProjectBase.PluginConfig
 {
-    public class BlackMuraMenu : MenuItemBase
+    public class BaseProject : IProjectBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override string? Header => "BlackMura检测";
 
-        public override int Order => 100;
-        public override string Header => "BlackMura检测";
+        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectBlackMura";
 
         public override void Execute()
         {

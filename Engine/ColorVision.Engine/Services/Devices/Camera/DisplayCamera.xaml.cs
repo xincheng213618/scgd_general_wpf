@@ -281,6 +281,36 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
                 }
             };
+        }
+
+        public MsgRecord? TakePhoto()
+        {
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return null;
+
+            TakePhotoButton.Visibility = Visibility.Hidden;
+
+            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            {
+                if (param.Id != -1)
+                {
+                    if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                    {
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                param = new CalibrationParam() { Id = -1, Name = "Empty" };
+            }
+
+            double[] expTime = null;
+            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+            else expTime = new double[] { Device.Config.ExpTime };
+            return DService.GetData(expTime, param, autoExpTimeParam);
+
+
 
         }
 

@@ -3,9 +3,12 @@ using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.ImageEditor;
@@ -17,6 +20,7 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
+using HelixToolkit.Wpf;
 using log4net;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
@@ -1372,7 +1376,6 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
         {
-            SettingPopup.IsOpen = true;
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
@@ -1761,6 +1764,57 @@ namespace ColorVision.Engine.Templates.POI
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        {
+            var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
+            DeviceCamera deviceCamera = lsit.FirstOrDefault();
+            
+
+            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
+
+            if (msgRecord != null)
+            {
+                msgRecord.MsgSucessed += (arg) =>
+                {
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
+                        {
+                            try
+                            {
+                                if (result.FileUrl != null)
+                                {
+                                    OpenImage(new NetFileUtil().OpenLocalCVFile(result.FileUrl));
+                                    PoiConfig.BackgroundFilePath = result.FileUrl;
+                                }
+                                else
+                                {
+                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                            }
+                        }
+                    }
+
+
+
+                };
+
+            }
         }
     }
 

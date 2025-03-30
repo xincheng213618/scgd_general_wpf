@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ProjectBase"
         d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
         mc:Ignorable="d"
-        Title="ProjectBlackMura" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="ProjectBase" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>

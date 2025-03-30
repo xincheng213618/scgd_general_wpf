@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Windows;
 
-namespace ProjectBlackMura.PluginConfig
+namespace ProjectBase.PluginConfig
 {
     public class BlackMuraProject : IProjectBase
     {

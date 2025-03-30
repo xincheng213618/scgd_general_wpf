@@ -23,7 +23,7 @@ namespace ProjectBase
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ProjectBlackMuraConfig.Instance;
+            this.DataContext = ProjectBaseConfig.Instance;
         }
 
 

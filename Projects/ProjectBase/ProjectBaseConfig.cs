@@ -10,9 +10,9 @@ using System.Windows;
 
 namespace ProjectBase
 {
-    public class ProjectBlackMuraConfig: ViewModelBase, IConfig
+    public class ProjectBaseConfig: ViewModelBase, IConfig
     {
-        public static ProjectBlackMuraConfig Instance => ConfigService.Instance.GetRequiredService<ProjectBlackMuraConfig>();
+        public static ProjectBaseConfig Instance => ConfigService.Instance.GetRequiredService<ProjectBaseConfig>();
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
@@ -22,7 +22,7 @@ namespace ProjectBase
         public RelayCommand OpenReadMeCommand { get; set; }
 
 
-        public ProjectBlackMuraConfig()
+        public ProjectBaseConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());

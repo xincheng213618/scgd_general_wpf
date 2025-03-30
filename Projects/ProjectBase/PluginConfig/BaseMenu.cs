@@ -3,12 +3,12 @@ using System.Windows;
 
 namespace ProjectBase.PluginConfig
 {
-    public class BlackMuraMenu : MenuItemBase
+    public class BaseMenu : MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
 
         public override int Order => 100;
-        public override string Header => "BlackMura检测";
+        public override string Header => "基础项目";
 
         public override void Execute()
         {
