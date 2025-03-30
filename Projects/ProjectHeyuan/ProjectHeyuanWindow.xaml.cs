@@ -342,32 +342,32 @@ namespace ColorVision.Projects.ProjectHeyuan
                                         tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
                                         tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
 
-                                        if (poiResultCIExyuvData1.ValidateSingles != null)
-                                        {
-                                            foreach (var item in poiResultCIExyuvData1.ValidateSingles)
-                                            {
-                                                if (item.Rule.RType == ValidateRuleType.CIE_x)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.CIE_y)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.CIE_lv)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.Wave)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
-                                        }
+                                        //if (poiResultCIExyuvData1.ValidateSingles != null)
+                                        //{
+                                        //    foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                        //    {
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.Wave)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //    }
+                                        //}
+                                        //else
+                                        //{
+                                        //    MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                        //}
 
                                         Results.Add(tempResult1);
                                     }
