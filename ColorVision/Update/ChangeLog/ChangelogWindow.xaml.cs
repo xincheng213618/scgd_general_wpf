@@ -1,6 +1,8 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
@@ -17,20 +19,45 @@ using System.Windows.Controls;
 namespace ColorVision.Update
 {
 
+    public class ChangelogWindowConfig : WindowConfig
+    {
+        public RelayCommand EditCommand { get; set; }
+
+        public RelayCommand OpenInExplorerCommand { get; set; }
+
+
+        public ChangelogWindowConfig()
+        {
+            EditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            OpenInExplorerCommand = new RelayCommand(a => Common.Utilities.PlatformHelper.Open("CHANGELOG.md"));
+        }
+
+
+    }
+
+
     /// <summary>
     /// ChangelogWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ChangelogWindow : Window
     {
         public ObservableCollection<ChangeLogEntry> ChangeLogEntrys { get; set; }
+
+        public static ChangelogWindowConfig WindowConfig =>ConfigService.Instance.GetRequiredService<ChangelogWindowConfig>();
+
+
         public ChangelogWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
+            WindowConfig.SetWindow(this);
+            this.SizeChanged += (s, e) => WindowConfig.SetConfig(this);
         }
         string? CHANGELOG { get; set; }
         private void Window_Initialized(object sender, System.EventArgs e)
         {
+            this.DataContext = WindowConfig;
+
             string changelogPath = "CHANGELOG.md";
             if (File.Exists(changelogPath))
             {

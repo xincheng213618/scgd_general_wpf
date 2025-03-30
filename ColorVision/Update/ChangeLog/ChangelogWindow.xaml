@@ -7,40 +7,65 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:ChangelogWindow}"
+        d:DataContext="{d:DesignInstance local:ChangelogWindowConfig}"
         Title="{x:Static properties:Resources.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Margin="5,5,0,5" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center">
-            <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
-            <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
-                <Rectangle Width="16 " Height="16" >
-                    <Rectangle.Resources>
-                        <SolidColorBrush x:Key="canvas" Opacity="0" />
-                        <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
-                        <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
-                    </Rectangle.Resources>
-                    <Rectangle.Fill>
-                        <DrawingBrush Stretch="None">
-                            <DrawingBrush.Drawing>
-                                <DrawingGroup>
-                                    <DrawingGroup x:Name="canvas">
-                                        <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+        <Grid>
+            <Grid Margin="5,5,0,5" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center">
+                <hc:TextBox x:Name="Searchbox"  Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
+                <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
+                    <Rectangle Width="16 " Height="16" >
+                        <Rectangle.Resources>
+                            <SolidColorBrush x:Key="canvas" Opacity="0" />
+                            <SolidColorBrush x:Key="light-defaultgrey-10" Color="{DynamicResource defaultgreyColor}" Opacity="0.1" />
+                            <SolidColorBrush x:Key="light-defaultgrey" Color="{DynamicResource defaultgreyColor}" Opacity="1" />
+                        </Rectangle.Resources>
+                        <Rectangle.Fill>
+                            <DrawingBrush Stretch="None">
+                                <DrawingBrush.Drawing>
+                                    <DrawingGroup>
+                                        <DrawingGroup x:Name="canvas">
+                                            <GeometryDrawing Brush="{DynamicResource canvas}" Geometry="F1M0,0H16V16H0Z" />
+                                        </DrawingGroup>
+                                        <DrawingGroup x:Name="level_1">
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
+                                            <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
+                                        </DrawingGroup>
                                     </DrawingGroup>
-                                    <DrawingGroup x:Name="level_1">
-                                        <GeometryDrawing Brush="{DynamicResource light-defaultgrey-10}" Geometry="F1M11.5,6.5a5,5,0,1,1-5-5A5,5,0,0,1,11.5,6.5Z" />
-                                        <GeometryDrawing Brush="{DynamicResource light-defaultgrey}" Geometry="F1M1,6.5a5.5,5.5,0,0,0,9.017,4.224l5.129,5.13.708-.708-5.13-5.129A5.5,5.5,0,1,0,1,6.5Zm1,0A4.5,4.5,0,1,1,6.5,11,4.505,4.505,0,0,1,2,6.5Z" />
-                                    </DrawingGroup>
-                                </DrawingGroup>
-                            </DrawingBrush.Drawing>
-                        </DrawingBrush>
-                    </Rectangle.Fill>
-                </Rectangle>
-            </Viewbox>
+                                </DrawingBrush.Drawing>
+                            </DrawingBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Viewbox>
+
+
+            </Grid>
+            <StackPanel Grid.Column="1" Margin="5,5,10,5" HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button Content="打开" Command="{Binding OpenInExplorerCommand}"  Margin="0,0,5,0" />
+                <Button  Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform21"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
+            </StackPanel>
+
         </Grid>
+
 
         <ListView x:Name="ChangeLogListView"  Background="Transparent" Grid.Row="1" Padding="2" Margin="5,0,5,5">
             <ListView.Resources >
