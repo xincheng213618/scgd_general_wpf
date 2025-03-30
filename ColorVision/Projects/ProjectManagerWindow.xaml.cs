@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 
 namespace ColorVision.Projects
 {
@@ -15,6 +16,7 @@ namespace ColorVision.Projects
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = ProjectManager.GetInstance();
+            DefalutSearchComboBox.ItemsSource = new List<string>() { "ProjectKB", "ProjectBlackMura", "ProjectHeyuan", "ProjectShiyuan", "ProjectBase" };
         }
 
 

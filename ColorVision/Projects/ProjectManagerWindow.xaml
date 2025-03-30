@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Projects"
         d:DataContext="{d:DesignInstance local:ProjectManager}"
         xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.ProjectManagerWindow}" Height="450" Width="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid>
@@ -16,7 +17,7 @@
         <StackPanel Orientation="Horizontal" Margin="5">
             <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
             <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-            <TextBox Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" Width="200" Margin="0,0,5,0"/>
+            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="200" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
             <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
             <Button Content="打开缓存文件夹" Command="{Binding OpenDownloadCacheCommand}" Margin="0,0,5,0"/>
         </StackPanel>

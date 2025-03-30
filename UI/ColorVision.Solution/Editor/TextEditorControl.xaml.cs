@@ -28,6 +28,8 @@ namespace ColorVision.Solution.Editor
             FilePath = filePath;
             InitializeComponent();
         }
+
+
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
             var b = e.Data.GetDataPresent(DataFormats.FileDrop);
@@ -58,6 +60,8 @@ namespace ColorVision.Solution.Editor
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, Save_Executed));
             OpenFile(FilePath);
         }
+
+
         private void Open_Executed(object sender, ExecutedRoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
