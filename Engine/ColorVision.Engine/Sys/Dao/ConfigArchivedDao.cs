@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 
@@ -56,6 +58,15 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             return GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "cfg_type", 10 } });
         }
+
+
+        public MySqlConfig GetArchMySqlConfig()
+        {
+            MySqlConfig mySqlConfig = JsonConvert.DeserializeObject<MySqlConfig>(GetArchDB().CfgValue);
+            return mySqlConfig;
+        }
+
+
     }
 
 

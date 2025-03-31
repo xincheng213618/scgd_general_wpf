@@ -1,7 +1,12 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
+using log4net;
+using MySql.Data.MySqlClient;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Threading;
 
 namespace ColorVision.Engine.DataHistory.Dao
 {
@@ -28,10 +33,30 @@ namespace ColorVision.Engine.DataHistory.Dao
     }
     public class ArchivedMasterDao : BaseTableDao<ArchivedMasterModel>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedMasterDao));
+
         public static ArchivedMasterDao Instance { get; set; } = new ArchivedMasterDao();
 
         public ArchivedMasterDao() : base("t_scgd_archived_master", "code")
         {
+            MySqlConfig MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
+            {
+                try
+                {
+                    string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                    MySqlConnection = new MySqlConnection(connStr = connStr);
+                    MySqlConnection.Open();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    MySqlControl = MySqlControl.GetInstance();
+                    MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
+                    MySqlConnection = MySqlControl.MySqlConnection;
+                }
+            }
+
 
         }
 

@@ -3,6 +3,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.Menus;
 using ColorVision.UI.PropertyEditor;
+using Newtonsoft.Json;
 using System.Windows;
 
 namespace ColorVision.Engine.DataHistory.Dao
@@ -48,6 +49,11 @@ namespace ColorVision.Engine.DataHistory.Dao
                 MySqlControl.GetInstance().ExecuteNonQuery(sql);
                 globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
             }
+
+
+
+
+
 
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Submited += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };

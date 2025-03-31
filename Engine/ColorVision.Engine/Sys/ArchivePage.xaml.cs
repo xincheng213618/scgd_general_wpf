@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;

@@ -1,8 +1,12 @@
 ﻿#pragma warning disable CA1720,CS8601
 
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using log4net;
+using MySql.Data.MySqlClient;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -131,11 +135,29 @@ namespace ColorVision.Engine.DataHistory.Dao
     }
     public class ArchivedDetailDao : BaseTableDao<ArchivedDetailModel>
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedDetailDao));
+
         public static ArchivedDetailDao Instance { get; set; } = new ArchivedDetailDao();
 
         public ArchivedDetailDao() : base("t_scgd_archived_detail", "guid")
         {
-
+            MySqlConfig MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
+            if (MySqlConfig != null)
+            {
+                try
+                {
+                    string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                    MySqlConnection = new MySqlConnection(connStr = connStr);
+                    MySqlConnection.Open();
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    MySqlControl = MySqlControl.GetInstance();
+                    MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
+                    MySqlConnection = MySqlControl.MySqlConnection;
+                }
+            }
         }
 
         public List<ArchivedDetailModel> ConditionalQuery(string batchCode)
