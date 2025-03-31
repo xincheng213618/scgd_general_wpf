@@ -20,10 +20,14 @@ namespace ColorVision.Engine.MySql.ORM
         private string _TableName;
         public string PKField { get { return _PKField; } set { _PKField = value; } }
         private string _PKField;
+        public MySqlConnection MySqlConnection { get; set; } 
 
         public BaseDao(string tableName, string pkField)
         {
             MySqlControl = MySqlControl.GetInstance();
+            MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
+            MySqlConnection = MySqlControl.MySqlConnection;
+
             _TableName = tableName;
             _PKField = pkField;
         }
@@ -33,7 +37,7 @@ namespace ColorVision.Engine.MySql.ORM
             int count = -1;
             try
             {
-                MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
+                MySqlCommand command = new(sql, MySqlConnection);
                 count = command.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -48,7 +52,7 @@ namespace ColorVision.Engine.MySql.ORM
             int count = -1;
             try
             {
-                MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
+                MySqlCommand command = new MySqlCommand(sql, MySqlConnection);
                 foreach (var item in param)
                 {
                     command.Parameters.AddWithValue(item.Key, item.Value);
@@ -72,21 +76,19 @@ namespace ColorVision.Engine.MySql.ORM
             {
                 if (param == null || param.Count == 0)
                 {
-                    using MySqlDataAdapter adapter = new(sql, MySqlControl.MySqlConnection);
+                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlConnection);
                     int count = adapter.Fill(dt);
                 }
                 else
                 {
-                    MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
+                    MySqlCommand command = new(sql, MySqlConnection);
                     foreach (var item in param)
                     {
                         command.Parameters.AddWithValue(item.Key, item.Value);
                     }
                     using MySqlDataAdapter adapter = new(command);
                     int count = adapter.Fill(dt);
-                }
-
-
+                }  
             }
             catch (Exception ex)
             {
@@ -101,8 +103,8 @@ namespace ColorVision.Engine.MySql.ORM
             string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                using MySqlCommand cmd = new(sqlStr, MySqlControl.MySqlConnection);
-                using MySqlDataAdapter dataAdapter = new(cmd);
+                using MySqlCommand cmd = new MySqlCommand(sqlStr, MySqlConnection);
+                using MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
                 dataAdapter.RowUpdated += DataAdapter_RowUpdated;
                 using MySqlCommandBuilder builder = new(dataAdapter);
                 builder.ConflictOption = ConflictOption.OverwriteChanges;

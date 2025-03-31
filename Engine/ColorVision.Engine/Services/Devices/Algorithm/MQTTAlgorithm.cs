@@ -92,22 +92,37 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     }
                     break;
                 default:
-                    List<AlgResultMasterModel> resultMaster = null;
-                    if (msg.Data.MasterId > 0)
+                    switch (msg.Code)
                     {
-                        resultMaster = new List<AlgResultMasterModel>();
-                        int MasterId = msg.Data.MasterId;
-                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
-                        if (model!=null)
-                            resultMaster.Add(model);
+                        case -1:
+                            AlgResultMasterModel algResultMasterModel = new AlgResultMasterModel();
+                            algResultMasterModel.Result = "-1";
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                Device.View.AlgResultMasterModelDataDraw(algResultMasterModel);
+                            });
+                            break;
+
+                        default:
+                            List<AlgResultMasterModel> resultMaster = null;
+                            if (msg.Data.MasterId > 0)
+                            {
+                                resultMaster = new List<AlgResultMasterModel>();
+                                int MasterId = msg.Data.MasterId;
+                                AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
+                                if (model != null)
+                                    resultMaster.Add(model);
+                            }
+                            foreach (AlgResultMasterModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    Device.View.AlgResultMasterModelDataDraw(result);
+                                });
+                            }
+                            break;
                     }
-                    foreach (AlgResultMasterModel result in resultMaster)
-                    {
-                        Application.Current.Dispatcher.Invoke((Delegate)(() =>
-                        {
-                            Device.View.AlgResultMasterModelDataDraw(result);
-                        }));
-                    }
+
                     break;
             }
         }
