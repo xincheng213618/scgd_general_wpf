@@ -27,6 +27,7 @@ using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
     public class PhyCameraManager:ViewModelBase
     {
         private static PhyCameraManager _instance;
@@ -44,7 +45,8 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
 
-            RefreshEmptyCamera();
+
+                RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
 

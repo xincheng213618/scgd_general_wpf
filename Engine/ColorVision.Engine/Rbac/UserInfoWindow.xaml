@@ -11,57 +11,54 @@
         Title="用户" Height="450" Width="500" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer >
-            <StackPanel  Grid.Row="1" Grid.Column="1">
-                <Button  Content="{x:Static properties:Resources.Edit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding EditCommand}" />
-                <hc:ImageSelector/>
-                <hc:ImageViewer/>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Account:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.Code}"/>
-                </DockPanel>
-                <hc:Gravatar Height="180" Width="180" Id="{Binding Text,ElementName=UserModel.Code}" Margin="10"/>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="User Name:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.UserName}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Email:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Email}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Phone:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Phone}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Address:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Address}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Company:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Company}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Department:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Department}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Position:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Position}"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="Remark:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Remark}"/>
-                </DockPanel>
+        <Grid Margin="0,0,0,5" >
+            <StackPanel  Orientation="Horizontal">
+                <Button Content="登录" Command="{Binding LoginCommand}"/>
+
+            </StackPanel>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <Button  Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform21"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
             </StackPanel>
 
-        </ScrollViewer>
-        <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resources.Close}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click_1" />
+        </Grid>
 
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Margin="30">
+                <TextBlock Margin="5" Text="{Binding UserModel.UserName}"/>
+                <TextBlock Margin="5" Text="{Binding UserDetailModel.Company}"/>
+                <TextBlock Margin="5" Text="{Binding UserDetailModel.Gender}"/>
+                <TextBlock Margin="5" Text="{Binding UserDetailModel.PermissionMode}"/>
+                <TextBlock Margin="5" Text="{Binding UserDetailModel.Remark}"/>
+
+            </StackPanel>
+            <hc:Gravatar Grid.Column="1" Height="180" Width="180" Margin="10"/>
+
+        </Grid>
+        <Border Grid.Row="2" Height="40" Margin="20">
+            <Button  Content="退出登录" Click="Button_Click_1" />
         </Border>
 
     </Grid>

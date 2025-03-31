@@ -101,7 +101,20 @@ namespace ColorVision.Wizards
 
             if (!result)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"请完成所有配置项","ColorVision");
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "还有未完成的配置，是否跳过", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    if (Application.Current.MainWindow == this)
+                    {
+                        WindowConfig.WizardCompletionKey = true;
+                        //这里使用件的启动路径，启动主程序
+                        Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"));
+                        Application.Current.Shutdown();
+                    }
+                    else
+                    {
+                        this.Close();
+                    }
+                }
                 return;
             }
 

@@ -47,8 +47,6 @@
             <ListView x:Name="ListWizard" Background="Transparent"  BorderThickness="0" Grid.Column="0" Padding="5,0,5,5">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Setter Property="Background" Value="{Binding ConfigurationStatus,Converter={StaticResource BooleanToBrushConverter}}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
@@ -60,12 +58,21 @@
                                 <Setter Property="BorderThickness" Value="0"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn >
+                        <GridViewColumn  Width="250">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type ui:IWizardStep}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding Header}"/>
-                                    </StackPanel>
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Grid DockPanel.Dock="Right" Margin="0,0,5,0">
+                                                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  ConfigurationStatus,Mode=OneWay}" IsEnabled="False" />
+                                                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+                                                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding Header}"/>
+                                        </StackPanel>
+
+                                    </Grid>
+
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

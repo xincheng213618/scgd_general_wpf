@@ -32,6 +32,7 @@ namespace ColorVision.Engine.MySql
             {
                 timer.Change(0, MySqlSetting.Instance.ReConnectTime);
             };
+            Connect();
         }
         public void ReConnect(object? o)
         {

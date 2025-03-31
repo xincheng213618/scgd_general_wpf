@@ -9,7 +9,7 @@ namespace ColorVision.Wizards
     {
         public override string OwnerGuid => "Help";
         public override string GuidId => "Wizard";
-        public override int Order => 10000;
+        public override int Order => 9000;
         public override string Header => Resources.Wizard;
 
         [RequiresPermission(PermissionMode.Administrator)]
