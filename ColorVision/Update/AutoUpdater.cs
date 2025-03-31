@@ -4,7 +4,6 @@ using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
-using ScottPlot.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

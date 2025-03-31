@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -32,7 +30,7 @@ namespace ColorVision.Update
             OpenInExplorerCommand = new RelayCommand(a => Common.Utilities.PlatformHelper.Open("CHANGELOG.md"));
         }
 
-
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 
 
@@ -73,8 +71,8 @@ namespace ColorVision.Update
             if (ChangeLogListView.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                ViewCameraConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                ViewCameraConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                WindowConfig.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                WindowConfig.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
         }
