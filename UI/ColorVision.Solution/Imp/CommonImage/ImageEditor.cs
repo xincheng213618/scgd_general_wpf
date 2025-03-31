@@ -1,12 +1,8 @@
-﻿using ColorVision.Engine.Templates.Flow;
-using ColorVision.ImageEditor;
-using ColorVision.Solution;
-using ColorVision.UI;
-using System;
+﻿using ColorVision.ImageEditor;
 using System.Windows.Controls;
 
 
-namespace ColorVision.Engine.Impl.CommonImage
+namespace ColorVision.Solution.Imp.CommonImage
 {
     public class ImageEditor : IEditorBase
     {

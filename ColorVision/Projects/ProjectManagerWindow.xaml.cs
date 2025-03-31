@@ -17,15 +17,13 @@ namespace ColorVision.Projects
         {
             this.DataContext = ProjectManager.GetInstance();
             DefalutSearchComboBox.ItemsSource = new List<string>() { "ProjectKB", "ProjectBlackMura", "ProjectHeyuan", "ProjectShiyuan", "ProjectBase" };
+            ListViewProjects.SelectedIndex = 0;
         }
 
 
         private void ListViewProjects_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (ListViewProjects.SelectedIndex > -1)
-            {
-                BorderContent.DataContext = ProjectManager.GetInstance().Projects[ListViewProjects.SelectedIndex];
-            }
+
         }
     }
 }

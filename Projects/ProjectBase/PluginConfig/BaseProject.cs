@@ -5,7 +5,7 @@ namespace ProjectBase.PluginConfig
 {
     public class BaseProject : IProjectBase
     {
-        public override string? Header => "BlackMura检测";
+        public override string? Header => "基础项目";
 
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectBlackMura";
 

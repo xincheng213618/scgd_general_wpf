@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using System.Windows;
@@ -23,7 +22,7 @@ namespace ColorVision.Solution.Imp.CommonImage
 
         public void Export(string filePath)
         {
-            new ExportCVCIE(filePath).Show();
+
         }
 
         public void Process(string filePath)

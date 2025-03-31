@@ -14,12 +14,35 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
-            <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-            <hc:ComboBox x:Name="DefalutSearchComboBox" Width="200" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
-            <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
-        </StackPanel>
+        <Grid>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
+                <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
+                <hc:ComboBox x:Name="DefalutSearchComboBox" Width="200" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
+                <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                <Button  Command="{Binding EditCommand}" Padding="2" Height="27" Width="27" >
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" RenderTransformOrigin="0.5,0.5"  FontSize="20" Foreground="{DynamicResource GlobalTextBrush}">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform x:Name="rotateTransform21"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
+
+            </StackPanel>
+
+        </Grid>
+
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="500"/>
