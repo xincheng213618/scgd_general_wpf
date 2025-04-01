@@ -16,11 +16,10 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0,0,0,0">
+        <Border Grid.Row="0" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,0" CornerRadius="0,0,0,0">
             <StackPanel >
                 <hc:ComboBox  x:Name="CameraCode" IsEditable="True" SelectedIndex="0" SelectedValue="{Binding CreateConfig.CameraID}" Text="{Binding CreateConfig.Code}" />
-                <DockPanel Margin="5,5,0,0" >
-                    <TextBlock Text="设备名称" Width="120" />
+                <DockPanel Margin="5,10,0,0" >
                     <TextBlock x:Name="DeviceName" Text="" />
                 </DockPanel>
             </StackPanel>

@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -16,24 +16,25 @@ using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
+using ColorVision.UI.PropertyEditor;
 using cvColorVision;
 using log4net;
+using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Net.Http;
-using System.Net.Http.Json;
-using ColorVision.UI.PropertyEditor;
-using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -224,6 +225,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                 }
             }
+
         }
 
         private string productBrochure;

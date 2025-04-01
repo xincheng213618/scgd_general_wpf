@@ -204,6 +204,16 @@ namespace ColorVision.Engine.Services.PhyCameras
             LoadPhyCamera();
             if (PhyCameras.Count == 1)
             {
+                LicenseModel license = CameraLicenseDao.Instance.GetByMAC(cameraID);
+                if (license == null)
+                    license = new LicenseModel();
+                license.LiceType = 0;
+                license.MacAddress = cameraID;
+                CameraLicenseDao.Instance.Save(license);
+
+                GetPhyCamera(cameraID).CameraLicenseModel = license;
+
+
                 foreach (var item in ServiceManager.GetInstance().DeviceServices)
                 {
                     if (item is DeviceCamera deviceCamera)
@@ -263,7 +273,15 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         var newPhyCamera = new PhyCamera(item);
                         if (newPhyCamera.LicenseState != LicenseState.Licensed)
-                            Task.Run(() => newPhyCamera.UploadLicenseNet());
+                            Task.Run(async () =>
+                            {
+                                await newPhyCamera.UploadLicenseNet();
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList().ForEach(a => a.Save());
+                                });
+                            }
+                            );
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);
