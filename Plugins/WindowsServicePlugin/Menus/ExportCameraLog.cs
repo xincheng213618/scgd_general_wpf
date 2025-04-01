@@ -24,6 +24,7 @@ namespace WindowsServicePlugin.Menus
         {
             get
             {
+                CVWinSMSConfig.Instance.Init();
                 if (!Directory.Exists(CVWinSMSConfig.Instance.BaseLocation))
                     return string.Empty;
                 string path = Path.Combine(CVWinSMSConfig.Instance.BaseLocation, "CVMainWindowsService_x64", "log");

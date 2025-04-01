@@ -20,13 +20,17 @@ namespace WindowsServicePlugin
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
-        public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; Init(); } }
+        public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; } }
         private string _CVWinSMSPath = string.Empty;
 
         [JsonIgnore]
-        public string BaseLocation { get
+        public string BaseLocation { 
+            
+            get
             {
-                return dic["BaseLocation"];
+                if (dic.TryGetValue("BaseLocation", out string location))
+                    return location;
+                return string.Empty;
             }
         }
 
@@ -35,29 +39,38 @@ namespace WindowsServicePlugin
 
         public void Init()
         {
-            string filePath = Directory.GetParent(CVWinSMSPath) + @"\config\App.config";
-            if (!File.Exists(filePath))
+            try
             {
-                return;
-            }
-            XDocument config = XDocument.Load(filePath);
-            var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
-
-            if (appSettings != null)
-            {
-                foreach (var setting in appSettings)
+                string filePath = Directory.GetParent(CVWinSMSPath) + @"\config\App.config";
+                if (!File.Exists(filePath))
                 {
-                    string key = setting.Attribute("key")?.Value;
-                    string value = setting.Attribute("value")?.Value;
-                    if (key != null && value != null)
+                    return;
+                }
+                XDocument config = XDocument.Load(filePath);
+                var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
+
+                if (appSettings != null)
+                {
+                    foreach (var setting in appSettings)
                     {
-                        if (!dic.TryAdd(key, value))
+                        string key = setting.Attribute("key")?.Value;
+                        string value = setting.Attribute("value")?.Value;
+                        if (key != null && value != null)
                         {
-                            dic[key] = value;
+                            if (!dic.TryAdd(key, value))
+                            {
+                                dic[key] = value;
+                            }
                         }
                     }
                 }
             }
+            catch(Exception ex)
+            {
+                return;
+            }
+
+
         }
 
         public string Version { get => _Version; set => _Version = value; }
@@ -375,10 +388,18 @@ namespace WindowsServicePlugin
                     CVWinSMSConfig.Instance.CVWinSMSPath = openFileDialog.FileName;
                 }
             }
+            ProcessStartInfo startInfo = new();
+            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+            startInfo.WorkingDirectory = Environment.CurrentDirectory;
+            startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
+            startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
+                                      // 如果需要静默安装，添加静默安装参数
+                                      //quiet 没法自启，桌面图标也是空                       
+                                      //startInfo.Arguments = "/quiet";
             try
             {
                 ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
-                Process.Start(CVWinSMSConfig.Instance.CVWinSMSPath);
+                Process p = Process.Start(startInfo);
             }
             catch (Exception ex)
             {
