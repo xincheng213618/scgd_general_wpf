@@ -17,13 +17,21 @@ using System.Windows;
 
 namespace ColorVision.Projects
 {
-    public class ProjectManager:ViewModelBase
+    public class ProjectWindowConfig : WindowConfig
+    {
+
+    }
+
+    public class ProjectManager: ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectManager));
         private static ProjectManager _instance;
         private static readonly object _locker = new();
         public static ProjectManager GetInstance() { lock (_locker) { _instance ??= new ProjectManager(); return _instance; } }
         public ObservableCollection<ProjectInfo> Projects { get; private set; } = new ObservableCollection<ProjectInfo>();
+
+        public ProjectWindowConfig Config => ConfigService.Instance.GetRequiredService<ProjectWindowConfig>();
+        public RelayCommand EditConfigCommand { get; set; }
 
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand OpenDownloadCacheCommand { get; set; }
@@ -56,7 +64,7 @@ namespace ColorVision.Projects
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
-
+            EditConfigCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenDownloadCacheCommand = new RelayCommand(a => OpenDownloadCache());
         }
         public static void OpenDownloadCache()

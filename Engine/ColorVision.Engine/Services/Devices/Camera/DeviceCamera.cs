@@ -206,8 +206,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 DService.GetAllCameraID();
             }  
-            PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
-            phyCameraManager.Show();
+            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner};
+            phyCameraManager.ShowDialog();
         }
 
         [CommandDisplay("刷新设备列表")]

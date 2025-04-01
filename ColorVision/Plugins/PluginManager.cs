@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Projects;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -17,6 +18,12 @@ using System.Windows;
 
 namespace ColorVision.Plugins
 {
+    public class PluginWindowConfig : WindowConfig
+    {
+
+    }
+
+
     public class PluginManager:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
@@ -24,6 +31,9 @@ namespace ColorVision.Plugins
         private static readonly object _locker = new();
         public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
         public ObservableCollection<PluginInfo> Plugins { get; private set; } = new ObservableCollection<PluginInfo>();
+        public PluginWindowConfig Config => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();
+        public RelayCommand EditConfigCommand { get; set; }
+
 
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
@@ -54,6 +64,7 @@ namespace ColorVision.Plugins
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
+            EditConfigCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}

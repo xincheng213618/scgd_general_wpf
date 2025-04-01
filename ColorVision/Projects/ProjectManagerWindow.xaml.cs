@@ -8,9 +8,12 @@ namespace ColorVision.Projects
     /// </summary>
     public partial class ProjectManagerWindow : Window
     {
+
         public ProjectManagerWindow()
         {
             InitializeComponent();
+            ProjectManager.GetInstance().Config.SetWindow(this);
+            this.SizeChanged += (s, e) => ProjectManager.GetInstance().Config.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)
