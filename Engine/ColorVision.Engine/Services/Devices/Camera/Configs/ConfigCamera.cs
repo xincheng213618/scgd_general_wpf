@@ -20,8 +20,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private string _CameraID;
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged();} }
         private CameraType _CameraType;
-        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged();  } }
-        private CameraMode _CameraMode;
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        private CameraMode _CameraMode = CameraMode.BV_MODE;
 
         public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; NotifyPropertyChanged();  } }
         private CameraModel _CameraModel;
