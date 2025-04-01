@@ -303,6 +303,9 @@
     <None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Tool\sscom5.13.1.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

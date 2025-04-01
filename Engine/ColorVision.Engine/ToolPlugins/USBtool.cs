@@ -13,5 +13,19 @@ namespace ColorVision.Engine.ToolPlugins
             Common.Utilities.PlatformHelper.Open("Assets\\Tool\\UsbTreeView.exe");
         }
     }
+
+    public class SSCOMTool : MenuItemBase
+    {
+        public override string OwnerGuid => MenuItemConstants.View;
+        public override string Header => "SSCOM串口调试助手";
+        public override int Order => 100;
+        public override void Execute()
+        {
+            Common.Utilities.PlatformHelper.Open("Assets\\Tool\\sscom5.13.1.exe");
+        }
+    }
+
+
+    
 }
 
