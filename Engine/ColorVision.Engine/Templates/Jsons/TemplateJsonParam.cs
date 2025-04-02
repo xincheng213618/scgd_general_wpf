@@ -2,6 +2,7 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
+using ScottPlot.Statistics;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -28,12 +29,15 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public RelayCommand OpenEditToolCommand { get; set; }
 
+        public string Description { get;  }
+
         public TemplateJsonParam()
         {
             TemplateJsonModel = new TemplateJsonModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
+            Description = "Json配置";
         }
 
         public TemplateJsonParam(TemplateJsonModel templateJsonModel)

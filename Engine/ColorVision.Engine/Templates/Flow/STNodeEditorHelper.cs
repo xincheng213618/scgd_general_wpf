@@ -21,6 +21,7 @@ using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
@@ -219,7 +220,11 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
             }
 
-
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode algorithmBlackMuraNode)
+            {
+                AddStackPanel(name => algorithmBlackMuraNode.DeviceCode = name, algorithmBlackMuraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => algorithmBlackMuraNode.TempName = name, algorithmBlackMuraNode.TempName, "BlackMura", new TemplateBlackMura());
+            }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
             {

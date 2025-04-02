@@ -1,5 +1,8 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Sys.Dao;
 using ColorVision.Solution.Searches;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -55,7 +58,6 @@ namespace ColorVision.Engine.DataHistory.Dao
         }
     }
 
-
     public class MenuConfigArchive : MenuItemBase
     {
         public override string OwnerGuid => nameof(MenuArchive);
@@ -66,7 +68,14 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
             string sql = "ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `excluding_images` TINYINT(1) NOT NULL DEFAULT '0' AFTER `data_save_days`;  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `del_local_file` tinyint(1) NOT NULL DEFAULT '0';  ALTER TABLE `t_scgd_sys_config_archived` ADD COLUMN `data_save_hours` int(11) NOT NULL DEFAULT '0';";
             MySqlControl.GetInstance().ExecuteNonQuery(sql);
-            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+
+            SysConfigRcModel sysConfigRcModel = SysConfigRcDao.Instance.GetByCode(RCSetting.Instance.Config.RCName);
+            if (sysConfigRcModel == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到RC配置信息", "ColorVision");
+                return;
+            }
+            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(sysConfigRcModel.ArchivedId);
             if (configArchivedModel == null)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到归档配置信息", "ColorVision");

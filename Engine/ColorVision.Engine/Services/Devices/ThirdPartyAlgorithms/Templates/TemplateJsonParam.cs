@@ -21,6 +21,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 
         public RelayCommand CheckCommand { get; set; }
 
+        public string Description { get; }
+
         public ModThirdPartyAlgorithmsModel ModThirdPartyAlgorithmsModel { get; set; }
 
         public TemplateJsonParam() 
@@ -28,7 +30,9 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             ResetCommand = new RelayCommand((a)=> ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
             CheckCommand = new RelayCommand(a => Check());
+            Description = "Json配置";
         }
+
 
         public TemplateJsonParam(ModThirdPartyAlgorithmsModel modThirdPartyAlgorithmsModel)
         {
