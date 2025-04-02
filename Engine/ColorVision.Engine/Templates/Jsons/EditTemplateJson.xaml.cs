@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.UI;
 using System;
-using System.Diagnostics;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 

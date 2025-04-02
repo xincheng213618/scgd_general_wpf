@@ -391,6 +391,10 @@ namespace ColorVision.UI
                 dockPanel.Children.Add(textbox);
 
             }
+            else if (propertyEditorType == PropertyEditorType.TextJson)
+            {
+
+            }
             else if (propertyEditorType == PropertyEditorType.CronExpression)
             {
                 var cronButton = new Button

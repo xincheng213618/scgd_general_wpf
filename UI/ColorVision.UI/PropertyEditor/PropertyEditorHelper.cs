@@ -489,7 +489,5 @@ namespace ColorVision.UI
         }
 
 
-
-
     }
 }
