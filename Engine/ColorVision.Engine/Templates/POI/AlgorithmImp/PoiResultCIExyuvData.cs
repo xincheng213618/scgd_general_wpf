@@ -58,26 +58,37 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             var maxValues = new Dictionary<string, double>();
             var minValues = new Dictionary<string, double>();
             var sumValues = new Dictionary<string, double>();
+            var maxNames = new Dictionary<string, string>();
+            var minNames = new Dictionary<string, string>();
             var count = poiResultCIExyuvDatas.Count;
 
             // 初始化字典
-            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            foreach (var property in properties.Skip(4)) // 假设前四个属性不是数字
             {
                 maxValues[property] = double.MinValue;
                 minValues[property] = double.MaxValue;
                 sumValues[property] = 0.0;
+                maxNames[property] = string.Empty;
+                minNames[property] = string.Empty;
 
                 // 计算最大值、最小值和总和
                 foreach (var item in poiResultCIExyuvDatas)
                 {
                     if (typeof(PoiResultCIExyuvData).GetProperty(property)?.GetValue(item) is double dd)
                     {
-                        maxValues[property] = Math.Max(maxValues[property], dd);
-                        minValues[property] = Math.Min(minValues[property], dd);
+                        if (dd > maxValues[property])
+                        {
+                            maxValues[property] = dd;
+                            maxNames[property] = item.Name ?? item.Id.ToString();
+                        }
+                        if (dd < minValues[property])
+                        {
+                            minValues[property] = dd;
+                            minNames[property] = item.Name ?? item.Id.ToString();
+                        }
                         sumValues[property] += dd;
                     }
                 }
-
             }
 
 
@@ -90,7 +101,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
             {
                 varianceValues[property] = 0.0;
-
 
                 foreach (var item in poiResultCIExyuvDatas)
                 {
@@ -105,16 +115,21 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             // 将统计数据添加到CSV
             csvBuilder.AppendLine("\n统计信息");
-            csvBuilder.AppendLine("属性,最大值,最小值,平均值,方差");
-            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            csvBuilder.AppendLine("属性,最大值,最大值所在名称,最小值,最小值所在名称,平均值,方差,均匀性");
+            foreach (var property in properties.Skip(4))
             {
+                double uniformity = (maxValues[property] != 0) ? (minValues[property] / maxValues[property]) * 100 : 0;
+
                 List<string> stats = new()
-                {
+        {
             property,
             maxValues[property].ToString(CultureInfo.InvariantCulture),
+            maxNames[property].ToString(CultureInfo.InvariantCulture),
             minValues[property].ToString(CultureInfo.InvariantCulture),
+            minNames[property].ToString(CultureInfo.InvariantCulture),
             meanValues[property].ToString(CultureInfo.InvariantCulture),
-            varianceValues[property].ToString(CultureInfo.InvariantCulture)
+            varianceValues[property].ToString(CultureInfo.InvariantCulture),
+            uniformity.ToString("F2", CultureInfo.InvariantCulture)
         };
                 csvBuilder.AppendLine(string.Join(",", stats));
             }
@@ -147,24 +162,6 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public double y { get { return _y; } set { _y = value; NotifyPropertyChanged(); } }
         private double _y;
-
-
-        public bool ValidateResult
-        {
-            get
-            {
-                if (ValidateSingles == null)
-                    return false;
-                bool result = true;
-                foreach (var item in ValidateSingles)
-                {
-                    result = result && item.Result == ValidateRuleResultType.M;
-                }
-                return result;
-            }
-        }
-
-
 
 
         public PoiResultCIExyuvData() { }

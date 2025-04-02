@@ -5,8 +5,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<VersionPrefix>1.1.11.1</VersionPrefix>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<VersionPrefix>1.1.12.2</VersionPrefix>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -14,10 +13,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25103.5738" />
+		<PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25104.5739" />
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\ColorVision.ImageEditor\ColorVision.ImageEditor.csproj" />
 		<ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
 

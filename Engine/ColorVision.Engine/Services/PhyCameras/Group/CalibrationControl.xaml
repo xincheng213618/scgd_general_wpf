@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
+             xmlns:phy ="clr-namespace:ColorVision.Engine.Services.PhyCameras"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance local:CalibrationParam}"
              mc:Ignorable="d" 
@@ -29,6 +30,7 @@
                     <StackPanel Margin="5">
                         <DockPanel >
                             <Button DockPanel.Dock="Right" Content="配置" Click="Button_Click"  Margin="5,0"/>
+                            <Button x:Name="uploadbutton" d:DataContext="{d:DesignInstance phy:PhyCamera}" DockPanel.Dock="Right" Content="上传" Command="{Binding UploadCalibrationCommand}"  Margin="5,0"/>
                             <TextBlock DockPanel.Dock="Left" Text="校正文件"  Width="80" />
                             <hc:ComboBox x:Name="ComboBoxList" Text="{Binding CalibrationMode}" DisplayMemberPath="Name" />
                         </DockPanel>

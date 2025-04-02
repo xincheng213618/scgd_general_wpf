@@ -74,6 +74,11 @@ namespace ColorVision.Projects
         {
             string LatestReleaseUrl = Project.UpdateUrl + "/LATEST_RELEASE";
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+            if (version == new Version())
+            {
+                MessageBox.Show("找不到版本");
+                return;
+            }
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Project.Header, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
@@ -130,9 +135,9 @@ namespace ColorVision.Projects
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 2
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c ProjectManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -184,7 +189,8 @@ del ""%~f0"" & exit
 
             string batchContent = $@"
 @echo off
-timeout /t 3
+taskkill /f /im ""{executableName}""
+timeout /t 2
 setlocal
 
 rem 设置要删除的目录路径
@@ -200,7 +206,7 @@ if exist %targetDirectory% (
 )
 
 endlocal
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c ProjectManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";

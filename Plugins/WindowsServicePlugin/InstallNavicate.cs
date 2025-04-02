@@ -7,15 +7,12 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallNavicate : MenuItemBase, IWizardStep
+    public class InstallNavicate : WizardStepBase
     {
-        public override string OwnerGuid => "ServiceLog";
-
-        public override string GuidId => "InstallNavicate";
 
         public override int Order => 50;
         public override string Header => "下载 Navicate";
-        public string Description => "下载Navicate作为第三方数据库查看软件";
+        public override string Description => "下载Navicate作为第三方数据库查看软件";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
         public InstallNavicate()

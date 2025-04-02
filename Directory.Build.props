@@ -17,10 +17,10 @@
 		<AssemblyCompany>ColorVision Corp.</AssemblyCompany>
 		<AssemblyCopyright>Copyright (C) 2024 ColorVision Corporation</AssemblyCopyright>
 		<AssemblyProduct>ColorVision</AssemblyProduct>
-		<VersionPrefix>1.1.14.30</VersionPrefix>
+		<VersionPrefix>1.1.19.8</VersionPrefix>
 		<Company>ColorVision</Company>
 		<NeutralLanguage>zh-CN</NeutralLanguage>
-		<NeutralLanguage>zh-CN</NeutralLanguage>
+		<NeutralLanguage>zh-CN</NeutralLanguage> 
 		<Authors>xincheng</Authors>
 	</PropertyGroup>
 </Project>

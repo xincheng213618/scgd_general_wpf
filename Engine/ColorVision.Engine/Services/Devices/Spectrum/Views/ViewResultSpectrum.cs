@@ -8,16 +8,19 @@ using ScottPlot;
 using static cvColorVision.GCSDLL;
 using ScottPlot.Plottables;
 using ScottPlot.DataSources;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
 
-    public class ViewResultSpectrum : ViewModelBase,ISortable
+    public class ViewResultSpectrum : ViewModelBase
     {
         private static int No;
-        public int Id { get; set; }
-        public int IdShow { get; set; }
 
+        [DisplayName("SerialNumber1")]
+        public int Id { get; set; }
+
+        [DisplayName("CreateTime")]
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }
         public int? BatchID { get; set; }

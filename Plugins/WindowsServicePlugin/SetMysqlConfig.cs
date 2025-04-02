@@ -11,17 +11,30 @@ namespace WindowsServicePlugin
 {
     public partial class SetServiceConfig
     {
-        public class SetMysqlConfig : IWizardStep
+        public class SetMysqlConfig : WizardStepBase
         {
-            public int Order => 8;
+            public override int Order => 2;
 
-            public string Header => "从服务中配置Mysql";
-            public string Description => "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
+            public override string Header => "读取服务的配置";
+            public override string Description => GetDescription(); 
 
-            public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+            public string GetDescription()
+            {
+                string Description = "如果已经正确配置服务管理工具，使用该命令会自动读取服务管理工具中的配置文件并应用";
+                if (File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+                {
+                    string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
+                    if (File.Exists(filePath))
+                    {
+                        Description += Environment.NewLine + "配置文件路径：" + filePath;
+                        Description += Environment.NewLine + File.ReadAllText(filePath);
+                    }
+                }
+                return Description;
+            }
 
             Dictionary<string, string> dic = new Dictionary<string, string>();
-            public void Execute()
+            public override void Execute()
             {
                 if (!File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
                 {
@@ -61,8 +74,9 @@ namespace WindowsServicePlugin
                     MySqlSetting.Instance.MySqlConfig.UserPwd = dic["MysqlPwd"];
                     MySqlSetting.Instance.MySqlConfig.Database = dic["MysqlDatabase"];
                     MySqlConfig rootConfig = new MySqlConfig() { Name = "RootPath", Host = dic["MysqlHost"], UserName = "root", UserPwd = dic["MysqlRootPwd"], Database = dic["MysqlDatabase"] };
-                    var oldrootConfig = MySqlSetting.Instance.MySqlConfigs.First(a => a.Name == "RootPath");
-                    MySqlSetting.Instance.MySqlConfigs.Remove(oldrootConfig);
+                    var oldrootConfig = MySqlSetting.Instance.MySqlConfigs.FirstOrDefault(a => a.Name == "RootPath");
+                    if (oldrootConfig != null)
+                        MySqlSetting.Instance.MySqlConfigs.Remove(oldrootConfig);
                     MySqlSetting.Instance.MySqlConfigs.Add(rootConfig);
 
                     CVWinSMSConfig.Instance.Version = dic["Version"];

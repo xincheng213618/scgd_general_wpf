@@ -1,27 +1,34 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Properties;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.ImageEditor;
+using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
-using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Resources;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.Flow;
-using System.Linq;
-using CVCommCore;
-using ColorVision.ImageEditor;
+using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -104,6 +111,32 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (arg.DeviceCode != Device.Config.Code) return;
 
+            if (arg.Code == 102)
+            {
+                switch (arg.EventName)
+                {
+                    case "AutoFocus":
+                        try
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Device.Config.MotorConfig.Position = arg.Data.Position;
+                                string Filepath = arg.Data.ImageTmpFile;
+                                ImageView.OpenImage(Filepath);
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+
+                return;
+            }
+
             switch (arg.EventName)
             {
                 case MQTTCameraEventEnum.Event_GetData:
@@ -141,30 +174,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilitys)
+                Type type = typeof(ViewResultCamera);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute !=null)
                     {
-                        string Name = item.ColumnName.ToString();
-                        if (Name == Properties.Resources.SerialNumber1)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByID(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.CreateTime)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByCreateTime(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.BatchNumber)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByBatch(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.File)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByFilePath(item.IsSortD);
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
+                                item.IsSortD =!item.IsSortD;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
                     }
                 }

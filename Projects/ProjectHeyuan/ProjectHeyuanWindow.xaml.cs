@@ -24,7 +24,6 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Compliance;
-using MQTTMessageLib.Algorithm;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib.Base;
 
@@ -175,7 +174,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             ComboBoxSer.SelectedIndex = 0;
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
-            FlowTemplate.ItemsSource = FlowParam.Params;
+            FlowTemplate.ItemsSource = TemplateFlow.Params;
             FlowTemplate.SelectionChanged += (s, e) => Refresh();
 
             List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
@@ -187,6 +186,7 @@ namespace ColorVision.Projects.ProjectHeyuan
             this.DataContext = HYMesManager.GetInstance();
 
             timer = new Timer(TimeRun, null, 0, 100);
+            timer.Change(Timeout.Infinite, 100); // 停止定时器
         }
 
         public void Refresh()
@@ -200,7 +200,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                     item.nodeRunEvent -= UpdateMsg;
 
                 flowEngine.LoadFromBase64(string.Empty);
-                flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
@@ -342,32 +342,32 @@ namespace ColorVision.Projects.ProjectHeyuan
                                         tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
                                         tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
 
-                                        if (poiResultCIExyuvData1.ValidateSingles != null)
-                                        {
-                                            foreach (var item in poiResultCIExyuvData1.ValidateSingles)
-                                            {
-                                                if (item.Rule.RType == ValidateRuleType.CIE_x)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.CIE_y)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.CIE_lv)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                                if (item.Rule.RType == ValidateRuleType.Wave)
-                                                {
-                                                    tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
-                                                }
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
-                                        }
+                                        //if (poiResultCIExyuvData1.ValidateSingles != null)
+                                        //{
+                                        //    foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                        //    {
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //        if (item.Rule.RType == ValidateRuleType.Wave)
+                                        //        {
+                                        //            tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                        //        }
+                                        //    }
+                                        //}
+                                        //else
+                                        //{
+                                        //    MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                        //}
 
                                         Results.Add(tempResult1);
                                     }

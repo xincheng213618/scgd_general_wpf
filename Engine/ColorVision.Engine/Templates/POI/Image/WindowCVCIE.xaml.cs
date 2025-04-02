@@ -1,15 +1,35 @@
-﻿using ColorVision.Engine.Templates.POI.AlgorithmImp;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace ColorVision.Engine.Media
 {
+    public class CVCIEShowConfig : ViewModelBase, IConfig
+    {
+        public static CVCIEShowConfig Instance => ConfigService.Instance.GetRequiredService<CVCIEShowConfig>();
+        public RelayCommand EditCommand { get; set; }
+
+        public CVCIEShowConfig()
+        {
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        }
+        [DisplayName("是否显示记录数据")]
+        public bool IsShowString { get => _IsShowString; set { _IsShowString = value; NotifyPropertyChanged(); } }
+        private bool _IsShowString = true;
+        [DisplayName("数据显示模板")]
+        public string Template { get => _Template;set { _Template = value;  NotifyPropertyChanged(); } }
+        private string _Template = "X:@X:F1 Y:@Y:F1 Z:@Z:F1\\nx:@x:F4 y:@y:F4 u:@u:F4 v:@v:F4\\nCCT:@CCT:F1 Wave:@Wave:F1";
+    }
+
     /// <summary>
     /// WindowCVCIE.xaml 的交互逻辑
     /// </summary>
@@ -52,6 +72,11 @@ namespace ColorVision.Engine.Media
             }
             listViewSide.ItemsSource = poiResultCIEYDatas;
         }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = CVCIEShowConfig.Instance;
+
+        }
 
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
@@ -71,5 +96,7 @@ namespace ColorVision.Engine.Media
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
         }
+
+
     }
 }

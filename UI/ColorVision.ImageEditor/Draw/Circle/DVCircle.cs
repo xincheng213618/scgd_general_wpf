@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Common.Utilities;
+using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -36,24 +37,29 @@ namespace ColorVision.ImageEditor.Draw
 
         public override void Render()
         {
+            using DrawingContext dc = RenderOpen();
+            TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             if (IsDrawing)
             {
-                TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
                 string Text = Attribute.Center.X.ToString("F0") + "," + Attribute.Center.Y.ToString("F0");
                 FormattedText formattedText = new(Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 
-                using DrawingContext dc = RenderOpen();
                 dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
                 dc.DrawText(formattedText, Attribute.Center);
-
                 FormattedText RadiusText = new(Attribute.Radius.ToString("F2"), CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(RadiusText,  new Point(Attribute.Radius + Attribute.Center.X, Attribute.Center.Y));
             }
             else
             {
-                using DrawingContext dc = RenderOpen();
                 dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
             }
+
+            if (!string.IsNullOrWhiteSpace(Attribute.Msg))
+            {
+                FormattedText formattedText = new FormattedText(Attribute.Msg, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                dc.DrawText(formattedText, new Point(Attribute.Center.X - formattedText.Width / 2, Attribute.Center.Y - formattedText.Height / 2));
+            }
+
 
         }
 

@@ -2,6 +2,7 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.LedCheck;
@@ -18,9 +19,12 @@ using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,7 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         private NetFileUtil netFileUtil;
 
-        public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
+        public ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
         public ObservableCollection<IResultHandleBase> ResultHandles { get; set; } = new ObservableCollection<IResultHandleBase>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -121,7 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        public static ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
+        public ObservableCollection<AlgorithmResult> ViewResults => Config.ViewResults;
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -562,7 +566,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     default:
                         break;
                 }
-
             }
         }
 
@@ -664,6 +667,32 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             else
             {
                 MessageBox.Show("您需要先选择数据");
+            }
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                Type type = typeof(AlgorithmResult);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
+                {
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    string displayName = attribute?.DisplayName ?? property.Name;
+                    displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                    if (displayName == gridViewColumnHeader.Content.ToString())
+                    {
+                        var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                        if (item != null)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            break;
+                        }
+                    }
+                }
             }
         }
     }

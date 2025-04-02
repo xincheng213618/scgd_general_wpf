@@ -107,7 +107,10 @@
             </Border>
             <Border Grid.Row="1"  Style="{StaticResource BorderModuleArea}"  CornerRadius="5" Margin="5,5,5,0">
                 <StackPanel Margin="5">
-            
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="KBLVSacle" Width="60"/>
+                        <TextBox  BorderThickness="1" Width="100" Style="{StaticResource TextBox.Small}" Text="{Binding KBLVSacle}"/>
+                    </StackPanel>
                     <DockPanel Margin="0,0">
                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource GlobalTextBrush}">

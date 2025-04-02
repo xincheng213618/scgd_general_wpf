@@ -1,13 +1,17 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
+using iText.Layout.Element;
 using log4net;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
+using System.Xml.Linq;
 
 
 namespace WindowsServicePlugin
@@ -16,8 +20,58 @@ namespace WindowsServicePlugin
     {
         public static CVWinSMSConfig Instance => ConfigService.Instance.GetRequiredService<CVWinSMSConfig>();
 
-        public string CVWinSMSPath { get => _CVWinSMSPath; set => _CVWinSMSPath = value; }
+        public string CVWinSMSPath { get => _CVWinSMSPath; set  { _CVWinSMSPath = value; } }
         private string _CVWinSMSPath = string.Empty;
+
+        [JsonIgnore]
+        public string BaseLocation { 
+            
+            get
+            {
+                if (dic.TryGetValue("BaseLocation", out string location))
+                    return location;
+                return string.Empty;
+            }
+        }
+
+        [JsonIgnore]
+        Dictionary<string, string> dic = new Dictionary<string, string>();
+
+        public void Init()
+        {
+            try
+            {
+                string filePath = Directory.GetParent(CVWinSMSPath) + @"\config\App.config";
+                if (!File.Exists(filePath))
+                {
+                    return;
+                }
+                XDocument config = XDocument.Load(filePath);
+                var appSettings = config.Element("configuration")?.Element("appSettings")?.Elements("add");
+
+                if (appSettings != null)
+                {
+                    foreach (var setting in appSettings)
+                    {
+                        string key = setting.Attribute("key")?.Value;
+                        string value = setting.Attribute("value")?.Value;
+                        if (key != null && value != null)
+                        {
+                            if (!dic.TryAdd(key, value))
+                            {
+                                dic[key] = value;
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                return;
+            }
+
+
+        }
 
         public string Version { get => _Version; set => _Version = value; }
         private string _Version = string.Empty;
@@ -67,11 +121,26 @@ namespace WindowsServicePlugin
 
         public override string GuidId => "InstallTool";
 
-        public override int Order => 4;
+        public override int Order => 1;
 
         public override string Header => Properties.Resources.ManagementService;
 
-        public string Description => "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
+        public string Description => GetDescription();
+
+        public string GetDescription()
+        {
+            string Description = "打开最新的服务管理工具，如果不存在会自动下载，下载后请手动指定保存位置";
+            if (File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath))
+            {
+                string filePath = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath) + @"\config\App.config";
+                if (File.Exists(filePath))
+                {
+                    Description += Environment.NewLine + "配置文件路径：" + filePath;
+                    Description += Environment.NewLine + File.ReadAllText(filePath);
+                }
+            }
+            return Description;
+        }
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
@@ -98,6 +167,8 @@ namespace WindowsServicePlugin
                 await GetLatestReleaseVersion();
             }
         }
+        public bool ConfigurationStatus { get => _ConfigurationStatus; set { _ConfigurationStatus = value; NotifyPropertyChanged(); } }
+        private bool _ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
 
         public async Task GetLatestReleaseVersion()
         {
@@ -248,6 +319,8 @@ namespace WindowsServicePlugin
                             CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser.SelectedPath + "\\InstallTool\\CVWinSMS.exe";
                         }
 
+                        ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
+
                         // 启动新的实例
                         ProcessStartInfo startInfo = new();
                         startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
@@ -315,14 +388,25 @@ namespace WindowsServicePlugin
                     CVWinSMSConfig.Instance.CVWinSMSPath = openFileDialog.FileName;
                 }
             }
+            ProcessStartInfo startInfo = new();
+            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+            startInfo.WorkingDirectory = Environment.CurrentDirectory;
+            startInfo.FileName = CVWinSMSConfig.Instance.CVWinSMSPath;
+            startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
+                                      // 如果需要静默安装，添加静默安装参数
+                                      //quiet 没法自启，桌面图标也是空                       
+                                      //startInfo.Arguments = "/quiet";
             try
             {
-                Process.Start(CVWinSMSConfig.Instance.CVWinSMSPath);
+                ConfigurationStatus = File.Exists(CVWinSMSConfig.Instance.CVWinSMSPath);
+                Process p = Process.Start(startInfo);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
             }
         }
+
+
     }
 }

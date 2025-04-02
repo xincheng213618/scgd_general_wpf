@@ -29,7 +29,7 @@
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSpectrum}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" >
-                <StackPanel >
+                <StackPanel x:Name="EditStackPanel" >
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,0,0,5">
@@ -110,22 +110,6 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="文件配置" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="数据目录" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.DataBasePath}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口地址" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="端口范围" Width="120"/>
-                                <TextBox Text="{Binding FileServerCfg.PortRange}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
                 </StackPanel>
             </Border>
         </ScrollViewer>

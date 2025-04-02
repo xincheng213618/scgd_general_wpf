@@ -1,23 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Configs;
+using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
-using NPOI.SS.Formula.Functions;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ColorVision.Engine.Services
 {

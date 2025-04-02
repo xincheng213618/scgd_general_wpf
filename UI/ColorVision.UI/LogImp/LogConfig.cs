@@ -18,7 +18,7 @@ namespace ColorVision.UI
         public RelayCommand EditCommand { get; set; }
         public LogConfig()
         {
-            EditCommand = new RelayCommand(a => new PropertyEditor.PropertyEditorWindow(this) {  Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) {  Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
         public static readonly List<string> LogLevels = new() { "all", "debug", "info", "warning", "error", "none" };

@@ -6,6 +6,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -89,7 +90,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
-            FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
         }
         [JsonIgnore]
@@ -124,6 +125,8 @@ namespace ColorVision.Engine.Templates.POI
 
         public bool LockDeafult { get => _LockDeafult; set { _LockDeafult = value; NotifyPropertyChanged(); } }
         private bool _LockDeafult;
+        public bool UseCenter { get => _UseCenter; set { _UseCenter = value; NotifyPropertyChanged(); } }
+        private bool _UseCenter = false;
 
         public double DefalutWidth { get => _DefalutWidth; set { if (LockDeafult) return;  _DefalutWidth = value; NotifyPropertyChanged(); } } 
         private double _DefalutWidth = 30;

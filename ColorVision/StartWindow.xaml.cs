@@ -40,6 +40,7 @@ namespace ColorVision
             labelVersion.Text = $"{(DebugBuild(Assembly.GetExecutingAssembly()) ? " (Debug)" : "")} {(Debugger.IsAttached ? ColorVision.Properties.Resources.Debugging : "")} {(IntPtr.Size == 4 ? "32" : "64")} {ColorVision.Properties.Resources.Bit} -  {System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} - .NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy/MM/dd}";
 #endif
 
+            TextBoxMsg.Text = labelVersion.Text;
             ThemeManager.Current.SystemThemeChanged += (e) => {
                 Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
             };

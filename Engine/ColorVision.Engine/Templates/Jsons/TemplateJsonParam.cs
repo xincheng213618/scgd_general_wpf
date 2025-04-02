@@ -2,6 +2,7 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
+using ScottPlot.Statistics;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -20,15 +21,23 @@ namespace ColorVision.Engine.Templates.Jsons
         public RelayCommand ResetCommand { get; set; }
 
         [Browsable(false)]
+        [JsonIgnore]
+        public RelayCommand CheckCommand { get; set; }
+
+        [Browsable(false)]
         public DicTemplateJsonModel? DicTemplateJsonModel => DicTemplateJsonDao.Instance.GetById(TemplateJsonModel.DicId);
 
         public RelayCommand OpenEditToolCommand { get; set; }
+
+        public string Description { get;  }
 
         public TemplateJsonParam()
         {
             TemplateJsonModel = new TemplateJsonModel();
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
+            CheckCommand = new RelayCommand(a => Check());
+            Description = "Json配置";
         }
 
         public TemplateJsonParam(TemplateJsonModel templateJsonModel)
@@ -36,7 +45,14 @@ namespace ColorVision.Engine.Templates.Jsons
             TemplateJsonModel = templateJsonModel;
             ResetCommand = new RelayCommand((a) => ResetValue());
             OpenEditToolCommand = new RelayCommand(a => OpenEditTool());
+            CheckCommand = new RelayCommand(a => Check());
         }
+
+        public void Check()
+        {
+            JsonValueChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public void OpenEditTool()
         {
             Common.NativeMethods.Clipboard.SetText(JsonValue);
@@ -61,6 +77,7 @@ namespace ColorVision.Engine.Templates.Jsons
             if (DicTemplateJsonModel is DicTemplateJsonModel dicnmodel && DicTemplateJsonModel.JsonVal is string str)
             {
                 JsonValue = str;
+                JsonValueChanged?.Invoke(this, EventArgs.Empty);
             }
             else
             {
@@ -70,6 +87,8 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override int Id { get => TemplateJsonModel.Id; set { TemplateJsonModel.Id = value; NotifyPropertyChanged(); } }
         public override string Name { get => TemplateJsonModel.Name ?? string.Empty; set { TemplateJsonModel.Name = value; NotifyPropertyChanged(); } }
+
+        public event EventHandler JsonValueChanged;
 
         public string JsonValue
         {

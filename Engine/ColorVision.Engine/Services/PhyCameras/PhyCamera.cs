@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -22,18 +22,17 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Net.Http;
-using System.Net.Http.Json;
-using ColorVision.UI.PropertyEditor;
-using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -46,7 +45,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         Invalid
     }
 
-    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, ICalibrationService<ServiceObjectBase>, IIcon
+    public class PhyCamera : ServiceBase,ITreeViewItem, IUploadMsg, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
 
@@ -76,6 +75,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ProductBrochureCommand { get; set; }
         [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
+
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
@@ -140,7 +140,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
-            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
+            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
             OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
@@ -192,12 +192,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             string fileName = $"{DirLicense}\\{Code}-license.zip";
 
-            if (File.Exists(fileName) && MessageBox.Show(Application.Current.GetActiveWindow(),$"查询到本地保存的{Code}许可证，应用还是联网获取？", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                SetLicense(fileName);
-                return;
-            }
-
             using (HttpClient client = new HttpClient())
             {
                 try
@@ -230,6 +224,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                 }
             }
+
         }
 
         private string productBrochure;
@@ -331,6 +326,23 @@ namespace ColorVision.Engine.Services.PhyCameras
                     ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
                 });
             }
+        }
+
+        public override void Delete()
+        {
+            CalibrationParams.Clear();
+            this.VisualChildren.Clear();
+            SysResourceDao.Instance.DeleteAllByPid(Id, false);
+            foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+            {
+                ModDetailDao.Instance.DeleteAllByPid(item.Id, false);
+            }
+            ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
+
+
+            SysResourceModel.Value = null;
+            SysResourceDao.Instance.Save(SysResourceModel);
+            PhyCameraManager.GetInstance().PhyCameras.Remove(this);
         }
 
         public DeviceCamera? DeviceCamera { get; set; }
@@ -888,9 +900,12 @@ namespace ColorVision.Engine.Services.PhyCameras
                 {
                     log.Error(ex);
                     Msg = ex.Message;
-                    await Task.Delay(200);
                     SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
-                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    Application.Current.Dispatcher.Invoke(() => 
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        UploadClosed.Invoke(this, new EventArgs());
+                    } );
                     return;
                 }
             }
@@ -906,12 +921,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
             UserControl ??= new InfoPhyCamera(this);
             return UserControl;
-        }
-        public override void Delete()
-        {
-            SysResourceModel.Value = null;
-            SysResourceDao.Instance.Save(SysResourceModel);
-            PhyCameraManager.GetInstance().PhyCameras.Remove(this);
         }
 
         public void ContentInit()

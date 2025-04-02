@@ -330,4 +330,7 @@
   <data name="Bit" xml:space="preserve">
     <value>少し</value>
   </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>発売日</value>
+  </data>
 </root>

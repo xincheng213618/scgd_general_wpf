@@ -1,9 +1,11 @@
-﻿#pragma warning disable CS8604,CS8602
+﻿#pragma warning disable CS8604,CS8602,CS8629
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -22,25 +24,85 @@ namespace ColorVision.Engine.Templates.SFR
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            var ViewResults = result.ViewResults.ToSpecificViewResults<ViewResultSFR>();
+            string fileName = System.IO.Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");
+            var ViewResults = result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>();
 
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "pdfrequency", "pdomainSamplingData" };
-            // 写入列头
-            csvBuilder.AppendLine(string.Join(",", properties));
-            // 写入数据行
+
+            // Collect data for basic information
+            List<List<string>> basicData = new List<List<string>>();
             foreach (var item in ViewResults)
             {
-                List<string> values = new()
-                {
-                    item.pdfrequency.ToString(),
-                    item.pdomainSamplingData.ToString(),
-                };
-
-                csvBuilder.AppendLine(string.Join(",", values));
+                basicData.Add(new List<string>
+    {
+        item.Id.ToString(),
+        item.RoiX.ToString(),
+        item.RoiY.ToString(),
+        item.RoiWidth.ToString(),
+        item.RoiHeight.ToString()
+    });
             }
 
-            File.WriteAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+            // Generate dynamic headers for basic information
+            List<string> basicHeaders = new List<string>();
+            for (int i = 0; i < basicData.Count; i++)
+            {
+                basicHeaders.Add($"{basicData[i][0]}");
+                basicHeaders.Add(""); // Add empty columns for spacing
+                basicHeaders.Add("");
+            }
+            csvBuilder.AppendLine(string.Join(",", basicHeaders));
+
+            // Combine RoiX and RoiY, and RoiWidth and RoiHeight
+            List<string> roiXYLine = new List<string>();
+            List<string> roiWHLine = new List<string>();
+            for (int i = 0; i < basicData.Count; i++)
+            {
+                roiXYLine.Add($"{basicData[i][1]},{basicData[i][2]}");
+                roiXYLine.Add("");
+                roiWHLine.Add($"{basicData[i][3]},{basicData[i][4]}");
+                roiWHLine.Add("");
+            }
+            csvBuilder.AppendLine(string.Join(",", roiXYLine));
+            csvBuilder.AppendLine(string.Join(",", roiWHLine));
+            csvBuilder.AppendLine();
+
+            // Collect data for Pdfrequency and PdomainSamplingData
+            List<float[]> lists = new List<float[]>();
+            int maxLength = 0;
+            foreach (var item in ViewResults)
+            {
+                var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                lists.Add(Pdfrequencys);
+                lists.Add(PdomainSamplingDatas);
+                maxLength = Math.Max(maxLength, Math.Max(Pdfrequencys.Length, PdomainSamplingDatas.Length));
+            }
+
+            // Generate dynamic headers for Pdfrequency and PdomainSamplingData
+            List<string> dynamicHeaders = new();
+            for (int i = 0; i < lists.Count; i += 2)
+            {
+                dynamicHeaders.Add($"Pdfrequency_{i / 2 + 1}");
+                dynamicHeaders.Add($"PdomainSamplingData_{i / 2 + 1}");
+                dynamicHeaders.Add(""); // Add an empty header for the space column
+            }
+            csvBuilder.AppendLine(string.Join(", ", dynamicHeaders));
+
+            // Write data rows for Pdfrequency and PdomainSamplingData
+            for (int i = 0; i < maxLength; i++)
+            {
+                List<string> lineValues = new List<string>();
+                for (int j = 0; j < lists.Count; j += 2)
+                {
+                    string pdfValue = i < lists[j].Length ? lists[j][i].ToString() : "";
+                    string pdomainValue = i < lists[j + 1].Length ? lists[j + 1][i].ToString() : "";
+                    lineValues.Add($"{pdfValue}, {pdomainValue},"); // Add an empty value for the space column
+                }
+                csvBuilder.AppendLine(string.Join(", ", lineValues));
+            }
+
+            File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -67,30 +129,31 @@ namespace ColorVision.Engine.Templates.SFR
                 view.ImageView.OpenImage(result.FilePath);
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultSFRModels)
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRDao.Instance.GetAllByPid(result.Id));
+            }
+            view.ImageView.ImageShow.Clear();
+
+            foreach (var item in result.ViewResults)
+            {
+                if (item is AlgResultSFRModel poiResultData)
                 {
-                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                    for (int i = 0; i < Pdfrequencys.Length; i++)
-                    {
-                        ViewResultSFR resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
-                        result.ViewResults.Add(resultData);
-                    }
-                };
+                    DVRectangleText Rectangle = new();
+                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX, (double)poiResultData.RoiY, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
+                    Rectangle.Attribute.Brush = Brushes.Transparent;
+                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    Rectangle.Attribute.Id = poiResultData.Id;
+                    Rectangle.Render();
+                    view.ImageView.AddVisual(Rectangle);
+                }
             }
 
-
-
-
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
-            List<string> header = new() { "pdfrequency", "pdomainSamplingData" };
-            List<string> bdHeader = new() { "pdfrequency", "pdomainSamplingData" };
-
+            List<string> header = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
+            List<string> bdHeader = new() { "RoiX", "RoiY", "RoiWidth", "RoiHeight", "Pdfrequency", "PdomainSamplingData" };
 
             if (view.listViewSide.View is GridView gridView)
             {
+                view.listViewSide.ItemsSource = null;
                 view.LeftGridViewColumnVisibilitys.Clear();
                 gridView.Columns.Clear();
                 for (int i = 0; i < header.Count; i++)

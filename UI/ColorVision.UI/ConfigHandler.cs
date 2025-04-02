@@ -28,7 +28,6 @@ namespace ColorVision.UI
         }
     }
 
-
     public class AssemblyHandler
     {
         private static ILog log = LogManager.GetLogger(typeof(AssemblyHandler));
@@ -53,9 +52,6 @@ namespace ColorVision.UI
         }
         public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
         public List<string> RemoveAssemblyNames { get; set; } = new List<string>();
-
-
-
     }
 
     public class ConfigHandler: IConfigService
@@ -196,10 +192,16 @@ namespace ColorVision.UI
                     log.Info(configPair.Key);
                     log.Error(ex);
                 }
-
             }
 
-            File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
+            using (StreamWriter file = File.CreateText(fileName))
+            {
+                using (JsonTextWriter writer = new JsonTextWriter(file))
+                {
+                    jObject.WriteTo(writer);
+                }
+            }
+
         }
 
         public void LoadDefaultConfigs()
@@ -224,7 +226,7 @@ namespace ColorVision.UI
         }
 
         public void LoadConfigs() => LoadConfigs(ConfigFilePath);
-        private JObject jsonObject;
+        private JObject jsonObject = new JObject();
 
         public void LoadConfigs(string fileName)
         {
@@ -233,61 +235,11 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    string json = File.ReadAllText(fileName);
-                    jsonObject = JObject.Parse(json);
-
-                    //foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-                    //{
-                    //    try
-                    //    {
-                    //        foreach (var type in assembly.GetTypes())
-                    //        {
-                    //            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
-                    //            {
-                    //                var configName = type.Name;
-                    //                try
-                    //                {
-                    //                    if (jsonObject.TryGetValue(configName, out JToken configToken))
-                    //                    {
-                    //                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                    //                        if (config is IConfigSecure configSecure)
-                    //                        {
-                    //                            configSecure.Decrypt();
-                    //                            Configs[type] = configSecure;
-                    //                        }
-                    //                        else if (config is IConfig configInstance)
-                    //                        {
-                    //                            Configs[type] = configInstance;
-                    //                        }
-                    //                    }
-                    //                    else
-                    //                    {
-                    //                        if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                    //                        {
-                    //                            Configs[type] = defaultConfig;
-                    //                        }
-                    //                    }
-                    //                }
-                    //                catch (Exception ex)
-                    //                {
-                    //                    log.Warn(ex);
-                    //                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
-                    //                    {
-                    //                        Configs[type] = defaultConfig;
-                    //                    }
-                    //                }
-                    //            }
-                    //        }
-                    //    }
-                    //    catch (Exception ex)
-                    //    {
-                    //        AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
-                    //        MessageBox.Show("程序集加载失败，现在跳过该程序集，如果您不想要该弹窗提示，您需要移除插件：" + assembly);
-                    //        log.Warn(ex);
-                    //    }
-                    //}
-
-
+                    using (StreamReader file = File.OpenText(fileName))
+                    using (JsonTextReader reader = new JsonTextReader(file))
+                    {
+                        jsonObject = (JObject)JToken.ReadFrom(reader);
+                    }
                 }
                 catch(Exception ex)
                 {

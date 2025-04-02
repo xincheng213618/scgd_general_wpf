@@ -139,19 +139,24 @@ def compare_and_write_version_weixin(latest_version, latest_release_path, latest
 
 
 if __name__ == "__main__":
+    
+    script_path =  os.path.abspath(os.path.dirname(__file__))
+    base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
+    
+    
     projects = {
         'ColorVision': {
             'msbuild_path': r'C:\Program Files\Microsoft Visual Studio\2022\Preview\MSBuild\Current\Bin\msbuild.exe',
-            'solution_path': r"C:\Users\17917\Desktop\scgd_general_wpf\build.sln",
-            'advanced_installer_path': r'C:\Users\17917\Desktop\AdvancedInstaller v19.7.1\App\ProgramFiles\bin\x86\AdvancedInstaller.com',
-            'aip_path': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip",
-            'setup_files_dir': r"C:\Users\17917\Documents\Advanced Installer\Projects\ColorVision\Setup Files",
+            'solution_path': os.path.join(base_path, 'build.sln'),
+            'advanced_installer_path': os.path.join(base_path,'..', 'AdvancedInstaller v19.7.1', 'App', 'ProgramFiles', 'bin', 'x86', 'AdvancedInstaller.com'),
+            'aip_path': r"C:\Users\Xin\Documents\Advanced Installer\Projects\ColorVision\ColorVision.aip",
+            'setup_files_dir': r"C:\Users\Xin\Documents\Advanced Installer\Projects\ColorVision\Setup Files",
             'latest_release_path': r"H:\ColorVision\LATEST_RELEASE",
             'target_directory': r"H:\ColorVision",
-            'changelog_src': r"C:\Users\17917\Desktop\scgd_general_wpf\CHANGELOG.md",
+            'changelog_src':  os.path.join(base_path, 'CHANGELOG.md'),
             'changelog_dst': r"H:\ColorVision\CHANGELOG.md",
             'file_pattern': r'ColorVision-\d+\.\d+\.\d+\.\d+\.exe',
-            'wechat_target_directory': r"C:\Users\17917\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision",
+            'wechat_target_directory': r"C:\Users\Xin\Documents\WXWork\1688854819471931\WeDrive\视彩光电\视彩（上海）光电技术有限公司\视彩软件及工具简易教程\新版软件安装包\ColorVision",
             'baidu_target_directory':r"D:\BaiduSyncdisk\ColorVision"
     }
     }
@@ -160,7 +165,7 @@ if __name__ == "__main__":
     project_name = 'ColorVision'  # 或 'Microscope'
     project = projects[project_name]
 
-    rebuild_project(project['msbuild_path'], project['solution_path'], project['advanced_installer_path'], project['aip_path'])
+    rebuild_project(project['msbuild_path'], project['solution_path'], project['advanced_installer_path'],   project['aip_path'])
     latest_file = get_latest_file(project['setup_files_dir'], project['file_pattern'])
     print("latest_file: " + str(latest_file))
     if latest_file:

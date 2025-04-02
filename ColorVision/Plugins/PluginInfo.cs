@@ -30,12 +30,14 @@ namespace ColorVision.Plugins
         public string? AssemblyPublicKeyToken { get; set; }
         public string? PackageName { get; set; }
 
+        public Version LastVersion { get => _LastVersion; set { _LastVersion = value; NotifyPropertyChanged(); } }
+        private Version _LastVersion;
+
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
         DownloadFile DownloadFile { get; set; }
         public PluginInfo()
         {
-
         }
         public PluginInfo(IPlugin plugin, Assembly assembly)
         {
@@ -62,17 +64,27 @@ namespace ColorVision.Plugins
 
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "更新" + Plugin.Header;
+            Task.Run(() => CheckVersion());
         }
+
+        public async void CheckVersion()
+        {
+            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
+            LastVersion = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+        }
+
+
+        string UpdateUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins";
         public async void Update()
         {
-            string LatestReleaseUrl = Plugin.UpdateUrl + "/LATEST_RELEASE";
+            string LatestReleaseUrl = UpdateUrl + "/" + PackageName + "/LATEST_RELEASE";
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Plugin.Header, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
-                    string url = $"{Plugin.UpdateUrl}/{PackageName}-{version}.zip";
+                    string url = $"{UpdateUrl}/{PackageName}/{PackageName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
                     if (File.Exists(downloadPath))
                     {
@@ -123,9 +135,9 @@ namespace ColorVision.Plugins
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 2
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -178,7 +190,7 @@ del ""%~f0"" & exit
             string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 2
 setlocal
 
 rem 设置要删除的目录路径
@@ -194,7 +206,7 @@ if exist %targetDirectory% (
 )
 
 endlocal
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";

@@ -37,7 +37,7 @@
                     <Button Click="Button_Click_Export" Margin="0,0,2,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
-                    <Button Content="{x:Static properties:Resources.Search}" Click="Search_Click" Margin="0,0,2,0"/>
+                    <Button Content="{x:Static properties:Resources.Inquire}" Click="Search_Click" Margin="0,0,2,0"/>
                     <Button x:Name="Search" Content="{x:Static properties:Resources.AdvanceSearch}" Click="Search1_Click" Margin="0,0,2,0"/>
                 </ToolBar>
             </ToolBarTray>
@@ -147,7 +147,13 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
+                        <GridViewColumn  Header="DeviceCode" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type model:ViewResultCamera}">
+                                    <TextBlock Text="{Binding DeviceCode}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
 
                     </GridView>
                 </ListView.View>

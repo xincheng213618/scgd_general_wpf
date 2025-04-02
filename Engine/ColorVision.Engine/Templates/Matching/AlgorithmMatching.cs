@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Matching
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateMatch(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateMatch(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show(); ;
         }
 
         public void OpenTemplatePoi()

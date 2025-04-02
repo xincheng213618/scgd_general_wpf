@@ -701,6 +701,7 @@ namespace ColorVision.ImageEditor
         public void Clear()
         {
             Config.Properties.Clear();
+            Config.FilePath = string.Empty;
             FunctionImage = null;
             ViewBitmapSource = null;
             ImageShow.Source = null;
@@ -1348,6 +1349,15 @@ namespace ColorVision.ImageEditor
         private void thresholdSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             DebounceTimer.AddOrResetTimer("AdjustBrightnessContrast", 50, a => ThresholdImg(), e.NewValue);
+        }
+
+        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Common.NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
         }
     }
 }

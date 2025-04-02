@@ -481,22 +481,29 @@ namespace ColorVision.Common.Utilities
             Environment.Exit(0);
         }
 
+        private static bool IsAdmin;
+        private static bool IsInitAdmin;
+
         /// <summary>
         /// IsAdministrator
         /// </summary>
         /// <returns></returns>
         public static bool IsAdministrator()
         {
+            if (IsInitAdmin) return IsAdmin;
+            IsInitAdmin = true;
             try
             {
                 WindowsIdentity current = WindowsIdentity.GetCurrent();
                 WindowsPrincipal windowsPrincipal = new(current);
                 //WindowsBuiltInRole可以枚举出很多权限，例如系统用户、User、Guest等等
-                return windowsPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
+                IsAdmin = windowsPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
+                return IsAdmin;
             }
             catch (Exception ex)
             {
                 Trace.TraceError(ex.Message);
+                IsInitAdmin = false;
                 return false;
             }
         }

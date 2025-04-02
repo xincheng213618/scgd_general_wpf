@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
     public class ViewHandleBinocularFusion : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BinocularFusion};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.ARVR_BinocularFusion};
 
         private static string EscapeCsvField(string field)
         {

@@ -3,12 +3,16 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.UI.Authorizations;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -20,9 +24,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
+
+
     public class PhyCameraManager:ViewModelBase
     {
         private static PhyCameraManager _instance;
@@ -39,7 +47,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-
             RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
@@ -75,6 +82,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                 WindowStartupLocation = WindowStartupLocation.CenterOwner
             };
             createWindow.ShowDialog();
+
+
         }
 
         public void Import()
@@ -119,7 +128,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             LoadPhyCamera();
         }
 
-        private static void ProcessZipFile(string file, List<LicenseModel> licenses)
+        private  void ProcessZipFile(string file, List<LicenseModel> licenses)
         {
             using ZipArchive archive = ZipFile.OpenRead(file);
             var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
@@ -135,7 +144,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             }
         }
 
-        private static void ProcessLicFile(string file, List<LicenseModel> licenses)
+        private  void ProcessLicFile(string file, List<LicenseModel> licenses)
         {
             var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(file), licenses);
             licenseModel.LicenseValue = File.ReadAllText(file);
@@ -149,7 +158,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             return licenseModel;
         }
 
-        private static void UpdateLicenseModel(LicenseModel licenseModel)
+        private void UpdateLicenseModel(LicenseModel licenseModel)
         {
             licenseModel.CusTomerName = licenseModel.ColorVisionLicense.Licensee;
             licenseModel.Model = licenseModel.ColorVisionLicense.DeviceMode;
@@ -160,7 +169,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             UpdateSysResource(licenseModel);
         }
 
-        private static void UpdateSysResource(LicenseModel licenseModel)
+        private  void UpdateSysResource(LicenseModel licenseModel)
         {
             var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == licenseModel.MacAddress);
             if (sysDictionaryModel == null)
@@ -175,7 +184,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
                 if(ret != -1 && sysDictionaryModel.Code !=null)
                 {
-                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                    CreatePhysicalCameraFloder(sysDictionaryModel.Code);
                 }
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
             }
@@ -185,9 +194,48 @@ namespace ColorVision.Engine.Services.PhyCameras
                 int ret= SysResourceDao.Instance.Save(sysDictionaryModel);
                 if (ret != -1 && sysDictionaryModel.Code != null)
                 {
-                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                    CreatePhysicalCameraFloder(sysDictionaryModel.Code);
                 }
             }
+        }
+
+        public void CreatePhysicalCameraFloder(string cameraID)
+        {
+            RCFileUpload.GetInstance().CreatePhysicalCameraFloder(cameraID);
+            LoadPhyCamera();
+            if (PhyCameras.Count == 1)
+            {
+                LicenseModel license = CameraLicenseDao.Instance.GetByMAC(cameraID);
+                if (license == null)
+                    license = new LicenseModel();
+                license.LiceType = 0;
+                license.MacAddress = cameraID;
+                CameraLicenseDao.Instance.Save(license);
+
+                GetPhyCamera(cameraID).CameraLicenseModel = license;
+
+
+                foreach (var item in ServiceManager.GetInstance().DeviceServices)
+                {
+                    if (item is DeviceCamera deviceCamera)
+                    {
+                        deviceCamera.Config.SN = cameraID;
+                        deviceCamera.Config.CameraCode = cameraID;
+                        deviceCamera.Save();
+                    }
+                    if (item is DeviceAlgorithm deviceAlgorithm)
+                    {
+                        deviceAlgorithm.Config.SN = cameraID;
+                        deviceAlgorithm.Save();
+                    }
+                    if (item is DeviceCalibration deviceCalibration)
+                    {
+                        deviceCalibration.Config.CameraCode = cameraID;
+                        deviceCalibration.Save();
+                    }
+                }
+            }
+
         }
 
         private static ConfigPhyCamera CreateDefaultConfig()
@@ -225,8 +273,20 @@ namespace ColorVision.Engine.Services.PhyCameras
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
-                        if (!newPhyCamera.IsLicensed)
-                            Task.Run(() => newPhyCamera.UploadLicenseNet());
+                        if (Authorization.Instance.PermissionMode == PermissionMode.SuperAdministrator)
+                        {
+                            if (newPhyCamera.LicenseState != LicenseState.Licensed)
+                                Task.Run(async () =>
+                                {
+                                    await newPhyCamera.UploadLicenseNet();
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList().ForEach(a => a.Save());
+                                    });
+                                }
+                                );
+                        }
+
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);

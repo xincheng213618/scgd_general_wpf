@@ -330,4 +330,7 @@
   <data name="Bit" xml:space="preserve">
     <value>Bit</value>
   </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>Release Date</value>
+  </data>
 </root>

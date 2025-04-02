@@ -16,7 +16,10 @@ using System.ComponentModel;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -38,6 +41,10 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         [CommandDisplay("自适应校零设置")]
         public RelayCommand SelfAdaptionInitDarkSettingCommand { get; set; }
+
+        [CommandDisplay("EmissionSP100设置")]
+        public RelayCommand EmissionSP100SettingCommand { get; set; }
+
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
@@ -63,6 +70,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             SelfAdaptionInitDarkCommand = new RelayCommand(a => SelfAdaptionInitDark());
             SelfAdaptionInitDarkSettingCommand = new RelayCommand(a => SelfAdaptionInitDarkSetting());
+            EmissionSP100SettingCommand = new RelayCommand(a => EmissionSP100Setting());
         }
 
         public void SelfAdaptionInitDark()
@@ -72,14 +80,19 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             {
                 if (msgRecord.MsgReturn != null)
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), msgRecord.MsgReturn.Data);
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"自适应校零执行" + e.ToString(),"ColorVison");
                 }
             };
         }
 
         public void SelfAdaptionInitDarkSetting()
         {
-            new UI.PropertyEditor.PropertyEditorWindow(Config.SelfAdaptionInitDark) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PropertyEditorWindow(Config.SelfAdaptionInitDark) { Owner =Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            SaveConfig();
+        }
+        public void EmissionSP100Setting()
+        {
+            new PropertyEditorWindow(Config.SetEmissionSP100Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             SaveConfig();
         }
 
@@ -98,6 +111,51 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 foreach (string file in selectedFiles)
                 {
                     SetLicense(file);
+                }
+            }
+        }
+
+        public async Task UploadLicenseNet(string sn)
+        {
+            // 设置请求的URL和数据
+            string url = "https://color-vision.picp.net/license/api/v1/license/onlyDownloadLicense";
+            var postData = new { macSn = sn };
+            string DirLicense = $"{Environments.DirAppData}\\Licenses";
+            if (!Directory.Exists(DirLicense))
+                Directory.CreateDirectory(DirLicense);
+
+            string fileName = $"{DirLicense}\\{sn}-license.zip";
+
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    // 发送POST请求
+                    HttpResponseMessage response = await client.PostAsJsonAsync(url, postData);
+                    // 检查响应状态码
+                    response.EnsureSuccessStatusCode();
+
+                    // 确保返回的是一个文件而不是JSON
+                    if (response.Content.Headers.ContentType?.MediaType == "application/json")
+                    {
+                        string errorContent = await response.Content.ReadAsStringAsync();
+                    }
+                    // 获取文件名
+                    fileName = "license.zip"; // 默认文件名
+                    if (response.Content.Headers.ContentDisposition != null)
+                    {
+                        fileName = response.Content.Headers.ContentDisposition.FileName?.Trim('"');
+                    }
+                    fileName = $"{DirLicense}\\{fileName}";
+                    using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        await response.Content.CopyToAsync(fs);
+                    }
+                    SetLicense(fileName);
+                }
+                catch 
+                {
+
                 }
             }
         }
@@ -168,6 +226,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     foreach (var item in SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type", 103 } }))
                     {
                         strings.Add(item.Code);
+                        Task.Run(() => UploadLicenseNet(item.Code));
                     }
                     string result = string.Join(",", strings);
                     MessageBox.Show(Application.Current.GetActiveWindow(), "所有光谱仪设备信息" + Environment.NewLine + result);

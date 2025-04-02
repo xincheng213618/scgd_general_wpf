@@ -1,7 +1,8 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.UI;
+using ScottPlot.Statistics;
 using System;
-using System.Diagnostics;
-using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons
@@ -24,11 +25,68 @@ namespace ColorVision.Engine.Templates.Jsons
             {
                 EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
             };
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            textEditor.ShowLineNumbers = true;
+            textEditor.TextChanged += (s, e) =>
+            {
+                DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
+            };
         }
+        private string Description { get; set; }
+        public EditTemplateJson(string description)
+        {
+            Description = description;
+            InitializeComponent();
+            this.Width = EditTemplateJsonConfig.Instance.Width;
+            this.SizeChanged += (s, e) =>
+            {
+                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
+            };
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            textEditor.ShowLineNumbers = true;
+            textEditor.TextChanged += (s, e) =>
+            {
+                DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
+            };
+            DescriptionButton.Visibility = Visibility.Visible;
+        }
+
+        public void EditTemplateJsonChanged()
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (IEditTemplateJson != null)
+                {
+                    IEditTemplateJson.JsonValue = textEditor.Text;
+                }
+            });
+        }
+
+
+        private IEditTemplateJson IEditTemplateJson;
+
 
         public void SetParam(object param)
         {
-            this.DataContext = param;
+            if (param is IEditTemplateJson editTemplateJson)
+            {
+                this.DataContext = param; 
+                if (IEditTemplateJson !=null)
+                    IEditTemplateJson.JsonValueChanged -= IEditTemplateJson_JsonValueChanged;
+                IEditTemplateJson = editTemplateJson;
+                textEditor.Text = IEditTemplateJson.JsonValue;
+                IEditTemplateJson.JsonValueChanged += IEditTemplateJson_JsonValueChanged;
+            }
+        }
+
+        private void IEditTemplateJson_JsonValueChanged(object? sender, EventArgs e)
+        {
+            textEditor.Text = IEditTemplateJson.JsonValue;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(Description);
         }
     }
 }

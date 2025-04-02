@@ -15,8 +15,11 @@ using MQTTMessageLib.Calibration;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -256,32 +259,26 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
-                foreach (var item in GridViewColumnVisibilitys)
+                Type type = typeof(ViewResultCamera);
+
+                var properties = type.GetProperties();
+                foreach (var property in properties)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    var attribute = property.GetCustomAttribute<DisplayNameAttribute>();
+                    if (attribute != null)
                     {
-                        string Name = item.ColumnName.ToString();
-                        if (Name == Properties.Resources.SerialNumber1)
+                        string displayName = attribute.DisplayName;
+                        displayName = Properties.Resources.ResourceManager?.GetString(displayName, Thread.CurrentThread.CurrentUICulture) ?? displayName;
+                        if (displayName == gridViewColumnHeader.Content.ToString())
                         {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByID(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.Duration)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByCreateTime(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.BatchNumber)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByBatch(item.IsSortD);
-                        }
-                        else if (Name == Properties.Resources.File)
-                        {
-                            item.IsSortD = !item.IsSortD;
-                            ViewResults.SortByFilePath(item.IsSortD);
+                            var item = GridViewColumnVisibilitys.FirstOrDefault(x => x.ColumnName.ToString() == displayName);
+                            if (item != null)
+                            {
+                                item.IsSortD = !item.IsSortD;
+                                ViewResults.SortByProperty(property.Name, item.IsSortD);
+                            }
                         }
                     }
                 }

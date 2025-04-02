@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
+
 namespace ColorVision.Engine.MySql
 {
 
@@ -31,6 +32,7 @@ namespace ColorVision.Engine.MySql
             {
                 timer.Change(0, MySqlSetting.Instance.ReConnectTime);
             };
+            Connect();
         }
         public void ReConnect(object? o)
         {

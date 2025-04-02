@@ -17,10 +17,27 @@ namespace ColorVision.ImageEditor.Draw
             ZoomboxSub = zoomboxSub;
         }
 
+        private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
+        {
+            Render();
+        }
+
         public Rect Rect { get => _Rect; set {  _Rect = value; }  }
         private Rect _Rect;
 
-        public ISelectVisual SelectVisual { get; set; }
+        public ISelectVisual SelectVisual { get => _SelectVisual; set
+            { _SelectVisual = value;
+                if (value != null)
+                {
+                    ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                }
+                else
+                {
+                    ZoomboxSub.LayoutUpdated -= ZoomboxSub_LayoutUpdated;
+                }
+            } 
+        }
+        private ISelectVisual _SelectVisual;
 
         public void SetRect()
         {

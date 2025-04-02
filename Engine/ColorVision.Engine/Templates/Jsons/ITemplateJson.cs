@@ -219,12 +219,14 @@ namespace ColorVision.Engine.Templates.Jsons
             ofd.Title = "导入模板";
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(sfd.FileName), StringComparison.OrdinalIgnoreCase)))
-            //{
-            //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
-            //    return false;
-            //}
-            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
+
+            return ImportFile(ofd.FileName);
+        }
+
+        public override bool ImportFile(string filePath)
+        {
+            if (!File.Exists(filePath)) return false;
+            byte[] fileBytes = File.ReadAllBytes(filePath);
             string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
             CreateDefault();
             try

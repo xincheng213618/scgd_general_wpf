@@ -3,9 +3,12 @@ using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIGenCali;
 using ColorVision.ImageEditor;
@@ -17,6 +20,7 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
+using HelixToolkit.Wpf;
 using log4net;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
@@ -760,8 +764,8 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
 
-                    double StepRow = (bitmapImage.PixelHeight - startD - startU) / (rows - 1);
-                    double StepCol = (bitmapImage.PixelWidth - startL - startR) / (cols - 1);
+                    double StepRow = (rows > 1) ? (bitmapImage.PixelHeight - startD - startU) / (rows - 1) : 0;
+                    double StepCol = (cols > 1) ? (bitmapImage.PixelWidth - startL - startR) / (cols - 1) : 0;
 
 
                     int all = rows * cols;
@@ -931,9 +935,8 @@ namespace ColorVision.Engine.Templates.POI
                         PoiParam.PoiPoints.Clear();
                     }
 
-
-                    double rowStep = 1.0 / (rows - 1);
-                    double columnStep = 1.0 / (cols - 1);
+                    double rowStep = (rows > 1) ? 1.0 / (rows - 1) : 0;
+                    double columnStep = (rows > 1) ? 1.0 / (cols - 1) : 0;
                     for (int i = 0; i < rows; i++)
                     {
                         for (int j = 0; j < cols; j++)
@@ -1310,6 +1313,7 @@ namespace ColorVision.Engine.Templates.POI
         private void SavePoiParam()
         {
             PoiParam.PoiPoints.Clear();
+            Rect rect = new Rect(0,0, PoiParam.Width, PoiParam.Height);
             foreach (var item in DrawingVisualLists)
             {
                 int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
@@ -1317,6 +1321,9 @@ namespace ColorVision.Engine.Templates.POI
                 BaseProperties drawAttributeBase = item.BaseAttribute;
                 if (drawAttributeBase is CircleTextProperties circle)
                 {
+                    Rect rect1 = new Rect(circle.Center.X - circle.Radius, circle.Center.Y - circle.Radius, circle.Radius * 2, circle.Radius * 2);
+                    if (!rect.Contains(rect1))
+                        continue;
                     PoiPoint poiParamData = new PoiPoint()
                     {
                         Id = index,
@@ -1327,11 +1334,13 @@ namespace ColorVision.Engine.Templates.POI
                         PixHeight = circle.Radius * 2,
                         Name = circle.Text
                     };
-
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
                 else if (drawAttributeBase is RectangleTextProperties rectangle)
                 {
+                    Rect rect1 = new Rect(rectangle.Rect.X, rectangle.Rect.Y, rectangle.Rect.Width, rectangle.Rect.Height);
+                    if (!rect.Contains(rect1))
+                        continue;
                     PoiPoint poiParamData = new()
                     {
                         Id = index,
@@ -1367,7 +1376,6 @@ namespace ColorVision.Engine.Templates.POI
         }
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
         {
-            SettingPopup.IsOpen = true;
         }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
@@ -1756,6 +1764,57 @@ namespace ColorVision.Engine.Templates.POI
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        {
+            var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
+            DeviceCamera deviceCamera = lsit.FirstOrDefault();
+            
+
+            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
+
+            if (msgRecord != null)
+            {
+                msgRecord.MsgSucessed += (arg) =>
+                {
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
+                        {
+                            try
+                            {
+                                if (result.FileUrl != null)
+                                {
+                                    OpenImage(new NetFileUtil().OpenLocalCVFile(result.FileUrl));
+                                    PoiConfig.BackgroundFilePath = result.FileUrl;
+                                }
+                                else
+                                {
+                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                            }
+                        }
+                    }
+
+
+
+                };
+
+            }
         }
     }
 

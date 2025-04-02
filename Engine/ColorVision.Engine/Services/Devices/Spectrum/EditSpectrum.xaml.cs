@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -46,6 +47,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             ComboBoxSn.ItemsSource = CameraLicenseDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "lic_type",1} });
             ComboBoxSn.DisplayMemberPath = "MacAddress";
+
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.SelfAdaptionInitDark));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.SetEmissionSP100Config));
+            EditStackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(EditConfig.FileServerCfg));
+
         }
 
 

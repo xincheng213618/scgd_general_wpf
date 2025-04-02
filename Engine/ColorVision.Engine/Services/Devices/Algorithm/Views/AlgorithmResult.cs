@@ -11,13 +11,14 @@ using ColorVision.UI.Sorts;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
-    public class AlgorithmResult : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
+    public class AlgorithmResult : ViewModelBase, ISortID
     {
         public ObservableCollection<IViewResult> ViewResults { get; set; }
 
@@ -42,7 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ResultImagFile = item.ResultImagFile;
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
-            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0);
+            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
             OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
 
             ContextMenu = new ContextMenu();
@@ -60,8 +61,44 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public void ExportToPoi()
         {
             var list = ViewResults?.ToSpecificViewResults<PoiResultData>();
-            if (list ==null )
+            if (list.Count ==0 )
+            {
+                var list1 = ViewResults?.ToSpecificViewResults<PoiPointResultModel>();
+                if (list1 == null)
+                    return;
+
+                int old1 = TemplatePoi.Params.Count;
+                TemplatePoi templatePoi1 = new TemplatePoi();
+                templatePoi1.ExportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                templatePoi1.ExportTemp.Height = 400;
+                templatePoi1.ExportTemp.Width = 300;
+                templatePoi1.ExportTemp.PoiConfig.BackgroundFilePath = FilePath;
+                foreach (var item in list1)
+                {
+                    PoiPoint poiPoint = new PoiPoint()
+                    {
+                        Name = item.PoiName,
+                        PixX = (double)item.PoiX,
+                        PixY = (double)item.PoiY,
+                        PixHeight = (double)item.PoiHeight,
+                        PixWidth = (double)item.PoiWidth,
+                        PointType = (RiPointTypes)item.PoiType,
+                        Id = -1
+                    };
+                    templatePoi1.ExportTemp.PoiPoints.Add(poiPoint);
+                }
+
+
+                templatePoi1.OpenCreate();
+                int next1 = TemplatePoi.Params.Count;
+                if (next1 == old1 + 1)
+                {
+                    new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                }
                 return;
+            }
+
+
             int old = TemplatePoi.Params.Count;
             TemplatePoi templatePoi = new TemplatePoi();
             templatePoi.ExportTemp = new PoiParam() {  Name = templatePoi.NewCreateFileName("poi")};
@@ -169,30 +206,32 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
 
 
-
+        [DisplayName("SerialNumber1")]
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
-
+        [DisplayName("BatchNumber")]
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
-
+        [DisplayName("File")]
         public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;
-
+        [DisplayName("Template")]
         public string POITemplateName { get { return _POITemplateName; } set { _POITemplateName = value; NotifyPropertyChanged(); } }
         private string _POITemplateName;
-
+        [DisplayName("CreateTime")]
         public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
 
+        [DisplayName("ResultType")]
         public AlgorithmResultType ResultType {get=> _ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
         private AlgorithmResultType _ResultType;
 
+        [DisplayName("ResultDesc")]
         public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
         private string _ResultDesc;
-
+        [DisplayName("img_result")]
         public string ResultImagFile { get; set; }
-
+        [DisplayName("Duration")]
         public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private long _TotalTime;
 

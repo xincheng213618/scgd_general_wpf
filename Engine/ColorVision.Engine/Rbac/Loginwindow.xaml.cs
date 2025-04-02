@@ -5,19 +5,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Rbac
 {
-    public class ExportLogin : MenuItemBase
-    {
-        public override string OwnerGuid => MenuItemConstants.Help;
-        public override string GuidId => "Login";
-        public override int Order => 3;
-        public override string Header => Properties.Resources.MenuLogin;
-        public override void Execute()
-        {
-            new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-    }
-
-
 
     /// <summary>
     /// LoginWindow.xaml 的交互逻辑

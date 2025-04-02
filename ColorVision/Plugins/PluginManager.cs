@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Projects;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -17,6 +18,12 @@ using System.Windows;
 
 namespace ColorVision.Plugins
 {
+    public class PluginWindowConfig : WindowConfig
+    {
+
+    }
+
+
     public class PluginManager:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(PluginManager));
@@ -24,6 +31,9 @@ namespace ColorVision.Plugins
         private static readonly object _locker = new();
         public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
         public ObservableCollection<PluginInfo> Plugins { get; private set; } = new ObservableCollection<PluginInfo>();
+        public PluginWindowConfig Config => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();
+        public RelayCommand EditConfigCommand { get; set; }
+
 
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
@@ -54,12 +64,11 @@ namespace ColorVision.Plugins
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
+            EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}
         private string _SearchName;
-
-
         public async void DownloadPackage()
         {
             string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/" + SearchName + "/LATEST_RELEASE";
@@ -129,7 +138,7 @@ namespace ColorVision.Plugins
 taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";
@@ -203,7 +212,7 @@ del ""%~f0"" & exit
 taskkill /f /im ""{executableName}""
 timeout /t 3
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c PluginManagerExport
+start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
 del ""%~f0"" & exit
 ";

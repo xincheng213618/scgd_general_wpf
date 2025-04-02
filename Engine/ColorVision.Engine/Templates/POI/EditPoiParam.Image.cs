@@ -215,7 +215,16 @@ namespace ColorVision.Engine.Templates.POI
 
                     DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Id = No;
-                    DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(MouseDownP, new Point(MouseDownP.X + PoiConfig.DefalutWidth, MouseDownP.Y + PoiConfig.DefalutHeight));
+
+                    if (PoiConfig.UseCenter)
+                    {
+                        DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(new Point(MouseDownP.X + PoiConfig.DefalutWidth/2, MouseDownP.Y + PoiConfig.DefalutHeight/2), new Point(MouseDownP.X - PoiConfig.DefalutWidth/2, MouseDownP.Y - PoiConfig.DefalutHeight/2));
+                    }
+                    else
+                    {
+                        DrawingRectangleCache.Attribute.Rect = new System.Windows.Rect(MouseDownP, new Point(MouseDownP.X + PoiConfig.DefalutWidth, MouseDownP.Y + PoiConfig.DefalutHeight));
+                    }
+
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
 

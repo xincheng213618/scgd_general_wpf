@@ -14,7 +14,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.UI.PropertyEditor
+namespace ColorVision.UI
 {
 
 
@@ -169,7 +169,7 @@ namespace ColorVision.UI.PropertyEditor
                         {
                             dockPanel = GenBoolProperties(property, obj);
                         }
-                        else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(string))
+                        else if (property.PropertyType == typeof(int?) || property.PropertyType == typeof(int) || property.PropertyType == typeof(float) || property.PropertyType == typeof(float?) || property.PropertyType == typeof(uint) || property.PropertyType == typeof(long) || property.PropertyType == typeof(ulong) || property.PropertyType == typeof(sbyte) || property.PropertyType == typeof(double) || property.PropertyType == typeof(double?) || property.PropertyType == typeof(string))
                         {
                             dockPanel = GenTextboxProperties(property, obj);
                         }
@@ -177,6 +177,16 @@ namespace ColorVision.UI.PropertyEditor
                         {
                             dockPanel = GenEnumProperties(property, obj);
 
+                        }
+                        else if (typeof(ViewModelBase).IsAssignableFrom(property.PropertyType))
+                        {
+                            // 如果属性是ViewModelBase的子类，递归解析
+                            var nestedObj = (ViewModelBase)property.GetValue(obj);
+                            if (nestedObj != null)
+                            {
+                                stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(nestedObj));
+                                continue;
+                            }
                         }
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
@@ -379,6 +389,10 @@ namespace ColorVision.UI.PropertyEditor
                 dockPanel.Children.Add(button1);
                 dockPanel.Children.Add(button);
                 dockPanel.Children.Add(textbox);
+
+            }
+            else if (propertyEditorType == PropertyEditorType.TextJson)
+            {
 
             }
             else if (propertyEditorType == PropertyEditorType.CronExpression)

@@ -1,5 +1,7 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Projects;
+using ColorVision.Themes;
 using ColorVision.UI;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ColorVision.Plugins
@@ -9,20 +11,20 @@ namespace ColorVision.Plugins
     /// </summary>
     public partial class PluginManagerWindow : Window
     {
+
         public PluginManagerWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            PluginLoader.LoadPluginsUS("Plugins");
+            PluginManager.GetInstance().Config.SetWindow(this);
+            this.SizeChanged += (s, e) => PluginManager.GetInstance().Config.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = PluginManager.GetInstance();
+            this.DataContext = PluginManager.GetInstance(); ;
+            DefalutSearchComboBox.ItemsSource = new List<string>() { "CalibrationCorrection", "ColorVisonChat", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin" };
+            ListViewPlugins.SelectedIndex = 0;
         }
 
         private void ListViewPlugins_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

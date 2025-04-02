@@ -13,6 +13,7 @@ namespace System.ComponentModel
         TextSelectFile,
         TextSerialPort,
         TextBaudRate,
+        TextJson,
         CronExpression
     }
     public enum CommandType

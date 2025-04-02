@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -33,17 +34,19 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => New(), (s, e) => e.CanExecute = true));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => ITemplate.Save(), (s, e) => e.CanExecute = true));
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
+                ITemplate.Save();
+                HandyControl.Controls.Growl.Success("保存成功");
+            } , (s, e) => e.CanExecute = true));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
-
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         public static TemplateSetting Config => TemplateSetting.Instance;
-
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            HandyControl.Controls.Growl.SetGrowlParent(this, true);
             if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -60,8 +63,8 @@ namespace ColorVision.Engine.Templates
                 Grid.SetColumnSpan(CreateGrid, 2);
                 Grid.SetColumn(CreateGrid, 0);
 
-                MinWidth = 350;
-                Width = 350;
+                MinWidth = 360;
+                Width = 360;
             }
 
             if (ITemplate.IsUserControl)
@@ -78,13 +81,15 @@ namespace ColorVision.Engine.Templates
                 }
                 if (!double.IsNaN(userControl.Width))
                 {
-                    Width = userControl.Width + 300;
+                    Width = userControl.Width + 350;
                     userControl.Width = double.NaN;
                 }
                 else
                 {
-                    Width = Width + 200;
+                    Width = Width + 350;
                 }
+                TemplateGrid.MinWidth = 200;
+                ScrollInfo.HorizontalAlignment = HorizontalAlignment.Right;
             }
 
             Title = ITemplate.Title;
@@ -409,6 +414,11 @@ namespace ColorVision.Engine.Templates
                     ITemplate.PreviewMouseDoubleClick(ListView1.SelectedIndex);
                 }
             }
+        }
+
+        private void CreateTemplate_Click(object sender, RoutedEventArgs e)
+        {
+            ITemplate.Export(ListView1.SelectedIndex);
         }
     }
 }

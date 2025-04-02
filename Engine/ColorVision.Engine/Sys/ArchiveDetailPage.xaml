@@ -1,0 +1,92 @@
+﻿<Page x:Class="ColorVision.Engine.DataHistory.Dao.ArchiveDetailPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.DataHistory.Dao"
+             mc:Ignorable="d" 
+             Title="归档查询"  d:DesignHeight="450" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
+    <Page.Resources>
+        <Style TargetType="TextBlock" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+    </Page.Resources>
+    <Grid>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5" Margin="5"/>
+
+        <Grid Margin="5" >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid>
+            </Grid>
+            <Border  Grid.Row="1"  CornerRadius="10" >
+                <ListView x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Background="Transparent" BorderThickness="0"    MouseDoubleClick="listView1_MouseDoubleClick" >
+                    <ListView.Resources>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                        </ContextMenu>
+                    </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn  Header="Guid">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding Guid}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="设备名称">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding DeviceCode}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="输入参数">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding InputCfg}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="名称">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBlock Text="{Binding PGuid}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+
+                            <GridViewColumn  Header="Data"  Width="600">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
+                                        <TextBox IsReadOnly="True" BorderThickness="0" Text="{Binding OutputValue,Mode=OneWay}" Height="100" TextWrapping="WrapWithOverflow" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+
+            </Border>
+        </Grid>
+
+
+
+    </Grid>
+</Page>

@@ -26,7 +26,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="1"  Margin="0,0,0,0" >
+        <Grid x:Name="TemplateGrid"  Grid.Row="0" Grid.Column="0" Grid.RowSpan="1"  Margin="0,0,0,0" MinWidth="340" >
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -89,6 +89,7 @@
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
                         <MenuItem Header="{x:Static properties:Resources.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
                         <MenuItem Header="创建副本"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="创建为样例"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
@@ -134,8 +135,8 @@
                 </ListView.View>
             </ListView>
             <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
-
         </Grid>
+
         <GridSplitter HorizontalAlignment="Right" Background="#22FFFFFF"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="1" Cursor="SizeWE"/>
 
         <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
@@ -145,19 +146,22 @@
                 <winf:PropertyGrid x:Name="PropertyGrid1" />
             </WindowsFormsHost>
         </Grid>
+        <ScrollViewer x:Name="ScrollInfo" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Grid.ColumnSpan="2" Margin="0,20,0,0">
+            <StackPanel hc:Growl.GrowlParent="True" VerticalAlignment="Top"  />
+        </ScrollViewer>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <UniformGrid x:Name="FunctionGrid"    Columns="5">
                 <Button  Click="Button_New_Click" Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.New}"/>
                 </Button>
-                <Button   Click="Button_Del_Click"  Margin="0,0,5,0" >
+                <Button  Click="Button_Del_Click"  Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.Delete}"/>
                 </Button>
-                <Button   Click="Button_Save_Click" Margin="0,0,5,0"  >
+                <Button  Click="Button_Save_Click" Margin="0,0,5,0"  >
                     <TextBlock Text="{x:Static properties:Resources.Save}"/>
                 </Button>
-                <Button    Click="Button_Export_Click" Margin="0,0,5,0" >
+                <Button  Click="Button_Export_Click" Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.Export}"/>
                 </Button>
                 <Button Click="Button_Import_Click"  >

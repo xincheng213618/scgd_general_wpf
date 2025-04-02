@@ -13,8 +13,9 @@ namespace ColorVision.Solution.Editor
         {
             if (File.Exists(FilePath))
             {
-                TextEditorControl textEditorControl = new TextEditorControl(FilePath);
-                return textEditorControl;
+                Window1 window1 = new Window1(FilePath);
+                window1.Show();
+                return new Control();
             }
             return null;
         }

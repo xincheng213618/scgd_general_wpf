@@ -4,7 +4,6 @@ using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
-using ScottPlot.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -200,8 +199,13 @@ namespace ColorVision.Update
                 if (LatestVersion > Version)
                 {
                     bool IsIncrement = false;
-                    if (LatestVersion.Build == Version.Build)
+                    if (LatestVersion.Minor == Version.Minor)
                         IsIncrement = true;
+                    if (IsIncrement && LatestVersion.Build != Version.Build)
+                    {
+                        LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
+                    }
+
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
                     Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);

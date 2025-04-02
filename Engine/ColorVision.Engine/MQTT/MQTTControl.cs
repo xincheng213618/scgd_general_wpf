@@ -24,8 +24,10 @@ namespace ColorVision.Engine.MQTT
         public static MQTTSetting Setting => MQTTSetting.Instance;
 
         public IMqttClient MQTTClient { get; set; }
+
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs()); NotifyPropertyChanged(); } }
         private bool _IsConnect;
+
         public event Func<MqttApplicationMessageReceivedEventArgs, Task> ApplicationMessageReceivedAsync;
 
         public event EventHandler MQTTConnectChanged;
@@ -45,9 +47,9 @@ namespace ColorVision.Engine.MQTT
             MQTTClient.ConnectedAsync -= MQTTClient_ConnectedAsync;
             MQTTClient.DisconnectedAsync -= MQTTClient_DisconnectedAsync;
             MQTTClient.ApplicationMessageReceivedAsync -= MQTTClient_ApplicationMessageReceivedAsync;
-
             await MQTTClient.DisconnectAsync();
-
+            MQTTClient?.Dispose();
+            MQTTClient = new MqttFactory().CreateMqttClient();
             var options = new MqttClientOptionsBuilder()
                 .WithTcpServer(mqttConfig.Host, mqttConfig.Port)
                 .WithCredentials(mqttConfig.UserName, mqttConfig.UserPwd)
@@ -87,8 +89,8 @@ namespace ColorVision.Engine.MQTT
         {
             var message = $"{DateTime.Now:HH:mm:ss.fff} Received: {e.ApplicationMessage.Topic} {Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)}, QoS: [{e.ApplicationMessage.QualityOfServiceLevel}], Retain: [{e.ApplicationMessage.Retain}]";
             log.Logger.Log(typeof(MQTTControl), log4net.Core.Level.Trace, message, null);
-
             MQTTLogChanged?.Invoke(new MQTTLog(1, message, e.ApplicationMessage.Topic, Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment)));
+
             if (ApplicationMessageReceivedAsync != null)
             {
                 await ApplicationMessageReceivedAsync(e);
@@ -101,7 +103,7 @@ namespace ColorVision.Engine.MQTT
             MQTTLogChanged?.Invoke(new MQTTLog(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT disconnected"));
             IsConnect = false;
             await Task.Delay(3000);
-            await ReConnectAsync();
+            Connect();
         }
 
         private async Task ReConnectAsync()

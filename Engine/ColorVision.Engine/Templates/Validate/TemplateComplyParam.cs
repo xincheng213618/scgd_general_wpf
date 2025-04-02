@@ -18,7 +18,6 @@ namespace ColorVision.Engine.Templates.Validate
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> CIEParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> JNDParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
 
-
         public TemplateComplyParam(string code, int type = 0)
         {
             Code = code;

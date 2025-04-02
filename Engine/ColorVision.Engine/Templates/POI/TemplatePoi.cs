@@ -107,7 +107,6 @@ namespace ColorVision.Engine.Templates.POI
                         poiDetails.Add(poiDetail);
                     }
                     PoiDetailDao.Instance.SaveByPid(ExportTemp.Id, poiDetails);
-
                     return ExportTemp;
                 }
                 else

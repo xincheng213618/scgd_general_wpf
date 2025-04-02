@@ -78,6 +78,7 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
+                        
                         <Button x:Name="Button222" Content="{x:Static properties:Resources.SaveDataColumn}" Click="SideSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
@@ -137,6 +138,7 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" Width="50">
@@ -204,8 +206,15 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="ResultType" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:AlgorithmResult}">
+                                        <TextBlock Text="{ Binding  ResultType}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
-                            
+
                         </GridView>
                     </ListView.View>
                 </ListView>

@@ -23,7 +23,7 @@ namespace ColorVisonChat
 
         public ChatGPTConfig()
         {
-            EditCommand = new RelayCommand(a =>  new ColorVision.UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog() );
+            EditCommand = new RelayCommand(a =>  new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog() );
         }
 
         public string APiKey { get => _APiKey; set { _APiKey = value; NotifyPropertyChanged(); } }

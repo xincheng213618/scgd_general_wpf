@@ -70,10 +70,10 @@ namespace ColorVision.Engine.Services.Core
                         MqttRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
-                    if (json.Code == 102)
-                    {
-                        return Task.CompletedTask;
-                    }
+                    //if (json.Code == 102)
+                    //{
+                    //    return Task.CompletedTask;
+                    //}
 
                     if (json.Code != 0 && json.Code != 1 && json.Code != -1&& json.Code != -401)
                     {
@@ -174,6 +174,10 @@ namespace ColorVision.Engine.Services.Core
         /// <param name="msg"></param>
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 30000)
         {
+            if (Timeout == 30000)
+            {
+                Timeout =MQTTSetting.Instance.DefaultTimeout;
+            }
             Guid guid = Guid.NewGuid();
             //这里修改成 如果在上一级已经赋值就不在这里强制修改
             msg.MsgID ??= guid.ToString();

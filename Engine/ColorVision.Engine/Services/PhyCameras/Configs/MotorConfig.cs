@@ -38,6 +38,11 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }
         private int _Position;
 
+        [JsonIgnore]
+        [Browsable(false)]
+        public double VIDPosition { get => _VIDPosition; set { _VIDPosition = value; NotifyPropertyChanged(); } }
+        private double _VIDPosition ;
+
         [DisplayName("超时时间")]
         public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;
@@ -85,7 +90,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [DisplayName("电机移动区间上限")]
         public int MaxPosition { get => _MaxPosition; set { _MaxPosition = value; NotifyPropertyChanged(); } }
         private int _MaxPosition = 7800;
+
+        [DisplayName("聚焦图片数量")]
+        public int AutoFocusSaveImageNum { get => _AutoFocusSaveImageNum; set { _AutoFocusSaveImageNum = value; NotifyPropertyChanged(); } }
+        private int _AutoFocusSaveImageNum = 2;
     }
+
 
     [DisplayName("电机配置")]
     public class MotorConfig : MotorConfigBase
@@ -99,5 +109,24 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsCameraLinkage { get => _IsCameraLinkage; set { _IsCameraLinkage = value; NotifyPropertyChanged(); } }
         private bool _IsCameraLinkage = true;
 
+
+        [DisplayName("VID")]
+        public MotorVID VID { get => _VID; set { _VID = value; NotifyPropertyChanged(); } }
+        private MotorVID _VID = new MotorVID();
+
+    }
+
+
+    public class MotorVID : ViewModelBase
+    {
+        [DisplayName("IsUseVID")]
+        public bool IsUseVID { get => _IsUseVID; set { _IsUseVID = value; NotifyPropertyChanged(); } }
+        private bool _IsUseVID ;
+        [DisplayName("MappingFileName"), PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public string MappingFileName { get=>_MappingFileName; set { _MappingFileName = value; NotifyPropertyChanged(); } }
+        private string _MappingFileName = string.Empty;
+        [DisplayName("Fit")]
+        public int Fit { get => _Fit; set { _Fit = value; NotifyPropertyChanged(); } } 
+        private int _Fit = 5;
     }
 }

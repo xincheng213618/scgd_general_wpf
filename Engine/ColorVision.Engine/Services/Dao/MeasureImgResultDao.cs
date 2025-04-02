@@ -15,7 +15,8 @@ namespace ColorVision.Engine.Services.Dao
         public string? ReqParams { get; set; }
         [Column("raw_file")]
         public string? RawFile { get; set; }
-        [Column("file_url")]
+
+        [Column("file_data")]
         public string? ImgFrameInfo { get; set; }
 
         [Column("file_type")]
@@ -30,7 +31,7 @@ namespace ColorVision.Engine.Services.Dao
         [Column("file_data")]
         public string? FileData { get; set; }
 
-        [Column("device_code")]
+        [Column("file_url")]
         public string? FileUrl { get; set; }
 
         [Column("device_code")]

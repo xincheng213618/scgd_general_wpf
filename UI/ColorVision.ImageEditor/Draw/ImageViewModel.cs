@@ -170,6 +170,7 @@ namespace ColorVision.ImageEditor.Draw
                 }
                 else
                 {
+                    IsInitContextMenu = false;
                     Opened();
                 }
             };

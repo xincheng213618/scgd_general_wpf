@@ -108,7 +108,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
         public void OpenFlowEngineTool()
         {
-            new FlowEngineToolWindow(FlowParam.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }

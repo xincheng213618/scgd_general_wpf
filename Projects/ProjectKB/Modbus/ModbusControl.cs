@@ -7,8 +7,6 @@ using System.Windows;
 namespace ProjectKB.Modbus
 {
 
-
-
     public class ModbusControl : ViewModelBase
     {
         private static ILog log = LogManager.GetLogger(typeof(ModbusControl));

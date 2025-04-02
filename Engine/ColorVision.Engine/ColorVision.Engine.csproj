@@ -27,7 +27,7 @@
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
 		<PackageReference Include="itext" Version="9.1.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.3" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="MySql.Data" Version="9.2.0" />
@@ -35,9 +35,9 @@
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20241108" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.6.0" />
-		<PackageReference Include="ScottPlot.WPF" Version="5.0.54" />
-		<PackageReference Include="System.IO.Ports" Version="9.0.2" />
-		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.2" />
+		<PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
+		<PackageReference Include="System.IO.Ports" Version="9.0.3" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.3" />
 		<PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>
 
@@ -81,6 +81,7 @@
     <None Remove="Assets\png\PowerToy.png" />
     <None Remove="Assets\Sounds\error.wav" />
     <None Remove="Assets\Sounds\success.wav" />
+    <None Remove="ToolPlugins\UsbTreeView.exe" />
   </ItemGroup>
 
   <ItemGroup>
@@ -302,7 +303,13 @@
     <None Update="Assets\Tool\EditJson\Editjson_files\UrlChangeTracker.js.下载">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Tool\sscom5.13.1.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Assets\Tool\static\media\jsoneditor-icons.15f2789d.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Tool\UsbTreeView.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">

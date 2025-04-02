@@ -4,7 +4,6 @@ using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -37,10 +36,9 @@ namespace ColorVision.Engine.ToolPlugins
 
     }
 
-
     public class LedTool : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
+        public override string OwnerGuid => MenuItemConstants.View;
 
         public override string Header => nameof(LedTool);
         public override int Order => 100;

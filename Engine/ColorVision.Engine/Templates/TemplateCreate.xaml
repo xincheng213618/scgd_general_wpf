@@ -29,12 +29,16 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <DockPanel Margin="2" >
+                <UniformGrid x:Name="TemplateStackPanels" Grid.Row="0" Margin="2"  Columns="3">
+                </UniformGrid>
+                <DockPanel Grid.Row="1"  Margin="2" >
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
-                <Grid Grid.Row="1" x:Name="GridProperty" Margin="3,5">
+
+                <Grid Grid.Row="2" x:Name="GridProperty" Margin="3,5">
                     <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
                     <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
                     <WindowsFormsHost>

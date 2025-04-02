@@ -10,7 +10,6 @@ using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Themes;
 using FlowEngineLib;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -187,7 +186,7 @@ namespace ColorVision.Projects.ProjectShiYuan
 
             ListViewResult.ItemsSource = Results;
 
-            FlowTemplate.ItemsSource = FlowParam.Params;
+            FlowTemplate.ItemsSource = TemplateFlow.Params;
             FlowTemplate.SelectionChanged += (s, e) =>
             {
                 if (FlowTemplate.SelectedIndex > -1)
@@ -200,7 +199,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                             algorithmNode.nodeRunEvent -= UpdateMsg;
                         }
                     }
-                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
+                    flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
                     foreach (var item in STNodeEditorMain.Nodes)
                     {
                         if (item is CVCommonNode algorithmNode)
