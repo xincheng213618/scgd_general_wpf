@@ -53,8 +53,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         KB_Output_Lv = 55,
         KB_Output_CIE = 56,
         ARVR_SFR_FindROI = 60,
-        BlackMura_Caculate =61,
-        Math_DataConvert = 70
+        Math_DataConvert = 70,
+        BlackMura_Caculate = 80
     }
     public interface IResultHandle
     {

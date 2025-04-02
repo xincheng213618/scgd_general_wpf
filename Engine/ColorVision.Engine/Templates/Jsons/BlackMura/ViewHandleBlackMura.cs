@@ -39,12 +39,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             {
                 List<string> content = new List<string>();
                 content.Add(EscapeCsvField(item.Id.ToString()));
-                content.Add(EscapeCsvField(item.CrossMarkCenterX.ToString()));
-                content.Add(EscapeCsvField(item.CrossMarkCenterY.ToString()));
-                content.Add(EscapeCsvField(item.XDegree.ToString()));
-                content.Add(EscapeCsvField(item.YDegree.ToString()));
-                content.Add(EscapeCsvField(item.ZDegree.ToString()));
-
                 csvBuilder.AppendLine(string.Join(",", content));
             }
             csvBuilder.AppendLine();
@@ -65,7 +59,6 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -75,9 +68,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     result.ViewResults.Add(item);
                 }
             }
-
-            List<string> header = new() { "中心点x", "中心点y", "x轴" , "y轴", "z轴" };
-            List<string> bdHeader = new() { "CrossMarkCenterX", "CrossMarkCenterY", "XDegree" , "YDegree", "ZDegree" };
+            List<string> header = new() { "ResultJson", "UniformityJson", "OutputFile" };
+            List<string> bdHeader = new() { "ResultJson", "UniformityJson", "OutputFile"};
 
             if (view.listViewSide.View is GridView gridView)
             {

@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         public RelayCommand OpenTemplateCommand { get; set; }
 
         public AlgorithmBinocularFusion(DeviceAlgorithm deviceAlgorithm)
-        {
+        {  
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

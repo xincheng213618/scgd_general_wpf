@@ -15,10 +15,10 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayBinocularFusion : UserControl
+    public partial class DisplayBlackMura : UserControl
     {
         public AlgorithmBlackMura IAlgorithm { get; set; }
-        public DisplayBinocularFusion(AlgorithmBlackMura iAlgorithm)
+        public DisplayBlackMura(AlgorithmBlackMura iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择双目融合模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择BlackMura模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行双目融合算法");
+                ServicesHelper.SendCommand(msg, "正在执行BlackMura算法");
             }
         }
 

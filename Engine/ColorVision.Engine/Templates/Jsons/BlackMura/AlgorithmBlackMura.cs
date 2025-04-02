@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public UserControl GetUserControl()
         {
-            UserControl ??= new DisplayBinocularFusion(this);
+            UserControl ??= new DisplayBlackMura(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
