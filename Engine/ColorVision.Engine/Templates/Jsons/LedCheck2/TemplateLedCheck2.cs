@@ -20,14 +20,17 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         {
             EditTemplateJson.SetParam(TemplateParams[index].Value);
         }
-        public EditTemplateJson EditTemplateJson { get; set; } = new EditTemplateJson();
+        public EditTemplateJson EditTemplateJson { get; set; }
 
         public override UserControl GetUserControl()
         {
+            EditTemplateJson = EditTemplateJson ?? new EditTemplateJson(Description);
             return EditTemplateJson;
         }
+        public string Description { get; set; } = "";
 
-        public override UserControl CreateUserControl() => new EditTemplateJson();
+        public override UserControl CreateUserControl() => new EditTemplateJson(Description);
+
 
         public override IMysqlCommand? GetMysqlCommand() => new MysqlLedCheck2();
 

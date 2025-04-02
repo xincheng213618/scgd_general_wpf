@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ScottPlot.Statistics;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,6 +31,24 @@ namespace ColorVision.Engine.Templates.Jsons
             {
                 DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
             };
+        }
+        private string Description { get; set; }
+        public EditTemplateJson(string description)
+        {
+            Description = description;
+            InitializeComponent();
+            this.Width = EditTemplateJsonConfig.Instance.Width;
+            this.SizeChanged += (s, e) =>
+            {
+                EditTemplateJsonConfig.Instance.Width = this.ActualWidth;
+            };
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+            textEditor.ShowLineNumbers = true;
+            textEditor.TextChanged += (s, e) =>
+            {
+                DebounceTimer.AddOrResetTimer("EditTemplateJsonChanged", 50, EditTemplateJsonChanged);
+            };
+            DescriptionButton.Visibility = Visibility.Visible;
         }
 
         public void EditTemplateJsonChanged()
@@ -63,6 +82,11 @@ namespace ColorVision.Engine.Templates.Jsons
         private void IEditTemplateJson_JsonValueChanged(object? sender, EventArgs e)
         {
             textEditor.Text = IEditTemplateJson.JsonValue;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(Description);
         }
     }
 }
