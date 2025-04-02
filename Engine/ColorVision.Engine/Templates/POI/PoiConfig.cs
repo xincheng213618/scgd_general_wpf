@@ -6,6 +6,7 @@ using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -89,7 +90,7 @@ namespace ColorVision.Engine.Templates.POI
         {
             SetPoiFileCommand = new RelayCommand(a => SetPoiCIEFile());
             OpenPoiCIEFileCommand = new RelayCommand(a => OpenPoiCIEFile());
-            FindLuminousAreaEditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            FindLuminousAreaEditCommand = new RelayCommand(a => new PropertyEditorWindow(FindLuminousArea) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             EditCalibrationTemplateCommand = new RelayCommand(a => OpenCalibrationTemplate());
         }
         [JsonIgnore]

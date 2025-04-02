@@ -1,9 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.PropertyEditor;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;

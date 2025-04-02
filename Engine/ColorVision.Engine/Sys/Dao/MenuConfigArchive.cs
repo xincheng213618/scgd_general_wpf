@@ -1,9 +1,8 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Solution.Searches;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
-using Newtonsoft.Json;
 using System.Windows;
 
 namespace ColorVision.Engine.DataHistory.Dao

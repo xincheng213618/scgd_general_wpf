@@ -1,17 +1,12 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.UI.PropertyEditor;
+﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.UI;
 
 #pragma warning disable CS8602
 
 using ColorVision.UI.Sorts;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;

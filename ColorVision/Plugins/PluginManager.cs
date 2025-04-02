@@ -64,7 +64,7 @@ namespace ColorVision.Plugins
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
-            EditConfigCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}

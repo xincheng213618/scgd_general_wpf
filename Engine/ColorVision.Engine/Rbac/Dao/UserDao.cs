@@ -98,8 +98,6 @@ namespace ColorVision.Engine.Rbac
     public class UserDao:BaseTableDao<UserModel>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
-        public MySqlConnection MySqlConnection => MySqlControl.MySqlConnection;
-
         public static UserDao Instance { get; set; } = new UserDao();
 
         public UserDao():base("t_scgd_sys_user")

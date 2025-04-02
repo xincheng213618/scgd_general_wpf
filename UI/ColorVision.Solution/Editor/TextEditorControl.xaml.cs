@@ -1,19 +1,9 @@
 ﻿using Microsoft.Win32;
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace ColorVision.Solution.Editor
 {
@@ -29,31 +19,6 @@ namespace ColorVision.Solution.Editor
             InitializeComponent();
         }
 
-
-        private void TreeViewControl_Drop(object sender, DragEventArgs e)
-        {
-            var b = e.Data.GetDataPresent(DataFormats.FileDrop);
-
-            if (b)
-            {
-                var sarr = e.Data.GetData(DataFormats.FileDrop);
-                var a = sarr as string[];
-                var fn = a?.First();
-
-                if (File.Exists(fn))
-                {
-                    if (fn.Contains(".txt|.dat"))
-                    {
-                        FilePath = fn;
-                        OpenFile(fn);
-                    }
-                    else
-                    {
-                        MessageBox.Show("文件的格式不受支持");
-                    }
-                }
-            }
-        }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Open, Open_Executed));

@@ -4,7 +4,6 @@ using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.UI.PropertyEditor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

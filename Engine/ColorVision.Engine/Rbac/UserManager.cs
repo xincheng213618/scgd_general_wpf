@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Rbac
 
         public void Edit()
         {
-            new UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             Save();
         }
 

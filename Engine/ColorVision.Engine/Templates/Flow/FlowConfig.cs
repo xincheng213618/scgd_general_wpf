@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Flow
         public RelayCommand EditCommand { get; set; }
         public FlowConfig()
         {
-            EditCommand = new RelayCommand(a => new ColorVision.UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
         }
         [DisplayName("修改保存提示")]
         public bool IsAutoEditSave { get => _IsAutoEditSave; set { _IsAutoEditSave = value; NotifyPropertyChanged(); } }

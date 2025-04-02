@@ -64,7 +64,7 @@ namespace ColorVision.Projects
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
-            EditConfigCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenDownloadCacheCommand = new RelayCommand(a => OpenDownloadCache());
         }
         public static void OpenDownloadCache()

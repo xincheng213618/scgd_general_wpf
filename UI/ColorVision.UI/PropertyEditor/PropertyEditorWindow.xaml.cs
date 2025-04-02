@@ -14,7 +14,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.UI.PropertyEditor
+namespace ColorVision.UI
 {
 
 

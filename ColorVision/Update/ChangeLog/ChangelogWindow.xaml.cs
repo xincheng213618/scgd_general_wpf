@@ -26,7 +26,7 @@ namespace ColorVision.Update
 
         public ChangelogWindowConfig()
         {
-            EditCommand = new RelayCommand(a => new UI.PropertyEditor.PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenInExplorerCommand = new RelayCommand(a => Common.Utilities.PlatformHelper.Open("CHANGELOG.md"));
         }
 

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using ColorVision.Solution.Searches;
-using ColorVision.UI.PropertyEditor;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
