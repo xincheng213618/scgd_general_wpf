@@ -348,6 +348,7 @@
     <Folder Include="Rbac\Tenants\" />
     <Folder Include="Rbac\Account\" />
     <Folder Include="Services\Devices\Spectrum\Templates\" />
+    <Folder Include="Templates\Jsons\BlackMura\" />
   </ItemGroup>
 
 </Project>

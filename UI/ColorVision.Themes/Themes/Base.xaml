@@ -30,7 +30,16 @@
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Height" Value="80"/>
         <Setter Property="Margin" Value="10"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                <Setter Property="Visibility" Value="Visible"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
+   
 
     <Style x:Key="TextBlock1" TargetType="{x:Type TextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

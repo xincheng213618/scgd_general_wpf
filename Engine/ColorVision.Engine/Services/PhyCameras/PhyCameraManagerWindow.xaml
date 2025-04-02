@@ -8,18 +8,6 @@
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="500" Width="1108" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
-    <Window.Resources>
-        <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
-                    <Setter Property="Visibility" Value="Collapsed"/>
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
-                    <Setter Property="Visibility" Value="Visible"/>
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-    </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

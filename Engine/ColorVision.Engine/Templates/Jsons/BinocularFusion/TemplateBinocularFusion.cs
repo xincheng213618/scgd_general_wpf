@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 

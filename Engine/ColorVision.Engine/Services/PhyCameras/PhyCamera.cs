@@ -77,6 +77,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand ProductBrochureCommand { get; set; }
         [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
+
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
@@ -141,7 +142,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
 
-            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()));
+            UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
             OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());

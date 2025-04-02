@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.UI.Authorizations;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -27,6 +28,8 @@ using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
+
 
     public class PhyCameraManager:ViewModelBase
     {
@@ -44,9 +47,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-
-
-                RefreshEmptyCamera();
+            RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
         }
 
@@ -272,16 +273,20 @@ namespace ColorVision.Engine.Services.PhyCameras
                     else
                     {
                         var newPhyCamera = new PhyCamera(item);
-                        if (newPhyCamera.LicenseState != LicenseState.Licensed)
-                            Task.Run(async () =>
-                            {
-                                await newPhyCamera.UploadLicenseNet();
-                                Application.Current.Dispatcher.Invoke(() =>
+                        if (Authorization.Instance.PermissionMode == PermissionMode.SuperAdministrator)
+                        {
+                            if (newPhyCamera.LicenseState != LicenseState.Licensed)
+                                Task.Run(async () =>
                                 {
-                                    ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList().ForEach(a => a.Save());
-                                });
-                            }
-                            );
+                                    await newPhyCamera.UploadLicenseNet();
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList().ForEach(a => a.Save());
+                                    });
+                                }
+                                );
+                        }
+
                         LoadPhyCameraResources(newPhyCamera);
                         // 添加新的 PhyCamera 对象到集合中
                         PhyCameras.Add(newPhyCamera);

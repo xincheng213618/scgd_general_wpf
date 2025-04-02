@@ -19,7 +19,16 @@ namespace ColorVision.Engine.Services.PhyCameras
         }
     }
 
-    public class PhyCameraManagerWindowConfig: WindowConfig { }
+    public class PhyCameraManagerWindowConfig: WindowConfig
+    {
+        public static PhyCameraManagerWindowConfig Instance => ConfigService.Instance.GetRequiredService<PhyCameraManagerWindowConfig>();
+
+        public bool AllowCreate { get => _AllowCreate; set { _AllowCreate = value; NotifyPropertyChanged(); } }
+        private bool _AllowCreate;
+
+
+
+    }
     /// <summary>
     /// PhySpectrumManagerWindow.xaml 的交互逻辑
     /// </summary>

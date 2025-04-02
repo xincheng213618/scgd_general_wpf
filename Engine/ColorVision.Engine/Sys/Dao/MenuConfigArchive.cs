@@ -50,11 +50,6 @@ namespace ColorVision.Engine.DataHistory.Dao
                 globleCfgdModel = GlobleCfgdDao.Instance.GetArchDB();
             }
 
-
-
-
-
-
             PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(globleCfgdModel, false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             propertyEditorWindow.Submited += (s, e) => { GlobleCfgdDao.Instance.Save(globleCfgdModel); };
             propertyEditorWindow.ShowDialog();
