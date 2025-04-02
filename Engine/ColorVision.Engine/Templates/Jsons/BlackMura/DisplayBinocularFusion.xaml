@@ -1,12 +1,12 @@
-﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.BinocularFusion.DisplayBinocularFusion"
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.BlackMura.DisplayBinocularFusion"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.BinocularFusion"
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.BlackMura"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmBinocularFusion}"
+             d:DataContext="{d:DesignInstance local:AlgorithmBlackMura}"
              d:DesignHeight="300" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
