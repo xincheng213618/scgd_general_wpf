@@ -2,7 +2,6 @@
 using ColorVision.UI;
 
 #pragma warning disable CS8602
-
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -57,6 +56,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         {
 
         }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {

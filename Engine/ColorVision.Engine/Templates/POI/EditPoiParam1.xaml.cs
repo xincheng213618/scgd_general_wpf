@@ -1659,19 +1659,27 @@ namespace ColorVision.Engine.Templates.POI
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
                 {
-                    ushort[] Keygray = new ushort[3];
-                    uint keygraynum = 0;
-                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", Keygray, ref keygraynum);
+                    ushort[] keygray1 = new ushort[256];
+                    uint Keygraynum = 0;
+                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", keygray1, ref Keygraynum);
+                    if (Calibratiohandle != IntPtr.Zero)
+                    {
+                        byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
+                        byte[] byteArray1 = new byte[4];
+                        cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp });
+                        keyGray = (float)BitConverter.ToSingle(byteArray1);
+                    }
+
                     keyGray = (float)(keyGray * poiPointParam.KeyScale);
                     if (poiPointParam.Area != 0)
                     {
                         poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
                     else
                     {
                         poiPointParam.Brightness = keyGray;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
 
                 }
@@ -1680,6 +1688,7 @@ namespace ColorVision.Engine.Templates.POI
 
 
         }
+        nint Calibratiohandle = IntPtr.Zero;
 
         bool IsInitialKB ;
         private void InitialKBKey()
@@ -1689,7 +1698,6 @@ namespace ColorVision.Engine.Templates.POI
                 MessageBox.Show("请先设置校准模板");
                 return;
             }
-            nint Calibratiohandle = IntPtr.Zero;
             string luminFile;
             if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
             {
