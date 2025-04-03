@@ -62,7 +62,7 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public List<ArchivedMasterModel> ConditionalQuery(string batchCode)
         {
-            return ConditionalQuery(new Dictionary<string, object>() { { "code", batchCode } });
+            return ConditionalQuery(new Dictionary<string, object>() { { "code", batchCode } , });
         }
     }
 }

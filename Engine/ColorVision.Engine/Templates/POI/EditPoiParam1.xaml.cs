@@ -38,6 +38,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static iText.Kernel.Pdf.Colorspace.PdfDeviceCs;
 
 namespace ColorVision.Engine.Templates.POI
 {
@@ -1688,6 +1689,7 @@ namespace ColorVision.Engine.Templates.POI
                 MessageBox.Show("请先设置校准模板");
                 return;
             }
+            nint Calibratiohandle = IntPtr.Zero;
             string luminFile;
             if (PoiConfig.CalibrationTemplateIndex > -1 && PoiConfig.CalibrationParams[PoiConfig.CalibrationTemplateIndex] is TemplateModel<CalibrationParam> templateModel)
             {
@@ -1735,6 +1737,13 @@ namespace ColorVision.Engine.Templates.POI
                     if (File.Exists(filepath))
                     {
                         luminFile = filepath;
+
+                        Calibratiohandle = cvCameraCSLib.CreatCalibrationManage();
+                        int ret = cvCameraCSLib.CM_SetCalibParam(Calibratiohandle, CalibrationType.Luminance,true, luminFile);
+                        if (ret != 1)
+                        {
+                            log.Error("read luminance file ERROR!");
+                        }
                     }
                     else
                     {
@@ -1872,6 +1881,18 @@ namespace ColorVision.Engine.Templates.POI
                             if (PoiConfig.DefaultDoKey)
                             {
                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  keygray1 ,ref Keygraynum);
+                                
+                                if (Calibratiohandle != IntPtr.Zero)
+                                {
+                                    byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
+                                    byte[] byteArray1 = new byte[4];
+                                    cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp , PoiConfig.Exp , PoiConfig.Exp });
+                                    keyGray =(float) BitConverter.ToSingle(byteArray1);
+                                }
+
+
+
+
                                 keyGray = (float)(keyGray * poiPointParam.KeyScale);
                                 if (poiPointParam.Area != 0)
                                 {

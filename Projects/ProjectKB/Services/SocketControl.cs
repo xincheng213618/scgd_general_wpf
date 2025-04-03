@@ -122,17 +122,60 @@ namespace ProjectKB.Services
             int bytesRead;
             while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
             {
-                string message = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
                 log.Info("Received message: " + message);
-                byte[] response = Encoding.ASCII.GetBytes(message);
-                stream.Write(response, 0, response.Length);
+                if (message.Contains('*') == false ||message.Contains('#') == false)
+                {
+                    string[] resultData = new string[3];
+                    resultData[0] = "A";
+                    resultData[1] = "Error";
+                    resultData[2] = "2";
+                    string XorData = CalXor(resultData);
+                    string hhData = CalXor(XorData);
+                    string returnmsg = "#" + resultData[0] + "," + resultData[1] + "," + resultData[2] + ",*" + hhData;
+                    byte[] response = Encoding.ASCII.GetBytes(returnmsg);
+                    stream.Write(response, 0, response.Length);
+                    continue;
+                }
+
+
                 StatusChanged?.Invoke(this, new EventArgs());
             }
 
             client.Close();
         }
 
-
+        public string CalXor(string[] srcData)
+        {
+            StringBuilder strText = new StringBuilder();
+            foreach (string s in srcData)
+            {
+                // 获取s对应的字节数组
+                byte[] b = Encoding.ASCII.GetBytes(s);
+                // xorResult 存放校验结果。注意：初值去首元素值！
+                byte xorResult = b[0];
+                // 求xor校验和。注意：XOR运算从第二元素开始
+                for (int i = 1; i < b.Length; i++)
+                {
+                    xorResult ^= b[i];
+                }
+                strText.Append(xorResult.ToString("x2")); // 使用16进制格式
+            }
+            return strText.ToString();
+        }
+        public string CalXor(string srcData)
+        {
+            // 获取s对应的字节数组
+            byte[] b = Encoding.ASCII.GetBytes(srcData);
+            // xorResult 存放校验结果。注意：初值去首元素值！
+            byte xorResult = b[0];
+            // 求xor校验和。注意：XOR运算从第二元素开始
+            for (int i = 1; i < b.Length; i++)
+            {
+                xorResult ^= b[i];
+            }
+            return xorResult.ToString("x2"); // 直接返回16进制格式的字符串
+        }
 
 
     }

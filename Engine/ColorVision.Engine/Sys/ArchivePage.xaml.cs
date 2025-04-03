@@ -131,5 +131,13 @@ namespace ColorVision.Engine.DataHistory.Dao
                 propertyEditorWindow.ShowDialog();
             }
         }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            
+
+
+
+        }
     }
 }
