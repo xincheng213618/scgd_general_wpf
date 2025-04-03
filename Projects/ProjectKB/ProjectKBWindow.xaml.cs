@@ -16,6 +16,7 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
+using ProjectKB.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -62,6 +63,14 @@ namespace ProjectKB
         {
             this.DataContext = ProjectKBConfig.Instance;
             listView1.ItemsSource = ViewResluts;
+            SocketControl.GetInstance().StartServer();
+            SocketControl.GetInstance().StatusChanged += ServicesChanged;
+            this.Closed += (s, e) =>
+            {
+                SocketControl.GetInstance().StopServer();
+                SocketControl.GetInstance().StatusChanged -= ServicesChanged;
+
+            };
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -116,6 +125,15 @@ namespace ProjectKB
             };
 
         }
+        private void ServicesChanged(object? sender, EventArgs e)
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                log.Info("Service触发拍照，执行流程");
+                RunTemplate();
+            });
+        } 
+
 
         private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
         {

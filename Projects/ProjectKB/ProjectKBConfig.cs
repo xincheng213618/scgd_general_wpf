@@ -5,6 +5,7 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
+using ProjectKB.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
@@ -20,6 +21,7 @@ namespace ProjectKB
         public RelayCommand OpenLogCommand { get; set; }
         public RelayCommand OpenModbusCommand { get; set; }
         public RelayCommand OpenConfigCommand { get; set; }
+        public RelayCommand OpenSocketConfigCommand { get; set; }
 
         public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenReadMeCommand { get; set; }
@@ -35,7 +37,15 @@ namespace ProjectKB
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+            OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
         }
+
+        public static void OepnSocketConfig()
+        {
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow() };
+            propertyEditorWindow.Show();
+        }
+
 
         public static void OpenConfig()
         {

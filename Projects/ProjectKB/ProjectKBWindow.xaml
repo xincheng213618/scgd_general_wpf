@@ -231,6 +231,9 @@
                 <Button Content="设置" Command="{Binding OpenConfigCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
+                <Button Content="socket" Command="{Binding OpenSocketConfigCommand}"/>
+            </StatusBarItem>
+            <StatusBarItem>
                 <Button Content="更新记录" Command="{Binding OpenChangeLogCommand}"/>
             </StatusBarItem>
             <StatusBarItem>
