@@ -84,6 +84,15 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="归档" Width="100">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}">
+                                        <Grid>
+                                            <Button Content="保存" Click="Save_Click"  Tag="{Binding .}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
