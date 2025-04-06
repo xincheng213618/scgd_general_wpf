@@ -49,6 +49,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 LoadPhyCamera();
             RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
+            if(PhyCameras.Count > 0)
+            {
+                PhyCameras[0].IsSelected = true;
+            }
         }
 
 

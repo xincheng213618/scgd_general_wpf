@@ -1300,16 +1300,8 @@ namespace ColorVision.Engine.Templates.POI
         {
             SavePoiParam();
         }
-        private void Button_Setting_Click(object sender, RoutedEventArgs e)
-        {
-            SettingPopup.IsOpen = true;
-        }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-
-
-
-
             if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
