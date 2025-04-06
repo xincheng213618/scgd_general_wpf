@@ -44,29 +44,6 @@
             <Border Margin="5,5,5,0" Style="{StaticResource BorderModuleArea}"  CornerRadius="5">
                 <StackPanel Margin="3">
                     <DockPanel Margin="0,3">
-                        <Grid x:Name="SettingGrid" DockPanel.Dock="Right" Width="20" Margin="5,0" HorizontalAlignment="Left" Grid.Column="0">
-                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="Button_Setting_Click" />
-                        </Grid>
-                        <Popup  x:Name="SettingPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=SettingGrid}">
-                            <Border Margin="5" Style="{StaticResource BorderModuleArea}">
-                                <StackPanel Margin="0,5">
-                                    <DockPanel x:Name="SettingGroup" Height="25" Margin="2">
-                                        <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding PoiConfig.IsLayoutUpdated}"/>
-                                        <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="2">
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}" IsChecked="{Binding PoiConfig.IsShowText}"/>
-                                        <TextBlock   HorizontalAlignment="Left" Text="不显示文字"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="2" >
-                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"   BorderBrush="{DynamicResource BorderBrush}" BorderThickness="3" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowPoiConfig_Click" IsChecked="{Binding PoiConfig.IsShowPoiConfig}"/>
-                                        <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-
                         <DockPanel  Margin="5,0">
                             <TextBlock Text="Width" MinWidth="25" Margin="0,0,5,0"/>
                             <TextBox x:Name="TextBoxCADW" Text="{Binding Width}" Width="55" />
@@ -79,7 +56,9 @@
                     <StackPanel  Orientation="Horizontal" Margin="0,2">
                         <Button  Content="默认画布" DockPanel.Dock="Right" Click="CreateImage_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                         <Button x:Name="button1" Content="图像导入" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
-                        <Button x:Name="button4" Content="导入服务最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button x:Name="button4" Content="导入最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button x:Name="button5" Content="拍摄" Click="TakePhoto_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+
                     </StackPanel>
 
 

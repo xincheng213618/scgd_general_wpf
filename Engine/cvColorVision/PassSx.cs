@@ -6,7 +6,7 @@ namespace cvColorVision
 {
     public class PassSx
     {
-        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
         private static bool _isSourceV = true;
 
         //打开

@@ -6,7 +6,7 @@ namespace cvColorVision
 {
     public class KeyBoardDLL
     {
-        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
         [DllImport(LIBRARY_CVCAMERA, CallingConvention = CallingConvention.Cdecl)]
         public static extern void CM_InitialKeyBoardSrc(int w, int h, int bpp, int channels, IntPtr imgdata, int saveProcessData, string debugPath ,float exp, string luminFile,int doCali =1);

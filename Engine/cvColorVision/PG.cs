@@ -16,7 +16,7 @@ namespace cvColorVision
 
 
 
-        private const string LibraryCVCamera = "libs\\cvCamera.dll";
+        private const string LibraryCVCamera = "cvCamera.dll";
 
         [DllImport(LibraryCVCamera, EntryPoint = "CM_InitPG",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern unsafe IntPtr CM_InitPG(PG_Type ePgType, Communicate_Type eCOMType);
