@@ -1,26 +1,11 @@
-﻿// Copyright (c) 2009 Daniel Grunwald
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this
-// software and associated documentation files (the "Software"), to deal in the Software
-// without restriction, including without limitation the rights to use, copy, modify, merge,
-// publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
-// to whom the Software is furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in all copies or
-// substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-// INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
-// PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
-// FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
+﻿
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -30,35 +15,24 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using System.Xml;
+using static System.Net.Mime.MediaTypeNames;
 
 
-namespace ColorVision.Solution.Editor
+namespace ColorVision.UI
 {
     /// <summary>
-    /// Interaction logic for Window1.xaml
+    /// Interaction logic for AvalonEditWindow.xaml
     /// </summary>
-    public partial class Window1 : Window
+    public partial class AvalonEditWindow : Window
 	{
-		public Window1()
+		public AvalonEditWindow()
 		{
 		
 			InitializeComponent();
-
 			this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
-
-			propertyGridComboBox.SelectedIndex = 2;
-			
-			//textEditor.TextArea.SelectionBorder = null;
-			
-			//textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
-			//textEditor.SyntaxHighlighting = customHighlighting;
-			// initial highlighting now set by XAML
-			
 			textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
 			textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
-			SearchPanel.Install(textEditor);
-			
+			SearchPanel.Install(textEditor);		
 			DispatcherTimer foldingUpdateTimer = new DispatcherTimer();
 			foldingUpdateTimer.Interval = TimeSpan.FromSeconds(2);
 			foldingUpdateTimer.Tick += delegate { UpdateFoldings(); };
@@ -74,18 +48,11 @@ namespace ColorVision.Solution.Editor
 			};
 		}
 
-		public Window1(string currentFileName)
+		public AvalonEditWindow(string currentFileName)
 		{
             InitializeComponent();
 
             this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
-
-            propertyGridComboBox.SelectedIndex = 2;
-
-            //textEditor.TextArea.SelectionBorder = null;
-            //textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("C#");
-            //textEditor.SyntaxHighlighting = customHighlighting;
-            // initial highlighting now set by XAML
 
             textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
             textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
@@ -108,6 +75,39 @@ namespace ColorVision.Solution.Editor
             this.currentFileName = currentFileName;
             textEditor.Load(currentFileName);
             textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName));
+            textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
+        }
+        bool isFormatted = false;
+		public string OriginalText;
+
+        public void SetJsonText(string Text)
+		{
+			OriginalText = Text;
+            try
+            {
+                var parsedJson = JToken.Parse(Text);
+                isFormatted = Text.Contains("\n") || Text.Contains("\t");
+                textEditor.Text = parsedJson.ToString(Formatting.Indented);
+            }
+            catch (JsonReaderException)
+            {               
+				textEditor.Text = Text;
+            }
+			textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension("Json");
+        }
+        public string GetJsonText()
+        {
+			string Text = textEditor.Text;
+            try
+            {
+                var parsedJson = JToken.Parse(Text);
+
+                return parsedJson.ToString(isFormatted?Formatting.Indented : Formatting.None);
+            }
+            catch (JsonReaderException)
+            {
+				return OriginalText;
+            }
         }
 
 
@@ -123,8 +123,8 @@ namespace ColorVision.Solution.Editor
                 textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName));
 			}
 		}
-		
-		void saveFileClick(object sender, EventArgs e)
+
+        void saveFileClick(object sender, EventArgs e)
 		{
 			if (currentFileName == null) {
 				SaveFileDialog dlg = new SaveFileDialog();
@@ -138,22 +138,6 @@ namespace ColorVision.Solution.Editor
 			textEditor.Save(currentFileName);
 		}
 		
-		void propertyGridComboBoxSelectionChanged(object sender, RoutedEventArgs e)
-		{
-			if (propertyGrid == null)
-				return;
-			switch (propertyGridComboBox.SelectedIndex) {
-				case 0:
-					propertyGrid.SelectedObject = textEditor;
-					break;
-				case 1:
-					propertyGrid.SelectedObject = textEditor.TextArea;
-					break;
-				case 2:
-					propertyGrid.SelectedObject = textEditor.Options;
-					break;
-			}
-		}
 		
 		CompletionWindow completionWindow;
 		

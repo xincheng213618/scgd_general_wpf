@@ -9,7 +9,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Services
 {
     /// <summary>
-    /// Window1.xaml 的交互逻辑
+    /// AvalonEditWindow.xaml 的交互逻辑
     /// </summary>
     public partial class WindowDevicesSetting : Window
     {

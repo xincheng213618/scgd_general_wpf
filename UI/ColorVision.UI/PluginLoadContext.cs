@@ -23,9 +23,7 @@ namespace ColorVision.UI
                     return LoadFromAssemblyPath(assemblyPath);
                 }
             }
-
             return Default.LoadFromAssemblyName(assemblyName);
-
         }
 
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
