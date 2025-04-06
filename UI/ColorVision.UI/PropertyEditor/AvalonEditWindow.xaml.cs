@@ -148,10 +148,6 @@ namespace ColorVision.UI
 				completionWindow = new CompletionWindow(textEditor.TextArea);
 				// provide AvalonEdit with the data:
 				IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
-				data.Add(new MyCompletionData("Item1"));
-				data.Add(new MyCompletionData("Item2"));
-				data.Add(new MyCompletionData("Item3"));
-				data.Add(new MyCompletionData("Another item"));
 				completionWindow.Show();
 				completionWindow.Closed += delegate {
 					completionWindow = null;
