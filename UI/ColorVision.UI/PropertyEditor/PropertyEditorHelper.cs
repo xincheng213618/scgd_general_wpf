@@ -51,6 +51,9 @@ namespace ColorVision.UI
                 var attribute = property.GetCustomAttribute<CommandDisplayAttribute>();
                 if (attribute != null)
                 {
+                    var browsableAttribute = property.GetCustomAttribute<BrowsableAttribute>();
+                    if (browsableAttribute != null && !browsableAttribute.Browsable)
+                        continue;
                     commandDisplayAttributes.Add((attribute, property));
                 }
             }
@@ -453,6 +456,9 @@ namespace ColorVision.UI
                     {
 
                         DockPanel dockPanel = new DockPanel();
+
+
+
                         if (property.PropertyType == typeof(bool))
                         {
                             dockPanel = GenBoolProperties(property, obj);
@@ -478,6 +484,20 @@ namespace ColorVision.UI
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
+                        }
+
+                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
+                        if (VisibleBlindAttr != null)
+                        {
+                            var binding = new Binding(VisibleBlindAttr.PropertyName)
+                            {
+                                Source = obj,
+                                Mode = BindingMode.TwoWay
+                            };
+                            binding.Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter");
+                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
+
+
                         }
                         stackPanel.Children.Add(dockPanel);
                     }

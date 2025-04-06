@@ -45,31 +45,10 @@
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="相机型号" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraModel}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="相机模式" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraMode}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="默认取图模式" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding TakeImageMode}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="默认通道数" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Channel}"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="默认图像位数" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding ImageBpp}"/>
-                            </DockPanel>
-
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="文件缓存:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
                             </DockPanel>
-                            <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}">
+                            <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}" Margin="0,2">
                                 <TextBlock Text="CVCIE文件保存:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
                             </DockPanel>

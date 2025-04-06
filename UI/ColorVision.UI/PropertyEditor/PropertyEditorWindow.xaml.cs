@@ -163,6 +163,7 @@ namespace ColorVision.UI
                 foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
+                    
                     if (browsableAttr?.Browsable ?? true)
                     {
                         DockPanel dockPanel = new DockPanel();
@@ -192,6 +193,19 @@ namespace ColorVision.UI
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
+                        }
+
+                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
+                        if (VisibleBlindAttr != null)
+                        {
+                            var binding = new Binding(VisibleBlindAttr.PropertyName)
+                            {
+                                Source = obj,
+                                Mode = BindingMode.TwoWay
+                            };
+
+                            binding.Converter = (IValueConverter)Application.Current.FindResource(VisibleBlindAttr.IsInverted?"bool2VisibilityConverter": "bool2VisibilityConverter1");
+                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
                         }
                         stackPanel.Children.Add(dockPanel);
                     }

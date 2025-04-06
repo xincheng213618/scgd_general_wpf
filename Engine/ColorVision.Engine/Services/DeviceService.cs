@@ -39,13 +39,13 @@ namespace ColorVision.Engine.Services
         private bool _IsExpanded = true;
 
         public ContextMenu ContextMenu { get; set; }
-        [CommandDisplayAttribute("Property", Order = -6)]
+        [CommandDisplayAttribute("Property", Order = -6), BrowsableAttribute(false)]
         public RelayCommand PropertyCommand { get; set; }
-        [CommandDisplayAttribute("Export", Order = -7)]
+        [CommandDisplayAttribute("Export", Order = -7), BrowsableAttribute(false)]
         public RelayCommand ExportCommand { get; set; }
-        [CommandDisplayAttribute("Import", Order = -8)]
+        [CommandDisplayAttribute("Import", Order = -8), BrowsableAttribute(false)]
         public RelayCommand ImportCommand { get; set; }
-        [CommandDisplayAttribute("Copy", Order = -10)]
+        [CommandDisplayAttribute("Copy", Order = -10), BrowsableAttribute(false)]
         public RelayCommand CopyCommand { get; set; }
 
         [CommandDisplayAttribute("Reset", CommandType = CommandType.Highlighted, Order = 9999)]

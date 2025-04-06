@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.Core
         [CommandDisplay("Delete", CommandType = CommandType.Highlighted, Order = 99999)]
         public RelayCommand DeleteCommand { get; set; }
 
-        [CommandDisplay("Save",Order =-11)]
+        [CommandDisplay("Save",Order =-11),BrowsableAttribute(false)]
         public RelayCommand SaveCommand { get; set; }
 
         public ObservableCollection<ServiceObjectBase> VisualChildren { get; set; }
