@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604
-
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.SMU.Dao;
@@ -7,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using cvColorVision;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottables;
@@ -23,7 +23,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
@@ -281,7 +280,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
                 First = true;
             }
 
-            ColorParam colorParam = data.Data;
+            COLOR_PARA colorParam = data.Data;
 
             ViewResultSpectrum viewResultSpectrum = new(colorParam);
             viewResultSpectrum.Id = data.ID;
@@ -581,7 +580,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
             for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
-                cvColorVision.GCSDLL.ColorParam param = new()
+                COLOR_PARA param = new()
                 {
                     fx = item.fx ?? 0,
                     fy = item.fy ?? 0,

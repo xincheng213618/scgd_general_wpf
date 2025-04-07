@@ -5,10 +5,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
-using static cvColorVision.GCSDLL;
 using ScottPlot.Plottables;
 using ScottPlot.DataSources;
 using System.ComponentModel;
+using cvColorVision;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
@@ -103,7 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Views
         }
 
 
-        public ViewResultSpectrum(ColorParam colorParam)
+        public ViewResultSpectrum(COLOR_PARA colorParam)
         {
             Id = No++; 
             fx = colorParam.fx;

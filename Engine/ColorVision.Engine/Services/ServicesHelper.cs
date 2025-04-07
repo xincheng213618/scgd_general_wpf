@@ -54,8 +54,6 @@ namespace ColorVision.Engine.Services
                     });
                 }
 
-
-
             };
             msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             handler.Cancelling += delegate

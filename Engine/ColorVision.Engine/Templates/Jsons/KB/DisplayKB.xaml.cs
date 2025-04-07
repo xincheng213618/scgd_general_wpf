@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择KB模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择键盘检测模板")) return;
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
             string type = string.Empty;
             string code = string.Empty;
