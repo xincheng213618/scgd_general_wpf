@@ -50,6 +50,8 @@ extern "C" COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, dou
 
 extern "C" COLORVISIONCORE_API int M_FindLuminousArea(HImage img,const char* config, char** result);
 
+extern "C" COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage);
+
 extern "C" COLORVISIONCORE_API int FreeResult(char* result) {
     delete[] result;
     return 0;

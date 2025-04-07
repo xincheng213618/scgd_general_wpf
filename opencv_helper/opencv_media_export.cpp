@@ -378,6 +378,32 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char*
 	return static_cast<int>(length);
 }
 
+COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+
+	if (mat.depth() == CV_32FC1) {
+		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
+
+		// 找到图像中的最小值和最大值
+		double minVal, maxVal;
+		cv::minMaxLoc(mat, &minVal, &maxVal);
+
+		// 计算比例因子和标量值
+		float scale = 65535 / (maxVal - minVal);
+		float delta = -minVal * scale;
+
+		// 将32位浮点图像转换为16位灰度图像
+		mat.convertTo(outMat, CV_16UC1, scale, delta);
+
+		MatToHImage(outMat, outImage);
+
+
+		return 0;
+	}
+	return -1;
+}
+
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

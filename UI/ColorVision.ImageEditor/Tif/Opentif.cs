@@ -97,6 +97,41 @@ namespace ColorVision.ImageEditor.Tif
                 throw new NotSupportedException("Unsupported pixel format");
             }
         }
+
+
+        public static WriteableBitmap ConvertGray32FloatToBitmapSource(BitmapSource bitmapSource)
+        {
+            // 确保图像数据已加载
+            bitmapSource.Freeze();
+
+            // 获取图像的宽度和高度
+            int width = bitmapSource.PixelWidth;
+            int height = bitmapSource.PixelHeight;
+
+            // 创建一个新的32位浮点数组来存储像素数据
+            float[] floatPixels = new float[width * height];
+
+            // 从BitmapSource中读取像素数据
+            bitmapSource.CopyPixels(floatPixels, width * 4, 0);
+
+
+            // 创建一个新的16位整数数组来存储转换后的像素值
+            ushort[] ushortPixels = new ushort[width * height];
+
+            // 将浮点值转换为0-65535范围的16位整数
+            for (int i = 0; i < floatPixels.Length; i++)
+            {
+                ushortPixels[i] = (ushort)(floatPixels[i] * 65535);
+            }
+            // 创建一个新的WriteableBitmap对象
+            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Gray16, null);
+            // 写入像素数据
+            int stride = width * 2; // 每行像素数据的字节数（16位，即2字节）
+            writeableBitmap.WritePixels(new Int32Rect(0, 0, width, height), ushortPixels, stride, 0);
+
+            return writeableBitmap;
+        }
+
         public async void OpenImage(ImageView imageView, string? filePath)
         {
             if (string.IsNullOrEmpty(filePath)) return;
@@ -123,8 +158,21 @@ namespace ColorVision.ImageEditor.Tif
                             imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
                         }
 
+                        if (data.Format == PixelFormats.Gray32Float)
+                        {
+                            WriteableBitmap writeableBitmap = new WriteableBitmap(data);
+                            HImage hImage = writeableBitmap.ToHImage();
+                            int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage,out HImage hImage1);
+                            imageView.SetImageSource(hImage1.ToWriteableBitmap());
+                            OpenCVMediaHelper.M_FreeHImageData(hImage1.pData);
+                            hImage1.Dispose();
+                            hImage.Dispose();
+                        }
+                        else
+                        {
+                            imageView.SetImageSource(new WriteableBitmap(data));
+                        }
 
-                        imageView.SetImageSource(new WriteableBitmap(data));
                         imageView.UpdateZoomAndScale();
                         imageView.WaitControl.Visibility = Visibility.Collapsed;
                     });

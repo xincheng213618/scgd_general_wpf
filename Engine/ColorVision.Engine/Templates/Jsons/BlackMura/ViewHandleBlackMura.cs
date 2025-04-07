@@ -4,12 +4,18 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.Ghost;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -31,19 +37,26 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         {
             var ViewResults = result.ViewResults.ToSpecificViewResults<BlackMuraModel>();
             var csvBuilder = new StringBuilder();
-            List<string> header = new() { "id", "中心点x", "中心点y", "x轴", "y轴", "z轴" };
+
+            // 获取 BlackMuraModel 类的所有属性，并读取 Column 属性的名称作为 header
+            List<string> header = typeof(BlackMuraModel)
+                .GetProperties()
+                .Select(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name)
+                .ToList();
 
             csvBuilder.AppendLine(string.Join(",", header));
 
             foreach (var item in ViewResults)
             {
                 List<string> content = new List<string>();
-                content.Add(EscapeCsvField(item.Id.ToString()));
+                foreach (var prop in typeof(BlackMuraModel).GetProperties())
+                {
+                    var value = prop.GetValue(item);
+                    content.Add(EscapeCsvField(value?.ToString() ?? string.Empty));
+                }
                 csvBuilder.AppendLine(string.Join(",", content));
             }
-            csvBuilder.AppendLine();
-            csvBuilder.AppendLine();
-            File.AppendAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+            File.WriteAllText(selectedPath + "//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
 
         }
 
@@ -66,6 +79,29 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 foreach (var item in AlgResultModels)
                 {
                     result.ViewResults.Add(item);
+
+                    LvDetails lvDetails = JsonConvert.DeserializeObject<LvDetails>(item.ResultJson);
+
+                    DVCircleText maxcirle = new();
+                    maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
+                    maxcirle.Attribute.Radius = 10;
+                    maxcirle.Attribute.Brush = Brushes.Transparent;
+                    maxcirle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    maxcirle.Attribute.Text = string.Empty;
+                    maxcirle.Attribute.Msg = $"Max:{lvDetails.LvMax}";
+                    maxcirle.Render();
+                    view.ImageView.AddVisual(maxcirle);
+
+
+                    DVCircleText mincirle = new();
+                    mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
+                    mincirle.Attribute.Radius = 10;
+                    mincirle.Attribute.Brush = Brushes.Transparent;
+                    mincirle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    mincirle.Attribute.Text = string.Empty;
+                    mincirle.Attribute.Msg = $"Min:{lvDetails.LvMin}";
+                    mincirle.Render();
+                    view.ImageView.AddVisual(mincirle);
                 }
             }
             List<string> header = new() { "ResultJson", "UniformityJson", "OutputFile" };
