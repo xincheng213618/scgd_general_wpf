@@ -76,25 +76,29 @@ namespace ColorVision.UI
 
 			if (File.Exists(currentFileName))
 			{
-                string text = File.ReadAllText(currentFileName);
+                string lines = File.ReadAllText(currentFileName);
 
-				if (text.Length< 10000)
+				if (lines.Length< 10000)
 				{
 					try
 					{
-                        var parsedJson = JToken.Parse(text);
+                        var parsedJson = JToken.Parse(Text);
+                        isFormatted = Text.Contains("\n") || Text.Contains("\t");
                         textEditor.Text = parsedJson.ToString(Formatting.Indented);
                     }
                     catch (JsonReaderException)
                     {
-                        textEditor.Text = text;
+                        textEditor.Text = lines;
 
                     }
 				}
 				else
 				{
-                    textEditor.Text = text;
+                    textEditor.Text = lines;
                 }
+
+
+
                 textEditor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinitionByExtension(Path.GetExtension(currentFileName)) ?? HighlightingManager.Instance.GetDefinitionByExtension(".Json");
                 textEditor.TextArea.IndentationStrategy = new ICSharpCode.AvalonEdit.Indentation.DefaultIndentationStrategy();
             }
