@@ -60,7 +60,6 @@ namespace cvColorVision
     {
         private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
-
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_CreateEmission", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public static extern IntPtr CM_CreateEmission(int nType);
 
