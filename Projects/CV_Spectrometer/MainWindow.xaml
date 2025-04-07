@@ -202,10 +202,6 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Row="0">
-                        <Button x:Name="button1" Content="CIE1931" HorizontalAlignment="Left" Click="Button1_Click" Grid.ColumnSpan="2"/>
-                        <Button x:Name="button2" Content="CIE1976" HorizontalAlignment="Left" Click="Button2_Click" Grid.Column="1"/>
-                    </StackPanel>
                     <Image x:Name="image" HorizontalAlignment="Left" Height="300"  Width="300" Source="Assets\Image\CIE-1931.jpg" Grid.Row="1" />
                 </Grid>
               

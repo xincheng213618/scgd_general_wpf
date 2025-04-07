@@ -70,10 +70,6 @@ namespace CV_Spectrometer
         public static ObservableCollection<ViewResultSpectrum> ViewResultSpectrums => MainWindowResult.Instance.ViewResultSpectrums;
 
         public static MainWindowConfig Config => MainWindowConfig.Instance;
-        BitmapSource pic1931;
-        BitmapSource pic1976;
-        Mat src1931 = new Mat(@"Assets\Image\CIE-1931.jpg", ImreadModes.Color);
-        Mat src1976 = new Mat(@"Assets\Image\CIE-1976.jpg", ImreadModes.Color);
 
         public MainWindow()
         {
@@ -591,19 +587,7 @@ namespace CV_Spectrometer
                 State4.Text = CV_Spectrometer.Properties.Resources.未连接;
             }
         }
-            
-        //按钮显示1976图
-        private void Button2_Click(object sender, RoutedEventArgs e)
-        {
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1976; });
-        }
-        //按钮显示1931图
-        private void Button1_Click(object sender, RoutedEventArgs e)
-        {
-            this.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Normal, (ThreadStart)delegate () { image.Source = pic1931; });
-        }
-
-
+           
         //单次校零
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
@@ -648,30 +632,6 @@ namespace CV_Spectrometer
             }
         }
 
-        public void DrawCIEPoinr(double fx, double fy ,double fu,double fv)
-        {
-            try
-            {
-                Mat cir1931 = src1931.Clone();
-                Mat cir1976 = src1976.Clone();
-                //Cv2.ImShow("Demo", src);
-                OpenCvSharp.Point p1, p2;
-                p1.X = Convert.ToInt32(Math.Round((fx * 10 * 97 + 104)));
-                p1.Y = Convert.ToInt32(Math.Round((881 - fy * 10 * 97)));
-                Cv2.Circle(cir1931, p1.X, p1.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                p2.X = Convert.ToInt32(Math.Round((fu * 10 * 154 + 49)));
-                //p2.X = 203;//49+154*6
-                p2.Y = Convert.ToInt32(Math.Round((973 - fv * 10 * 154)));
-                Cv2.Circle(cir1976, p2.X, p2.Y, 5, new Scalar(0, 0, 255), -1, LineTypes.Link8, 0);
-                pic1931 = cir1931.ToWriteableBitmap();
-                pic1976 = cir1976.ToWriteableBitmap();
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
-
-        }
 
 
 
@@ -911,7 +871,6 @@ namespace CV_Spectrometer
         {
             MenuManager.GetInstance().Menu = menu;
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
-            image.Source = src1931.ToBitmapSource();
             ComboBoxSpectrometerType.ItemsSource = from e1 in Enum.GetValues(typeof(SpectrometerType)).Cast<SpectrometerType>()
                                                    select new KeyValuePair<SpectrometerType, string>(e1, e1.ToString());
 
@@ -967,9 +926,6 @@ namespace CV_Spectrometer
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             this.DataContext = Manager;
-
-            pic1931 = src1931.ToBitmapSource();
-            pic1976 = src1976.ToBitmapSource();
         }
 
 
@@ -1098,7 +1054,6 @@ namespace CV_Spectrometer
             {
                 DrawPlot();
                 listView2.ItemsSource = ViewResultSpectrums[listview.SelectedIndex].SpectralDatas;
-                DrawCIEPoinr(ViewResultSpectrums[listview.SelectedIndex].fx, ViewResultSpectrums[listview.SelectedIndex].fy, ViewResultSpectrums[listview.SelectedIndex].fu, ViewResultSpectrums[listview.SelectedIndex].fv);
             }
         }
 
