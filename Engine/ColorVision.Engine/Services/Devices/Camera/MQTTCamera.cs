@@ -10,11 +10,9 @@ using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -40,13 +38,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             //string Msg = "{\"Data\":{\"Position\":1800,\"ImageTmpFile\":\"D:\\\\CVTest\\\\DEV.Camera.Default\\\\Data\\\\2025-03-26\\\\AutoFocus_.4425280117077446656_4.cvraw\"},\"Code\":102,\"Message\":\"Pending\",\"Version\":\"1.0\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceCode\":\"DEV.Camera.Default\",\"EventName\":\"AutoFocus\",\"SerialNumber\":\"\",\"MsgID\":\"5ee93a80-af4c-4621-9dc6-2fb0584c523b\",\"ZIndex\":-1}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
-            //if (Config.Code != null && msg.DeviceCode != Config.Code) return;
+
             //string Msg = "{\"Data\":{\"nPosition\":2311,\"VidPos\":-1127.522865999267},\"Code\":0,\"Message\":\"ok\",\"Version\":\"1.0\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceCode\":\"DEV.Camera.Default\",\"EventName\":\"GetPosition\",\"SerialNumber\":\"\",\"MsgID\":\"1c364974-45c4-4e2f-8071-10b3d898e8af\",\"ZIndex\":-1}";
             //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
+            //string Msg = "{\"Version\":\"1.0\",\"EventName\":\"AutoFocus\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default1\",\"SerialNumber\":\"\",\"Code\":0,\"MsgID\":\"ac152c4d-9501-49fe-b082-03110dc26479\",\"data\":{\"Position\":157909,\"VidPosition\":111.15504121214114,\"TotalTime\":23759,\"MasterId\":54,\"MasterResultType\":108,\"MasterValue\":null}}";
+            //msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
 
-            string Msg = "{\"Version\":\"1.0\",\"EventName\":\"AutoFocus\",\"ServiceName\":\"RC_local/Camera/SVR.Camera.Default/CMD\",\"DeviceName\":null,\"DeviceCode\":\"DEV.Camera.Default1\",\"SerialNumber\":\"\",\"Code\":0,\"MsgID\":\"ac152c4d-9501-49fe-b082-03110dc26479\",\"data\":{\"Position\":157909,\"VidPosition\":111.15504121214114,\"TotalTime\":23759,\"MasterId\":54,\"MasterResultType\":108,\"MasterValue\":null}}";
-            msg = JsonConvert.DeserializeObject<MsgReturn>(Msg);
+            if (Config.Code != null && msg.DeviceCode != Config.Code) return;
+
 
 
             if (msg.Code == 0)

@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.Ghost;
+using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
@@ -80,7 +81,14 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 {
                     result.ViewResults.Add(item);
 
-                    LvDetails lvDetails = JsonConvert.DeserializeObject<LvDetails>(item.ResultJson);
+
+                }
+            }
+            foreach (var item in result.ViewResults)
+            {
+                if (item is BlackMuraModel blackMuraModel)
+                {
+                    LvDetails lvDetails = JsonConvert.DeserializeObject<LvDetails>(blackMuraModel.ResultJson);
 
                     DVCircleText maxcirle = new();
                     maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
@@ -104,6 +112,9 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     view.ImageView.AddVisual(mincirle);
                 }
             }
+
+
+
             List<string> header = new() { "ResultJson", "UniformityJson", "OutputFile" };
             List<string> bdHeader = new() { "ResultJson", "UniformityJson", "OutputFile"};
 

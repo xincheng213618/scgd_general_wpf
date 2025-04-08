@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
@@ -26,6 +27,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
     public class CalibrationResource : ServiceFileBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PhyCamera));
+
         public static List<CalibrationResource> CalibrationResources { get; set; } = new List<CalibrationResource>();
 
         public static CalibrationResource EnsureInstance(SysResourceModel sysResourceModel)
@@ -59,6 +62,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                     AvalonEditWindow avalonEditWindow = new AvalonEditWindow(filepath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     avalonEditWindow.ShowDialog();
                 }
+                else
+                {
+                    log.Info($"找不到phyCamera.Config.FileServerCfg.FileBasePath{phyCamera.Config.FileServerCfg.FileBasePath}");
+                }
+            }
+            else
+            {
+                log.Info("找不到物理相机");
             }
         }
 

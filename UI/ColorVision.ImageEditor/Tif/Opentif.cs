@@ -162,10 +162,9 @@ namespace ColorVision.ImageEditor.Tif
                         {
                             WriteableBitmap writeableBitmap = new WriteableBitmap(data);
                             HImage hImage = writeableBitmap.ToHImage();
-                            int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage,out HImage hImage1);
+                            int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImage1);
                             imageView.SetImageSource(hImage1.ToWriteableBitmap());
                             OpenCVMediaHelper.M_FreeHImageData(hImage1.pData);
-                            hImage1.Dispose();
                             hImage.Dispose();
                         }
                         else

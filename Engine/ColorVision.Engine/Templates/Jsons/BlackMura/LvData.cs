@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -15,15 +16,25 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
     public class LvDetails
     {
+        [JsonProperty("Nle")]
         public int Nle { get; set; }
+        [JsonProperty("lv_avg")]
         public double LvAvg { get; set; }
+        [JsonProperty("lv_max")]
         public double LvMax { get; set; }
+        [JsonProperty("lv_min")]
         public double LvMin { get; set; }
+        [JsonProperty("max_pt_x")]
         public int MaxPtX { get; set; }
+        [JsonProperty("max_pt_y")]
         public int MaxPtY { get; set; }
+        [JsonProperty("min_pt_x")]
         public int MinPtX { get; set; }
+        [JsonProperty("min_pt_y")]
         public int MinPtY { get; set; }
+        [JsonProperty("uniformity")]
         public double Uniformity { get; set; }
+        [JsonProperty("za_rel_max")]
         public double ZaRelMax { get; set; }
     }
 

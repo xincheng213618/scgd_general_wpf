@@ -382,26 +382,38 @@ COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
-	if (mat.depth() == CV_32FC1) {
+	// 检查图像深度是否为CV_32FC1
+	if (mat.depth() != CV_32FC1) {
+		return -1; // 图像不是32位浮点类型
+	}
+
+	// 找到图像中的最小值和最大值
+	double minVal, maxVal;
+	cv::minMaxLoc(mat, &minVal, &maxVal);
+
+	// 如果minVal为0且maxVal为1，则不需要缩放和偏移，直接转换
+	if (minVal >= 0.0 && maxVal <= 5.0) {
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
-
-		// 找到图像中的最小值和最大值
-		double minVal, maxVal;
-		cv::minMaxLoc(mat, &minVal, &maxVal);
-
+		mat.convertTo(outMat, CV_16UC1, 65535);
+		// 将OpenCV的Mat对象转换回HImage对象
+		MatToHImage(outMat, outImage);
+	}
+	else {
 		// 计算比例因子和标量值
 		float scale = 65535 / (maxVal - minVal);
 		float delta = -minVal * scale;
 
+		// 创建输出图像矩阵
+		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
+
 		// 将32位浮点图像转换为16位灰度图像
 		mat.convertTo(outMat, CV_16UC1, scale, delta);
-
+		// 将OpenCV的Mat对象转换回HImage对象
 		MatToHImage(outMat, outImage);
-
-
-		return 0;
 	}
-	return -1;
+
+
+	return 0;
 }
 
 COLORVISIONCORE_API int M_CvtColor(HImage img, HImage* outImage, double thresh, double maxval, int type)
