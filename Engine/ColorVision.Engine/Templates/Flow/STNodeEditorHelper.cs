@@ -178,6 +178,12 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
+            {
+                AddStackPanel(name => realPOINode.FilterTemplateName = name, realPOINode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
+                AddStackPanel(name => realPOINode.ReviseTemplateName = name, realPOINode.OutputTemplateName, "POI修正", new TemplatePoiReviseParam());
+                AddStackPanel(name => realPOINode.OutputTemplateName = name, realPOINode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
+            }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUModelNode sMUModelNode)
             {

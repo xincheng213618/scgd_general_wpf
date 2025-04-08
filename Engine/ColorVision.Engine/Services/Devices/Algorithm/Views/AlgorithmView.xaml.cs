@@ -7,15 +7,18 @@ using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -357,51 +360,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                             AddPoint(points1);
                         }
-                        break;
-                    case AlgorithmResultType.OLED_FindDotsArrayMem:
-                    case AlgorithmResultType.LedCheck:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<PoiPointResultModel> AlgResultLedcheckModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultLedcheckModels)
-                            {
-                                ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
-                                result.ViewResults.Add(ledResultData);
-                            };
-                        }
-                        header = new List<string> { "坐标", "半径" };
-                        bdHeader = new List<string> { "Point", "Radius" };
-
-                        List<Point> points = new();
-                        List<double> Radius = new();
-
-
-                        foreach (var item in result.ViewResults)
-                        {
-                            if (item is ViewResultLedCheck viewResultLedCheck)
-                            {
-                                points.Add(viewResultLedCheck.Point);
-                                Radius.Add(viewResultLedCheck.Radius);
-                            }
-                        }
-                        Application.Current.Dispatcher.Invoke(async () =>
-                        {
-                            for (int i = 0; i < points.Count; i++)
-                            {
-                                if (i % 10000 == 0)
-                                    await Task.Delay(30);
-
-                                DVCircle Circle = new();
-                                Circle.Attribute.Center = points[i];
-                                Circle.Attribute.Radius = Radius[i];
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
-                                Circle.Render();
-                                ImageView.ImageShow.OnlyAddVisual(Circle);
-                            }
-                        });
-
                         break;
                     default:
                         break;
