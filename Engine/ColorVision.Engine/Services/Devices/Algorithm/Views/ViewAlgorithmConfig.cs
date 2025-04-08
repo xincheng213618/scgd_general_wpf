@@ -52,5 +52,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public int HistoyDay { get => _HistoyDay; set { _HistoyDay = value; NotifyPropertyChanged(); } }
         private int _HistoyDay = 1;
 
+
+        [DisplayName("显示位点信息")]
+        [PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public string ShowDateFilePath { get => _ShowDateFilePath; set { _ShowDateFilePath = value; NotifyPropertyChanged(); } }
+        private string _ShowDateFilePath;
+
     }
 }

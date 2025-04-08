@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
 using ColorVision.Net;
 using ColorVision.UI.Menus;
@@ -54,17 +55,65 @@ namespace ColorVision.Engine.Media
         public List<string> Extension { get; } = new List<string> { ".cvraw",".cvcie" };
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
- 
+        public List<List<Point>> Points { get; set; } = new List<List<Point>>();
 
+        public (int pointIndex, int listIndex) FindNearbyPoints(int mousex, int mousey)
+        {
+            for (int listIndex = 0; listIndex < Points.Count; listIndex++)
+            {
+                List<Point> pointList = Points[listIndex];
+                for (int pointIndex = 0; pointIndex < pointList.Count; pointIndex++)
+                {
+                    Point point = pointList[pointIndex];
+                    double deltaX = point.X - (double)mousex;
+                    double deltaY = point.Y - (double)mousey;
+                    if (!(Math.Abs(deltaX) > 5.0) && !(Math.Abs(deltaY) > 5.0))
+                    {
+                        double distance = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+                        if (distance < 5.0)
+                        {
+                            return (pointIndex: pointIndex, listIndex: listIndex);
+                        }
+                    }
+                }
+            }
+            return (pointIndex: -1, listIndex: -1);
+        }
+        bool ShowDateFilePath;
         public void CVCIESetBuffer(ImageView imageView,string filePath)
         {
+            log.Info("ShowDateFilePath:" + ViewAlgorithmConfig.Instance.ShowDateFilePath);
+            if (File.Exists(ViewAlgorithmConfig.Instance.ShowDateFilePath))
+            {
+                string[] lines = File.ReadAllLines(ViewAlgorithmConfig.Instance.ShowDateFilePath);
+                string[] dates = lines[0].Split(',');
+                int rows = int.Parse(dates[0]);
+                int cols = int.Parse(dates[1]);
+                for (int lineIndex = 2; lineIndex < lines.Length; lineIndex++)
+                {
+                    string[] xy = lines[lineIndex].Split(',');
+                    List<Point> points = new List<Point>();
+                    for (int i = 0; i < xy.Length; i += 4)
+                    {
+                        if (double.TryParse(xy[i], out var x) && double.TryParse(xy[i + 1], out var y))
+                        {
+                            points.Add(new Point(x, y));
+                        }
+                    }
+                    Points.Add(points);
+                }
+                ShowDateFilePath = true;
+            }
             void ShowCVCIE(object sender, ImageInfo imageInfo)
             {
                 float dXVal = 0;
                 float dYVal = 0;
                 float dZVal = 0;
                 float dx = 0, dy = 0, du = 0, dv = 0;
-
+                var (x2, y2) = FindNearbyPoints(imageInfo.X, imageInfo.Y);
+                //要从1,1开始
+                x2 += 1;
+                y2 += 1;
                 switch (imageView.Config.CVCIETYpe)
                 {
                     case CVCIETYpe.Circle:
@@ -79,7 +128,12 @@ namespace ColorVision.Engine.Media
                         {
 
                             int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum/2);
-                            string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+                            string text1;
+                            if (ShowDateFilePath)
+                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
+                            else
+                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+
                             string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
@@ -96,7 +150,12 @@ namespace ColorVision.Engine.Media
                         else
                         {
                             int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
-                            string text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+                            string text1;
+                            if (ShowDateFilePath)
+                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
+                            else
+                                text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1}";
+
                             string text2 = $"x:{dx:F2},y:{dy:F2},u:{du:F2},v:{dv:F2}";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }

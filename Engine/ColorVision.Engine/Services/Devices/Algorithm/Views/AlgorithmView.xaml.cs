@@ -2,23 +2,17 @@
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.ToolPlugins;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
-using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using log4net;
-using MQTTMessageLib.Algorithm;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -44,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
-        private static readonly ILog logg = LogManager.GetLogger(typeof(AlgorithmView));
+        private static readonly ILog log = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
 
         public AlgorithmView()
@@ -304,14 +298,23 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         bdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
 
-                        foreach (var item in result.ViewResults)
+
+                        if (result.ViewResults.Count <= 4000)
                         {
-                            if (item is PoiResultCIExyuvData poiResultData)
+                            foreach (var item in result.ViewResults)
                             {
-                                DrawPoiPoint.Add(poiResultData.Point);
+                                if (item is PoiResultCIExyuvData poiResultData)
+                                {
+                                    DrawPoiPoint.Add(poiResultData.Point);
+                                }
                             }
+                            AddPOIPoint(DrawPoiPoint);
                         }
-                        AddPOIPoint(DrawPoiPoint);
+                        else
+                        {
+                            log.Info($"result.ViewResults.Count:{result.ViewResults.Count}");
+                        }
+
                         break;
                     case AlgorithmResultType.POI_Y:
                         if (result.ViewResults == null)
@@ -599,7 +602,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             catch (Exception ex)
             {
-                logg.Error(ex);
+                log.Error(ex);
             }
 
         }

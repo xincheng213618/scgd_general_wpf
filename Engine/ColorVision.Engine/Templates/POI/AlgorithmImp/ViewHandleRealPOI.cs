@@ -3,6 +3,8 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
+using log4net;
+using log4net.Core;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -16,6 +18,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
     public class ViewHandleRealPOI : IResultHandleBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
         public override List<AlgorithmResultType> CanHandle { get;  } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_XYZ_V2, AlgorithmResultType.POI_Y_V2 , AlgorithmResultType.KB_Output_Lv, AlgorithmResultType.KB_Output_CIE };
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
@@ -61,17 +64,25 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
             }
 
-            List<POIPoint> DrawPoiPoint = new();
-            foreach (var item in result.ViewResults)
+            if (result.ViewResults.Count < 1000)
             {
-                if (item is PoiPointResultModel poiPointResultModel)
+                List<POIPoint> DrawPoiPoint = new();
+                foreach (var item in result.ViewResults)
                 {
-                    POIPoint pOIPoint = new POIPoint(poiPointResultModel.PoiId ?? -1, -1, poiPointResultModel.PoiName, poiPointResultModel.PoiType, (int)poiPointResultModel.PoiX, (int)poiPointResultModel.PoiY, poiPointResultModel.PoiWidth ?? 0, poiPointResultModel.PoiHeight ?? 0);
-                    DrawPoiPoint.Add(pOIPoint);
-                }
+                    if (item is PoiPointResultModel poiPointResultModel)
+                    {
+                        POIPoint pOIPoint = new POIPoint(poiPointResultModel.PoiId ?? -1, -1, poiPointResultModel.PoiName, poiPointResultModel.PoiType, (int)poiPointResultModel.PoiX, (int)poiPointResultModel.PoiY, poiPointResultModel.PoiWidth ?? 0, poiPointResultModel.PoiHeight ?? 0);
+                        DrawPoiPoint.Add(pOIPoint);
+                    }
 
+                }
+                view.AddPOIPoint(DrawPoiPoint);
             }
-            view.AddPOIPoint(DrawPoiPoint);
+            else
+            {
+                log.Info($"点阵信息太多{result.ViewResults.Count}");
+            }
+
 
             List<string> header;
             List<string> bdHeader;
