@@ -38,6 +38,16 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public double ZaRelMax { get; set; }
     }
 
+    public class Outputfile
+    {
 
+        [JsonProperty("aa_path")]
+        public string AAPath { get; set; }
 
+        [JsonProperty("rst_path")]
+        public string RstPath { get; set; }
+
+        [JsonProperty("mask_path")]
+        public string MaskPath { get; set; }
+    }
 }

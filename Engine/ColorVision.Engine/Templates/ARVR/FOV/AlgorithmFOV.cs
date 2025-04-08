@@ -49,7 +49,8 @@ namespace ColorVision.Engine.Templates.FOV
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 

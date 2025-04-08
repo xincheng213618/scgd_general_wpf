@@ -107,6 +107,9 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             sn = string.IsNullOrWhiteSpace(sn) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : sn;
 
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
+
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
 
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });

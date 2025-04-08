@@ -52,13 +52,17 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public void Edit()
         {
+
             if (this.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
             {
+                log.Info(phyCamera.Config.FileServerCfg.FileBasePath);
+
                 if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
                 {
                     string path = SysResourceModel.Value ?? string.Empty;
 
                     string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
+                    log.Info(filepath);
                     AvalonEditWindow avalonEditWindow = new AvalonEditWindow(filepath) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     avalonEditWindow.ShowDialog();
                 }

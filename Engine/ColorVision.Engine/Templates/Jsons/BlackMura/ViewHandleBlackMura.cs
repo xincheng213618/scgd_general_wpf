@@ -70,8 +70,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                     view.ImageView.OpenImage(result.FilePath);
                 return;
             }
-            if (File.Exists(result.FilePath))
-                view.ImageView.OpenImage(result.FilePath);
+
 
             if (result.ViewResults == null)
             {
@@ -81,9 +80,13 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 {
                     result.ViewResults.Add(item);
 
-
+                    Outputfile outputfile = JsonConvert.DeserializeObject<Outputfile>(item.OutputFile);
+                    if (File.Exists(outputfile.AAPath))
+                        view.ImageView.OpenImage(outputfile.AAPath);
                 }
             }
+
+            view.ImageView.ImageShow.Clear();
             foreach (var item in result.ViewResults)
             {
                 if (item is BlackMuraModel blackMuraModel)
@@ -92,22 +95,24 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
                     DVCircleText maxcirle = new();
                     maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
-                    maxcirle.Attribute.Radius = 10;
+                    maxcirle.Attribute.Radius = lvDetails.Nle;
                     maxcirle.Attribute.Brush = Brushes.Transparent;
                     maxcirle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    maxcirle.Attribute.Id = -1;
                     maxcirle.Attribute.Text = string.Empty;
-                    maxcirle.Attribute.Msg = $"Max:{lvDetails.LvMax}";
+                    maxcirle.Attribute.Msg = $"Max({lvDetails.MaxPtX},{lvDetails.MaxPtY}) Lv:{lvDetails.LvMax}";
                     maxcirle.Render();
                     view.ImageView.AddVisual(maxcirle);
 
 
                     DVCircleText mincirle = new();
                     mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
-                    mincirle.Attribute.Radius = 10;
+                    mincirle.Attribute.Radius = lvDetails.Nle;
                     mincirle.Attribute.Brush = Brushes.Transparent;
-                    mincirle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                    mincirle.Attribute.Pen = new Pen(Brushes.Yellow, 1);
+                    mincirle.Attribute.Id = -1;
                     mincirle.Attribute.Text = string.Empty;
-                    mincirle.Attribute.Msg = $"Min:{lvDetails.LvMin}";
+                    mincirle.Attribute.Msg = $"Min({lvDetails.MinPtX},{lvDetails.MinPtY}) Lv:{lvDetails.LvMin}";
                     mincirle.Render();
                     view.ImageView.AddVisual(mincirle);
                 }
