@@ -59,6 +59,7 @@
                         <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                     </StackPanel>
                 </TabItem>
                 <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">

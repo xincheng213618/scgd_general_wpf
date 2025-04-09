@@ -846,4 +846,7 @@
   <data name="Lock" xml:space="preserve">
     <value>잠금</value>
   </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>확인삭제</value>
+  </data>
 </root>

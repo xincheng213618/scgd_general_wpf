@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:AlgorithmSFR}"
-             d:DesignHeight="100" d:DesignWidth="280" Initialized="UserControl_Initialized">
+             d:DesignHeight="200" d:DesignWidth="280" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
@@ -28,11 +28,12 @@
                 </Grid>
             </DockPanel>
             <TabControl BorderThickness="0" Background="Transparent">
-                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
+                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" HorizontalAlignment="Right" Width="44" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="文件" Margin="10,0,0,0" Width="40"/>
                         <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
                         <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
                     </StackPanel>
                 </TabItem>
                 <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">

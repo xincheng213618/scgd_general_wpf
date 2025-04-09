@@ -363,6 +363,14 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         }
 
-
+        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
+        {
+            if (!File.Exists(ImageFile.Text))
+            {
+                MessageBox.Show("找不到图像文件");
+                return;
+            }
+            Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
     }
 }
