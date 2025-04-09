@@ -315,6 +315,8 @@ int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
         //clahe->setClipLimit(1.0); // 设置对比度限制
         //clahe->apply(image, image);
 
+        min1 = min1 / 256;
+        max1 = max1 / 256;
         cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 

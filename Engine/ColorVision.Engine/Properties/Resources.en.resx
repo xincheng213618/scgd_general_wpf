@@ -846,4 +846,7 @@
   <data name="Lock" xml:space="preserve">
     <value>locked</value>
   </data>
+  <data name="ConfirmDelete" xml:space="preserve">
+    <value>ConfirmDelete</value>
+  </data>
 </root>

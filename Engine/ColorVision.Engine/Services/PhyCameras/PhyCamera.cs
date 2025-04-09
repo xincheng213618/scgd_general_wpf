@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
+using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -330,6 +331,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public override void Delete()
         {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
             SysResourceDao.Instance.DeleteAllByPid(Id, false);
