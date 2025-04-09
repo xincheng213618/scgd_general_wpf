@@ -13,8 +13,6 @@ using ColorVision.UI.Views;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
-using Panuon.WPF.UI;
-using ScottPlot;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

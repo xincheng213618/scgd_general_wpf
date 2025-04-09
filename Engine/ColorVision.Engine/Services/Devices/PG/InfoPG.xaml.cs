@@ -1,12 +1,6 @@
 ﻿using ColorVision.UI;
-using ColorVision.UI.Extension;
 using System;
-using System.ComponentModel;
-using System.Reflection;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {

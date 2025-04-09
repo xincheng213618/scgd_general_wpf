@@ -6,8 +6,6 @@ using ColorVision.UI.Sorts;
 using cvColorVision;
 using log4net;
 using Microsoft.Xaml.Behaviors;
-using OpenCvSharp;
-using OpenCvSharp.WpfExtensions;
 using ScottPlot;
 using ScottPlot.Plottables;
 using System.Collections.ObjectModel;
@@ -18,7 +16,6 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 
 namespace CV_Spectrometer
 {

@@ -1,12 +1,9 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 

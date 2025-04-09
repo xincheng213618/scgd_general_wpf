@@ -41,7 +41,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using static iText.Kernel.Pdf.Colorspace.PdfDeviceCs;
 
 namespace ColorVision.Engine.Templates.POI
 {

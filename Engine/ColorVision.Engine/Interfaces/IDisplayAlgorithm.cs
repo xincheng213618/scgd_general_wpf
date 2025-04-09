@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm
+namespace ColorVision.Engine.Interfaces
 {
     public interface IDisplayAlgorithm
     {

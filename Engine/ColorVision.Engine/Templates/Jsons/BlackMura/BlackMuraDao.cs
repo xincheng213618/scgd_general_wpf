@@ -1,8 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using CVCommCore;
-using Newtonsoft.Json;
-using System.Collections.ObjectModel;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {

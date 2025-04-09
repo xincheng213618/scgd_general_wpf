@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1707,CA1711
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Interfaces
 {
     public enum AlgorithmResultType
     {

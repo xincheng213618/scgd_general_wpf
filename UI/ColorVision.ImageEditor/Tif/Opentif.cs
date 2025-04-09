@@ -2,12 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Menus.Base;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 

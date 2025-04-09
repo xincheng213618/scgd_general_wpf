@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using ScottPlot.Statistics;
 using System;
 using System.Windows;
 using System.Windows.Controls;

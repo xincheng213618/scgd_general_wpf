@@ -1,12 +1,10 @@
 ﻿#pragma warning disable CS8625,CS8602,CS8607,CS0103,CS0067
 using ColorVision.Common.MVVM;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
-using HarfBuzzSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;

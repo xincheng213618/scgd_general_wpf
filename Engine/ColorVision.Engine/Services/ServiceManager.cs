@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
@@ -59,7 +58,7 @@ namespace ColorVision.Engine.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            var nameToIndexMap = DisPlayManagerConfig.Instance.PlayControls;
+            var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
 
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
             DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
@@ -74,33 +73,13 @@ namespace ColorVision.Engine.Services
                 }
             }
 
-            if (ServicesConfig.Instance.IsRetorePlayControls)
-            {
-                DisPlayManager.GetInstance().IDisPlayControls.Sort((a, b) =>
-                {
-                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
-                    {
-                        return indexA.CompareTo(indexB);
-                    }
-                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
-                    {
-                        return -1; // a should come before b
-                    }
-                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
-                    {
-                        return 1; // b should come before a
-                    }
-                    return 0; // keep original order if neither a nor b are in playControls
-                });
-            }
+            DisPlayManager.GetInstance().RestoreControl();
         }
         /// <summary>
         /// 生成显示空间
         /// </summary>
         public void GenDeviceDisplayControl()
         {
-            var nameToIndexMap = DisPlayManagerConfig.Instance.PlayControls;
-
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
             DisPlayManager.GetInstance().IDisPlayControls.Insert(0, DisplayFlow.GetInstance());
@@ -123,30 +102,9 @@ namespace ColorVision.Engine.Services
             }
             LastGenControl = DeviceServices;
 
-            if (ServicesConfig.Instance.IsRetorePlayControls)
-            {
-                DisPlayManager.GetInstance().IDisPlayControls.Sort((a, b) =>
-                {
-                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
-                    {
-                        return indexA.CompareTo(indexB);
-                    }
-                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
-                    {
-                        return -1; // a should come before b
-                    }
-                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
-                    {
-                        return 1; // b should come before a
-                    }
-                    return 0; // keep original order if neither a nor b are in playControls
-                });
-            }
-
-
-            for (int i = 0; i < DisPlayManager.GetInstance().IDisPlayControls.Count; i++)
-                DisPlayManagerConfig.Instance.PlayControls[DisPlayManager.GetInstance().IDisPlayControls[i].DisPlayName] = i;
+            DisPlayManager.GetInstance().RestoreControl();
         }
+
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new();
 
         public void LoadServices()

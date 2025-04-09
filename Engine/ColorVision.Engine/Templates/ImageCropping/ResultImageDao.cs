@@ -1,6 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using System.Data;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {

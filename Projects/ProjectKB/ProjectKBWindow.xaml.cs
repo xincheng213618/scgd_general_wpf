@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;

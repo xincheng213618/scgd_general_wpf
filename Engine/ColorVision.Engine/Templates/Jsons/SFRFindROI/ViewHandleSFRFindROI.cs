@@ -1,19 +1,14 @@
 ﻿#pragma warning disable CS8602,CS8601,CS8629
 
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Ghost;
-using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;

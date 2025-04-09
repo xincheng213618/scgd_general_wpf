@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.UI
 {
@@ -58,11 +59,15 @@ namespace ColorVision.UI
 
 
 
-    public class DisPlayManagerConfig : IConfig
+    public class DisPlayManagerConfig : ViewModelBase,IConfig
     {
         public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
-        public Dictionary<string, int> PlayControls { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
+        public bool IsRetore { get => _IsRetore; set { _IsRetore = value; NotifyPropertyChanged(); } }
+        private bool _IsRetore = true;
     }
+
+
 
     public class DisPlayManager
     {
@@ -150,7 +155,7 @@ namespace ColorVision.UI
                 for (int i = 0; i < StackPanel.Children.Count; i++)
                 {
                     if (StackPanel.Children[i] is IDisPlayControl disPlayControl)
-                        DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
+                        DisPlayManagerConfig.Instance.StoreIndex[disPlayControl.DisPlayName] = i;
                 }
             };
 
@@ -160,6 +165,33 @@ namespace ColorVision.UI
                 StackPanel.Tag = IDisPlayControls[0];
             }
 
+        }
+
+        public void RestoreControl()
+        {
+            var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
+            if (DisPlayManagerConfig.Instance.IsRetore)
+            {
+                IDisPlayControls.Sort((a, b) =>
+                {
+                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
+                    {
+                        return indexA.CompareTo(indexB);
+                    }
+                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
+                    {
+                        return -1; // a should come before b
+                    }
+                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
+                    {
+                        return 1; // b should come before a
+                    }
+                    return 0; // keep original order if neither a nor b are in playControls
+                });
+            }
+
+            for (int i = 0; i < IDisPlayControls.Count; i++)
+                DisPlayManagerConfig.Instance.StoreIndex[IDisPlayControls[i].DisPlayName] = i;
         }
 
 

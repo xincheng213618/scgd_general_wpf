@@ -7,8 +7,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Runtime.Serialization;
-using System.IO;
-using ColorVision.Solution.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;

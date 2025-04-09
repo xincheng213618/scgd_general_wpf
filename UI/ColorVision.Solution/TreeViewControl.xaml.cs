@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Solution.V;
+﻿using ColorVision.Solution.V;
 using System.Globalization;
 using System.IO;
 using System.Windows;

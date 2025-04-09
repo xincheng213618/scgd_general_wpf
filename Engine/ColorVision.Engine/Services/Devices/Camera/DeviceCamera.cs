@@ -21,7 +21,6 @@ using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {

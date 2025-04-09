@@ -1,6 +1,4 @@
 ﻿using ColorVision.UI.Properties;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.UI.Menus.Base.File
 {

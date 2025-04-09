@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Algorithms;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
 using System.Collections.Generic;
