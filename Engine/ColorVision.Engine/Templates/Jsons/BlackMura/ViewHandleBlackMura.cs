@@ -100,19 +100,22 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             view.ImageView.OpenImage(result.FilePath);
                         log.Info(result.FilePath);
 
-                        log.Info(blackMuraModel.AreaJsonVal);
-                        List<FloatPoint> floatPoints = JsonConvert.DeserializeObject<List<FloatPoint>>(blackMuraModel.AreaJsonVal);
-                        log.Info(floatPoints.Count);
-                        DVPolygon dVPolygon = new DVPolygon();
-                        dVPolygon.Attribute.Brush = Brushes.Transparent;
-                        dVPolygon.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        foreach (var item1 in floatPoints)
+                        if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
                         {
-                            dVPolygon.Points.Add(item1.ToPoint());
+                            List<FloatPoint> floatPoints = JsonConvert.DeserializeObject<List<FloatPoint>>(blackMuraModel.AreaJsonVal);
+                            log.Info(floatPoints.Count);
+                            DVPolygon dVPolygon = new DVPolygon();
+                            dVPolygon.Attribute.Brush = Brushes.Transparent;
+                            dVPolygon.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            foreach (var item1 in floatPoints)
+                            {
+                                dVPolygon.Points.Add(item1.ToPoint());
+                            }
+                            dVPolygon.IsComple = true;
+                            view.ImageView.AddVisual(dVPolygon);
+                            log.Info(dVPolygon);
                         }
-                        dVPolygon.IsComple = true;
-                        view.ImageView.AddVisual(dVPolygon);
-                        log.Info(dVPolygon);
+
                     }
                 }
             }
