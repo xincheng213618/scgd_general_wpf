@@ -2,7 +2,9 @@
 using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
@@ -24,6 +26,10 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         [Column("output_file_json_val")]
         public string OutputFile { get; set; }
+
+        [Column("area_json_val")]
+        public string AreaJsonVal { get; set; }
+
     }
 
 

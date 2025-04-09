@@ -574,8 +574,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void SideSave(AlgorithmResult result,string selectedPath)
         {
-
-            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(ViewResults[listView1.SelectedIndex].ResultType));
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(result.ResultType));
             if (ResultHandle != null)
             {
                 ResultHandle.SideSave(result,selectedPath);

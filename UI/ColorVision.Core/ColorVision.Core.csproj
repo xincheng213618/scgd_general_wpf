@@ -6,7 +6,7 @@
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-		<VersionPrefix>1.1.11.3</VersionPrefix>
+		<VersionPrefix>1.1.12.1</VersionPrefix>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
 		<IncludeSymbols>True</IncludeSymbols>

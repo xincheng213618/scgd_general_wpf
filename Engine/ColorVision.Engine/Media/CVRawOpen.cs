@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -231,9 +232,14 @@ namespace ColorVision.Engine.Media
                     imageView.Config.AddProperties("IsCVCIE", true);
                     imageView.Config.AddProperties("Exp", meta.exp);
                     exp = meta.exp;
-                    CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
-                    int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
-                    log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
+                    Thread thread = new Thread(() =>
+                    {
+                        CVFileUtil.ReadCIEFileData(imageView.Config.FilePath, ref meta, index);
+                        int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(imageView.Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
+                        log.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
+                    });
+                    thread.Start();
+
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
 
                     if (!File.Exists(meta.srcFileName))
@@ -314,7 +320,7 @@ namespace ColorVision.Engine.Media
 
 
 
-        public async void OpenImage(ImageView imageView, string? filePath)
+        public async void OpenImage(ImageView imageView, string? filePath)  
         {
             if (filePath == null) return;
             CVCIESetBuffer(imageView, filePath);
@@ -324,7 +330,6 @@ namespace ColorVision.Engine.Media
                 if (imageView.Config.IsShowLoadImage)
                 {
                     imageView.WaitControl.Visibility = Visibility.Visible;
-                    await Task.Delay(30);
                     await Task.Run(() =>
                     {
                         CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath);

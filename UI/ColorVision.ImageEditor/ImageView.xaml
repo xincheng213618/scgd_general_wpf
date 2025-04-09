@@ -216,8 +216,8 @@
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
-                                <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                                <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                                <TextBox Grid.Row="0" Width="28" FontSize="8" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                                <TextBox Grid.Row="2" Width="28" FontSize="8" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0,Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
                                 <Grid Grid.Row="1"   Width="18">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
