@@ -8,12 +8,6 @@ using System.Text;
 
 namespace ColorVision.ImageEditor
 {
-    public enum CVCIETYpe
-    {
-        Circle,
-        Rect
-    }
-
     public class ImageViewConfig:ViewModelBase
     {
         [JsonIgnore]
@@ -64,14 +58,6 @@ namespace ColorVision.ImageEditor
         private double _MaxZoom = 10;
         public double MinZoom { get => _MinZoom; set { _MinZoom = value; NotifyPropertyChanged(); } }
         private double _MinZoom = 0.01;
-
-        public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
-        private int _CVCIENum = 1;
-        public double PoiCircleRadius { get => _PoiCircleRadius; set { _PoiCircleRadius = value; NotifyPropertyChanged(); } }
-        private double _PoiCircleRadius = 1;
-
-        public CVCIETYpe CVCIETYpe { get => _CVCIETYpe; set { _CVCIETYpe = value; NotifyPropertyChanged(); } }
-        private CVCIETYpe _CVCIETYpe;
 
         [JsonIgnore]
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }

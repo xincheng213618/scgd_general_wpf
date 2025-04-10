@@ -115,12 +115,12 @@ namespace ColorVision.Engine.Media
                 //要从1,1开始
                 x2 += 1;
                 y2 += 1;
-                switch (imageView.Config.CVCIETYpe)
+                switch (imageView.ImageViewModel.MouseMagnifier.MagnigifierType)
                 {
-                    case CVCIETYpe.Circle:
+                    case MagnigifierType.Circle:
                         if (exp.Length == 1)
                         {
-                            int ret = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal,imageView.Config.CVCIENum/2);
+                            int ret = ConvertXYZ.CM_GetYCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.ImageViewModel.MouseMagnifier.Radius);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
@@ -128,7 +128,7 @@ namespace ColorVision.Engine.Media
                         else
                         {
 
-                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum/2);
+                            int ret = ConvertXYZ.CM_GetXYZxyuvCircle(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.ImageViewModel.MouseMagnifier.Radius);
                             string text1;
                             if (ShowDateFilePath)
                                 text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";
@@ -140,17 +140,17 @@ namespace ColorVision.Engine.Media
                         }
 
                         break;
-                    case CVCIETYpe.Rect:
+                    case MagnigifierType.Rect:
                         if (exp.Length == 1)
                         {
-                            int ret = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            int ret = ConvertXYZ.CM_GetYRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dYVal, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             string text1 = $"Y:{dYVal:F1}";
                             string text2 = $"";
                             imageView.ImageViewModel.MouseMagnifier.DrawImage(imageInfo, text1, text2);
                         }
                         else
                         {
-                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            int ret = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             string text1;
                             if (ShowDateFilePath)
                                 text1 = $"X:{dXVal:F1},Y:{dYVal:F1},Z:{dZVal:F1},({x2},{y2})";

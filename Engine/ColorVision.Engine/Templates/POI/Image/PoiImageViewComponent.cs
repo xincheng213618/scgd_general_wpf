@@ -324,7 +324,7 @@ namespace ColorVision.Engine.Templates.POI.Image
                             float dYVal = 0;
                             float dZVal = 0;
                             float dx = 0, dy = 0, du = 0, dv = 0;
-                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, imageView.Config.CVCIENum, imageView.Config.CVCIENum);
+                            int result = ConvertXYZ.CM_GetXYZxyuvRect(imageView.Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)imageView.ImageViewModel.MouseMagnifier.RectWidth, (int)imageView.ImageViewModel.MouseMagnifier.RectHeight);
                             
                             windowCIE.ChangeSelect(dx, dy);
                         }

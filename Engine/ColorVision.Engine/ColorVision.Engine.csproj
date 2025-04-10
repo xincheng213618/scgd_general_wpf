@@ -67,9 +67,6 @@
 
   <ItemGroup>
     <None Remove="Assets\Image\background0.png" />
-    <None Remove="Assets\Image\CIE1931xy.ico" />
-    <None Remove="Assets\Image\CIE1931xy.png" />
-    <None Remove="Assets\Image\CIE1931xy1.png" />
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
@@ -98,9 +95,6 @@
     <Resource Include="Assets\Image\background0.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Assets\Image\CIE1931xy.ico" />
-    <Resource Include="Assets\Image\CIE1931xy.png" />
-    <Resource Include="Assets\Image\CIE1931xy1.png" />
     <Resource Include="Assets\Image\ColorVision.ico" />
     <Resource Include="Assets\Image\ColorVision.png" />
     <Resource Include="Assets\Image\ColorVision1.ico" />
