@@ -1,11 +1,6 @@
-﻿using ColorVision.Engine.Services.Devices.SMU;
-using ColorVision.Engine.Services.Devices.Spectrum.Configs;
-using ColorVision.UI;
-using ColorVision.UI.Extension;
+﻿using ColorVision.UI;
 using System;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

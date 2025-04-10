@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using ICSharpCode.AvalonEdit.Document;
+﻿using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Folding;
 
 namespace ColorVision.UI

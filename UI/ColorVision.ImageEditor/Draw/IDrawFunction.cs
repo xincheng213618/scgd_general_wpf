@@ -1,6 +1,4 @@
 ﻿#pragma warning disable CS8625
-using System.Drawing;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.ImageEditor.Draw

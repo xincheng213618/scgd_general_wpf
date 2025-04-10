@@ -3,12 +3,8 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.UI.Menus;
 using ColorVision.Solution.Properties;
 using System.IO;
-using System.Windows.Controls;
-using System.Windows.Input;
-using ColorVision.UI;
 using System.Windows;
 using ColorVision.Common.Utilities;
-using System.Collections.Generic;
 
 namespace ColorVision.Solution.V.Files
 {

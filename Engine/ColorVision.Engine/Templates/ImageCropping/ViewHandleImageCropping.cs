@@ -1,20 +1,13 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
-using CVCommCore.CVAlgorithm;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {

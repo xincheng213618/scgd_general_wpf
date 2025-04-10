@@ -3,8 +3,6 @@ using ColorVision.UI;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Forms.VisualStyles;
 using System.Windows.Media;
 
 namespace ColorVision.Solution

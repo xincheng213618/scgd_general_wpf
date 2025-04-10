@@ -1,5 +1,4 @@
 ﻿using System.Windows.Media;
-using System.Windows.Controls;
 using System.IO;
 using ColorVision.UI.Menus;
 using ColorVision.Common.MVVM;

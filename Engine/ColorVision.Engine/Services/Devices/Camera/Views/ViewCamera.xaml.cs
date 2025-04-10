@@ -1,19 +1,16 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw.Ruler;
-using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -21,14 +18,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Resources;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Interop;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {

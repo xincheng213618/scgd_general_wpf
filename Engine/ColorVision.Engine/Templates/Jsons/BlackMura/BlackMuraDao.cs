@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore;
 using Newtonsoft.Json;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
 using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;

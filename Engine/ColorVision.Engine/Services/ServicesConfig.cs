@@ -25,8 +25,8 @@ namespace ColorVision.Engine.Services
                     Description = Properties.Resources.IsRetorePlayControls,
                     Order = 16,
                     Type = ConfigSettingType.Bool,
-                    BindingName =nameof(ServicesConfig.IsRetorePlayControls),
-                    Source = ServicesConfig.Instance,
+                    BindingName =nameof(DisPlayManagerConfig.IsRetore),
+                    Source = DisPlayManagerConfig.Instance,
                 }
             };
         }
@@ -41,9 +41,6 @@ namespace ColorVision.Engine.Services
 
         public bool IsAutoConfig { get => _IsAutoConfig; set { _IsAutoConfig = value; NotifyPropertyChanged(); } }
         private bool _IsAutoConfig = true;
-
-        public bool IsRetorePlayControls { get => _IsRetorePlayControls; set { _IsRetorePlayControls = value; NotifyPropertyChanged(); } }
-        private bool _IsRetorePlayControls = true;
 
     }
 }

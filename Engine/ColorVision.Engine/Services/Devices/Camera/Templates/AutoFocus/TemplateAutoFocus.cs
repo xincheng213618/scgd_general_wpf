@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using System.Collections.ObjectModel;
-using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
 {

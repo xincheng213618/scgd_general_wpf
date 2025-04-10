@@ -1,7 +1,6 @@
 ﻿using System.Windows.Media;
 using System.IO;
 using ColorVision.Common.MVVM;
-using System.Configuration;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Solution.V.Files

@@ -1,8 +1,4 @@
 ﻿using ColorVision.UI.Properties;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Shapes;
 
 namespace ColorVision.UI.Menus.Base
 {

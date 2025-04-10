@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CV_Spectrometer
+﻿namespace CV_Spectrometer
 {
     internal class localCIE2015Data
     {

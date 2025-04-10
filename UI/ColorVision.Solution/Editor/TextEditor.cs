@@ -1,7 +1,6 @@
 ﻿using ColorVision.UI;
 using System.IO;
 using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace ColorVision.Solution.Editor
 {

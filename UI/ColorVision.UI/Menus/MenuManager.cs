@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 

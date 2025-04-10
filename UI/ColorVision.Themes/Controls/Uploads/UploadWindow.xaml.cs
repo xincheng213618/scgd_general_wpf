@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Effects;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace ColorVision.Themes.Controls.Uploads
 {

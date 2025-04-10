@@ -1,10 +1,8 @@
 ﻿using ColorVision.Themes.Controls;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.IO;
 using System.Reflection;
-using System.Windows;
 
 namespace ColorVision.Update
 {
