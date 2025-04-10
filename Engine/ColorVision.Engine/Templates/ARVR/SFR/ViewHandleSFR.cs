@@ -1,14 +1,18 @@
 ﻿#pragma warning disable CS8604,CS8602,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.ARVR.SFR;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using OpenTK.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -128,7 +132,20 @@ namespace ColorVision.Engine.Templates.SFR
                 view.ImageView.OpenImage(result.FilePath);
             if (result.ViewResults == null)
             {
-                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRDao.Instance.GetAllByPid(result.Id));
+                var AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
+
+                foreach (var item in AlgResultSFRModels)
+                {
+                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                }
+
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRModels);
+
+
+                RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
             }
             view.ImageView.ImageShow.Clear();
 

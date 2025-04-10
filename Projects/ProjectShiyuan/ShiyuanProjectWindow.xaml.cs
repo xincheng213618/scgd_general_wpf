@@ -588,7 +588,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    ListViewValue.ItemsSource = poiResultCIExyuvData.ValidateSingles;
                 }
 
             }
