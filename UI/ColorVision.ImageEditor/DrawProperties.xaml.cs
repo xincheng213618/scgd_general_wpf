@@ -56,9 +56,6 @@ namespace ColorVision.ImageEditor
                                                select new KeyValuePair<FontStretch, string>((FontStretch)FontStretch.GetValue(null), FontStretch.Name);
             ComboBoxFontStretch.SelectedValuePath = "Key";
 
-            ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(CVCIETYpe)).Cast<CVCIETYpe>()
-                                      select new KeyValuePair<CVCIETYpe, string>(e1, e1.ToString());
-
         }
 
         private void ComboBoxBrush_SelectionChanged(object sender, SelectionChangedEventArgs e)

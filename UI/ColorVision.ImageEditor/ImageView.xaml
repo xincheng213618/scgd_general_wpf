@@ -280,6 +280,16 @@
                                 <TextBlock Text="伪彩色" Width="100"/>
                                 <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value" Style="{StaticResource ComboBox.Small}" Text="{Binding  Config.ColormapTypes}" DisplayMemberPath="Key"/>
                             </DockPanel>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="CVICE范围" Width="100"/>
+                                <TextBox  Text="{Binding ImageViewModel.MouseMagnifier.Radius}" Style="{StaticResource TextBox.Small}"/>
+                            </DockPanel>
+                            <TextBlock Text="设置为圆的时候，输入的值是直径"/>
+
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="CVICE Type:" Width="100"/>
+                                <hc:ComboBox x:Name="ComboxeType"  SelectedValue="{Binding ImageViewModel.MouseMagnifier.MagnigifierType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                            </DockPanel>
                         </StackPanel>
                     </Border>
 
