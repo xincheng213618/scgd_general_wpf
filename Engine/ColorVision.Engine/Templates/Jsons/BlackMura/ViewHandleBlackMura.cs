@@ -33,6 +33,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         }
     }
 
+
+
     public class ViewHandleBlackMura : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleBlackMura));
@@ -54,24 +56,59 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             var ViewResults = result.ViewResults.ToSpecificViewResults<BlackMuraModel>();
             var csvBuilder = new StringBuilder();
 
-            // 获取 BlackMuraModel 类的所有属性，并读取 Column 属性的名称作为 header
-            List<string> header = typeof(BlackMuraModel)
-                .GetProperties()
-                .Select(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name)
-                .ToList();
+            List<BlackMuraView> blackMuraViews = new List<BlackMuraView>();
+            foreach (var item in ViewResults)
+            {
+                blackMuraViews.Add(new BlackMuraView(item));
+            }
+
+            List<string> header = new List<string>();
+            var properties = typeof(BlackMuraView).GetProperties();
+
+            // 递归构建头部
+            foreach (var prop in properties)
+            {
+                var columnName = prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name;
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                {
+                    var nestedProperties = prop.PropertyType.GetProperties();
+                    foreach (var nestedProp in nestedProperties)
+                    {
+                        var nestedColumnName = $"{nestedProp.Name}";
+                        header.Add(nestedColumnName);
+                    }
+                }
+                else
+                {
+                    header.Add(columnName);
+                }
+            }
 
             csvBuilder.AppendLine(string.Join(",", header));
 
-            foreach (var item in ViewResults)
+            foreach (var item in blackMuraViews)
             {
                 List<string> content = new List<string>();
-                foreach (var prop in typeof(BlackMuraModel).GetProperties())
+                foreach (var prop in properties)
                 {
                     var value = prop.GetValue(item);
-                    content.Add(EscapeCsvField(value?.ToString() ?? string.Empty));
+                    if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                    {
+                        var nestedProperties = prop.PropertyType.GetProperties();
+                        foreach (var nestedProp in nestedProperties)
+                        {
+                            var nestedValue = nestedProp.GetValue(value);
+                            content.Add(EscapeCsvField(nestedValue?.ToString() ?? string.Empty));
+                        }
+                    }
+                    else
+                    {
+                        content.Add(EscapeCsvField(value?.ToString() ?? string.Empty));
+                    }
                 }
                 csvBuilder.AppendLine(string.Join(",", content));
             }
+
             File.WriteAllText(selectedPath + "//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
 
         }
@@ -130,7 +167,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             view.ImageView.OpenImage(outputfile.AAPath);
 
 
-                        LvDetails lvDetails = JsonConvert.DeserializeObject<LvDetails>(blackMuraModel.ResultJson);
+                        ResultJson lvDetails = JsonConvert.DeserializeObject<ResultJson>(blackMuraModel.ResultJson);
                         DVCircleText maxcirle = new();
                         maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
                         maxcirle.Attribute.Radius = lvDetails.Nle;

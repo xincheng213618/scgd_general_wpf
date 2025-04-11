@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using System.Windows.Media;
 
 
@@ -29,7 +30,7 @@ namespace ColorVision.UI.Extension
 
         public static JsonSerializerSettings settings { get; set; } = new JsonSerializerSettings
         {
-            Formatting = Formatting.Indented
+            Formatting = Formatting.Indented,
         };
 
 

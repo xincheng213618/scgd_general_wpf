@@ -13,6 +13,7 @@
 #define ToChar(x)			#@x
 #define EnumToStr(val)		#val
 
+std::string Multi2Utf8(const char* str);
 MYDLL std::string STDCALL Utf8ToGbk(const char* src_str);
 MYDLL std::string STDCALL GbkToUtf8(const char* src_str);
 

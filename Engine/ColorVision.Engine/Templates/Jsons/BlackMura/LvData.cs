@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public List<double> LocalLvUniformity { get; set; }
     }
 
-    public class LvDetails
+    public class ResultJson
     {
         [JsonProperty("Nle")]
         public int Nle { get; set; }

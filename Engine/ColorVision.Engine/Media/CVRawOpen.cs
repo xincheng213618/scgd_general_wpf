@@ -242,7 +242,7 @@ namespace ColorVision.Engine.Media
 
                     imageView.ImageViewModel.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
 
-                    if (!File.Exists(meta.srcFileName))
+                    if (meta.srcFileName !=null && !File.Exists(meta.srcFileName))
                         meta.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, meta.srcFileName);
 
                     if (meta.channels ==3)

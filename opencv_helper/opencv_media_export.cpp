@@ -378,6 +378,84 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char*
 	return static_cast<int>(length);
 }
 
+
+StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv::Mat& result) {
+	if (image_files.empty()) {
+		return StitchingErrorCode::EMPTY_INPUT;
+	}
+
+	std::vector<cv::Mat> images;
+
+	// 读取第一张图像以获取参考尺寸和类型
+	cv::Mat ref_image = cv::imread(image_files[0], cv::IMREAD_GRAYSCALE);
+	if (ref_image.empty()) {
+		return StitchingErrorCode::FILE_NOT_FOUND;
+	}
+
+	int ref_height = ref_image.rows;
+	int ref_width = ref_image.cols;
+	int ref_type = ref_image.type(); // 获取图像类型，例如 CV_8UC1 表示灰度图像
+
+	// 读取剩余的图像
+	for (size_t i = 1; i < image_files.size(); ++i) {
+		cv::Mat img = cv::imread(image_files[i], cv::IMREAD_GRAYSCALE);
+		if (img.empty()) {
+			return StitchingErrorCode::FILE_NOT_FOUND;
+		}
+
+		// 检查图像尺寸和类型是否与第一张图像相同
+		if (img.rows != ref_height || img.cols != ref_width || img.type() != ref_type) {
+			return StitchingErrorCode::DIFFERENT_DIMENSIONS;
+		}
+
+		images.push_back(img);
+	}
+
+	int num_images = images.size();
+	if (num_images == 0) {
+		return StitchingErrorCode::NO_VALID_IMAGES;
+	}
+
+	int width = ref_width / num_images;
+
+	result.create(ref_height, width * num_images, ref_type);
+	if (result.empty()) {
+		return StitchingErrorCode::NO_VALID_IMAGES;
+	}
+
+	for (int i = 0; i < num_images; ++i) {
+		cv::Mat part = images[i](cv::Rect(i* width, 0, width, ref_height));
+		result(cv::Rect(i * width, 0, width, ref_height)) = part;
+	}
+
+	return StitchingErrorCode::SUCCESS;
+}
+
+
+
+COLORVISIONCORE_API int M_StitchImages(const char* config, HImage* outImage)
+{
+	if (!config) {
+		return -1;
+	}
+	json j = json::parse(GbkToUtf8(config));
+
+	const auto& image_files = j.at("ImageFiles").get<std::vector<std::string>>();
+	if (image_files.empty()) {
+		return -1;
+	}
+	cv::Mat result;
+
+	StitchingErrorCode code = stitchImages(image_files, result);
+
+	if (code == StitchingErrorCode::SUCCESS && !result.empty()) {
+		MatToHImage(result, outImage);
+	}
+	return static_cast<int>(code);
+}
+
+
+
 COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
