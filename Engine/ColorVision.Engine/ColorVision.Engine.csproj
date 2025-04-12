@@ -27,6 +27,7 @@
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
 		<PackageReference Include="itext" Version="9.1.0" />
 		<PackageReference Include="itext.bouncy-castle-adapter" Version="9.1.0" />
+		<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />

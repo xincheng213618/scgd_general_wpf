@@ -7,6 +7,8 @@ using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.Painting.Effects;
+using MathNet.Numerics;
+using MathNet.Numerics.LinearAlgebra;
 using Newtonsoft.Json;
 using NPOI.OpenXmlFormats.Dml.Chart;
 using SkiaSharp;
@@ -143,6 +145,7 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
 
             var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(AlgResultSFRModels[index].Pdfrequency);
             var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(AlgResultSFRModels[index].PdomainSamplingData);
+
             var points = new PointF[Pdfrequencys.Length];
 
             var series = new LineSeries<ObservablePoint>
