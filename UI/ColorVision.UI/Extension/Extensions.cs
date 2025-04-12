@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8602 // 取消引用可能出现的空引用。
+#pragma warning disable CS8602 // 取消引用可能出现的空引用。
 
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
@@ -6,7 +6,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Windows.Media;
 
 
@@ -31,6 +30,7 @@ namespace ColorVision.UI.Extension
         public static JsonSerializerSettings settings { get; set; } = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented,
+            
         };
 
 

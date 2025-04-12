@@ -6,6 +6,10 @@
 #define COLORVISIONCORE_API __declspec(dllimport)
 #endif
 
+#include <string>
+std::string UTF8ToGB(const char* str);
+
+
 typedef int(__cdecl* InitialFrame)(void*, int, int, int);
 typedef int(__cdecl* UpdateFrame)(void*, int, int);
 

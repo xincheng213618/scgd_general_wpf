@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "custom_structs.h"
-#include "Utilcom.h"
+#include "common.h"
 
 #ifdef OPENCV_EXPORTS
 #define COLORVISIONCORE_API __declspec(dllexport)
@@ -20,14 +20,14 @@ enum EvaFunc
     CalResol,
 };
 
-// ����������ö��
+// 定义错误代码枚举
 enum class StitchingErrorCode {
-    SUCCESS = 0,          // �ɹ�
-    EMPTY_INPUT = -1,     // ����Ϊ��
-    FILE_NOT_FOUND = -2,  // �ļ�δ�ҵ�
-    DIFFERENT_DIMENSIONS = -3, // �ߴ粻ͬ
-    DIFFERENT_TYPE = -4,  // ���Ͳ�ͬ
-    NO_VALID_IMAGES = -5 // û����Ч��ͼ��
+    SUCCESS = 0,          // 成功
+    EMPTY_INPUT = -1,     // 输入为空
+    FILE_NOT_FOUND = -2,  // 文件未找到
+    DIFFERENT_DIMENSIONS = -3, // 尺寸不同
+    DIFFERENT_TYPE = -4,  // 类型不同
+    NO_VALID_IMAGES = -5 // 没有有效的图像
 };
 
 
