@@ -8,8 +8,16 @@
         mc:Ignorable="d"
         Title="WindowSFR" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
-        <GroupBox Grid.Column="3" Header="MTF Line" HorizontalAlignment="Left" Height="247" Margin="6.6,252,0,0" VerticalAlignment="Top" Width="324">
-            <skia:CartesianChart x:Name="MTFChart" Foreground="#FF000000" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Center" Height="180" Width="307" Margin="7,-1,-2,-20.6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <Button Content="1" Click="Button_Click"/>
+        </StackPanel>
+        
+        <GroupBox Header="MTF Line"  Grid.Row="1" >
+            <skia:CartesianChart x:Name="MTFChart" Foreground="#FF000000"  >
             </skia:CartesianChart>
         </GroupBox>
 
