@@ -42,6 +42,8 @@
 
 24.修改ColorVision.NET代码 使之支持NET48
 
+25.SFR FindROI 关联POI
+
 ## [1.1.20.1] 2025.04.06
 
 1.添加BlackMura 流程节点以及相关逻辑

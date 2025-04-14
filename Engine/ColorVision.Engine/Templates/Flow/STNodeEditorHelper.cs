@@ -296,6 +296,7 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR_FindROI", new TemplateSFRFindROI());
+                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.双目融合:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "双目融合", new TemplateBinocularFusion());
