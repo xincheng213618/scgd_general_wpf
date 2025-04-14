@@ -39,6 +39,8 @@ namespace CV_Spectrometer
             AssociatedObject.ScrollToEnd();
         }
     }
+
+
     public class MainWindowConfig : WindowConfig,IConfig
     {
         public static MainWindowConfig Instance => ConfigService.Instance.GetRequiredService<MainWindowConfig>();
@@ -77,450 +79,51 @@ namespace CV_Spectrometer
             this.Closed += (s, e) => ConfigService.Instance.SaveConfigs();
 
         }
-        float fIntTime = 0;
-        int testType = 0;
-        int picType = 0;
-        bool start = false;
-        int testid = 0;
 
 
-
-        public void addtable(COLOR_PARA data)
+        public void AddTable(COLOR_PARA data)
         {
-            float[] cutdata = CutFplData(data);
-            double Cie2015XData = CalCIE2015Data(localCIE2015Data.CIE2015_X, cutdata);
-            double Cie2015YData = CalCIE2015Data(localCIE2015Data.CIE2015_Y, cutdata);
-            double Cie2015ZData = CalCIE2015Data(localCIE2015Data.CIE2015_Z, cutdata);
+            float[] cutData = CutFplData(data);
+            double cie2015XData = CalCIE2015Data(localCIE2015Data.CIE2015_X, cutData);
+            double cie2015YData = CalCIE2015Data(localCIE2015Data.CIE2015_Y, cutData);
+            double cie2015ZData = CalCIE2015Data(localCIE2015Data.CIE2015_Z, cutData);
 
             AddViewResultSpectrum(new ViewResultSpectrum(data));
         }
 
-        //计算绝对光谱
-        private double calcAbsSpdata(float fPL, float fPlambda)
+        // 计算绝对光谱
+        private double CalcAbsSpData(float fPL, float fPlambda)
         {
-            double da = fPL * fPlambda / 1000;
-            return da;
+            return fPL * fPlambda / 1000.0;
         }
 
-
-        public double CalCIE2015Data(double[] Cie2015Source, float[] sp100Source) 
+        public double CalCIE2015Data(double[] cie2015Source, float[] sp100Source)
         {
-            double reusltData = 0;
-            if (sp100Source.Length== Cie2015Source.Length)
+            double resultData = 0;
+            if (sp100Source.Length == cie2015Source.Length)
             {
-                for (int i = 0; i < Cie2015Source.Length; i++)
+                for (int i = 0; i < cie2015Source.Length; i++)
                 {
-                    reusltData = reusltData + Cie2015Source[i] * sp100Source[i];
+                    resultData += cie2015Source[i] * sp100Source[i];
                 }
-                reusltData = reusltData * 683.2;
+                resultData *= 683.2;
             }
-
-            return reusltData;
+            return resultData;
         }
 
         public float[] CutFplData(COLOR_PARA data)
         {
+            int part1Length = 401; // 10 to 400 inclusive
+            float[] part1Data = new float[part1Length];
 
-            float[] part1Data = new float[]
-                {
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[10], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[11], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[12], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[13], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[14], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[15], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[16], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[17], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[18], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[19], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[20], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[21], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[22], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[23], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[24], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[25], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[26], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[27], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[28], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[29], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[30], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[31], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[32], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[33], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[34], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[35], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[36], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[37], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[38], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[39], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[40], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[41], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[42], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[43], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[44], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[45], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[46], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[47], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[48], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[49], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[50], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[51], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[52], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[53], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[54], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[55], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[56], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[57], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[58], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[59], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[60], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[61], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[62], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[63], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[64], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[65], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[66], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[67], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[68], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[69], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[70], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[71], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[72], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[73], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[74], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[75], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[76], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[77], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[78], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[79], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[80], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[81], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[82], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[83], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[84], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[85], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[86], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[87], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[88], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[89], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[90], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[91], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[92], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[93], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[94], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[95], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[96], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[97], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[98], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[99], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[100], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[101], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[102], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[103], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[104], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[105], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[106], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[107], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[108], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[109], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[110], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[111], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[112], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[113], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[114], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[115], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[116], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[117], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[118], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[119], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[120], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[121], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[122], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[123], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[124], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[125], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[126], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[127], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[128], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[129], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[130], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[131], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[132], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[133], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[134], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[135], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[136], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[137], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[138], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[139], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[140], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[141], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[142], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[143], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[144], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[145], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[146], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[147], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[148], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[149], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[150], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[151], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[152], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[153], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[154], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[155], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[156], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[157], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[158], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[159], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[160], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[161], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[162], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[163], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[164], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[165], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[166], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[167], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[168], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[169], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[170], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[171], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[172], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[173], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[174], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[175], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[176], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[177], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[178], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[179], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[180], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[181], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[182], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[183], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[184], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[185], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[186], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[187], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[188], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[189], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[190], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[191], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[192], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[193], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[194], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[195], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[196], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[197], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[198], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[199], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[200], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[201], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[202], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[203], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[204], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[205], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[206], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[207], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[208], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[209], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[210], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[211], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[212], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[213], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[214], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[215], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[216], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[217], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[218], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[219], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[220], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[221], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[222], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[223], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[224], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[225], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[226], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[227], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[228], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[229], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[230], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[231], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[232], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[233], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[234], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[235], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[236], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[237], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[238], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[239], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[240], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[241], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[242], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[243], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[244], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[245], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[246], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[247], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[248], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[249], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[250], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[251], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[252], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[253], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[254], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[255], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[256], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[257], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[258], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[259], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[260], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[261], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[262], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[263], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[264], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[265], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[266], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[267], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[268], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[269], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[270], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[271], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[272], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[273], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[274], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[275], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[276], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[277], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[278], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[279], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[280], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[281], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[282], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[283], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[284], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[285], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[286], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[287], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[288], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[289], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[290], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[291], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[292], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[293], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[294], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[295], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[296], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[297], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[298], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[299], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[300], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[301], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[302], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[303], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[304], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[305], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[306], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[307], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[308], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[309], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[310], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[311], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[312], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[313], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[314], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[315], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[316], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[317], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[318], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[319], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[320], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[321], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[322], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[323], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[324], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[325], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[326], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[327], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[328], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[329], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[330], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[331], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[332], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[333], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[334], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[335], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[336], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[337], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[338], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[339], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[340], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[341], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[342], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[343], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[344], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[345], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[346], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[347], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[348], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[349], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[350], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[351], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[352], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[353], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[354], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[355], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[356], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[357], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[358], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[359], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[360], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[361], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[362], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[363], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[364], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[365], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[366], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[367], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[368], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[369], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[370], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[371], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[372], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[373], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[374], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[375], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[376], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[377], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[378], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[379], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[380], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[381], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[382], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[383], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[384], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[385], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[386], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[387], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[388], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[389], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[390], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[391], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[392], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[393], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[394], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[395], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[396], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[397], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[398], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[399], data.fPlambda)),
-                           Convert.ToSingle(calcAbsSpdata(data.fPL[400], data.fPlambda)),
-            };
-            float[] part2Data = new float[50];
-            float[] cutData = new float[part1Data.Length+ part2Data.Length];
-            for (int i = 0; i < part2Data.Length; i++)
+            for (int i = 0; i < part1Length; i++)
             {
-                part2Data[i] = 0;
+                part1Data[i] = Convert.ToSingle(CalcAbsSpData(data.fPL[i + 10], data.fPlambda));
             }
+
+            float[] part2Data = new float[50]; // Already initialized to 0
+            float[] cutData = new float[part1Data.Length + part2Data.Length];
+
             Array.Copy(part1Data, 0, cutData, 0, part1Data.Length);
             Array.Copy(part2Data, 0, cutData, part1Data.Length, part2Data.Length);
 
@@ -575,7 +178,6 @@ namespace CV_Spectrometer
         //断开连接
         private void Button8_Click(object sender, RoutedEventArgs e)
         {
-            testid = 0;
             ret = Manager.Disconnect();
             if (ret == 1)
             {
@@ -620,7 +222,7 @@ namespace CV_Spectrometer
                 }
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    addtable(data);
+                    AddTable(data);
                 });
             }
             else
@@ -636,6 +238,7 @@ namespace CV_Spectrometer
         {
             if (Manager.EnableAutoIntegration)
             {
+                float fIntTime = 0;
                 ret = Spectrometer.CM_Emission_GetAutoTimeEx(SpectrometerHandle, ref fIntTime, Manager.IntTimeConfig.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB, Manager.Max);
                 if (ret == 1)
                 {
@@ -689,7 +292,7 @@ namespace CV_Spectrometer
         //绝对光谱校正
         private void juedui_Click(object sender, RoutedEventArgs e)
         {
-            SpectralCorrection spec = new SpectralCorrection(fIntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.EnableAutoIntegration, Manager.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB);
+            SpectralCorrection spec = new SpectralCorrection(Manager.IntTime, Manager.Average, Manager.GetDataConfig.FilterBW, Manager.EnableAutoIntegration, Manager.IntLimitTime, Manager.IntTimeConfig.AutoIntTimeB);
             spec.ShowDialog();
         }
 
