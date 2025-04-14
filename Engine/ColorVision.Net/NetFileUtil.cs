@@ -13,17 +13,23 @@ namespace ColorVision.Net
         }
         public void TaskStartDownloadFile(bool isLocal, string serverEndpoint, string fileName, CVType extType)
         {
-           Task t = new(() =>
+            Task t = new Task(delegate
             {
-                if (isLocal) OpenLocalFile(fileName, extType);
+                if (isLocal)
+                {
+                    OpenLocalFile(fileName, extType);
+                }
             });
             t.Start();
         }
         public void TaskStartDownloadFile(bool isLocal, string fileName, CVType extType)
         {
-            Task t = new(() =>
+            Task t = new Task(delegate
             {
-                if (isLocal) OpenLocalFileChannel(fileName, extType);
+                if (isLocal)
+                {
+                    OpenLocalFileChannel(fileName, extType);
+                }
             });
             t.Start();
         }
@@ -32,7 +38,7 @@ namespace ColorVision.Net
         {
             int code = -1;
             int channel = -1;
-            CVCIEFile data = new();
+            CVCIEFile data = default(CVCIEFile);
             switch (channelType)
             {
                 case CVImageChannelType.SRC:

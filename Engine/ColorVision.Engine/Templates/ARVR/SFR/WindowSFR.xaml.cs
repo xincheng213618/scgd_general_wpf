@@ -2,31 +2,16 @@
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.Drawing;
-using LiveChartsCore.Kernel.Sketches;
 using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.Painting.Effects;
-using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
 using Newtonsoft.Json;
-using NPOI.OpenXmlFormats.Dml.Chart;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using static iText.Kernel.Pdf.Colorspace.PdfDeviceCs;
 
 namespace ColorVision.Engine.Templates.ARVR.SFR
 {
