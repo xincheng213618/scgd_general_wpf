@@ -431,7 +431,7 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 
 	for (int i = 0; i < num_images; ++i) {
 		cv::Mat part = images[i](cv::Rect(i* width, 0, width, ref_height));
-		result(cv::Rect(i * width, 0, width, ref_height)) = part;
+		part.copyTo(result(cv::Rect(i * width, 0, width, ref_height)));
 	}
 
 	return StitchingErrorCode::SUCCESS;
