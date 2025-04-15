@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Interfaces
         Compliance_Contrast = 14,
         Compliance_Contrast_CIE_XYZ = 15,
         Compliance_Contrast_CIE_Y = 16,
+
         LEDStripDetection = 17,
         RealPOI = 18,
         DataLoad = 19,

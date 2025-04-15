@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.POI_XYZ ,AlgorithmResultType.LEDStripDetection };
+        
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
             string fileName = Path.Combine(selectedPath, $"{result.ResultType}_{result.Batch}.csv");

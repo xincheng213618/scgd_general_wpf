@@ -97,6 +97,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         case -1:
                             AlgResultMasterModel algResultMasterModel = new AlgResultMasterModel();
                             algResultMasterModel.Result = "-1";
+
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 Device.View.AlgResultMasterModelDataDraw(algResultMasterModel);
