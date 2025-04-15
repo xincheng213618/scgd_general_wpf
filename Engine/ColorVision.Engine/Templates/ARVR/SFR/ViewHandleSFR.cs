@@ -157,18 +157,15 @@ namespace ColorVision.Engine.Templates.SFR
 
             view.ImageView.ImageShow.Clear();
 
-            foreach (var item in result.ViewResults)
+            foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>())
             {
-                if (item is AlgResultSFRModel poiResultData)
-                {
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX, (double)poiResultData.RoiY, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = poiResultData.Id;
-                    Rectangle.Render();
-                    view.ImageView.AddVisual(Rectangle);
-                }
+                DVRectangleText Rectangle = new();
+                Rectangle.Attribute.Rect = new Rect((double)item.RoiX, (double)item.RoiY, (double)item.RoiWidth, (double)item.RoiHeight);
+                Rectangle.Attribute.Brush = Brushes.Transparent;
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                Rectangle.Attribute.Id = item.Id;
+                Rectangle.Render();
+                view.ImageView.AddVisual(Rectangle);
             }
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();

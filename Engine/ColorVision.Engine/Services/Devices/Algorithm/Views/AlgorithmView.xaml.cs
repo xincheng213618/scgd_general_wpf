@@ -3,11 +3,8 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.Distortion;
-using ColorVision.Engine.Templates.Flow;
+
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.SFR;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Net;
@@ -146,17 +143,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 dialog.RestoreDirectory = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-                switch (result.ResultType)
-                {   
-                    case AlgorithmResultType.POI_XYZ:
-                        var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
-                        PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
-                        ImageUtils.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-                        return;
-                    default:
-                        break;
-                }
-
                 using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
                 if (listView1.View is GridView gridView1)
                 {
@@ -196,7 +182,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     ResultHandle?.Load(algorithmResult);
 
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
-                if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
+                if (Config.AutoRefreshView)
                     RefreshResultListView();
                 if (Config.AutoSaveSideData)
                     SideSave(algorithmResult, Config.SaveSideDataDirPath);
@@ -284,30 +270,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
                         AddPOIPoint(DrawPoiPoint);
                         break;
-                    case AlgorithmResultType.Distortion:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in Distortions)
-                            {
-                                ViewResultDistortion distortionResultData = new(item);
-                                result.ViewResults.Add(distortionResultData);
-                            }
-                        }
-                        header = new() { "类型", "斜率", "布点", "角点", "畸变率" };
-                        bdHeader = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
-
-                        if (result.ViewResults.Count > 0 && result.ViewResults[0] is ViewResultDistortion viewResultDistortion)
-                        {
-                            List<Point> points1 = new();
-                            foreach (var item in viewResultDistortion.FinalPoints)
-                            {
-                                points1.Add(new Point(item.X, item.Y));
-                            }
-                            AddPoint(points1);
-                        }
-                        break;
                     default:
                         break;
                 }
@@ -320,23 +282,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
                     listViewSide.ItemsSource = result.ViewResults;
                 }
-            }
-        }
-
-        public void AddPoint(List<Point> points)
-        {
-            int id = 0;
-            foreach (var item in points)
-            {
-                id++;
-                DVCircleText Circle = new();
-                Circle.Attribute.Center = item;
-                Circle.Attribute.Radius = 20 / ImageView.Zoombox1.ContentMatrix.M11;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
-                Circle.Attribute.Id = id;
-                Circle.Render();
-                ImageView.AddVisual(Circle);
             }
         }
 
