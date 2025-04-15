@@ -51,6 +51,16 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmView AlgorithmView { get; set; }
 
+        public override void Load(AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
+                    result.ViewResults.Add(new ViewRsultJND(item));
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             AlgorithmView = view;
@@ -65,13 +75,7 @@ namespace ColorVision.Engine.Templates.JND
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
-                    result.ViewResults.Add(new ViewRsultJND(item));
-            }
-
+            Load(result);
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "Name", "位置", "大小", "形状", "h_jnd", "v_jnd" };

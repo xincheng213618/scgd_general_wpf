@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -12,6 +13,22 @@ namespace ColorVision.Engine.Templates.FOV
     public class ViewHandleFOV : IResultHandleBase
     {
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
+
+
+        public override void Load(AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
+                foreach (var item in AlgResultFOVModels)
+                {
+                    ViewResultFOV fOVResultData = new(item);
+                    result.ViewResults.Add(fOVResultData);
+                }
+                ;
+            }
+        }
 
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -28,16 +45,7 @@ namespace ColorVision.Engine.Templates.FOV
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultFOVModels)
-                {
-                    ViewResultFOV fOVResultData = new(item);
-                    result.ViewResults.Add(fOVResultData);
-                };
-            }
+            Load(result);
 
             List<string> header =  new() { "Pattern", "Type", "Degrees" };
             List<string> bdHeader = new() { "Pattern", "Type", "Degrees" };

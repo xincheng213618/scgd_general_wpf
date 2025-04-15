@@ -3,6 +3,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -13,6 +14,29 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+
+    public class ColorInformation
+    {
+        public double KeyLv { get; set; }
+        public int HaloLv { get; set; }
+        public CieColor KeyCIE { get; set; }
+        public CieColor HaloCIE { get; set; }
+    }
+
+    public class CieColor
+    {
+        public double U { get; set; }
+        public double V { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double CCT { get; set; }
+        public double Wave { get; set; }
+    }
+
+
+
+
+
     public class ViewHandleRealPOI : IResultHandleBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleRealPOI));
@@ -21,26 +45,63 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "PoiName","Value" };
 
-            // 写入列头
-            csvBuilder.AppendLine(string.Join(",", properties));
-
-            // 写入数据行
-            foreach (var item in result.ViewResults.OfType<PoiPointResultModel>())
+            if (result.ResultType == AlgorithmResultType.KB_Output_CIE)
             {
-                List<string> values = new()
+                List<string> properties = new List<string>() { "PoiName", "KeyLv", "HaloLv", "KeyCIE_U", "KeyCIE_V", "KeyCIE_X", "KeyCIE_Y", "KeyCIE_CCT", "KeyCIE_Wave", "HaloCIE_U", "HaloCIE_V", "HaloCIE_X", "HaloCIE_Y", "HaloCIE_CCT", "HaloCIE_Wave" };
+                csvBuilder.AppendLine(string.Join(",", properties));
+                foreach (var item in result.ViewResults.OfType<PoiPointResultModel>())
+                {
+                    var colorInfo = JsonConvert.DeserializeObject<ColorInformation>(item.Value) ?? new ColorInformation();
+
+                    // 将ColorInformation对象的属性转换为字符串
+                    var values = new List<string>
+                    {
+                        item.PoiName.ToString(),
+                        colorInfo.KeyLv.ToString(),
+                        colorInfo.HaloLv.ToString(),
+                        colorInfo.KeyCIE.U.ToString(),
+                        colorInfo.KeyCIE.V.ToString(),
+                        colorInfo.KeyCIE.X.ToString(),
+                        colorInfo.KeyCIE.Y.ToString(),
+                        colorInfo.KeyCIE.CCT.ToString(),
+                        colorInfo.KeyCIE.Wave.ToString(),
+                        colorInfo.HaloCIE.U.ToString(),
+                        colorInfo.HaloCIE.V.ToString(),
+                        colorInfo.HaloCIE.X.ToString(),
+                        colorInfo.HaloCIE.Y.ToString(),
+                        colorInfo.HaloCIE.CCT.ToString(),
+                        colorInfo.HaloCIE.Wave.ToString()
+                    };
+
+                    csvBuilder.AppendLine(string.Join(",", values));
+                }
+            }
+            else
+            {
+                List<string> properties = new() { "PoiName", "Value" };
+
+                // 写入列头
+                csvBuilder.AppendLine(string.Join(",", properties));
+
+                // 写入数据行
+                foreach (var item in result.ViewResults.OfType<PoiPointResultModel>())
+                {
+                    List<string> values = new()
                 {
                     item.PoiName,
                     item.Value
                 };
 
-                csvBuilder.AppendLine(string.Join(",", values));
+                    csvBuilder.AppendLine(string.Join(",", values));
+                }
             }
-
+           
             File.WriteAllText(selectedPath +"//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
-
-
+        }
+        public override void Load(AlgorithmResult result)
+        {
+            result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -56,10 +117,8 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
-            }
+            Load(result);
+
 
             if (result.ViewResults.Count < 1000)
             {

@@ -108,6 +108,28 @@ namespace ColorVision.Engine.Templates.SFR
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
+
+        public override void Load(AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                var AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
+
+                foreach (var item in AlgResultSFRModels)
+                {
+                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                }
+
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRModels);
+
+
+                RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
@@ -130,23 +152,9 @@ namespace ColorVision.Engine.Templates.SFR
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-            if (result.ViewResults == null)
-            {
-                var AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
 
-                foreach (var item in AlgResultSFRModels)
-                {
-                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                }
+            Load(result);
 
-                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRModels);
-
-
-                RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
-
-                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
-            }
             view.ImageView.ImageShow.Clear();
 
             foreach (var item in result.ViewResults)

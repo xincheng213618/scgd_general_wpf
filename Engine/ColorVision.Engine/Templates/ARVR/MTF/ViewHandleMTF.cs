@@ -122,6 +122,19 @@ namespace ColorVision.Engine.Templates.MTF
 
 
 
+        public override void Load(AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
+                foreach (var item in AlgResultMTFModels)
+                {
+                    ViewResultMTF mTFResultData = new(item);
+                    result.ViewResults.Add(mTFResultData);
+                }
+            }
+        }
 
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -136,17 +149,8 @@ namespace ColorVision.Engine.Templates.MTF
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultMTFModels)
-                {
-                    ViewResultMTF mTFResultData = new(item);
-                    result.ViewResults.Add(mTFResultData);
-                }
-            }
 
+            Load(result);
             view.ImageView.ImageShow.Clear();
 
             foreach (var item in result.ViewResults)

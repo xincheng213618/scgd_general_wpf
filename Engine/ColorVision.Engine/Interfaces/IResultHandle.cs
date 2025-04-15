@@ -70,6 +70,11 @@ namespace ColorVision.Engine.Interfaces
         public abstract List<AlgorithmResultType> CanHandle { get; } 
 
         public abstract void Handle(AlgorithmView view, AlgorithmResult result);
+
+        public virtual void Load( AlgorithmResult result)
+        {
+
+        }
         public virtual void SideSave(AlgorithmResult result, string selectedPath)
         {
 
