@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
             catch (Exception ex)
             {
-
+                MessageBox.Show(ex.Message);
             }
         }
 
