@@ -15,8 +15,6 @@ using System.Windows.Media;
 
 namespace ColorVision.UI
 {
-    public class WindowLogConfig : WindowConfig { }
-
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>
@@ -50,6 +48,11 @@ namespace ColorVision.UI
             SearchBar1Brush = SearchBar1.BorderBrush;
 
             LoadLogHistory();
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                logTextBox.ScrollToEnd();
+            });
+
         }
         private static string? GetLogFilePath()
         {
@@ -137,7 +140,7 @@ namespace ColorVision.UI
                 break; // 退出外层循环
             }
 
-            // 将日志内容添加到日志文本框中
+            // 将日志内容添加到日志文 框中
             if (logReserve)
             {
                 logTextBox.Text = logBuilder.ToString() + logTextBox.Text;
