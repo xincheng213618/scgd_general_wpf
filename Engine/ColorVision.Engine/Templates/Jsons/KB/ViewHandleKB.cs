@@ -60,8 +60,14 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
             catch (Exception ex)
             {
-
+                MessageBox.Show(ex.Message);
             }
+        }
+
+
+        public override void Load(AlgorithmResult result)
+        {
+            result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -76,7 +82,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
             if (File.Exists(result.ResultImagFile))
             {
-
                 Task.Run(async () =>
                 {
                     try
@@ -114,10 +119,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
 
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
-            }
+            Load(result);
 
             List<POIPoint> DrawPoiPoint = new();
             foreach (var item in result.ViewResults)

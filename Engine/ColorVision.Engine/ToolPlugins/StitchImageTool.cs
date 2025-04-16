@@ -6,6 +6,7 @@ using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -54,7 +55,44 @@ namespace ColorVision.Engine.ToolPlugins
 
                 string a = stitchImageConfig.ToJsonN();
                 OpenCVMediaHelper.M_StitchImages(a, out HImage hImage);
-                
+
+
+                Mat mat = Mat.FromPixelData(hImage.rows, hImage.cols, MatType.MakeType(5, hImage.channels), hImage.pData);
+
+
+                // 创建一个SaveFileDialog实例
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+
+                // 设置对话框的标题
+                saveFileDialog.Title = "保存图像";
+
+                // 设置默认文件名
+                saveFileDialog.FileName = "stitched_image";
+
+                // 设置过滤器，这里以选择JPEG文件为例
+                saveFileDialog.Filter = "tif 文件 (*.tif)|*.tif";
+
+                // 显示对话框
+                DialogResult saveResult = saveFileDialog.ShowDialog();
+
+                // 检查用户是否点击了“保存”按钮
+                if (saveResult == DialogResult.OK)
+                {
+                    // 指定保存路径
+                    string savePath = saveFileDialog.FileName;
+
+                    // 保存Mat对象到文件
+                    if (mat.SaveImage(savePath))
+                    {
+                        Console.WriteLine("图像保存成功！");
+                    }
+                    else
+                    {
+                        Console.WriteLine("图像保存失败！");
+                    }
+                }
+
+
 
             }
 

@@ -47,6 +47,14 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
+        public override void Load(AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
@@ -59,10 +67,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
-            }
+            Load(result);
 
             view.ImageView.ImageShow.Clear();
 

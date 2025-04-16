@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Interfaces
         Compliance_Contrast = 14,
         Compliance_Contrast_CIE_XYZ = 15,
         Compliance_Contrast_CIE_Y = 16,
+
         LEDStripDetection = 17,
         RealPOI = 18,
         DataLoad = 19,
@@ -70,6 +71,11 @@ namespace ColorVision.Engine.Interfaces
         public abstract List<AlgorithmResultType> CanHandle { get; } 
 
         public abstract void Handle(AlgorithmView view, AlgorithmResult result);
+
+        public virtual void Load( AlgorithmResult result)
+        {
+
+        }
         public virtual void SideSave(AlgorithmResult result, string selectedPath)
         {
 
