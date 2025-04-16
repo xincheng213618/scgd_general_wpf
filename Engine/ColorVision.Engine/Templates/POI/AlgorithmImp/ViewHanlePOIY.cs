@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             PoiResultCIEYData.SaveCsv(PoiResultCIEYDatas, fileName);
         }
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
 
             view.ImageView.ImageShow.Clear();
 
@@ -74,6 +74,11 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             else
             {
                 log.Info($"result.ViewResults.Count:{result.ViewResults.Count}");
+
+
+
+
+
             }
 
             if (view.listViewSide.View is GridView gridView)

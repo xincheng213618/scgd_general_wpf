@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Distortion
         }
 
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Templates.Distortion
             if (result.ResultCode != 0)
                 return;
 
-            Load(result);
+            Load(view, result);
 
             int id = 0;
             foreach (var item in result.ViewResults.ToSpecificViewResults<ViewResultDistortion>())

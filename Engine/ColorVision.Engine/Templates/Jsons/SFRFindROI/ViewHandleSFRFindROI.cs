@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
 
             view.ImageView.ImageShow.Clear();
 

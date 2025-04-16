@@ -198,6 +198,10 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 	return 0;
 }
 
+
+
+
+
 int FindClosestFactor(int value, const int* allowedFactors, int size = 13)
 {
 	int closestFactor = allowedFactors[0];

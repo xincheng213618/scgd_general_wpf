@@ -99,7 +99,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
            
             File.WriteAllText(selectedPath +"//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
         }
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
         }
@@ -117,7 +117,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
 
 
             if (result.ViewResults.Count < 1000)

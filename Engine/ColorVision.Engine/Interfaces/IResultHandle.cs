@@ -72,7 +72,7 @@ namespace ColorVision.Engine.Interfaces
 
         public abstract void Handle(AlgorithmView view, AlgorithmResult result);
 
-        public virtual void Load( AlgorithmResult result)
+        public virtual void Load(AlgorithmView view, AlgorithmResult result)
         {
 
         }

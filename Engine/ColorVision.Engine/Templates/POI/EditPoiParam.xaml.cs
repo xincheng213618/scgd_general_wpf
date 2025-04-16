@@ -880,7 +880,7 @@ namespace ColorVision.Engine.Templates.POI
                                     });
                                 }
 
-                                if (ImageShow.Source is BitmapImage bitmapSource)
+                                else if (ImageShow.Source is BitmapImage bitmapSource)
                                 {
                                     hImage = bitmapSource.ToHImage();
                                     int ret = OpenCVMediaHelper.M_DrawPoiImage(hImage, out HImage hImageProcessed, PoiConfig.DefaultCircleRadius, ints, ints.Length, PoiConfig.Thickness);

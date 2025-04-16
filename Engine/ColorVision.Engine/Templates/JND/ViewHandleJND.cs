@@ -51,7 +51,7 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmView AlgorithmView { get; set; }
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -75,7 +75,7 @@ namespace ColorVision.Engine.Templates.JND
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();
             List<string> header = new() { "Name", "位置", "大小", "形状", "h_jnd", "v_jnd" };

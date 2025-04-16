@@ -73,6 +73,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public int MarginBottom { get => GetValue(_MarginBottom); set { SetProperty(ref _MarginBottom, value); } }
         private int _MarginBottom = 10;
 
+        [Category("BuildPOI"), Description("4角点顺序")]
+        public string PolygonFour_OIndex { get => GetValue(_PolygonFour_OIndex); set { SetProperty(ref _PolygonFour_OIndex, value); } }
+        private string _PolygonFour_OIndex = string.Empty;
+
 
     }
 }

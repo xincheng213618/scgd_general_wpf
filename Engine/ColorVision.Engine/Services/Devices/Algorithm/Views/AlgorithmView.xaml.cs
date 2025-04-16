@@ -179,7 +179,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             {
                 AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(algorithmResult.ResultType));
-                    ResultHandle?.Load(algorithmResult);
+                    ResultHandle?.Load(this,algorithmResult);
 
                 ViewResults.AddUnique(algorithmResult, Config.InsertAtBeginning);
                 if (Config.AutoRefreshView)

@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates.FOV
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
 
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates.FOV
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view, result);
 
             List<string> header =  new() { "Pattern", "Type", "Degrees" };
             List<string> bdHeader = new() { "Pattern", "Type", "Degrees" };

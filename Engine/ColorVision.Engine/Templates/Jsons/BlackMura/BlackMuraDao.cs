@@ -10,7 +10,7 @@ using System.Windows;
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
 
-    public class BlackMuraView
+    public class BlackMuraView: IViewResult
     {
         public BlackMuraView(BlackMuraModel blackMuraModel)
         {
@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
 
     [Table("t_scgd_algorithm_result_detail_blackmura")]
-    public class BlackMuraModel : PKModel, IViewResult
+    public class BlackMuraModel : PKModel
     {
         [Column("pid")]
         public int PId { get; set; }

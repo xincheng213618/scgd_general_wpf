@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         }
 
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             result.ViewResults ??= new ObservableCollection<IViewResult>(PoiPointResultDao.Instance.GetAllByPid(result.Id));
         }
@@ -119,7 +119,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             }
 
 
-            Load(result);
+            Load(view, result);
 
             List<POIPoint> DrawPoiPoint = new();
             foreach (var item in result.ViewResults)

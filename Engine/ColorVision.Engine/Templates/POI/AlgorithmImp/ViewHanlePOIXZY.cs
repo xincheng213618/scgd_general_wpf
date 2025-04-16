@@ -1,14 +1,19 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI.Image;
+using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
@@ -23,7 +28,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
             PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, fileName);
         }
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -50,7 +55,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
 
             view.ImageView.ImageShow.Clear();
 
@@ -69,15 +74,38 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
             if (result.ViewResults.Count <= 4000)
             {
-                List<POIPoint> DrawPoiPoint = new();
-                foreach (var item in result.ViewResults)
+                foreach (var poiResultCIExyuvData in result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>())
                 {
-                    if (item is PoiResultCIExyuvData poiResultData)
+                    var item = poiResultCIExyuvData.Point;
+                    switch (item.PointType)
                     {
-                        DrawPoiPoint.Add(poiResultData.Point);
+                        case POIPointTypes.Circle:
+                            DVCircleText Circle = new DVCircleText();
+                            Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                            Circle.Attribute.Radius = item.Radius;
+                            Circle.Attribute.Brush = Brushes.Transparent;
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Circle.Attribute.Id = item.Id ?? -1;
+                            Circle.Attribute.Text = item.Name;
+                            Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            Circle.Render();
+                            view.ImageView.AddVisual(Circle);
+                            break;
+                        case POIPointTypes.Rect:
+                            DVRectangleText Rectangle = new DVRectangleText();
+                            Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Id = item.Id ?? -1;
+                            Rectangle.Attribute.Text = item.Name;
+                            Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                            Rectangle.Render();
+                            view.ImageView.AddVisual(Rectangle);
+                            break;
+                        default:
+                            break;
                     }
                 }
-                view.AddPOIPoint(DrawPoiPoint);
             }
             else
             {

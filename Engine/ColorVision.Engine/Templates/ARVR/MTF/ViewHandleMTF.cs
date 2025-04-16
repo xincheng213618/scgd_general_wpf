@@ -122,7 +122,7 @@ namespace ColorVision.Engine.Templates.MTF
 
 
 
-        public override void Load(AlgorithmResult result)
+        public override void Load(AlgorithmView view, AlgorithmResult result)
         {
             if (result.ViewResults == null)
             {
@@ -150,7 +150,7 @@ namespace ColorVision.Engine.Templates.MTF
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
 
-            Load(result);
+            Load(view,result);
             view.ImageView.ImageShow.Clear();
 
             foreach (var item in result.ViewResults)

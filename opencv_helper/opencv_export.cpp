@@ -196,7 +196,6 @@ int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X
 
 	cv::drawContours(scaledMat, paintContours, -1, cv::Scalar(0, 255,0), -1, 8, cv::noArray(), INT_MAX, cv::Point());
 
-
 	//paintContours.clear();
 	std::vector<std::vector<cv::Point>> paintContours1;
 
