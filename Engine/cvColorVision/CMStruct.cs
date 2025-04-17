@@ -11,7 +11,7 @@ namespace cvColorVision
         CV_Q,
         [Description("LV_Q")]
         LV_Q,
-        [Description("BV_Q")]
+        [Description("BV_Q")]    
         BV_Q,
         [Description("MIL_CL")]
         MIL_CL,

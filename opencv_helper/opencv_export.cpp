@@ -41,6 +41,13 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 }
 
 
+void FreeHImageData(unsigned char* data)
+{
+	// 使用 delete[] 来释放由 new[] 分配的内存
+	delete[] data;
+}
+
+
 
 int CM_AutoLevelsAdjust(HImage img, HImage* outImage)
 {
@@ -161,13 +168,6 @@ COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, u
 }
 
 
-
-
-void FreeHImageData(unsigned char* data)
-{
-	// 使用 delete[] 来释放由 new[] 分配的内存
-	delete[] data;
-}
 
 
 

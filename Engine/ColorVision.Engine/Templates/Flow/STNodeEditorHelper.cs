@@ -35,10 +35,7 @@ using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.Engine.Templates.ROI;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
-using FlowEngineLib;
-using FlowEngineLib.Base;
 using FlowEngineLib.End;
-using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -54,94 +51,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
-    [STNode("/03_4 Algorithm")]
-    public class NodeTest : CVBaseServerNode
-    {
-        private int _OrderIndex;
-
-        private string _TempName;
-
-        private string _CaliTemplate;
-
-        private string _ImgFileName;
-
-        private STNodeEditText<string> m_ctrl_temp;
-
-        [STNodeProperty("o-index", "Input Order Index", true, false, false)]
-        public int OrderIndex
-        {
-            get
-            {
-                return _OrderIndex;
-            }
-            set
-            {
-                _OrderIndex = value;
-            }
-        }
-
-        [STNodeProperty("参数模板", "参数模板", true)]
-        public string TempName
-        {
-            get
-            {
-                return _TempName;
-            }
-            set
-            {
-                _TempName = value;
-                m_ctrl_temp.Value = value;
-            }
-        }
-
-        [STNodeProperty("图像文件", "图像文件", true)]
-        public string ImgFileName
-        {
-            get
-            {
-                return _ImgFileName;
-            }
-            set
-            {
-                _ImgFileName = value;
-            }
-        }
-
-        public NodeTest()
-            : base("KB算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
-        {
-            operatorCode = "KB";
-            _CaliTemplate = "";
-            _TempName = "";
-            _OrderIndex = -1;
-        }
-        protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
-        {
-            if (e.Status != ConnectionStatus.Connected || e.TargetOption.Data == null)
-            {
-                FlowConfig.Instance.IsShowNickName = true;
-                m_op_end.TransferData();
-            }
-            return;
-        }
-        protected override void DoTransCompleted(CVStartCFC action)
-        {
-            return;
-        }
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
-        }
-
-        protected override object getBaseEventData(CVStartCFC start)
-        {
-            KBParam kBParam = new KBParam(_TempName, _ImgFileName, GetImageFileType(_ImgFileName), _CaliTemplate);
-            getPreStepParam(start, kBParam);
-            return kBParam;
-        }
-    }
 
     public class STNodeEditorHelper:ViewModelBase
     {

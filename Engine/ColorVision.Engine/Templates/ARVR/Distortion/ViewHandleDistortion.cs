@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Templates.Distortion
 {
     public class ViewHandleDistortion : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.SFR };
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Distortion };
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {

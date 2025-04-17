@@ -21,7 +21,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; NotifyPropertyChanged(); } }
         private bool _KBCanDrag;
 
-
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata> {
@@ -46,7 +45,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
-
     public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
     {
         public string Name { get; set; } = "键盘检测";
