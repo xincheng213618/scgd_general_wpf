@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
     /// </summary>
     public partial class WindowSFR : Window
     {
-
         public List<AlgResultSFRModel> AlgResultSFRModels { get; set; }
 
         public WindowSFR(List<AlgResultSFRModel> algResultSFRModels)
@@ -124,6 +123,37 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
             MTFChart.ZoomMode = ZoomAndPanMode.ZoomY | ZoomAndPanMode.PanY | ZoomAndPanMode.PanX; ;
         }
 
+        double InterpolateValue(float[] frequencies, float[] samplingData, double targetFrequency)
+        {
+            if (frequencies.Length != samplingData.Length)
+            {
+                throw new ArgumentException("频率和采样数据数组长度不匹配！");
+            }
+
+            if (targetFrequency <= frequencies[0])
+            {
+                return samplingData[0];
+            }
+            else if (targetFrequency >= frequencies[frequencies.Length])
+            {
+                return samplingData[frequencies.Length];
+            }
+
+            for (int i = 0; i < frequencies.Length; i++)
+            {
+                if (targetFrequency >= frequencies[i] && targetFrequency < frequencies[i + 1])
+                {
+                    // 线性插值
+                    double t = (targetFrequency - frequencies[i]) / (frequencies[i + 1] - frequencies[i]);
+                    return samplingData[i] + t * (samplingData[i + 1] - samplingData[i]);
+                }
+            }
+
+            throw new ArgumentException("目标频率超出范围！");
+        }
+
+
+
         public void Render(int index )
         {
             List<ISeries> SeriesCollection = new List<ISeries>();
@@ -162,7 +192,10 @@ namespace ColorVision.Engine.Templates.ARVR.SFR
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
+            var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(AlgResultSFRModels[0].Pdfrequency);
+            var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(AlgResultSFRModels[0].PdomainSamplingData);
+            double a = InterpolateValue(Pdfrequencys, PdomainSamplingDatas, 0.5);
+            Resultextbox.Text = a.ToString();
         }
-    }
+    }  
 }

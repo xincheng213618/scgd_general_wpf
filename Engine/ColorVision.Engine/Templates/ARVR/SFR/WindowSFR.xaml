@@ -12,8 +12,13 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel>
-            <Button Content="1" Click="Button_Click"/>
+        <StackPanel Orientation="Horizontal">
+
+            <TextBox Text="0.5"  Width="100"/>
+
+            <Button Content="计算" Click="Button_Click"/>
+            <TextBlock x:Name="Resultextbox" Text="" Width="150"/>
+
         </StackPanel>
         
         <GroupBox Header="MTF Line"  Grid.Row="1" >

@@ -130,8 +130,26 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 }
             }
 
-            csvBuilder.AppendLine(string.Join(",", header));
+            string filePath = selectedPath + "//" + result.ResultType + ".csv";
 
+            // 检查文件是否存在
+            if (File.Exists(filePath))
+            {
+                // 读取文件末尾的几行，检查是否包含头信息
+                var lines = File.ReadLines(filePath).ToList();
+                if (!lines.Any(line => line == string.Join(",", header)))
+                {
+                    // 如果文件存在但不含头信息，则追加头信息
+                    File.AppendAllText(filePath, "\n" + string.Join(",", header) + "\n", Encoding.UTF8);
+                }
+            }
+            else
+            {
+                // 文件不存在，创建新文件并写入头信息
+                File.WriteAllText(filePath, string.Join(",", header) + "\n", Encoding.UTF8);
+            }
+
+            // 追加内容
             foreach (var item in blackMuraViews)
             {
                 List<string> content = new List<string>();
@@ -155,7 +173,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 csvBuilder.AppendLine(string.Join(",", content));
             }
 
-            File.WriteAllText(selectedPath + "//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
+            // 追加内容到文件
+            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
 
         }
 
@@ -224,7 +243,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             maxcirle.Render();
                             view.ImageView.AddVisual(maxcirle);
 
-                            DVCircleText mincirle = new();
+                            DVCircleText mincirle = new();    
                             mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
                             mincirle.Attribute.Radius = lvDetails.Nle;
                             mincirle.Attribute.Brush = Brushes.Transparent;
