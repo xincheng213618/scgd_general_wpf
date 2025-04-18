@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         {
             Name = "关注点布点";
             Order = 2;
-
+            Group = "定位算法";
 
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Interfaces
         public virtual string Name { get; set; }
         public virtual int Order { get; set; }
 
-        public virtual string Group { get; set; } = "All";
+        public virtual string Group { get; set; }
 
         public virtual UserControl GetUserControl()
         {

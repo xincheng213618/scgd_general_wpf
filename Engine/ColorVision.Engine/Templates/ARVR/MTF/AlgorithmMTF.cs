@@ -23,8 +23,8 @@ namespace ColorVision.Engine.Templates.MTF
         {
             Name = "MTF";
             Order = 50;
-
-            Device = deviceAlgorithm;
+			Group = "AR/VR算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }

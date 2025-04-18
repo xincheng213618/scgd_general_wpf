@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Templates.JND
         {
             Name = "JND";
             Order = 3;
-
+			Group = "数据提取算法";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

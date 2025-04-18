@@ -32,6 +32,7 @@ namespace ColorVision.Engine.Templates.Matching
         {
             Name = "模板匹配";
             Order = 99;
+			Group = "定位算法";
 
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

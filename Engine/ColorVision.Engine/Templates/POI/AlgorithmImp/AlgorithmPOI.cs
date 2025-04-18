@@ -34,6 +34,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
         {
             Name = "POI";
             Order = 1;
+			Group = "数据提取算法";
 
 
 			Device = deviceAlgorithm;

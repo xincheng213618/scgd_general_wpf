@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             Name = "键盘检测";
             Order = 98;
-
+            Group = "数据提取算法";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());

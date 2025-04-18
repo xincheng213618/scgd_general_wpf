@@ -15,8 +15,6 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
     public class AlgorithmLedCheck2 : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "亚像素级灯珠检测";
-        public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -25,7 +23,11 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 
         public AlgorithmLedCheck2(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "亚像素级灯珠检测";
+            Order = 21;
+			Group = "定位算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

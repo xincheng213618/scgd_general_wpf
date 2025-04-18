@@ -28,6 +28,7 @@ namespace ColorVision.Engine.Templates.LedCheck
         {
             Name = "像素级灯珠检测";
             Order = 20;
+			Group = "定位算法";
 
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

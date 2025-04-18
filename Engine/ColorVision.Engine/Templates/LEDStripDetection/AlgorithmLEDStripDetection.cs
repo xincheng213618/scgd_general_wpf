@@ -24,6 +24,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         {
             Name = "灯带检测";
             Order = 10;
+			Group = "定位算法";
 
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

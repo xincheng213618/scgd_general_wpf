@@ -19,6 +19,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public string LastSelectTemplate { get => _LastSelectTemplate; set { _LastSelectTemplate = value; NotifyPropertyChanged(); } }
         private string _LastSelectTemplate;
 
+
+        public string LastSelectGroup { get => _LastSelectGroup; set { _LastSelectGroup = value; NotifyPropertyChanged(); } }
+        private string _LastSelectGroup;
+
     }
 
     /// <summary>
@@ -51,8 +55,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             }
 
+            // 创建一个包含所有算法的组
+            string allAlgorithmsGroup = "All";
             Algorithms = new ObservableCollection<IDisplayAlgorithm>(algorithms.OrderBy(item => item.Order));
-            CB_Algorithms.ItemsSource = Algorithms;
+
+            // 创建一个包含不同组的列表
+            List<string> groups = new List<string> { allAlgorithmsGroup };
+            foreach (var group in Algorithms.Select(a => a.Group).Distinct())
+            {
+                if (!groups.Contains(group) && !string.IsNullOrWhiteSpace(group))
+                {
+                    groups.Add(group);
+                }
+            }
+
+            CB_AlgorithmTypes.ItemsSource = groups;
 
             CB_Algorithms.SelectionChanged += (s, e) =>
             {
@@ -64,17 +81,42 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
 
-            var lastSelectedAlgorithm = Algorithms
-                .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+            // 更新 CB_Algorithms 的绑定
+            CB_AlgorithmTypes.SelectionChanged += (s, e) =>
+            {
+                if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
+                {
+                    DisplayAlgorithmConfig.Instance.LastSelectGroup = selectedGroup;
+                    if (selectedGroup == allAlgorithmsGroup)
+                    {
+                        CB_Algorithms.ItemsSource = Algorithms.OrderBy(a => a.Order).ToList();
+                        CB_Algorithms.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        CB_Algorithms.ItemsSource = Algorithms.Where(a => a.Group == selectedGroup).OrderBy(a => a.Order).ToList();
+                        CB_Algorithms.SelectedIndex = 0;
+                    }
 
-            if (lastSelectedAlgorithm != null)
-            {
-                CB_Algorithms.SelectedIndex = Algorithms.IndexOf(lastSelectedAlgorithm);
-            }
-            else
-            {
-                CB_Algorithms.SelectedIndex = 0; // Default to the first item if no match is found
-            }
+                    // 选中上次选中的算法
+                    var lastSelectedAlgorithm = Algorithms
+                        .FirstOrDefault(a => a.Name == DisplayAlgorithmConfig.Instance.LastSelectTemplate);
+
+                    if (lastSelectedAlgorithm != null)
+                    {
+                        CB_Algorithms.SelectedItem = lastSelectedAlgorithm;
+                    }
+                    else
+                    {
+                        CB_Algorithms.SelectedIndex = 0; // Default to the first item if no match is found
+                    }
+                }
+            };
+
+            // 默认选中 "All Algorithms" 组
+            CB_AlgorithmTypes.SelectedItem = DisplayAlgorithmConfig.Instance.LastSelectGroup;
+
+
             this.AddViewConfig(Device.View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
