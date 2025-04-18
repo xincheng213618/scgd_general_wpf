@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -19,7 +20,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; NotifyPropertyChanged(); } }
         private bool _KBCanDrag;
-
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -45,8 +45,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
-
-    public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmKB : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "键盘检测";
 
@@ -61,7 +60,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "键盘检测";
+            Order = 98;
+            Group = "数据提取算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());
         }
@@ -78,7 +80,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayKB(this);
             return UserControl;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using System.Windows;
 
 namespace ColorVision.Engine.MySql

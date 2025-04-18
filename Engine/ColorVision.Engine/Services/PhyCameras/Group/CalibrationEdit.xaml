@@ -8,7 +8,7 @@
         xmlns:phy="clr-namespace:ColorVision.Engine.Services.PhyCameras"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="465" Width="1000" Initialized="Window_Initialized" >
+        Title="校正文件管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="465" Width="1000" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -29,9 +29,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,5" >
-                <Button Content="添加"  Click="Button_Add_Click" Margin="0,0,5,0" />
-                <Button Content="删除"  Click="Button_Delete_Click" Margin="0,0,5,0" />
+                <Button Content="添加" Click="Button_Add_Click" Margin="0,0,5,0" />
+                <Button Content="删除" Click="Button_Delete_Click" Margin="0,0,5,0" />
                 <Button Content="上传" Command="{Binding UploadCalibrationCommand}" />
+                <Button Content="导出"/>
             </StackPanel>
             <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Padding="0,5,0,0">
                 <ListView.ItemContainerStyle>

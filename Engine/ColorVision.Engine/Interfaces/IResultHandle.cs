@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CA1707,CA1711
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Interfaces
 {
     public enum AlgorithmResultType
     {
@@ -23,6 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         Compliance_Contrast = 14,
         Compliance_Contrast_CIE_XYZ = 15,
         Compliance_Contrast_CIE_Y = 16,
+
         LEDStripDetection = 17,
         RealPOI = 18,
         DataLoad = 19,
@@ -69,6 +71,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public abstract List<AlgorithmResultType> CanHandle { get; } 
 
         public abstract void Handle(AlgorithmView view, AlgorithmResult result);
+
+        public virtual void Load(AlgorithmView view, AlgorithmResult result)
+        {
+
+        }
         public virtual void SideSave(AlgorithmResult result, string selectedPath)
         {
 

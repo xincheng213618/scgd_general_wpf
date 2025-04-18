@@ -1,9 +1,7 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

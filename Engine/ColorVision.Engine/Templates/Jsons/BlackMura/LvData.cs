@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ColorVision.Engine.MySql.ORM;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
@@ -14,7 +15,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public List<double> LocalLvUniformity { get; set; }
     }
 
-    public class LvDetails
+    public class ResultJson
     {
         [JsonProperty("Nle")]
         public int Nle { get; set; }
@@ -32,7 +33,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         public int MinPtX { get; set; }
         [JsonProperty("min_pt_y")]
         public int MinPtY { get; set; }
-        [JsonProperty("uniformity")]
+
+        [JsonProperty("uniformity"), Column("Uniformity (%)")]
         public double Uniformity { get; set; }
         [JsonProperty("za_rel_max")]
         public double ZaRelMax { get; set; }

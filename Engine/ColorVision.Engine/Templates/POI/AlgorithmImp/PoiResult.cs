@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using MQTTMessageLib.Algorithm;
+using ColorVision.Engine.Interfaces;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp

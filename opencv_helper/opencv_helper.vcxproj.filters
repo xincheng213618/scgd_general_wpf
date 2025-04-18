@@ -30,9 +30,6 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Utilcom.h">
-      <Filter>Util</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -73,9 +70,6 @@
     </ClCompile>
     <ClCompile Include="fusion.cpp">
       <Filter>算法</Filter>
-    </ClCompile>
-    <ClCompile Include="Utilcom.cpp">
-      <Filter>Util</Filter>
     </ClCompile>
     <ClCompile Include="opencv_media_export.cpp">
       <Filter>源文件</Filter>

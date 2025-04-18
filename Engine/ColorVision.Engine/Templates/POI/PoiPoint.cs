@@ -1,7 +1,6 @@
 ﻿using ColorVision.UI.Sorts;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Common.MVVM;
-using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Templates.POI
 {

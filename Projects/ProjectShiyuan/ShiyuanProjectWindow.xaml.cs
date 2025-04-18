@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
@@ -25,6 +24,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.Engine.Templates.Validate;
 using FlowEngineLib.Base;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Interfaces;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -588,7 +588,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    ListViewValue.ItemsSource = poiResultCIExyuvData.ValidateSingles;
                 }
 
             }

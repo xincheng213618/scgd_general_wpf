@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.ObjectModel;
-using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;

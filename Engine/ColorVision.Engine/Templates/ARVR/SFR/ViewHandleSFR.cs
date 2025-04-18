@@ -1,15 +1,18 @@
 ﻿#pragma warning disable CS8604,CS8602,CS8629
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.MTF;
+using ColorVision.Engine.Templates.ARVR.SFR;
 using ColorVision.ImageEditor.Draw;
 using Newtonsoft.Json;
+using OpenTK.Core.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -105,6 +108,28 @@ namespace ColorVision.Engine.Templates.SFR
             File.WriteAllText(fileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 
+
+        public override void Load(AlgorithmView view, AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                var AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
+
+                foreach (var item in AlgResultSFRModels)
+                {
+                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                }
+
+                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRModels);
+
+
+                RelayCommand relayCommand = new RelayCommand(a => new WindowSFR(AlgResultSFRModels).Show());
+
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "分析", Command = relayCommand });
+            }
+        }
+
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
@@ -127,24 +152,20 @@ namespace ColorVision.Engine.Templates.SFR
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>(AlgResultSFRDao.Instance.GetAllByPid(result.Id));
-            }
+
+            Load(view,result);
+
             view.ImageView.ImageShow.Clear();
 
-            foreach (var item in result.ViewResults)
+            foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultSFRModel>())
             {
-                if (item is AlgResultSFRModel poiResultData)
-                {
-                    DVRectangleText Rectangle = new();
-                    Rectangle.Attribute.Rect = new Rect((double)poiResultData.RoiX, (double)poiResultData.RoiY, (double)poiResultData.RoiWidth, (double)poiResultData.RoiHeight);
-                    Rectangle.Attribute.Brush = Brushes.Transparent;
-                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                    Rectangle.Attribute.Id = poiResultData.Id;
-                    Rectangle.Render();
-                    view.ImageView.AddVisual(Rectangle);
-                }
+                DVRectangleText Rectangle = new();
+                Rectangle.Attribute.Rect = new Rect((double)item.RoiX, (double)item.RoiY, (double)item.RoiWidth, (double)item.RoiHeight);
+                Rectangle.Attribute.Brush = Brushes.Transparent;
+                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                Rectangle.Attribute.Id = item.Id;
+                Rectangle.Render();
+                view.ImageView.AddVisual(Rectangle);
             }
 
             List<GridViewColumn> gridViewColumns = new List<GridViewColumn>();

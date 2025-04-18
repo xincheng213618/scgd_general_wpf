@@ -5,6 +5,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using ColorVision.Util.Draw.Special;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -123,6 +124,10 @@ namespace ColorVision.ImageEditor
             Drop += ImageView_Drop;
 
             ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
+
+            ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
+                                      select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
+
         }
 
 

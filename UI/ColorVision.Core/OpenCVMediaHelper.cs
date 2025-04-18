@@ -149,7 +149,12 @@ namespace ColorVision
 
         [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int M_ConvertGray32Float(HImage image, out HImage hImage);
-        
+
+
+
+        [DllImport(LibPath, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int M_StitchImages(string config, out HImage hImage);
+       
 
     }
 }

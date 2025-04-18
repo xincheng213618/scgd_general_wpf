@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -11,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FOV
 {
-    public class AlgorithmFOV : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmFOV : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "FOV";
-        public int Order { get; set; } = 53;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -23,7 +22,10 @@ namespace ColorVision.Engine.Templates.FOV
 
         public AlgorithmFOV(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "FOV";
+            Order = 53;
+			Group = "AR/VR算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -36,7 +38,7 @@ namespace ColorVision.Engine.Templates.FOV
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayFOV(this);
             return UserControl;

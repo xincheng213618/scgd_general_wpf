@@ -2,7 +2,7 @@
 using ColorVision.UI;
 using System.Windows;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
     /// <summary>
     /// EditProjectKBConfig.xaml 的交互逻辑

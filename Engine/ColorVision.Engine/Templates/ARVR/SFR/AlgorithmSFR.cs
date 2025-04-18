@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -12,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.SFR
 {
-    public class AlgorithmSFR : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmSFR : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "SFR";
         public int Order { get; set; } = 51;
@@ -24,6 +25,9 @@ namespace ColorVision.Engine.Templates.SFR
 
         public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "SFR";
+            Order = 51;
+            Group = "AR/VR算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
@@ -48,7 +52,7 @@ namespace ColorVision.Engine.Templates.SFR
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplaySFR(this);
             return UserControl;

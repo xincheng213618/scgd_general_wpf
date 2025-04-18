@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectBase"
-        d:DataContext="{d:DesignInstance local:ProjectBlackMuraConfig}"
+        d:DataContext="{d:DesignInstance local:ProjectBaseConfig}"
         mc:Ignorable="d"
         Title="ProjectBase" Height="720" Width="1280"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
@@ -102,7 +102,7 @@
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
+                        <Button Content="运行流程"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

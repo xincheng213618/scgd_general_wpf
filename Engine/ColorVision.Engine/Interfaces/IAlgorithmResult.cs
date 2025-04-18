@@ -1,13 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm
+namespace ColorVision.Engine.Interfaces
 {
     public interface IViewResult
     {
 
     }
-
 
 
     public static class CollectionExtensions

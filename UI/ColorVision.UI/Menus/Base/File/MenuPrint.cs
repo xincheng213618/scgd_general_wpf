@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI.Properties;
-using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus.Base.File

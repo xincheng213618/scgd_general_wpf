@@ -3,15 +3,15 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectKB.Config;
-using ProjectKB.Modbus;
-using ProjectKB.Services;
+using ProjectARVR.Config;
+using ProjectARVR.Modbus;
+using ProjectARVR.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
     public class ProjectKBConfig: ViewModelBase, IConfig
     {

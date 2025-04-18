@@ -2,9 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.UI;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;

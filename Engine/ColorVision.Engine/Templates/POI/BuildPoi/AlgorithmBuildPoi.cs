@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore.CVAlgorithm;
@@ -25,7 +26,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         }
     }
 
-    public class AlgorithmBuildPoi : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmBuildPoi : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "关注点布点";
         public int Order { get; set; } = 2;
@@ -39,6 +40,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public AlgorithmBuildPoi(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "关注点布点";
+            Order = 2;
+            Group = "定位算法";
+
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenCADFileCommand = new RelayCommand(a => OpenCADFile());
@@ -64,7 +69,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
             new TemplateEditorWindow(new TemplateBuildPoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayBuildPoi(this);
             return UserControl;

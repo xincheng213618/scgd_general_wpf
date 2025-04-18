@@ -1,7 +1,4 @@
 ﻿#pragma warning disable CS8603
-using System.Windows;
-using System.Windows.Media;
-
 namespace System.Windows.Media
 {
     public static partial class ViewHelper

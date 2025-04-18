@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -13,7 +14,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Matching
 {
-    public class AlgorithmMatching : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmMatching : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "模板匹配";
         public int Order { get; set; } = 99;
@@ -29,7 +30,11 @@ namespace ColorVision.Engine.Templates.Matching
 
         public AlgorithmMatching(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "模板匹配";
+            Order = 99;
+			Group = "定位算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
             SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(TemplateFile)));
@@ -75,7 +80,7 @@ namespace ColorVision.Engine.Templates.Matching
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayMatching(this);
             return UserControl;

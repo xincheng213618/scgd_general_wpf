@@ -9,6 +9,7 @@ namespace ColorVision
         public int rows;
         public int cols;
         public int channels;
+
         public int depth; //bpp
         public int stride;
 

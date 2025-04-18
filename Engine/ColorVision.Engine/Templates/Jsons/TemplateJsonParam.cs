@@ -2,7 +2,6 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Utilities;
 using Newtonsoft.Json;
-using ScottPlot.Statistics;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;

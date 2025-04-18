@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {

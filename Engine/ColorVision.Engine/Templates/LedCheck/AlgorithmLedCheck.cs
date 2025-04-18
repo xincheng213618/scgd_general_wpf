@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -12,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LedCheck
 {
-    public class AlgorithmLedCheck : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmLedCheck : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "像素级灯珠检测";
         public int Order { get; set; } = 20;
@@ -25,7 +26,11 @@ namespace ColorVision.Engine.Templates.LedCheck
 
         public AlgorithmLedCheck(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "像素级灯珠检测";
+            Order = 20;
+			Group = "定位算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
@@ -46,7 +51,7 @@ namespace ColorVision.Engine.Templates.LedCheck
 
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayLedCheck(this);
             return UserControl;

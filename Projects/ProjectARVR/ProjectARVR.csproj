@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	  <OutputType>WinExe</OutputType>
+	  <TargetFramework>net8.0-windows</TargetFramework>
+	  <Nullable>enable</Nullable>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <UseWPF>true</UseWPF>
+	  <VersionPrefix>1.0.0.1</VersionPrefix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Engine\ColorVision.Engine\ColorVision.Engine.csproj" />
+    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FlowEngineLib">
+      <HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+    </Reference>
+    <Reference Include="ST.Library.UI">
+      <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\" />
+  </ItemGroup>
+
+</Project>

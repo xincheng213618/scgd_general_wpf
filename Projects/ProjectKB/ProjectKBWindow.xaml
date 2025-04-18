@@ -1,11 +1,11 @@
-﻿<Window x:Class="ProjectKB.ProjectKBWindow"
+﻿<Window x:Class="ProjectsARVR.ProjectKBWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
-        xmlns:local="clr-namespace:ProjectKB"
-        xmlns:properties ="clr-namespace:ProjectKB.Properties"
+        xmlns:local="clr-namespace:ProjectsARVR"
+        xmlns:properties ="clr-namespace:ProjectsARVR.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectKBConfig}"
         Title="键盘测试" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Icon="/ProjectKB;component/Assets/ProjectKB.png">
@@ -80,22 +80,35 @@
                 </Grid>
                 <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="32"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <Grid Visibility="Visible" Height="32">
-                        <StackPanel HorizontalAlignment="Left"  Orientation="Horizontal">
-                            <Button Grid.Column="0" Background="#01FFFFFF" BorderThickness="0"  VerticalAlignment="Center" Command="{Binding OpenConfigCommand}" >
-                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Padding="0,5" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <Grid Visibility="Visible" >
+                        <StackPanel Orientation="Horizontal" Background="{DynamicResource RegionBrush}">
+                            <Button  Command="{Binding OpenConfigCommand}" Padding="0" Height="25" Width="25" Margin="5,0,0,0"> 
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform21"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform21" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
                             </Button>
-                            <Button Click="Button_Click_Clear" Background="#01FFFFFF" BorderThickness="0">
-                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="4" />
+                            <Button Click="Button_Click_Clear"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
+                                <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" Margin="2" />
                             </Button>
 
                         </StackPanel>
                     </Grid>
 
-                    <ListView  x:Name="listView1" Grid.Row="1"   BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
+                    <ListView  x:Name="listView1" Grid.Row="1"   BorderThickness="0" Padding="0"  SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                         <ListView.Resources >
                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                         </ListView.Resources>

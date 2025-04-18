@@ -1,6 +1,4 @@
-﻿using ColorVision.Projects;
-using ColorVision.Themes;
-using ColorVision.UI;
+﻿using ColorVision.Themes;
 using System.Collections.Generic;
 using System.Windows;
 

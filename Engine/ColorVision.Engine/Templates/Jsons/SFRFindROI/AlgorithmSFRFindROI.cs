@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
-using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;
 using System;
@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
-    public class AlgorithmSFRFindROI : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmSFRFindROI : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "SFR寻边";
         public int Order { get; set; } = 21;
@@ -26,7 +26,9 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
         public AlgorithmSFRFindROI(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "SFR寻边";
+            Order = 21;
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
@@ -46,7 +48,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
         private int _TemplatePoiSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplaySFRFindROI(this);
             return UserControl;

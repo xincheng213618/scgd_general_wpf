@@ -1,8 +1,7 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
 using System;
@@ -12,7 +11,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -124,6 +122,19 @@ namespace ColorVision.Engine.Templates.MTF
 
 
 
+        public override void Load(AlgorithmView view, AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
+                foreach (var item in AlgResultMTFModels)
+                {
+                    ViewResultMTF mTFResultData = new(item);
+                    result.ViewResults.Add(mTFResultData);
+                }
+            }
+        }
 
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -138,17 +149,8 @@ namespace ColorVision.Engine.Templates.MTF
 
             if (File.Exists(result.FilePath))
                 view.ImageView.OpenImage(result.FilePath);
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultMTFModels)
-                {
-                    ViewResultMTF mTFResultData = new(item);
-                    result.ViewResults.Add(mTFResultData);
-                }
-            }
 
+            Load(view,result);
             view.ImageView.ImageShow.Clear();
 
             foreach (var item in result.ViewResults)

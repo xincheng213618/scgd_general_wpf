@@ -14,7 +14,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Projects
-{
+{ 
     public class ProjectInfo:ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectInfo));

@@ -1,5 +1,5 @@
-﻿using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp

@@ -2,12 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Menus.Base;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -158,19 +156,19 @@ namespace ColorVision.ImageEditor.Tif
                             imageView.AddSelectionChangedHandler(imageView.ComboBoxLayersSelectionChanged);
                         }
 
-                        //if (data.Format == PixelFormats.Gray32Float)
-                        //{
-                        //    WriteableBitmap writeableBitmap = new WriteableBitmap(data);
-                        //    HImage hImage = writeableBitmap.ToHImage();
-                        //    int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImage1);
-                        //    imageView.SetImageSource(hImage1.ToWriteableBitmap());
-                        //    OpenCVMediaHelper.M_FreeHImageData(hImage1.pData);
-                        //    hImage.Dispose();
-                        //}
-                        //else
-                        //{
-                        //}
-                        imageView.SetImageSource(new WriteableBitmap(data));
+                        if (data.Format == PixelFormats.Gray32Float)
+                        {
+                            WriteableBitmap writeableBitmap = new WriteableBitmap(data);
+                            HImage hImage = writeableBitmap.ToHImage();
+                            int i = OpenCVMediaHelper.M_ConvertGray32Float(hImage, out HImage hImage1);
+                            imageView.SetImageSource(hImage1.ToWriteableBitmap());
+                            OpenCVMediaHelper.M_FreeHImageData(hImage1.pData);
+                            hImage.Dispose();
+                        }
+                        else
+                        {
+                            imageView.SetImageSource(new WriteableBitmap(data));
+                        }
                         imageView.UpdateZoomAndScale();
                         imageView.WaitControl.Visibility = Visibility.Collapsed;
                     });

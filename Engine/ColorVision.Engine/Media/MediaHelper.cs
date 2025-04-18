@@ -1,7 +1,6 @@
 ﻿using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using log4net;
-using log4net.Util;
 using OpenCvSharp.WpfExtensions;
 using System;
 using System.Windows;

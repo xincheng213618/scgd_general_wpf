@@ -1,13 +1,11 @@
 ﻿#pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Ghost;
-using ColorVision.Engine.Templates.MTF;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -24,6 +22,57 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
 
+    public class BlackMuraConfig : ViewModelBase, IConfig,IConfigSettingProvider
+    {
+
+        public static BlackMuraConfig Instance =>  ConfigService.Instance.GetRequiredService<BlackMuraConfig>();
+
+        public double LvMaxScale { get => _LvMaxScale; set { _LvMaxScale = value; NotifyPropertyChanged(); } }
+        private double _LvMaxScale = 1;
+
+        public double LvMinScale { get => _LvMinScale; set { _LvMinScale = value; NotifyPropertyChanged(); } }
+        private double _LvMinScale = 1;
+
+        public double ZaRelMaxScale { get => _ZaRelMaxScale; set { _ZaRelMaxScale = value; NotifyPropertyChanged(); } }
+        private double _ZaRelMaxScale = 1;
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                new ConfigSettingMetadata
+                {
+                    Name = "LvMaxScale",
+                    Description = "LvMaxScale",
+                    Order = 8,
+                    Type = ConfigSettingType.Text,
+                    BindingName =nameof(LvMaxScale),
+                    Source = Instance,
+                },
+                 new ConfigSettingMetadata
+                {
+                    Name = "LvMinScale",
+                    Description = "LvMinScale",
+                    Order = 8,
+                    Type = ConfigSettingType.Text,
+                    BindingName =nameof(LvMinScale),
+                    Source = Instance,
+                },
+                new ConfigSettingMetadata
+                {
+                    Name = "ZaRelMaxScale",
+                    Description = "ZaRelMaxScale",
+                    Order = 8,
+                    Type = ConfigSettingType.Text,
+                    BindingName =nameof(ZaRelMaxScale),
+                    Source = Instance,
+                }
+            };
+
+
+
+        }
+    }
+
 
     public class FloatPoint
     {
@@ -35,6 +84,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             return new Point(X, Y);
         }
     }
+
+
 
     public class ViewHandleBlackMura : IResultHandleBase
     {
@@ -54,29 +105,182 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            var ViewResults = result.ViewResults.ToSpecificViewResults<BlackMuraModel>();
+            var blackMuraViews = result.ViewResults.ToSpecificViewResults<BlackMuraView>();
             var csvBuilder = new StringBuilder();
 
-            // 获取 BlackMuraModel 类的所有属性，并读取 Column 属性的名称作为 header
-            List<string> header = typeof(BlackMuraModel)
-                .GetProperties()
-                .Select(prop => prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name)
-                .ToList();
+            List<string> header = new List<string>();
+            var properties = typeof(BlackMuraView).GetProperties();
 
-            csvBuilder.AppendLine(string.Join(",", header));
+            // 递归构建头部
+            foreach (var prop in properties)
+            {
+                var columnName = prop.GetCustomAttribute<ColumnAttribute>()?.Name ?? prop.Name;
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                {
+                    var nestedProperties = prop.PropertyType.GetProperties();
+                    foreach (var nestedProp in nestedProperties)
+                    {
+                        var nestedColumnName = $"{nestedProp.Name}";
+                        header.Add(nestedColumnName);
+                    }
+                }
+                else
+                {
+                    header.Add(columnName);
+                }
+            }
 
-            foreach (var item in ViewResults)
+            string filePath = selectedPath + "//" + result.ResultType + ".csv";
+
+            // 检查文件是否存在
+            if (File.Exists(filePath))
+            {
+                // 读取文件末尾的几行，检查是否包含头信息
+                var lines = File.ReadLines(filePath).ToList();
+                if (!lines.Any(line => line == string.Join(",", header)))
+                {
+                    // 如果文件存在但不含头信息，则追加头信息
+                    File.AppendAllText(filePath, "\n" + string.Join(",", header) + "\n", Encoding.UTF8);
+                }
+            }
+            else
+            {
+                // 文件不存在，创建新文件并写入头信息
+                File.WriteAllText(filePath, string.Join(",", header) + "\n", Encoding.UTF8);
+            }
+
+            // 追加内容
+            foreach (var item in blackMuraViews)
             {
                 List<string> content = new List<string>();
-                foreach (var prop in typeof(BlackMuraModel).GetProperties())
+                foreach (var prop in properties)
                 {
                     var value = prop.GetValue(item);
-                    content.Add(EscapeCsvField(value?.ToString() ?? string.Empty));
+                    if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                    {
+                        var nestedProperties = prop.PropertyType.GetProperties();
+                        foreach (var nestedProp in nestedProperties)
+                        {
+                            var nestedValue = nestedProp.GetValue(value);
+                            content.Add(EscapeCsvField(nestedValue?.ToString() ?? string.Empty));
+                        }
+                    }
+                    else
+                    {
+                        content.Add(EscapeCsvField(value?.ToString() ?? string.Empty));
+                    }
                 }
                 csvBuilder.AppendLine(string.Join(",", content));
             }
-            File.WriteAllText(selectedPath + "//" + result.Batch + ".csv", csvBuilder.ToString(), Encoding.UTF8);
 
+            // 追加内容到文件
+            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
+
+        }
+
+
+        public override void Load(AlgorithmView view, AlgorithmResult result)
+        {
+            if (result.ViewResults == null)
+            {
+
+                void OpenSource()
+                {
+                    view.ImageView.ImageShow.Clear();
+                    foreach (var item in result.ViewResults)
+                    {
+                        if (item is BlackMuraView blackMuraModel)
+                        {
+                            if (File.Exists(result.FilePath))
+                                view.ImageView.OpenImage(result.FilePath);
+                            log.Info(result.FilePath);
+
+                            if (!string.IsNullOrEmpty(blackMuraModel.AreaJsonVal))
+                            {
+                                List<FloatPoint> floatPoints = JsonConvert.DeserializeObject<List<FloatPoint>>(blackMuraModel.AreaJsonVal);
+                                log.Info(floatPoints.Count);
+                                DVPolygon dVPolygon = new DVPolygon();
+                                dVPolygon.Attribute.Brush = Brushes.Transparent;
+                                dVPolygon.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                foreach (var item1 in floatPoints)
+                                {
+                                    dVPolygon.Points.Add(item1.ToPoint());
+                                }
+                                dVPolygon.IsComple = true;
+                                view.ImageView.AddVisual(dVPolygon);
+                                log.Info(dVPolygon);
+                            }
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                view.ImageView.Zoombox1.ZoomUniform();
+                            });
+                        }
+                    }
+                }
+
+
+                void OpenAA()
+                {
+                    view.ImageView.ImageShow.Clear();
+                    foreach (var item in result.ViewResults)
+                    {
+                        if (item is BlackMuraView blackMuraModel)
+                        {
+                            Outputfile outputfile = blackMuraModel.Outputfile;
+                            if (File.Exists(outputfile.AAPath))
+                                view.ImageView.OpenImage(outputfile.AAPath);
+
+
+                            ResultJson lvDetails = blackMuraModel.ResultJson;
+                            DVCircleText maxcirle = new();
+                            maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
+                            maxcirle.Attribute.Radius = lvDetails.Nle;
+                            maxcirle.Attribute.Brush = Brushes.Transparent;
+                            maxcirle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            maxcirle.Attribute.Id = -1;
+                            maxcirle.Attribute.Text = string.Empty;
+                            maxcirle.Attribute.Msg = $"Max({lvDetails.MaxPtX},{lvDetails.MaxPtY}) Lv:{lvDetails.LvMax}";
+                            maxcirle.Render();
+                            view.ImageView.AddVisual(maxcirle);
+
+                            DVCircleText mincirle = new();    
+                            mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
+                            mincirle.Attribute.Radius = lvDetails.Nle;
+                            mincirle.Attribute.Brush = Brushes.Transparent;
+                            mincirle.Attribute.Pen = new Pen(Brushes.Yellow, 1);
+                            mincirle.Attribute.Id = -1;
+                            mincirle.Attribute.Text = string.Empty;
+                            mincirle.Attribute.Msg = $"Min({lvDetails.MinPtX},{lvDetails.MinPtY}) Lv:{lvDetails.LvMin}";
+                            mincirle.Render();
+                            view.ImageView.AddVisual(mincirle);
+                        }
+                    }
+
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        view.ImageView.Zoombox1.ZoomUniform();
+                    });
+                }
+
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(result.Id);
+                foreach (var item in AlgResultModels)
+                {
+                    BlackMuraView blackMuraView = new BlackMuraView(item);
+                    blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
+                    blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
+                    blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                    blackMuraView.ResultJson.Uniformity =  blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
+                    result.ViewResults.Add(blackMuraView);
+                }
+
+
+                var ContextMenu = result.ContextMenu;
+                RelayCommand relayCommand = new RelayCommand(a => OpenSource());
+                ContextMenu.Items.Add(new MenuItem() { Header = "切分示意图", Command = relayCommand });
+                RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
+                ContextMenu.Items.Add(new MenuItem() { Header = "AA区", Command = relayCommand1 });
+            }
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
@@ -94,7 +298,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                 view.ImageView.ImageShow.Clear();
                 foreach (var item in result.ViewResults)
                 {
-                    if (item is BlackMuraModel blackMuraModel)
+                    if (item is BlackMuraView blackMuraModel)
                     {
                         if (File.Exists(result.FilePath))
                             view.ImageView.OpenImage(result.FilePath);
@@ -115,71 +319,19 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
                             view.ImageView.AddVisual(dVPolygon);
                             log.Info(dVPolygon);
                         }
-
+                        Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+                            view.ImageView.Zoombox1.ZoomUniform();
+                        });
                     }
                 }
             }
 
-
-            void OpenAA()
-            {
-                view.ImageView.ImageShow.Clear();
-                foreach (var item in result.ViewResults)
-                {
-                    if (item is BlackMuraModel blackMuraModel)
-                    {
-                        Outputfile outputfile = JsonConvert.DeserializeObject<Outputfile>(blackMuraModel.OutputFile);
-                        if (File.Exists(outputfile.AAPath))
-                            view.ImageView.OpenImage(outputfile.AAPath);
-
-
-                        LvDetails lvDetails = JsonConvert.DeserializeObject<LvDetails>(blackMuraModel.ResultJson);
-                        DVCircleText maxcirle = new();
-                        maxcirle.Attribute.Center = new System.Windows.Point(lvDetails.MaxPtX, lvDetails.MaxPtY);
-                        maxcirle.Attribute.Radius = lvDetails.Nle;
-                        maxcirle.Attribute.Brush = Brushes.Transparent;
-                        maxcirle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                        maxcirle.Attribute.Id = -1;
-                        maxcirle.Attribute.Text = string.Empty;
-                        maxcirle.Attribute.Msg = $"Max({lvDetails.MaxPtX},{lvDetails.MaxPtY}) Lv:{lvDetails.LvMax}";
-                        maxcirle.Render();
-                        view.ImageView.AddVisual(maxcirle);
-
-                        DVCircleText mincirle = new();
-                        mincirle.Attribute.Center = new System.Windows.Point(lvDetails.MinPtX, lvDetails.MinPtY);
-                        mincirle.Attribute.Radius = lvDetails.Nle;
-                        mincirle.Attribute.Brush = Brushes.Transparent;
-                        mincirle.Attribute.Pen = new Pen(Brushes.Yellow, 1);
-                        mincirle.Attribute.Id = -1;
-                        mincirle.Attribute.Text = string.Empty;
-                        mincirle.Attribute.Msg = $"Min({lvDetails.MinPtX},{lvDetails.MinPtY}) Lv:{lvDetails.LvMin}";
-                        mincirle.Render();
-                        view.ImageView.AddVisual(mincirle);
-                    }
-                }
-            }
-
-
-            if (result.ViewResults == null)
-            {
-                result.ViewResults = new ObservableCollection<IViewResult>();
-                List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultModels)
-                {
-                    result.ViewResults.Add(item);
-                    var ContextMenu = result.ContextMenu;
-                    RelayCommand relayCommand = new RelayCommand(a => OpenSource());
-                    ContextMenu.Items.Add(new MenuItem() { Header = "切分示意图", Command = relayCommand });
-                    RelayCommand relayCommand1 = new RelayCommand(a => OpenAA());
-                    ContextMenu.Items.Add(new MenuItem() { Header = "AA区", Command = relayCommand1 });
-                }
-            }
-
+            Load(view, result);
             OpenSource();
 
-
-            List<string> header = new() { "ResultJson", "UniformityJson", "OutputFile", "AreaJsonVal" };
-            List<string> bdHeader = new() { "ResultJson", "UniformityJson", "OutputFile", "AreaJsonVal" };
+            List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
+            List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
 
             if (view.listViewSide.View is GridView gridView)
             {

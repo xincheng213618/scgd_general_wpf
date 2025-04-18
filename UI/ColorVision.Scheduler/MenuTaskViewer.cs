@@ -1,10 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using ColorVision.UI.HotKey;
+﻿using ColorVision.UI;
 using ColorVision.UI.Menus;
-using System.IO;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Scheduler
 {

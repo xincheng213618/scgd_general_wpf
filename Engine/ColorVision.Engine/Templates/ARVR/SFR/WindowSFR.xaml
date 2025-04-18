@@ -1,0 +1,30 @@
+﻿<Window x:Class="ColorVision.Engine.Templates.ARVR.SFR.WindowSFR"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Templates.ARVR.SFR"
+        xmlns:skia="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        mc:Ignorable="d"
+        Title="WindowSFR" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+
+            <TextBox Text="0.5"  Width="100"/>
+
+            <Button Content="计算" Click="Button_Click"/>
+            <TextBlock x:Name="Resultextbox" Text="" Width="150"/>
+
+        </StackPanel>
+        
+        <GroupBox Header="MTF Line"  Grid.Row="1" >
+            <skia:CartesianChart x:Name="MTFChart" Foreground="#FF000000"  >
+            </skia:CartesianChart>
+        </GroupBox>
+
+    </Grid>
+</Window>

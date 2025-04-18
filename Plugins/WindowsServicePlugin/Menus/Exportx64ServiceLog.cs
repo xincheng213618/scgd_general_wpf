@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.LogImp;
-using HarfBuzzSharp;
+﻿using ColorVision.UI.LogImp;
 using System.IO;
 using WindowsServicePlugin.Properties;
 

@@ -41,6 +41,13 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 }
 
 
+void FreeHImageData(unsigned char* data)
+{
+	// 使用 delete[] 来释放由 new[] 分配的内存
+	delete[] data;
+}
+
+
 
 int CM_AutoLevelsAdjust(HImage img, HImage* outImage)
 {
@@ -163,13 +170,6 @@ COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, u
 
 
 
-void FreeHImageData(unsigned char* data)
-{
-	// 使用 delete[] 来释放由 new[] 分配的内存
-	delete[] data;
-}
-
-
 
 int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X , int* LED_pixel_Y, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y, HImage* outImage)
 {
@@ -195,7 +195,6 @@ int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X
 	}
 
 	cv::drawContours(scaledMat, paintContours, -1, cv::Scalar(0, 255,0), -1, 8, cv::noArray(), INT_MAX, cv::Point());
-
 
 	//paintContours.clear();
 	std::vector<std::vector<cv::Point>> paintContours1;

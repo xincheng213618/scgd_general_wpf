@@ -1,6 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Interfaces;
 using MQTTMessageLib.Algorithm;
 
 namespace ColorVision.Engine.Templates.FOV

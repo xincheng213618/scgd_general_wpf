@@ -4,6 +4,7 @@ using System.Windows;
 using System;
 using ColorVision.Util.Draw.Special;
 using ColorVision.Themes;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor
 {
@@ -71,14 +72,14 @@ namespace ColorVision.ImageEditor
             InitializeComponent();
             this.ApplyCaption();
         }
-        public ImageViewModel ToolBarTop { get; set; }
+        public ImageViewModel ImageViewModel { get; set; }
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            ToolBarTop = new ImageViewModel(this, Zoombox1, ImageShow);
-            ToolBar1.DataContext = ToolBarTop;
-            ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
-            ToolBarTop.CrosshairFunction = true;
+            ImageViewModel = new ImageViewModel(this, Zoombox1, ImageShow);
+            ToolBar1.DataContext = ImageViewModel;
+            ImageViewModel.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
+            ImageViewModel.CrosshairFunction = true;
             Zoombox1.ZoomUniform();
         }
 
@@ -86,9 +87,9 @@ namespace ColorVision.ImageEditor
         {
             x = 60 + 755 * x;
             y = 689 - 755 * y;
-            x = x / ToolBarTop.Crosshair.Ratio;
-            y = y / ToolBarTop.Crosshair.Ratio;
-            ToolBarTop.Crosshair.DrawImage(new Point(x, y));
+            x = x / ImageViewModel.Crosshair.Ratio;
+            y = y / ImageViewModel.Crosshair.Ratio;
+            ImageViewModel.Crosshair.DrawImage(new Point(x, y));
         }
 
 
@@ -97,10 +98,10 @@ namespace ColorVision.ImageEditor
             double[] doubles = CIEColorConverter.RgbToCie1931xy(imageInfo.R,imageInfo.G,imageInfo.B);
             double x =60 + 755 * doubles[0];
             double Y = 689 - 755 * doubles[1];
-            x = x / ToolBarTop.Crosshair.Ratio;
-            Y = Y / ToolBarTop.Crosshair.Ratio;
+            x = x / ImageViewModel.Crosshair.Ratio;
+            Y = Y / ImageViewModel.Crosshair.Ratio;
 
-            ToolBarTop.Crosshair.DrawImage(new Point(x, Y));
+            ImageViewModel.Crosshair.DrawImage(new Point(x, Y));
         }
 
 
@@ -148,6 +149,12 @@ namespace ColorVision.ImageEditor
         private void Button7_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            ImageShow.Source = new BitmapImage(new Uri("/ColorVision.ImageEditor;component/Assets/Image/cie_1976_ucs.png", UriKind.Relative));
+            ImageViewModel.ZoomUniformToFill.Execute(sender);
         }
     }
 }

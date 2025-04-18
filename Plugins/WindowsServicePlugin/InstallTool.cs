@@ -1,10 +1,8 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using iText.Layout.Element;
 using log4net;
 using Newtonsoft.Json;
 using System.Diagnostics;

@@ -1,9 +1,6 @@
 ﻿using ColorVision.UI;
-using ColorVision.UI.Extension;
 using System;
-using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Engine.Services.Devices.Sensor
 {
