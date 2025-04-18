@@ -19,7 +19,7 @@ namespace ColorVision.Projects
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = ProjectManager.GetInstance();
-            DefalutSearchComboBox.ItemsSource = new List<string>() { "ProjectKB", "ProjectBlackMura", "ProjectHeyuan", "ProjectShiyuan", "ProjectBase" };
+            DefalutSearchComboBox.ItemsSource = new List<string>() { "ProjectKB", "ProjectBlackMura", "ProjectHeyuan", "ProjectShiyuan", "ProjectBase", "ProjectARVR", "CV_Spectrometer" };
             ListViewProjects.SelectedIndex = 0;
         }
 

@@ -89,12 +89,12 @@ namespace ColorVision.Engine.Templates.Distortion
                 foreach (var point in item.FinalPoints)
                 {
                     id++;
-                    DVCircleText Circle = new();
+                    DVCircle Circle = new();
                     Circle.Attribute.Center = new Point(point.X, point.Y);
                     Circle.Attribute.Radius = 20 / view.ImageView.Zoombox1.ContentMatrix.M11;
                     Circle.Attribute.Brush = Brushes.Transparent;
                     Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / view.ImageView.Zoombox1.ContentMatrix.M11);
-                    Circle.Attribute.Id = id;
+                    Circle.Attribute.Id = -1;
                     Circle.Render();
                     view.ImageView.AddVisual(Circle);
 

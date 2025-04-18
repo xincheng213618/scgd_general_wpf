@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
     /// <summary>
     /// MySql配置

@@ -5,9 +5,9 @@ using System.Windows;
 namespace ProjectARVR
 {
 
-    public class ProjectKBWindowConfig : IConfig
+    public class ProjectsARVRWindowConfig : IConfig
     {
-        public static ProjectKBWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBWindowConfig>();
+        public static ProjectsARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectsARVRWindowConfig>();
         public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
 
         public bool IsRestoreWindow { get; set; } = true;

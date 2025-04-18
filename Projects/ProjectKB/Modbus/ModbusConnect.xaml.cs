@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ProjectKB.Modbus;
+using ProjectARVR.Modbus;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
 
 

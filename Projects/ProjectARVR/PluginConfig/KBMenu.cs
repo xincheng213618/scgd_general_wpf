@@ -1,13 +1,17 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ProjectARVR.PluginConfig
 {
 
-    public class KBProjectPlugin : IProjectBase
+
+
+    public class KBMenu : MenuItemBase
     {
-        public override string? Header => "键盘测试";
-        public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";
+        public override string OwnerGuid => MenuItemConstants.Tool;
+
+        public override int Order => 100;
+        public override string Header => "ARVR检测";
 
         public override void Execute()
         {

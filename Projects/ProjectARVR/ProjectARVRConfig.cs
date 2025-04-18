@@ -4,7 +4,6 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
-using ProjectARVR.Modbus;
 using ProjectARVR.Services;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -13,9 +12,9 @@ using System.Windows;
 
 namespace ProjectARVR
 {
-    public class ProjectKBConfig: ViewModelBase, IConfig
+    public class ProjectARVRConfig: ViewModelBase, IConfig
     {
-        public static ProjectKBConfig Instance => ConfigService.Instance.GetRequiredService<ProjectKBConfig>();
+        public static ProjectARVRConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRConfig>();
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
@@ -27,13 +26,12 @@ namespace ProjectARVR
         public RelayCommand OpenReadMeCommand { get; set; }
 
 
-        public ProjectKBConfig()
+        public ProjectARVRConfig()
         {
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
-            OpenModbusCommand = new RelayCommand(a => OpenModbus());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
@@ -117,11 +115,6 @@ namespace ProjectARVR
             window.ShowDialog();
         }
 
-        public static void OpenModbus()
-        {
-            ModbusConnect modbusConnect = new ModbusConnect() { Owner = Application.Current.GetActiveWindow() };
-            modbusConnect.ShowDialog();
-        }
 
         public static void OpenLog()
         {
@@ -179,8 +172,6 @@ namespace ProjectARVR
 
         public double Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private double _Height = 300;
-
-        public static ModbusControl ModbusControl => ModbusControl.GetInstance();
         public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
 
@@ -194,7 +185,7 @@ namespace ProjectARVR
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
-        public static ProjectKBWindowConfig ProjectKBWindowConfig => ProjectKBWindowConfig.Instance;
+        public static ProjectsARVRWindowConfig ProjectKBWindowConfig => ProjectsARVRWindowConfig.Instance;
         public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
 
         public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }

@@ -6,7 +6,7 @@ namespace ProjectARVR.PluginConfig
 
     public class KBProjectPlugin : IProjectBase
     {
-        public override string? Header => "键盘测试";
+        public override string? Header => "ARVR检测";
         public override string? UpdateUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/ProjectKB";
 
         public override void Execute()

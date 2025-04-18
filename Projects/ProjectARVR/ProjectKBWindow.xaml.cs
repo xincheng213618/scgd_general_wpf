@@ -16,7 +16,6 @@ using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
-using ProjectARVR.Modbus;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -32,21 +31,15 @@ using System.Windows.Media;
 
 namespace ProjectARVR
 {
-    class KBvalue
-    {
-        public double Y { get; set; }
-        public int PixNumber { get; set; } = 1;
-    }
-
     /// <summary>
     /// Interaction logic for _windowInstance.xaml
     /// </summary>
     public partial class ProjectKBWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectKBWindowConfig.Instance.ViewResluts;
+        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectsARVRWindowConfig.Instance.ViewResluts;
 
-        public static ProjectKBWindowConfig Config => ProjectKBWindowConfig.Instance;
+        public static ProjectsARVRWindowConfig Config => ProjectsARVRWindowConfig.Instance;
 
         public ProjectKBWindow()
         {
@@ -62,7 +55,7 @@ namespace ProjectARVR
         Stopwatch stopwatch = new Stopwatch();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ProjectKBConfig.Instance;
+            this.DataContext = ProjectARVRConfig.Instance;
             listView1.ItemsSource = ViewResluts;
             SocketControl.GetInstance().StartServer();
             SocketControl.GetInstance().StatusChanged += ServicesChanged;
@@ -83,18 +76,18 @@ namespace ProjectARVR
 
             FlowTemplate.SelectionChanged += (s, e) =>
             {
-                if (ProjectKBConfig.Instance.TemplateSelectedIndex > -1)
+                if (ProjectARVRConfig.Instance.TemplateSelectedIndex > -1)
                 {
-                    string Name = TemplateFlow.Params[ProjectKBConfig.Instance.TemplateSelectedIndex].Key;
-                    if (ProjectKBConfig.Instance.SPECConfigs.TryGetValue(Name,out SPECConfig sPECConfig))
+                    string Name = TemplateFlow.Params[ProjectARVRConfig.Instance.TemplateSelectedIndex].Key;
+                    if (ProjectARVRConfig.Instance.SPECConfigs.TryGetValue(Name,out SPECConfig sPECConfig))
                     {
-                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                        ProjectARVRConfig.Instance.SPECConfig = sPECConfig;
                     }
                     else
                     {
                         sPECConfig = new SPECConfig();
-                        ProjectKBConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
-                        ProjectKBConfig.Instance.SPECConfig = sPECConfig;
+                        ProjectARVRConfig.Instance.SPECConfigs.TryAdd(Name, sPECConfig);
+                        ProjectARVRConfig.Instance.SPECConfig = sPECConfig;
                     }
 
                 }
@@ -103,26 +96,10 @@ namespace ProjectARVR
             timer = new Timer(TimeRun, null, 0, 500);
             timer.Change(Timeout.Infinite, 500); // 停止定时器
 
-            Task.Run(async () =>
-            {
-                if (ProjectKBConfig.Instance.AutoModbusConnect)
-                {
-                    bool con = await ModbusControl.GetInstance().Connect();
-                    if (con)
-                    {
-                        log.Debug("初始化寄存器设置为0");
-                        ModbusControl.GetInstance().SetRegisterValue(0);
-                    }
-                    ModbusControl.GetInstance().StatusChanged += ProjectKBWindow_StatusChanged;
-                }
-
-            });
-
             this.Closed += (s, e) =>
             {
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
-                ModbusControl.GetInstance().StatusChanged -= ProjectKBWindow_StatusChanged;
             };
 
         }
@@ -135,18 +112,6 @@ namespace ProjectARVR
             });
         } 
 
-
-        private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)
-        {
-            if (ModbusControl.GetInstance().CurrentValue == 1)
-            {
-                Application.Current.Dispatcher.BeginInvoke(() =>
-                {
-                    log.Info("触发拍照，执行流程");
-                    RunTemplate();
-                });
-            }
-        }
 
         public void Refresh()
         {
@@ -191,17 +156,17 @@ namespace ProjectARVR
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (ProjectKBConfig.Instance.LastFlowTime == 0 || ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (ProjectARVRConfig.Instance.LastFlowTime == 0 || ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = ProjectKBConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectKBConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectARVRConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         if (flowControl.IsFlowRun)
                             handler.UpdateMessage(msg);
@@ -291,7 +256,7 @@ namespace ProjectARVR
             handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            ProjectKBConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+            ProjectARVRConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
             if (sender is FlowControlData FlowControlData)
@@ -341,55 +306,12 @@ namespace ProjectARVR
                                 }
                                 if (item.ImgFileType == AlgorithmResultType.POI_Y)
                                 {
-                                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                                    if (pois != null)
-                                    {
-                                        foreach (var poi in pois)
-                                        {
-                                            var list = JsonConvert.DeserializeObject<KBvalue>(poi.Value);
-                                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
-                                            if (key != null)
-                                            {
-                                                key.Lv = list.Y;
-                                                if (key.KBKeyRect.KBKey.Area != 0)
-                                                {
-                                                    key.Lv = key.Lv / key.KBKeyRect.KBKey.Area ;
-                                                }
-                                                key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
 
-                                            }
-                                        }
-                                    }
                                 }
                                 if (item.ImgFileType == AlgorithmResultType.POI_Y_V2)
                                 {
-                                    var pois = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                                    if (pois != null)
-                                    {
-                                        foreach (var poi in pois)
-                                        {
-                                            var list = JsonConvert.DeserializeObject<ObservableCollection<KBvalue>>(poi.Value);
+ 
 
-                                            var key = kBItem.Items.First(a => a.Name == poi.PoiName && poi.PoiWidth == a.KBKeyRect.Width);
-                                            if (key != null)
-                                            {
-                                                if(list!=null && list.Count == 2)
-                                                {
-                                                    key.Lv = list[0].Y;
-                                                    key.Lv = key.Lv  * list[0].PixNumber;
-                                                    if (key.KBKeyRect.KBKey.Area != 0)
-                                                    {
-                                                        key.Lv = key.Lv / key.KBKeyRect.KBKey.Area;
-                                                    }
-                                                    key.Lv = key.KBKeyRect.KBKey.KeyScale * key.Lv * ProjectKBConfig.Instance.KBLVSacle;
-                                                    if (key.Lv == 0)
-                                                    {
-                                                        key.Lc = 0;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                             }
 
@@ -405,34 +327,34 @@ namespace ProjectARVR
                             foreach (var item in kBItem.Items)
                             {
 
-                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv != 0)
+                                if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLv != 0)
                                 {
-                                    item.Result = item.Result && item.Lv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                                    item.Result = item.Result && item.Lv >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLv;
                                 }
                                 else
                                 {
                                     log.Debug("跳过minLv检测");
                                 }
-                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+                                if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv != 0)
                                 {
-                                    item.Result = item.Result && item.Lv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                                    item.Result = item.Result && item.Lv <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv;
                                 }
                                 else
                                 {
                                     log.Debug("跳过MaxLv检测");
                                 }
 
-                                if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                                if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLc != 0)
                                 {
-                                    item.Result = item.Result && item.Lc >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                    item.Result = item.Result && item.Lc >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLc / 100;
                                 }
                                 else
                                 {
                                     log.Debug("跳过MinKeyLc检测");
                                 }
-                                if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                                if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc != 0)
                                 {
-                                    item.Result = item.Result && item.Lc <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                    item.Result = item.Result && item.Lc <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc / 100;
                                 }
                                 else
                                 {
@@ -457,60 +379,60 @@ namespace ProjectARVR
 
                             kBItem.Result = true;
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLv!= 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLv!= 0)
                             {
-                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectKBConfig.Instance.SPECConfig.MinKeyLv;
+                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLv;
                             }
                             else
                             {
                                 log.Debug("跳过minLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLv != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLv;
+                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv;
                             }
                             else
                             {
                                 log.Debug("跳过MaxLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.MinAvgLv != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MinAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectKBConfig.Instance.SPECConfig.MinAvgLv;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectARVRConfig.Instance.SPECConfig.MinAvgLv;
                             }
                             else
                             {
                                 log.Debug("跳过MinAvgLv检测");
                             }
-                            if (ProjectKBConfig.Instance.SPECConfig.MaxAvgLv != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MaxAvgLv != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectKBConfig.Instance.SPECConfig.MaxAvgLv;
+                                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectARVRConfig.Instance.SPECConfig.MaxAvgLv;
                             }
                             else
                             {
                                 log.Debug("跳过MaxAvgLv检测");
                             }
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinUniformity != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MinUniformity != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectKBConfig.Instance.SPECConfig.MinUniformity /100;
+                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectARVRConfig.Instance.SPECConfig.MinUniformity /100;
                             }
                             else
                             {
                                 log.Debug("跳过Uniformity检测");
                             }
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MinKeyLc != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= ProjectKBConfig.Instance.SPECConfig.MinKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLc / 100;
                             }
                             else
                             {
                                 log.Debug("跳过MinKeyLc检测");
                             }
 
-                            if (ProjectKBConfig.Instance.SPECConfig.MaxKeyLc != 0)
+                            if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc != 0)
                             {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= ProjectKBConfig.Instance.SPECConfig.MaxKeyLc / 100;
+                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc / 100;
                             }
                             else
                             {
@@ -520,18 +442,18 @@ namespace ProjectARVR
 
                             kBItem.Exposure = "50";
 
-                            ProjectKBConfig.Instance.SummaryInfo.ActualProduction += 1;
+                            ProjectARVRConfig.Instance.SummaryInfo.ActualProduction += 1;
                             if (kBItem.Result)
                             {
-                                ProjectKBConfig.Instance.SummaryInfo.GoodProductCount += 1;
+                                ProjectARVRConfig.Instance.SummaryInfo.GoodProductCount += 1;
                             }
                             else
                             {
-                                ProjectKBConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
+                                ProjectARVRConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
                             }
                             ViewResluts.Insert(0, kBItem);
                             listView1.SelectedIndex = 0;
-                            string resultPath = ProjectKBConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
+                            string resultPath = ProjectARVRConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
                             string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
 
                             log.Debug($"结果正在写入{resultPath},result:{result}");
@@ -543,15 +465,10 @@ namespace ProjectARVR
                                 string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
                                 string regexPattern = $"[{Regex.Escape(invalidChars)}]";
 
-                                string csvpath = ProjectKBConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.DateTime:yyyyMMdd}.csv";
+                                string csvpath = ProjectARVRConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.DateTime:yyyyMMdd}.csv";
 
                                 KBItemMaster.SaveCsv(kBItem, csvpath);
                                 log.Debug($"writecsv:{csvpath}");
-                            });
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                log.Debug("流程执行结束，设置寄存器为0，触发移动");
-                                ModbusControl.GetInstance().SetRegisterValue(0);
                             });
                             SNtextBox.Text = string.Empty;
                         }
@@ -710,7 +627,7 @@ namespace ProjectARVR
 
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectKBConfig.Instance.Height = row2.ActualHeight;
+            ProjectARVRConfig.Instance.Height = row2.ActualHeight;
             row2.Height = GridLength.Auto;
         }
 
@@ -760,7 +677,7 @@ namespace ProjectARVR
                         catch
                         {
                             log.Warn("文件还在写入");
-                            await Task.Delay(ProjectKBConfig.Instance.ViewImageReadDelay);
+                            await Task.Delay(ProjectARVRConfig.Instance.ViewImageReadDelay);
                             _=Application.Current.Dispatcher.BeginInvoke(() =>
                             {
                                 ImageView.OpenImage(kBItem.ResultImagFile);
@@ -836,14 +753,10 @@ namespace ProjectARVR
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            new TestWindow().Show();
-        }
 
         private void GridSplitter_DragCompleted1(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
-            ProjectKBConfig.Instance.SummaryInfo.Width = col1.ActualWidth;
+            ProjectARVRConfig.Instance.SummaryInfo.Width = col1.ActualWidth;
             col1.Width = GridLength.Auto;
         }
     }

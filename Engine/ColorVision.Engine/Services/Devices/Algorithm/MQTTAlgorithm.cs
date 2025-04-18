@@ -94,16 +94,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 default:
                     switch (msg.Code)
                     {
-                        case -1:
-                            AlgResultMasterModel algResultMasterModel = new AlgResultMasterModel();
-                            algResultMasterModel.Result = "-1";
-
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                Device.View.AlgResultMasterModelDataDraw(algResultMasterModel);
-                            });
-                            break;
-
                         default:
                             List<AlgResultMasterModel> resultMaster = null;
                             if (msg.Data.MasterId > 0)
