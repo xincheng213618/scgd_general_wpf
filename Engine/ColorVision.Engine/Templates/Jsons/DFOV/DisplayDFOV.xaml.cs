@@ -7,15 +7,15 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.DFOV
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayGhostQK : UserControl
+    public partial class DisplayDFOV : UserControl
     {
-        public AlgorithmGhostQK IAlgorithm { get; set; }
-        public DisplayGhostQK(AlgorithmGhostQK iAlgorithm)
+        public AlgorithmDFOV IAlgorithm { get; set; }
+        public DisplayDFOV(AlgorithmDFOV iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
         {
             DataContext = IAlgorithm;
             
-            ComboxTemplate.ItemsSource = TemplateGhostQK.Params;
+            ComboxTemplate.ItemsSource = TemplateDFOV.Params;
             ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择Ghost模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择DFOV模板")) return;
 
             if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
 
@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行Ghost算法");
+                ServicesHelper.SendCommand(msg, "正在执行DFOV算法");
             }
         }
 
@@ -148,16 +148,5 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
             IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
         }
 
-        private void Open1_File(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
-            openFileDialog.RestoreDirectory = true;
-            openFileDialog.FilterIndex = 1;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                IAlgorithm.CIEFileName = openFileDialog.FileName;
-            }
-        }
     }
 }

@@ -139,6 +139,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
             }
 
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode algorithmBlackMuraNode)
             {
                 AddStackPanel(name => algorithmBlackMuraNode.DeviceCode = name, algorithmBlackMuraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
