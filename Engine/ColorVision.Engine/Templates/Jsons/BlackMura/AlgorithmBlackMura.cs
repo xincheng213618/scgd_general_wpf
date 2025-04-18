@@ -12,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
-    public class AlgorithmBlackMura : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmBlackMura : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "BlackMura";
-        public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +22,12 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
 
         public AlgorithmBlackMura(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "BlackMura";
+            Order = 21;
+
+
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -36,7 +39,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayBlackMura(this);
             return UserControl;

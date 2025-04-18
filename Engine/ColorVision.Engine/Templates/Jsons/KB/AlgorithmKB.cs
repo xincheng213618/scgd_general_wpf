@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
-    public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmKB : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "键盘检测";
 
@@ -60,7 +60,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "键盘检测";
+            Order = 98;
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());
         }
@@ -77,7 +80,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayKB(this);
             return UserControl;

@@ -14,11 +14,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
-    public class AlgorithmPoi : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmPoi : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "POI";
-        public int Order { get; set; } = 1;
-
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -35,7 +32,11 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 
         public AlgorithmPoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "POI";
+            Order = 1;
+
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePOIFilterCommand = new RelayCommand(a => OpenTemplatePOIFilter());
             OpenTemplatePoiReviseCommand = new RelayCommand(a => OpenTemplatePoiRevise());
@@ -97,7 +98,7 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             new TemplateEditorWindow(new TemplatePoiOutputParam(), TemplatePoiOutputSelectedIndex - 1) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayPoi(this);
             return UserControl;

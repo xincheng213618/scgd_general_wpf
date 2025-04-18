@@ -12,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
-    public class AlgorithmImageCropping : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmImageCropping : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "发光区裁剪";
-        public int Order { get; set; } = 5;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +22,11 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public AlgorithmImageCropping(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "发光区裁剪";
+            Order = 5;
+
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -37,7 +39,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayImageCropping(this);
             return UserControl;

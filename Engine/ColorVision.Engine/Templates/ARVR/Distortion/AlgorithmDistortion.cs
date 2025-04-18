@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
+using Mysqlx.Crud;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -12,10 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
-    public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmDistortion : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "畸变评价";
-        public int Order { get; set; } = 55;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +23,9 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public AlgorithmDistortion(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "畸变评价";
+            Order = 55;
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Templates.Distortion
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayDistortion(this);
             return UserControl;

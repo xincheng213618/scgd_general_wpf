@@ -12,7 +12,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ROI
 {
-    public class AlgorithmRoi : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmRoi : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "发光区检测";
         public int Order { get; set; } = 11;
@@ -25,7 +25,11 @@ namespace ColorVision.Engine.Templates.ROI
 
         public AlgorithmRoi(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "发光区检测";
+            Order = 11;
+
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -36,7 +40,7 @@ namespace ColorVision.Engine.Templates.ROI
             new TemplateEditorWindow(new TemplateRoi(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayRoi(this);
             return UserControl;

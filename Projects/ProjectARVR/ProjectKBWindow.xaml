@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:ProjectARVR.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRConfig}"
-        Title="ARVR检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" Icon="/ProjectKB;component/Assets/ProjectKB.png">
+        Title="ARVR检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:OKNGConverter x:Key="OKNGConverter"/>

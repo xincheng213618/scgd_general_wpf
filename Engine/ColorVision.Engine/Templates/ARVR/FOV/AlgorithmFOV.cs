@@ -12,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FOV
 {
-    public class AlgorithmFOV : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmFOV : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "FOV";
-        public int Order { get; set; } = 53;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,6 +22,8 @@ namespace ColorVision.Engine.Templates.FOV
 
         public AlgorithmFOV(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "FOV";
+            Order = 53;
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Templates.FOV
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayFOV(this);
             return UserControl;

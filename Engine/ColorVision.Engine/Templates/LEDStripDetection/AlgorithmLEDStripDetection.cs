@@ -12,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
-    public class AlgorithmLEDStripDetection : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmLEDStripDetection : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "灯带检测";
-        public int Order { get; set; } = 10;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +22,10 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         public AlgorithmLEDStripDetection(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "灯带检测";
+            Order = 10;
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -37,7 +38,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayLEDStripDetection(this);
             return UserControl;

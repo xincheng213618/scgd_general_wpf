@@ -13,11 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.JND
 {
-    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmJND : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "JND";
-        public int Order { get; set; } = 3;
-
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
@@ -26,7 +23,10 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmJND(DeviceAlgorithm deviceAlgorithm) 
         {
-            Device = deviceAlgorithm;
+            Name = "JND";
+            Order = 3;
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
@@ -47,7 +47,7 @@ namespace ColorVision.Engine.Templates.JND
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayJND(this);
             return UserControl;

@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
-    public class AlgorithmLedCheck2 : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmLedCheck2 : DisplayAlgorithmBase
     {
         public string Name { get; set; } = "亚像素级灯珠检测";
         public int Order { get; set; } = 21;
@@ -49,7 +49,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         private PointFloat _Point4;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayLedCheck2(this);
             return UserControl;

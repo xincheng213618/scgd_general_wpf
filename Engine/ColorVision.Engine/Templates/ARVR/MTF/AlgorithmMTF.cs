@@ -13,17 +13,17 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.MTF
 {
-    public class AlgorithmMTF : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmMTF : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "MTF";
-        public int Order { get; set; } = 50;
-
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
 
         public AlgorithmMTF(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "MTF";
+            Order = 50;
+
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Templates.MTF
 
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayMTF(this);
             return UserControl;

@@ -12,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.DataConvert
 {
-    public class AlgorithmDataConvert : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmDataConvert : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "数据转换";
-        public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,7 +22,11 @@ namespace ColorVision.Engine.Templates.Jsons.DataConvert
 
         public AlgorithmDataConvert(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+
+            Name = "数据转换";
+            Order = -21;
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
@@ -36,7 +38,7 @@ namespace ColorVision.Engine.Templates.Jsons.DataConvert
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayDataConvert(this);
             return UserControl;
