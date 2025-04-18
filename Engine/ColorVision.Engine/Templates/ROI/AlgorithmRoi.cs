@@ -14,9 +14,6 @@ namespace ColorVision.Engine.Templates.ROI
 {
     public class AlgorithmRoi : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "发光区检测";
-        public int Order { get; set; } = 11;
-
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -27,9 +24,10 @@ namespace ColorVision.Engine.Templates.ROI
         {
             Name = "发光区检测";
             Order = 11;
+            Group = "定位算法";
 
 
-			Device = deviceAlgorithm;
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }

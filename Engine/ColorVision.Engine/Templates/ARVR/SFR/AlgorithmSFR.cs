@@ -15,8 +15,6 @@ namespace ColorVision.Engine.Templates.SFR
 {
     public class AlgorithmSFR : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "SFR";
-        public int Order { get; set; } = 51;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

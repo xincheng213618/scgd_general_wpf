@@ -16,8 +16,6 @@ namespace ColorVision.Engine.Templates.Matching
 {
     public class AlgorithmMatching : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "模板匹配";
-        public int Order { get; set; } = 99;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
