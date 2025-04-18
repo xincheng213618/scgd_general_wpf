@@ -1,12 +1,65 @@
 ﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates.Jsons.KB;
+using log4net;
+using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.GhostQK
 {
-    public class TemplateGhostQK : ITemplateJson<TemplateJsonParam>, IITemplateLoad
+
+    public class TemplateJsonGhostQKParam : TemplateJsonParam
     {
-        public static ObservableCollection<TemplateModel<TemplateJsonParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonParam>>();
+        private static ILog log = LogManager.GetLogger(nameof(TemplateJsonGhostQKParam));
+
+        public GhostDetectionConfig KBJson
+        {
+            get
+            {
+                try
+                {
+                    GhostDetectionConfig kBJson = JsonConvert.DeserializeObject<GhostDetectionConfig>(JsonValue);
+                    if (kBJson == null)
+                    {
+                        kBJson = new GhostDetectionConfig();
+                        JsonValue = JsonConvert.SerializeObject(kBJson);
+                        return kBJson;
+                    }
+                    return kBJson;
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                    GhostDetectionConfig kBJson = new GhostDetectionConfig();
+                    JsonValue = JsonConvert.SerializeObject(kBJson);
+                    return kBJson;
+                }
+            }
+            set
+            {
+                JsonValue = JsonConvert.SerializeObject(value);
+                NotifyPropertyChanged();
+            }
+        }
+
+
+
+        public TemplateJsonGhostQKParam() : base()
+        {
+        }
+
+        public TemplateJsonGhostQKParam(TemplateJsonModel templateJsonModel) : base(templateJsonModel)
+        {
+
+        }
+
+
+    }
+
+    public class TemplateGhostQK : ITemplateJson<TemplateJsonGhostQKParam>, IITemplateLoad
+    {
+        public static ObservableCollection<TemplateModel<TemplateJsonGhostQKParam>> Params { get; set; } = new ObservableCollection<TemplateModel<TemplateJsonGhostQKParam>>();
 
         public TemplateGhostQK()
         {

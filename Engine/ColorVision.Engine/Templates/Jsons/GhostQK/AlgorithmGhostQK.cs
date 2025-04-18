@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
+                EventName = "ghost_qk",
                 SerialNumber = sn,
                 Params = Params
             };
