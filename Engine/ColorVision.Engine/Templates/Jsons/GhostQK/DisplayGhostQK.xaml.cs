@@ -45,6 +45,8 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
 
 
 
+
+
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;
@@ -144,6 +146,18 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
                 return;
             }
             IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
+
+        private void Open1_File(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                IAlgorithm.CIEFileName = openFileDialog.FileName;
+            }
         }
     }
 }

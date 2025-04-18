@@ -37,6 +37,9 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
             new TemplateEditorWindow(new TemplateGhostQK(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
+        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; NotifyPropertyChanged(); } }
+        private string _CIEFileName;
+
 
         public override UserControl GetUserControl()
         {
@@ -55,7 +58,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-
+            Params.Add("CIEFileName", CIEFileName);
 
             MsgSend msg = new()
             {

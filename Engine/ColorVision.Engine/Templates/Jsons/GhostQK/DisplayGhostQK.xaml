@@ -19,6 +19,13 @@
                     <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
                 </Grid>
             </DockPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="CIE" Margin="0,0,10,0" Width="40"/>
+                <TextBox x:Name="ImageFile1" Style="{StaticResource TextBox.Small}"  Text="{Binding CIEFileName}" Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open1_File" />
+            </StackPanel>
+            
             <TabControl BorderThickness="0" Background="Transparent">
                 <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
                     <StackPanel Orientation="Horizontal" Margin="0,2">
