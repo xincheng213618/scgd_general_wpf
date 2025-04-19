@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Templates.FOV
 {
     public class ViewHandleFOV : IResultHandleBase
     {
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { /*AlgorithmResultType.FOV*/};
 
 
         public override void Load(AlgorithmView view, AlgorithmResult result)

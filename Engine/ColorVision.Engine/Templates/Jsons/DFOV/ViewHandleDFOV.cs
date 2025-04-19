@@ -3,6 +3,7 @@
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.Jsons.GhostQK;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,6 +16,7 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Templates.Jsons.DFOV
 {
+
 
     public class ViewHandleDFOV : IResultHandleBase
     {
@@ -34,11 +36,11 @@ namespace ColorVision.Engine.Templates.Jsons.DFOV
 
         public override void SideSave(AlgorithmResult result, string selectedPath)
         {
-            var blackMuraViews = result.ViewResults.ToSpecificViewResults<GhostView>();
+            var blackMuraViews = result.ViewResults.ToSpecificViewResults<DFovView>();
             var csvBuilder = new StringBuilder();
 
             List<string> header = new List<string>();
-            var properties = typeof(GhostView).GetProperties();
+            var properties = typeof(DFovView).GetProperties();
 
             // 递归构建头部
             foreach (var prop in properties)
@@ -112,28 +114,12 @@ namespace ColorVision.Engine.Templates.Jsons.DFOV
         {
             if (result.ViewResults == null)
             {
-
-                void OpenSource()
-                {
-                    view.ImageView.ImageShow.Clear();
-                    foreach (var item in result.ViewResults)
-                    {
-                        if (item is GhostView blackMuraModel)
-                        {
-                            if (File.Exists(result.FilePath))
-                                view.ImageView.OpenImage(result.FilePath);
-                            log.Info(result.FilePath);
-                        }
-                    }
-                }
-
-
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
                 {
-                    GhostView blackMuraView = new GhostView(item);
-                    result.ViewResults.Add(blackMuraView);
+                    DFovView view1 = new DFovView(item);
+                    result.ViewResults.Add(view1);
                 }
             }
         }
@@ -141,32 +127,14 @@ namespace ColorVision.Engine.Templates.Jsons.DFOV
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
             view.ImageView.ImageShow.Clear();
-            if (result.ResultCode != 0)
-            {
-                if (File.Exists(result.FilePath))
-                    view.ImageView.OpenImage(result.FilePath);
-                return;
-            }
-
-            void OpenSource()
-            {
-                view.ImageView.ImageShow.Clear();
-                foreach (var item in result.ViewResults)
-                {
-                    if (item is GhostView blackMuraModel)
-                    {
-                        if (File.Exists(result.FilePath))
-                            view.ImageView.OpenImage(result.FilePath);
-                        log.Info(result.FilePath);
-                    }
-                }
-            }
+            if (File.Exists(result.FilePath))
+                view.ImageView.OpenImage(result.FilePath);
 
             Load(view, result);
-            OpenSource();
 
-            List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
-            List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
+
+            List<string> header = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp", "LeftUpToRightDown" };
+            List<string> bdHeader = new() { "D_Fov", "H_Fov", "V_FOV", "ClolorVisionH_Fov", "ClolorVisionV_Fov", "LeftDownToRightUp" , "LeftUpToRightDown" };
 
             if (view.listViewSide.View is GridView gridView)
             {

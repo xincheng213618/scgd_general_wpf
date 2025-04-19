@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleGhostQK));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.Ghost};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.GhostQK};
 
         private static string EscapeCsvField(string field)
         {

@@ -56,6 +56,8 @@ namespace ColorVision.Engine.Interfaces
         KB_Output_CIE = 56,
         ARVR_SFR_FindROI = 60,
         Math_DataConvert = 70,
+        GhostQK =76,
+        DFOV =77,
         BlackMura_Caculate = 80
     }
     public interface IResultHandle

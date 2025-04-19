@@ -9,79 +9,58 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.DFOV
 {
-    public class VOtherConfig
-    {
-        public bool Debug { get; set; }
-        public string debugPath { get; set; }
-        public float showMinGain { get; set; }
-        public float showMaxGain { get; set; }
-    }
 
-    public class BrightConfig
+    public class CameraFOV
     {
-        public int thresholdMin { get; set; }
-        public int thresholdMax { get; set; }
-        public int thresholdStep { get; set; }
-        public int brightNumX { get; set; }
-        public int brightNumY { get; set; }
-        public int patternType { get; set; }
-        public int outRectSizeMin { get; set; }
-        public float outRectSizeRate { get; set; }
-        public int erodeKernel { get; set; }
+        public double D_Fov { get; set; }
+        public double H_Fov { get; set; }
+        public double V_FOV { get; set; }
+        public double ClolorVisionH_Fov { get; set; }
+        public double ClolorVisionV_Fov { get; set; }
+        public double LeftDownToRightUp { get; set; }
+        public double LeftUpToRightDown { get; set; }
     }
-
-    public class GhostConfig
+    public class ResDFov
     {
-        public List<bool> ingoreCheckMixBright { get; set; }
-        public int thresholdMin { get; set; }
-        public int thresholdMax { get; set; }
-        public int thresholdStep { get; set; }
-        public int outRectSizeMin { get; set; }
-        public float outRectSizeRate { get; set; }
-        public int minGary { get; set; }
-        public float garyRate { get; set; }
-        public int erodeKernel { get; set; }
-        public int erodeTime { get; set; }
-        public int distanceToBright { get; set; }
+        public CameraFOV result { get; set; }
     }
 
 
-    public class GhostView: IViewResult
+    public class DFovView : IViewResult
     {
-        public GhostView(DetailCommonModel detail)
+        public DFovView(DetailCommonModel detail)
         {
             Id = detail.Id;
             PId = detail.PId;
-            Result = detail.ResultJson;
+            Result = JsonConvert.DeserializeObject<ResDFov>(detail.ResultJson);
+            D_Fov = Result.result.D_Fov;
+            H_Fov = Result.result.H_Fov;
+            V_FOV = Result.result.V_FOV;
+            ClolorVisionH_Fov  = Result.result.ClolorVisionH_Fov;
+            ClolorVisionV_Fov  = Result.result.ClolorVisionV_Fov;
+            LeftDownToRightUp  = Result.result.LeftDownToRightUp;
+            LeftUpToRightDown =  Result.result.LeftUpToRightDown;
         }
+
+
         [Column("id")]
         public int Id { get; set; }
         [Column("pid")]
         public int PId { get; set; }
 
         [Column("result")]
-        public string Result { get; set; }
-    }
+        public ResDFov Result { get; set; }
 
 
-
-    [Table("t_scgd_algorithm_result_detail_common")]
-    public class DetailCommonModel : PKModel
-    {
-        [Column("pid")]
-        public int PId { get; set; }
-
-        [Column("result_json")]
-        public string ResultJson { get; set; }
-    }
+        public double D_Fov { get; set; }
+        public double H_Fov { get; set; }
+        public double V_FOV { get; set; }
+        public double ClolorVisionH_Fov { get; set; }
+        public double ClolorVisionV_Fov { get; set; }
+        public double LeftDownToRightUp { get; set; }
+        public double LeftUpToRightDown { get; set; }
 
 
-    public class DeatilCommonDao : BaseTableDao<DetailCommonModel>
-    {
-        public static DeatilCommonDao Instance { get; set; } = new DeatilCommonDao();
-        public DeatilCommonDao() : base("ot_scgd_algorithm_result_detail_common")
-        {
-        }
     }
 
 
