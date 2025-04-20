@@ -3,26 +3,28 @@ using System.Data;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    [Table("t_scgd_mod_param_detail")]
     public class ModFlowDetailModel : PKModel
     {
-        public ModFlowDetailModel() : this(-1, -1, null) { }
-        public ModFlowDetailModel(int sysPid, int pid, string? val)
-        {
-            SysPid = sysPid;
-            Pid = pid;
-            ValueA = val;
-        }
+        [Column("cc_pid")]
         public int SysPid { get; set; }
+        [Column("pid")]
         public int Pid { get; set; }
-        public string? ValueA { get; set; }
+        [Column("value")]
         public string? Value { get; set; }
+        [Column("value_a")]
+        public string? ValueA { get; set; }
+        [Column("value_b")]
         public string? ValueB { get; set; }
+        [Column("symbol")]
         public string? Symbol { get; set; }
+        [Column("is_enable")]
         public bool? IsEnable { get; set; } = true;
+        [Column("is_enable")]
         public bool? IsDelete { get; set; } = false;
     }
 
-    public class ModFlowDetailDao : BaseDaoMaster<ModFlowDetailModel>
+    public class ModFlowDetailDao : BaseViewDao<ModFlowDetailModel>
     {
         public static ModFlowDetailDao Instance { get; set; } = new ModFlowDetailDao();
 
