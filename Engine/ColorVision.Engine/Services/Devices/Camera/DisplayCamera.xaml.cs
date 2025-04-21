@@ -13,11 +13,13 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;
+using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -126,6 +128,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             ComboxAutoFocus.SelectedIndex = 0;
             ComboxAutoFocus.DataContext = DisplayCameraConfig;
+
+            CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+                                              select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
             void UpdateUI(DeviceStatusType status)

@@ -56,8 +56,9 @@ namespace ColorVision.Engine.Services.Flow
             SaveCommand = new RelayCommand(a => Save());
             AutoAlignmentCommand = new RelayCommand(a => AutoAlignment());
             OpenFlowTemplateCommand = new RelayCommand(a => OpenFlowTemplate());
+
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => Save(), (s, e) => { e.CanExecute = STNodeEditorHelper.CheckFlow(); }));
-            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => { e.CanExecute = STNodeEditorMain.GetSelectedNode().Length>0; }));
+
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => Clear(), (s, e) => { e.CanExecute = true; }));
 
@@ -74,9 +75,10 @@ namespace ColorVision.Engine.Services.Flow
                 if (DisplayFlow.flowControl != null)
                     e.CanExecute = DisplayFlow.flowControl.IsFlowRun;
             }));
-
-
         }
+
+
+
         #region ActionCommand
 
         public ObservableCollection<ActionCommand> UndoStack { get; set; } = new ObservableCollection<ActionCommand>();
@@ -209,7 +211,7 @@ namespace ColorVision.Engine.Services.Flow
                     );
                 }
             };
-            STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1, STNodePropertyGrid1, SignStackPannel);
         }
 
 
@@ -311,14 +313,6 @@ namespace ColorVision.Engine.Services.Flow
                         e.Handled = true;
                     }
                 }
-            }
-        }
-
-        public void Delete()
-        {
-            foreach (var item in STNodeEditorMain.GetSelectedNode())
-            {
-                STNodeEditorMain.Nodes.Remove(item);
             }
         }
 

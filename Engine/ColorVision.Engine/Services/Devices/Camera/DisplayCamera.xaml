@@ -147,10 +147,13 @@
                                 </DockPanel>
                             </StackPanel>
                         </StackPanel>
-                        <DockPanel Margin="0,0,0,3">
+                        <StackPanel Margin="0,0,0,3" Orientation="Horizontal">
                             <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
-                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.AvgCount}" HorizontalAlignment="Left" Width="100" />
-                        </DockPanel>
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.AvgCount}" HorizontalAlignment="Left" Width="100"  Margin="0,0,10,0"  />
+                            <TextBlock  Text="翻转" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="30" />
+                            <ComboBox x:Name="CBFilp" SelectedValue="{Binding Config.FlipMode}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"  Width="70" />
+
+                        </StackPanel>
 
                         <StackPanel Visibility="{Binding Config.IsAutoExpose,Converter={StaticResource bool2VisibilityConverter1}}" Margin="0,0,0,3">
                             <DockPanel >
