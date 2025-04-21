@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates
     }
 
 
-    public class ModDetailDao : BaseDaoMaster<ModDetailModel>
+    public class ModDetailDao : BaseViewDao<ModDetailModel>
     {
         public static ModDetailDao Instance { get; set; } = new ModDetailDao();
 
