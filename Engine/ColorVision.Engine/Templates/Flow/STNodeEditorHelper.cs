@@ -15,13 +15,13 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.DFOV;
 using ColorVision.Engine.Templates.Jsons.GhostQK;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -235,7 +235,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
