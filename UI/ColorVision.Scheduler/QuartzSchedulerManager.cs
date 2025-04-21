@@ -85,19 +85,21 @@ namespace ColorVision.Scheduler
 
             Listener = new TaskExecutionListener();
             Scheduler.ListenerManager.AddJobListener(Listener);
-
             Jobs = new Dictionary<string, Type>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                foreach (var type in assembly.GetTypes())
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
+                    foreach (var type in assembly.GetTypes())
                     {
-                        Jobs.Add(type.Name, type);
+                        if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
+                        {
+                            Jobs.Add(type.Name, type);
+                        }
                     }
                 }
-            }
-
+            });
         }
         public async Task StopJob(string jobName, string groupName)
         {

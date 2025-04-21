@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -260,6 +261,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
+                RotateTransform rotateTransform1 = new() { Angle = 0 };
+                View.ImageView.ImageShow.RenderTransform = rotateTransform1;
+                View.ImageView.ImageShow.RenderTransformOrigin = new Point(0.5, 0.5);
             }
         }
 
