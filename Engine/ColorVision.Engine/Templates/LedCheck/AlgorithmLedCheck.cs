@@ -15,8 +15,6 @@ namespace ColorVision.Engine.Templates.LedCheck
 {
     public class AlgorithmLedCheck : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "像素级灯珠检测";
-        public int Order { get; set; } = 20;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

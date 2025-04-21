@@ -2,7 +2,6 @@
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
-using ColorVision.Engine.Templates.POI;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -11,9 +10,10 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.SFR
+
+namespace ColorVision.Engine.Templates.Jsons.GhostQK
 {
-    public class AlgorithmSFR : DisplayAlgorithmBase
+    public class AlgorithmGhostQK : DisplayAlgorithmBase
     {
 
         public DeviceAlgorithm Device { get; set; }
@@ -21,44 +21,35 @@ namespace ColorVision.Engine.Templates.SFR
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmGhostQK(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "SFR";
-            Order = 51;
+            Name = "鬼影QK";
+            Order = 54;
             Group = "AR/VR算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
-            OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
-
-        public void OpenTemplate()
-        {
-            new TemplateEditorWindow(new TemplateSFR(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
-
-        public RelayCommand OpenTemplatePoiCommand { get; set; }
-        public int TemplatePoiSelectedIndex { get => _TemplatePoiSelectedIndex; set { _TemplatePoiSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplatePoiSelectedIndex;
-
-        public void OpenTemplatePoi()
+        public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplatePoi(), _TemplatePoiSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateGhostQK(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
+
+        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; NotifyPropertyChanged(); } }
+        private string _CIEFileName;
 
 
         public override UserControl GetUserControl()
         {
-            UserControl ??= new DisplaySFR(this);
+            UserControl ??= new DisplayGhostQK(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -66,13 +57,12 @@ namespace ColorVision.Engine.Templates.SFR
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            Params.Add("POITemplateParam", new CVTemplateParam() { ID = TemplatePoi.Params[TemplatePoiSelectedIndex].Id, Name = TemplatePoi.Params[TemplatePoiSelectedIndex].Key });
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
+            Params.Add("CIEFileName", CIEFileName);
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_SFR_GetData,
+                EventName = "ghost_qk",
                 SerialNumber = sn,
                 Params = Params
             };

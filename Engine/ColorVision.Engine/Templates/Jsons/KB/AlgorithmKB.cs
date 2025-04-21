@@ -47,9 +47,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
     }
     public class AlgorithmKB : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "键盘检测";
-
-        public int Order { get; set; } = 98;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

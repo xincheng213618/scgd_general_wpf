@@ -15,8 +15,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
     public class AlgorithmSFRFindROI : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "SFR寻边";
-        public int Order { get; set; } = 21;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }

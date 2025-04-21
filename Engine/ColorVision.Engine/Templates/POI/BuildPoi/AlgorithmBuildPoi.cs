@@ -28,8 +28,6 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
     public class AlgorithmBuildPoi : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "关注点布点";
-        public int Order { get; set; } = 2;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
