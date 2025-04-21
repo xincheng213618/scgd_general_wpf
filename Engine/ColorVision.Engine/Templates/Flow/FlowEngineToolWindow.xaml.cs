@@ -299,14 +299,6 @@ namespace ColorVision.Engine.Templates.Flow
                 try
                 {
                     STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is STNode node)
-                        {
-                            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
-                        }
-                    }
                 }
                 catch(Exception ex)
                 {
@@ -317,6 +309,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
+
+
 
         private bool AutoSave()
         {

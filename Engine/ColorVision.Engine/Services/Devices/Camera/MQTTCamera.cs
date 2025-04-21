@@ -47,8 +47,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             if (Config.Code != null && msg.DeviceCode != Config.Code) return;
 
-
-
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -307,6 +305,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             Params.Add("AvgCount", Config.AvgCount);
             Params.Add("ExpTime", expTime);
+            Params.Add("FlipMode", Config.FlipMode);
+
             if (param.Id == -1)
             {
                 Params.Add("Calibration", new CVTemplateParam() { ID = param.Id,Name = string.Empty });

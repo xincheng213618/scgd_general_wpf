@@ -70,11 +70,13 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel = stackPanel;
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
-
             STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
 
             AddContentMenu();
         }
+
+
+
 
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
@@ -690,11 +692,55 @@ namespace ColorVision.Engine.Templates.Flow
         #endregion
 
         #region ContextMenu
+
+        public void AddNodeContext()
+        {
+            foreach (var item in STNodeEditor.Nodes)
+            {
+                if (item is STNode node)
+                {
+                    node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+                    node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+                    node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+                    node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+                }
+            }
+        }
+
+
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+            node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+            node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+        }
+
+        public void CopySTNode(STNode sTNode)
+        {
+            Type type = sTNode.GetType();
+
+            STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+            if (sTNode1 != null)
+            {
+                sTNode1.Create();
+                PropertyInfo[] properties = type.GetProperties();
+                foreach (PropertyInfo property in properties)
+                {
+                    if (property.CanRead && property.CanWrite)
+                    {
+                        object value = property.GetValue(sTNode);
+                        property.SetValue(sTNode1, value);
+                    }
+                }
+                sTNode1.Left = sTNode.Left;
+                sTNode1.Top = sTNode.Top;
+
+                STNodeEditor.Nodes.Add(sTNode1);
+            }
         }
 
         public void AddContentMenu()
