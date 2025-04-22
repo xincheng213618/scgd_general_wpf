@@ -15,9 +15,9 @@ using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
-using ProjectARVR.Config;
-using ProjectARVR.Modbus;
-using ProjectARVR.Services;
+using ProjectKB.Config;
+using ProjectKB.Modbus;
+using ProjectKB.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,7 +30,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
     class KBvalue
     {

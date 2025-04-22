@@ -4,7 +4,7 @@ using NModbus;
 using System.Net.Sockets;
 using System.Windows;
 
-namespace ProjectARVR.Modbus
+namespace ProjectKB.Modbus
 {
 
     public class ModbusControl : ViewModelBase

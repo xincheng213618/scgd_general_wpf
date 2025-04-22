@@ -5,7 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
     public class KBItemMaster : ViewModelBase
     {
