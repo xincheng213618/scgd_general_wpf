@@ -17,7 +17,7 @@ namespace ProjectARVR.PluginConfig
         {
             if (ProjectWindowInstance.WindowInstance == null)
             {
-                ProjectWindowInstance.WindowInstance = new ProjectKBWindow
+                ProjectWindowInstance.WindowInstance = new ProjectARVRWindow
                 {
                     WindowStartupLocation = WindowStartupLocation.CenterOwner
                 };

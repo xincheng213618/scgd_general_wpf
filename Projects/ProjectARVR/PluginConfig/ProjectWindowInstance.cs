@@ -2,7 +2,7 @@
 {
     public class ProjectWindowInstance
     {
-        public static ProjectKBWindow WindowInstance { get; set; }
+        public static ProjectARVRWindow WindowInstance { get; set; }
     }
 
 }

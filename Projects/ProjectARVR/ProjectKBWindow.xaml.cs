@@ -1,31 +1,19 @@
-﻿using ColorVision.Engine.Interfaces;
-using ColorVision.Engine.MQTT;
-using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
-using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -34,14 +22,12 @@ namespace ProjectARVR
     /// <summary>
     /// Interaction logic for _windowInstance.xaml
     /// </summary>
-    public partial class ProjectKBWindow : Window
+    public partial class ProjectARVRWindow : Window
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectKBWindow));
-        public static ObservableCollection<KBItemMaster> ViewResluts => ProjectsARVRWindowConfig.Instance.ViewResluts;
-
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRWindow));
         public static ProjectsARVRWindowConfig Config => ProjectsARVRWindowConfig.Instance;
 
-        public ProjectKBWindow()
+        public ProjectARVRWindow()
         {
             InitializeComponent();
             this.ApplyCaption(false);
@@ -56,7 +42,6 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
-            listView1.ItemsSource = ViewResluts;
             SocketControl.GetInstance().StartServer();
             SocketControl.GetInstance().StatusChanged += ServicesChanged;
             this.Closed += (s, e) =>
@@ -265,217 +250,6 @@ namespace ProjectARVR
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
-                        LastCompleted = true;
-                        try
-                        {
-                            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                            bool sucess = true;
-                            var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
-
-                            if (Batch == null)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
-                                return;
-                            }
-                            KBItemMaster kBItem = new KBItemMaster();
-                            kBItem.Model = FlowTemplate.Text;
-                            kBItem.Id = Batch.Id;
-                            kBItem.SN = SNtextBox.Text;
-
-                            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
-                            {
-                                if (item.ImgFileType == AlgorithmResultType.KB || item.ImgFileType == AlgorithmResultType.KB_Raw)
-                                {
-                                    var mod = TemplateJsonDao.Instance.GetByParam(new Dictionary<string, object>() { { "name", item.TName }, { "mm_id", 150 } });
-
-                                    KBJson kBJson = JsonConvert.DeserializeObject<KBJson>(mod.JsonVal);
-                                    log.Info(JsonConvert.SerializeObject(kBJson));
-                                    if (kBJson != null)
-                                    {
-                                        foreach (var keyRect in kBJson.KBKeyRects)
-                                        {
-                                            KBItem kItem = new KBItem();
-                                            kItem.Name = keyRect.Name;
-                                            kItem.KBKeyRect = keyRect;
-                                            kBItem.Items.Add(kItem);
-                                            
-                                        }
-                                        kBItem.ResultImagFile = item.ResultImagFile;
-
-                                    }
-                                }
-                                if (item.ImgFileType == AlgorithmResultType.POI_Y)
-                                {
-
-                                }
-                                if (item.ImgFileType == AlgorithmResultType.POI_Y_V2)
-                                {
- 
-
-                                }
-                            }
-
-                            if (kBItem.Items.Count == 0)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
-                                return;
-                            }
-
-                            CalCulLc(kBItem.Items);
-
-
-                            foreach (var item in kBItem.Items)
-                            {
-
-                                if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLv != 0)
-                                {
-                                    item.Result = item.Result && item.Lv >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLv;
-                                }
-                                else
-                                {
-                                    log.Debug("跳过minLv检测");
-                                }
-                                if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv != 0)
-                                {
-                                    item.Result = item.Result && item.Lv <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv;
-                                }
-                                else
-                                {
-                                    log.Debug("跳过MaxLv检测");
-                                }
-
-                                if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLc != 0)
-                                {
-                                    item.Result = item.Result && item.Lc >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLc / 100;
-                                }
-                                else
-                                {
-                                    log.Debug("跳过MinKeyLc检测");
-                                }
-                                if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc != 0)
-                                {
-                                    item.Result = item.Result && item.Lc <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc / 100;
-                                }
-                                else
-                                {
-                                    log.Debug("跳过MaxLv检测");
-                                }
-                            }
-
-
-                            var maxKeyItem = kBItem.Items.OrderByDescending(item => item.Lv).FirstOrDefault();
-                            var minLKey = kBItem.Items.OrderBy(item => item.Lv).FirstOrDefault();
-                            kBItem.MaxLv = maxKeyItem.Lv;
-                            kBItem.BrightestKey = maxKeyItem.Name;
-                            kBItem.MinLv = minLKey.Lv;
-                            kBItem.DrakestKey = minLKey.Name;
-                            kBItem.AvgLv = kBItem.Items.Any() ? kBItem.Items.Average(item => item.Lv) : 0;
-                            kBItem.LvUniformity = kBItem.MinLv / kBItem.MaxLv;
-                            kBItem.SN = SNtextBox.Text;
-                            kBItem.NbrFailPoints = kBItem.Items.Count(item => !item.Result);
-
-
-                            CalCulLc(kBItem.Items);
-
-                            kBItem.Result = true;
-
-                            if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLv!= 0)
-                            {
-                                kBItem.Result= kBItem.Result && kBItem.MinLv >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLv;
-                            }
-                            else
-                            {
-                                log.Debug("跳过minLv检测");
-                            }
-                            if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.MaxLv <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLv;
-                            }
-                            else
-                            {
-                                log.Debug("跳过MaxLv检测");
-                            }
-                            if (ProjectARVRConfig.Instance.SPECConfig.MinAvgLv != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv >= ProjectARVRConfig.Instance.SPECConfig.MinAvgLv;
-                            }
-                            else
-                            {
-                                log.Debug("跳过MinAvgLv检测");
-                            }
-                            if (ProjectARVRConfig.Instance.SPECConfig.MaxAvgLv != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.AvgLv <= ProjectARVRConfig.Instance.SPECConfig.MaxAvgLv;
-                            }
-                            else
-                            {
-                                log.Debug("跳过MaxAvgLv检测");
-                            }
-
-                            if (ProjectARVRConfig.Instance.SPECConfig.MinUniformity != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.LvUniformity >= ProjectARVRConfig.Instance.SPECConfig.MinUniformity /100;
-                            }
-                            else
-                            {
-                                log.Debug("跳过Uniformity检测");
-                            }
-
-                            if (ProjectARVRConfig.Instance.SPECConfig.MinKeyLc != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Min(item => item.Lc) >= ProjectARVRConfig.Instance.SPECConfig.MinKeyLc / 100;
-                            }
-                            else
-                            {
-                                log.Debug("跳过MinKeyLc检测");
-                            }
-
-                            if (ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc != 0)
-                            {
-                                kBItem.Result = kBItem.Result && kBItem.Items.Max(item => item.Lc) <= ProjectARVRConfig.Instance.SPECConfig.MaxKeyLc / 100;
-                            }
-                            else
-                            {
-                                log.Debug("跳过MaxKeyLc检测");
-                            }
-
-
-                            kBItem.Exposure = "50";
-
-                            ProjectARVRConfig.Instance.SummaryInfo.ActualProduction += 1;
-                            if (kBItem.Result)
-                            {
-                                ProjectARVRConfig.Instance.SummaryInfo.GoodProductCount += 1;
-                            }
-                            else
-                            {
-                                ProjectARVRConfig.Instance.SummaryInfo.DefectiveProductCount += 1;
-                            }
-                            ViewResluts.Insert(0, kBItem);
-                            listView1.SelectedIndex = 0;
-                            string resultPath = ProjectARVRConfig.Instance.ResultSavePath1 + $"\\{kBItem.SN}-{kBItem.DateTime:yyyyMMddHHmmssffff}.txt";
-                            string result = $"{kBItem.SN},{(kBItem.Result ? "Pass" : "Fail")}, ,";
-
-                            log.Debug($"结果正在写入{resultPath},result:{result}");
-                            File.WriteAllText(resultPath, result);
-
-
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                string invalidChars = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
-                                string regexPattern = $"[{Regex.Escape(invalidChars)}]";
-
-                                string csvpath = ProjectARVRConfig.Instance.ResultSavePath + $"\\{Regex.Replace(kBItem.Model, regexPattern, "")}_{kBItem.DateTime:yyyyMMdd}.csv";
-
-                                KBItemMaster.SaveCsv(kBItem, csvpath);
-                                log.Debug($"writecsv:{csvpath}");
-                            });
-                            SNtextBox.Text = string.Empty;
-                        }
-                        catch(Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
 
                     }
                     else
@@ -495,136 +269,6 @@ namespace ProjectARVR
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
-        public static bool IsPointInCircle(double px, double py, double centerX, double centerY, double r)
-        {
-            return Math.Pow(px - centerX, 2) + Math.Pow(py - centerY, 2) <= Math.Pow(r, 2);
-        }
-
-        public static bool IsRectInCircle(KBItem item, double centerX, double centerY, double r)
-        {
-            Rect rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
-            var corners = new[]
-{
-            (rect.X, rect.Y),
-            (rect.X + rect.Width, rect.Y),
-            (rect.X, rect.Y + rect.Height),
-            (rect.X + rect.Width, rect.Y + rect.Height)
-        };
-            foreach (var corner in corners)
-            {
-                if (!IsPointInCircle(corner.Item1, corner.Item2, centerX, centerY, r))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-        public void CalCulLc(ObservableCollection<KBItem> kBItems)
-        {
-            if (kBItems.Count == 0) return;
-            foreach (var item in kBItems)
-            {
-                double centex = item.KBKeyRect.X + item.KBKeyRect.Width / 2;
-                double centey = item.KBKeyRect.Y + item.KBKeyRect.Height / 2;
-
-                List<KBItem> round = new List<KBItem>();
-                foreach (var keys in kBItems.Where(a=>a != item))
-                {
-                    if (IsRectInCircle(keys, centex, centey, item.KBKeyRect.Width + 300))
-                        round.Add(keys);
-                }
-                List<string> strings = round.Select(keys => keys.Name).ToList();
-                log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
-
-                double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
-                log.Debug($"Round Key {item.Name}: averagelv{averagelv}");
-                if (averagelv == 0)
-                {
-                    item.Lc = 0;
-                }
-                else
-                {
-                    item.Lc = (item.Lv - averagelv) / averagelv;
-                }
-            }
-        }
-
-
-
-        public void GenoutputText(KBItemMaster kmitemmaster)
-        {
-            NGResult.Text = kmitemmaster.Result ? "OK" : "NG";
-            NGResult.Foreground = kmitemmaster.Result ? Brushes.Green : Brushes.Red;
-
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
-            outputText.Document.Blocks.Clear(); // 清除之前的内容
-
-            string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine; 
-            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
-            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
-
-            Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-
-            var paragraph = new Paragraph();
-            paragraph.Inlines.Add(run);
-
-            outputText.Document.Blocks.Add(paragraph);
-            outtext = string.Empty;
-
-            paragraph = new Paragraph();
-
-            string title1 = "PT";
-            string title2 = "Lv";
-
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-
-            paragraph.Inlines.Add(run);
-            outtext = string.Empty;
-
-            foreach (var item in kmitemmaster.Items)
-            {
-                string formattedString = $"[{item.Name}]";
-
-                outtext += $"{formattedString,-20} {item.Lv,-10:F2}   {item.Lc*100,10:F2}%  {(item.Result?"":"Fail")}" +Environment.NewLine;
-                run = new Run(outtext);
-                run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-                run.FontSize += 1;
-                paragraph.Inlines.Add(run);
-                outtext = string.Empty;
-            }
-            outputText.Document.Blocks.Add(paragraph);
-
-            outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
-
-            outtext += Environment.NewLine;
-            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
-
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
-
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-            paragraph = new Paragraph(run);
-            outtext = string.Empty;
-            outputText.Document.Blocks.Add(paragraph);
-            SNtextBox.Focus();
-        }
-
-
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             ProjectARVRConfig.Instance.Height = row2.ActualHeight;
@@ -633,7 +277,6 @@ namespace ProjectARVR
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            ViewResluts.Clear();
             ImageView.Clear();
             outputText.Document.Blocks.Clear();
             outputText.Background = Brushes.White;
@@ -644,81 +287,6 @@ namespace ProjectARVR
         {
             if (sender is ListView listView && listView.SelectedIndex >-1)
             {
-                var kBItem = ViewResluts[listView.SelectedIndex];
-                GenoutputText(kBItem);
-
-                var maxKeyItem = kBItem.Items.Where(a=>a.Result).OrderByDescending(item => item.Lv).FirstOrDefault();
-                var minLKey = kBItem.Items.Where(a => a.Result).OrderBy(item => item.Lv).FirstOrDefault();
-
-
-                string DrakestKey = minLKey?.Name;
-                string BrightestKey = maxKeyItem?.Name;
-                Task.Run(async () =>
-                {
-                    if (File.Exists(kBItem.ResultImagFile))
-                    {
-                        try
-                        {
-                            var fileInfo = new FileInfo(kBItem.ResultImagFile);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
-                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
-                            {
-                                log.Warn("文件可以读取，没有被占用。");
-                            }
-                            if (fileInfo.Length > 0)
-                            {
-                                _=Application.Current.Dispatcher.BeginInvoke(() =>
-                                {
-                                    ImageView.OpenImage(kBItem.ResultImagFile);
-                                    ImageView.ImageShow.Clear();
-                                });
-                            }
-                        }
-                        catch
-                        {
-                            log.Warn("文件还在写入");
-                            await Task.Delay(ProjectARVRConfig.Instance.ViewImageReadDelay);
-                            _=Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                ImageView.OpenImage(kBItem.ResultImagFile);
-                                ImageView.ImageShow.Clear();
-                            });
-                        }
-                        _=Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            foreach (var item in kBItem.Items)
-                            {
-                                DVRectangle Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(item.KBKeyRect.X, item.KBKeyRect.Y, item.KBKeyRect.Width, item.KBKeyRect.Height);
-
-                                if (item.Result == false)
-                                {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Red, 10);
-                                }
-                                else if (item.Name == DrakestKey)
-                                {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Violet, 10);
-                                }
-                                else if (item.Name == BrightestKey)
-                                {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.White, 10);
-                                }
-                                else
-                                {
-                                    Rectangle.Attribute.Pen = new Pen(Brushes.Gray, 5);
-                                }
-
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Id = -1;
-                                Rectangle.Render();
-                                ImageView.AddVisual(Rectangle);
-                            }
-
-
-                        });
-
-                    }
-                });
 
             }
         }
