@@ -112,22 +112,6 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
         {
             if (result.ViewResults == null)
             {
-
-                void OpenSource()
-                {
-                    view.ImageView.ImageShow.Clear();
-                    foreach (var item in result.ViewResults)
-                    {
-                        if (item is GhostView blackMuraModel)
-                        {
-                            if (File.Exists(result.FilePath))
-                                view.ImageView.OpenImage(result.FilePath);
-                            log.Info(result.FilePath);
-                        }
-                    }
-                }
-
-
                 result.ViewResults = new ObservableCollection<IViewResult>();
                 List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
                 foreach (var item in AlgResultModels)
