@@ -1,7 +1,7 @@
 ﻿using System.Windows;
-using ProjectKB.Modbus;
+using ProjectARVR.Modbus;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
     /// <summary>
     /// TestWindow.xaml 的交互逻辑

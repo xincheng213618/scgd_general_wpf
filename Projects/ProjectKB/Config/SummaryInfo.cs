@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 
-namespace ProjectKB.Config
+namespace ProjectARVR.Config
 {
     public class SummaryInfo : ViewModelBase
     {

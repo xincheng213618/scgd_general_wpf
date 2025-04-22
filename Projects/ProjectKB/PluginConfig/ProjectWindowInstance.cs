@@ -1,4 +1,4 @@
-﻿namespace ProjectKB.PluginConfig
+﻿namespace ProjectARVR.PluginConfig
 {
     public class ProjectWindowInstance
     {

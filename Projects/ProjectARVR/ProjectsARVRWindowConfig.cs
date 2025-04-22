@@ -4,7 +4,6 @@ using System.Windows;
 
 namespace ProjectARVR
 {
-
     public class ProjectsARVRWindowConfig : IConfig
     {
         public static ProjectsARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectsARVRWindowConfig>();

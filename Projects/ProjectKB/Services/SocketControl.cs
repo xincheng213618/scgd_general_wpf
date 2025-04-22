@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace ProjectKB.Services
+namespace ProjectARVR.Services
 {
 
     public class SocketConfig : ViewModelBase,IConfig

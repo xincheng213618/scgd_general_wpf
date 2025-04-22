@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates.Jsons.KB;
 
-namespace ProjectKB
+namespace ProjectARVR
 {
     public class KBItem : ViewModelBase
     {

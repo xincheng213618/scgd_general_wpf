@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 
-namespace ProjectKB.Modbus
+namespace ProjectARVR.Modbus
 {
     public class ModbusSetting : ViewModelBase, IConfigSecure
     {
