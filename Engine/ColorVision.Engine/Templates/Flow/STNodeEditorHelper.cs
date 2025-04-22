@@ -102,6 +102,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Paste()
         {
+            int offset = 10;
+
             foreach (var item in CopyNodes)
             {
                 Type type = item.GetType();
@@ -119,11 +121,33 @@ namespace ColorVision.Engine.Templates.Flow
                             property.SetValue(sTNode1, value);
                         }
                     }
-                    sTNode1.Left = item.Left;
-                    sTNode1.Top = item.Top;
+                    sTNode1.Left = item.Left + offset;
+                    sTNode1.Top = item.Top + offset;
+                    sTNode1.IsSelected = true;
                     STNodeEditor.Nodes.Add(sTNode1);
+                    if (CopyNodes.Count == 1)
+                    {
+                        item.IsSelected = false;
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                        STNodeEditor.SetActiveNode(sTNode1);
+                    }
+                    else
+                    {
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                    }
                 }
             }
+
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+
+
+
         }
 
 
