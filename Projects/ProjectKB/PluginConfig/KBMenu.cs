@@ -1,7 +1,8 @@
 ﻿using ColorVision.UI.Menus;
+using ProjectKB;
 using System.Windows;
 
-namespace ProjectARVR.PluginConfig
+namespace ProjectKB.PluginConfig
 {
 
 

@@ -15,9 +15,10 @@ using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
-using ProjectARVR.Config;
-using ProjectARVR.Modbus;
-using ProjectARVR.Services;
+using ProjectKB;
+using ProjectKB.Config;
+using ProjectKB.Modbus;
+using ProjectKB.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -30,9 +31,9 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
-    class KBvalue
+    sealed class KBvalue
     {
         public double Y { get; set; }
         public int PixNumber { get; set; } = 1;
@@ -619,7 +620,7 @@ namespace ProjectARVR
                 List<string> strings = round.Select(keys => keys.Name).ToList();
                 log.Debug($"Round Key {item.Name}: {string.Join(",", strings)}");
 
-                double averagelv = round.Any() ? round.Average(item => item.Lv) : 0;
+                double averagelv = round.Count>0 ? round.Average(item => item.Lv) : 0;
                 log.Debug($"Round Key {item.Name}: averagelv{averagelv}");
                 if (averagelv == 0)
                 {

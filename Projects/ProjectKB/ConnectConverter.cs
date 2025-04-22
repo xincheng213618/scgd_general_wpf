@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
     public sealed class ConnectConverter : IValueConverter
     {
