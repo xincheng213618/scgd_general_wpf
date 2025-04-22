@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectARVR.ProjectKBWindow"
+﻿<Window x:Class="ProjectARVR.ARVRWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -127,62 +127,6 @@
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
 
-                                <GridViewColumn Header="Id" >
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding Id}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Name" >
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding Model}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="SN" Width="150">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding SN}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Result" >
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding Result,Converter={StaticResource OKNGConverter}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Avg Lv">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding AvgLv, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Min Lv">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding  MinLv, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Max Lv">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding MaxLv, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Uniform">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type local:KBItemMaster}">
-                                            <TextBlock Text="{Binding LvUniformity, StringFormat={}{0:F2}}" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
 
@@ -227,18 +171,9 @@
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2">
-            
+
             <StatusBarItem>
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <Button Content="Modbus配置" Command="{Binding OpenModbusCommand}"/>
-            </StatusBarItem>
-            <StatusBarItem>
-                <DockPanel>
-                    <TextBlock Text="连接情况:" Width="60"/>
-                    <TextBlock Text="{Binding  ModbusControl.IsConnect ,Converter={StaticResource ConnectConverter}}"/>
-                </DockPanel>
             </StatusBarItem>
             <StatusBarItem>
                 <Button Content="设置" Command="{Binding OpenConfigCommand}"/>

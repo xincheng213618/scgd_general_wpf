@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ProjectKB;
 using System.Windows;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
     /// <summary>
     /// EditProjectKBConfig.xaml 的交互逻辑

@@ -15,13 +15,13 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.DFOV;
 using ColorVision.Engine.Templates.Jsons.GhostQK;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -102,6 +102,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Paste()
         {
+            int offset = 10;
+
             foreach (var item in CopyNodes)
             {
                 Type type = item.GetType();
@@ -119,11 +121,33 @@ namespace ColorVision.Engine.Templates.Flow
                             property.SetValue(sTNode1, value);
                         }
                     }
-                    sTNode1.Left = item.Left;
-                    sTNode1.Top = item.Top;
+                    sTNode1.Left = item.Left + offset;
+                    sTNode1.Top = item.Top + offset;
+                    sTNode1.IsSelected = true;
                     STNodeEditor.Nodes.Add(sTNode1);
+                    if (CopyNodes.Count == 1)
+                    {
+                        item.IsSelected = false;
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                        STNodeEditor.SetActiveNode(sTNode1);
+                    }
+                    else
+                    {
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                    }
                 }
             }
+
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+
+
+
         }
 
 
@@ -235,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());

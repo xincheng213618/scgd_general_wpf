@@ -1,7 +1,8 @@
 ﻿using ColorVision.UI;
+using ProjectKB;
 using System.Windows;
 
-namespace ProjectARVR.PluginConfig
+namespace ProjectKB.PluginConfig
 {
 
     public class KBProjectPlugin : IProjectBase

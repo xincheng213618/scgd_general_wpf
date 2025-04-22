@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ProjectARVR.Config
+namespace ProjectKB.Config
 {
     public class SPECConfig : ViewModelBase
     {

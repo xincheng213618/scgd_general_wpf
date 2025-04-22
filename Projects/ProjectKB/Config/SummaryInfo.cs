@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 
-namespace ProjectARVR.Config
+namespace ProjectKB.Config
 {
     public class SummaryInfo : ViewModelBase
     {
@@ -50,13 +50,13 @@ namespace ProjectARVR.Config
         /// 良品率
         /// </summary>
         [JsonIgnore]
-        public double GoodProductRate { get => ActualProduction > 0 ? (double)GoodProductCount / (double)ActualProduction : 0; }
+        public double GoodProductRate { get => ActualProduction > 0 ? GoodProductCount / (double)ActualProduction : 0; }
 
         /// <summary>
         /// 不良率
         /// </summary>
         [JsonIgnore]
-        public double DefectiveProductRate { get => ActualProduction > 0 ? (double)DefectiveProductCount / (double)ActualProduction : 0; }
+        public double DefectiveProductRate { get => ActualProduction > 0 ? DefectiveProductCount / (double)ActualProduction : 0; }
 
 
 

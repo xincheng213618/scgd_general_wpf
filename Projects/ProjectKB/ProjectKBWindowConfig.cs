@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ProjectARVR
+namespace ProjectKB
 {
 
     public class ProjectKBWindowConfig : IConfig
