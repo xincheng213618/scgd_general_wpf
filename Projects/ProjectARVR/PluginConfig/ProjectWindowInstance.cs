@@ -2,7 +2,7 @@
 {
     public class ProjectWindowInstance
     {
-        public static ProjectARVRWindow WindowInstance { get; set; }
+        public static ARVRWindow WindowInstance { get; set; }
     }
 
 }

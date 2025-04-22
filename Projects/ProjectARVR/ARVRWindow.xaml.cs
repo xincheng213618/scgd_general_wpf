@@ -19,15 +19,13 @@ using System.Windows.Media;
 
 namespace ProjectARVR
 {
-    /// <summary>
-    /// Interaction logic for _windowInstance.xaml
-    /// </summary>
-    public partial class ProjectARVRWindow : Window
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectARVRWindow));
-        public static ProjectsARVRWindowConfig Config => ProjectsARVRWindowConfig.Instance;
 
-        public ProjectARVRWindow()
+    public partial class ARVRWindow : Window,IDisposable
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
+        public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
+
+        public ARVRWindow()
         {
             InitializeComponent();
             this.ApplyCaption(false);
@@ -326,6 +324,12 @@ namespace ProjectARVR
         {
             ProjectARVRConfig.Instance.SummaryInfo.Width = col1.ActualWidth;
             col1.Width = GridLength.Auto;
+        }
+
+        public void Dispose()
+        {
+            timer?.Dispose();
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -185,7 +185,7 @@ namespace ProjectARVR
         public SummaryInfo SummaryInfo { get => _SummaryInfo; set { _SummaryInfo = value; NotifyPropertyChanged(); } }
         private SummaryInfo _SummaryInfo = new SummaryInfo();
 
-        public static ProjectsARVRWindowConfig ProjectKBWindowConfig => ProjectsARVRWindowConfig.Instance;
+        public static ARVRWindowConfig ProjectKBWindowConfig => ARVRWindowConfig.Instance;
         public Dictionary<string, SPECConfig> SPECConfigs { get; set; } = new Dictionary<string, SPECConfig>();
 
         public SPECConfig SPECConfig { get => _SPECConfig; set { _SPECConfig = value; NotifyPropertyChanged(); } }
