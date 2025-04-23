@@ -4,6 +4,7 @@ using System.Windows;
 
 namespace ColorVision.Plugins
 {
+
     /// <summary>
     /// PluginManagerWindow.xaml 的交互逻辑
     /// </summary>
@@ -14,8 +15,8 @@ namespace ColorVision.Plugins
         {
             InitializeComponent();
             this.ApplyCaption();
-            PluginManager.GetInstance().Config.SetWindow(this);
-            this.SizeChanged += (s, e) => PluginManager.GetInstance().Config.SetConfig(this);
+            PluginWindowConfig.Instance.SetWindow(this);
+            this.SizeChanged += (s, e) => PluginWindowConfig.Instance.SetConfig(this);
         }
 
         private void Window_Initialized(object sender, System.EventArgs e)
