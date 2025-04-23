@@ -267,16 +267,16 @@ namespace ColorVision.Engine.Templates.Flow
                         case FlowEngineLib.Algorithm.AlgorithmType.畸变:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
                             break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测1:
+                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测1", new TemplateLedCheck());
                             break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
-                            break;
+                        //case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
+                        //    AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
+                        //    break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                             break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.发光区检测1:
+                        case FlowEngineLib.Algorithm.AlgorithmType.发光区检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测1", new TemplateFocusPoints());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
