@@ -10,9 +10,10 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.FOV
+
+namespace ColorVision.Engine.Templates.Jsons.DFOV
 {
-    public class AlgorithmFOV : DisplayAlgorithmBase
+    public class AlgorithmDFOV : DisplayAlgorithmBase
     {
 
         public DeviceAlgorithm Device { get; set; }
@@ -20,33 +21,32 @@ namespace ColorVision.Engine.Templates.FOV
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmFOV(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmDFOV(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "FOV";
+            Name = "DFOV";
             Order = 53;
-			Group = "AR/VR算法";
-			Device = deviceAlgorithm;
+            Group = "AR/VR算法";
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
+        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateSelectedIndex;
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateFOV(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new TemplateEditorWindow(new TemplateDFOV(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-
-        public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
-        private int _TemplateSelectedIndex;
 
 
         public override UserControl GetUserControl()
         {
-            UserControl ??= new DisplayFOV(this);
+            UserControl ??= new DisplayDFOV(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
 
 
-        public MsgRecord SendCommand(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord SendCommand(ParamBase param, string deviceCode, string deviceType, string fileName, FileExtType fileExtType, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -54,11 +54,11 @@ namespace ColorVision.Engine.Templates.FOV
             if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_FOV_GetData,
+                EventName = "FOV_qk",
                 SerialNumber = sn,
                 Params = Params
             };

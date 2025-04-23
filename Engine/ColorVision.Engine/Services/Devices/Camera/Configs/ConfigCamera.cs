@@ -1,10 +1,11 @@
-﻿using Newtonsoft.Json;
-using cvColorVision;
-using ColorVision.Engine.Services.Devices.Camera.Video;
-using System;
-using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Engine.Services.Configs;
+﻿using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
+using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using cvColorVision;
+using FlowEngineLib.Algorithm;
+using Newtonsoft.Json;
+using System;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -38,6 +39,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public int AvgCount { get => _AvgCount; set { _AvgCount = value; NotifyPropertyChanged(); } }
         private int _AvgCount = 1;
+
+        public CVImageFlipMode FlipMode { get => _FlipMode; set { _FlipMode = value; NotifyPropertyChanged(); } }
+        private CVImageFlipMode _FlipMode = CVImageFlipMode.None;
 
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
         private bool _UsingFileCaching;

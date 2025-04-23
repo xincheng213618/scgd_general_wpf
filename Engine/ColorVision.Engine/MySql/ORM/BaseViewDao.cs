@@ -7,11 +7,11 @@ using System.Linq;
 namespace ColorVision.Engine.MySql.ORM
 {
 
-    public class BaseDaoMaster<T> : BaseDao1 where T : IPKModel
+    public class BaseViewDao<T> : BaseDao1 where T : IPKModel
     {
         public string ViewName { get; set; }
-        private static readonly ILog log = LogManager.GetLogger(typeof(BaseDaoMaster<T>));
-        public BaseDaoMaster(string viewName, string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseViewDao<T>));
+        public BaseViewDao(string viewName, string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
         {
             ViewName = viewName;
         }

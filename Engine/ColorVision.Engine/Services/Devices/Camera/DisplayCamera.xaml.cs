@@ -13,14 +13,17 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;
+using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -125,6 +128,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             ComboxAutoFocus.SelectedIndex = 0;
             ComboxAutoFocus.DataContext = DisplayCameraConfig;
+
+            CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+                                              select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
             void UpdateUI(DeviceStatusType status)
@@ -260,6 +266,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
+                RotateTransform rotateTransform1 = new() { Angle = 0 };
+                View.ImageView.ImageShow.RenderTransform = rotateTransform1;
+                View.ImageView.ImageShow.RenderTransformOrigin = new Point(0.5, 0.5);
             }
         }
 

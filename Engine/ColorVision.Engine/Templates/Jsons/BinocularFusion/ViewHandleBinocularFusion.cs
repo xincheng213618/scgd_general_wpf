@@ -48,7 +48,8 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             }
             csvBuilder.AppendLine();
             csvBuilder.AppendLine();
-            File.AppendAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+            string filePath = selectedPath + "//" + result.ResultType + ".csv";
+            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
 
         }
 

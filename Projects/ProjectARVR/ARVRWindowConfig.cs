@@ -4,12 +4,9 @@ using System.Windows;
 
 namespace ProjectARVR
 {
-
-    public class ProjectsARVRWindowConfig : IConfig
+    public class ARVRWindowConfig : IConfig
     {
-        public static ProjectsARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ProjectsARVRWindowConfig>();
-        public ObservableCollection<KBItemMaster> ViewResluts { get; set; } = new ObservableCollection<KBItemMaster>();
-
+        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
         public bool IsRestoreWindow { get; set; } = true;
         public double Width { get; set; }
         public double Height { get; set; }

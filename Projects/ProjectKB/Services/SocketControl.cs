@@ -6,7 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace ProjectARVR.Services
+namespace ProjectKB.Services
 {
 
     public class SocketConfig : ViewModelBase,IConfig
@@ -15,7 +15,7 @@ namespace ProjectARVR.Services
         public static SocketConfig Instance => ConfigService.Instance.GetRequiredService<SocketConfig>();
 
         public bool IsUseSocket { get => _IsUseSocket; set { _IsUseSocket = value; NotifyPropertyChanged(); } }
-        private bool _IsUseSocket = false;
+        private bool _IsUseSocket;
 
 
         /// <summary>

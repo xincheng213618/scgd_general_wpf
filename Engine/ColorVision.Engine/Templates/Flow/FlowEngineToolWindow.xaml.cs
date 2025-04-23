@@ -161,16 +161,6 @@ namespace ColorVision.Engine.Templates.Flow
 
             STNodeEditorMain.PreviewKeyDown += (s, e) =>
             {
-                if (e.KeyCode == System.Windows.Forms.Keys.Delete)
-                {
-                    if (STNodeEditorMain.ActiveNode !=null)
-                        STNodeEditorMain.Nodes.Remove(STNodeEditorMain.ActiveNode);
-
-                    foreach (var item in STNodeEditorMain.GetSelectedNode())
-                    {
-                        STNodeEditorMain.Nodes.Remove(item);
-                    }
-                }
                 if (e.KeyCode == System.Windows.Forms.Keys.S && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
                 {
                     Save();
@@ -200,7 +190,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             };
 
-            STNodeEditorHelper = new STNodeEditorHelper(STNodeEditorMain, STNodeTreeView1,STNodePropertyGrid1, SignStackPannel);
+            STNodeEditorHelper = new STNodeEditorHelper(this,STNodeEditorMain, STNodeTreeView1,STNodePropertyGrid1, SignStackPannel);
         }
         public void AutoAlignment()
         {
@@ -299,14 +289,6 @@ namespace ColorVision.Engine.Templates.Flow
                 try
                 {
                     STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
-                    foreach (var item in STNodeEditorMain.Nodes)
-                    {
-                        if (item is STNode node)
-                        {
-                            node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
-                            node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
-                        }
-                    }
                 }
                 catch(Exception ex)
                 {
@@ -317,6 +299,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
+
+
 
         private bool AutoSave()
         {

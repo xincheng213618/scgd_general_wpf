@@ -57,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行BlackMura算法");
+                ServicesHelper.SendCommand(msg, "正在执行Ghost算法");
             }
         }
 

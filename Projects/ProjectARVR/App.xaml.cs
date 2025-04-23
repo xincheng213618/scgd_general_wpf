@@ -52,7 +52,7 @@ namespace ProjectARVR
             {
                 await item.InitializeAsync();
             }
-            ProjectKBWindow window = new ProjectKBWindow();
+            ARVRWindow window = new ARVRWindow();
             window.Show();
         }
     }

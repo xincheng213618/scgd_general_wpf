@@ -15,13 +15,13 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.DFOV;
 using ColorVision.Engine.Templates.Jsons.GhostQK;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -48,6 +48,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.Flow
@@ -62,7 +63,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
-        public STNodeEditorHelper(STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
+        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
         {
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
@@ -70,11 +71,86 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel = stackPanel;
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
-
             STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
 
             AddContentMenu();
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
+            {
+                foreach (var item in STNodeEditor.GetSelectedNode())
+                    STNodeEditor.Nodes.Remove(item);
+            } , (s, e) => { e.CanExecute = sTNodeEditor.GetSelectedNode().Length > 0; }));
+
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = true; }));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = CopyNodes.Count >0;}));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
         }
+
+        private List<STNode> CopyNodes = new List<STNode>();
+
+        public void Copy()
+        {
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+        }
+
+        public void Paste()
+        {
+            int offset = 10;
+
+            foreach (var item in CopyNodes)
+            {
+                Type type = item.GetType();
+
+                STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+                if (sTNode1 != null)
+                {
+                    sTNode1.Create();
+                    PropertyInfo[] properties = type.GetProperties();
+                    foreach (PropertyInfo property in properties)
+                    {
+                        if (property.CanRead && property.CanWrite)
+                        {
+                            object value = property.GetValue(item);
+                            property.SetValue(sTNode1, value);
+                        }
+                    }
+                    sTNode1.Left = item.Left + offset;
+                    sTNode1.Top = item.Top + offset;
+                    sTNode1.IsSelected = true;
+                    STNodeEditor.Nodes.Add(sTNode1);
+                    if (CopyNodes.Count == 1)
+                    {
+                        item.IsSelected = false;
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                        STNodeEditor.SetActiveNode(sTNode1);
+                    }
+                    else
+                    {
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                    }
+                }
+            }
+
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+
+
+
+        }
+
+
 
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
@@ -139,6 +215,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
             }
 
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode algorithmBlackMuraNode)
             {
                 AddStackPanel(name => algorithmBlackMuraNode.DeviceCode = name, algorithmBlackMuraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
@@ -182,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
@@ -689,11 +766,55 @@ namespace ColorVision.Engine.Templates.Flow
         #endregion
 
         #region ContextMenu
+
+        public void AddNodeContext()
+        {
+            foreach (var item in STNodeEditor.Nodes)
+            {
+                if (item is STNode node)
+                {
+                    node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+                    node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+                    node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+                    node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+                }
+            }
+        }
+
+
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+            node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+            node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+        }
+
+        public void CopySTNode(STNode sTNode)
+        {
+            Type type = sTNode.GetType();
+
+            STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+            if (sTNode1 != null)
+            {
+                sTNode1.Create();
+                PropertyInfo[] properties = type.GetProperties();
+                foreach (PropertyInfo property in properties)
+                {
+                    if (property.CanRead && property.CanWrite)
+                    {
+                        object value = property.GetValue(sTNode);
+                        property.SetValue(sTNode1, value);
+                    }
+                }
+                sTNode1.Left = sTNode.Left;
+                sTNode1.Top = sTNode.Top;
+
+                STNodeEditor.Nodes.Add(sTNode1);
+            }
         }
 
         public void AddContentMenu()

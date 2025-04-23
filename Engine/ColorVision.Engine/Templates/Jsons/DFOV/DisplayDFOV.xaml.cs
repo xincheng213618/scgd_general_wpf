@@ -7,25 +7,26 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.FOV
+namespace ColorVision.Engine.Templates.Jsons.DFOV
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayFOV : UserControl
+    public partial class DisplayDFOV : UserControl
     {
-        public AlgorithmFOV IAlgorithm { get; set; }
-        public DisplayFOV(AlgorithmFOV fOVAlgorithm)
+        public AlgorithmDFOV IAlgorithm { get; set; }
+        public DisplayDFOV(AlgorithmDFOV iAlgorithm)
         {
-            IAlgorithm = fOVAlgorithm;
+            IAlgorithm = iAlgorithm;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            ComboxFOVTemplate.ItemsSource = TemplateFOV.Params;
-            ComboxFOVTemplate.SelectedIndex = 0;
+            
+            ComboxTemplate.ItemsSource = TemplateDFOV.Params;
+            ComboxTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -38,11 +39,16 @@ namespace ColorVision.Engine.Templates.FOV
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择DFOV模板")) return;
+
+            if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
+
+
+
+
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                var pm = TemplateFOV.Params[ComboxFOVTemplate.SelectedIndex].Value;
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
@@ -50,8 +56,8 @@ namespace ColorVision.Engine.Templates.FOV
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand( code, type, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                ServicesHelper.SendCommand(msg, "FOV");
+                MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
+                ServicesHelper.SendCommand(msg, "正在执行DFOV算法");
             }
         }
 
@@ -76,6 +82,7 @@ namespace ColorVision.Engine.Templates.FOV
             else if (isRaw == true)
             {
                 imgFileName = CB_RawImageFiles.Text;
+                fileExtType = FileExtType.Raw;
             }
             else
             {
@@ -86,7 +93,6 @@ namespace ColorVision.Engine.Templates.FOV
                 MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
-
 
             if (Path.GetExtension(imgFileName).Contains("cvraw"))
             {
@@ -131,6 +137,7 @@ namespace ColorVision.Engine.Templates.FOV
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
         }
+
         private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
         {
             if (!File.Exists(ImageFile.Text))
@@ -140,5 +147,6 @@ namespace ColorVision.Engine.Templates.FOV
             }
             IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
         }
+
     }
 }
