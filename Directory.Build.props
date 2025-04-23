@@ -13,11 +13,11 @@
 	</PropertyGroup>
 	
 	<PropertyGroup>
-		<Copyright>Copyright (C) 2024 ColorVision Corporation</Copyright>
+		<Copyright>Copyright (C) 2025 ColorVision Corporation</Copyright>
 		<AssemblyCompany>ColorVision Corp.</AssemblyCompany>
-		<AssemblyCopyright>Copyright (C) 2024 ColorVision Corporation</AssemblyCopyright>
+		<AssemblyCopyright>Copyright (C) 2025 ColorVision Corporation</AssemblyCopyright>
 		<AssemblyProduct>ColorVision</AssemblyProduct>
-		<VersionPrefix>1.2.2.8</VersionPrefix>
+		<VersionPrefix>1.2.2.9</VersionPrefix>
 		<Company>ColorVision</Company>
 		<NeutralLanguage>zh-CN</NeutralLanguage>
 		<NeutralLanguage>zh-CN</NeutralLanguage> 

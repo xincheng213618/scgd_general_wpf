@@ -1,5 +1,6 @@
 ﻿#pragma warning disable SYSLIB0014
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
@@ -10,6 +11,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Windows;
 using System.Xml.Linq;
+using WindowsServicePlugin.Menus;
 
 
 namespace WindowsServicePlugin
@@ -107,6 +109,24 @@ namespace WindowsServicePlugin
     }
 
 
+    public class RestartService : MenuItemBase
+    {
+        public override string OwnerGuid => "ServiceLog";
+        public override string Header => "重启服务";
+        public override int Order => 2;
+
+        public override void Execute()
+        {
+            if (Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService"))
+            {
+                MessageBox.Show("重启服务成功");
+            }
+            else
+            {
+                MessageBox.Show("重启服务失败请手动重启服务");
+            }
+        }
+    }
 
 
 
@@ -158,7 +178,7 @@ namespace WindowsServicePlugin
         public async Task Initialize()
         {
             // 如果是调试模式，不进行更新检测
-            if (Debugger.IsAttached) return;
+            //if (Debugger.IsAttached) return;
 
             if (Config.IsAutoUpdate)
             {
@@ -221,16 +241,35 @@ namespace WindowsServicePlugin
                                             if (folderBrowser != null)
                                             {
                                                 ZipFile.ExtractToDirectory(downloadPath, folderBrowser, true);
+
+                                                DirectoryInfo directoryInfo = Directory.GetParent(CVWinSMSConfig.Instance.CVWinSMSPath);
+                                                if (directoryInfo.Name != "InstallTool")
+                                                {
+                                                    string Config = directoryInfo.FullName + "\\config\\App.config";
+                                                    string dirconfig = folderBrowser + "\\InstallTool\\config\\App.config";
+                                                    DirectoryInfo targetDirInfo = Directory.GetParent(dirconfig);
+                                                    if (!targetDirInfo.Exists)
+                                                    {
+                                                        targetDirInfo.Create();
+                                                    }
+                                                    File.Copy(Config,dirconfig,true);
+                                                    directoryInfo.Delete(true);
+                                                }
+                                                CVWinSMSConfig.Instance.CVWinSMSPath = folderBrowser + "\\InstallTool\\CVWinSMS.exe";
+
                                             }
                                             else
                                             {
                                                 MessageBox.Show("更新失败， 找不到更新所在的文件夹");
                                             }
+
+
+
+
                                         }
                                         catch (Exception ex)
                                         {
                                             MessageBox.Show("更新失败，" + ex.Message);
-
                                         }
 
                                         // 启动新的实例
