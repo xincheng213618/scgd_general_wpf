@@ -47,6 +47,17 @@ namespace System.ComponentModel
     }
 
 
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event)]
+    public class PropertyVisibilityAttribute : Attribute
+    {
+        public string PropertyName { get; }
+        public bool IsInverted { get; }
+        public PropertyVisibilityAttribute(string propertyName ,bool isInverted = false)
+        {
+            PropertyName = propertyName;
+            IsInverted = isInverted;
+        }
+    }
 
 
 
@@ -66,6 +77,7 @@ namespace System.ComponentModel
         public PropertyEditorTypeAttribute() : this(PropertyEditorType.Default)
         {
         }
+
         public PropertyEditorTypeAttribute(PropertyEditorType propertyEditorType, object[] itemSourse)
         {
             PropertyEditorTypeValue = propertyEditorType;

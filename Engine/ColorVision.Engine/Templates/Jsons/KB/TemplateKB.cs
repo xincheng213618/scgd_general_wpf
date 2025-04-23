@@ -2,9 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.UI;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -66,7 +64,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public TemplateKB()
         {
-            Title = "KB模板管理";
+            Title = "键盘检测模板管理";
             Code = "KB";
             TemplateParams = Params;
             IsSideHide = true;

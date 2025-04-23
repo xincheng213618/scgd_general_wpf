@@ -7,7 +7,6 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -45,6 +44,8 @@ namespace ColorVision.Engine.Templates.Flow
                 foreach (var dbModel in flows)
                 {
                     List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
+
+
                     var param = new FlowParam(dbModel, flowDetails);
 
                     if (backup.TryGetValue(param.Id, out var model))
@@ -226,6 +227,7 @@ namespace ColorVision.Engine.Templates.Flow
                         sysResourceModel.Type = sysResourceModeldefault.Type;
                         sysResourceModel.Value = sysResourceModeldefault.Value;
                         VSysResourceDao.Instance.Save(sysResourceModel);
+
                         flowDetail[0].ValueA = sysResourceModel.Id.ToString();
                         ModFlowDetailDao.Instance.Save(flowDetail[0]);
                     }

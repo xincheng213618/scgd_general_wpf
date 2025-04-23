@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Interfaces;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.LedCheck

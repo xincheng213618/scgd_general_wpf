@@ -7,7 +7,7 @@ namespace cvColorVision
 
     public static class ConvertXYZ
     {
-        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
         #region cvConvertXYZ.cpp
 

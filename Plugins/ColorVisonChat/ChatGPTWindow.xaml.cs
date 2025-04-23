@@ -3,7 +3,6 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using log4net;
-using OpenAI;
 using OpenAI.Chat;
 using System.ClientModel;
 using System.Collections.ObjectModel;

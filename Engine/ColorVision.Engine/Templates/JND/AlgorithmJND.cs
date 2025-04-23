@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -12,11 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.JND
 {
-    public class AlgorithmJND : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmJND : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "JND";
-        public int Order { get; set; } = 3;
-
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
@@ -25,7 +23,10 @@ namespace ColorVision.Engine.Templates.JND
 
         public AlgorithmJND(DeviceAlgorithm deviceAlgorithm) 
         {
-            Device = deviceAlgorithm;
+            Name = "JND";
+            Order = 3;
+			Group = "数据提取算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }
@@ -46,7 +47,7 @@ namespace ColorVision.Engine.Templates.JND
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayJND(this);
             return UserControl;
@@ -59,7 +60,8 @@ namespace ColorVision.Engine.Templates.JND
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             

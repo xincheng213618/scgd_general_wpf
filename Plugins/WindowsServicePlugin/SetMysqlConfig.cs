@@ -1,8 +1,6 @@
 ﻿#pragma warning disable SYSLIB0014
-using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;

@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Templates
     }
 
 
-    public class ModMasterDao : BaseDaoMaster<ModMasterModel>
+    public class ModMasterDao : BaseViewDao<ModMasterModel>
     {
         public static ModMasterDao Instance { get; set; } = new ModMasterDao(string.Empty);
 

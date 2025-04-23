@@ -91,7 +91,7 @@ namespace ColorVision.Engine.DataHistory.Dao
         public int CfgType { get => _CfgType; set { _CfgType = value; NotifyPropertyChanged(); } }
         private int _CfgType;
 
-        [Column("cfg_value"), DisplayName("CFGValue")]
+        [Column("cfg_value"), DisplayName(nameof(CfgValue)),PropertyEditorType(PropertyEditorType.TextJson)]
         public string CfgValue { get => _CfgValue; set { _CfgValue = value; NotifyPropertyChanged(); } }
         private string _CfgValue;
 

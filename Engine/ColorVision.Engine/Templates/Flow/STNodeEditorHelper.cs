@@ -15,13 +15,14 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
-using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.DFOV;
+using ColorVision.Engine.Templates.Jsons.GhostQK;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
@@ -35,10 +36,7 @@ using ColorVision.Engine.Templates.POI.POIRevise;
 using ColorVision.Engine.Templates.ROI;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
-using FlowEngineLib;
-using FlowEngineLib.Base;
 using FlowEngineLib.End;
-using FlowEngineLib.Node.Algorithm;
 using FlowEngineLib.Start;
 using ST.Library.UI.NodeEditor;
 using System;
@@ -56,94 +54,6 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Templates.Flow
 {
 
-    [STNode("/03_4 Algorithm")]
-    public class NodeTest : CVBaseServerNode
-    {
-        private int _OrderIndex;
-
-        private string _TempName;
-
-        private string _CaliTemplate;
-
-        private string _ImgFileName;
-
-        private STNodeEditText<string> m_ctrl_temp;
-
-        [STNodeProperty("o-index", "Input Order Index", true, false, false)]
-        public int OrderIndex
-        {
-            get
-            {
-                return _OrderIndex;
-            }
-            set
-            {
-                _OrderIndex = value;
-            }
-        }
-
-        [STNodeProperty("参数模板", "参数模板", true)]
-        public string TempName
-        {
-            get
-            {
-                return _TempName;
-            }
-            set
-            {
-                _TempName = value;
-                m_ctrl_temp.Value = value;
-            }
-        }
-
-        [STNodeProperty("图像文件", "图像文件", true)]
-        public string ImgFileName
-        {
-            get
-            {
-                return _ImgFileName;
-            }
-            set
-            {
-                _ImgFileName = value;
-            }
-        }
-
-        public NodeTest()
-            : base("KB算法", "Algorithm", "SVR.Algorithm.Default", "DEV.Algorithm.Default")
-        {
-            operatorCode = "KB";
-            _CaliTemplate = "";
-            _TempName = "";
-            _OrderIndex = -1;
-        }
-        protected override void m_in_start_DataTransfer(object sender, STNodeOptionEventArgs e)
-        {
-            if (e.Status != ConnectionStatus.Connected || e.TargetOption.Data == null)
-            {
-                FlowConfig.Instance.IsShowNickName = true;
-                m_op_end.TransferData();
-            }
-            return;
-        }
-        protected override void DoTransCompleted(CVStartCFC action)
-        {
-            return;
-        }
-        protected override void OnCreate()
-        {
-            base.OnCreate();
-            m_ctrl_temp = CreateControl(typeof(STNodeEditText<string>), m_custom_item, "模板:", _TempName);
-        }
-
-        protected override object getBaseEventData(CVStartCFC start)
-        {
-            KBParam kBParam = new KBParam(_TempName, _ImgFileName, GetImageFileType(_ImgFileName), _CaliTemplate);
-            getPreStepParam(start, kBParam);
-            return kBParam;
-        }
-    }
-
     public class STNodeEditorHelper:ViewModelBase
     {
         public STNodeEditor STNodeEditor { get; set; }
@@ -153,7 +63,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public STNodeTreeView STNodeTreeView1 { get; set; }
 
-        public STNodeEditorHelper(STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
+        public STNodeEditorHelper(Control Paraent,STNodeEditor sTNodeEditor, STNodeTreeView sTNodeTreeView1, STNodePropertyGrid sTNodePropertyGrid, StackPanel stackPanel)
         {
             STNodeEditor = sTNodeEditor;
             STNodeTreeView1 = sTNodeTreeView1;
@@ -161,11 +71,86 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel = stackPanel;
             STNodeEditor.NodeAdded += StNodeEditor1_NodeAdded;
             STNodeEditor.ActiveChanged += STNodeEditorMain_ActiveChanged;
-
             STNodePropertyGrid1.SetInfoKey("Xincheng", "1791746286@qq.com", "https://xincheng213618.com/", "Xincheng");
 
             AddContentMenu();
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
+            {
+                foreach (var item in STNodeEditor.GetSelectedNode())
+                    STNodeEditor.Nodes.Remove(item);
+            } , (s, e) => { e.CanExecute = sTNodeEditor.GetSelectedNode().Length > 0; }));
+
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.New, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
+
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = true; }));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = CopyNodes.Count >0;}));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
         }
+
+        private List<STNode> CopyNodes = new List<STNode>();
+
+        public void Copy()
+        {
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+        }
+
+        public void Paste()
+        {
+            int offset = 10;
+
+            foreach (var item in CopyNodes)
+            {
+                Type type = item.GetType();
+
+                STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+                if (sTNode1 != null)
+                {
+                    sTNode1.Create();
+                    PropertyInfo[] properties = type.GetProperties();
+                    foreach (PropertyInfo property in properties)
+                    {
+                        if (property.CanRead && property.CanWrite)
+                        {
+                            object value = property.GetValue(item);
+                            property.SetValue(sTNode1, value);
+                        }
+                    }
+                    sTNode1.Left = item.Left + offset;
+                    sTNode1.Top = item.Top + offset;
+                    sTNode1.IsSelected = true;
+                    STNodeEditor.Nodes.Add(sTNode1);
+                    if (CopyNodes.Count == 1)
+                    {
+                        item.IsSelected = false;
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                        STNodeEditor.SetActiveNode(sTNode1);
+                    }
+                    else
+                    {
+                        STNodeEditor.RemoveSelectedNode(item);
+                        STNodeEditor.AddSelectedNode(sTNode1);
+                    }
+                }
+            }
+
+            CopyNodes.Clear();
+            foreach (var item in STNodeEditor.GetSelectedNode())
+            {
+                CopyNodes.Add(item);
+            }
+
+
+
+        }
+
+
 
         #region Activate
         private void STNodeEditorMain_ActiveChanged(object? sender, EventArgs e)
@@ -177,6 +162,12 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.PG.PGNode pgnode)
             {
                 AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
+            {
+                AddStackPanel(name => realPOINode.FilterTemplateName = name, realPOINode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
+                AddStackPanel(name => realPOINode.ReviseTemplateName = name, realPOINode.OutputTemplateName, "POI修正", new TemplatePoiReviseParam());
+                AddStackPanel(name => realPOINode.OutputTemplateName = name, realPOINode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.SMUModelNode sMUModelNode)
@@ -219,6 +210,11 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
             }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostNode algorithmGhostNode)
+            {
+                AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
+            }
+
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode algorithmBlackMuraNode)
             {
@@ -263,7 +259,7 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateFOV());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
@@ -291,6 +287,7 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR_FindROI:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "SFR_FindROI", new TemplateSFRFindROI());
+                            AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.双目融合:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "双目融合", new TemplateBinocularFusion());
@@ -769,11 +766,55 @@ namespace ColorVision.Engine.Templates.Flow
         #endregion
 
         #region ContextMenu
+
+        public void AddNodeContext()
+        {
+            foreach (var item in STNodeEditor.Nodes)
+            {
+                if (item is STNode node)
+                {
+                    node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
+                    node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+                    node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+                    node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+                    node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+                }
+            }
+        }
+
+
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditor.Nodes.Remove(node));
+            node.ContextMenuStrip.Items.Add("复制", null, (s, e1) => CopySTNode(node));
+            node.ContextMenuStrip.Items.Add("LockOption", null, (s, e1) => STNodeEditor.ActiveNode.LockOption = !STNodeEditor.ActiveNode.LockOption);
+            node.ContextMenuStrip.Items.Add("LockLocation", null, (s, e1) => STNodeEditor.ActiveNode.LockLocation = !STNodeEditor.ActiveNode.LockLocation);
+        }
+
+        public void CopySTNode(STNode sTNode)
+        {
+            Type type = sTNode.GetType();
+
+            STNode sTNode1 = (STNode)Activator.CreateInstance(type);
+            if (sTNode1 != null)
+            {
+                sTNode1.Create();
+                PropertyInfo[] properties = type.GetProperties();
+                foreach (PropertyInfo property in properties)
+                {
+                    if (property.CanRead && property.CanWrite)
+                    {
+                        object value = property.GetValue(sTNode);
+                        property.SetValue(sTNode1, value);
+                    }
+                }
+                sTNode1.Left = sTNode.Left;
+                sTNode1.Top = sTNode.Top;
+
+                STNodeEditor.Nodes.Add(sTNode1);
+            }
         }
 
         public void AddContentMenu()

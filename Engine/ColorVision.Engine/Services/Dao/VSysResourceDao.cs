@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Services.Dao
 
 
 
-    public class VSysResourceDao : BaseDaoMaster<SysResourceModel>
+    public class VSysResourceDao : BaseViewDao<SysResourceModel>
     {
         public static VSysResourceDao Instance { get; set; } = new VSysResourceDao();
 

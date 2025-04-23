@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -19,7 +20,6 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public bool KBCanDrag { get => _KBCanDrag; set { _KBCanDrag = value; NotifyPropertyChanged(); } }
         private bool _KBCanDrag;
-
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -45,12 +45,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             };
         }
     }
-
-    public class AlgorithmKB : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmKB : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "KB服务测试";
-
-        public int Order { get; set; } = 98;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -61,7 +57,10 @@ namespace ColorVision.Engine.Templates.Jsons.KB
 
         public AlgorithmKB(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "键盘检测";
+            Order = 98;
+            Group = "数据提取算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFirstTemplateCommand = new RelayCommand(a => OpenFirstTemplate());
         }
@@ -78,7 +77,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         public int TemplateSelectedIndex { get => _TemplateSelectedIndex; set { _TemplateSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _TemplateSelectedIndex;
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayKB(this);
             return UserControl;
@@ -91,7 +90,8 @@ namespace ColorVision.Engine.Templates.Jsons.KB
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new Dictionary<string,object>() { { "ID", paramBase.Id },{ "Name", paramBase.Name } });
             MsgSend msg = new()

@@ -309,5 +309,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 DeviceService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
         }
+
+        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
+        {
+            if (!File.Exists(ImageFile.Text))
+            {
+                MessageBox.Show("找不到图像文件");
+                return;
+            }
+            Device.View.ImageView.OpenImage(ImageFile.Text);
+        }
     }
 }

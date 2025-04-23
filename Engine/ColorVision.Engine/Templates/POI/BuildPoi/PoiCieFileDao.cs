@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS0618
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.UI.Sorts;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi

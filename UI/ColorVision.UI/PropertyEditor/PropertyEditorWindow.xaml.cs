@@ -13,6 +13,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 
 namespace ColorVision.UI
 {
@@ -162,6 +163,7 @@ namespace ColorVision.UI
                 foreach (var property in categoryGroup.Value)
                 {
                     var browsableAttr = property.GetCustomAttribute<BrowsableAttribute>();
+                    
                     if (browsableAttr?.Browsable ?? true)
                     {
                         DockPanel dockPanel = new DockPanel();
@@ -191,6 +193,19 @@ namespace ColorVision.UI
                         if (categoryGroup.Value.IndexOf(property) == categoryGroup.Value.Count - 1)
                         {
                             dockPanel.Margin = new Thickness(0);
+                        }
+
+                        var VisibleBlindAttr = property.GetCustomAttribute<PropertyVisibilityAttribute>();
+                        if (VisibleBlindAttr != null)
+                        {
+                            var binding = new Binding(VisibleBlindAttr.PropertyName)
+                            {
+                                Source = obj,
+                                Mode = BindingMode.TwoWay
+                            };
+
+                            binding.Converter = (IValueConverter)Application.Current.FindResource(VisibleBlindAttr.IsInverted?"bool2VisibilityConverter": "bool2VisibilityConverter1");
+                            dockPanel.SetBinding(DockPanel.VisibilityProperty, binding);
                         }
                         stackPanel.Children.Add(dockPanel);
                     }
@@ -393,7 +408,70 @@ namespace ColorVision.UI
             }
             else if (propertyEditorType == PropertyEditorType.TextJson)
             {
+                RelayCommand relayCommand = new RelayCommand(a =>
+                {
+                    AvalonEditWindow avalonEditWindow = new AvalonEditWindow() { WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = Application.Current.GetActiveWindow() };
+                    avalonEditWindow.SetJsonText((string)property.GetValue(obj));
+                    avalonEditWindow.Closing += (s, e) =>
+                    {
+                        property.SetValue(obj,avalonEditWindow.GetJsonText());
+                    };
+                    avalonEditWindow.ShowDialog();
+                });
+                Button button = new Button
+                {
+                    Width = 25,
+                    Height = 25,
+                    Margin = new Thickness(5, 1, 5, 0),
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Padding = new Thickness(2),
+                    Command = relayCommand
+                };
+                TextBlock textBlock1 = new TextBlock
+                {
+                    Text = "\uE713",
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 16,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    RenderTransformOrigin = new Point(0.5, 0.5),
+                    Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+                };
 
+                RotateTransform rotateTransform = new RotateTransform();
+                textBlock1.RenderTransform = rotateTransform;
+                button.Content = textBlock1;
+                DoubleAnimation rotateAnimation = new DoubleAnimation
+                {
+                    From = 0,
+                    To = 360,
+                    Duration = new Duration(TimeSpan.FromSeconds(0.5)),
+                    FillBehavior = FillBehavior.Stop
+                };
+
+                // Create the storyboard
+                Storyboard storyboard = new Storyboard();
+                storyboard.Children.Add(rotateAnimation);
+                Storyboard.SetTarget(rotateAnimation, rotateTransform);
+                Storyboard.SetTargetProperty(rotateAnimation, new PropertyPath(RotateTransform.AngleProperty));
+
+                // Add the click event handler
+                button.Click += (s, e) => storyboard.Begin();
+
+
+                var textbox = new TextBox
+                {
+                    Margin = new Thickness(5, 0, 0, 0),
+                    Style = (Style)Application.Current.FindResource("TextBox.Small")
+                };
+                var binding = new Binding(property.Name)
+                {
+                    Source = obj,
+                    Mode = BindingMode.TwoWay
+                };
+                textbox.SetBinding(TextBox.TextProperty, binding);
+                DockPanel.SetDock(button, Dock.Right);
+                dockPanel.Children.Add(button);
+                dockPanel.Children.Add(textbox);
             }
             else if (propertyEditorType == PropertyEditorType.CronExpression)
             {

@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using System.IO;
 using ColorVision.UI.Shell;
 using System.Windows;
 

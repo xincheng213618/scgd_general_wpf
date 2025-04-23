@@ -7,6 +7,7 @@ using ColorVision.Engine.Templates.POI.POIRevise;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -129,6 +130,16 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
             {
                 ImageFile.Text = openFileDialog.FileName;
             }
+        }
+
+        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
+        {
+            if (!File.Exists(ImageFile.Text))
+            {
+                MessageBox.Show("找不到图像文件");
+                return;
+            }
+            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
         }
     }
 }

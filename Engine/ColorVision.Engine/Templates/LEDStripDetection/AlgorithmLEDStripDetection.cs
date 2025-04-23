@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -11,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.LEDStripDetection
 {
-    public class AlgorithmLEDStripDetection : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmLEDStripDetection : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "灯带检测";
-        public int Order { get; set; } = 10;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -23,7 +22,11 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
 
         public AlgorithmLEDStripDetection(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "灯带检测";
+            Order = 10;
+			Group = "定位算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -36,7 +39,7 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayLEDStripDetection(this);
             return UserControl;
@@ -52,7 +55,8 @@ namespace ColorVision.Engine.Templates.LEDStripDetection
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             Params.Add("IsInversion", IsInversion);

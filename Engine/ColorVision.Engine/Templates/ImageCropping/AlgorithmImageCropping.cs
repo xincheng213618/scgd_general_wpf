@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -11,10 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.ImageCropping
 {
-    public class AlgorithmImageCropping : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmImageCropping : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "发光区裁剪";
-        public int Order { get; set; } = 5;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -23,7 +22,11 @@ namespace ColorVision.Engine.Templates.ImageCropping
 
         public AlgorithmImageCropping(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "发光区裁剪";
+            Order = 5;
+			Group = "数据提取算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -36,7 +39,7 @@ namespace ColorVision.Engine.Templates.ImageCropping
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayImageCropping(this);
             return UserControl;
@@ -57,7 +60,8 @@ namespace ColorVision.Engine.Templates.ImageCropping
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };

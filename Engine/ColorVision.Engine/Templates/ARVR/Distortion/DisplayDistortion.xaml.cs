@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Templates.Distortion
                     code = deviceService.Code;
                 }
                 MsgRecord msg = IAlgorithm.SendCommand(param,code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "LEDStripDetection");
+                ServicesHelper.SendCommand(msg, "正在计算Distortion");
             }
         }
 
@@ -131,6 +131,15 @@ namespace ColorVision.Engine.Templates.Distortion
         {
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
+        }
+        private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
+        {
+            if (!File.Exists(ImageFile.Text))
+            {
+                MessageBox.Show("找不到图像文件");
+                return;
+            }
+            IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
         }
     }
 }

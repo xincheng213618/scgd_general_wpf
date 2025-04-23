@@ -5,11 +5,81 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Views;
 
 namespace ColorVision.UI
 {
+
+
     public static class DisPlayManagerExtension
     {
+
+        public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)
+        {
+            if (view is not Control control) throw new NotImplementedException();
+
+            ViewGridManager.GetInstance().AddView(control);
+
+
+            void ViewMaxChangedEvent(int max)
+            {
+                List<KeyValuePair<string, int>> KeyValues = new()
+                {
+                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowSingle, -2),
+                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowHidden, -1)
+                };
+                for (int i = 0; i < max; i++)
+                {
+                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
+                }
+                comboBox.ItemsSource = KeyValues;
+
+                if (view.View.ViewIndex >= max)
+                {
+                    view.View.ViewIndex = -1;
+                }
+                comboBox.SelectedValue = view.View.ViewIndex;
+            }
+
+            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+
+            //移除掉所有的订阅者
+            view.View.ClearViewIndexChangedSubscribers();
+
+            view.View.ViewIndexChangedEvent += (e1, e2) =>
+            {
+                comboBox.SelectedIndex = e2 + 2;
+            };
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                if (s is ComboBox combo && combo.SelectedItem is KeyValuePair<string, int> KeyValue)
+                {
+                    view.View.ViewIndex = KeyValue.Value;
+                    ViewGridManager.GetInstance().SetViewIndex(control, KeyValue.Value);
+                }
+            };
+            view.View.ViewIndex = -1;
+
+            if (userControl is IDisPlayControl disPlayControl)
+            {
+                disPlayControl.Selected += (s, e) =>
+                {
+                    if (ViewConfig.Instance.IsAutoSelect)
+                    {
+                        if (ViewGridManager.GetInstance().ViewMax == 1)
+                        {
+                            view.View.ViewIndex = 0;
+                            ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                        }
+                    }
+                };
+            }
+
+        }
+
+
         public static void ApplyChangedSelectedColor(this IDisPlayControl disPlayControl, Border border)
         {
             void UpdateDisPlayBorder()
@@ -58,11 +128,15 @@ namespace ColorVision.UI
 
 
 
-    public class DisPlayManagerConfig : IConfig
+    public class DisPlayManagerConfig : ViewModelBase,IConfig
     {
         public static DisPlayManagerConfig Instance => ConfigService.Instance.GetRequiredService<DisPlayManagerConfig>();
-        public Dictionary<string, int> PlayControls { get; set; } = new Dictionary<string, int>();
+        public Dictionary<string, int> StoreIndex { get; set; } = new Dictionary<string, int>();
+        public bool IsRetore { get => _IsRetore; set { _IsRetore = value; NotifyPropertyChanged(); } }
+        private bool _IsRetore = true;
     }
+
+
 
     public class DisPlayManager
     {
@@ -150,7 +224,7 @@ namespace ColorVision.UI
                 for (int i = 0; i < StackPanel.Children.Count; i++)
                 {
                     if (StackPanel.Children[i] is IDisPlayControl disPlayControl)
-                        DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
+                        DisPlayManagerConfig.Instance.StoreIndex[disPlayControl.DisPlayName] = i;
                 }
             };
 
@@ -160,6 +234,33 @@ namespace ColorVision.UI
                 StackPanel.Tag = IDisPlayControls[0];
             }
 
+        }
+
+        public void RestoreControl()
+        {
+            var nameToIndexMap = DisPlayManagerConfig.Instance.StoreIndex;
+            if (DisPlayManagerConfig.Instance.IsRetore)
+            {
+                IDisPlayControls.Sort((a, b) =>
+                {
+                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
+                    {
+                        return indexA.CompareTo(indexB);
+                    }
+                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
+                    {
+                        return -1; // a should come before b
+                    }
+                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
+                    {
+                        return 1; // b should come before a
+                    }
+                    return 0; // keep original order if neither a nor b are in playControls
+                });
+            }
+
+            for (int i = 0; i < IDisPlayControls.Count; i++)
+                DisPlayManagerConfig.Instance.StoreIndex[IDisPlayControls[i].DisPlayName] = i;
         }
 
 

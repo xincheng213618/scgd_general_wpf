@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
-using System.ComponentModel;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;

@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.Solution;
-using ColorVision.UI;
-using System;
 using System.Windows;
 using System.Windows.Controls;
 

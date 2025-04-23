@@ -6,7 +6,6 @@ using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using static cvColorVision.GCSDLL;
 
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
@@ -192,53 +191,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             SpectrumService.GetParam();
         }
-        #endregion
-        #region Spectrum
-
-        private ColorParamReturn SpectrumData;
-
-        private bool ConnectSpectrum()
-        {
-            if (JKStartServer() != 0)
-            {
-                MessageBox.Show("启动光谱仪软件的服务失败");
-                return false;
-            }
-            if (CVInit() != 0)
-            {
-                MessageBox.Show("连接光谱仪失败");
-                return false;
-            }
-            SpectrumData += TestResult;
-            return true;
-        }
-        private static bool DisconnectSpectrum()
-        {
-            if (JKEmissionClose() != 0)
-            {
-                MessageBox.Show("断开光谱仪失败");
-                return false;
-            }
-            if (JKCloseServer() != 0)
-            {
-                MessageBox.Show("断开光谱仪软件的服务失败");
-                return false;
-            }
-            return true;
-        }
-
-        public void TestResult(ref ColorParam data, float intTime, int resultCode)
-        {
-            if (resultCode == 0)
-            {
-                View.SpectrumDrawPlot(new SpectrumData(-1,data));
-            }
-            else
-            {
-                MessageBox.Show("测量失败");
-            }
-        }
-
         #endregion
 
         private void Button_Click_Shutter_Connect(object sender, RoutedEventArgs e)

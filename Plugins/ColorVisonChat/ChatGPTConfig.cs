@@ -1,6 +1,4 @@
-﻿using ColorVision.UI;
-
-namespace ColorVisonChat
+﻿namespace ColorVisonChat
 {
 
 }

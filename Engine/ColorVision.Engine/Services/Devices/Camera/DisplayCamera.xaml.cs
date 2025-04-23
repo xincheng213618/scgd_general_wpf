@@ -13,22 +13,46 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;
+using FlowEngineLib.Algorithm;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
+    public class DisplayCameraLocalConfig : IConfig
+    {
+        public static DisplayCameraLocalConfig Instance => ConfigService.Instance.GetRequiredService<DisplayCameraLocalConfig>();
+
+        public Dictionary<string, DisplayCameraConfig> keyValuePairs { get; set; } = new Dictionary<string, DisplayCameraConfig>();
+
+        public DisplayCameraConfig GetDisplayCameraConfig(string key)
+        {
+            if (keyValuePairs.TryGetValue(key, out DisplayCameraConfig config))
+            {
+                return config;
+            }
+            else
+            {
+                config = new DisplayCameraConfig();
+                keyValuePairs.Add(key, config);
+                return config;
+            }
+        }
+
+    }
 
     public class DisplayCameraConfig:IConfig
     {
-        public static DisplayCameraConfig Instance => ConfigService.Instance.GetRequiredService<DisplayCameraConfig>();
         public double TakePictureDelay { get; set; }
 
         public int CalibrationTemplateIndex { get; set; }
@@ -51,6 +75,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
         public MQTTCamera DService { get => Device.DService; }
+
+        public DisplayCameraConfig DisplayCameraConfig  => DisplayCameraLocalConfig.Instance.GetDisplayCameraConfig(Device.Config.Code);
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
@@ -89,19 +115,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
 
-            ComboxCalibrationTemplate.DataContext = DisplayCameraConfig.Instance;
+            ComboxCalibrationTemplate.DataContext = DisplayCameraConfig;
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
             ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTime.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
-            ComboxAutoExpTimeParamTemplate.DataContext = DisplayCameraConfig.Instance;
+            ComboxAutoExpTimeParamTemplate.DataContext = DisplayCameraConfig;
 
             ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTime.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
-            ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig.Instance;
+            ComboxAutoExpTimeParamTemplate1.DataContext = DisplayCameraConfig;
 
             ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             ComboxAutoFocus.SelectedIndex = 0;
-            ComboxAutoFocus.DataContext = DisplayCameraConfig.Instance;
+            ComboxAutoFocus.DataContext = DisplayCameraConfig;
+
+            CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
+                                              select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
 
 
             void UpdateUI(DeviceStatusType status)
@@ -223,7 +252,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
                 ButtonProgressBarOpen.Start();
-                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.Instance.OpenTime; 
+                ButtonProgressBarOpen.TargetTime = DisplayCameraConfig.OpenTime; 
                 ServicesHelper.SendCommand(button,msgRecord);
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
@@ -233,10 +262,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     StackPanelOpen.Visibility = Visibility.Visible;
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarOpen.Stop();
-                    DisplayCameraConfig.Instance.OpenTime = ButtonProgressBarOpen.Elapsed;
+                    DisplayCameraConfig.OpenTime = ButtonProgressBarOpen.Elapsed;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
 
+                RotateTransform rotateTransform1 = new() { Angle = 0 };
+                View.ImageView.ImageShow.RenderTransform = rotateTransform1;
+                View.ImageView.ImageShow.RenderTransformOrigin = new Point(0.5, 0.5);
             }
         }
 
@@ -268,14 +300,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
 
             ButtonProgressBarGetData.Start();
-            ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.Instance.TakePictureDelay;
-            logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.Instance.TakePictureDelay}");
+            ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
+            logger.Info($"正在取图：ExpTime{Device.Config.ExpTime} othertime{DisplayCameraConfig.TakePictureDelay}");
 
             ServicesHelper.SendCommand(TakePhotoButton, msgRecord);
             msgRecord.MsgRecordStateChanged += (s) =>
             {
                 ButtonProgressBarGetData.Stop();
-                DisplayCameraConfig.Instance.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
+                DisplayCameraConfig.TakePictureDelay = ButtonProgressBarGetData.Elapsed - Device.Config.ExpTime;
                 if (s == MsgRecordState.Timeout)
                 {
                     MessageBox1.Show("取图超时,请重设超时时间或者是否为物理相机配置校正");
@@ -496,7 +528,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
             ButtonProgressBarClose.Start();
-            ButtonProgressBarClose.TargetTime = DisplayCameraConfig.Instance.CloseTime;
+            ButtonProgressBarClose.TargetTime = DisplayCameraConfig.CloseTime;
             if (msgRecord != null)
             {
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
@@ -514,7 +546,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     StackPanelOpen.Visibility = Visibility.Collapsed;
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                     ButtonProgressBarClose.Stop();
-                    DisplayCameraConfig.Instance.CloseTime = ButtonProgressBarClose.Elapsed;
+                    DisplayCameraConfig.CloseTime = ButtonProgressBarClose.Elapsed;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
             }

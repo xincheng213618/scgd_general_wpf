@@ -5,6 +5,7 @@ using ColorVision.ImageEditor.Draw;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using ColorVision.Util.Draw.Special;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -123,6 +124,10 @@ namespace ColorVision.ImageEditor
             Drop += ImageView_Drop;
 
             ComColormapTypes.ItemsSource = PseudoColor.GetColormapsDictionary();
+
+            ComboxeType.ItemsSource = from e1 in Enum.GetValues(typeof(MagnigifierType)).Cast<MagnigifierType>()
+                                      select new KeyValuePair<MagnigifierType, string>(e1, e1.ToString());
+
         }
 
 
@@ -822,8 +827,30 @@ namespace ColorVision.ImageEditor
                         Config.AddProperties("Channel", hImage.channels);
                         Config.AddProperties("Depth", hImage.depth);
                         Config.AddProperties("Stride", hImage.stride);
+
                         Config.Channel = hImage.channels;
                         Config.Ochannel = Config.Channel;
+
+                        if (hImage.depth == 16)
+                        {
+                            PseudoSlider.Maximum = 65535;
+                            PseudoSlider.ValueEnd = 65535;
+
+                            thresholdSlider.Maximum = 65535;
+                            thresholdSlider.Value = 0;
+                            Config.AddProperties("Max",65535 );
+
+                        }
+                        else
+                        {
+                            Config.AddProperties("Max", 255);
+
+                            PseudoSlider.Maximum = 255;
+                            PseudoSlider.ValueEnd = 255;
+
+                            thresholdSlider.Maximum = 255;
+                            thresholdSlider.Value = 0;
+                        }
                     }
                 })));
             }
@@ -1279,7 +1306,9 @@ namespace ColorVision.ImageEditor
                 Stopwatch stopwatch = new Stopwatch();
                 stopwatch.Start();
                 double thresh = thresholdSlider.Value;
-                double maxval = 65535;
+                double maxval =  Config.GetProperties<int>("Max");
+
+
                 int type = 0;
                 log.Info($"InvertImag");
                 Task.Run(() =>

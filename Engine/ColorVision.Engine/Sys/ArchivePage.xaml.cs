@@ -5,6 +5,7 @@ using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -129,6 +130,26 @@ namespace ColorVision.Engine.DataHistory.Dao
                 PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(configArchivedModel, false) { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
                 propertyEditorWindow.Submited += (s, e) => { ConfigArchivedDao.Instance.Save(configArchivedModel); };
                 propertyEditorWindow.ShowDialog();
+            }
+        }
+
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (sender is Button button && button.Tag is ArchivedMasterModel archivedMasterModel)
+            {
+                string SavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Archived");
+                if (!Directory.Exists(SavePath))
+                    Directory.CreateDirectory(SavePath);
+
+                string Save1Path = Path.Combine(SavePath,archivedMasterModel.Code);
+                if (!Directory.Exists(Save1Path)) 
+                    Directory.CreateDirectory(Save1Path);
+
+                foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", archivedMasterModel.Code } }))
+                {
+                    item.Save(Save1Path);
+                }
             }
         }
     }

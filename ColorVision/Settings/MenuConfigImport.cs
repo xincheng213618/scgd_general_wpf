@@ -2,10 +2,8 @@
 using ColorVision.UI.Menus;
 using ColorVision.Update;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Windows;
 
 namespace ColorVision.Settings
 {

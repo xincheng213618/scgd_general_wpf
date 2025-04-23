@@ -1,15 +1,21 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Compliance;
+using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.JND;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.Validate;
 using ColorVision.Themes;
 using FlowEngineLib;
+using FlowEngineLib.Base;
 using log4net;
+using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -20,11 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Templates.Validate;
-using FlowEngineLib.Base;
-using ColorVision.Engine.Services.RC;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Projects.ProjectShiYuan
 {
@@ -437,6 +439,53 @@ namespace ColorVision.Projects.ProjectShiYuan
 
                                 ResultText.Text = "OK";
                                 ResultText.Foreground = Brushes.Red;
+
+                                string h_gap = "C:\\Windows\\System32\\pic\\v_gap.tif";
+                                if (File.Exists(h_gap))
+                                {
+                                    File.Copy(h_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap_1" + ".tif", true);
+                                    BitmapImage bitmapImage = new BitmapImage(new Uri(h_gap));
+                                    HImage hImage = bitmapImage.ToHImage();
+
+                                    int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+                                            image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap" + ".tif");
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+
+                                        }
+                                    });
+                                }
+
+                                string g_gap = "C:\\Windows\\System32\\pic\\v_gap.tif";
+                                if (File.Exists(g_gap))
+                                {
+                                    File.Copy(g_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap_1" + ".tif", true);
+                                    BitmapImage bitmapImage = new BitmapImage(new Uri(g_gap));
+                                    HImage hImage = bitmapImage.ToHImage();
+
+                                    int ret = OpenCVMediaHelper.M_PseudoColor(hImage, out HImage hImageProcessed, 0, 65535, ColormapTypes.COLORMAP_JET, 1);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        if (ret == 0)
+                                        {
+                                            var image = hImageProcessed.ToWriteableBitmap();
+                                            image.SaveImageSourceToFile(ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_v_gap" + ".tif");
+                                            OpenCVMediaHelper.M_FreeHImageData(hImageProcessed.pData);
+                                            hImageProcessed.pData = IntPtr.Zero;
+
+                                        }
+                                    });
+                                }
+                                string luminance = "C:\\Windows\\System32\\pic\\luminance.tif";
+                                if (File.Exists(luminance))
+                                {
+                                    File.Copy(luminance, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "luminance_1" + ".tif", true);
+                                }
                             }
                             else
                             {
@@ -444,6 +493,10 @@ namespace ColorVision.Projects.ProjectShiYuan
                                 ResultText.Text = "NG";
                                 ResultText.Foreground = Brushes.Blue;
                             }
+
+
+
+
 
                         }
                         else
@@ -588,7 +641,6 @@ namespace ColorVision.Projects.ProjectShiYuan
                     gridView.Columns.Clear();
                     for (int i = 0; i < header.Count; i++)
                         gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    ListViewValue.ItemsSource = poiResultCIExyuvData.ValidateSingles;
                 }
 
             }

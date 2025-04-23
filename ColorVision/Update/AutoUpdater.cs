@@ -239,7 +239,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.CurrentVersionIsUpToDate, Version?.ToString(), MessageBoxButton.OK);
                         });
                     }
                 }
@@ -247,6 +247,7 @@ namespace ColorVision.Update
             catch (Exception ex)
             {
                 LatestVersion = CurrentVersion ?? new Version();
+                MessageBox.Show(ex.Message);
                 log.Info(ex);
             }
         }

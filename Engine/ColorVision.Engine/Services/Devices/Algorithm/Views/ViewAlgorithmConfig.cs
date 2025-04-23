@@ -48,5 +48,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;
 
+        [DisplayName("历史数据查询")]
+        public int HistoyDay { get => _HistoyDay; set { _HistoyDay = value; NotifyPropertyChanged(); } }
+        private int _HistoyDay = 1;
+
+
+        [DisplayName("显示位点信息")]
+        [PropertyEditorType(PropertyEditorType.TextSelectFile)]
+        public string ShowDateFilePath { get => _ShowDateFilePath; set { _ShowDateFilePath = value; NotifyPropertyChanged(); } }
+        private string _ShowDateFilePath;
+
     }
 }

@@ -1,4 +1,6 @@
-﻿using static cvColorVision.GCSDLL;
+﻿
+
+using cvColorVision;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
@@ -7,9 +9,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
         public int ID { get; set; }
         public float V { get; set; }
         public float I { get; set; }
-        public ColorParam Data { get; set; }
+        public COLOR_PARA Data { get; set; }
 
-        public SpectrumData(int id, ColorParam data)
+        public SpectrumData(int id, COLOR_PARA data)
         {
             ID = id;
             Data = data;

@@ -62,13 +62,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// 目标温度
         /// </summary>
         [JsonProperty("targetTemp")]
-        [DisplayName("目标温度")]
+        [DisplayName("目标温度"), PropertyVisibility(nameof(TempCtlChecked))]
         public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; NotifyPropertyChanged(); } }
         private float _TargetTemp = 10.0f;
         /// <summary>
         /// 温度查询时间间隔
         /// </summary>
-        [DisplayName("温度查询时间间隔(s)")]
+        [DisplayName("温度查询时间间隔(s)"), PropertyVisibility(nameof(TempCtlChecked))]
         public int TempSpanTime { get; set; } = 60;
 
         /// <summary>

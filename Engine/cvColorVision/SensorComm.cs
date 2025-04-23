@@ -12,7 +12,7 @@ namespace cvColorVision
 
     public class SensorComm
     {
-        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
 
         //初始化传感器

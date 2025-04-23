@@ -517,7 +517,7 @@ namespace cvColorVision
 
     public partial class cvCameraCSLib
     {
-        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
 
 
 
@@ -587,7 +587,7 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, CharSet = CharSet.Auto, EntryPoint = "CM_SetIndent", CallingConvention = CallingConvention.Cdecl)]
         public static extern void CM_SetIndent(IntPtr handle, int nL, int nT, int nR, int nB);
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetCalibParam", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern bool CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
+        public unsafe static extern int CM_SetCalibParam(IntPtr handle, CalibrationType cType, bool bEnabled, string filename);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetParamDarkNoise", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_SetParamDarkNoise(IntPtr handle, bool bEnabled, float darkNoiseRatio);

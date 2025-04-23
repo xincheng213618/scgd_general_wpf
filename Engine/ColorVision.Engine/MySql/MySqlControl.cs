@@ -83,7 +83,7 @@ namespace ColorVision.Engine.MySql
                 MySqlConnection.Open();
                 
                 ///https://blog.csdn.net/a79412906/article/details/8971534
-                ///https://bugs.mysql.com/bug.php?id=2400
+                ///https://bugs.mysql.com/bug.php?Id=2400
                 //BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
 
                 //BatchExecuteQuery("SHOW VARIABLES LIKE 'interactive_timeout';SHOW VARIABLES LIKE 'wait_timeout';");

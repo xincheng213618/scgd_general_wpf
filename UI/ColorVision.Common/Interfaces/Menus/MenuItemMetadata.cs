@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Windows;
-using System.Windows.Forms.Design;
 using System.Windows.Input;
 
 namespace ColorVision.UI.Menus

@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Utilities;
+using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -330,6 +331,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public override void Delete()
         {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), Properties.Resources.ConfirmDelete, "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             CalibrationParams.Clear();
             this.VisualChildren.Clear();
             SysResourceDao.Instance.DeleteAllByPid(Id, false);
@@ -472,6 +474,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
             openFileDialog.Title = "请选择许可证文件 " + SysResourceModel.Code;
             openFileDialog.FilterIndex = 1;
+            
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string[] selectedFiles = openFileDialog.FileNames;
@@ -481,13 +484,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                     SetLicense(file);
                 }
             }
-            DeviceCalibration?.RestartRCService();
-            DeviceCamera?.RestartRCService();
         }
 
-        public void SetLicense(string filepath)
+        public bool SetLicense(string filepath)
         {
-            if (!File.Exists(filepath)) return;
+            if (!File.Exists(filepath)) return false;
             if (Path.GetExtension(filepath) == ".zip")
             {
                 try
@@ -528,13 +529,16 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 {
                                     MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
                                 }
+                                return false;
                             }
+                            return true;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                    return false;
                 }
             }
             else if (Path.GetExtension(filepath) == ".lic")
@@ -566,7 +570,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                         {
                             MySqlControl.GetInstance().BatchExecuteNonQuery(new MysqlCameraLicense().GetRecover());
                         }
+                        return false;
                     }
+                    return true;
                 }
                 else
                 {
@@ -577,6 +583,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
             }
+            return false;
         }
 
 

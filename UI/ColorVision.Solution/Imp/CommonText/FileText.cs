@@ -1,12 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Solution;
 using ColorVision.Solution.V.Files;
-using System;
 using System.IO;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Solution.Imp.CommonText
 {

@@ -114,6 +114,58 @@ namespace ColorVision.Engine.DataHistory.Dao
         }
 
 
+        public void Save(string FullPath)
+        {
+            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+            switch (DetailType)
+            {
+                case "Camera_Img":
+                    // 解析 JSON
+                    JObject json = JObject.Parse(OutputValue);
+
+                    // 获取文件名
+                    string fileName = json["FileName"].ToString();
+                    string filepath = json["FilePath"].ToString();
+
+                    string fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
+                    if (!File.Exists(fullName))
+                    {
+                        return;
+                    }
+
+                    string exportPath = Path.Combine(FullPath, fileName);
+                    File.Copy(fullName, exportPath);
+                    break;
+                case "Algorithm_Calibration":
+                    // 解析 JSON
+                    json = JObject.Parse(OutputValue);
+
+                    // 获取文件名
+                    fileName = json["FileName"].ToString();
+                    filepath = json["FilePath"].ToString();
+
+                    fullName = Path.Combine(configArchivedModel.Path + "\\" + filepath, fileName);
+                    if (!File.Exists(fullName))
+                    {
+                        return;
+                    }
+                    string exportPath1 = Path.Combine(FullPath, fileName);
+                    File.Copy(fullName, exportPath1);
+
+                    break;
+                case "Algorithm_POI_XYZ":
+
+                    string exportPath2 = Path.Combine(FullPath, Guid);
+                    File.WriteAllText(exportPath2, OutputValue);
+                    break;
+                default:
+                    string exportPath3 = Path.Combine(FullPath, Guid);
+                    File.WriteAllText(exportPath3, OutputValue);
+                    break;
+            }
+        }
+
+
         [Column("guid"), DisplayName("Guid")]
         public string Guid { get; set; }
         [Column("p_guid"),DisplayName("名称")]

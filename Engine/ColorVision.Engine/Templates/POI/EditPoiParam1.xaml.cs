@@ -3,8 +3,11 @@ using ColorVision.Common.Adorners.ListViewAdorners;
 using ColorVision.Common.Collections;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.Jsons;
@@ -1296,16 +1299,8 @@ namespace ColorVision.Engine.Templates.POI
         {
             SavePoiParam();
         }
-        private void Button_Setting_Click(object sender, RoutedEventArgs e)
-        {
-            SettingPopup.IsOpen = true;
-        }
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-
-
-
-
             if (MeasureImgResultDao.Instance.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
@@ -1658,19 +1653,27 @@ namespace ColorVision.Engine.Templates.POI
                 IRECT rect = new IRECT((int)rectangle.Rect.X, (int)rectangle.Rect.Y, (int)rectangle.Rect.Width, (int)rectangle.Rect.Height);
                 if (PoiConfig.DefaultDoKey)
                 {
-                    ushort[] Keygray = new ushort[3];
-                    uint keygraynum = 0;
-                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", Keygray, ref keygraynum);
+                    ushort[] keygray1 = new ushort[256];
+                    uint Keygraynum = 0;
+                    float keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}", keygray1, ref Keygraynum);
+                    if (Calibratiohandle != IntPtr.Zero)
+                    {
+                        byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
+                        byte[] byteArray1 = new byte[4];
+                        cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp, PoiConfig.Exp, PoiConfig.Exp });
+                        keyGray = (float)BitConverter.ToSingle(byteArray1);
+                    }
+
                     keyGray = (float)(keyGray * poiPointParam.KeyScale);
                     if (poiPointParam.Area != 0)
                     {
                         poiPointParam.Brightness = keyGray / poiPointParam.Area;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
                     else
                     {
                         poiPointParam.Brightness = keyGray;
-                        poiPointParam.Brightness = poiPointParam.Brightness * keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
+                        poiPointParam.Brightness = poiPointParam.Brightness * Keygraynum * AlgorithmKBConfig.Instance.KBLVSacle;
                     }
 
                 }
@@ -1679,6 +1682,7 @@ namespace ColorVision.Engine.Templates.POI
 
 
         }
+        nint Calibratiohandle = IntPtr.Zero;
 
         bool IsInitialKB ;
         private void InitialKBKey()
@@ -1735,6 +1739,13 @@ namespace ColorVision.Engine.Templates.POI
                     if (File.Exists(filepath))
                     {
                         luminFile = filepath;
+
+                        Calibratiohandle = cvCameraCSLib.CreatCalibrationManage();
+                        int ret = cvCameraCSLib.CM_SetCalibParam(Calibratiohandle, CalibrationType.Luminance,true, luminFile);
+                        if (ret != 1)
+                        {
+                            log.Error("read luminance file ERROR!");
+                        }
                     }
                     else
                     {
@@ -1872,6 +1883,18 @@ namespace ColorVision.Engine.Templates.POI
                             if (PoiConfig.DefaultDoKey)
                             {
                                 keyGray = KeyBoardDLL.CM_CalculateKey(rect, poiPointParam.KeyOutMOVE, poiPointParam.KeyThreadV, PoiConfig.SaveFolderPath + $"\\{rectangle.Text}",  keygray1 ,ref Keygraynum);
+                                
+                                if (Calibratiohandle != IntPtr.Zero)
+                                {
+                                    byte[] byteArray = BitConverter.GetBytes(keygray1[0]);
+                                    byte[] byteArray1 = new byte[4];
+                                    cvCameraCSLib.CM_SCGD_SDP_Luminance(Calibratiohandle, 1, 1, 16, 1, byteArray, byteArray1, new float[] { PoiConfig.Exp , PoiConfig.Exp , PoiConfig.Exp });
+                                    keyGray =(float) BitConverter.ToSingle(byteArray1);
+                                }
+
+
+
+
                                 keyGray = (float)(keyGray * poiPointParam.KeyScale);
                                 if (poiPointParam.Area != 0)
                                 {
@@ -1956,6 +1979,55 @@ namespace ColorVision.Engine.Templates.POI
             {
                 this.Close();
                 new EditPoiParam1(TemplateKB.Params[newindex - 1].Value).ShowDialog();
+            }
+        }
+
+        private void TakePhoto_Click(object sender, RoutedEventArgs e)
+        {
+            var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
+            DeviceCamera deviceCamera = lsit.FirstOrDefault();
+            MsgRecord msgRecord = deviceCamera?.DisplayCameraControlLazy.Value.TakePhoto();
+
+            if (msgRecord != null)
+            {
+                msgRecord.MsgSucessed += (arg) =>
+                {
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = MeasureImgResultDao.Instance.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
+                        {
+                            try
+                            {
+                                if (result.FileUrl != null)
+                                {
+                                    OpenImage(new NetFileUtil().OpenLocalCVFile(result.FileUrl));
+                                    PoiConfig.BackgroundFilePath = result.FileUrl;
+                                }
+                                else
+                                {
+                                    MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("打开最近服务拍摄的图像失败", ex.Message);
+                            }
+                        }
+                    }
+
+
+
+                };
+
             }
         }
     }

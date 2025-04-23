@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -12,10 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.SFR
 {
-    public class AlgorithmSFR : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmSFR : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "SFR";
-        public int Order { get; set; } = 51;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -24,6 +23,9 @@ namespace ColorVision.Engine.Templates.SFR
 
         public AlgorithmSFR(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "SFR";
+            Order = 51;
+            Group = "AR/VR算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
@@ -48,7 +50,7 @@ namespace ColorVision.Engine.Templates.SFR
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplaySFR(this);
             return UserControl;
@@ -61,7 +63,8 @@ namespace ColorVision.Engine.Templates.SFR
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 

@@ -1,9 +1,8 @@
 ﻿#pragma warning disable CS8602
 
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Ghost;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -49,7 +48,8 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
             }
             csvBuilder.AppendLine();
             csvBuilder.AppendLine();
-            File.AppendAllText(selectedPath, csvBuilder.ToString(), Encoding.UTF8);
+            string filePath = selectedPath + "//" + result.ResultType + ".csv";
+            File.AppendAllText(filePath, csvBuilder.ToString(), Encoding.UTF8);
 
         }
 

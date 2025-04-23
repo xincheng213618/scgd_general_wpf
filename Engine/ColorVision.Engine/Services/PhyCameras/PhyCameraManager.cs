@@ -11,7 +11,6 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Authorizations;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -24,7 +23,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
@@ -49,6 +47,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 LoadPhyCamera();
             RefreshEmptyCamera();
             PhyCameras.CollectionChanged += (s, e) => RefreshEmptyCamera();
+            if(PhyCameras.Count > 0)
+            {
+                PhyCameras[0].IsSelected = true;
+            }
         }
 
 

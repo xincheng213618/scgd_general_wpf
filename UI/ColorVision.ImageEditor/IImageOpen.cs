@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
-using System.Windows.Controls;
 
 namespace ColorVision.ImageEditor
 {

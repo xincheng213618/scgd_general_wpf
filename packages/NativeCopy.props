@@ -5,10 +5,10 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs");
-	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs");
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs";
-	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs";</Command>
+      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\runtimes\win-x64\native" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\runtimes\win-x64\native");
+	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native");
+	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\runtimes\win-x64\native";
+	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\runtimes\win-x64\native";</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />

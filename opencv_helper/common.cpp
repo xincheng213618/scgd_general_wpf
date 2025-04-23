@@ -45,7 +45,6 @@ std::string UTF8ToGB(const char* str)
 	return result;
 }
 
-
 COLORVISIONCORE_API int ReadVideoTest(char* FilePath)
 {
 	cv::Mat frame;

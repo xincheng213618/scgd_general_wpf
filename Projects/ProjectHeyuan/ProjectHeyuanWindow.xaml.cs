@@ -6,7 +6,6 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Themes;
 using ColorVision.UI;
-using CVCommCore;
 using FlowEngineLib;
 using log4net;
 using Panuon.WPF.UI;
@@ -26,6 +25,7 @@ using ColorVision.Engine.Templates.Validate;
 using ColorVision.Engine.Templates.Compliance;
 using ColorVision.Engine.Services.RC;
 using FlowEngineLib.Base;
+using ColorVision.Engine.Interfaces;
 
 namespace ColorVision.Projects.ProjectHeyuan
 {

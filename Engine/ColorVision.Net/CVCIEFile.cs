@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1051
+using System.Runtime.CompilerServices;
 namespace ColorVision.Net
 {
     public enum CVType
@@ -20,18 +21,37 @@ namespace ColorVision.Net
         public  int rows;
         public int cols;
         public int bpp;
-        public readonly int Depth
+        public int Depth
         {
             get
             {
-                return bpp switch
+                int num = bpp;
+                if (1 == 0)
                 {
-                    8 => 0,
-                    16 => 2,
-                    32 => 5,
-                    64 => 6,
-                    _ => 0,
-                };
+                }
+                int result;
+                switch (num)
+                {
+                    case 8:
+                        result = 0;
+                        break;
+                    case 16:
+                        result = 2;
+                        break;
+                    case 32:
+                        result = 5;
+                        break;
+                    case 64:
+                        result = 6;
+                        break;
+                    default:
+                        result = 0;
+                        break;
+                }
+                if (1 == 0)
+                {
+                }
+                return result;
             }
         }
         public int channels;

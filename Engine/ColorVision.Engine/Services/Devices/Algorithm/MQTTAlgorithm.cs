@@ -1,18 +1,18 @@
 ﻿#pragma warning disable CS8602
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Messages;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
 using CVCommCore;
-using CVCommCore.CVAlgorithm;
-using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Windows;
-using ColorVision.Engine.MySql.ORM;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -94,15 +94,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 default:
                     switch (msg.Code)
                     {
-                        case -1:
-                            AlgResultMasterModel algResultMasterModel = new AlgResultMasterModel();
-                            algResultMasterModel.Result = "-1";
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                Device.View.AlgResultMasterModelDataDraw(algResultMasterModel);
-                            });
-                            break;
-
                         default:
                             List<AlgResultMasterModel> resultMaster = null;
                             if (msg.Data.MasterId > 0)
@@ -135,60 +126,134 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public List<string> CIEImageFiles { get => _CIEImageFiles; set { _CIEImageFiles = value; NotifyPropertyChanged(); } }
         private List<string> _CIEImageFiles = new List<string>();
 
+        public Dictionary<string, string> HistoryFilePath { get; set; } = new Dictionary<string, string>() { };
 
         public void GetRawFiles(string deviceCode, string deviceType)
         {
-            MsgSend msg = new()
+
+            if (!GetHistoryPath(deviceCode))
             {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-            };
-            PublishAsyncClient(msg);
+                MsgSend msg = new()
+                {
+                    EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                    Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
+                };
+                PublishAsyncClient(msg);
+            }
+
         }
+        public bool GetHistoryPath(string deviceCode)
+        {
+            var deviceServices = ServiceManager.GetInstance().DeviceServices;
+            var targetService = deviceServices.FirstOrDefault(service =>
+                service.GetConfig() is IFileServerCfg fileServerCfg && service.Code == deviceCode);
+
+            string path = string.Empty;
+            if (targetService != null && targetService.GetConfig() is IFileServerCfg fileServerCfg)
+            {
+                path = fileServerCfg.FileServerCfg.DataBasePath;
+            }
+            if (Directory.Exists(Config.FileServerCfg.DataBasePath))
+            {
+                var rawfiles = new List<string>();
+                var ciefiles = new List<string>();
+
+                foreach (var item in GetDirectoriesCreatedInLastDays(Path.Combine(Config.FileServerCfg.DataBasePath, deviceCode, "data"), ViewAlgorithmConfig.Instance.HistoyDay))
+                {
+                    foreach (var item1 in item.GetFiles())
+                    {
+                        HistoryFilePath.TryAdd(item1.Name, item1.FullName);
+                        if (item1.Extension.Contains("cvraw"))
+                        {
+                            rawfiles.Add(item1.Name);
+                        }
+                        if (item1.Extension.Contains("cvcie"))
+                        {
+                            ciefiles.Add(item1.Name);
+                        }
+                    }
+                }
+                rawfiles.Reverse();
+                ciefiles.Reverse();
+                RawImageFiles = rawfiles;
+                CIEImageFiles = ciefiles;
+                return true;
+            }
+
+            return false;
+        }
+
+        static List<DirectoryInfo> GetDirectoriesCreatedInLastDays(string directoryPath, int daysRange)
+        {
+            if (daysRange < 1) daysRange = 1;
+            if (daysRange > 365) daysRange = 365;
+
+            List<DirectoryInfo> directories = new List<DirectoryInfo>();
+            DateTime currentDate = DateTime.Now;
+            DateTime dateLimit = currentDate.AddDays(-daysRange);
+
+            DirectoryInfo dirInfo = new DirectoryInfo(directoryPath);
+            if (dirInfo.Exists)
+            {
+                // 获取所有文件夹
+                FileSystemInfo[] fsInfos = dirInfo.GetFileSystemInfos();
+                foreach (FileSystemInfo fsInfo in fsInfos)
+                {
+                    if (fsInfo is DirectoryInfo subDir)
+                    {
+                        // 检查文件夹是否在指定日期范围内创建
+                        if (subDir.CreationTime > dateLimit)
+                        {
+                            directories.Add(subDir);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("The specified directory does not exist.");
+            }
+
+            return directories;
+        }
+
+
 
         public void GetCIEFiles(string deviceCode, string deviceType)
         {
-            MsgSend msg = new()
+            if (!GetHistoryPath(deviceCode))
             {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } ,{ "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
-            };
-            PublishAsyncClient(msg);
-        }
+                MsgSend msg = new()
+                {
+                    EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                    Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
+                };
+                PublishAsyncClient(msg);
 
-
-        public MsgRecord BuildPoi(POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-            Params.Add("POILayoutReq", POILayoutReq.ToString());
-            foreach (var param in @params)
-            {
-                Params.Add(param.Key, param.Value);
             }
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
-                SerialNumber = sn,
-                Params = Params
-            };
-            return PublishAsyncClient(msg);
         }
+
+
 
         internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
         {
-            MsgSend msg = new()
+
+            if (HistoryFilePath.TryGetValue(fileName,out string fullpath) && File.Exists(fullpath))
             {
-                EventName = MQTTFileServerEventEnum.Event_File_Download,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
-            };
-            PublishAsyncClient(msg);
+                Device.View.ImageView.OpenImage(fullpath);
+            }
+            else
+            {
+                MsgSend msg = new()
+                {
+                    EventName = MQTTFileServerEventEnum.Event_File_Download,
+                    ServiceName = Config.Code,
+                    Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
+                };
+                PublishAsyncClient(msg);
+            }
+
+
         }
 
         public void UploadCIEFile(string fileName)

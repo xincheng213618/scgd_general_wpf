@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System.Collections.Generic;

@@ -419,7 +419,7 @@
             </draw:ZoomboxSub>
             <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
-                    <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
+                    <Button Command="{Binding SaveAsImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
                     <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">

@@ -2,7 +2,7 @@
 {
     public class ExportKBTemplate : MenuITemplateAlgorithmBase
     {
-        public override string Header => "KB统一模板";
+        public override string Header => "键盘检测";
         public override int Order => 2003;
         public override ITemplate Template => new TemplateKB();
     }

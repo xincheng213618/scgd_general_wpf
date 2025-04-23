@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Templates.POI;
@@ -13,10 +14,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Matching
 {
-    public class AlgorithmMatching : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmMatching : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "模板匹配";
-        public int Order { get; set; } = 99;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -29,7 +28,11 @@ namespace ColorVision.Engine.Templates.Matching
 
         public AlgorithmMatching(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "模板匹配";
+            Order = 99;
+			Group = "定位算法";
+
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
             SetTemplateFileCommand = new RelayCommand(a => SetFile(this, nameof(TemplateFile)));
@@ -75,7 +78,7 @@ namespace ColorVision.Engine.Templates.Matching
         }
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayMatching(this);
             return UserControl;
@@ -88,6 +91,8 @@ namespace ColorVision.Engine.Templates.Matching
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateFile", TemplateFile);

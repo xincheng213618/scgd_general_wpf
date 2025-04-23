@@ -1,6 +1,5 @@
 ﻿using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Shell;
 using ColorVision.Wizards;

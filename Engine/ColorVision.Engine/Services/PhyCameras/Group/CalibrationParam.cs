@@ -1,7 +1,6 @@
 ﻿#pragma warning disable CS8603,CS0649,CS8604,CS8601
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Rbac;

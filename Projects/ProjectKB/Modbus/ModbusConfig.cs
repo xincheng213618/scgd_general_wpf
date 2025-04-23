@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ProjectKB
+namespace ProjectKB.Modbus
 {
     /// <summary>
     /// MySql配置

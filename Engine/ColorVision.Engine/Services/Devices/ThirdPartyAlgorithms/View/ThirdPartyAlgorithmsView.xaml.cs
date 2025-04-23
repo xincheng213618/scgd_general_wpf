@@ -24,9 +24,9 @@ using System.Windows.Media;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.UI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Interfaces;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 {

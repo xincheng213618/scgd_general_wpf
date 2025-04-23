@@ -2,8 +2,6 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
 using System.Text;
 
 
@@ -32,20 +30,28 @@ namespace ColorVision.Net
         const int HeaderSize = 5;
         const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
 
-        public static bool IsCIEFile(string? filePath)
+        public static bool IsCIEFile(string filePath)
         {
-            if (!File.Exists(filePath)) return false;
+            if (!File.Exists(filePath))
+            {
+                return false;
+            }
             try
             {
-                using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
-                if (fs.Length < HeaderSize) return false;
-
-                using BinaryReader br = new(fs);
-                string fileHeader = new(br.ReadChars(HeaderSize));
-                return fileHeader == MagicHeader;
-
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+                {
+                    if (fs.Length < 5)
+                    {
+                        return false;
+                    }
+                    using (BinaryReader br = new BinaryReader(fs))
+                    {
+                        string fileHeader = new string(br.ReadChars(5));
+                        return fileHeader == "CVCIE";
+                    }
+                }
             }
-            catch 
+            catch
             {
                 return false;
             }
@@ -61,156 +67,171 @@ namespace ColorVision.Net
 
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
-            cvcie = new CVCIEFile();
-            if (!File.Exists(filePath)) return -1;
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
-            if (fs.Length < MinimumFileSize) return -1;
-
-            using BinaryReader br = new(fs);
-            string fileHeader = new(br.ReadChars(HeaderSize));
-            if (fileHeader != MagicHeader) return -1;
-
-            cvcie.FileExtType = filePath.Contains(".cvraw") ? CVType.Raw : filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE;
-
-            uint ver = br.ReadUInt32();
-            cvcie.version = ver;
-            if (ver !=1 && ver != 2)
+            cvcie = default(CVCIEFile);
+            if (!File.Exists(filePath))
             {
                 return -1;
             }
-
-            int fileNameLen = br.ReadInt32();
-            if (fileNameLen > 0 && (fs.Position + fileNameLen) <= fs.Length)
-                cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
-
-            cvcie.gain = br.ReadSingle();
-            cvcie.channels = (int)br.ReadUInt32();
-
-            if ((fs.Position + cvcie.channels * 4) > fs.Length) return -1; // Not enough data for channel exposure times
-
-            cvcie.exp = new float[cvcie.channels];
-            for (int i = 0; i < cvcie.channels; i++)
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                cvcie.exp[i] = br.ReadSingle();
+                if (fs.Length < 9)
+                {
+                    return -1;
+                }
+                using (BinaryReader br = new BinaryReader(fs))
+                {
+                    string fileHeader = new string(br.ReadChars(5));
+                    if (fileHeader != "CVCIE")
+                    {
+                        return -1;
+                    }
+                    cvcie.FileExtType = ((!filePath.Contains(".cvraw")) ? (filePath.Contains(".cvsrc") ? CVType.Src : CVType.CIE) : CVType.Raw);
+                    uint ver = (cvcie.version = br.ReadUInt32());
+                    if (ver != 1 && ver != 2)
+                    {
+                        return -1;
+                    }
+                    int fileNameLen = br.ReadInt32();
+                    if (fileNameLen > 0 && fs.Position + fileNameLen <= fs.Length)
+                    {
+                        cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
+                    }
+                    cvcie.gain = br.ReadSingle();
+                    cvcie.channels = (int)br.ReadUInt32();
+                    if (fs.Position + cvcie.channels * 4 > fs.Length)
+                    {
+                        return -1;
+                    }
+                    cvcie.exp = new float[cvcie.channels];
+                    for (int i = 0; i < cvcie.channels; i++)
+                    {
+                        cvcie.exp[i] = br.ReadSingle();
+                    }
+                    cvcie.rows = (int)br.ReadUInt32();
+                    cvcie.cols = (int)br.ReadUInt32();
+                    cvcie.bpp = (int)br.ReadUInt32();
+                    cvcie.FilePath = filePath;
+                    return (int)fs.Position;
+                }
             }
-
-            cvcie.rows = (int)br.ReadUInt32();
-            cvcie.cols = (int)br.ReadUInt32();
-            cvcie.bpp = (int)br.ReadUInt32();
-
-            cvcie.FilePath = filePath;
-            return (int)fs.Position;
         }
 
-        public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile  cvcie)
+        public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile cvcie)
         {
-            cvcie = new CVCIEFile();
-
-            // Check if the data is null or does not meet the minimum required size.
-            if (fileData == null || fileData.Length < MinimumFileSize) return -1;
-
-            // Read and validate the file header.
-            string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
-            if (fileHeader != MagicHeader) return -1;
-
-            int startIndex = HeaderSize;
-            uint version = BitConverter.ToUInt32(fileData, startIndex);
-
-            cvcie.version = version;
+            cvcie = default(CVCIEFile);
+            if (fileData == null || fileData.Length < 9)
+            {
+                return -1;
+            }
+            string fileHeader = Encoding.ASCII.GetString(fileData, 0, 5);
+            if (fileHeader != "CVCIE")
+            {
+                return -1;
+            }
+            int startIndex = 5;
+            uint version = (cvcie.version = BitConverter.ToUInt32(fileData, startIndex));
             if (version != 1 && version != 2)
             {
                 return -1;
             }
-
-            startIndex += sizeof(uint);
-
-            // Read and validate the file name length.
+            startIndex += 4;
             int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
-            startIndex += sizeof(int);
-            if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
-
-            // Read the file name.
+            startIndex += 4;
+            if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length)
+            {
+                return -1;
+            }
             cvcie.srcFileName = Encoding.GetEncoding("GBK").GetString(fileData, startIndex, fileNameLength);
             startIndex += fileNameLength;
-
-
-            // Read additional fields with validation.
-            if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain)) return -1;
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
-            // Validate and read channel exposure times.
-            if (startIndex + cvcie.channels * sizeof(float) > fileData.Length) return -1;
+            if (!TryReadSingle(fileData, ref startIndex, out cvcie.gain))
+            {
+                return -1;
+            }
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.channels))
+            {
+                return -1;
+            }
+            if (startIndex + cvcie.channels * 4 > fileData.Length)
+            {
+                return -1;
+            }
             cvcie.exp = new float[cvcie.channels];
             for (int i = 0; i < cvcie.channels; i++)
             {
                 cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
-                startIndex += sizeof(float);
+                startIndex += 4;
             }
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
-            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
-
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.rows))
+            {
+                return -1;
+            }
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.cols))
+            {
+                return -1;
+            }
+            if (!TryReadUInt32(fileData, ref startIndex, out cvcie.bpp))
+            {
+                return -1;
+            }
             return startIndex;
         }
 
         public static bool ReadCIEFileData(string filePath, ref CVCIEFile fileInfo, int dataStartIndex)
         {
-            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
-            using BinaryReader br = new(fs);
-            if (fs.Length < dataStartIndex)
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                return false; // The data start index is beyond the file length
-            }
-
-            fs.Position = dataStartIndex; // Set the stream position to the start of the data
-                                          // Read the data length and data
-                                          // Determine the data length based on the version
-            long dataLen = fileInfo.version switch
-            {
-                2 => br.ReadInt64(),
-                _ => br.ReadInt32()
-            };
-
-            // Ensure dataLen is within the file length
-            if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
-            {
-                // Initialize a buffer to hold the data
-                fileInfo.data = new byte[dataLen];
-                const int bufferSize = 81920; // 80 KB buffer size
-                int bytesRead;
-                long totalBytesRead = 0;
-
-                // Read the data in chunks
-                while (totalBytesRead < dataLen)
+                using (BinaryReader br = new BinaryReader(fs))
                 {
-                    int bytesToRead = (int)Math.Min(bufferSize, dataLen - totalBytesRead);
-                    bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
-                    if (bytesRead == 0)
+                    if (fs.Length < dataStartIndex)
                     {
-                        break; // End of file reached
+                        return false;
                     }
-                    totalBytesRead += bytesRead;
-                }
-
-                // Check if we have read the expected amount of data
-                if (totalBytesRead == dataLen)
-                {
-                    return true;
+                    fs.Position = dataStartIndex;
+                    uint version = fileInfo.version;
+                    if (1 == 0)
+                    {
+                    }
+                    long num = ((version != 2) ? br.ReadInt32() : br.ReadInt64());
+                    if (1 == 0)
+                    {
+                    }
+                    long dataLen = num;
+                    if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
+                    {
+                        fileInfo.data = new byte[dataLen];
+                        long totalBytesRead;
+                        int bytesRead;
+                        for (totalBytesRead = 0L; totalBytesRead < dataLen; totalBytesRead += bytesRead)
+                        {
+                            int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
+                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            if (bytesRead == 0)
+                            {
+                                break;
+                            }
+                        }
+                        if (totalBytesRead == dataLen)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
                 }
             }
-
-            return false;
         }
-        private static bool TryReadUInt32(byte[] data, ref int startIndex, out  int value)
+
+        private static bool TryReadUInt32(byte[] data, ref int startIndex, out int value)
         {
-            if (startIndex + sizeof(int) > data.Length)
+            if (startIndex + 4 > data.Length)
             {
                 value = 0;
                 return false;
             }
             value = (int)BitConverter.ToUInt32(data, startIndex);
-            startIndex += sizeof(int);
+            startIndex += 4;
             return true;
         }
+
         private static bool TryReadSingle(byte[] data, ref int startIndex, out float value)
         {
             if (startIndex + sizeof(int) > data.Length)
@@ -238,56 +259,50 @@ namespace ColorVision.Net
         {
             if (fileData == null || fileData.Length < dataStartIndex)
             {
-                return false; // The data start index is beyond the byte array length
+                return false;
             }
-
-            using MemoryStream ms = new(fileData);
-            using BinaryReader br = new(ms);
-
-            ms.Position = dataStartIndex; // Set the stream position to the start of the data
-
-            // Ensure there is enough data remaining for reading the data length
-            if (ms.Length - ms.Position < sizeof(int))
+            using (MemoryStream ms = new MemoryStream(fileData))
             {
-                return false; // Not enough data to read the data length
-            }
-
-            long dataLen = fileInfo.version switch
-            {
-                2 => br.ReadInt64(),
-                _ => br.ReadInt32()
-            };
-
-            // Ensure dataLen is within the file length
-            if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
-            {
-                // Initialize a buffer to hold the data
-                fileInfo.data = new byte[dataLen];
-                const int bufferSize = 81920; // 80 KB buffer size
-                int bytesRead;
-                long totalBytesRead = 0;
-
-                // Read the data in chunks
-                while (totalBytesRead < dataLen)
+                using (BinaryReader br = new BinaryReader(ms))
                 {
-                    int bytesToRead = (int)Math.Min(bufferSize, dataLen - totalBytesRead);
-                    bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
-                    if (bytesRead == 0)
+                    ms.Position = dataStartIndex;
+                    if (ms.Length - ms.Position < 4)
                     {
-                        break; // End of file reached
+                        return false;
                     }
-                    totalBytesRead += bytesRead;
-                }
-
-                // Check if we have read the expected amount of data
-                if (totalBytesRead == dataLen)
-                {
+                    uint version = fileInfo.version;
+                    if (1 == 0)
+                    {
+                    }
+                    long num = ((version != 2) ? br.ReadInt32() : br.ReadInt64());
+                    if (1 == 0)
+                    {
+                    }
+                    long dataLen = num;
+                    if (dataLen > 0 && ms.Position + dataLen <= ms.Length)
+                    {
+                        fileInfo.data = new byte[dataLen];
+                        long totalBytesRead;
+                        int bytesRead;
+                        for (totalBytesRead = 0L; totalBytesRead < dataLen; totalBytesRead += bytesRead)
+                        {
+                            int bytesToRead = (int)Math.Min(81920L, dataLen - totalBytesRead);
+                            bytesRead = br.Read(fileInfo.data, (int)totalBytesRead, bytesToRead);
+                            if (bytesRead == 0)
+                            {
+                                break;
+                            }
+                        }
+                        if (totalBytesRead == dataLen)
+                        {
+                            return true;
+                        }
+                    }
                     return true;
                 }
             }
-
-            return true;
         }
+
 
         public static bool Read(byte[] fileData, out CVCIEFile fileInfo)
         {
@@ -307,29 +322,31 @@ namespace ColorVision.Net
         private static Encoding Encoding1 = Encoding.GetEncoding("GBK");
         public static int WriteFile(string fileName, CVCIEFile fileInfo)
         {
-
-            using FileStream fileStream = new(fileName, FileMode.Create);
-            using BinaryWriter writer = new(fileStream);
-            int ver = 1;
-            char[] hd = { 'C', 'V', 'C', 'I', 'E' };
-            writer.Write(hd);
-            writer.Write(ver);
-            byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.srcFileName);
-            writer.Write(srcFileNameBytes.Length);
-            writer.Write(srcFileNameBytes);
-            writer.Write(fileInfo.gain);
-            writer.Write(fileInfo.channels);
-            for (int i = 0; i < fileInfo.exp.Length; i++)
+            using (FileStream fileStream = new FileStream(fileName, FileMode.Create))
             {
-                writer.Write(fileInfo.exp[i]);
+                using (BinaryWriter writer = new BinaryWriter(fileStream))
+                {
+                    int ver = 1;
+                    char[] hd = new char[5] { 'C', 'V', 'C', 'I', 'E' };
+                    writer.Write(hd);
+                    writer.Write(ver);
+                    byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.srcFileName);
+                    writer.Write(srcFileNameBytes.Length);
+                    writer.Write(srcFileNameBytes);
+                    writer.Write(fileInfo.gain);
+                    writer.Write(fileInfo.channels);
+                    for (int i = 0; i < fileInfo.exp.Length; i++)
+                    {
+                        writer.Write(fileInfo.exp[i]);
+                    }
+                    writer.Write(fileInfo.rows);
+                    writer.Write(fileInfo.cols);
+                    writer.Write(fileInfo.bpp);
+                    writer.Write(fileInfo.data.Length);
+                    writer.Write(fileInfo.data);
+                    return 0;
+                }
             }
-            writer.Write(fileInfo.rows);
-            writer.Write(fileInfo.cols);
-            writer.Write(fileInfo.bpp);
-            //
-            writer.Write(fileInfo.data.Length);
-            writer.Write(fileInfo.data);
-            return 0;
         }
 
         public static bool ReadCVRaw(string fileName, out CVCIEFile fileInfo) => Read(fileName, out fileInfo);
@@ -365,19 +382,17 @@ namespace ColorVision.Net
         {
             if (channelType == CVImageChannelType.SRC)
             {
-                if (extType == CVType.Raw)
+                if (extType == CVType.Raw && ReadCVRaw(fileName, out var meta))
                 {
-                    if (ReadCVRaw(fileName, out CVCIEFile meta))
-                        return meta;
+                    return meta;
                 }
-                if (extType == CVType.CIE)
+                if (extType == CVType.CIE && ReadCVCIE(fileName, out var meta2))
                 {
-                    if (ReadCVCIE(fileName, out CVCIEFile meta))
-                        return meta;
+                    return meta2;
                 }
             }
             int channel = -1;
-            CVCIEFile data = new();
+            CVCIEFile data = default(CVCIEFile);
             switch (channelType)
             {
                 case CVImageChannelType.CIE_XYZ_X:
@@ -389,15 +404,10 @@ namespace ColorVision.Net
                 case CVImageChannelType.CIE_XYZ_Z:
                     channel = 2;
                     break;
-                default:
-                    break;
             }
-            if (channel >= 0)
+            if (channel >= 0 && extType == CVType.CIE)
             {
-                if (extType == CVType.CIE)
-                {
-                    CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
-                }
+                ReadCVCIEXYZ(fileName, channel, out data);
             }
             return data;
         }
@@ -436,12 +446,10 @@ namespace ColorVision.Net
         {
             if (File.Exists(fileName))
             {
-                FileStream fileStream = new(fileName, FileMode.Open, FileAccess.Read);
-                BinaryReader binaryReader = new(fileStream);
-                //获取文件长度
+                FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
+                BinaryReader binaryReader = new BinaryReader(fileStream);
                 long length = fileStream.Length;
                 byte[] bytes = new byte[length];
-                //读取文件中的内容并保存到字节数组中
                 binaryReader.Read(bytes, 0, bytes.Length);
                 return bytes;
             }

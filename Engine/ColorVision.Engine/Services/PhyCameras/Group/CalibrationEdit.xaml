@@ -8,7 +8,7 @@
         xmlns:phy="clr-namespace:ColorVision.Engine.Services.PhyCameras"
         d:DataContext="{d:DesignInstance phy:PhyCamera}"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="465" Width="1000" Initialized="Window_Initialized" >
+        Title="校正文件管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="465" Width="1000" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -29,9 +29,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,5" >
-                <Button Content="添加"  Click="Button_Add_Click" Margin="0,0,5,0" />
-                <Button Content="删除"  Click="Button_Delete_Click" Margin="0,0,5,0" />
+                <Button Content="添加" Click="Button_Add_Click" Margin="0,0,5,0" />
+                <Button Content="删除" Click="Button_Delete_Click" Margin="0,0,5,0" />
                 <Button Content="上传" Command="{Binding UploadCalibrationCommand}" />
+                <Button Content="导出"/>
             </StackPanel>
             <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Padding="0,5,0,0">
                 <ListView.ItemContainerStyle>
@@ -107,6 +108,7 @@
                     <Border Style="{StaticResource BorderModuleArea}"  CornerRadius="5"  Margin="0,0,0,5">
                         <StackPanel Margin="10,5">
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding DarkNoise.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
                                 <hc:ComboBox x:Name="ComboBoxDarkNoise" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />
@@ -122,11 +124,13 @@
                                 <hc:ComboBox x:Name="ComboBoxDefectPoint" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding ColorShift.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxColorShift" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Distortion.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxDistortion" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"    hc:InfoElement.ShowClearButton="True" />
@@ -137,11 +141,13 @@
                                 <hc:ComboBox  x:Name="ComboBoxUniformity" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LineArity.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="LineArity" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxLineArity" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding LineArity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding ColorDiff.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="ColorDiff" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxColorDiff" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding ColorDiff}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
@@ -152,21 +158,25 @@
                     <Border Style="{StaticResource BorderModuleArea}"  CornerRadius="5"  Margin="0,0,0,0">
                         <StackPanel Margin="5">
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding Luminance.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxLuminance" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumOneColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"/>
                                 <hc:ComboBox x:Name="ComboBoxLumOneColor" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel  Margin="0,0,0,5">
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumFourColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
                                 <hc:ComboBox  x:Name="ComboBoxLumFourColor" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                             </DockPanel>
                             <DockPanel >
+                                <Button DockPanel.Dock="Right" Content="编辑" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.EditCommand}"/>
                                 <Button DockPanel.Dock="Right" Content="选中" Width="80"  Margin="5,0,0,0" Command="{Binding LumMultiColor.OpenCommand}"/>
                                 <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
                                 <hc:ComboBox x:Name="ComboBoxLumMultiColor" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />

@@ -3,7 +3,7 @@
     public class ExportFocusPoints : MenuITemplateAlgorithmBase
     {
         public override int Order => 2;
-        public override string Header => Properties.Resources.MenuFocusPoints;
+        public override string Header => "FocusPoints";
         public override ITemplate Template => new TemplateFocusPoints();
     }
 }

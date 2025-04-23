@@ -1,9 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
+using Mysqlx.Crud;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -11,10 +13,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
-    public class AlgorithmDistortion : ViewModelBase, IDisplayAlgorithm
+    public class AlgorithmDistortion : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "畸变评价";
-        public int Order { get; set; } = 55;
 
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
@@ -23,7 +23,10 @@ namespace ColorVision.Engine.Templates.Distortion
 
         public AlgorithmDistortion(DeviceAlgorithm deviceAlgorithm)
         {
-            Device = deviceAlgorithm;
+            Name = "畸变评价";
+            Order = 55;
+            Group = "AR/VR算法";
+			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
@@ -36,7 +39,7 @@ namespace ColorVision.Engine.Templates.Distortion
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayDistortion(this);
             return UserControl;
@@ -49,7 +52,8 @@ namespace ColorVision.Engine.Templates.Distortion
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
+            if (DService.HistoryFilePath.TryGetValue(fileName, out string fullpath))
+                fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
 

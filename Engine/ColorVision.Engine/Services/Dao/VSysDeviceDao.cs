@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.Dao
         public DateTime CreateDate { get; set; }
         public int TenantId { get; set; }
     }
-    public class VSysDeviceDao : BaseDaoMaster<SysDeviceModel>
+    public class VSysDeviceDao : BaseViewDao<SysDeviceModel>
     {
         public static VSysDeviceDao Instance { get; set; } = new VSysDeviceDao();
 
