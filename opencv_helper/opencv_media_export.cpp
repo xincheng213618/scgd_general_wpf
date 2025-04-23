@@ -393,29 +393,27 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 
 	std::vector<cv::Mat> images;
 
-	std::string ss =  UTF8ToGB(image_files[0].c_str());
-
-	// 读取第一张图像以获取参考尺寸和类型
-	cv::Mat ref_image = cv::imread(ss, cv::IMREAD_UNCHANGED);
-	if (ref_image.empty()) {
-		return StitchingErrorCode::FILE_NOT_FOUND;
-	}
-
-	int ref_height = ref_image.rows;
-	int ref_width = ref_image.cols;
-	int ref_type = ref_image.type(); // 获取图像类型，例如 CV_8UC1 表示灰度图像
-
-	// 读取剩余的图像
-	for (size_t i = 1; i < image_files.size(); ++i) {
-		std::string ss = UTF8ToGB(image_files[i].c_str());
+	for (const auto& file : image_files) {
+		std::string ss = UTF8ToGB(file.c_str());
 		cv::Mat img = cv::imread(ss, cv::IMREAD_UNCHANGED);
 		if (img.empty()) {
 			return StitchingErrorCode::FILE_NOT_FOUND;
 		}
 
-		// 检查图像尺寸和类型是否与第一张图像相同
-		if (img.rows != ref_height || img.cols != ref_width || img.type() != ref_type) {
-			return StitchingErrorCode::DIFFERENT_DIMENSIONS;
+		if (images.empty()) {
+			// 读取第一张图像以获取参考尺寸和类型
+			int ref_height = img.rows;
+			int ref_width = img.cols;
+			int ref_type = img.type(); // 获取图像类型，例如 CV_8UC1 表示灰度图像
+
+			// 检查后续图像的尺寸和类型是否与第一张图像相同
+			for (size_t i = 1; i < image_files.size(); ++i) {
+				std::string ss = UTF8ToGB(image_files[i].c_str());
+				cv::Mat img = cv::imread(ss, cv::IMREAD_UNCHANGED);
+				if (img.empty() || img.rows != ref_height || img.cols != ref_width || img.type() != ref_type) {
+					return StitchingErrorCode::DIFFERENT_DIMENSIONS;
+				}
+			}
 		}
 
 		images.push_back(img);
@@ -426,16 +424,22 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		return StitchingErrorCode::NO_VALID_IMAGES;
 	}
 
-	int width = ref_width / num_images;
+	// 使用最后一张图像作为底图
+	cv::Mat last_image = images.back();
+	int result_height = last_image.rows;
+	int result_width = last_image.cols;
 
-	result.create(ref_height, width * num_images, ref_type);
+	result.create(result_height, result_width, last_image.type());
+
 	if (result.empty()) {
 		return StitchingErrorCode::NO_VALID_IMAGES;
 	}
+	last_image.copyTo(result);
 
-	for (int i = 0; i < num_images; ++i) {
-		cv::Mat part = images[i](cv::Rect(i* width, 0, width, ref_height));
-		part.copyTo(result(cv::Rect(i * width, 0, width, ref_height)));
+	int width = result_width / num_images;
+	for (int i = 0; i < num_images -1; ++i) {
+		cv::Mat part = images[i](cv::Rect(i* width, 0, width, result_height));
+		part.copyTo(result(cv::Rect(i * width, 0, width, result_height)));
 	}
 
 	return StitchingErrorCode::SUCCESS;
