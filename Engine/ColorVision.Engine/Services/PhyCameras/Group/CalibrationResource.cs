@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -14,13 +15,21 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 {
     public class CalibrationFileConfig : ViewModelBase
     {
+        public CalibrationType CalibrationType { get; set; }
+        public string FileName { get; set; }
+        public string Title { get; set; }
+
+        public double Gain { get; set; }
+
         public double Aperturein { get; set; }
         public double ExpTime { get; set; }
         public double ND { get; set; }
         public double ShotType { get; set; }
-        public double Title { get; set; }
+
         public double Focallength { get; set; }
         public double GetImgMode { get; set; }
+
+        public double ImgBpp { get; set; }
     }
 
 
@@ -48,6 +57,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             CalibrationResources.Add(this);
             OpenCommand = new RelayCommand(a=> Open(),a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => Edit(), a => AccessControl.Check(PermissionMode.Administrator));
+            Config = JsonConvert.DeserializeObject<CalibrationFileConfig>(sysResourceModel.Remark) ?? new CalibrationFileConfig();
         }
 
         public void Edit()

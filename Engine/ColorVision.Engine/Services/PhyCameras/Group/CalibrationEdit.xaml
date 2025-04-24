@@ -32,7 +32,7 @@
                 <Button Content="添加" Click="Button_Add_Click" Margin="0,0,5,0" />
                 <Button Content="删除" Click="Button_Delete_Click" Margin="0,0,5,0" />
                 <Button Content="上传" Command="{Binding UploadCalibrationCommand}" />
-                <Button Content="导出"/>
+                <Button Content="导出" Click="Export_Click"/>
             </StackPanel>
             <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged" Padding="0,5,0,0">
                 <ListView.ItemContainerStyle>

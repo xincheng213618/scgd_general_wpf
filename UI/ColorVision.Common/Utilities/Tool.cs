@@ -242,6 +242,28 @@ namespace ColorVision.Common.Utilities
             }
         }
 
+
+        public static bool ExecuteCommand(string command)
+        {
+            ProcessStartInfo startInfo = new();
+            startInfo.UseShellExecute = true;
+            startInfo.WorkingDirectory = @"C:\Windows\System32";
+            startInfo.FileName = "cmd.exe";
+            startInfo.Arguments = "/c " + command; // 创建文件夹的命令
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden; // 隐藏命令行窗口
+            try
+            {
+                Process process = Process.Start(startInfo);
+                process?.WaitForExit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+                return false;
+            }
+        }
+
         public static bool ExecuteCommandAsAdmin(string command)
         {
             ProcessStartInfo startInfo = new();

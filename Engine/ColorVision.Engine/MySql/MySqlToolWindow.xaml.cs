@@ -36,6 +36,7 @@ namespace ColorVision.Engine.MySql
         {
 
         }
+
         public int ExecuteNonQuery(string sqlBatch)
         {
             // 将整个SQL批次按照分号拆分为单个SQL语句
@@ -74,6 +75,16 @@ namespace ColorVision.Engine.MySql
         {
             string Sql = MySqlText.Text;
             ExecuteNonQuery(Sql);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            MySqlLocalServicesManager.GetInstance().BackupMysql();
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            MySqlLocalServicesManager.GetInstance().RestoreMysql();
         }
     }
 }
