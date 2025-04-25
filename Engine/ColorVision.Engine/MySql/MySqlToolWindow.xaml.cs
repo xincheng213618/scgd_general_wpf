@@ -2,6 +2,7 @@
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.MySql
@@ -34,7 +35,7 @@ namespace ColorVision.Engine.MySql
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-
+            this.DataContext = MySqlLocalServicesManager.GetInstance();
         }
 
         public int ExecuteNonQuery(string sqlBatch)
@@ -76,15 +77,43 @@ namespace ColorVision.Engine.MySql
             string Sql = MySqlText.Text;
             ExecuteNonQuery(Sql);
         }
-
+        bool IsRun;
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            MySqlLocalServicesManager.GetInstance().BackupMysql();
+            if (IsRun)
+            {
+                MessageBox.Show("正在执行备份程序");
+                return;
+            }
+            Task.Run(() =>
+            {
+                IsRun = true;
+                MySqlLocalServicesManager.GetInstance().BackupMysql();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"备份成功");
+                });
+                IsRun = false;
+            });
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            MySqlLocalServicesManager.GetInstance().RestoreMysql();
+            if (IsRun)
+            {
+                MessageBox.Show("正在执行恢复程序");
+                return;
+            }
+            Task.Run(() =>
+            {
+                IsRun = true;
+                MySqlLocalServicesManager.GetInstance().RestoreMysql();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "还原成功,资源文件加载需要重启服务，当前软件也需要重启加载");
+                });
+                IsRun = false;
+            });
         }
     }
 }

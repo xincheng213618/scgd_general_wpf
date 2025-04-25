@@ -5,18 +5,49 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.MySql"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:MySqlLocalServicesManager}"
         Title="MysqlToolWindow" Height="450" Width="800"  Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    <Grid Margin="5">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="{x:Type TextBlock}" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+        <Grid Margin="5">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="ServiceName:"/>
+                <TextBlock Text="{Binding ServiceName}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="ImagePath:"/>
+                <TextBlock Text="{Binding ImagePath}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="MysqlPath:"/>
+                <TextBlock Text="{Binding MysqlPath}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="MysqldumpPath:"/>
+                <TextBlock Text="{Binding MysqldumpPath}"/>
+            </StackPanel>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
             <Button Content="执行" Click="Button_Click"/>
             <Button Content="备份数据库" Click="Button_Click_1"/>
             <Button Content="恢复备份数据库" Click="Button_Click_2"/>
         </StackPanel>
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>

@@ -25,6 +25,16 @@
 
 	<ItemGroup>
 	  <Folder Include="Assets\" />
+	  <Folder Include="Config\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Reference Include="FlowEngineLib">
+	    <HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
+	  </Reference>
+	  <Reference Include="ST.Library.UI">
+	    <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+	  </Reference>
 	</ItemGroup>
 	
 	

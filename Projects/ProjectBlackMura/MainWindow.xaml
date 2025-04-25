@@ -102,7 +102,7 @@
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
+                        <Button Content="Test BlackMura"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">

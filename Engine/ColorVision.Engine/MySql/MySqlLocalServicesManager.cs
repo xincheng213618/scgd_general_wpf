@@ -12,22 +12,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.MySql
 {
-    public class ExporMySqlLocalServicesManager : MenuItemBase
-    {
-        public override string OwnerGuid => nameof(ExportMySqlMenuItem);
-        public override string Header => "MySqlLocalServicesManager";
-        public override int Order => 2;
-
-        public override void Execute()
-        {
-            MySqlLocalServicesManager.GetInstance().BackupMysql();
-        }
-    }
-
-
-
-
-
     public class MySqlLocalServicesManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlLocalServicesManager));
@@ -115,12 +99,24 @@ namespace ColorVision.Engine.MySql
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredTableNames());
             
+            string BackUpSql = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Backup.sql");
+            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
+
+            Common.Utilities.Tool.ExecuteCommand(backCommnad);
+        }
+
+        public void BackupMysqlResource()
+        {
+            //备份的信息里应该只包含基础的信息不应该包含许多逻辑
+            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredTableNames());
 
             string BackUpSql = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "Backup.sql");
             string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
 
             Common.Utilities.Tool.ExecuteCommand(backCommnad);
         }
+
+
 
         public void RestoreMysql()
         {
