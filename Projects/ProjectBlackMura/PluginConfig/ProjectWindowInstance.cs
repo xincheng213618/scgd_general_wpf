@@ -1,4 +1,4 @@
-﻿namespace ProjectBase.PluginConfig
+﻿namespace ProjectBlackMura.PluginConfig
 {
     public class ProjectWindowInstance
     {

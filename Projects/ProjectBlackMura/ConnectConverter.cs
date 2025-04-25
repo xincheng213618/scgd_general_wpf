@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Windows.Data;
 
-namespace ProjectBase
+namespace ProjectBlackMura
 {
     public sealed class ConnectConverter : IValueConverter
     {

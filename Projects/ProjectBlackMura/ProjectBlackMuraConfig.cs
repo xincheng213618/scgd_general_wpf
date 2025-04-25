@@ -8,7 +8,7 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectBase
+namespace ProjectBlackMura
 {
     public class JudgeConfig:ViewModelBase
     {
