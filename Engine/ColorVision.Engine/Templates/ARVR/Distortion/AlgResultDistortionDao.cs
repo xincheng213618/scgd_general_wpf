@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.MySql.ORM;
-using MQTTMessageLib.Algorithm;
+using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
