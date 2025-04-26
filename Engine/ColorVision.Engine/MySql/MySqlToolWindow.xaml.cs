@@ -4,6 +4,7 @@ using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Specialized;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -44,13 +45,15 @@ namespace ColorVision.Engine.MySql
                 var selectedFilePath = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex].FilePath;
                 StringCollection paths = new StringCollection();
                 paths.Add(selectedFilePath);
-
                 Clipboard.SetFileDropList(paths);
+
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
 
             listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
             {
+                var index = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex];
                 MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
+                File.Delete(index.FilePath);
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
 
         }
@@ -93,44 +96,6 @@ namespace ColorVision.Engine.MySql
         {
             string Sql = MySqlText.Text;
             ExecuteNonQuery(Sql);
-        }
-        bool IsRun;
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (IsRun)
-            {
-                MessageBox.Show("正在执行备份程序");
-                return;
-            }
-            Task.Run(() =>
-            {
-                IsRun = true;
-                MySqlLocalServicesManager.GetInstance().BackupMysql();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),"备份成功");
-                });
-                IsRun = false;
-            });
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            if (IsRun)
-            {
-                MessageBox.Show("正在执行备份程序");
-                return;
-            }
-            Task.Run(() =>
-            {
-                IsRun = true;
-                MySqlLocalServicesManager.GetInstance().BackupMysqlResource();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
-                });
-                IsRun = false;
-            });
         }
     }
 }
