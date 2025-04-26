@@ -43,6 +43,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             List<IDisplayAlgorithm> algorithms = new List<IDisplayAlgorithm>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {

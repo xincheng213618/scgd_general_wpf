@@ -30,6 +30,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             void Update()
             {
                 var list = new TemplateSensor(Device.Config.Category);

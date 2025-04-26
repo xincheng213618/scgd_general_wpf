@@ -15,24 +15,27 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     /// </summary>
     public partial class DisplaySpectrum : UserControl, IDisPlayControl
     {
-        public DeviceSpectrum DeviceSpectrum { get; set; }
-        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DService; }
+        public DeviceSpectrum Device { get; set; }
+        public MQTTSpectrum SpectrumService { get => Device.DService; }
 
-        public ViewSpectrum View { get => DeviceSpectrum.View;}
+        public ViewSpectrum View { get => Device.View;}
 
-        public string DisPlayName => DeviceSpectrum.Config.Name;
+        public string DisPlayName => Device.Config.Name;
 
         public DisplaySpectrum(DeviceSpectrum DeviceSpectrum)
         {
-            this.DeviceSpectrum = DeviceSpectrum;
+            this.Device = DeviceSpectrum;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            DataContext = DeviceSpectrum;
+            DataContext = Device;
 
             this.AddViewConfig(View,ComboxView);
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
 
             SpectrumService.DataHandlerEvent += (s,e) =>
             {
