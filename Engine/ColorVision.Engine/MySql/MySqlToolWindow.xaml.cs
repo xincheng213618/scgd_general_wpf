@@ -1,9 +1,12 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.MySql
 {
@@ -36,6 +39,20 @@ namespace ColorVision.Engine.MySql
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = MySqlLocalServicesManager.GetInstance();
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => 
+            {
+                var selectedFilePath = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex].FilePath;
+                StringCollection paths = new StringCollection();
+                paths.Add(selectedFilePath);
+
+                Clipboard.SetFileDropList(paths);
+            }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
+            {
+                MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
+            }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
+
         }
 
         public int ExecuteNonQuery(string sqlBatch)
@@ -101,16 +118,16 @@ namespace ColorVision.Engine.MySql
         {
             if (IsRun)
             {
-                MessageBox.Show("正在执行恢复程序");
+                MessageBox.Show("正在执行备份程序");
                 return;
             }
             Task.Run(() =>
             {
                 IsRun = true;
-                MySqlLocalServicesManager.GetInstance().RestoreMysql();
+                MySqlLocalServicesManager.GetInstance().BackupMysqlResource();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "还原成功,资源文件加载需要重启服务，当前软件也需要重启加载");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
                 });
                 IsRun = false;
             });

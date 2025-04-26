@@ -71,6 +71,43 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn Header="Id" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
+                                            <TextBlock Text="{Binding Id}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Name" >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
+                                            <TextBlock Text="{Binding Model}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="SN" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
+                                            <TextBlock Text="{Binding SN}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="White" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
+                                            <TextBlock Text="{Binding WhiteFilePath}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Black" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:BlackMuraResult}">
+                                            <TextBlock Text="{Binding BlackFilePath}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+
                             </GridView>
                         </ListView.View>
 

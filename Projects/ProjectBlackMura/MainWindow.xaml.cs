@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using FlowEngineLib;
@@ -18,9 +19,12 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ProjectBlackMura
 {
@@ -35,6 +39,14 @@ namespace ProjectBlackMura
 
         public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
         private string _SN;
+        public string WhiteFilePath { get => _WhiteFilePath; set { _WhiteFilePath = value; NotifyPropertyChanged(); } }
+        private string _WhiteFilePath = string.Empty;
+
+        public string BlackFilePath { get => _BlackFilePath; set { _BlackFilePath = value; NotifyPropertyChanged(); } }
+        private string _BlackFilePath = string.Empty;
+
+        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        private bool _Result = true;
 
     }
 
@@ -57,8 +69,6 @@ namespace ProjectBlackMura
             listView1.ItemsSource = ViewResluts;
             InitFlow();
         }
-
-
 
         #region FlowRun
         public STNodeEditor STNodeEditorMain { get; set; }
@@ -288,7 +298,7 @@ namespace ProjectBlackMura
 
             if (Batch == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到对映的按键，请检查流程配置是否计算KB模板", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
             BlackMuraResult result = new BlackMuraResult();
@@ -299,7 +309,20 @@ namespace ProjectBlackMura
 
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
+                if(item.ImgFileType == AlgorithmResultType.BlackMura_Caculate)
+                {
+                    List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
+                    if (AlgResultModels.Count > 0)
+                    {
+                        BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
+                        blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
+                        blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
+                        blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                        blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
 
+                        result.WhiteFilePath = item.ImgFile;
+                    }
+                }
             }
 
             SNtextBox.Text = string.Empty;
@@ -310,8 +333,117 @@ namespace ProjectBlackMura
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                var result = ViewResluts[listView.SelectedIndex];
+                GenoutputText(result);
+
+                Task.Run(async () =>
+                {
+                    if (File.Exists(result.WhiteFilePath))
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(result.WhiteFilePath);
+                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
+                            if (fileInfo.Length > 0)
+                            {
+                                _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    ImageView.OpenImage(result.WhiteFilePath);
+                                    ImageView.ImageShow.Clear();
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            log.Warn("文件还在写入");
+                            await Task.Delay(ProjectBlackMuraConfig.Instance.ViewImageReadDelay);
+                            _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                ImageView.OpenImage(result.WhiteFilePath);
+                                ImageView.ImageShow.Clear();
+                            });
+                        }
+
+                        _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                        {
+
+
+
+                        });
+
+                    }
+                });
+
+            }
 
         }
+
+        public void GenoutputText(BlackMuraResult kmitemmaster)
+        {
+
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Document.Blocks.Clear(); // 清除之前的内容
+
+            string outtext = string.Empty;
+            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
+            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
+            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+
+            Run run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(run);
+
+            outputText.Document.Blocks.Add(paragraph);
+            outtext = string.Empty;
+
+            paragraph = new Paragraph();
+
+            string title1 = "PT";
+            string title2 = "Lv";
+
+            string title5 = "Lc";
+            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            paragraph.Inlines.Add(run);
+            outtext = string.Empty;
+
+            outputText.Document.Blocks.Add(paragraph);
+
+            //outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
+            //outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+
+            outtext += Environment.NewLine;
+            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
+            //outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
+            //outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
+            //outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
+
+            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+            paragraph = new Paragraph(run);
+            outtext = string.Empty;
+            outputText.Document.Blocks.Add(paragraph);
+            SNtextBox.Focus();
+        }
+
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -340,7 +472,7 @@ namespace ProjectBlackMura
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-
+            ViewResluts.Clear();
         }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)

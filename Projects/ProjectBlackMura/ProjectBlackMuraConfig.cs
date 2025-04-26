@@ -46,7 +46,7 @@ namespace ProjectBlackMura
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
         }
 
-        public  void OpenConfig()
+        public void OpenConfig()
         {
         }
 
