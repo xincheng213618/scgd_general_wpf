@@ -57,9 +57,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand CalibrationEditCommand { get; set; }
         [CommandDisplay("校正模板设置",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
-        [CommandDisplay("资源组管理",Order =103)]
-        public RelayCommand ResourceManagerCommand { get; set; }
-
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
@@ -110,13 +107,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
-
-            ResourceManagerCommand = new RelayCommand(a =>
-            {
-                ResourceManagerWindow resourceManager = new ResourceManagerWindow(this) { Owner = WindowHelpers.GetActiveWindow() };
-                resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                resourceManager.ShowDialog();
-            });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
