@@ -849,4 +849,16 @@
   <data name="ConfirmDelete" xml:space="preserve">
     <value>ПодтвердитьУдалить</value>
   </data>
+  <data name="CalibrationCorrection" xml:space="preserve">
+    <value>Инструменты калибровки</value>
+  </data>
+  <data name="SelectCalibToolsExe" xml:space="preserve">
+    <value>Выберите CalibTools.exe</value>
+  </data>
+  <data name="CannotFindCalibToolsExe_HelpMeFindIt" xml:space="preserve">
+    <value>Я не могу найти CalibTools (CalibTools.exe). Хотите помочь мне найти его?</value>
+  </data>
+  <data name="OpenInCalibTools" xml:space="preserve">
+    <value>Открыть в CalibTools</value>
+  </data>
 </root>

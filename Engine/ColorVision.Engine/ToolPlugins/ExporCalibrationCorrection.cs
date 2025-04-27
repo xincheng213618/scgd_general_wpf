@@ -11,7 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace CalibrationCorrection
+namespace ColorVision.Engine.ToolPlugins
 {
     public class CalibrationConfig : IConfig
     {
@@ -30,7 +30,7 @@ namespace CalibrationCorrection
 
         public override int Order => 6;
 
-        public override string Header => CalibrationCorrection.Properties.Resources.CalibrationCorrection;
+        public override string Header => Properties.Resources.CalibrationCorrection;
 
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
@@ -49,7 +49,7 @@ namespace CalibrationCorrection
         {
             if (!File.Exists(CalibrationConfig.Instance.CalibToolsPath))
             {
-                if (MessageBox.Show("是否下载","ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show("找不到校正生成工具，是否在线下载","ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
                     if (!File.Exists(downloadPath))
@@ -117,10 +117,10 @@ namespace CalibrationCorrection
                     });
                     return;
                 }
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), CalibrationCorrection.Properties.Resources.CannotFindCalibToolsExe_HelpMeFindIt, CalibrationCorrection.Properties.Resources.OpenInCalibTools, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.CannotFindCalibToolsExe_HelpMeFindIt, Properties.Resources.OpenInCalibTools, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
                 using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
                 {
-                    openFileDialog.Title = CalibrationCorrection.Properties.Resources.SelectCalibToolsExe;
+                    openFileDialog.Title = Properties.Resources.SelectCalibToolsExe;
                     openFileDialog.Filter = "CalibTools.exe|CalibTools.exe";
                     openFileDialog.RestoreDirectory = true;
 

@@ -22,7 +22,7 @@ namespace ColorVision.Plugins
         private void Window_Initialized(object sender, System.EventArgs e)
         {
             this.DataContext = PluginManager.GetInstance(); ;
-            DefalutSearchComboBox.ItemsSource = new List<string>() { "CalibrationCorrection", "ColorVisonChat", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin" };
+            DefalutSearchComboBox.ItemsSource = new List<string>() { "ColorVisonChat", "EventVWR", "ScreenRecorder", "SystemMonitor", "WindowsServicePlugin" };
             ListViewPlugins.SelectedIndex = 0;
         }
 

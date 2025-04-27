@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
@@ -77,6 +78,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
+        [CommandDisplay("校正生成工具")]
+        public RelayCommand OepnCalibrationToolCommand { get; set; }
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -113,6 +116,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
             ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
+            OepnCalibrationToolCommand = new RelayCommand(a=>new ExporCalibrationCorrection().Execute());
 
             CalibrationEditCommand = new RelayCommand(a =>
             {
