@@ -3,8 +3,10 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using log4net;
+using MySqlX.XDevAPI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Net;
@@ -64,6 +66,9 @@ namespace ColorVision.Engine
             }
         }
         private int _Port = 6666;
+
+        public int BufferLength { get => _BufferLength; set { _BufferLength = value; NotifyPropertyChanged(); } }
+        private int _BufferLength = 1024;
     }
 
     public interface ISocketMsgHandle
@@ -85,6 +90,8 @@ namespace ColorVision.Engine
         public static SocketConfig Config => SocketConfig.Instance;
 
         public List<ISocketMsgHandle> SocketMsgHandles { get; set; } = new List<ISocketMsgHandle>();
+
+
 
         public SocketControl()
         {
@@ -139,6 +146,15 @@ namespace ColorVision.Engine
                     tcpListener.Stop();
                     IsConnect = false;
                     log.Info("Server stopped.");
+                    foreach (var item in TcpClients)
+                    {
+                        if (item.Connected)
+                        {
+                            item.Client.Shutdown(SocketShutdown.Both);
+                        }
+                        item?.Close();
+                        item?.Dispose();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -146,6 +162,9 @@ namespace ColorVision.Engine
                 }
             }
         }
+
+        public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
+
         public void CheckUpdate()
         {
             tcpListener = new TcpListener(IPAddress.Parse(Config.Host), Config.Port);
@@ -160,6 +179,7 @@ namespace ColorVision.Engine
                 while (true)
                 {
                     TcpClient client = tcpListener.AcceptTcpClient();
+                    TcpClients.Add(client);
                     Thread clientThread = new Thread(new ParameterizedThreadStart(HandleClient));
                     clientThread.Start(client);
                 }
@@ -182,66 +202,38 @@ namespace ColorVision.Engine
 
             NetworkStream stream = client.GetStream();
 
-            byte[] buffer = new byte[1024];
+            byte[] buffer = Config.BufferLength > 1024 ? new byte[Config.BufferLength] : new byte[1024];
             int bytesRead;
-            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+            try
             {
-                string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                log.Info("Received message: " + message);
-
-                bool handled = false;
-                foreach (var handler in SocketMsgHandles)
+                while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
-                    if (handler.Handle(stream, message))
+                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    log.Info("Received message: " + message);
+
+                    bool handled = false;
+                    foreach (var handler in SocketMsgHandles)
                     {
-                        handled = true;
-                        break;
+                        if (handler.Handle(stream, message))
+                        {
+                            handled = true;
+                            break;
+                        }
                     }
-                }
 
-                if (!handled)
-                {
-                    byte[] response = Encoding.ASCII.GetBytes("Unhandled Function Call");
-                    stream.Write(response, 0, response.Length);
-                }
+                    if (!handled)
+                    {
+                        byte[] response = Encoding.ASCII.GetBytes("Unhandled Function Call");
+                        stream.Write(response, 0, response.Length);
+                    }
 
+                }
             }
-
-            client.Close();
-        }
-
-        public string CalXor(string[] srcData)
-        {
-            StringBuilder strText = new StringBuilder();
-            foreach (string s in srcData)
+            catch
             {
-                // 获取s对应的字节数组
-                byte[] b = Encoding.ASCII.GetBytes(s);
-                // xorResult 存放校验结果。注意：初值去首元素值！
-                byte xorResult = b[0];
-                // 求xor校验和。注意：XOR运算从第二元素开始
-                for (int i = 1; i < b.Length; i++)
-                {
-                    xorResult ^= b[i];
-                }
-                strText.Append(xorResult.ToString("x2")); // 使用16进制格式
+                client?.Close();
             }
-            return strText.ToString();
+            client?.Dispose();
         }
-        public string CalXor(string srcData)
-        {
-            // 获取s对应的字节数组
-            byte[] b = Encoding.ASCII.GetBytes(srcData);
-            // xorResult 存放校验结果。注意：初值去首元素值！
-            byte xorResult = b[0];
-            // 求xor校验和。注意：XOR运算从第二元素开始
-            for (int i = 1; i < b.Length; i++)
-            {
-                xorResult ^= b[i];
-            }
-            return xorResult.ToString("x2"); // 直接返回16进制格式的字符串
-        }
-
-
     }
 }
