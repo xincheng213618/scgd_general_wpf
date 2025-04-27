@@ -440,7 +440,7 @@ namespace ColorVision.Projects.ProjectShiYuan
                                 ResultText.Text = "OK";
                                 ResultText.Foreground = Brushes.Red;
 
-                                string h_gap = "C:\\Windows\\System32\\pic\\v_gap.tif";
+                                string h_gap = "C:\\Windows\\System32\\pic\\h_gap.tif";
                                 if (File.Exists(h_gap))
                                 {
                                     File.Copy(h_gap, ProjectShiYuanConfig.Instance.DataPath + "\\" + timestamp + "_" + ProjectShiYuanConfig.Instance.SN + "_h_gap_1" + ".tif", true);
