@@ -60,10 +60,12 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)
                 {
+
                     byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
                     stream.Write(response1, 0, response1.Length);
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
                         DisplayFlow.GetInstance().RunFlow();
                         byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
                         stream.Write(response1, 0, response1.Length);
