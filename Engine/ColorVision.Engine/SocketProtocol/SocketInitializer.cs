@@ -17,12 +17,26 @@ namespace ColorVision.Engine
             _messageUpdater = messageUpdater;
         }
         public override string Name => nameof(SocketInitializer);
-        public override int Order => 1;
+        public override int Order => 5;
 
         public override Task InitializeAsync()
         {
-            _messageUpdater.Update("启动通讯协议");
-            SocketControl.GetInstance();
+            if (SocketConfig.Instance.IsSocketService)
+            {
+                _messageUpdater.Update("启动通讯协议");
+                SocketControl.GetInstance().StartServer();
+            }
+            SocketConfig.Instance.IsSocketServiceChanged += (s, e) =>
+            {
+                if (e)
+                {
+                    SocketControl.GetInstance().StartServer();
+                }
+                else
+                {
+                    SocketControl.GetInstance().StopServer();
+                }
+            };
             return Task.CompletedTask;
         }
     }

@@ -7,7 +7,6 @@ using MySqlX.XDevAPI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -19,65 +18,6 @@ using System.Windows.Interop;
 
 namespace ColorVision.Engine
 {
-    public class SocketConfigProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = "通信协议",
-                                Description = "通用协议配置",
-                                Order =1,
-                                Type = ConfigSettingType.Class,
-                                Source = SocketConfig.Instance
-                            },
-            };
-        }
-
-    }
-
-
-    public class SocketConfig : ViewModelBase,IConfig
-    {
-        public static SocketConfig Instance => ConfigService.Instance.GetRequiredService<SocketConfig>();
-
-        public event EventHandler<bool> IsSocketServiceChanged;
-        public bool IsSocketService { get => _IsSocketService; set { _IsSocketService = value; NotifyPropertyChanged(); IsSocketServiceChanged?.Invoke(this, _IsSocketService); } }
-        private bool _IsSocketService;
-
-        /// <summary>
-        /// IP地址
-        /// </summary>
-        [DisplayName("IP地址")]
-        public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
-        private string _Host = "127.0.0.1";
-
-        /// <summary>
-        /// 端口地址
-        /// </summary>
-        [DisplayName("端口")]
-        public int Port
-        {
-            get => _Port; set
-            {
-                _Port = value <= 0 ? 0 : value >= 65535 ? 65535 : value;
-                NotifyPropertyChanged();
-            }
-        }
-        private int _Port = 6666;
-
-        public int BufferLength { get => _BufferLength; set { _BufferLength = value; NotifyPropertyChanged(); } }
-        private int _BufferLength = 1024;
-    }
-
-    public interface ISocketMsgHandle
-    {
-        public int Order { get; }
-        bool Handle(NetworkStream stream, string message);
-    }
-
-
 
     public class SocketControl:ViewModelBase
     {
@@ -95,23 +35,7 @@ namespace ColorVision.Engine
 
         public SocketControl()
         {
-            if (Config.IsSocketService)
-            {
-                Task.Run(() => CheckUpdate());
-            }
-            Config.IsSocketServiceChanged += (s, e) =>
-            {
-                if (e)
-                {
-                    StartServer();
-                }
-                else
-                {
-                    StopServer();
-                }
-            };
             var hanles = new List<ISocketMsgHandle>();
-
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketMsgHandle).IsAssignableFrom(t) && !t.IsAbstract))
