@@ -53,11 +53,12 @@ namespace ProjectBlackMura
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
 
         public static ObservableCollection<BlackMuraResult> ViewResluts => ProjectBlackMuraConfig.Instance.ViewResluts;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -78,8 +79,8 @@ namespace ProjectBlackMura
 
         public void InitFlow()
         {
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            MQTTConfig mqttcfg = MQTTSetting.Instance.MQTTConfig;
+            MQTTHelper.SetDefaultCfg(mqttcfg.Host, mqttcfg.Port, mqttcfg.UserName, mqttcfg.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -478,6 +479,11 @@ namespace ProjectBlackMura
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
         }
     }
 }
