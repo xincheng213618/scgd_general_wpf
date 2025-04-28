@@ -6,6 +6,7 @@ using ColorVision.UI;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;
+using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin
 {

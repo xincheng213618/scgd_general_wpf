@@ -65,12 +65,8 @@ namespace ColorVision.Engine.MySql
                         MySqlConnect mySqlConnect = new() { Owner = Application.Current.MainWindow };
                         mySqlConnect.ShowDialog();
                     });
-                    }
-                
-                else
-                {
-                    _messageUpdater.Update("已经跳过数据库连接");
                 }
+                
             }
         }
     }
