@@ -16,7 +16,6 @@ namespace ColorVision.UI
         public string Group { get; set; } = "Deafult";
 
         public ConfigSettingType Type { get; set; }
-
         /// <summary>
         /// Bool
         /// </summary>
