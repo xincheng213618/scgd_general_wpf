@@ -32,7 +32,6 @@ namespace ColorVision.Engine.MySql
             {
                 timer.Change(0, MySqlSetting.Instance.ReConnectTime);
             };
-            Connect();
         }
         public void ReConnect(object? o)
         {
@@ -55,7 +54,6 @@ namespace ColorVision.Engine.MySql
                 try
                 {
                     IsConnect = false;
-                    log.Info($"正在连接数据库:{connStr}");
                     MySqlConnection = new MySqlConnection() { ConnectionString = connStr };
                     MySqlConnection.Open();
                     IsConnect = true;
@@ -78,7 +76,6 @@ namespace ColorVision.Engine.MySql
             try
             {
                 IsConnect = false;
-                log.Info($"正在连接数据库:{connStr}");
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
                 
