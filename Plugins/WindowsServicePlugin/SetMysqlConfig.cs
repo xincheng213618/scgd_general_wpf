@@ -4,6 +4,7 @@ using ColorVision.UI;
 using System.IO;
 using System.Windows;
 using System.Xml.Linq;
+using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin
 {
@@ -76,8 +77,6 @@ namespace WindowsServicePlugin
                     if (oldrootConfig != null)
                         MySqlSetting.Instance.MySqlConfigs.Remove(oldrootConfig);
                     MySqlSetting.Instance.MySqlConfigs.Add(rootConfig);
-
-                    CVWinSMSConfig.Instance.Version = dic["Version"];
                     MessageBox.Show("配置成功");
                 }
                 else
