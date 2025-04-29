@@ -8,11 +8,24 @@ using System.IO;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectBase
+namespace ProjectBlackMura
 {
+    public class JudgeConfig:ViewModelBase
+    {
+
+
+    }
+
     public class ProjectBlackMuraConfig: ViewModelBase, IConfig
     {
         public static ProjectBlackMuraConfig Instance => ConfigService.Instance.GetRequiredService<ProjectBlackMuraConfig>();
+
+        public ObservableCollection<BlackMuraResult> ViewResluts { get; set; } = new ObservableCollection<BlackMuraResult>();
+        public Dictionary<string, JudgeConfig> JudgeConfigs { get; set; } = new Dictionary<string, JudgeConfig>();
+        public JudgeConfig JudgeConfig { get => _JudgeConfig; set { _JudgeConfig = value; NotifyPropertyChanged(); } }
+        private JudgeConfig _JudgeConfig = new JudgeConfig();
+
+
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
@@ -33,7 +46,7 @@ namespace ProjectBase
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
         }
 
-        public  void OpenConfig()
+        public void OpenConfig()
         {
         }
 

@@ -6,7 +6,7 @@ using System.Data;
 using System.Reflection;
 using System.Windows;
 
-namespace ProjectBase
+namespace ProjectBlackMura
 {
     /// <summary>
     /// Interaction logic for App.xaml

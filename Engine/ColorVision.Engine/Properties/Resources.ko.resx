@@ -849,4 +849,16 @@
   <data name="ConfirmDelete" xml:space="preserve">
     <value>확인삭제</value>
   </data>
+  <data name="CalibrationCorrection" xml:space="preserve">
+    <value>교정 도구</value>
+  </data>
+  <data name="SelectCalibToolsExe" xml:space="preserve">
+    <value>CalibTools.exe를 선택하세요</value>
+  </data>
+  <data name="CannotFindCalibToolsExe_HelpMeFindIt" xml:space="preserve">
+    <value>CalibTools(CalibTools.exe)를 찾을 수 없습니다. 찾는 데 도움을 주시겠습니까?</value>
+  </data>
+  <data name="OpenInCalibTools" xml:space="preserve">
+    <value>CalibTools에서 열기</value>
+  </data>
 </root>

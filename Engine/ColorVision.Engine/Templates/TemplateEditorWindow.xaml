@@ -10,6 +10,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
+        xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
         ShowInTaskbar="False"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
         Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
@@ -87,7 +88,7 @@
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
-                        <MenuItem Header="{x:Static properties:Resources.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuRename}" Command="{x:Static commands:Commands.ReName}" Tag="{Binding .}" />
                         <MenuItem Header="创建副本"  Click="Button_CreateCopy_Click" Tag="{Binding .}"  />
                         <MenuItem Header="创建为样例"  Click="CreateTemplate_Click" Tag="{Binding .}"  />
                     </ContextMenu>
@@ -152,7 +153,7 @@
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <UniformGrid x:Name="FunctionGrid"    Columns="5">
-                <Button  Click="Button_New_Click" Margin="0,0,5,0" >
+                <Button Command="ApplicationCommands.New" Margin="0,0,5,0" >
                     <TextBlock Text="{x:Static properties:Resources.New}"/>
                 </Button>
                 <Button  Click="Button_Del_Click"  Margin="0,0,5,0" >

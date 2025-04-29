@@ -1,8 +1,13 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
+using System.Collections.Specialized;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.MySql
 {
@@ -34,6 +39,22 @@ namespace ColorVision.Engine.MySql
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
+            this.DataContext = MySqlLocalServicesManager.GetInstance();
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => 
+            {
+                var selectedFilePath = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex].FilePath;
+                StringCollection paths = new StringCollection();
+                paths.Add(selectedFilePath);
+                Clipboard.SetFileDropList(paths);
+
+            }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
+
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => 
+            {
+                var index = MySqlLocalServicesManager.GetInstance().Backups[listView1.SelectedIndex];
+                MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
+                File.Delete(index.FilePath);
+            }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
 
         }
 
@@ -75,16 +96,6 @@ namespace ColorVision.Engine.MySql
         {
             string Sql = MySqlText.Text;
             ExecuteNonQuery(Sql);
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MySqlLocalServicesManager.GetInstance().BackupMysql();
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            MySqlLocalServicesManager.GetInstance().RestoreMysql();
         }
     }
 }

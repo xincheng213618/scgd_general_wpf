@@ -136,6 +136,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             DataContext = Device;
 
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             void ConfigChanged()
             {
                 CB_ThirdPartyAlgorithms.ItemsSource = ThirdPartyAlgorithmsDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "pid", Device.DLLModel?.Id } });

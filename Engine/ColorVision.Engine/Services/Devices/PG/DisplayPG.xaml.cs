@@ -12,19 +12,23 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// </summary>
     public partial class DisplayPG : UserControl, IDisPlayControl
     {
-        private MQTTPG PGService { get => DevicePG.DService; }
-        private DevicePG DevicePG { get; set; }
-        public string DisPlayName => DevicePG.Config.Name;
+        private MQTTPG PGService { get => Device.DService; }
+        private DevicePG Device { get; set; }
+        public string DisPlayName => Device.Config.Name;
 
 
         public DisplayPG(DevicePG devicePG)
         {
-            DevicePG = devicePG;
+            Device = devicePG;
             InitializeComponent();
-            DataContext = DevicePG;
+            DataContext = Device;
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             PGService.DeviceStatusChanged += (e) =>
             {
                 switch (e)

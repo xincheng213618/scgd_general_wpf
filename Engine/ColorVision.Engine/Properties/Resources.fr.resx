@@ -849,4 +849,16 @@
   <data name="ConfirmDelete" xml:space="preserve">
     <value>ConfirmerSupprimer</value>
   </data>
+  <data name="CalibrationCorrection" xml:space="preserve">
+    <value>Outils d'étalonnage</value>
+  </data>
+  <data name="SelectCalibToolsExe" xml:space="preserve">
+    <value>Sélectionnez CalibTools.exe</value>
+  </data>
+  <data name="CannotFindCalibToolsExe_HelpMeFindIt" xml:space="preserve">
+    <value>Je ne trouve pas CalibTools (CalibTools.exe). Voulez-vous m'aider à le retrouver ?</value>
+  </data>
+  <data name="OpenInCalibTools" xml:space="preserve">
+    <value>Ouvrir dans CalibTools</value>
+  </data>
 </root>
