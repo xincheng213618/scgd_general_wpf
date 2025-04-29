@@ -200,12 +200,11 @@ namespace WindowsServicePlugin.CVWinSMS
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 if (!File.Exists(downloadPath))
                 {
                     windowUpdate.Show();
                 }
-
                 Task.Run(async () =>
                 {
                     if (!File.Exists(downloadPath))

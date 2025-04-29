@@ -88,7 +88,7 @@ namespace WindowsServicePlugin.Serv
                     {
                         downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{filepath}";
                         string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/{filepath}";
-                        WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                        WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                         if (!File.Exists(downloadPath))
                         {
                             windowUpdate.Show();

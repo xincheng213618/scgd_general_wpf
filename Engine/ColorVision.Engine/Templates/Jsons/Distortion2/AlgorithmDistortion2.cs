@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             Params.Add("Version", "2.0");
             MsgSend msg = new()
             {
-                EventName = "ghost",
+                EventName = "Distortion",
                 SerialNumber = sn,
                 Params = Params
             };

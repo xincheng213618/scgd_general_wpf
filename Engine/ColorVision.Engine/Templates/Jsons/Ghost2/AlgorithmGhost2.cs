@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             Params.Add("Version", "2.0");
             MsgSend msg = new()
             {
-                EventName = "ghost",
+                EventName = "Ghost",
                 SerialNumber = sn,
                 Params = Params
             };

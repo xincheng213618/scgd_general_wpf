@@ -5,11 +5,11 @@ using CVCommCore;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
-
     public class CameraFOV
     {
         public double D_Fov { get; set; }
@@ -25,6 +25,11 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         public CameraFOV result { get; set; }
     }
 
+    public class ResultFile
+    {
+        public string ResultFileName { get; set; }
+    }
+
 
     public class DFovView : IViewResult
     {
@@ -32,14 +37,25 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         {
             Id = detail.Id;
             PId = detail.PId;
-            Result = JsonConvert.DeserializeObject<ResDFov>(detail.ResultJson);
-            D_Fov = Result.result.D_Fov;
-            H_Fov = Result.result.H_Fov;
-            V_FOV = Result.result.V_FOV;
-            ClolorVisionH_Fov  = Result.result.ClolorVisionH_Fov;
-            ClolorVisionV_Fov  = Result.result.ClolorVisionV_Fov;
-            LeftDownToRightUp  = Result.result.LeftDownToRightUp;
-            LeftUpToRightDown =  Result.result.LeftUpToRightDown;
+            
+            var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);
+            if (restfile != null)
+            {
+                if (File.Exists(restfile.ResultFileName))
+                {
+                    string json = File.ReadAllText(restfile.ResultFileName);
+                    Result = JsonConvert.DeserializeObject<ResDFov>(json);
+                    D_Fov = Result.result.D_Fov;
+                    H_Fov = Result.result.H_Fov;
+                    V_FOV = Result.result.V_FOV;
+                    ClolorVisionH_Fov = Result.result.ClolorVisionH_Fov;
+                    ClolorVisionV_Fov = Result.result.ClolorVisionV_Fov;
+                    LeftDownToRightUp = Result.result.LeftDownToRightUp;
+                    LeftUpToRightDown = Result.result.LeftUpToRightDown;
+                }
+            }
+
+
         }
 
 
