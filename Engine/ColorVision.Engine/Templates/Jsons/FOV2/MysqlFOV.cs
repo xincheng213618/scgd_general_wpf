@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
-    public class MysqlDFOV : IMysqlCommand
+    public class MysqlFOV : IMysqlCommand
     {
         public string GetMysqlCommandName() => "恢复FOV_2.0";
 

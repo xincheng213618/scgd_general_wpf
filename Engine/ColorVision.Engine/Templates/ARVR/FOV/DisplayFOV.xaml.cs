@@ -7,26 +7,25 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.Distortion2
+namespace ColorVision.Engine.Templates.FOV
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayDistortion2 : UserControl
+    public partial class DisplayFOV : UserControl
     {
-        public AlgorithmDistortion2 IAlgorithm { get; set; }
-        public DisplayDistortion2(AlgorithmDistortion2 iAlgorithm)
+        public AlgorithmFOV IAlgorithm { get; set; }
+        public DisplayFOV(AlgorithmFOV fOVAlgorithm)
         {
-            IAlgorithm = iAlgorithm;
+            IAlgorithm = fOVAlgorithm;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = IAlgorithm;
-            
-            ComboxTemplate.ItemsSource = TemplateDistortion2.Params;
-            ComboxTemplate.SelectedIndex = 0;
+            ComboxFOVTemplate.ItemsSource = TemplateFOV.Params;
+            ComboxFOVTemplate.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
@@ -39,16 +38,11 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
 
         private void RunTemplate_Click(object sender, RoutedEventArgs e)
         {
-            if (!AlgorithmHelper.IsTemplateSelected(ComboxTemplate, "请先选择畸变模板")) return;
-
-            if (ComboxTemplate.SelectedValue is not TemplateJsonParam param) return;
-
-
-
-
+            if (!AlgorithmHelper.IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板")) return;
 
             if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
+                var pm = TemplateFOV.Params[ComboxFOVTemplate.SelectedIndex].Value;
                 string type = string.Empty;
                 string code = string.Empty;
                 if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
@@ -56,8 +50,8 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = IAlgorithm.SendCommand(param, code, type, imgFileName, fileExtType, sn);
-                ServicesHelper.SendCommand(msg, "正在执行畸变算法");
+                MsgRecord msg = IAlgorithm.SendCommand( code, type, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
+                ServicesHelper.SendCommand(msg, "FOV");
             }
         }
 
@@ -82,7 +76,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             else if (isRaw == true)
             {
                 imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
             }
             else
             {
@@ -93,6 +86,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                 MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
+
 
             if (Path.GetExtension(imgFileName).Contains("cvraw"))
             {
@@ -137,7 +131,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
             if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
                 IAlgorithm.DService.Open(deviceService.Code, deviceService.ServiceTypes.ToString(), CB_RawImageFiles.Text, FileExtType.CIE);
         }
-
         private void Button_OpenLocal_Click(object sender, RoutedEventArgs e)
         {
             if (!File.Exists(ImageFile.Text))
@@ -146,18 +139,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
                 return;
             }
             IAlgorithm.Device.View.ImageView.OpenImage(ImageFile.Text);
-        }
-
-        private void Open1_File(object sender, RoutedEventArgs e)
-        {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png, *.tif)|*.jpg;*.jpeg;*.png;*.tif;*.cvcie;*.cvraw|All files (*.*)|*.*";
-            openFileDialog.RestoreDirectory = true;
-            openFileDialog.FilterIndex = 1;
-            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                IAlgorithm.CIEFileName = openFileDialog.FileName;
-            }
         }
     }
 }

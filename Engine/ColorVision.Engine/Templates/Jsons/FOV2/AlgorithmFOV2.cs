@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
 
         public AlgorithmFOV2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "FOV_2.0";
+            Name = "FOV2.0";
             Order = 53;
             Group = "AR/VR算法";
             Device = deviceAlgorithm;
