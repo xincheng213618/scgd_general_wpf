@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
     public class VOtherConfig
     {

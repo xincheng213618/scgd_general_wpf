@@ -13,7 +13,7 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
 
     public class ViewHandleGhostQK : IResultHandleBase

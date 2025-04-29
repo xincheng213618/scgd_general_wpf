@@ -1,10 +1,10 @@
 ﻿using ColorVision.Engine.MySql;
 
-namespace ColorVision.Engine.Templates.Jsons.DFOV
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     public class MysqlDFOV : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复DFOV";
+        public string GetMysqlCommandName() => "恢复FOV_2.0";
 
         public string GetRecover()
         {

@@ -7,15 +7,15 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayGhostQK : UserControl
     {
-        public AlgorithmGhostQK IAlgorithm { get; set; }
-        public DisplayGhostQK(AlgorithmGhostQK iAlgorithm)
+        public AlgorithmGhost2 IAlgorithm { get; set; }
+        public DisplayGhostQK(AlgorithmGhost2 iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();

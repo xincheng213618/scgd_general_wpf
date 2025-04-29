@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.Jsons.DFOV
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
 
     public class CameraFOV

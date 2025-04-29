@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
     public class GhostDetectionConfig
     {

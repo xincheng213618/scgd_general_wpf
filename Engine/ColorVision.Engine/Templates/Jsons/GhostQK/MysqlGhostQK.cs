@@ -1,10 +1,10 @@
 ﻿using ColorVision.Engine.MySql;
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
     public class MysqlGhostQK : IMysqlCommand
     {
-        public string GetMysqlCommandName() => "恢复GhostQK";
+        public string GetMysqlCommandName() => "恢复Ghost2";
 
         public string GetRecover()
         {

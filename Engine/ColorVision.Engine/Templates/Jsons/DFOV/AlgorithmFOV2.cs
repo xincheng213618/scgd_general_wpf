@@ -11,9 +11,9 @@ using System.Windows;
 using System.Windows.Controls;
 
 
-namespace ColorVision.Engine.Templates.Jsons.GhostQK
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
-    public class AlgorithmGhostQK : DisplayAlgorithmBase
+    public class AlgorithmFOV2 : DisplayAlgorithmBase
     {
 
         public DeviceAlgorithm Device { get; set; }
@@ -21,10 +21,10 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
 
         public RelayCommand OpenTemplateCommand { get; set; }
 
-        public AlgorithmGhostQK(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmFOV2(DeviceAlgorithm deviceAlgorithm)
         {
-            Name = "鬼影QK";
-            Order = 54;
+            Name = "FOV_2.0";
+            Order = 53;
             Group = "AR/VR算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
@@ -34,16 +34,13 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
 
         public void OpenTemplate()
         {
-            new TemplateEditorWindow(new TemplateGhostQK(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new TemplateEditorWindow(new TemplateDFOV(), TemplateSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-
-        public string CIEFileName { get => _CIEFileName; set { _CIEFileName = value; NotifyPropertyChanged(); } }
-        private string _CIEFileName;
 
 
         public override UserControl GetUserControl()
         {
-            UserControl ??= new DisplayGhostQK(this);
+            UserControl ??= new DisplayFOV2(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
@@ -58,15 +55,13 @@ namespace ColorVision.Engine.Templates.Jsons.GhostQK
                 fileName = fullpath;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = param.Id, Name = param.Name });
-            Params.Add("CIEFileName", CIEFileName);
-
+            Params.Add("Version", "2.0");
             MsgSend msg = new()
             {
-                EventName = "ghost_qk",
+                EventName = "FOV",
                 SerialNumber = sn,
                 Params = Params
             };
-
             return DService.PublishAsyncClient(msg);
         }
     }

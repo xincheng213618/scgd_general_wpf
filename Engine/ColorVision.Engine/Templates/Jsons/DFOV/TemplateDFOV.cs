@@ -6,7 +6,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.DFOV
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
 
     public class TJDFOVParam : TemplateJsonParam
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Templates.Jsons.DFOV
         public TemplateDFOV()
         {
             Title = "DFOV模板管理";
-            Code = "FOV_qk";
+            Code = "FOV_2.0";
             TemplateParams = Params;
             IsUserControl = true;
         }

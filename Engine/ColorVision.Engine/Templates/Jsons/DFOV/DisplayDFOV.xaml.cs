@@ -7,15 +7,15 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.Jsons.DFOV
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayDFOV : UserControl
+    public partial class DisplayFOV2 : UserControl
     {
-        public AlgorithmDFOV IAlgorithm { get; set; }
-        public DisplayDFOV(AlgorithmDFOV iAlgorithm)
+        public AlgorithmFOV2 IAlgorithm { get; set; }
+        public DisplayFOV2(AlgorithmFOV2 iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();

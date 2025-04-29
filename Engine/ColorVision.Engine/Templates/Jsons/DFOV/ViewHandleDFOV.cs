@@ -3,7 +3,7 @@
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.GhostQK;
+using ColorVision.Engine.Templates.Jsons.Ghost2;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -14,7 +14,7 @@ using System.Text;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Engine.Templates.Jsons.DFOV
+namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
 
 
