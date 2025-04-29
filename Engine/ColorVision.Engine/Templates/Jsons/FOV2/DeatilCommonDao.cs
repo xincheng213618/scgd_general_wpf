@@ -25,12 +25,6 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         public CameraFOV result { get; set; }
     }
 
-    public class ResultFile
-    {
-        public string ResultFileName { get; set; }
-    }
-
-
     public class DFovView : IViewResult
     {
         public DFovView(DetailCommonModel detail)

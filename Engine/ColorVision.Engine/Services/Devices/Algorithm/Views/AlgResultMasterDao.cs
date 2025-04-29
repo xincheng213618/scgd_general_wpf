@@ -11,19 +11,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     {
         public AlgResultMasterModel() { }
 
-        public AlgResultMasterModel(int? tid, string tname, string imgFile, string pms, AlgorithmResultType imgFileType, int? batchId, int? resultCode, string result)
-        {
-            TId = tid;
-            TName = tname;
-            ImgFile = imgFile;
-            Params = pms;
-            ImgFileType = imgFileType;
-            BatchId = batchId;
-            Result = result;
-            ResultCode = resultCode;
-            CreateDate = DateTime.Now;
-        }
-
         [Column("tid")]
         public int? TId { get; set; }
 
@@ -35,6 +22,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         [Column("img_file_type")]
         public AlgorithmResultType ImgFileType { get; set; }
+
+        [Column("version")]
+        public string version { get; set; }
 
         [Column("batch_id")]
         public int? BatchId { get; set; }

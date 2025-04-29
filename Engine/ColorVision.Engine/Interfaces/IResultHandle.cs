@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Interfaces
     }
     public interface IResultHandle
     {
-        public List<AlgorithmResultType> CanHandle { get; }
+        public bool CanHandle1(AlgorithmResult result);
 
         void Handle(AlgorithmView view, AlgorithmResult result);
         void SideSave(AlgorithmResult result, string selectedPath);
@@ -70,7 +70,15 @@ namespace ColorVision.Engine.Interfaces
 
     public abstract class IResultHandleBase : IResultHandle
     {
-        public abstract List<AlgorithmResultType> CanHandle { get; } 
+        public abstract List<AlgorithmResultType> CanHandle { get; }
+        public virtual bool CanHandle1(AlgorithmResult result)
+        {
+            if (CanHandle.Contains(result.ResultType))
+            {
+                return true;
+            }
+            return false;
+        }
 
         public abstract void Handle(AlgorithmView view, AlgorithmResult result);
 

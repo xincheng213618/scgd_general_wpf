@@ -23,7 +23,11 @@ namespace ColorVision.Engine.Templates.Jsons.FOV2
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleDFOV));
 
         public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.FOV};
-
+        public override bool CanHandle1(AlgorithmResult result)
+        {
+            if (result.Version != "2.0") return false;
+            return base.CanHandle1(result);
+        }
         private static string EscapeCsvField(string field)
         {
             if (field.Contains(',' ) || field.Contains('"') || field.Contains('\n'))

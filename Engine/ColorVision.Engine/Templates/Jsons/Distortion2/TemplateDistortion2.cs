@@ -13,38 +13,6 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
     {
         private static ILog log = LogManager.GetLogger(nameof(TemplateJsonDistortion2));
 
-        public GhostDetectionConfig KBJson
-        {
-            get
-            {
-                try
-                {
-                    GhostDetectionConfig kBJson = JsonConvert.DeserializeObject<GhostDetectionConfig>(JsonValue);
-                    if (kBJson == null)
-                    {
-                        kBJson = new GhostDetectionConfig();
-                        JsonValue = JsonConvert.SerializeObject(kBJson);
-                        return kBJson;
-                    }
-                    return kBJson;
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    GhostDetectionConfig kBJson = new GhostDetectionConfig();
-                    JsonValue = JsonConvert.SerializeObject(kBJson);
-                    return kBJson;
-                }
-            }
-            set
-            {
-                JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged();
-            }
-        }
-
-
-
         public TemplateJsonDistortion2() : base()
         {
         }
