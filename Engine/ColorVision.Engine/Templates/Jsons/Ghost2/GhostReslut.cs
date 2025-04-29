@@ -29,6 +29,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         [JsonProperty("message")]
         public string Message { get; set; }
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class Ratio
@@ -68,6 +69,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         [JsonProperty("message")]
         public string Message { get; set; }
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class Ghost
@@ -83,6 +85,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         [JsonProperty("message")]
         public string Message { get; set; }
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class Luminosity

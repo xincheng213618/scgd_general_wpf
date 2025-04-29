@@ -82,8 +82,8 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             Load(view, result);
             OpenSource();
 
-            List<string> header = new() { "LvAvg", "LvMax", "LvMin", "Uniformity(%)", "ZaRelMax", "AreaJsonVal" };
-            List<string> bdHeader = new() { "ResultJson.LvAvg", "ResultJson.LvMax", "ResultJson.LvMin", "ResultJson.Uniformity", "ResultJson.ZaRelMax", "AreaJsonVal" };
+            List<string> header = new() { "Analysis", "Bright", "Ghost" };
+            List<string> bdHeader = new() { "GhostReslut.Analysis", "GhostReslut.Bright", "GhostReslut.Ghost" };
 
             if (view.listViewSide.View is GridView gridView)
             {
