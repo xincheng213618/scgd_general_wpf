@@ -378,7 +378,7 @@ namespace ColorVision
                         SearchMeta search = new SearchMeta
                         {
                             GuidId = Guid.NewGuid().ToString(),
-                            Header = $"搜索{searchtext}",
+                            Header = $"{Properties.Resources.Search} {searchtext}",
                             Command = new Common.MVVM.RelayCommand(a => Search())
                         };
 
