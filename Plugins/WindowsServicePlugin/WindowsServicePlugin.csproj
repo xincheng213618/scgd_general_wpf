@@ -4,7 +4,7 @@
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<ImplicitUsings>enable</ImplicitUsings>    
-		<VersionPrefix>1.2.1.1</VersionPrefix>
+		<VersionPrefix>1.2.1.2</VersionPrefix>
 	</PropertyGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">

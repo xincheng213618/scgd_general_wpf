@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.RC;
 using ColorVision.UI;
 using System.IO;
 using System.Windows;
@@ -48,10 +49,6 @@ namespace WindowsServicePlugin
                     }
                 }
 
-                MySqlSetting.Instance.MySqlConfig.UserName = dic["MysqlUser"];
-                MySqlSetting.Instance.MySqlConfig.UserPwd = dic["MysqlPwd"];
-                MySqlSetting.Instance.MySqlConfig.Database = dic["MysqlDatabase"];
-
                 string DirPath = dic["BaseLocation"];
 
                 SetServiceConfig(DirPath, "RegWindowsService");
@@ -86,6 +83,76 @@ namespace WindowsServicePlugin
             if (!File.Exists(mqttConfigPath)) return;
 
             UpdateMqttConfig(mqttConfigPath);
+
+
+
+            string WinServiceConfigPath = Path.Combine(serviceDir, "cfg", "WinService.config");
+            if (!File.Exists(WinServiceConfigPath)) return;
+            if (serviceName == "RegWindowsService")
+            {
+                UpdateRCWinServiceConfig(WinServiceConfigPath);
+            }
+            else
+            {
+                UpdateWinServiceConfig(WinServiceConfigPath);
+            }
+        }
+
+        private void UpdateRCWinServiceConfig(string mysqlConfigPath)
+        {
+            var mqttConfigXml = XDocument.Load(mysqlConfigPath);
+            var mqttAppSettings = mqttConfigXml.Element("configuration")?.Element("appSettings")?.Elements("add");
+            if (mqttAppSettings != null)
+            {
+                var mqttConfig = RCSetting.Instance.Config;
+                foreach (var setting in mqttAppSettings)
+                {
+                    string key = setting.Attribute("key")?.Value;
+                    if (key == null) continue;
+
+                    string value = key switch
+                    {
+                        "NodeName" => mqttConfig.RCName,
+                        "RCNodeName" => mqttConfig.RCName,
+                        _ => null
+                    };
+                    if (value != null)
+                    {
+                        setting.SetAttributeValue("value", value);
+                    }
+                }
+
+            }
+            mqttConfigXml.Save(mysqlConfigPath);
+        }
+
+        private void UpdateWinServiceConfig(string mysqlConfigPath)
+        {
+            var mqttConfigXml = XDocument.Load(mysqlConfigPath);
+            var mqttAppSettings = mqttConfigXml.Element("configuration")?.Element("appSettings")?.Elements("add");
+            if (mqttAppSettings != null)
+            {
+                var mqttConfig = RCSetting.Instance.Config;
+                foreach (var setting in mqttAppSettings)
+                {
+                    string key = setting.Attribute("key")?.Value;
+                    if (key == null) continue;
+
+                    string value = key switch
+                    {
+                        "RCNodeName" => mqttConfig.RCName,
+                        "NodeAppId" => mqttConfig.AppId,
+                        "NodeKey" => mqttConfig.AppSecret,
+                        _ => null
+                    };
+                    if (value != null)
+                    {
+                        setting.SetAttributeValue("value", value);
+                    }
+                }
+
+            }
+            mqttConfigXml.Save(mysqlConfigPath);
         }
 
         private void UpdateMqttConfig(string mysqlConfigPath)

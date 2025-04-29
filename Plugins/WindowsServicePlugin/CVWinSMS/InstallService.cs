@@ -113,16 +113,24 @@ namespace WindowsServicePlugin.Serv
                             try
                             {
                                 PlatformHelper.OpenFolderAndSelectFile(downloadPath);
-
-                                MessageBox.Show(Application.Current.GetActiveWindow(), "更新前需要先备份数据库");
-                                Task.Run(() =>
+                                Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    // 备份数据库
-                                    MySqlLocalServicesManager.GetInstance().BackupMysql();
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库备份完成，接下来请点击更新按钮");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), "更新前需要先备份数据库");
+                                    var mySqlLocalServices = MySqlLocalServicesManager.GetInstance();
+                                    Task.Run(() =>
+                                    {
+                                        // 备份数据库
+                                        mySqlLocalServices.BackupMysql();
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库备份完成，接下来请点击更新按钮");
+                                            new InstallTool().Execute();
+                                        });
+      
+                                    });
 
-                                    new InstallTool().Execute();
                                 });
+
 
                             }
                             catch (Exception ex)
