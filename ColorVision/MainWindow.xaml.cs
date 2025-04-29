@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -334,14 +335,15 @@ namespace ColorVision
         {
             if (sender is TextBox textBox)
             {
-                if (string.IsNullOrWhiteSpace(textBox.Text))
+                string searchtext = textBox.Text;
+                if (string.IsNullOrWhiteSpace(searchtext))
                 {
                     SearchPopup.IsOpen = false;
                 }
                 else
                 {
                     SearchPopup.IsOpen = true;
-                    var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+                    var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = Searches
                         .OfType<ISearch>()
@@ -350,6 +352,38 @@ namespace ColorVision
                             template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
                             ))
                         .ToList();
+
+
+                    string everythingpath = "C:\\Program Files\\Everything\\Everything.exe";
+
+                    if (File.Exists(everythingpath))
+                    {
+                        void Search()
+                        {
+                            ProcessStartInfo startInfo = new();
+                            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+                            startInfo.WorkingDirectory = Environment.CurrentDirectory;
+                            startInfo.FileName = everythingpath;
+                            startInfo.Arguments = $"-s {searchtext}";
+                            try
+                            {
+                                Process p = Process.Start(startInfo);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                            }
+                        }
+
+                        SearchMeta search = new SearchMeta
+                        {
+                            GuidId = Guid.NewGuid().ToString(),
+                            Header = $"搜索{searchtext}",
+                            Command = new Common.MVVM.RelayCommand(a => Search())
+                        };
+
+                        filteredResults.Add(search);
+                    }
 
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)
