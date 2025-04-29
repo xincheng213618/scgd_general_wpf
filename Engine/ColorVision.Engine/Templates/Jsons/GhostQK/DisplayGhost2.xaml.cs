@@ -12,10 +12,10 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayGhostQK : UserControl
+    public partial class DisplayGhost2 : UserControl
     {
         public AlgorithmGhost2 IAlgorithm { get; set; }
-        public DisplayGhostQK(AlgorithmGhost2 iAlgorithm)
+        public DisplayGhost2(AlgorithmGhost2 iAlgorithm)
         {
             IAlgorithm = iAlgorithm;
             InitializeComponent();

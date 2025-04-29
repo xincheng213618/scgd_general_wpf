@@ -3,7 +3,6 @@ using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
@@ -43,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public override UserControl GetUserControl()
         {
-            UserControl ??= new DisplayGhostQK(this);
+            UserControl ??= new DisplayGhost2(this);
             return UserControl;
         }
         public UserControl UserControl { get; set; }
