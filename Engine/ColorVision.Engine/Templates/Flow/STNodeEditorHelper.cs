@@ -223,7 +223,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
             }
-            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostNode algorithmGhostNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node algorithmGhostNode)
             {
                 AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
             }
