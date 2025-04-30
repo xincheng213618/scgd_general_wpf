@@ -1,4 +1,7 @@
-﻿using ColorVision.Themes.Controls;
+﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
@@ -128,12 +131,20 @@ namespace ColorVision.Engine.ToolPlugins
                     CalibrationConfig.Instance.CalibToolsPath = openFileDialog.FileName;
                 }
 
-
-
-
             }
             try
             {
+                var cameraLicenseModels = CameraLicenseDao.Instance.GetAll(); 
+                string DirectoryPath = Path.Combine(Directory.GetParent(CalibrationConfig.Instance.CalibToolsPath).FullName, "license");
+
+                if (!Directory.Exists(DirectoryPath))
+                    Directory.CreateDirectory(DirectoryPath);
+
+                foreach (var item in cameraLicenseModels)
+                {
+                    string lincesePath = Path.Combine(DirectoryPath, item.MacAddress + ".lic");
+                    File.WriteAllText(lincesePath, item.LicenseValue);
+               }
                 Process.Start(CalibrationConfig.Instance.CalibToolsPath);
             }
             catch (Exception ex)
