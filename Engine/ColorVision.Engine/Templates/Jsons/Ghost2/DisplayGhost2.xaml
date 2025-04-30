@@ -1,0 +1,78 @@
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.Ghost2.DisplayGhost2"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.Ghost2"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:AlgorithmGhost2}"
+             d:DesignHeight="300" d:DesignWidth="300" Initialized="UserControl_Initialized">
+    <Grid>
+        <StackPanel>
+            <DockPanel Margin="0,2">
+                <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
+                <TextBlock Text="Ghost" Width="60"/>
+                <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
+                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding OpenTemplateCommand}"/>
+                </Grid>
+            </DockPanel>
+            
+            <StackPanel Orientation="Horizontal" Margin="0,2">
+                <TextBlock Text="CIE" Margin="0,0,10,0" Width="40"/>
+                <TextBox x:Name="ImageFile1" Style="{StaticResource TextBox.Small}"  Text="{Binding CIEFileName}" Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open1_File" />
+            </StackPanel>
+            
+            <TabControl BorderThickness="0" Background="Transparent">
+                <TabItem Background="Transparent" Header="{x:Static properties:Resources.Local}" >
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="文件" Margin="0,0,10,0" Width="40"/>
+                        <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}"  Width="150" Margin="0,0,2,0" HorizontalAlignment="Left" />
+                        <Button  Content="..." DockPanel.Dock="Right" HorizontalAlignment="Right"  Click="Open_File" />
+                        <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_OpenLocal_Click" />
+                    </StackPanel>
+                </TabItem>
+                <TabItem Background="Transparent" Header="服务" x:Name="AlgRawSelect" IsSelected="True">
+                    <StackPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0" Width="40"/>
+                            <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" HorizontalAlignment="Left" SelectedValuePath="Code"  DisplayMemberPath="Name" />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <Button Click="Button_Click_RawRefresh" Background="Transparent"  BorderThickness="0" Margin="-5,0,15,0" Width="40">
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Button>
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
+                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  ItemsSource="{Binding DService.RawImageFiles}" Width="150" HorizontalAlignment="Left" />
+                        </DockPanel>
+                    </StackPanel>
+
+                </TabItem>
+                <TabItem  Background="Transparent" Header="批次号" x:Name="AlgBatchSelect" >
+                    <StackPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="批次号" Margin="0,0,10,0" Width="40"/>
+                            <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}"  Width="150" HorizontalAlignment="Left" />
+                        </DockPanel>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+        </StackPanel>
+    </Grid>
+</UserControl>

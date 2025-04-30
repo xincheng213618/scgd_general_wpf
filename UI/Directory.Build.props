@@ -13,9 +13,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<Copyright>Copyright (C) 2024 ColorVision Corporation</Copyright>
+		<Copyright>Copyright (C) 2025 ColorVision Corporation</Copyright>
 		<AssemblyCompany>ColorVision Corp.</AssemblyCompany>
-		<AssemblyCopyright>Copyright (C) 2024 ColorVision Corporation</AssemblyCopyright>
+		<AssemblyCopyright>Copyright (C) 2025 ColorVision Corporation</AssemblyCopyright>
 		<AssemblyProduct>ColorVision</AssemblyProduct>
 		<VersionPrefix>1.1.12.2</VersionPrefix>
 		<Company>ColorVision</Company>

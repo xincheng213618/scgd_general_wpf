@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -86,6 +87,16 @@ namespace ColorVision.Engine.Templates.Jsons
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show(Description);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "https://www.json.cn/",
+                UseShellExecute = true
+            });
+            Common.NativeMethods.Clipboard.SetText(IEditTemplateJson.JsonValue);
         }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
@@ -30,6 +32,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new SSCOMTool().ToMenuItem());
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             void Update()
             {
                 var list = new TemplateSensor(Device.Config.Category);

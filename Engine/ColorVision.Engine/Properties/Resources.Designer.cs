@@ -241,11 +241,29 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 校正生成工具 的本地化字符串。
+        /// </summary>
+        public static string CalibrationCorrection {
+            get {
+                return ResourceManager.GetString("CalibrationCorrection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
             get {
                 return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 我找不到 CalibTools (CalibTools.exe)。你愿意帮我找到它吗？ 的本地化字符串。
+        /// </summary>
+        public static string CannotFindCalibToolsExe_HelpMeFindIt {
+            get {
+                return ResourceManager.GetString("CannotFindCalibToolsExe_HelpMeFindIt", resourceCulture);
             }
         }
         
@@ -1564,6 +1582,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 在 CalibTools 中打开 的本地化字符串。
+        /// </summary>
+        public static string OpenInCalibTools {
+            get {
+                return ResourceManager.GetString("OpenInCalibTools", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 打开项目 的本地化字符串。
         /// </summary>
         public static string OpenItem {
@@ -1794,6 +1821,15 @@ namespace ColorVision.Engine.Properties {
         public static string SearchLimit {
             get {
                 return ResourceManager.GetString("SearchLimit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 选择 CalibTools.exe 的本地化字符串。
+        /// </summary>
+        public static string SelectCalibToolsExe {
+            get {
+                return ResourceManager.GetString("SelectCalibToolsExe", resourceCulture);
             }
         }
         

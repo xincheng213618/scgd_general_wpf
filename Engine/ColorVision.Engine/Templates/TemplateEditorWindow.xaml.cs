@@ -113,12 +113,21 @@ namespace ColorVision.Engine.Templates
             command.InputGestures.Add(gesture);
             CommandBindings.Add(new CommandBinding(command, (s,e) => { Searchbox.Focus(); }));
             ListView1.Focus();
+
+            this.Deactivated += (s, e) =>
+            {
+                if (LastSelectTemplateBase != null)
+                    LastSelectTemplateBase.IsEditMode = false;
+            };
         }
+
+        private TemplateBase LastSelectTemplateBase;
 
         public void ReName()
         {
             if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateBase templateModelBase)
             {
+                LastSelectTemplateBase = templateModelBase;
                 templateModelBase.IsEditMode = true;
             }
         }
@@ -226,12 +235,6 @@ namespace ColorVision.Engine.Templates
             Close();
         }
 
-
-
-        private void Button_New_Click(object sender, RoutedEventArgs e)
-        {
-            New();
-        }
         private void New()
         {
             int oldnum = ITemplate.Count;

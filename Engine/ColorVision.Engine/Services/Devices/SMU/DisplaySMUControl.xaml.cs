@@ -37,6 +37,9 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DataContext = Device;
 
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };

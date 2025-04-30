@@ -11,6 +11,7 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.ToolPlugins;
 using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.Themes.Controls.Uploads;
@@ -57,9 +58,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand CalibrationEditCommand { get; set; }
         [CommandDisplay("校正模板设置",Order =101)]
         public RelayCommand CalibrationTemplateOpenCommand { get; set; }
-        [CommandDisplay("资源组管理",Order =103)]
-        public RelayCommand ResourceManagerCommand { get; set; }
-
         public RelayCommand UploadLicenseCommand { get; set; }
         [CommandDisplay("在线下载许可证")]
         public RelayCommand UploadLicenseNetCommand { get; set; }
@@ -80,6 +78,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("修改电机配置")]
         public RelayCommand UpdateMotorConfigCommand {get; set; }
 
+        [CommandDisplay("校正生成工具")]
+        public RelayCommand OepnCalibrationToolCommand { get; set; }
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -111,18 +111,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             CopyConfigCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(Config.ToJsonN()));
             ContentInit();
 
-            ResourceManagerCommand = new RelayCommand(a =>
-            {
-                ResourceManagerWindow resourceManager = new ResourceManagerWindow(this) { Owner = WindowHelpers.GetActiveWindow() };
-                resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                resourceManager.ShowDialog();
-            });
-
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id);
 
             ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
+            OepnCalibrationToolCommand = new RelayCommand(a=>new ExporCalibrationCorrection().Execute());
 
             CalibrationEditCommand = new RelayCommand(a =>
             {

@@ -18,7 +18,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -44,6 +46,40 @@ namespace ColorVision.Engine.Templates.Flow
                 schedulerInfo.Status = SchedulerStatus.Ready;
             });
             return Task.CompletedTask;
+        }
+    }
+
+    public class FlowSocketMsgHandle : ISocketMsgHandle
+    {
+        public int Order => 0;
+
+        public bool Handle(NetworkStream stream, string message)
+        {
+            var strings = message.Split(",");
+            if (strings.Length > 1 && strings[0] == "Flow")
+            {
+                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)
+                {
+
+                    byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
+                    stream.Write(response1, 0, response1.Length);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
+                        DisplayFlow.GetInstance().RunFlow();
+                        byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
+                        stream.Write(response1, 0, response1.Length);
+                    });
+                    return true;
+                }
+                else
+                {
+                    byte[] response = Encoding.ASCII.GetBytes($"Cant Find Flow {strings[1]}");
+                    stream.Write(response, 0, response.Length);
+                }
+                return true;
+            }
+            return false;
         }
     }
 

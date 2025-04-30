@@ -1,12 +1,18 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
+using Newtonsoft.Json;
+using Org.BouncyCastle.Asn1.Cmp;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
@@ -208,5 +214,117 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 groupResource.IsEditMode = false;
             }
         }
+
+        private void Export_Click(object sender, RoutedEventArgs e)
+        {
+            string zipFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "output.zip");
+            using (System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog())
+            {
+                saveFileDialog.Filter = "ZIP files (*.zip)|*.zip";
+                saveFileDialog.DefaultExt = "zip";
+                saveFileDialog.AddExtension = true;
+                saveFileDialog.FileName =  $"{PhyCamera.Code}.zip";
+                saveFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (saveFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                    return;
+                 zipFilePath = saveFileDialog.FileName;
+            }
+
+
+            // 创建或打开ZIP文件
+            using (FileStream zipToOpen = new FileStream(zipFilePath, FileMode.Create))
+            {
+                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Update))
+                {
+                    Dictionary<string, List<ZipCalibrationItem>> keyValuePairs = new Dictionary<string, List<ZipCalibrationItem>>();
+                    List<ZipCalibrationItem> calibrationItems = new List<ZipCalibrationItem>();
+                    keyValuePairs.Add("Calibration", calibrationItems);
+                    foreach (var item in PhyCamera.VisualChildren)
+                    {
+                        if (item is CalibrationResource calibrationResource)
+                        {
+                            ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                            zipCalibrationItem.CalibrationType = ((ServiceTypes)calibrationResource.SysResourceModel.Type).ToCalibrationType();
+                            zipCalibrationItem.Title = calibrationResource.Config.Title;
+                            zipCalibrationItem.FileName = calibrationResource.Config.FileName;
+                            calibrationItems.Add(zipCalibrationItem);
+
+                            var serviceType = (ServiceTypes)calibrationResource.SysResourceModel.Type;
+                            if (calibrationResource.GetAncestor<PhyCamera>() is PhyCamera phyCamera)
+                            {
+                                if (Directory.Exists(phyCamera.Config.FileServerCfg.FileBasePath))
+                                {
+                                    string path = calibrationResource.SysResourceModel.Value ?? string.Empty;
+                                    string filepath = Path.Combine(phyCamera.Config.FileServerCfg.FileBasePath, phyCamera.Code, "cfg", path);
+
+                                    // 确保文件存在
+                                    if (File.Exists(filepath))
+                                    {
+                                        string entryPath = Path.Combine("Calibration", serviceType.ToString(), calibrationResource.Config.FileName);
+                                        archive.CreateEntryFromFile(filepath, entryPath);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (item is GroupResource groupResource)
+                        {
+                            List<ZipCalibrationItem> zipCalibrationItems = new List<ZipCalibrationItem>();
+                            foreach (var cc in groupResource.VisualChildren)
+                            {
+                                if (cc is CalibrationResource caesource)
+                                {
+                                    ZipCalibrationItem zipCalibrationItem = new ZipCalibrationItem();
+                                    zipCalibrationItem.CalibrationType = ((ServiceTypes)caesource.SysResourceModel.Type).ToCalibrationType();
+                                    zipCalibrationItem.Title = caesource.Config.Title;
+                                    zipCalibrationItem.FileName = caesource.Config.FileName;
+                                    zipCalibrationItems.Add(zipCalibrationItem);
+                                }
+                            }
+
+                            // 序列化为 JSON 使用 Newtonsoft.Json
+                            string json = JsonConvert.SerializeObject(zipCalibrationItems, Formatting.Indented);
+
+                            // 添加 JSON 到 ZIP
+                            string entryName = Path.Combine("Calibration", $"{groupResource.Name}.cfg");
+                            ZipArchiveEntry jsonEntry = archive.CreateEntry(entryName);
+                            using (StreamWriter writer = new StreamWriter(jsonEntry.Open()))
+                            {
+                                writer.Write(json);
+                            }
+                        }
+                    }
+
+
+                    // 序列化为 JSON 使用 Newtonsoft.Json
+                    string json1 = JsonConvert.SerializeObject(keyValuePairs, Formatting.Indented);
+
+                    // 添加 JSON 到 ZIP
+                    string entryName1 = $"Calibration.cfg";
+                    ZipArchiveEntry jsonEntry1 = archive.CreateEntry(entryName1);
+                    using (StreamWriter writer = new StreamWriter(jsonEntry1.Open()))
+                    {
+                        writer.Write(json1);
+                    }
+
+                    string phyconfig = JsonConvert.SerializeObject(PhyCamera.Config, Formatting.Indented);
+                    ZipArchiveEntry jsonEntry2 = archive.CreateEntry("Camera.cfg");
+                    using (StreamWriter writer = new StreamWriter(jsonEntry2.Open()))
+                    {
+                        writer.Write(phyconfig);
+                    }
+                    if (PhyCamera.CameraLicenseModel != null)
+                    {
+                        ZipArchiveEntry jsonEntry3 = archive.CreateEntry($"{PhyCamera.Code}.lic");
+                        using (StreamWriter writer = new StreamWriter(jsonEntry3.Open()))
+                        {
+                            writer.Write(PhyCamera.CameraLicenseModel.LicenseValue);
+                        }
+                    }
+                }
+            }
+            MessageBox.Show($"{PhyCamera.Code}导出成功");
+        }
+
     }
 }

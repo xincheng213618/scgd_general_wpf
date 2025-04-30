@@ -2,6 +2,11 @@
 
 namespace ColorVision.Engine.Templates.Jsons
 {
+    public class ResultFile
+    {
+        public string ResultFileName { get; set; }
+    }
+
     [Table("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel
     {

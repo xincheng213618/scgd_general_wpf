@@ -40,17 +40,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             TotalTime = item.TotalTime;
             ResultDesc = item.Result;
             ResultImagFile = item.ResultImagFile;
+            Version = item.version;
+
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
-            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
             OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "选中", Command = OpenContainingFolderCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "导出", Command = ExportCVCIECommand });
+            ExportToPoiCommand = new RelayCommand(a => ExportToPoi(), a => ViewResults?.ToSpecificViewResults<PoiResultData>().Count != 0 || ViewResults?.ToSpecificViewResults<PoiPointResultModel>().Count != 0);
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
         }
 
+        public string? Version { get; set; }
         public void OpenContainingFolder()
         {
             PlatformHelper.OpenFolderAndSelectFile(FilePath);

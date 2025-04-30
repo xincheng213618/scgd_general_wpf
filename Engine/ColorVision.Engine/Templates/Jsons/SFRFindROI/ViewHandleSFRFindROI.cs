@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CS8602,CS8601,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using CVCommCore.CVAlgorithm;
@@ -104,9 +106,47 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 
         public override void Load(AlgorithmView view, AlgorithmResult result)
         {
-            result.ViewResults ??= new ObservableCollection<IViewResult>();
-            foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
-                result.ViewResults.Add(new ViewSFRFindROI(item));
+            if (result.ViewResults ==null)
+            {
+                result.ViewResults = new ObservableCollection<IViewResult>();
+                foreach (var item in PoiPointResultDao.Instance.GetAllByPid(result.Id))
+                    result.ViewResults.Add(new ViewSFRFindROI(item));
+
+                void ExportToPoi()
+                {
+                    int old1 = TemplatePoi.Params.Count;
+                    TemplatePoi templatePoi1 = new TemplatePoi();
+                    templatePoi1.ExportTemp = new PoiParam() { Name = templatePoi1.NewCreateFileName("poi") };
+                    templatePoi1.ExportTemp.Height = 400;
+                    templatePoi1.ExportTemp.Width = 300;
+                    templatePoi1.ExportTemp.PoiConfig.BackgroundFilePath = result.FilePath;
+                    foreach (var item in result.ViewResults.ToSpecificViewResults<ViewSFRFindROI>())
+                    {
+                        PoiPoint poiPoint = new PoiPoint()
+                        {
+                            Name = item.PoiName,
+                            PixX = (double)item.PoiX,
+                            PixY = (double)item.PoiY,
+                            PixHeight = (double)item.PoiHeight,
+                            PixWidth = (double)item.PoiWidth,
+                            PointType = (RiPointTypes)item.PoiType,
+                            Id = -1
+                        };
+                        templatePoi1.ExportTemp.PoiPoints.Add(poiPoint);
+                    }
+
+
+                    templatePoi1.OpenCreate();
+                    int next1 = TemplatePoi.Params.Count;
+                    if (next1 == old1 + 1)
+                    {
+                        new EditPoiParam(TemplatePoi.Params[next1 - 1].Value).ShowDialog();
+                    }
+                }
+                RelayCommand ExportToPoiCommand = new RelayCommand(a => ExportToPoi());
+                result.ContextMenu.Items.Add(new MenuItem() { Header = "创建POI", Command = ExportToPoiCommand });
+            }
+
         }
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)

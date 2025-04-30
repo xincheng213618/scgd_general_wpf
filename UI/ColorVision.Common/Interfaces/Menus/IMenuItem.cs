@@ -19,6 +19,20 @@ namespace ColorVision.UI.Menus
             }
             return null;
         }
+
+        public static MenuItem ToMenuItem(this IMenuItem item)
+        {
+            MenuItem menuItem = new()
+            {
+                Header = item.Header,
+                Icon = item.Icon,
+                InputGestureText = item.InputGestureText,
+                Command = item.Command,
+                Tag = item,
+                Visibility = item.Visibility,
+            };
+            return menuItem;
+        }
     }
 
     public static class MenuItemConstants
@@ -30,6 +44,7 @@ namespace ColorVision.UI.Menus
         public const string Tool = "Tool";
         public const string Help = "Help";
     }
+
 
     public interface IMenuItem
     {

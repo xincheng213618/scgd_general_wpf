@@ -15,15 +15,18 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.DFOV;
-using ColorVision.Engine.Templates.Jsons.GhostQK;
+using ColorVision.Engine.Templates.Jsons.Distortion2;
+using ColorVision.Engine.Templates.Jsons.FOV2;
+using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.KB;
+using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
 using ColorVision.Engine.Templates.LedCheck;
 using ColorVision.Engine.Templates.LEDStripDetection;
@@ -86,10 +89,20 @@ namespace ColorVision.Engine.Templates.Flow
 
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => Copy(), (s, e) => { e.CanExecute = true; }));
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => Paste(), (s, e) => { e.CanExecute = CopyNodes.Count >0;}));
+            Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => SelectAll(), (s, e) => { e.CanExecute = true; }));
+
             Paraent.CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (s, e) => sTNodeEditor.Nodes.Clear(), (s, e) => { e.CanExecute = true; }));
         }
 
         private List<STNode> CopyNodes = new List<STNode>();
+
+        public void SelectAll()
+        {
+            foreach (var item in STNodeEditor.Nodes.OfType<STNode>())
+            {
+                STNodeEditor.AddSelectedNode(item);
+            }
+        }
 
         public void Copy()
         {
@@ -181,6 +194,8 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => sMUNode.NodeName = name, sMUNode.NodeName, "SMUParam设置", new TemplateSMUParam());
             }
 
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Spectrum.SpectrumNode spectrumNode)
             {
                 AddStackPanel(name => spectrumNode.DeviceCode = name, spectrumNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSpectrum>().ToList());
@@ -210,9 +225,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
             }
-            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostNode algorithmGhostNode)
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node algorithmGhostNode)
             {
-                AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
+                AddStackPanel1(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK(), new TemplateGhost());
             }
 
 
@@ -241,6 +256,89 @@ namespace ColorVision.Engine.Templates.Flow
                     AddStackPanel(name => calibrationNode.TempName = name, calibrationNode.TempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
             }
 
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode olednode)
+            {
+                AddStackPanel(name => olednode.DeviceCode = name, olednode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => olednode.TempName = name, olednode.TempName, "亚像素", new TemplateLedCheck2());
+            }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmARVRNode algorithmNode1)
+            {
+                void Refesh()
+                {
+                    SignStackPanel.Children.Clear();
+                    AddStackPanel(name => algorithmNode1.DeviceCode = name, algorithmNode1.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
+                    switch (algorithmNode1.Algorithm)
+                    {
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.MTF:
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "MTF", new TemplateMTF());
+                            AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "POI", new TemplatePoi());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR:
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "SFR", new TemplateSFR());
+                            AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "POI", new TemplatePoi());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
+                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
+                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "SFR_FindROI", new TemplateSFRFindROI());
+                            AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "POI", new TemplatePoi());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmARVRType.双目融合:
+                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "双目融合", new TemplateBinocularFusion());
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+                algorithmNode1.nodeEvent -= (s, e) => Refesh();
+                algorithmNode1.nodeEvent += (s, e) => Refesh();
+                Refesh();
+
+            }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.Algorithm2InNode algorithmNode2)
+            {
+                void Refesh()
+                {
+                    SignStackPanel.Children.Clear();
+                    AddStackPanel(name => algorithmNode2.DeviceCode = name, algorithmNode2.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
+                    switch (algorithmNode2.Algorithm)
+                    {
+                        case FlowEngineLib.Algorithm.Algorithm2Type.MTF:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "MTF", new TemplateMTF());
+                            break;
+                        case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "SFR", new TemplateSFR());
+                            break;
+                        case FlowEngineLib.Algorithm.Algorithm2Type.图像裁剪:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "图像裁剪", new TemplateImageCropping());
+                            break;
+                        case FlowEngineLib.Algorithm.Algorithm2Type.JND:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "JND", new TemplateJND());
+                            break;
+                        case FlowEngineLib.Algorithm.Algorithm2Type.SFR_FindROI:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "SFR_FindROI", new TemplateSFRFindROI());
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+                algorithmNode2.nodeEvent -= (s, e) => Refesh();
+                algorithmNode2.nodeEvent += (s, e) => Refesh();
+                Refesh();
+
+            }
+
+
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.AlgorithmNode algorithmNode)
             {
                 void Refesh()
@@ -259,25 +357,22 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateGhostQK(), new TemplateGhost());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
                             break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测1:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测1", new TemplateLedCheck());
-                            break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测OLED:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测OLED", new TemplateMTF());
+                        case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯带检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯带检测", new TemplateLEDStripDetection()); ;
                             break;
-                        case FlowEngineLib.Algorithm.AlgorithmType.发光区检测1:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测1", new TemplateFocusPoints());
+                        case FlowEngineLib.Algorithm.AlgorithmType.发光区检测:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测", new TemplateFocusPoints());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.发光区检测OLED:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "发光区检测OLED", new TemplateRoi());
@@ -619,6 +714,11 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel.Children.Add(dockPanel);
         }
 
+        void AddStackPanel1<T, T1>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template, ITemplate<T1> template1) where T : TemplateJsonParam, new() where T1: ParamModBase, new()
+        {
+            AddStackPanel(updateStorageAction, tempName, signName, template);
+            AddStackPanel(updateStorageAction, tempName, signName, template1);
+        }
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {

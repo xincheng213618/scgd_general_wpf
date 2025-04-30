@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI.LogImp;
 using System.IO;
+using WindowsServicePlugin.CVWinSMS;
 using WindowsServicePlugin.Properties;
 
 namespace WindowsServicePlugin.Menus

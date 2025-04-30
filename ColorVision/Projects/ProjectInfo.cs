@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
+using log4net.Plugin;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -12,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Projects
 { 
@@ -66,6 +68,11 @@ namespace ColorVision.Projects
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
             ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "打开", Command = OpenProjectCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "创建快捷方式", Command = CreateShortCutCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "打开命令行", Command = OpenInCmdCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = "更新", Command = UpdateCommand });
 
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "更新" + Project.Header;
@@ -85,7 +92,7 @@ namespace ColorVision.Projects
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{Project.UpdateUrl}/{PackageName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -135,7 +142,7 @@ namespace ColorVision.Projects
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 1
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
@@ -172,6 +179,8 @@ del ""%~f0"" & exit
 
         public void Delete()
         {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除项目{Project.Header}", Properties.Resources.ProjectManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))
             {
@@ -190,7 +199,7 @@ del ""%~f0"" & exit
             string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 1
 setlocal
 
 rem 设置要删除的目录路径

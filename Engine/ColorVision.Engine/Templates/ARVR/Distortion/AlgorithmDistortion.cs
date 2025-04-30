@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Distortion_GetData,
+                EventName = "Distortion",
                 SerialNumber = sn,
                 Params = Params
             };

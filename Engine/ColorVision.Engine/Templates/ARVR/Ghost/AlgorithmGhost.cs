@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Templates.Ghost
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
+                EventName = "Ghost",
                 SerialNumber = sn,
                 Params = Params
             };

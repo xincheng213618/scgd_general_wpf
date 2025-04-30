@@ -6,6 +6,7 @@ using System.Windows.Input;
 namespace ColorVision.UI.Menus
 {
 
+
     public abstract class MenuItemBase : ViewModelBase,IMenuItem
     {
         public virtual string OwnerGuid => MenuItemConstants.Menu;

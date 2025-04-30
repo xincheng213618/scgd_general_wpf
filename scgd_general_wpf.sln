@@ -36,8 +36,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{3978
 		Plugins\Directory.Build.props = Plugins\Directory.Build.props
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalibrationCorrection", "Plugins\CalibrationCorrection\CalibrationCorrection.csproj", "{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisonChat", "Plugins\ColorVisonChat\ColorVisonChat.csproj", "{E27330F2-E308-4F9D-9761-BEC7ADB7676A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventVWR", "Plugins\EventVWR\EventVWR.csproj", "{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61}"
@@ -205,22 +203,6 @@ Global
 		{04BB9722-017A-466F-B4ED-80165C654618}.Release|x64.Build.0 = Release|x64
 		{04BB9722-017A-466F-B4ED-80165C654618}.Release|x86.ActiveCfg = Release|x64
 		{04BB9722-017A-466F-B4ED-80165C654618}.Release|x86.Build.0 = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|Any CPU.Build.0 = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|ARM64.Build.0 = Debug|ARM64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|x64.ActiveCfg = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|x64.Build.0 = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|x86.ActiveCfg = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Debug|x86.Build.0 = Debug|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|Any CPU.ActiveCfg = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|Any CPU.Build.0 = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|ARM64.ActiveCfg = Release|ARM64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|ARM64.Build.0 = Release|ARM64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|x64.ActiveCfg = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|x64.Build.0 = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|x86.ActiveCfg = Release|x64
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562}.Release|x86.Build.0 = Release|x64
 		{E27330F2-E308-4F9D-9761-BEC7ADB7676A}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{E27330F2-E308-4F9D-9761-BEC7ADB7676A}.Debug|Any CPU.Build.0 = Debug|x64
 		{E27330F2-E308-4F9D-9761-BEC7ADB7676A}.Debug|ARM64.ActiveCfg = Debug|ARM64
@@ -608,7 +590,6 @@ Global
 		{C8071225-73B5-4559-A22E-CD057B424A3C} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
 		{87FFB8BB-20C4-4D0D-8EF6-A39B0C14FF3A} = {55F5939D-C4F5-498D-97B0-8117E84F0FB1}
 		{04BB9722-017A-466F-B4ED-80165C654618} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
-		{04BDB759-91E0-4F4A-AC5F-F48E0D2F3562} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{E27330F2-E308-4F9D-9761-BEC7ADB7676A} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{C17AAAC2-DE62-41AA-8D9F-DB6345C8C22C} = {E24919A5-7981-44FF-82A9-E7259C5492CE}
@@ -636,11 +617,11 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = False
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = False
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal

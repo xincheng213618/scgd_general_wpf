@@ -27,6 +27,25 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 _ => ServiceTypes.DarkNoise,
             };
         }
+        public static CalibrationType ToCalibrationType(this ServiceTypes serviceType)
+        {
+            return serviceType switch
+            {
+                ServiceTypes.DarkNoise => CalibrationType.DarkNoise,
+                ServiceTypes.DefectPoint => CalibrationType.DefectPoint,
+                ServiceTypes.DSNU => CalibrationType.DSNU,
+                ServiceTypes.Uniformity => CalibrationType.Uniformity,
+                ServiceTypes.Distortion => CalibrationType.Distortion,
+                ServiceTypes.ColorShift => CalibrationType.ColorShift,
+                ServiceTypes.Luminance => CalibrationType.Luminance,
+                ServiceTypes.LumOneColor => CalibrationType.LumOneColor,
+                ServiceTypes.LumFourColor => CalibrationType.LumFourColor,
+                ServiceTypes.LumMultiColor => CalibrationType.LumMultiColor,
+                ServiceTypes.ColorDiff => CalibrationType.ColorDiff,
+                ServiceTypes.LineArity => CalibrationType.LineArity,
+                _ => CalibrationType.DarkNoise, // 默认值，视情况而定
+            };
+        }
 
     }
 }

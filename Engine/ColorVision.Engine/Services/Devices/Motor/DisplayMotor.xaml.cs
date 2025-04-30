@@ -26,6 +26,9 @@ namespace ColorVision.Engine.Services.Devices.Motor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = Device.PropertyCommand });
+
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }

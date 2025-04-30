@@ -3,9 +3,11 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.Update;
 using log4net;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -17,9 +19,35 @@ using System.Windows;
 
 namespace ColorVision.Plugins
 {
+    public class PluginWindowConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata>
+            {
+                 new ConfigSettingMetadata
+                {
+                    Name ="主动检测插件更新",
+                    Description =  "主动检测插件更新",
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(PluginWindowConfig.IsAutoUpdate),
+                    Source = PluginWindowConfig.Instance,
+                }
+            };
+        }
+    }
+
+
     public class PluginWindowConfig : WindowConfig
     {
+        public static PluginWindowConfig Instance => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();
 
+        /// <summary>
+        /// 是否自动更新插件
+        /// </summary>
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoUpdate = true;
     }
 
 
@@ -30,9 +58,8 @@ namespace ColorVision.Plugins
         private static readonly object _locker = new();
         public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
         public ObservableCollection<PluginInfo> Plugins { get; private set; } = new ObservableCollection<PluginInfo>();
-        public PluginWindowConfig Config => ConfigService.Instance.GetRequiredService<PluginWindowConfig>();
+        public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
-
 
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
@@ -85,7 +112,7 @@ namespace ColorVision.Plugins
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/{SearchName}/{SearchName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -135,7 +162,7 @@ namespace ColorVision.Plugins
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 1
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
@@ -209,7 +236,7 @@ del ""%~f0"" & exit
                     string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 1
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""

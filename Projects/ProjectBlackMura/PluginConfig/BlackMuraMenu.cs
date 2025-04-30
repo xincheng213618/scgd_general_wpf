@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ProjectBase.PluginConfig
+namespace ProjectBlackMura.PluginConfig
 {
     public class BlackMuraMenu : MenuItemBase
     {
