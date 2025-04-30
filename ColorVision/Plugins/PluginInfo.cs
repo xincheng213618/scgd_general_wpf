@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -12,6 +13,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Plugins
 {
@@ -65,6 +68,10 @@ namespace ColorVision.Plugins
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "更新" + Plugin.Header;
             Task.Run(() => CheckVersion());
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = "更新", Command = UpdateCommand });
         }
 
         public async void CheckVersion()
@@ -172,6 +179,8 @@ del ""%~f0"" & exit
 
         public void Delete()
         {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Plugin.Header}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))
             {
