@@ -1,7 +1,4 @@
-﻿using ColorVision.UI.Menus;
-using System.Windows.Controls;
-
-namespace ColorVision.UI.Languages
+﻿namespace ColorVision.UI.Languages
 {
     //这里隐藏掉，因为我认为频繁切换语言是不需要的
 

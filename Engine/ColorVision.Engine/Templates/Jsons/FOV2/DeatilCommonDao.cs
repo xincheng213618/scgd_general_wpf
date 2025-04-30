@@ -1,12 +1,7 @@
 ﻿using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm;
-using CVCommCore;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {

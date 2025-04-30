@@ -15,7 +15,6 @@ using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;

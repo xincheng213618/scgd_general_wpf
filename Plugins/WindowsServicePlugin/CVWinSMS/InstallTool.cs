@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Windows;
-using WindowsServicePlugin.Menus;
 
 
 namespace WindowsServicePlugin.CVWinSMS

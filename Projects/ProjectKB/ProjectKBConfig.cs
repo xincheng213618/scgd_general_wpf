@@ -3,7 +3,6 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
 using Newtonsoft.Json;
-using ProjectKB;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ProjectKB.Services;

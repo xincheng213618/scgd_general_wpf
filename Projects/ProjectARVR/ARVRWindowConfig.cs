@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ProjectARVR

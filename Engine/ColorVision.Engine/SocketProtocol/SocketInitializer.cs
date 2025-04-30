@@ -1,9 +1,5 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI;
-using System;
-using System.ServiceProcess;
+﻿using ColorVision.UI;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Engine
 {

@@ -1,12 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static iText.Kernel.Pdf.Colorspace.PdfSpecialCs;
-
-namespace ColorVision.Engine.Templates.Jsons.FOV2
+﻿namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     public enum Pattern
     {

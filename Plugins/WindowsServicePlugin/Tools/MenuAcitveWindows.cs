@@ -1,5 +1,4 @@
 ﻿#pragma warning disable SYSLIB0014
-using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 using System.Diagnostics;
 using System.Windows;

@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.Update;
 using log4net;
 using Microsoft.Win32;
 using System;

@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 

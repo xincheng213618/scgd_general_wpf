@@ -15,7 +15,6 @@ using FlowEngineLib.Base;
 using log4net;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
-using ProjectKB;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
 using ProjectKB.Services;

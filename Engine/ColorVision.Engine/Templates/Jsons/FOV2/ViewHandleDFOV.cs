@@ -3,7 +3,6 @@
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.Ghost2;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

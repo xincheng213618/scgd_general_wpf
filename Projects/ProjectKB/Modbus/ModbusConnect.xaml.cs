@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ProjectKB.Modbus;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
