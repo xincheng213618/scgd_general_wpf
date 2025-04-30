@@ -15,12 +15,14 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates.DataLoad;
 using ColorVision.Engine.Templates.Distortion;
 using ColorVision.Engine.Templates.FocusPoints;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
+using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
 using ColorVision.Engine.Templates.Jsons.KB;
@@ -225,7 +227,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node algorithmGhostNode)
             {
-                AddStackPanel(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK());
+                AddStackPanel1(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK(), new TemplateGhost());
             }
 
 
@@ -278,10 +280,10 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode1.POITempName = name, algorithmNode1.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.FOV:
-                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "FOV", new TemplateDFOV());
+                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.畸变:
-                            AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变", new TemplateDistortionParam());
+                            AddStackPanel1(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmARVRType.SFR_FindROI:
                             AddStackPanel(name => algorithmNode1.TempName = name, algorithmNode1.TempName, "SFR_FindROI", new TemplateSFRFindROI());
@@ -355,13 +357,13 @@ namespace ColorVision.Engine.Templates.Flow
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.FOV:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "FOV", new TemplateDFOV(), new TemplateFOV());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.鬼影:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "鬼影", new TemplateGhost());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateGhostQK(), new TemplateGhost());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.畸变:
-                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortionParam());
+                            AddStackPanel1(name => algorithmNode.TempName = name, algorithmNode.TempName, "畸变", new TemplateDistortion2(), new TemplateDistortionParam());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.灯珠检测:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "灯珠检测", new TemplateLedCheck());
@@ -712,6 +714,11 @@ namespace ColorVision.Engine.Templates.Flow
             SignStackPanel.Children.Add(dockPanel);
         }
 
+        void AddStackPanel1<T, T1>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template, ITemplate<T1> template1) where T : TemplateJsonParam, new() where T1: ParamModBase, new()
+        {
+            AddStackPanel(updateStorageAction, tempName, signName, template);
+            AddStackPanel(updateStorageAction, tempName, signName, template1);
+        }
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
