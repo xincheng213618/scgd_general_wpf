@@ -93,7 +93,7 @@ namespace ColorVision.Projects
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/{SearchName}/{SearchName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -143,7 +143,7 @@ namespace ColorVision.Projects
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 1
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""

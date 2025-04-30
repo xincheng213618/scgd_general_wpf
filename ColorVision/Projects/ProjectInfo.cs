@@ -85,7 +85,7 @@ namespace ColorVision.Projects
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{Project.UpdateUrl}/{PackageName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -135,7 +135,7 @@ namespace ColorVision.Projects
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 1
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
@@ -190,7 +190,7 @@ del ""%~f0"" & exit
             string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 1
 setlocal
 
 rem 设置要删除的目录路径
