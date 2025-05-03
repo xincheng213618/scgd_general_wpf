@@ -113,7 +113,7 @@ namespace ProjectKB.Modbus
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
-        bool IsRun = false;
+        bool IsRun;
 
         public async void CheckUpdate()
         {
