@@ -17,6 +17,8 @@ namespace ProjectKB.Modbus
         public static ModbusConfig Config => ModbusSetting.Instance.ModbusConfig;
 
         static ushort registerAddress => Config.RegisterAddress; // 需要监控的寄存器地址
+
+
         ushort previousValue;
         public ModbusControl()
         {
