@@ -32,10 +32,6 @@ namespace ColorVision.Engine.Media
             {
                 src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
             }
-            else
-            {
-                src.SaveImage(fileName + "tiff");
-            }
         }
 
         public static int SaveToTif(VExportCIE export)

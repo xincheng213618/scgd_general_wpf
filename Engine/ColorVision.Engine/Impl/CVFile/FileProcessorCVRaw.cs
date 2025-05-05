@@ -2,7 +2,9 @@
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using ColorVision.UI.Shell;
 using System;
+using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Impl.SolutionImpl
@@ -18,8 +20,23 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         }
         public void Export(string filePath)
         {
+            var parser = ArgumentParser.GetInstance();
+            parser.AddArgument("quiet", true, "q");
+            parser.Parse();
+
+            if (parser.GetFlag("quiet"))
+            {
+                var vie = new VExportCIE(filePath);
+                vie.SavePath = Directory.GetParent(filePath)?.FullName ?? string.Empty;
+                VExportCIE.SaveToTif(vie);
+                Environment.Exit(0);
+                return;
+            }
+
             new ExportCVCIE(filePath).Show();
         }
+
+
         public bool CanExport(string filePath)
         {
             return filePath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase);
