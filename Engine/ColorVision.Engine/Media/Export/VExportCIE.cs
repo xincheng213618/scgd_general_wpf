@@ -18,7 +18,11 @@ namespace ColorVision.Engine.Media
             fileName = fileName + export.ExportImageFormat.ToString().ToLower(CultureInfo.CurrentCulture);
             if (export.ExportImageFormat == ImageFormat.Tiff)
             {
-                src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+                if (export.Compression == 0)
+                {
+                    export.Compression = 1;
+                }
+                src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, export.Compression));
             }
             else if (export.ExportImageFormat == ImageFormat.Bmp)
             {
@@ -26,10 +30,19 @@ namespace ColorVision.Engine.Media
             }
             else if (export.ExportImageFormat == ImageFormat.Png)
             {
+                if (export.Compression == 0)
+                {
+                    export.Compression = 3;
+                }
+
                 src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
             }
             else if (export.ExportImageFormat == ImageFormat.Jpeg)
             {
+                if (export.Compression == 0)
+                {
+                    export.Compression = 95;
+                }
                 src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
             }
         }
@@ -163,6 +176,10 @@ namespace ColorVision.Engine.Media
 
             Name = Path.GetFileNameWithoutExtension(FilePath);
         }
+
+
+
+
         public int Rows { get => _CVCIEFile.rows; }
         public int Cols { get => _CVCIEFile.cols; }
         public int Channels { get => _CVCIEFile.channels; }
@@ -177,6 +194,8 @@ namespace ColorVision.Engine.Media
         public RecentFileList RecentImage { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentImageSaveList") };
 
         public ObservableCollection<string> RecentImageSaveList { get; set; }
+
+
         public bool IsCVRaw { get => FileExtType == CVType.Raw; }
 
         public bool IsCVCIE { get => FileExtType == CVType.CIE; }
@@ -195,6 +214,10 @@ namespace ColorVision.Engine.Media
 
         public CVType FileExtType { get => _FileExtType; set { _FileExtType = value; NotifyPropertyChanged(); } }
         private CVType _FileExtType;
+
+        public int Compression { get => _Compression; set { _Compression = value; NotifyPropertyChanged(); } }
+        private int _Compression ;
+
         public bool IsExportChannelX { get => _IsExportChannelX; set { _IsExportChannelX = value; NotifyPropertyChanged(); } }
         private bool _IsExportChannelX;
 
