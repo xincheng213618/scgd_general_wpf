@@ -50,12 +50,6 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            log.Info(UI.ACE.License.GetMachineCode());
-            if (!UI.ACE.License.Check())
-            {
-                log.Info("检测不到许可证，正在创建许可证");
-                UI.ACE.License.Create();
-            }
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -114,6 +108,15 @@ namespace ColorVision
             {
                 //杀死僵尸进程
                 KillZombieProcesses();
+            }
+
+            log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
+
+            log.Info(UI.ACE.License.GetMachineCode());
+            if (!UI.ACE.License.Check())
+            {
+                log.Info("检测不到许可证，正在创建许可证");
+                UI.ACE.License.Create();
             }
 
             PluginLoader.LoadPluginsAssembly("Plugins");

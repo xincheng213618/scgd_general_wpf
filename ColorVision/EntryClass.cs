@@ -38,7 +38,7 @@ namespace ColorVision
         {
             ProgramTimer.Start();
             ArgumentParser.GetInstance().CommandLineArgs = args;
-            log.Info("args：" + string.Join(", ", args));
+            log.Debug("args：" + string.Join(", ", args));
 
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -74,7 +74,6 @@ namespace ColorVision
             }
 
             //杀死僵尸进程
-            log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
             App app;
             app = new App();
             app.InitializeComponent();
@@ -106,7 +105,7 @@ namespace ColorVision
                 catch (Exception ex)
                 {
                     // 处理可能的异常，例如权限不足
-                    log.Info($"无法终止进程：PID {process.Id}，错误：{ex.Message}");
+                    log.Warn($"无法终止进程：PID {process.Id}，错误：{ex.Message}");
                 }
             }
         }
