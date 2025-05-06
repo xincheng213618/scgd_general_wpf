@@ -115,16 +115,21 @@ namespace WindowsServicePlugin.Serv
                                 PlatformHelper.OpenFolderAndSelectFile(downloadPath);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "更新前需要先备份数据库");
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), "更新前需要先备份数据库","3.0更新助手");
+                                    string sql = "ALTER TABLE `t_scgd_algorithm_result_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `img_file_type`;";
+                                    MySqlControl.GetInstance().ExecuteNonQuery(sql);
+                                    string sql1 = "ALTER TABLE `t_scgd_sys_dictionary_mod_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `cfg_json`;";
+                                    MySqlControl.GetInstance().ExecuteNonQuery(sql1);
                                     var mySqlLocalServices = MySqlLocalServicesManager.GetInstance();
                                     Task.Run(() =>
                                     {
-                                        // 备份数据库
-                                        mySqlLocalServices.BackupMysql();
+                                        mySqlLocalServices.BackupMysqlResource();
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
                                             MessageBox.Show(Application.Current.GetActiveWindow(), "数据库备份完成，接下来请点击更新按钮");
                                             new InstallTool().Execute();
+                                            MessageBox.Show(Application.Current.GetActiveWindow(), "更新完成后请点击恢复数据库");
+                                            new ExportMySqlTool().Execute();
                                         });
       
                                     });

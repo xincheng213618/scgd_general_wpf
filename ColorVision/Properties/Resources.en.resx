@@ -333,4 +333,7 @@
   <data name="ReleaseDate" xml:space="preserve">
     <value>Release Date</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
 </root>

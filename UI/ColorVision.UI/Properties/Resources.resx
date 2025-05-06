@@ -262,4 +262,7 @@
   <data name="MenuRedo" xml:space="preserve">
     <value>重做(_R)</value>
   </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>缓冲区大小</value>
+  </data>
 </root>

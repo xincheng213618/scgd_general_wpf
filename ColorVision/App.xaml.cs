@@ -50,12 +50,6 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            log.Info(UI.ACE.License.GetMachineCode());
-            if (!UI.ACE.License.Check())
-            {
-                log.Info("检测不到许可证，正在创建许可证");
-                UI.ACE.License.Create();
-            }
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -78,6 +72,7 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
 
             ConfigHandler.GetInstance();
+            ConfigHandler.GetInstance().IsAutoSave = false;
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
@@ -86,18 +81,8 @@ namespace ColorVision
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
             parser.AddArgument("input", false, "i");
-            parser.Parse();
-            string inputFile = parser.GetValue("input");
-            if (inputFile != null)
-            {
-                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
-                if (isok)
-                {
-                    ConfigHandler.GetInstance().IsAutoSave = false;
-                    return;
-                }
-            }
             parser.AddArgument("export", false, "e");
+
             parser.Parse();
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
@@ -105,15 +90,33 @@ namespace ColorVision
                 bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
                 if (isok)
                 {
-                    ConfigHandler.GetInstance().IsAutoSave = false;
                     return;
                 }
             }
+            ConfigHandler.GetInstance().IsAutoSave = true;
 
+            string inputFile = parser.GetValue("input");
+            if (inputFile != null)
+            {
+                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
+                if (isok)
+                {
+                    return;
+                }
+            }
             if (!Debugger.IsAttached)
             {
                 //杀死僵尸进程
                 KillZombieProcesses();
+            }
+
+            log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
+
+            log.Info(UI.ACE.License.GetMachineCode());
+            if (!UI.ACE.License.Check())
+            {
+                log.Info("检测不到许可证，正在创建许可证");
+                UI.ACE.License.Create();
             }
 
             PluginLoader.LoadPluginsAssembly("Plugins");

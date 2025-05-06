@@ -1,15 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Views;
 using OpenCvSharp;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ColorVision.Engine.ToolPlugins

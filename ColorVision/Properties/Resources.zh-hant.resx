@@ -333,4 +333,7 @@
   <data name="ReleaseDate" xml:space="preserve">
     <value>發佈日期</value>
   </data>
+  <data name="Delete" xml:space="preserve">
+    <value>刪除</value>
+  </data>
 </root>

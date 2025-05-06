@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Interfaces;
 using CVCommCore.CVAlgorithm;
-using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
 

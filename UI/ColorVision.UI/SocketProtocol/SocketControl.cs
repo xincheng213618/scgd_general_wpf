@@ -1,22 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.UI;
 using log4net;
-using MySqlX.XDevAPI;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Interop;
 
-namespace ColorVision.Engine
+namespace ColorVision.UI.SocketProtocol
 {
 
     public class SocketControl:ViewModelBase
@@ -91,11 +81,11 @@ namespace ColorVision.Engine
 
         public void CheckUpdate()
         {
-            tcpListener = new TcpListener(IPAddress.Parse(Config.Host), Config.Port);
+            tcpListener = new TcpListener(IPAddress.Parse(Config.IPAddress), Config.ServerPort);
             try
             {
                 tcpListener.Start();
-                log.Info("Server started. Listening on port: " + Config.Port);
+                log.Info("Server started. Listening on port: " + Config.ServerPort);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     IsConnect = true;
@@ -116,6 +106,7 @@ namespace ColorVision.Engine
             {
                 tcpListener.Stop();
                 IsConnect = false;
+                Config.IsServerEnabled = false;
             }
         }
 
@@ -126,7 +117,7 @@ namespace ColorVision.Engine
 
             NetworkStream stream = client.GetStream();
 
-            byte[] buffer = Config.BufferLength > 1024 ? new byte[Config.BufferLength] : new byte[1024];
+            byte[] buffer = Config.SocketBufferSize > 1024 ? new byte[Config.SocketBufferSize] : new byte[1024];
             int bytesRead;
             try
             {

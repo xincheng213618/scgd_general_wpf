@@ -2,7 +2,6 @@
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Languages;
-using ProjectKB;
 using System.Reflection;
 using System.Windows;
 

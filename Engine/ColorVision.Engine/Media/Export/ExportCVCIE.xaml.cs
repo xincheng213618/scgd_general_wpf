@@ -24,6 +24,11 @@ namespace ColorVision.Engine.Media
             InitializeComponent();
         }
 
+        public ExportCVCIE(VExportCIE  vExportCIE)
+        {
+            VExportCIE = vExportCIE;
+            InitializeComponent();
+        }
         private void Window_Initialized(object sender, EventArgs e)
         {
             if (!CVFileUtil.IsCIEFile(VExportCIE.FilePath))
@@ -54,11 +59,13 @@ namespace ColorVision.Engine.Media
                     return;
                 }
                 VExportCIE.SavePath = dialog.SelectedPath;
+                VExportCIE.RecentImage.InsertFile(VExportCIE.SavePath);
             }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            VExportCIE.RecentImage.InsertFile(VExportCIE.SavePath);
             Thread thread = new(() => VExportCIE.SaveToTif(VExportCIE));
             thread.Start();
             Close();

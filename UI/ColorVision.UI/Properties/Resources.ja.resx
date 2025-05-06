@@ -282,4 +282,7 @@
   <data name="MenuRedo" xml:space="preserve">
     <value>やり直し</value>
   </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>バッファサイズ</value>
+  </data>
 </root>

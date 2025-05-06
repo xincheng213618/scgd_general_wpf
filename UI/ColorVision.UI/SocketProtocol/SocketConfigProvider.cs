@@ -1,7 +1,7 @@
 ﻿using ColorVision.UI;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine
+namespace ColorVision.UI.SocketProtocol
 {
     public class SocketConfigProvider : IConfigSettingProvider
     {

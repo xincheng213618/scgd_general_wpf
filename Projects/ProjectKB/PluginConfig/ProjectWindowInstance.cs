@@ -1,6 +1,4 @@
-﻿using ProjectKB;
-
-namespace ProjectKB.PluginConfig
+﻿namespace ProjectKB.PluginConfig
 {
     public class ProjectWindowInstance
     {

@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -55,11 +53,6 @@ namespace ColorVision.Engine.MySql
                 MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
                 File.Delete(index.FilePath);
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
-
-            string sql = "ALTER TABLE `t_scgd_algorithm_result_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `img_file_type`;";
-            MySqlControl.GetInstance().ExecuteNonQuery(sql);
-            string sql1 = "ALTER TABLE `t_scgd_sys_dictionary_mod_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `cfg_json`;";
-            MySqlControl.GetInstance().ExecuteNonQuery(sql1);
         }
 
         public int ExecuteNonQuery(string sqlBatch)

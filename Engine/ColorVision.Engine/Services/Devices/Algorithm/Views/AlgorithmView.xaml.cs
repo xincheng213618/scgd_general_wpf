@@ -28,7 +28,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ZstdSharp.Unsafe;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {

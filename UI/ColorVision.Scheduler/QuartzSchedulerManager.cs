@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
 using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;

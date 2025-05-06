@@ -14,7 +14,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Plugins
 {
@@ -66,12 +65,12 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "更新" + Plugin.Header;
+            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Plugin.Header;
             Task.Run(() => CheckVersion());
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "更新", Command = UpdateCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
         }
 
         public async void CheckVersion()
