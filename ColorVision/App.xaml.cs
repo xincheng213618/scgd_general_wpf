@@ -72,6 +72,7 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
 
             ConfigHandler.GetInstance();
+            ConfigHandler.GetInstance().IsAutoSave = false;
             LogConfig.Instance.SetLog();
             this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
@@ -80,18 +81,8 @@ namespace ColorVision
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); // 确保 .NET Core 及以上支持 GBK
             parser.AddArgument("input", false, "i");
-            parser.Parse();
-            string inputFile = parser.GetValue("input");
-            if (inputFile != null)
-            {
-                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
-                if (isok)
-                {
-                    ConfigHandler.GetInstance().IsAutoSave = false;
-                    return;
-                }
-            }
             parser.AddArgument("export", false, "e");
+
             parser.Parse();
             string exportFile = parser.GetValue("export");
             if (exportFile != null)
@@ -99,11 +90,20 @@ namespace ColorVision
                 bool isok = FileProcessorFactory.GetInstance().ExportFile(exportFile);
                 if (isok)
                 {
-                    ConfigHandler.GetInstance().IsAutoSave = false;
                     return;
                 }
             }
+            ConfigHandler.GetInstance().IsAutoSave = true;
 
+            string inputFile = parser.GetValue("input");
+            if (inputFile != null)
+            {
+                bool isok = FileProcessorFactory.GetInstance().HandleFile(inputFile);
+                if (isok)
+                {
+                    return;
+                }
+            }
             if (!Debugger.IsAttached)
             {
                 //杀死僵尸进程
