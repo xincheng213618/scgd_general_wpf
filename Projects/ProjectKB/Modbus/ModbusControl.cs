@@ -14,10 +14,11 @@ namespace ProjectKB.Modbus
         private static readonly object _locker = new();
         public static ModbusControl GetInstance() { lock (_locker) { return _instance ??= new ModbusControl(); } }
 
-
         public static ModbusConfig Config => ModbusSetting.Instance.ModbusConfig;
 
         static ushort registerAddress => Config.RegisterAddress; // 需要监控的寄存器地址
+
+
         ushort previousValue;
         public ModbusControl()
         {
@@ -114,7 +115,7 @@ namespace ProjectKB.Modbus
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
-        bool IsRun = false;
+        bool IsRun;
 
         public async void CheckUpdate()
         {

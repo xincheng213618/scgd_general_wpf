@@ -1,7 +1,4 @@
-﻿using ColorVision.UI;
-using System.Threading.Tasks;
-
-namespace ColorVision.Engine
+﻿namespace ColorVision.UI.SocketProtocol
 {
 
     public class SocketInitializer : InitializerBase
@@ -17,12 +14,12 @@ namespace ColorVision.Engine
 
         public override Task InitializeAsync()
         {
-            if (SocketConfig.Instance.IsSocketService)
+            if (SocketConfig.Instance.IsServerEnabled )
             {
                 _messageUpdater.Update("启动通讯协议");
                 SocketControl.GetInstance().StartServer();
             }
-            SocketConfig.Instance.IsSocketServiceChanged += (s, e) =>
+            SocketConfig.Instance.ServerEnabledChanged += (s, e) =>
             {
                 if (e)
                 {

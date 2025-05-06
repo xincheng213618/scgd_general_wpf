@@ -282,4 +282,7 @@
   <data name="MenuRedo" xml:space="preserve">
     <value>_Redo</value>
   </data>
+  <data name="SocketBufferSize" xml:space="preserve">
+    <value>SocketBufferSize</value>
+  </data>
 </root>

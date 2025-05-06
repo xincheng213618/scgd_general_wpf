@@ -62,13 +62,6 @@ namespace ProjectKB
             listView1.ItemsSource = ViewResluts;
             InitFlow();
 
-            SocketControl.GetInstance().StartServer();
-            SocketControl.GetInstance().StatusChanged += ServicesChanged;
-            this.Closed += (s, e) =>
-            {
-                SocketControl.GetInstance().StopServer();
-                SocketControl.GetInstance().StatusChanged -= ServicesChanged;
-            };
             ImageView.Config.IsLayoutUpdated = false;
 
             Task.Run(async() =>
@@ -91,14 +84,6 @@ namespace ProjectKB
             };
 
         }
-        private void ServicesChanged(object? sender, EventArgs e)
-        {
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                log.Info("Service触发拍照，执行流程");
-                RunTemplate();
-            });
-        } 
 
 
         private void ProjectKBWindow_StatusChanged(object? sender, EventArgs e)

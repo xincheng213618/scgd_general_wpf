@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates

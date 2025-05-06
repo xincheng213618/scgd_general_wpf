@@ -5,7 +5,8 @@ namespace ColorVision.UI
 {
     public abstract class InitializerBase : IInitializer
     {
-        public virtual string Name => string.Empty;
+        public virtual string Name => GetType().Name;
+
         public virtual IEnumerable<string> Dependencies => new List<string>();
 
         public virtual int Order => 1;

@@ -24,6 +24,11 @@ namespace ColorVision.Engine.Media
             InitializeComponent();
         }
 
+        public ExportCVCIE(VExportCIE  vExportCIE)
+        {
+            VExportCIE = vExportCIE;
+            InitializeComponent();
+        }
         private void Window_Initialized(object sender, EventArgs e)
         {
             if (!CVFileUtil.IsCIEFile(VExportCIE.FilePath))

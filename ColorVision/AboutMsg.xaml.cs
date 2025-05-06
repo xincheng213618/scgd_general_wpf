@@ -4,9 +4,11 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.CUDA;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Shell;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
@@ -64,6 +66,7 @@ namespace ColorVision
                 TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} - {ConfigCuda.Instance.ComputeCapabilities[0]} - { (double)(ConfigCuda.Instance.TotalMemories[0])/ (1024.0 * 1024 * 1024):F2} GB";
             }
 
+            //LogoText.Text = string.Join(" ", ArgumentParser.GetInstance().CommandLineArgs.Select(arg => $"\"{arg}\""));
             Grid1.Background = RainbowAnimation();
             Deactivated += (s, e) =>
             {
