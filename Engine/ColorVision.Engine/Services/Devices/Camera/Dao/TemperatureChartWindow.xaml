@@ -16,6 +16,6 @@
             <TextBlock x:Name="TempatureText" Text=""/>
             <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click"/>
         </StackPanel>
-        <lvc:CartesianChart x:Name="TemperatureChart"  Grid.Row="1" ZoomMode ="Y"  ZoomingSpeed="0.5"/>
+        <lvc:CartesianChart x:Name="TemperatureChart"  Grid.Row="1" ZoomMode ="X"  ZoomingSpeed="0.5"/>
     </Grid>
 </Window>
