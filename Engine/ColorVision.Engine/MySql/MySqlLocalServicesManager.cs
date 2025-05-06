@@ -284,7 +284,7 @@ namespace ColorVision.Engine.MySql
         public void BackupMysqlResource()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredTableNames());
+            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
             string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);

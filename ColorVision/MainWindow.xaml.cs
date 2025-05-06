@@ -100,6 +100,10 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
+            this.SizeChanged += (s, e) =>
+            {
+                SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
+            };
 
             this.DataContext = Config;
 
