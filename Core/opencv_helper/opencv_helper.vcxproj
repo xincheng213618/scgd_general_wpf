@@ -177,12 +177,12 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\algorithm.h" />
-    <ClInclude Include="..\include\common.h" />
-    <ClInclude Include="..\include\custom_file.h" />
-    <ClInclude Include="..\include\custom_structs.h" />
-    <ClInclude Include="..\include\opencv_export.h" />
-    <ClInclude Include="..\include\opencv_media_export.h" />
+    <ClInclude Include="..\..\include\algorithm.h" />
+    <ClInclude Include="..\..\include\common.h" />
+    <ClInclude Include="..\..\include\custom_file.h" />
+    <ClInclude Include="..\..\include\custom_structs.h" />
+    <ClInclude Include="..\..\include\opencv_export.h" />
+    <ClInclude Include="..\..\include\opencv_media_export.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="resource.h" />

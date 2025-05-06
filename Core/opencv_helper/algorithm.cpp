@@ -77,12 +77,12 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
             centers.push_back(cv::Point(cx, cy));
         }
         else {
-            int coutns = centers.size();
+            size_t coutns = centers.size();
         }
     }
 
     //总亮点
-    int coutns = centers.size();
+    size_t coutns = centers.size();
 
     // 计算中心点的凸包
     std::vector<cv::Point> hull;
@@ -134,7 +134,7 @@ void LampBeadDetection(cv::Mat image, int rows, int cols)
     }
 
     //缺少的点
-    int black = rows * cols - centers.size();
+    size_t black = rows * cols - centers.size();
     std::cout << black << std::endl;
 
 
