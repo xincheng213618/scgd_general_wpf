@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
@@ -256,12 +257,18 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var model = CameraTempDao.Instance.GetLatestCameraTemp(SysResourceModel.Id);
             if (model != null)
             {
-                MessageBox1.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
+                var list =CameraTempDao.Instance.GetCameraTempsByCreateDate(SysResourceModel.Id, 100);
+                list.Reverse();
+                TemperatureChartWindow window = new TemperatureChartWindow(list);
+                window.Show();
             }
             else
             {
                 MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
             }
+
+
+
         }
 
         public override UserControl GetDeviceInfo() => new InfoCamera(this);
