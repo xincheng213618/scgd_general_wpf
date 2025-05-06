@@ -43,15 +43,6 @@ namespace ColorVision.Update
                     Type = ConfigSettingType.Text,
                     BindingName =nameof(AutoUpdateConfig.UpdatePath),
                     Source = AutoUpdateConfig.Instance,
-                },
-                 new ConfigSettingMetadata
-                {
-                    Name ="更新使用CDN",
-                    Description =  "更新使用CDN",
-                    Order = 999,
-                    Type = ConfigSettingType.Bool,
-                    BindingName =nameof(AutoUpdateConfig.IsUseCDN),
-                    Source = AutoUpdateConfig.Instance,
                 }
             };
         }
@@ -62,19 +53,14 @@ namespace ColorVision.Update
     {
         public static AutoUpdateConfig Instance  => ConfigService.Instance.GetRequiredService<AutoUpdateConfig>();    
 
-        public string UpdatePath { get => IsUseCDN ? _CDnUpdatePath: _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        public string UpdatePath { get => _UpdatePath; set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A/ColorVision";
-
-        private string _CDnUpdatePath = "http://cdn.xincheng213618.cn/upload/ColorVision";
-        public bool IsUseCDN { get => _IsUseCDN; set { _IsUseCDN = value; NotifyPropertyChanged(); } }
-        private bool _IsUseCDN;
 
         /// <summary>
         /// 是否自动更新
         /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
-
 
     }
 
@@ -164,21 +150,6 @@ namespace ColorVision.Update
             windowUpdate.Show();
         }
 
-        public async Task<bool> GetUpdateStatue()
-        {
-            try
-            {
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
-                if (LatestVersion > CurrentVersion)
-                {
-                    return true;
-                }
-            }
-            catch 
-            {
-            }
-            return false;
-        }
         public async Task ForceUpdate()
         {
             LatestVersion = await GetLatestVersionNumber(UpdateUrl);
@@ -186,6 +157,77 @@ namespace ColorVision.Update
             {
                 Update(LatestVersion, Path.GetTempPath());
             });
+        }
+
+        public async Task CheckAndUpdateV2()
+        {
+            // 获取本地版本
+            try
+            {
+                // 获取服务器版本
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                var Version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (LatestVersion > Version)
+                {
+                    bool IsIncrement = false;
+                    if (LatestVersion.Minor == Version.Minor)
+                        IsIncrement = true;
+                    bool IsSilence = false;
+
+                    if (IsIncrement && LatestVersion.Build != Version.Build)
+                    {
+                        LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
+                    }
+                    else
+                    {
+                        if (IsIncrement && LatestVersion.Revision != Version.Revision)
+                        {
+                            IsSilence = true;
+                        }
+                    }
+                    if (IsSilence)
+                    {
+                        CancellationTokenSource _cancellationTokenSource = new();
+
+                        AppDomain.CurrentDomain.ProcessExit += (s, e) => _cancellationTokenSource.Cancel();
+                        SilenceDownloadAndUpdate(LatestVersion, Path.GetTempPath(), _cancellationTokenSource.Token);
+                        return;
+                    }
+
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
+                    Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
+                    if (match.Success)
+                    {
+                        // 如果找到匹配项，提取变更日志
+                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
+
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
+                            }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LatestVersion = CurrentVersion ?? new Version();
+                MessageBox.Show(ex.Message);
+                log.Info(ex);
+            }
         }
 
         public async Task CheckAndUpdateV1(bool detection = true)
@@ -402,106 +444,167 @@ namespace ColorVision.Update
 
         private string _RemainingTimeValue;
 
-
-        private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath, CancellationToken cancellationToken, bool IsIncrement = false)
+        private async Task DownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken, bool isIncrement = false)
         {
-            // 构建下载URL，这里假设下载路径与版本号相关
-            string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
-            string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
+            string downloadUrl;
+            string filePath;
 
-            if (IsIncrement)
+            if (isIncrement)
             {
                 downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
-                downloadPath = Path.Combine(DownloadPath, $"ColorVision-Update-[{latestVersion}].zip");
+                filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
             }
-
-            // 指定下载路径
-            using (var client = new HttpClient())
+            else
             {
-                if (DownloadFileConfig.Instance.IsPassWorld)
-                {
-                    string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
-                }
-
-                Stopwatch stopwatch = new();
-
-                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),$"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
-                    return;
-                }
-
-                double totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                double totalReadBytes = 0L;
-                var readBytes = 0;
-                var buffer = new byte[8192];
-                var isMoreToRead = true;
-
-                stopwatch.Start();
-                SpeedValue = $"{totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
-                RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(0):hh\\:mm\\:ss}";
-
-                using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
-                {
-                    do
-                    {
-                        readBytes = await stream.ReadAsync(buffer, cancellationToken);
-                        if (readBytes == 0)
-                        {
-                            isMoreToRead = false;
-                        }
-                        else
-                        {
-                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
-
-                            totalReadBytes += readBytes;
-                            int progressPercentage = totalBytes != -1L
-                                ? (int)((totalReadBytes * 100) / totalBytes)
-                                : -1;
-
-                            ProgressValue = progressPercentage;
-
-                            if (cancellationToken.IsCancellationRequested)
-                            {
-                                return;
-                            }
-
-                            if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
-                            {
-                                double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s   {totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
-
-                                if (totalBytes != -1L)
-                                {
-                                    double remainingBytes = totalBytes - totalReadBytes;
-                                    double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
-                                }
-                            }
-                        }
-                    }
-                    while (isMoreToRead);
-                }
-
-                stopwatch.Stop();
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    if (IsIncrement)
-                    {
-                        RestartIsIncrementApplication(downloadPath);
-                    }
-                    else
-                    {
-                        RestartApplication(downloadPath);
-                    }
-                });
+                downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision-{latestVersion}.exe";
+                filePath = Path.Combine(downloadPath, $"ColorVision-{latestVersion}.exe");
             }
+
+            await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
+            UpdateApplication(filePath, isIncrement);
         }
+
+        private async Task SilenceDownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken)
+        {
+            string downloadUrl;
+            string filePath;
+            downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/Update/ColorVision-Update-[{latestVersion}].zip";
+            filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
+
+            await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
+            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            {
+                try
+                {
+                    // 解压缩 ZIP 文件到临时目录
+                    string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionUpdate");
+                    if (Directory.Exists(tempDirectory))
+                    {
+                        Directory.Delete(tempDirectory, true);
+                    }
+                    ZipFile.ExtractToDirectory(filePath, tempDirectory);
+
+                    // 创建批处理文件内容
+                    string batchFilePath = Path.Combine(tempDirectory, "update.bat");
+                    string programDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    string? executableName = Path.GetFileName(Environment.ProcessPath);
+
+                    string batchContent = $@"
+@echo off
+taskkill /f /im ""{executableName}""
+timeout /t 0
+xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
+rd /s /q ""{tempDirectory}""
+del ""%~f0"" & exit
+";
+
+                    File.WriteAllText(batchFilePath, batchContent);
+                    // 设置批处理文件的启动信息
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = batchFilePath,
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        WindowStyle = ProcessWindowStyle.Normal // 隐藏命令行窗口
+                    };
+
+                    // 启动批处理文件并退出当前程序
+                    Process.Start(startInfo);
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"更新失败: {ex.Message}");
+                }
+            };
+
+
+        }
+
+        private void UpdateApplication(string downloadPath, bool isIncrement)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                if (isIncrement)
+                {
+                    RestartIsIncrementApplication(downloadPath);
+                }
+                else
+                {
+                    RestartApplication(downloadPath);
+                }
+            });
+        }
+
+        private async Task DownloadFileAsync(string url, string downloadPath, CancellationToken cancellationToken)
+        {
+            using var client = new HttpClient();
+
+            if (DownloadFileConfig.Instance.IsPassWorld)
+            {
+                string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+            }
+
+            var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
+                return;
+            }
+
+            double totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            double totalReadBytes = 0L;
+            var buffer = new byte[8192];
+            var isMoreToRead = true;
+
+            using var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None);
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+
+            do
+            {
+                var readBytes = await stream.ReadAsync(buffer, cancellationToken);
+                if (readBytes == 0)
+                {
+                    isMoreToRead = false;
+                }
+                else
+                {
+                    await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
+                    totalReadBytes += readBytes;
+
+                    int progressPercentage = totalBytes != -1L ? (int)((totalReadBytes * 100) / totalBytes) : -1;
+                    ProgressValue = progressPercentage;
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        /// 取消下载后删除未下载的文件
+                        File.Delete(downloadPath);
+                        return;
+                    }
+
+                    if (stopwatch.ElapsedMilliseconds > 200)
+                    {
+                        double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
+                        SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s   {totalReadBytes / 1024 / 1024:F2} MB/{totalBytes / 1024 / 1024:F2} MB";
+
+                        if (totalBytes != -1L)
+                        {
+                            double remainingBytes = totalBytes - totalReadBytes;
+                            double remainingTime = remainingBytes / speed;
+                            RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                        }
+                    }
+                }
+            } while (isMoreToRead);
+
+            stopwatch.Stop();
+        }
+
 
         public static void RestartIsIncrementApplication(string downloadPath)
         {
@@ -525,7 +628,7 @@ namespace ColorVision.Update
                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programDirectory}""
 start """" ""{Path.Combine(programDirectory, executableName)}""
 rd /s /q ""{tempDirectory}""
