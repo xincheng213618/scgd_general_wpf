@@ -504,9 +504,14 @@ del ""%~f0"" & exit
                     {
                         FileName = batchFilePath,
                         UseShellExecute = true,
-                        Verb = "runas",
-                        WindowStyle = ProcessWindowStyle.Normal // 隐藏命令行窗口
+                        WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
                     };
+
+                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                    {
+                        startInfo.Verb = "runas"; // 请求管理员权限
+                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                    }
 
                     // 启动批处理文件并退出当前程序
                     Process.Start(startInfo);
