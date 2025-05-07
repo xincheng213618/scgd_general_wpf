@@ -172,6 +172,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case DeviceStatusType.UnInit:
                         SetVisibility(ButtonInit, Visibility.Visible);
                         break;
+                    case DeviceStatusType.Closing:
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
@@ -198,15 +199,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         }
                         break;
-
+                    case DeviceStatusType.Opening:
                     case DeviceStatusType.Opened:
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
-                        ///防止在取图的时候，这个按钮已经被隐藏掉了
                         TakePhotoButton.Visibility = Visibility.Visible;
                         break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
                     default:
                         // No specific action needed
                         break;

@@ -82,9 +82,19 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
-                <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="相机未注册" Command="{Binding PhyCamera.UploadLicenseCommand}"/>
-                <Button x:Name="ButtonInit" Margin="0,0,0,3" Content="请先配置相机ID" Click="CameraInit_Click"/>
+                <DockPanel x:Name="TextBlockUnknow" Margin="0,0,0,3" >
+                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
+                    <TextBlock  Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
+                </DockPanel>
+
+                <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
+                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
+                    <Button Content="相机未注册" Command="{Binding EditCommand}"  />
+                </DockPanel>
+                <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
+                    <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}" Margin="0,0,3,0"/>
+                    <Button Content="请先配置相机ID" Click="CameraInit_Click"/>
+                </DockPanel>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">
                     <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
