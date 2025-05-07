@@ -141,7 +141,7 @@ namespace ColorVision.Projects
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 1
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
@@ -154,9 +154,13 @@ del ""%~f0"" & exit
                                 {
                                     FileName = batchFilePath,
                                     UseShellExecute = true,
-                                    Verb = "runas" // 请求管理员权限
+                                    WindowStyle = ProcessWindowStyle.Hidden
                                 };
-                                // 启动批处理文件并退出当前程序
+                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                                {
+                                    startInfo.Verb = "runas"; // 请求管理员权限
+                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                                }
                                 Process.Start(startInfo);
                                 Environment.Exit(0);
                             }
@@ -198,7 +202,7 @@ del ""%~f0"" & exit
             string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 1
+timeout /t 0
 setlocal
 
 rem 设置要删除的目录路径
@@ -225,9 +229,13 @@ del ""%~f0"" & exit
             {
                 FileName = batchFilePath,
                 UseShellExecute = true,
-                Verb = "runas" // 请求管理员权限
+                WindowStyle = ProcessWindowStyle.Hidden
             };
-            // 启动批处理文件并退出当前程序
+            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            {
+                startInfo.Verb = "runas"; // 请求管理员权限
+                startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
             Process.Start(startInfo);
             Environment.Exit(0);
         }

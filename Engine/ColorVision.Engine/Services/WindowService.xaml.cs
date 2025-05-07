@@ -10,12 +10,10 @@ namespace ColorVision.Engine.Services
 {
     public class ExportWindowService : MenuItemBase
     {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "WindowService";
+        public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => Properties.Resources.MenuService;
         public override int Order => 3;
 
-        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -77,7 +75,7 @@ namespace ColorVision.Engine.Services
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             MqttRCService.GetInstance().RestartServices();
-            MessageBox.Show(Application.Current.MainWindow,"命令已经发送","ColorVision");
+            MessageBox.Show(Application.Current.GetActiveWindow(),"命令已经发送","ColorVision");
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)

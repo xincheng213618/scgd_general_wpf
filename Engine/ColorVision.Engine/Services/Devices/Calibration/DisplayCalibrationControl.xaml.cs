@@ -90,6 +90,11 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 {
                     case DeviceStatusType.Unauthorized:
                         SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        if (Device.Config.CameraCode != null)
+                        {
+                            Device.Config.CameraCode = string.Empty;
+                            Device.Save();
+                        }
                         break;
                     case DeviceStatusType.Unknown:
                         SetVisibility(TextBlockUnknow, Visibility.Visible);

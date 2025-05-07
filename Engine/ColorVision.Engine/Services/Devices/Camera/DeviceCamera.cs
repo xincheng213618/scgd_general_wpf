@@ -216,11 +216,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public void RefreshDeviceId()
         {
             MsgRecord msgRecord =  DService.GetAllCameraID();
-            msgRecord.MsgSucessed += (e) =>
+            msgRecord.MsgRecordStateChanged += (e) =>
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
-                PhyCameraManager.GetInstance().LoadPhyCamera();
-                PhyCameraManager.GetInstance().RefreshEmptyCamera();
+                if (e == MsgRecordState.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                    PhyCameraManager.GetInstance().LoadPhyCamera();
+                    PhyCameraManager.GetInstance().RefreshEmptyCamera();
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "刷新设备列表失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                }
             };
         }
 

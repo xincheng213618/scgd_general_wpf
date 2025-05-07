@@ -647,11 +647,14 @@ del ""%~f0"" & exit
                 {
                     FileName = batchFilePath,
                     UseShellExecute = true,
-                    Verb = "runas" // 请求管理员权限
+                    WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
                 };
 
-                // 启动批处理文件并退出当前程序
-                Process.Start(startInfo);
+                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                {
+                    startInfo.Verb = "runas"; // 请求管理员权限
+                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                }
                 Environment.Exit(0);
             }
             catch (Exception ex)
@@ -671,10 +674,11 @@ del ""%~f0"" & exit
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
-            startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                      // 如果需要静默安装，添加静默安装参数
-            //quiet 没法自启，桌面图标也是空                       
-            //startInfo.Arguments = "/quiet";
+            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            {
+                startInfo.Verb = "runas"; // 请求管理员权限
+                startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
             try
             {
                 Process p = Process.Start(startInfo);
