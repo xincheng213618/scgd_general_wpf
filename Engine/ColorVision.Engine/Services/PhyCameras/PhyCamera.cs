@@ -837,6 +837,8 @@ namespace ColorVision.Engine.Services.PhyCameras
                             catch (Exception ex)
                             {
                                 log.Warn(ex);
+                                log.Info("校正组解析失败，使用旧版的解析方案");
+
                                 zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                             }
 
