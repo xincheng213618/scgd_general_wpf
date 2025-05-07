@@ -155,7 +155,6 @@ namespace ColorVision
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
-            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
 
             // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
@@ -335,6 +334,10 @@ namespace ColorVision
         public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
 
         private readonly char[] Chars = new[] { ' ' };
+        private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
+        }
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -439,5 +442,7 @@ namespace ColorVision
         {
            new UserInfoWindow().ShowDialog();
         }
+
+
     }
 }

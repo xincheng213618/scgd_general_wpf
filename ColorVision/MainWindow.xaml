@@ -56,7 +56,7 @@
                 </Popup>
                 <Menu x:Name="Menu1" Background="Transparent" HorizontalAlignment="Left" Padding="2"/>
                 <Grid x:Name="SearchGrid" Margin="10,1" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
-                    <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1"  hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
+                    <hc:TextBox x:Name="Searchbox"  Style="{DynamicResource TextBoxPlus.Small}" Padding="20,1,2,1"  BorderThickness="1" GotFocus="Searchbox_GotFocus" hc:InfoElement.Placeholder="{x:Static properties:Resources.Search}" BorderBrush="#CCCEDB" MaxLength="15"  VerticalContentAlignment="Center" PreviewKeyDown="Searchbox_PreviewKeyDown" TextChanged="Searchbox_TextChanged"  />
                     <Viewbox Width="12 " Height="12" HorizontalAlignment="Left" Margin="4,0,0,0">
                         <Rectangle Width="16 " Height="16" >
                             <Rectangle.Resources>
