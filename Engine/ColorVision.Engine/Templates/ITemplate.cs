@@ -50,6 +50,10 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
+        public virtual int GetTemplateIndex(string templateName)
+        {
+            throw new NotImplementedException();
+        }
 
         public virtual IMysqlCommand? GetMysqlCommand()
         {
@@ -172,10 +176,17 @@ namespace ColorVision.Engine.Templates
     {
 
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
+        public override int GetTemplateIndex(string templateName)
+        {
+            return TemplateParams
+                    .Select((template, index) => new { template, index })
+                    .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
+        }
         public override List<string> GetTemplateNames()
         {
             return TemplateParams.Select(a => a.Key).ToList();
         }
+
 
         public override Type GetTemplateType => typeof(T);
 

@@ -74,8 +74,9 @@ namespace ColorVision.Engine.Templates
         public static bool ExitsTemplateName(string templateName)
         {
             var templateNames = ITemplateNames
-                .SelectMany(item => item.GetTemplateNames())
-                .ToList();
+               .SelectMany(item => item.GetTemplateNames())
+               .Distinct()
+               .ToList();
             return templateNames.Any(a => a.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
         public static ITemplateName? FindDuplicateTemplate(string templateName)

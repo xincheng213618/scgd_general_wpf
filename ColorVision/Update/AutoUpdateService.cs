@@ -39,7 +39,7 @@ namespace ColorVision.Update
                 if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
                 {
                     //如果需要管理员权限的配置则弹出提示窗
-                    await autoUpdater.CheckAndUpdateV1();
+                    await autoUpdater.CheckAndUpdateV1(false);
                 }
                 else
                 {
