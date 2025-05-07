@@ -41,7 +41,8 @@ namespace ColorVision.Engine.Templates.SysDictionary
                 MessageBox.Show("请输入模板名称", "ColorVision");
                 return;
             }
-            if (ITemplate.ExitsTemplateName(CreateCode.Text))
+
+            if (TemplateControl.ExitsTemplateName(CreateCode.Text))
             {
                 MessageBox.Show("已经存在改模板，请修改模板名称", "ColorVision");
                 return;

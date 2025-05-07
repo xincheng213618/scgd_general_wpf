@@ -652,7 +652,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\ColorVision\\Cache";
+                string path = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Cache";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);

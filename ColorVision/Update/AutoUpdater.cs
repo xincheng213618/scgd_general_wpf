@@ -91,39 +91,24 @@ namespace ColorVision.Update
 
         public static void DeleteAllCachedUpdateFiles()
         {
-            // 获取临时文件夹路径
             string tempPath = Path.GetTempPath();
-
-            // 搜索所有匹配的更新文件
-            string[] updateFiles = Directory.GetFiles(tempPath, "ColorVision-*.exe");
-
-            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-            foreach (string updateFile in updateFiles)
+            string[] updatePatterns = { "ColorVision-*.exe", "ColorVision-*.zip" };
+            foreach (string pattern in updatePatterns)
             {
-                if (updateFile.Contains($"ColorVision-{CurrentVersion}.exe"))
+                string[] updateFiles = Directory.GetFiles(tempPath, pattern);
+                foreach (string updateFile in updateFiles)
                 {
-                    string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-
-                    File.Move(updateFile, Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{CurrentVersion}.exe"));
-                    continue;
+                    try
+                    {
+                        File.Delete(updateFile);
+                        log.Info($"Deleted update file: {updateFile}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // 如果删除过程中出现错误，输出错误信息
+                        log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
+                    }
                 }
-
-                try
-                {
-                    File.Delete(updateFile);
-                    log.Info($"Deleted update file: {updateFile}");
-                }
-                catch (Exception ex)
-                {
-                    // 如果删除过程中出现错误，输出错误信息
-                    log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
-                }
-            }
-
-            if (updateFiles.Length == 0)
-            {
-                log.Info($"No update files found to delete.");
             }
         }
 

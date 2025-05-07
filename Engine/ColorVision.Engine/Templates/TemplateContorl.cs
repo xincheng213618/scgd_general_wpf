@@ -69,5 +69,22 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
+        public static List<ITemplateName> ITemplateNames { get; set; } = new List<ITemplateName>();
+
+        public static bool ExitsTemplateName(string templateName)
+        {
+            var templateNames = ITemplateNames
+                .SelectMany(item => item.GetTemplateNames())
+                .ToList();
+            return templateNames.Any(a => a.Equals(templateName, StringComparison.OrdinalIgnoreCase));
+        }
+        public static ITemplateName? FindDuplicateTemplate(string templateName)
+        {
+            var duplicates = ITemplateNames
+                .FirstOrDefault(item => item.GetTemplateNames()
+                    .Any(name => name.Equals(templateName, StringComparison.OrdinalIgnoreCase)));
+
+            return duplicates;
+        }
     }
 }

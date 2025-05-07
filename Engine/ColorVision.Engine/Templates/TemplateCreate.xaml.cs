@@ -96,9 +96,10 @@ namespace ColorVision.Engine.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(),"请输入模板名称", "ColorVision");
                 return;
             }
-            if (ITemplate.ExitsTemplateName(CreateName))
+            if (TemplateControl.ExitsTemplateName(CreateName))
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"已经存在{CreateName}模板", "Template Manager");
+                var template = TemplateControl.FindDuplicateTemplate(CreateName);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{template?.GetType()?.Name}已经存在 {CreateName}模板", "Template Manager");
                 return;
             }
 

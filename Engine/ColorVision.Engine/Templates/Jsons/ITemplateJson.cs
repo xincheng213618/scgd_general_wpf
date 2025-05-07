@@ -21,6 +21,11 @@ namespace ColorVision.Engine.Templates.Jsons
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate));
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
+        public override List<string> GetTemplateNames()
+        {
+            return [.. TemplateParams.Select(a => a.Key)];
+        }
+
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public override Type GetTemplateType => typeof(T);
@@ -31,7 +36,6 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object GetValue() => TemplateParams;
 
-        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         public override object GetParamValue(int index) => TemplateParams[index].Value;
         public override object GetValue(int index) => TemplateParams[index];
 
@@ -58,15 +62,6 @@ namespace ColorVision.Engine.Templates.Jsons
             return CreateTemp ?? new T();
         }
 
-        public override string NewCreateFileName(string FileName)
-        {
-            for (int i = 1; i < 9999; i++)
-            {
-                if (!ExitsTemplateName($"{FileName}{i}"))
-                    return $"{FileName}{i}";
-            }
-            return FileName;
-        }
 
         public virtual void Save(TemplateModel<T> item)
         {
