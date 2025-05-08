@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1051
-using System.Runtime.CompilerServices;
 namespace ColorVision.Net
 {
     public enum CVType

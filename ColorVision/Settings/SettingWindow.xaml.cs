@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using System;
@@ -95,6 +96,32 @@ namespace ColorVision.Settings
                     dockPanel.Children.Add(textBox);
                     dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
                     UniversalStackPanel.Children.Add(dockPanel);
+                }
+                else if (configSetting.Type == ConfigSettingType.Class)
+                {
+                    TabItem tabItem = new TabItem() { Header = configSetting.Name, Background = Brushes.Transparent };
+                    Grid grid = new Grid();
+                    grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
+                    GroupBox groupBox = new GroupBox
+                    {
+                        Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
+                        Background = Brushes.Transparent,
+                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
+                    };
+
+                    StackPanel stackPanel = new StackPanel() { Margin = new Thickness(10) };
+
+                    if (configSetting.Source is ViewModelBase obj)
+                    {
+
+                        stackPanel.Children.Add(PropertyEditorHelper.GenPropertyEditorControl(obj));
+                        groupBox.Content = stackPanel;
+                    }
+                    grid.Children.Add(groupBox);
+                    tabItem.Content = grid;
+                    TabControlSetting.Items.Add(tabItem);
+
+
                 }
             }
             var allSettings = new List<ConfigSettingMetadata>();

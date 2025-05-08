@@ -1,0 +1,21 @@
+﻿<Window x:Class="ColorVision.Engine.Services.Devices.Camera.Dao.TemperatureChartWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Dao"
+        xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
+        mc:Ignorable="d"
+        Title="TemperatureChartWindow" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Grid.Row="0" x:Name="ToolStackPanel" Orientation="Horizontal" VerticalAlignment="Top" Margin="5">
+            <TextBlock x:Name="TempatureText" Text=""/>
+            <Button x:Name="ButtonExport" Content="导出" Click="ButtonExport_Click"/>
+        </StackPanel>
+        <lvc:CartesianChart x:Name="TemperatureChart"  Grid.Row="1" ZoomMode ="X"  ZoomingSpeed="0.5"/>
+    </Grid>
+</Window>

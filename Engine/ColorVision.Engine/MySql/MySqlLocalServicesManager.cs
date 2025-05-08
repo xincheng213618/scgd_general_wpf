@@ -1,17 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
 using log4net;
 using Microsoft.Win32;
-using OpenTK.Core.Exceptions;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -84,6 +78,7 @@ namespace ColorVision.Engine.MySql
         public RelayCommand RestoreSelectCommand { get; set; }
         public RelayCommand BackupDatabaseCommand { get; set; }
         public RelayCommand BackupResourcesCommand { get; set; }
+        public RelayCommand BackupAllResourcesCommand { get; set; }
 
         public MySqlLocalServicesManager()
         {
@@ -112,6 +107,7 @@ namespace ColorVision.Engine.MySql
             RestoreSelectCommand = new RelayCommand(a => RestoreSelect());
             BackupDatabaseCommand = new RelayCommand(a => BackupDatabase());
             BackupResourcesCommand = new RelayCommand(a => BackupResources());
+            BackupAllResourcesCommand = new RelayCommand(a => BackupAllMysql());
 
         }
 
@@ -271,12 +267,25 @@ namespace ColorVision.Engine.MySql
                 Backups.Add(new MysqlBack(BackUpSql));
             });
         }
+        public void BackupAllMysql()
+        {
+            //备份的信息里应该只包含基础的信息不应该包含许多逻辑
+            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetTableNames());
+
+            string BackUpSql = Path.Combine(BackupPath, $"All_{DateTime.Now:yyyyMMddHHmmss}.sql");
+            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
+            Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                Backups.Add(new MysqlBack(BackUpSql));
+            });
+        }
 
         public void BackupMysqlResource()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredTableNames());
-            string BackUpSql = Path.Combine(BackupPath, $"res{DateTime.Now:yyyyMMddHHmmss}.sql");
+            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
+            string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
             string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>

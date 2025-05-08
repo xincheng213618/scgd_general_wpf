@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Templates
             [
                 ITemplate.NewCreateFileName(ITemplate.Code),
                 ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateSetting.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateSetting.Instance.DefaultCreateTemplateName),
                 ITemplate.NewCreateFileName(TemplateSetting.Instance.DefaultCreateTemplateName),
             ];
 
@@ -94,12 +93,13 @@ namespace ColorVision.Engine.Templates
             CreateName = CreateCode.Text;
             if (string.IsNullOrEmpty(CreateName))
             {
-                MessageBox.Show("请输入模板名称", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(),"请输入模板名称", "ColorVision");
                 return;
             }
-            if (ITemplate.ExitsTemplateName(CreateName))
+            if (TemplateControl.ExitsTemplateName(CreateName))
             {
-                MessageBox.Show("已经存在改模板，请修改模板名称", "ColorVision");
+                var template = TemplateControl.FindDuplicateTemplate(CreateName);
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"{template?.GetType()?.Name}已经存在 {CreateName}模板", "Template Manager");
                 return;
             }
 

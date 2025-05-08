@@ -3,9 +3,7 @@ using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
-using Mysqlx.Crud;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -59,7 +57,7 @@ namespace ColorVision.Engine.Templates.Distortion
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Distortion_GetData,
+                EventName = "Distortion",
                 SerialNumber = sn,
                 Params = Params
             };

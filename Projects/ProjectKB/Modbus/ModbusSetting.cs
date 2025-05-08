@@ -9,8 +9,10 @@ namespace ProjectKB.Modbus
     {
         public static ModbusSetting Instance => ConfigService.Instance.GetRequiredService<ModbusSetting>();
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); } }
-        private bool _IsUseMySql = true;
+        public event EventHandler<bool> MobusEnableChanged;
+        public bool MobusEnable { get => _MobusEnable; set { _MobusEnable = value; NotifyPropertyChanged(); MobusEnableChanged?.Invoke(this, _MobusEnable); } }
+        private bool _MobusEnable = true;
+
         /// <summary>
         /// MySql配置
         /// </summary>

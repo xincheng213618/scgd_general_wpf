@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -12,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Plugins
 {
@@ -63,8 +65,12 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "更新" + Plugin.Header;
+            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Plugin.Header;
             Task.Run(() => CheckVersion());
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
         }
 
         public async void CheckVersion()
@@ -85,7 +91,7 @@ namespace ColorVision.Plugins
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{UpdateUrl}/{PackageName}/{PackageName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -135,7 +141,7 @@ namespace ColorVision.Plugins
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
@@ -148,10 +154,13 @@ del ""%~f0"" & exit
                                 {
                                     FileName = batchFilePath,
                                     UseShellExecute = true,
-                                    Verb = "runas" // 请求管理员权限
+                                    WindowStyle = ProcessWindowStyle.Hidden
                                 };
-                                // 启动批处理文件并退出当前程序
-                                Process.Start(startInfo);
+                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                                {
+                                    startInfo.Verb = "runas"; // 请求管理员权限
+                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                                }
                                 Environment.Exit(0);
                             }
                             catch (Exception ex)
@@ -172,6 +181,8 @@ del ""%~f0"" & exit
 
         public void Delete()
         {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Plugin.Header}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))
             {
@@ -190,7 +201,7 @@ del ""%~f0"" & exit
             string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 2
+timeout /t 0
 setlocal
 
 rem 设置要删除的目录路径
@@ -217,9 +228,13 @@ del ""%~f0"" & exit
             {
                 FileName = batchFilePath,
                 UseShellExecute = true,
-                Verb = "runas" // 请求管理员权限
+                WindowStyle = ProcessWindowStyle.Hidden
             };
-            // 启动批处理文件并退出当前程序
+            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            {
+                startInfo.Verb = "runas"; // 请求管理员权限
+                startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
             Process.Start(startInfo);
             Environment.Exit(0);
         }

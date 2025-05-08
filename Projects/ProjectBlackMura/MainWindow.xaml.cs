@@ -6,14 +6,10 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
-using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
-using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
@@ -53,11 +49,12 @@ namespace ProjectBlackMura
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
 
         public static ObservableCollection<BlackMuraResult> ViewResluts => ProjectBlackMuraConfig.Instance.ViewResluts;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -78,8 +75,8 @@ namespace ProjectBlackMura
 
         public void InitFlow()
         {
-            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            MQTTConfig mqttcfg = MQTTSetting.Instance.MQTTConfig;
+            MQTTHelper.SetDefaultCfg(mqttcfg.Host, mqttcfg.Port, mqttcfg.UserName, mqttcfg.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
@@ -478,6 +475,11 @@ namespace ProjectBlackMura
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
         }
     }
 }

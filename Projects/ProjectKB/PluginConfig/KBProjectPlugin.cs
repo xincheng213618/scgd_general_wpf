@@ -1,5 +1,4 @@
 ﻿using ColorVision.UI;
-using ProjectKB;
 using System.Windows;
 
 namespace ProjectKB.PluginConfig

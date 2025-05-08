@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Projects
 {
@@ -21,6 +22,7 @@ namespace ColorVision.Projects
             this.DataContext = ProjectManager.GetInstance();
             DefalutSearchComboBox.ItemsSource = new List<string>() { "ProjectKB", "ProjectBlackMura", "ProjectHeyuan", "ProjectShiyuan", "ProjectBase", "ProjectARVR", "CV_Spectrometer" };
             ListViewProjects.SelectedIndex = 0;
+            this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => ProjectManager.GetInstance().Projects[ListViewProjects.SelectedIndex].Delete(), (s, e) => e.CanExecute = ListViewProjects.SelectedIndex > -1));
         }
 
 

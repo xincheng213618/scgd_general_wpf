@@ -40,6 +40,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             TotalTime = item.TotalTime;
             ResultDesc = item.Result;
             ResultImagFile = item.ResultImagFile;
+            Version = item.version;
+
             ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FilePath));
             CopyToCommand = new RelayCommand(a => CopyTo(), a => File.Exists(FilePath));
             OpenContainingFolderCommand = new RelayCommand(a => OpenContainingFolder());
@@ -51,6 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ContextMenu.Items.Add(new MenuItem() { Header = "导出到POI", Command = ExportToPoiCommand });
         }
 
+        public string? Version { get; set; }
         public void OpenContainingFolder()
         {
             PlatformHelper.OpenFolderAndSelectFile(FilePath);

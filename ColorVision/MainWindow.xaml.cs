@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -99,6 +100,10 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
+            this.SizeChanged += (s, e) =>
+            {
+                SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
+            };
 
             this.DataContext = Config;
 
@@ -150,7 +155,6 @@ namespace ColorVision
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
-            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
 
             // 设置快捷键 Ctrl + F
             var gesture = new KeyGesture(Key.F, ModifierKeys.Control);
@@ -330,18 +334,23 @@ namespace ColorVision
         public List<ISearch> filteredResults { get; set; } = new List<ISearch>();
 
         private readonly char[] Chars = new[] { ' ' };
+        private void Searchbox_GotFocus(object sender, RoutedEventArgs e)
+        {
+            Searches = new ObservableCollection<ISearch>(SearchManager.GetInstance().GetISearches());
+        }
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
             {
-                if (string.IsNullOrWhiteSpace(textBox.Text))
+                string searchtext = textBox.Text;
+                if (string.IsNullOrWhiteSpace(searchtext))
                 {
                     SearchPopup.IsOpen = false;
                 }
                 else
                 {
                     SearchPopup.IsOpen = true;
-                    var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+                    var keywords = searchtext.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     filteredResults = Searches
                         .OfType<ISearch>()
@@ -350,6 +359,38 @@ namespace ColorVision
                             template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
                             ))
                         .ToList();
+
+
+                    string everythingpath = "C:\\Program Files\\Everything\\Everything.exe";
+
+                    if (File.Exists(everythingpath))
+                    {
+                        void Search()
+                        {
+                            ProcessStartInfo startInfo = new();
+                            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
+                            startInfo.WorkingDirectory = Environment.CurrentDirectory;
+                            startInfo.FileName = everythingpath;
+                            startInfo.Arguments = $"-s {searchtext}";
+                            try
+                            {
+                                Process p = Process.Start(startInfo);
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                            }
+                        }
+
+                        SearchMeta search = new SearchMeta
+                        {
+                            GuidId = Guid.NewGuid().ToString(),
+                            Header = $"{Properties.Resources.Search} {searchtext}",
+                            Command = new Common.MVVM.RelayCommand(a => Search())
+                        };
+
+                        filteredResults.Add(search);
+                    }
 
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)
@@ -401,5 +442,7 @@ namespace ColorVision
         {
            new UserInfoWindow().ShowDialog();
         }
+
+
     }
 }

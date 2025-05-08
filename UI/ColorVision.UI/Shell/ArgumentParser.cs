@@ -1,16 +1,23 @@
-﻿namespace ColorVision.UI.Shell
+﻿using System;
+using System.Security.Cryptography.X509Certificates;
+
+namespace ColorVision.UI.Shell
 {
     public class Argument
     {
-        public string Name { get; }
-        public List<string> Aliases { get; }
-        public bool IsFlag { get; }
+        public string LongName { get; }
+        public string ShortName { get; }
+        public bool IsOption { get; }
 
-        public Argument(string name, bool isFlag, params string[] aliases)
+        public string Help { get; set; }
+
+        public Argument() { }
+        public Argument(string shortName,string longName, bool isOption, string help)
         {
-            Name = name;
-            IsFlag = isFlag;
-            Aliases = new List<string>(aliases);
+            LongName = longName;
+            IsOption = isOption;
+            ShortName = shortName;
+            Help = help;
         }
     }
 
@@ -22,15 +29,24 @@
 
         private readonly List<Argument> _arguments = new List<Argument>();
         private readonly Dictionary<string, string> _parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
         public string[] CommandLineArgs { get; set; } = Array.Empty<string>();
-        public ArgumentParser()
+
+        public string Description { get; set; }
+
+        public ArgumentParser(string description ="")
         {
             AddArgument("input", false, "i");
+            AddArgument("version", false, "i");
+            Description = description;
         }
-        public void AddArgument(string name, bool isFlag = false, params string[] aliases)
+        public void AddArgument(string name, bool isFlag = false, string aliases ="")
         {
-            _arguments.Add(new Argument(name, isFlag, aliases));
+            _arguments.Add(new Argument(aliases,name,isFlag,""));
+        }
+
+        public void AddArgument(Argument argument)
+        {
+            _arguments.Add(argument);
         }
 
         public void Parse() => Parse(CommandLineArgs);
@@ -44,6 +60,7 @@
                 return;
             }
 
+
             var aliasMap = BuildAliasMap();
 
             for (int i = 0; i < args.Length; i++)
@@ -56,16 +73,16 @@
                         key = value;
                     }
 
-                    if (_arguments.Exists(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
+                    if (_arguments.Exists(arg => arg.LongName.Equals(key, StringComparison.OrdinalIgnoreCase)))
                     {
-                        Argument argument = _arguments.Find(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
+                        Argument argument = _arguments.Find(arg => arg.LongName.Equals(key, StringComparison.OrdinalIgnoreCase));
                         if (argument != null)
                         {
-                            string value1 = argument.IsFlag ? "true" : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture) ? args[i + 1] : null;
+                            string value1 = argument.IsOption ? "true" : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture) ? args[i + 1] : null;
                             if (value1 != null)
                             {
                                 _parsedArguments[key] = value1;
-                                if (!argument.IsFlag)
+                                if (!argument.IsOption)
                                 {
                                     i++; // Skip the next argument if it's a value
                                 }
@@ -85,11 +102,8 @@
 
             foreach (var argument in _arguments)
             {
-                aliasMap[argument.Name.ToLowerInvariant()] = argument.Name;
-                foreach (var alias in argument.Aliases)
-                {
-                    aliasMap[alias.ToLowerInvariant()] = argument.Name;
-                }
+                aliasMap[argument.LongName.ToLowerInvariant()] = argument.LongName;
+                aliasMap[argument.ShortName.ToLowerInvariant()] = argument.LongName;
             }
 
             return aliasMap;

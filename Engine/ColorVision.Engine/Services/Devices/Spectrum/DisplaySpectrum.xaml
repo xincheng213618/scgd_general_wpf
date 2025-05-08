@@ -49,7 +49,7 @@
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
                 <Button x:Name="TextBlockOffLine" Margin="0,0,0,3" Content="OffLine" Click="Button_Click_Open"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未授权或者许可证过期" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,0,0,2">
                         <Button x:Name="btn_connect" Margin="0,0,0,2" Content="打开" Click="Button_Click_Open"/>

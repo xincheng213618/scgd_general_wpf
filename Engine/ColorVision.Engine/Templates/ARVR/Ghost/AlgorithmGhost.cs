@@ -3,7 +3,6 @@ using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
@@ -61,7 +60,7 @@ namespace ColorVision.Engine.Templates.Ghost
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
+                EventName = "Ghost",
                 SerialNumber = sn,
                 Params = Params
             };

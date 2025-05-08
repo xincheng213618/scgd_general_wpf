@@ -11,4 +11,5 @@ namespace ColorVision.UI
         public ICommand? Command { get; }
     }
 
+
 }

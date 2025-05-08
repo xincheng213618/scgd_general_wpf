@@ -93,7 +93,7 @@ namespace ColorVision.Projects
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/{SearchName}/{SearchName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -142,8 +142,9 @@ namespace ColorVision.Projects
 
                                 string batchContent = $@"
 @echo off
+title ""更新脚本""
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
@@ -156,9 +157,13 @@ del ""%~f0"" & exit
                                 {
                                     FileName = batchFilePath,
                                     UseShellExecute = true,
-                                    Verb = "runas" // 请求管理员权限
+                                    WindowStyle = ProcessWindowStyle.Hidden
                                 };
-                                // 启动批处理文件并退出当前程序
+                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                                {
+                                    startInfo.Verb = "runas"; // 请求管理员权限
+                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                                }
                                 Process.Start(startInfo);
                                 Environment.Exit(0);
                             }
@@ -216,8 +221,9 @@ del ""%~f0"" & exit
 
                     string batchContent = $@"
 @echo off
+title ""更新脚本""
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
 rd /s /q ""{tempDirectory}""
@@ -230,9 +236,13 @@ del ""%~f0"" & exit
                     {
                         FileName = batchFilePath,
                         UseShellExecute = true,
-                        Verb = "runas" // 请求管理员权限
+                        WindowStyle = ProcessWindowStyle.Hidden
                     };
-                    // 启动批处理文件并退出当前程序
+                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                    {
+                        startInfo.Verb = "runas"; // 请求管理员权限
+                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                    }
                     Process.Start(startInfo);
                     Environment.Exit(0);
                 }

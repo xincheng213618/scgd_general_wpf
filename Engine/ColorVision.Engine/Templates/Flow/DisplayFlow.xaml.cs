@@ -1,12 +1,12 @@
 ﻿#pragma warning disable CS8602,CS8603,CS8601
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
+using ColorVision.UI.SocketProtocol;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -18,7 +18,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Sockets;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -44,6 +46,40 @@ namespace ColorVision.Engine.Templates.Flow
                 schedulerInfo.Status = SchedulerStatus.Ready;
             });
             return Task.CompletedTask;
+        }
+    }
+
+    public class FlowSocketMsgHandle : ISocketMsgHandle
+    {
+        public int Order => 0;
+
+        public bool Handle(NetworkStream stream, string message)
+        {
+            var strings = message.Split(",");
+            if (strings.Length > 1 && strings[0] == "Flow")
+            {
+                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)
+                {
+
+                    byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
+                    stream.Write(response1, 0, response1.Length);
+                    Application.Current.Dispatcher.BeginInvoke(() =>
+                    {
+                        DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
+                        DisplayFlow.GetInstance().RunFlow();
+                        byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
+                        stream.Write(response1, 0, response1.Length);
+                    });
+                    return true;
+                }
+                else
+                {
+                    byte[] response = Encoding.ASCII.GetBytes($"Cant Find Flow {strings[1]}");
+                    stream.Write(response, 0, response.Length);
+                }
+                return true;
+            }
+            return false;
         }
     }
 
@@ -76,15 +112,19 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 if (flowControl != null)
                     e.CanExecute = flowControl.IsFlowRun;
-            }));
-
-            
+            })); 
         }
 
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Config;
+            this.ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = "开始执行(_S)", Command = EngineCommands.StartExecutionCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "停止执行(_S)", Command = EngineCommands.StopExecutionCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "属性", Command = Config.EditCommand });
+
+
             View = new ViewFlow();
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);

@@ -43,7 +43,6 @@ namespace ColorVision.UI
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             hierarchy.Root.Level = LogLevel;
             log4net.Config.BasicConfigurator.Configure(hierarchy);
-            log.Info("更新Log4Net 日志级别：" + LogLevel);
         }
 
         public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value; NotifyPropertyChanged(); } }

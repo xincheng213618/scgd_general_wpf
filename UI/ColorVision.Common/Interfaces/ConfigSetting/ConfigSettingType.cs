@@ -7,5 +7,6 @@
         UserControl,
         TabItem,
         Text,
+        Class
     }
 }

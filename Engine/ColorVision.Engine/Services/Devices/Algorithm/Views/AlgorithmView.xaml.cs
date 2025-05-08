@@ -3,7 +3,6 @@ using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
-
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
 using ColorVision.ImageEditor.Draw;
@@ -199,89 +198,87 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (listView1.SelectedIndex < 0) return;
-
-            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle.Contains(ViewResults[listView1.SelectedIndex].ResultType));
+            if (ViewResults[listView1.SelectedIndex] is not AlgorithmResult result) return;
+            var ResultHandle = ResultHandles.FirstOrDefault(a => a.CanHandle1(result));
             if (ResultHandle != null)
             {
-                ResultHandle.Handle(this,ViewResults[listView1.SelectedIndex]);
+                ResultHandle.Handle(this, result);
                 return;
             }
 
-            if (ViewResults[listView1.SelectedIndex] is AlgorithmResult result)
+            ImageView.ImageShow.Clear();
+            if (File.Exists(result.FilePath))
+                ImageView.OpenImage(result.FilePath);
+
+            List<POIPoint> DrawPoiPoint = new();
+            List<string> header = new();
+            List<string> bdHeader = new();
+
+            switch (result.ResultType)
             {
-                ImageView.ImageShow.Clear();
-                if (File.Exists(result.FilePath))
-                    ImageView.OpenImage(result.FilePath);
-
-                List<POIPoint> DrawPoiPoint = new();
-                List<string> header = new();
-                List<string> bdHeader = new();
-
-                switch (result.ResultType)
-                {
-                    case AlgorithmResultType.LightArea:
-                        result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
-                        DVPolygon polygon = new DVPolygon();
-                        List<System.Windows.Point> point1s = new List<System.Windows.Point>();
-                        foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
+                case AlgorithmResultType.LightArea:
+                    result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
+                    DVPolygon polygon = new DVPolygon();
+                    List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+                    foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
+                    {
+                        point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                    }
+                    foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                    {
+                        polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                    }
+                    polygon.Attribute.Brush = Brushes.Transparent;
+                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                    polygon.Attribute.Id = -1;
+                    polygon.IsComple = true;
+                    polygon.Render();
+                    ImageView.AddVisual(polygon);
+                    header = new List<string> { "PosX", "PosY" };
+                    bdHeader = new List<string> { "PosX", "PosY" };
+                    break;
+                case AlgorithmResultType.POI_XYZ_File:
+                case AlgorithmResultType.POI_Y_File:
+                    header = new List<string> { "file_name", "FileUrl", "FileType" };
+                    bdHeader = new List<string> { "FileName", "FileUrl", "FileType", };
+                    break;
+                case AlgorithmResultType.POI:
+                    if (result.ViewResults == null)
+                    {
+                        result.ViewResults = new ObservableCollection<IViewResult>();
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
                         {
-                            point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                            PoiResultData poiResult = new(item) { Id = id++ };
+                            result.ViewResults.Add(poiResult);
                         }
-                        foreach (var item in GrahamScan.ComputeConvexHull(point1s))
-                        {
-                            polygon.Attribute.Points.Add(new Point(item.X, item.Y));
-                        }
-                        polygon.Attribute.Brush = Brushes.Transparent;
-                        polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
-                        polygon.Attribute.Id =  -1;
-                        polygon.IsComple = true;
-                        polygon.Render();
-                        ImageView.AddVisual(polygon);
-                        header = new List<string> { "PosX", "PosY"};
-                        bdHeader = new List<string> { "PosX", "PosY"};
-                        break;
-                    case AlgorithmResultType.POI_XYZ_File:
-                    case AlgorithmResultType.POI_Y_File:
-                        header = new List<string> { "file_name", "FileUrl" , "FileType" };
-                        bdHeader = new List<string> { "FileName", "FileUrl" , "FileType", };
-                        break;
-                    case AlgorithmResultType.POI:
-                        if (result.ViewResults == null)
-                        {
-                            result.ViewResults = new ObservableCollection<IViewResult>();
-                            List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(result.Id);
-                            int id = 0;
-                            foreach (var item in POIPointResultModels)
-                            {
-                                PoiResultData poiResult = new(item) { Id = id++ };
-                                result.ViewResults.Add(poiResult);
-                            };
-                        }
+                        ;
+                    }
 
-                        header = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
-                        bdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "POIPointResultModel.ValidateResult" };
+                    header = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
+                    bdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "POIPointResultModel.ValidateResult" };
 
-                        foreach (var item in result.ViewResults)
+                    foreach (var item in result.ViewResults)
+                    {
+                        if (item is PoiResultData poiResultData)
                         {
-                            if (item is PoiResultData poiResultData)
-                            {
-                                DrawPoiPoint.Add(poiResultData.Point);
-                            }
+                            DrawPoiPoint.Add(poiResultData.Point);
                         }
-                        AddPOIPoint(DrawPoiPoint);
-                        break;
-                    default:
-                        break;
-                }
+                    }
+                    AddPOIPoint(DrawPoiPoint);
+                    break;
+                default:
+                    break;
+            }
 
-                if (listViewSide.View is GridView gridView)
-                {
-                    LeftGridViewColumnVisibilitys.Clear();
-                    gridView.Columns.Clear();
-                    for (int i = 0; i < header.Count; i++)
-                        gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
-                    listViewSide.ItemsSource = result.ViewResults;
-                }
+            if (listViewSide.View is GridView gridView)
+            {
+                LeftGridViewColumnVisibilitys.Clear();
+                gridView.Columns.Clear();
+                for (int i = 0; i < header.Count; i++)
+                    gridView.Columns.Add(new GridViewColumn() { Header = header[i], DisplayMemberBinding = new Binding(bdHeader[i]) });
+                listViewSide.ItemsSource = result.ViewResults;
             }
         }
 

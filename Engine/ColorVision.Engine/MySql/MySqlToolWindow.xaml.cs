@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Specialized;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -55,7 +53,6 @@ namespace ColorVision.Engine.MySql
                 MySqlLocalServicesManager.GetInstance().Backups.RemoveAt(listView1.SelectedIndex);
                 File.Delete(index.FilePath);
             }, (s, e) => { e.CanExecute = listView1.SelectedIndex > -1; }));
-
         }
 
         public int ExecuteNonQuery(string sqlBatch)

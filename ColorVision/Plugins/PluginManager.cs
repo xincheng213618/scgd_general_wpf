@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.Update;
 using log4net;
 using Microsoft.Win32;
 using System;
@@ -108,11 +107,11 @@ namespace ColorVision.Plugins
             
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，版本{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，{ColorVision.Properties.Resources.Version}{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
                     string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/{SearchName}/{SearchName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile);
+                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {
                         File.Delete(downloadPath);
@@ -162,7 +161,7 @@ namespace ColorVision.Plugins
                                 string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
@@ -175,8 +174,15 @@ del ""%~f0"" & exit
                                 {
                                     FileName = batchFilePath,
                                     UseShellExecute = true,
-                                    Verb = "runas" // 请求管理员权限
+                                    WindowStyle = ProcessWindowStyle.Hidden
                                 };
+                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                                {
+                                    startInfo.Verb = "runas"; // 请求管理员权限
+                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                                }
+
+
                                 // 启动批处理文件并退出当前程序
                                 Process.Start(startInfo);
                                 Environment.Exit(0);
@@ -236,7 +242,7 @@ del ""%~f0"" & exit
                     string batchContent = $@"
 @echo off
 taskkill /f /im ""{executableName}""
-timeout /t 3
+timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
 start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}""  -c MenuPluginManager
 rd /s /q ""{tempDirectory}""
@@ -249,9 +255,13 @@ del ""%~f0"" & exit
                     {
                         FileName = batchFilePath,
                         UseShellExecute = true,
-                        Verb = "runas" // 请求管理员权限
+                        WindowStyle = ProcessWindowStyle.Hidden
                     };
-                    // 启动批处理文件并退出当前程序
+                    if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                    {
+                        startInfo.Verb = "runas"; // 请求管理员权限
+                        startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                    }
                     Process.Start(startInfo);
                     Environment.Exit(0);
                 }
