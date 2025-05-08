@@ -69,6 +69,7 @@ namespace ColorVision.Engine.Services
         public bool IsDisplayOpen { get => _IsDisplayOpen; set { _IsDisplayOpen = value; NotifyPropertyChanged(); } }
         private bool _IsDisplayOpen = true;
 
+
         public virtual UserControl GetDisplayControl()
         {
             return new UserControl();
@@ -231,9 +232,7 @@ namespace ColorVision.Engine.Services
 
         protected virtual void OnConfigChanged()
         {
-            // 这里可以放置你希望在配置变更时执行的逻辑
-            // 比如记录日志，刷新缓存等
-            Console.WriteLine("Configuration has changed.");
+
         }
 
         public void RestartRCService()
@@ -246,18 +245,21 @@ namespace ColorVision.Engine.Services
         {
             if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
+
             Parent.RemoveChild(this);
 
             //删除数据库
             if (SysResourceModel != null)
-                VSysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+                SysResourceDao.Instance.DeleteById(SysResourceModel.Id,false);
+
             //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+
             //删除前台显示
             if (GetDisplayControl() is IDisPlayControl disPlayControl)
                 DisPlayManager.GetInstance().IDisPlayControls.Remove(disPlayControl);
-            //删除资源
 
+            //删除资源
             Dispose();
         }
     }
