@@ -8,7 +8,6 @@ namespace ColorVision.Engine.Services.Dao
 {
     public class SysResourceModel : PKModel
     {
-
         public SysResourceModel(SysDeviceModel sysDeviceModel)
         {
             Code = sysDeviceModel.Code; 
@@ -22,24 +21,6 @@ namespace ColorVision.Engine.Services.Dao
         }
 
         public SysResourceModel() { }
-        public SysResourceModel(string name, string code, int tp, int pid, int tenantId)
-        {
-            Name = name;
-            Code = code;
-            TenantId = tenantId;
-            Type = tp;
-            Pid = pid;
-            CreateDate = DateTime.Now;
-        }
-
-        public SysResourceModel(string name, string code, int tp, int tenantId)
-        {
-            Name = name;
-            Code = code;
-            TenantId = tenantId;
-            Type = tp;
-            CreateDate = DateTime.Now;
-        }
 
         [Column("name")]
         public string? Name { get; set; }
@@ -52,7 +33,7 @@ namespace ColorVision.Engine.Services.Dao
         [Column("txt_value")]
         public string? Value { get; set; }
         [Column("create_date")]
-        public DateTime CreateDate { get; set; }
+        public DateTime CreateDate { get; set; } = DateTime.Now;
         [Column("tenant_id")]
         public int TenantId { get; set; }
 

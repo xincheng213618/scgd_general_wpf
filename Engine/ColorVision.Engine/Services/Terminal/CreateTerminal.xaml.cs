@@ -75,7 +75,14 @@ namespace ColorVision.Engine.Services.Terminal
             DeviceService deviceService = null;
 
 
-            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, UserConfig.Instance.TenantId);
+            SysResourceModel sysResource = new SysResourceModel();
+            sysResource.Name = CreateName.Text;
+            sysResource.Code = CreateCode.Text;
+            sysResource.Type = TerminalService.SysResourceModel.Type;
+            sysResource.Pid = TerminalService.SysResourceModel.Id;
+            sysResource.TenantId = UserConfig.Instance.TenantId;
+
+
             SysDeviceModel sysDevModel = null;
             DeviceServiceConfig deviceConfig;
             int fromPort;
