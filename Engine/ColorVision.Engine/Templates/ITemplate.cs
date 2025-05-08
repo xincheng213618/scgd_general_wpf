@@ -321,16 +321,10 @@ namespace ColorVision.Engine.Templates
                 List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
                 int ret = ModMasterDao.Instance.DeleteById(id);
                 ModDetailDao.Instance.DeleteAllByPid(id);
-                if (de != null && de.Count > 0)
+                foreach (ModDetailModel model in de)
                 {
-                    string[] codes = new string[de.Count];
-                    int idx = 0;
-                    foreach (ModDetailModel model in de)
-                    {
-                        string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
-                        codes[idx++] = code;
-                    }
-                    VSysResourceDao.Instance.DeleteInCodes(codes);
+                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
+                    SysResourceDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "code", code } }, true);
                 }
             }
 
