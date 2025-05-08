@@ -142,6 +142,7 @@ namespace ColorVision.Projects
 
                                 string batchContent = $@"
 @echo off
+title ""更新脚本""
 taskkill /f /im ""{executableName}""
 timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
@@ -220,6 +221,7 @@ del ""%~f0"" & exit
 
                     string batchContent = $@"
 @echo off
+title ""更新脚本""
 taskkill /f /im ""{executableName}""
 timeout /t 0
 xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""

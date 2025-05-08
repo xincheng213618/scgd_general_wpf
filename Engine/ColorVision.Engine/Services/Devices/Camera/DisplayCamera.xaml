@@ -89,11 +89,11 @@
 
                 <DockPanel x:Name="ButtonUnauthorized" Margin="0,0,0,3" >
                     <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}"  Margin="0,0,3,0" />
-                    <Button Content="相机未注册" Command="{Binding EditCommand}"  />
+                    <Button Content="未授权或者相机许可证过期" Command="{Binding PhyCamera.UploadLicenseCommand}"  />
                 </DockPanel>
                 <DockPanel x:Name="ButtonInit" Margin="0,0,0,3" >
                     <Button Content="刷新设备列表" Command="{Binding  RefreshDeviceIdCommand}" Margin="0,0,3,0"/>
-                    <Button Content="请先配置相机ID" Click="CameraInit_Click"/>
+                    <Button Content="请先配置相机ID" Command="{Binding EditCommand}"/>
                 </DockPanel>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <DockPanel x:Name="ButtonOpen"  Margin="0,0,0,3">

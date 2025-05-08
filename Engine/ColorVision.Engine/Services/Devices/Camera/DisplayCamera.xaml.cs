@@ -157,11 +157,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     case DeviceStatusType.Unauthorized:
                         SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        if (Device.Config.CameraCode != null)
-                        {
-                            Device.Config.CameraCode = string.Empty;
-                            Device.Save();
-                        }
                         break;
                     case DeviceStatusType.Unknown:
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
@@ -246,11 +241,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void CameraOffline_Click(object sender, RoutedEventArgs e)
         {
             ServicesHelper.SendCommandEx(sender, DService.GetCameraID);
-        }
-
-        private void CameraInit_Click(object sender, RoutedEventArgs e)
-        {
-            Device.EditCommand.RaiseExecute(sender);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)

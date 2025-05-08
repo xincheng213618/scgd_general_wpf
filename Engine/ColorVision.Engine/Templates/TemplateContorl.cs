@@ -69,11 +69,19 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
-        public static List<ITemplateName> ITemplateNames { get; set; } = new List<ITemplateName>();
+        public static Dictionary<string, ITemplateName> ITemplateNames { get; set; } = new Dictionary<string, ITemplateName>();
+
+        public static void AddITemplateName(string code, ITemplateName templateName)
+        {
+            if (!ITemplateNames.TryAdd(code, templateName))
+            {
+                ITemplateNames[code] = templateName;
+            }
+        }
 
         public static bool ExitsTemplateName(string templateName)
         {
-            var templateNames = ITemplateNames
+            var templateNames = ITemplateNames.Values
                .SelectMany(item => item.GetTemplateNames())
                .Distinct()
                .ToList();
@@ -81,7 +89,7 @@ namespace ColorVision.Engine.Templates
         }
         public static ITemplateName? FindDuplicateTemplate(string templateName)
         {
-            var duplicates = ITemplateNames
+            var duplicates = ITemplateNames.Values
                 .FirstOrDefault(item => item.GetTemplateNames()
                     .Any(name => name.Equals(templateName, StringComparison.OrdinalIgnoreCase)));
 

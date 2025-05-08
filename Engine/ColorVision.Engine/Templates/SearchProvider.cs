@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Templates
 
         public IEnumerable<ISearch> GetSearchItems()
         {
-            var templateNames = TemplateControl.ITemplateNames.SelectMany(item => item.GetTemplateNames()).ToList();
+            var templateNames = TemplateControl.ITemplateNames.Values.SelectMany(item => item.GetTemplateNames()).Distinct().ToList();
             foreach (var item in templateNames)
             {
                 SearchMeta search = new SearchMeta

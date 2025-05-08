@@ -139,6 +139,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
             OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
+            new TemplateCalibrationParam(this);
         }
         public static void OpenLicenseCache()
         {

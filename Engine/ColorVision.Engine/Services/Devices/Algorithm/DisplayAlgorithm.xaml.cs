@@ -161,11 +161,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 {
                     case DeviceStatusType.Unauthorized:
                         SetVisibility(ButtonUnauthorized, Visibility.Visible);
-                        if (Device.Config.SN != null)
-                        {
-                            Device.Config.SN = string.Empty;
-                            Device.Save();
-                        }
                         break;
                     case DeviceStatusType.Unknown:
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
