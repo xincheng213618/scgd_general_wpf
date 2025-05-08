@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Core
     public class ServiceBase : ServiceObjectBase
     {
         public SysResourceModel SysResourceModel { get; set; }
-        public int Id { get => SysResourceModel.Id; }
+        public int Id { get => SysResourceModel.Id; set { } }
 
         public ServiceBase(SysResourceModel sysResourceModel)
         {

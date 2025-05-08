@@ -27,7 +27,11 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
                             <StackPanel Margin="-15,5,0,5">
-                                <TextBlock Text="{Binding Id}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Id}"/>
+                                    <TextBlock Text="  "/>
+                                    <TextBlock Text="{Binding SysResourceModel.Remark}"/>
+                                </StackPanel>
                                 <TextBlock Text="{Binding Code}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
