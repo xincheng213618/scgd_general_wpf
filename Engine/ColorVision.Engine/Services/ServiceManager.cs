@@ -124,11 +124,10 @@ namespace ColorVision.Engine.Services
 
             TerminalServices.Clear();
 
-            List<SysResourceModel> sysResourceModelServices = VSysResourceDao.Instance.GetServices(UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {
-                var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
-                foreach (var sysResourceModel in sysResourceModels)
+                List<SysResourceModel> sysResourceModelServices = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type",(int)typeService1.ServiceTypes },{ "tenant_id", UserConfig.TenantId }, { "is_delete", 0} });
+                foreach (var sysResourceModel in sysResourceModelServices)
                 {
                     TerminalService terminalService = new TerminalService(sysResourceModel);
                     typeService1.AddChild(terminalService);

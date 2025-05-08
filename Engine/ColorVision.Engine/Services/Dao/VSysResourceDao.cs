@@ -148,36 +148,5 @@ namespace ColorVision.Engine.Services.Dao
         {
 
         }
-
-        internal List<SysResourceModel> GetServices(int tenantId)
-        {
-            List<SysResourceModel> list = new();
-            DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-
-        public virtual DataTable GetTablePidIsNullByPPcodeAndTenantId(int tenantId)
-        {
-            string ppcode = "service_type";
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1) and ppcode='{ppcode}'" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        internal int DeleteInCodes(string[] codes)
-        {
-            string sqlCode = string.Join(',', codes);
-            string sql = $"update {TableName} set is_delete=1 where code in ('{sqlCode}')";
-            return ExecuteNonQuery(sql);
-        }
     }
 }
