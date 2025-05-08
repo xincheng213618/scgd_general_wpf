@@ -17,7 +17,6 @@ namespace ColorVision.Engine.Services.Dao
             Pid = sysDeviceModel.Pid;
             Type = sysDeviceModel.Type; 
             TenantId = sysDeviceModel.TenantId; 
-            TypeCode = sysDeviceModel.TypeCode; 
             Value = sysDeviceModel.Value;
             CreateDate = sysDeviceModel.CreateDate;
         }
@@ -42,15 +41,21 @@ namespace ColorVision.Engine.Services.Dao
             CreateDate = DateTime.Now;
         }
 
+        [Column("name")]
         public string? Name { get; set; }
+        [Column("code")]
         public string? Code { get; set; }
-        public string? TypeCode { get; set; }
+        [Column("type")]
         public int Type { get; set; }
-
+        [Column("pid")]
         public int? Pid { get; set; }
+        [Column("txt_value")]
         public string? Value { get; set; }
+        [Column("create_date")]
         public DateTime CreateDate { get; set; }
+        [Column("tenant_id")]
         public int TenantId { get; set; }
+
 
         public string? Remark { get; set; }
     }
@@ -59,41 +64,6 @@ namespace ColorVision.Engine.Services.Dao
     {
         public static SysResourceDao Instance { get; set; } =  new SysResourceDao();
         public SysResourceDao() : base("t_scgd_sys_resource", "id") { }
-
-
-        public override SysResourceModel GetModelFromDataRow(DataRow item)
-        {
-            SysResourceModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                Type = item.Field<int>("type"),
-                Pid = item.Field<int?>("pid"),
-                Value = item.Field<string>("txt_value"),
-                CreateDate = item.Field<DateTime>("create_date"),
-                TenantId = item.Field<int>("tenant_id"),
-                Remark =item.Field<string?>("remark"),
-            };
-            return model;
-        }
-
-        public override DataRow Model2Row(SysResourceModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                if (item.Name != null) row["name"] = item.Name;
-                if (item.Code != null) row["code"] = item.Code;
-                if (item.Pid != null) row["pid"] = item.Pid;
-                row["txt_value"] = DataTableExtension.IsDBNull(item.Value);
-                if (item.Type >= 0) row["type"] = item.Type;
-                row["tenant_id"] = item.TenantId;
-                row["create_date"] = item.CreateDate;
-                if (item.Remark!=null) row["remark"] = item.Remark;
-            }
-            return row;
-        }
 
         public void ADDGroup(int groupId ,int resourceId)
         {
@@ -165,12 +135,6 @@ namespace ColorVision.Engine.Services.Dao
         }
 
         public List<SysResourceModel> GetAllType(int type) => GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });
-        internal int DeleteInCodes(string[] codes)
-        {
-            string sqlCode = string.Join(',', codes);
-            string sql = $"update {TableName} set is_delete=1 where code in ('{sqlCode}')";
-            return ExecuteNonQuery(sql);
-        }
     }
 
 
@@ -184,41 +148,6 @@ namespace ColorVision.Engine.Services.Dao
         {
 
         }
-
-        public override SysResourceModel GetModelFromDataRow(DataRow item)
-        {
-            SysResourceModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                Type = item.Field<int>("type"),
-                Pid = item.Field<int?>("pid"),
-                TypeCode = item.Field<string>("type_code"),
-                Value = item.Field<string>("txt_value"),
-                CreateDate = item.Field<DateTime>("create_date"),
-                TenantId = item.Field<int>("tenant_id"),
-            };
-            return model;
-        }
-
-        public override DataRow Model2Row(SysResourceModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                if (item.Name != null) row["name"] = item.Name;
-                if (item.Code != null) row["code"] = item.Code;
-                if (item.Pid != null) row["pid"] = item.Pid;
-                if (item.Value != null) row["txt_value"] = item.Value;
-                if (item.Type >= 0) row["type"] = item.Type;
-                row["tenant_id"] = item.TenantId;
-                row["create_date"] = item.CreateDate;
-            }
-            return row;
-        }
-
-
 
         internal List<SysResourceModel> GetServices(int tenantId)
         {
