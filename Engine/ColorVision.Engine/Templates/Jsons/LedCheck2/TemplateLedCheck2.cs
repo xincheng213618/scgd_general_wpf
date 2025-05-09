@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         {
             Title = "亚像素级灯珠检测模板管理";
             Code = "LedCheck2";
+            TemplateDicId = 18;
             TemplateParams = Params;
             IsUserControl = true;
         }

@@ -72,37 +72,6 @@ namespace ColorVision.Engine.Templates
                             template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
                             ))
                         .ToList();
-
-                    string everythingpath = "C:\\Program Files\\Everything\\Everything.exe";
-                    if (File.Exists(everythingpath))
-                    {
-                        void Search()
-                        {
-                            ProcessStartInfo startInfo = new();
-                            startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
-                            startInfo.WorkingDirectory = Environment.CurrentDirectory;
-                            startInfo.FileName = everythingpath;
-                            startInfo.Arguments = $"-s {searchtext}";
-                            try
-                            {
-                                Process p = Process.Start(startInfo);
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                            }
-                        }
-
-                        SearchMeta search = new SearchMeta
-                        {
-                            GuidId = Guid.NewGuid().ToString(),
-                            Header = $"{Properties.Resources.Search} {searchtext}",
-                            Command = new Common.MVVM.RelayCommand(a => Search())
-                        };
-
-                        filteredResults.Add(search);
-                    }
-
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)
                     {

@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
         {
             Title = "BlackMura模板管理";
             Code = "BlackMura.Caculate";
+            TemplateDicId = 37;
             TemplateParams = Params;
             IsUserControl = true;
         }

@@ -62,8 +62,10 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         public TemplateGhostQK()
         {
-            Title = "Ghost模板管理";
-            Code = "ghost_2.0";
+            Title = "Ghost2.0模板管理";
+            Code = "ghost";
+            Name = "ghost2.0";
+            TemplateDicId = 38;
             TemplateParams = Params;
             IsUserControl = true;
         }

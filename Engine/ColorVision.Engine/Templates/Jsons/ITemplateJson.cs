@@ -5,6 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,12 +27,16 @@ namespace ColorVision.Engine.Templates.Jsons
                     .Select((template, index) => new { template, index })
                     .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
         }
+
+        public int TemplateDicId { get; set; }
+
         public override List<string> GetTemplateNames()
         {
             return [.. TemplateParams.Select(a => a.Key)];
         }
 
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
+
 
         public override Type GetTemplateType => typeof(T);
 
@@ -52,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
-            var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
+            var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
             if (dictemplate ==null)
                 return new T();
 
@@ -94,7 +99,9 @@ namespace ColorVision.Engine.Templates.Jsons
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var templates =  TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "code", Code } });
+                List<TemplateJsonModel> templates = new List<TemplateJsonModel>();
+                templates = TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mm_id", TemplateDicId } ,{ "is_delete",0} });
+
                 foreach (var template in templates)
                 {
                     if (Activator.CreateInstance(typeof(T), [template]) is T t)
@@ -245,7 +252,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             T? AddParamMode()
             {
-                var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
+                var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
 
                 if (dictemplate == null) return null;
                 TemplateJsonModel templateJson = new TemplateJsonModel();

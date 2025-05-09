@@ -35,11 +35,11 @@ namespace ColorVision.Engine.Templates
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 Name = Name?? Code ?? this.GetType().ToString();
+
                 TemplateControl.AddITemplateName(Name, this);
             });
         }
         public string Name { get ; set; }
-
         public virtual IEnumerable ItemsSource { get; }
         public virtual List<string> GetTemplateNames()
         {
@@ -49,6 +49,7 @@ namespace ColorVision.Engine.Templates
         public virtual string Title { get; set; }
 
         public string Code { get; set; }
+
         public virtual int Count { get; }
 
         public virtual string GetTemplateName(int index)
