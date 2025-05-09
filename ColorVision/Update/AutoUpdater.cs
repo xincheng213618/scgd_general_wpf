@@ -457,7 +457,9 @@ namespace ColorVision.Update
             filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
 
             await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
-            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+
+
+            void update()
             {
                 try
                 {
@@ -506,9 +508,14 @@ del ""%~f0"" & exit
                 {
                     MessageBox.Show($"更新失败: {ex.Message}");
                 }
-            };
+            }
 
-
+            HandyControl.Controls.Growl.AskGlobal("检测到新版本！是否立即更新", isConfirmed =>
+            {
+                update();
+                return true;
+            });
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => update();
         }
 
         private void UpdateApplication(string downloadPath, bool isIncrement)
