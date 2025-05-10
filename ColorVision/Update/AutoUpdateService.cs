@@ -35,7 +35,17 @@ namespace ColorVision.Update
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                await autoUpdater.CheckAndUpdateV2();
+
+                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                {
+                    //如果需要管理员权限的配置则弹出提示窗
+                    await autoUpdater.CheckAndUpdateV1(false);
+                }
+                else
+                {
+                    //否则静默更新，不提示用户
+                    await autoUpdater.CheckAndUpdateV2();
+                }
             });
         }
 

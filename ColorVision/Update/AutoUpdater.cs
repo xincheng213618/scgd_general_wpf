@@ -91,39 +91,24 @@ namespace ColorVision.Update
 
         public static void DeleteAllCachedUpdateFiles()
         {
-            // 获取临时文件夹路径
             string tempPath = Path.GetTempPath();
-
-            // 搜索所有匹配的更新文件
-            string[] updateFiles = Directory.GetFiles(tempPath, "ColorVision-*.exe");
-
-            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-            foreach (string updateFile in updateFiles)
+            string[] updatePatterns = { "ColorVision-*.exe", "ColorVision-*.zip" };
+            foreach (string pattern in updatePatterns)
             {
-                if (updateFile.Contains($"ColorVision-{CurrentVersion}.exe"))
+                string[] updateFiles = Directory.GetFiles(tempPath, pattern);
+                foreach (string updateFile in updateFiles)
                 {
-                    string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
-
-                    File.Move(updateFile, Path.Combine(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),AssemblyCompany), $"ColorVision-{CurrentVersion}.exe"));
-                    continue;
+                    try
+                    {
+                        File.Delete(updateFile);
+                        log.Info($"Deleted update file: {updateFile}");
+                    }
+                    catch (Exception ex)
+                    {
+                        // 如果删除过程中出现错误，输出错误信息
+                        log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
+                    }
                 }
-
-                try
-                {
-                    File.Delete(updateFile);
-                    log.Info($"Deleted update file: {updateFile}");
-                }
-                catch (Exception ex)
-                {
-                    // 如果删除过程中出现错误，输出错误信息
-                    log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
-                }
-            }
-
-            if (updateFiles.Length == 0)
-            {
-                log.Info($"No update files found to delete.");
             }
         }
 
@@ -472,7 +457,9 @@ namespace ColorVision.Update
             filePath = Path.Combine(downloadPath, $"ColorVision-Update-[{latestVersion}].zip");
 
             await DownloadFileAsync(downloadUrl, filePath, cancellationToken);
-            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+
+
+            void update()
             {
                 try
                 {
@@ -521,9 +508,14 @@ del ""%~f0"" & exit
                 {
                     MessageBox.Show($"更新失败: {ex.Message}");
                 }
-            };
+            }
 
-
+            HandyControl.Controls.Growl.AskGlobal("检测到新版本！是否立即更新", isConfirmed =>
+            {
+                update();
+                return true;
+            });
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => update();
         }
 
         private void UpdateApplication(string downloadPath, bool isIncrement)
@@ -647,12 +639,23 @@ del ""%~f0"" & exit
                 {
                     FileName = batchFilePath,
                     UseShellExecute = true,
-                    Verb = "runas" // 请求管理员权限
+                    WindowStyle = ProcessWindowStyle.Hidden // 隐藏命令行窗口
                 };
 
-                // 启动批处理文件并退出当前程序
-                Process.Start(startInfo);
-                Environment.Exit(0);
+                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+                {
+                    startInfo.Verb = "runas"; // 请求管理员权限
+                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
+                }
+                try
+                {
+                    Process p = Process.Start(startInfo);
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
             }
             catch (Exception ex)
             {
@@ -671,10 +674,11 @@ del ""%~f0"" & exit
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;
-            startInfo.Verb = "runas"; // "runas"指定启动程序时请求管理员权限
-                                      // 如果需要静默安装，添加静默安装参数
-            //quiet 没法自启，桌面图标也是空                       
-            //startInfo.Arguments = "/quiet";
+            if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
+            {
+                startInfo.Verb = "runas"; // 请求管理员权限
+                startInfo.WindowStyle = ProcessWindowStyle.Normal;
+            }
             try
             {
                 Process p = Process.Start(startInfo);

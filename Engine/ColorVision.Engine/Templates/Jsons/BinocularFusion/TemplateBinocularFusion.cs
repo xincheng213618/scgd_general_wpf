@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
         {
             Title = "双目融合模板管理";
             Code = "ARVR.BinocularFusion";
+            TemplateDicId = 35;
             TemplateParams = Params;
             IsUserControl = true;
         }

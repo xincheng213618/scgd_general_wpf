@@ -18,6 +18,12 @@ namespace ColorVision.Engine.Templates.Validate
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> CIEParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> JNDParams { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
 
+        public TemplateComplyParam()
+        {
+
+        }
+
+
         public TemplateComplyParam(string code, int type = 0)
         {
             Code = code;
@@ -48,17 +54,6 @@ namespace ColorVision.Engine.Templates.Validate
         }
 
 
-        public override bool ExitsTemplateName(string templateName)
-        {
-            foreach (var entry in CIEParams)
-            {
-                if (entry.Value.Any(item => item.Value.Name.Equals(templateName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
 
         public override string Title { get => Code + Properties.Resources.Edit; set { } }
 

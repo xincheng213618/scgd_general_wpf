@@ -35,8 +35,8 @@ namespace ColorVision.Engine.Templates
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CreateCopy(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Save, (s, e) => {
                 ITemplate.Save();
-                HandyControl.Controls.Growl.Success("保存成功");
-            } , (s, e) => e.CanExecute = true));
+                HandyControl.Controls.Growl.SuccessGlobal( Title +"保存成功");
+            }, (s, e) => e.CanExecute = true));
             this.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
             this.CommandBindings.Add(new CommandBinding(Commands.ReName, (s, e) => ReName(), (s, e) => e.CanExecute = ListView1.SelectedIndex > -1));
         }

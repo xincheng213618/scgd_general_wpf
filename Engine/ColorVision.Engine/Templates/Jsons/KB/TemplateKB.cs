@@ -66,6 +66,7 @@ namespace ColorVision.Engine.Templates.Jsons.KB
         {
             Title = "键盘检测模板管理";
             Code = "KB";
+            TemplateDicId = 150;
             TemplateParams = Params;
             IsSideHide = true;
         }

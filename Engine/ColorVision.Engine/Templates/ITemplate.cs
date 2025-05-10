@@ -1,36 +1,62 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Templates.SysDictionary;
+using ColorVision.Solution;
+using ColorVision.UI.Extension;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO.Compression;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Templates.SysDictionary;
-using ColorVision.Solution;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ITemplate
+    public interface ITemplateName
     {
+        public List<string> GetTemplateNames();
+    }
+
+
+    public class ITemplate: ITemplateName
+    {
+        public ITemplate()
+        {
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                Name = Name?? Code ?? this.GetType().ToString();
+
+                TemplateControl.AddITemplateName(Name, this);
+            });
+        }
+        public string Name { get ; set; }
         public virtual IEnumerable ItemsSource { get; }
+        public virtual List<string> GetTemplateNames()
+        {
+            return new List<string>();
+        }
 
         public virtual string Title { get; set; }
 
         public string Code { get; set; }
+
         public virtual int Count { get; }
 
         public virtual string GetTemplateName(int index)
+        {
+            throw new NotImplementedException();
+        }
+        public virtual int GetTemplateIndex(string templateName)
         {
             throw new NotImplementedException();
         }
@@ -69,9 +95,14 @@ namespace ColorVision.Engine.Templates
             throw new NotImplementedException();
         }
 
-        public virtual string NewCreateFileName(string FileName)
+        public string NewCreateFileName(string FileName)
         {
-            throw new NotImplementedException();
+            for (int i = 1; i < 9999; i++)
+            {
+                if (!TemplateControl.ExitsTemplateName($"{FileName}{i}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
         }
 
         public virtual void Save()
@@ -129,13 +160,6 @@ namespace ColorVision.Engine.Templates
 
         }
 
-
-
-        public virtual bool ExitsTemplateName(string templateName)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool IsUserControl { get; set; }
 
 
@@ -154,9 +178,21 @@ namespace ColorVision.Engine.Templates
         }
     }
 
-    public class ITemplate<T> : ITemplate where T : ParamModBase, new()
+    public class ITemplate<T> : ITemplate where T : ParamModBase, new() 
     {
+
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
+        public override int GetTemplateIndex(string templateName)
+        {
+            return TemplateParams
+                    .Select((template, index) => new { template, index })
+                    .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
+        }
+        public override List<string> GetTemplateNames()
+        {
+            return TemplateParams.Select(a => a.Key).ToList();
+        }
+
 
         public override Type GetTemplateType => typeof(T);
 
@@ -166,7 +202,6 @@ namespace ColorVision.Engine.Templates
 
         public override object GetValue() => TemplateParams;
 
-        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         public override object GetParamValue(int index) => TemplateParams[index].Value;
         public override object GetValue(int index) => TemplateParams[index];
 
@@ -197,15 +232,6 @@ namespace ColorVision.Engine.Templates
             return CreateTemp ?? new T();
         }
 
-        public override string NewCreateFileName(string FileName)
-        {
-            for (int i = 1; i < 9999; i++)
-            {
-                if (!ExitsTemplateName($"{FileName}{i}"))
-                    return $"{FileName}{i}";
-            }
-            return FileName;
-        }
 
         public virtual void Save(TemplateModel<T> item)
         {
@@ -296,16 +322,10 @@ namespace ColorVision.Engine.Templates
                 List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
                 int ret = ModMasterDao.Instance.DeleteById(id);
                 ModDetailDao.Instance.DeleteAllByPid(id);
-                if (de != null && de.Count > 0)
+                foreach (ModDetailModel model in de)
                 {
-                    string[] codes = new string[de.Count];
-                    int idx = 0;
-                    foreach (ModDetailModel model in de)
-                    {
-                        string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
-                        codes[idx++] = code;
-                    }
-                    VSysResourceDao.Instance.DeleteInCodes(codes);
+                    string code = Cryptography.GetMd5Hash(model.ValueA + model.Id);
+                    SysResourceDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "code", code } }, true);
                 }
             }
 

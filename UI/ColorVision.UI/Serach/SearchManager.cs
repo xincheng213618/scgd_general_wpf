@@ -6,7 +6,7 @@ namespace ColorVision.UI.Serach
 {
     public class SearchManager
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
+        private static readonly ILog log = LogManager.GetLogger(typeof(SearchManager));
         private static SearchManager _instance;
         private static readonly object _locker = new();
         public static SearchManager GetInstance() { lock (_locker) { return _instance ??= new SearchManager(); } }

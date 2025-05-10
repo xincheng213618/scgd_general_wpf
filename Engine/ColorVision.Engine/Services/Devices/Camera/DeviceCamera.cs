@@ -72,7 +72,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditAutoFocusCommand = new RelayCommand(a => EditAutoFocus());
             EditCameraExpousureCommand = new RelayCommand(A => EditCameraExpousure());
             EditCalibrationCommand = new RelayCommand(a => EditCalibration());
-
         }
         [CommandDisplay("编辑校正文件")]
         public RelayCommand EditCalibrationCommand { get; set; }
@@ -215,12 +214,35 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void RefreshDeviceId()
         {
-            MsgRecord msgRecord =  DService.GetAllCameraID();
-            msgRecord.MsgSucessed += (e) =>
+            if (PhyCamera !=null && PhyCamera.LicenseState != LicenseState.Licensed)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
-                PhyCameraManager.GetInstance().LoadPhyCamera();
-                PhyCameraManager.GetInstance().RefreshEmptyCamera();
+                if ( MessageBox.Show(Application.Current.GetActiveWindow(), "当前逻辑相机许可证过期，无法刷新设备列表，是否清空当前相机服务绑定的物理相机，然后在重试", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    this.Config.Code = "";
+                    Config.CameraCode = string.Empty;
+                    Save();
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            MsgRecord msgRecord =  DService.GetAllCameraID();
+            msgRecord.MsgRecordStateChanged += (e) =>
+            {
+                if (e == MsgRecordState.Success)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "当前设备相机信息" + Environment.NewLine + msgRecord.MsgReturn.Data);
+                    PhyCameraManager.GetInstance().LoadPhyCamera();
+                    PhyCameraManager.GetInstance().RefreshEmptyCamera();
+                }
+                else
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "刷新设备列表失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+
+                }
             };
         }
 
@@ -283,6 +305,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
+            this.PhyCamera?.ReleaseDeviceCamera();
+
             DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);

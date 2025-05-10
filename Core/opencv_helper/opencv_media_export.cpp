@@ -11,11 +11,11 @@ using json = nlohmann::json;
 
 std::vector<std::pair<uintptr_t, cv::Mat>> MediaList;
 
-std::mutex mediaListMutex; // å®šä¹‰ä¸€ä¸ªäº’æ–¥é”
+std::mutex mediaListMutex; // ¶¨ÒåÒ»¸ö»¥³âËø
 
 static void MatToHImage(cv::Mat& mat, HImage* outImage)
 {
-	std::lock_guard<std::mutex> lock(mediaListMutex); // åŠ é”
+	std::lock_guard<std::mutex> lock(mediaListMutex); // ¼ÓËø
 
 
 	outImage->rows = mat.rows;
@@ -43,8 +43,8 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	default:
 		break;
 	}
-	outImage->depth = bitsPerElement; // è®¾ç½®æ¯åƒç´ ä½æ•°
-	outImage->stride = (int)mat.step; // è®¾ç½®å›¾åƒçš„æ­¥é•¿
+	outImage->depth = bitsPerElement; // ÉèÖÃÃ¿ÏñËØÎ»Êı
+	outImage->stride = (int)mat.step; // ÉèÖÃÍ¼ÏñµÄ²½³¤
 	MediaList.push_back(std::make_pair(reinterpret_cast<uintptr_t>(outImage->pData), mat));
 }
 
@@ -84,7 +84,7 @@ COLORVISIONCORE_API double M_CalArtculation(HImage img, EvaFunc type) {
 COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 {
 	uintptr_t address = reinterpret_cast<uintptr_t>(data);
-	std::lock_guard<std::mutex> lock(mediaListMutex); // åŠ é”
+	std::lock_guard<std::mutex> lock(mediaListMutex); // ¼ÓËø
 
 	std::vector<std::pair<uintptr_t, cv::Mat>>::iterator it = std::find_if(
 		MediaList.begin(), MediaList.end(),
@@ -94,7 +94,7 @@ COLORVISIONCORE_API void M_FreeHImageData(unsigned char* data)
 
 	if (it != MediaList.end()) {
 		it->second.release();
-		// ä»ç¼“å­˜ä¸­ç§»é™¤
+		// ´Ó»º´æÖĞÒÆ³ı
 		MediaList.erase(it);
 	}
 }
@@ -120,7 +120,7 @@ COLORVISIONCORE_API int M_PseudoColor(HImage img, HImage* outImage, uint min, ui
 		}
 	}
 	pseudoColor(out, min, max, types);
-	///è¿™é‡Œä¸åˆ†é…çš„è¯ï¼Œå±€éƒ¨å†…å­˜ä¼šåœ¨è¿è¡Œç»“æŸä¹‹åæ¸…ç©º
+	///ÕâÀï²»·ÖÅäµÄ»°£¬¾Ö²¿ÄÚ´æ»áÔÚÔËĞĞ½áÊøÖ®ºóÇå¿Õ
 	MatToHImage(out, outImage);
 	return 0;
 }
@@ -187,7 +187,7 @@ COLORVISIONCORE_API int M_DrawPoiImage(HImage img, HImage* outImage,int radius, 
 		return -1;
 	if (mat.channels() != 3) {
 		if (mat.channels() == 1) {
-			// å°†å•é€šé“å›¾åƒè½¬æ¢ä¸ºä¸‰é€šé“
+			// ½«µ¥Í¨µÀÍ¼Ïñ×ª»»ÎªÈıÍ¨µÀ
 			cv::cvtColor(mat, mat, cv::COLOR_GRAY2BGR);
 		}
 	}
@@ -220,36 +220,36 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-	// å¦‚æœæ˜¯å½©è‰²å›¾åƒï¼Œè½¬æ¢ä¸ºç°åº¦å›¾
-	if (mat.channels() == 3 || mat.channels() == 4)  // åˆ¤æ–­æ˜¯å¦ä¸ºå½©è‰²å›¾ï¼ˆBGR æˆ– BGRAï¼‰
+	// Èç¹ûÊÇ²ÊÉ«Í¼Ïñ£¬×ª»»Îª»Ò¶ÈÍ¼
+	if (mat.channels() == 3 || mat.channels() == 4)  // ÅĞ¶ÏÊÇ·ñÎª²ÊÉ«Í¼£¨BGR »ò BGRA£©
 	{
-		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // è½¬æ¢ä¸ºç°åº¦å›¾
+		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY); // ×ª»»Îª»Ò¶ÈÍ¼
 	}
 	else
 	{
 		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 
-	// ç›®æ ‡åˆ†è¾¨ç‡è®¾ç½®
-	int targetPixels = targetPixelsX * targetPixelsY; // ç›®æ ‡åƒç´ æ•°ï¼ˆå¯ä»¥è°ƒæ•´ï¼‰
+	// Ä¿±ê·Ö±æÂÊÉèÖÃ
+	int targetPixels = targetPixelsX * targetPixelsY; // Ä¿±êÏñËØÊı£¨¿ÉÒÔµ÷Õû£©
 	int originalWidth = mat.cols;
 	int originalHeight = mat.rows;
 
-	// è®¡ç®—åˆå§‹æ¯”ä¾‹å› å­
+	// ¼ÆËã³õÊ¼±ÈÀıÒò×Ó
 	double initialScaleFactor = std::sqrt((double)originalWidth * originalHeight / targetPixels);
 
-	// ç¡®ä¿æ¯”ä¾‹å› å­æ˜¯ 1ã€2ã€4ã€8 ç­‰å€æ•°
+	// È·±£±ÈÀıÒò×ÓÊÇ 1¡¢2¡¢4¡¢8 µÈ±¶Êı
 	int allowedFactors[] = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048 };
 	int scaleFactor = FindClosestFactor((int)std::round(initialScaleFactor), allowedFactors);
-	// è®¡ç®—æ–°çš„å®½åº¦å’Œé«˜åº¦
+	// ¼ÆËãĞÂµÄ¿í¶ÈºÍ¸ß¶È
 	int newWidth = originalWidth / scaleFactor;
 	int newHeight = originalHeight / scaleFactor;
 
-	// åˆ†é…å†…å­˜ç»™ rowGrayPixels
+	// ·ÖÅäÄÚ´æ¸ø rowGrayPixels
 	*length = newWidth * newHeight;
 	*rowGrayPixels = new uchar[*length];
 
-	// å¹¶è¡Œå¤„ç†å›¾åƒåƒç´ ç¼©æ”¾
+	// ²¢ĞĞ´¦ÀíÍ¼ÏñÏñËØËõ·Å
 #pragma omp parallel for
 	for (int y = 0; y < newHeight; ++y)
 	{
@@ -260,7 +260,7 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 			int oldY = y * scaleFactor;
 			int oldIndex = oldY * mat.cols + oldX;
 
-			// å°†åƒç´ å€¼å­˜å‚¨åˆ° rowGrayPixels
+			// ½«ÏñËØÖµ´æ´¢µ½ rowGrayPixels
 			row[x] = mat.data[oldIndex];
 		}
 	}
@@ -317,7 +317,7 @@ COLORVISIONCORE_API int M_AdjustBrightnessContrast(HImage img, HImage* outImage,
 }
 
 /// <summary>
-/// åç›¸
+/// ·´Ïà
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
@@ -334,7 +334,7 @@ COLORVISIONCORE_API int M_InvertImage(HImage img, HImage* outImage)
 }
 
 /// <summary>
-/// äºŒå€¼åŒ–
+/// ¶şÖµ»¯
 /// </summary>
 /// <param name="img"></param>
 /// <param name="outImage"></param>
@@ -353,7 +353,7 @@ COLORVISIONCORE_API int M_Threshold(HImage img, HImage* outImage, double thresh,
 COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char** result)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
-	// æ£€æŸ¥è¾“å…¥å›¾åƒæ˜¯å¦ä¸ºç©º
+	// ¼ì²éÊäÈëÍ¼ÏñÊÇ·ñÎª¿Õ
 	if (mat.empty()) {
 		return -1;
 	}
@@ -379,7 +379,7 @@ COLORVISIONCORE_API int M_FindLuminousArea(HImage img, const char* config, char*
 	size_t length = output.length() + 1;
 	*result = new char[length];
 	if (!*result) {
-		return -2; // é”™è¯¯ï¼šå†…å­˜åˆ†é…å¤±è´¥
+		return -2; // ´íÎó£ºÄÚ´æ·ÖÅäÊ§°Ü
 	}
 	std::strcpy(*result, output.c_str());
 	return static_cast<int>(length);
@@ -401,12 +401,12 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		}
 
 		if (images.empty()) {
-			// è¯»å–ç¬¬ä¸€å¼ å›¾åƒä»¥è·å–å‚è€ƒå°ºå¯¸å’Œç±»å‹
+			// ¶ÁÈ¡µÚÒ»ÕÅÍ¼ÏñÒÔ»ñÈ¡²Î¿¼³ß´çºÍÀàĞÍ
 			int ref_height = img.rows;
 			int ref_width = img.cols;
-			int ref_type = img.type(); // è·å–å›¾åƒç±»å‹ï¼Œä¾‹å¦‚ CV_8UC1 è¡¨ç¤ºç°åº¦å›¾åƒ
+			int ref_type = img.type(); // »ñÈ¡Í¼ÏñÀàĞÍ£¬ÀıÈç CV_8UC1 ±íÊ¾»Ò¶ÈÍ¼Ïñ
 
-			// æ£€æŸ¥åç»­å›¾åƒçš„å°ºå¯¸å’Œç±»å‹æ˜¯å¦ä¸ç¬¬ä¸€å¼ å›¾åƒç›¸åŒ
+			// ¼ì²éºóĞøÍ¼ÏñµÄ³ß´çºÍÀàĞÍÊÇ·ñÓëµÚÒ»ÕÅÍ¼ÏñÏàÍ¬
 			for (size_t i = 1; i < image_files.size(); ++i) {
 				std::string ss = UTF8ToGB(image_files[i].c_str());
 				cv::Mat img = cv::imread(ss, cv::IMREAD_UNCHANGED);
@@ -419,12 +419,12 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 		images.push_back(img);
 	}
 
-	int num_images = images.size();
+	size_t num_images = images.size();
 	if (num_images == 0) {
 		return StitchingErrorCode::NO_VALID_IMAGES;
 	}
 
-	// ä½¿ç”¨æœ€åä¸€å¼ å›¾åƒä½œä¸ºåº•å›¾
+	// Ê¹ÓÃ×îºóÒ»ÕÅÍ¼Ïñ×÷Îªµ×Í¼
 	cv::Mat last_image = images.back();
 	int result_height = last_image.rows;
 	int result_width = last_image.cols;
@@ -436,10 +436,10 @@ StitchingErrorCode stitchImages(const std::vector<std::string>& image_files, cv:
 	}
 	last_image.copyTo(result);
 
-	int width = result_width / num_images;
+	size_t width = result_width / num_images;
 	for (int i = 0; i < num_images -1; ++i) {
-		cv::Mat part = images[i](cv::Rect(i* width, 0, width, result_height));
-		part.copyTo(result(cv::Rect(i * width, 0, width, result_height)));
+		cv::Mat part = images[i](cv::Rect(i* (int)width, 0, (int)width, result_height));
+		part.copyTo(result(cv::Rect(i * (int)width, 0, (int)width, result_height)));
 	}
 
 	return StitchingErrorCode::SUCCESS;
@@ -488,33 +488,33 @@ COLORVISIONCORE_API int M_ConvertGray32Float(HImage img, HImage* outImage)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
-	// æ£€æŸ¥å›¾åƒæ·±åº¦æ˜¯å¦ä¸ºCV_32FC1
+	// ¼ì²éÍ¼ÏñÉî¶ÈÊÇ·ñÎªCV_32FC1
 	if (mat.depth() != CV_32FC1) {
-		return -1; // å›¾åƒä¸æ˜¯32ä½æµ®ç‚¹ç±»å‹
+		return -1; // Í¼Ïñ²»ÊÇ32Î»¸¡µãÀàĞÍ
 	}
 
-	// æ‰¾åˆ°å›¾åƒä¸­çš„æœ€å°å€¼å’Œæœ€å¤§å€¼
+	// ÕÒµ½Í¼ÏñÖĞµÄ×îĞ¡ÖµºÍ×î´óÖµ
 	double minVal, maxVal;
 	cv::minMaxLoc(mat, &minVal, &maxVal);
 
-	// å¦‚æœminValä¸º0ä¸”maxValä¸º1ï¼Œåˆ™ä¸éœ€è¦ç¼©æ”¾å’Œåç§»ï¼Œç›´æ¥è½¬æ¢
+	// Èç¹ûminValÎª0ÇÒmaxValÎª1£¬Ôò²»ĞèÒªËõ·ÅºÍÆ«ÒÆ£¬Ö±½Ó×ª»»
 	if (minVal >= 0.0 && maxVal <= 5.0) {
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
 		mat.convertTo(outMat, CV_16UC1, 65535);
-		// å°†OpenCVçš„Matå¯¹è±¡è½¬æ¢å›HImageå¯¹è±¡
+		// ½«OpenCVµÄMat¶ÔÏó×ª»»»ØHImage¶ÔÏó
 		MatToHImage(outMat, outImage);
 	}
 	else {
-		// è®¡ç®—æ¯”ä¾‹å› å­å’Œæ ‡é‡å€¼
+		// ¼ÆËã±ÈÀıÒò×ÓºÍ±êÁ¿Öµ
 		float scale = 65535 / (maxVal - minVal);
 		float delta = -minVal * scale;
 
-		// åˆ›å»ºè¾“å‡ºå›¾åƒçŸ©é˜µ
+		// ´´½¨Êä³öÍ¼Ïñ¾ØÕó
 		cv::Mat outMat(img.rows, img.cols, CV_16UC1);
 
-		// å°†32ä½æµ®ç‚¹å›¾åƒè½¬æ¢ä¸º16ä½ç°åº¦å›¾åƒ
+		// ½«32Î»¸¡µãÍ¼Ïñ×ª»»Îª16Î»»Ò¶ÈÍ¼Ïñ
 		mat.convertTo(outMat, CV_16UC1, scale, delta);
-		// å°†OpenCVçš„Matå¯¹è±¡è½¬æ¢å›HImageå¯¹è±¡
+		// ½«OpenCVµÄMat¶ÔÏó×ª»»»ØHImage¶ÔÏó
 		MatToHImage(outMat, outImage);
 	}
 
@@ -539,9 +539,3 @@ COLORVISIONCORE_API int M_RemoveMoire(HImage img, HImage* outImage)
 	MatToHImage(dst, outImage);
 	return 0;
 }
-
-
-
-
-
-

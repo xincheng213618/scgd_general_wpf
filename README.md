@@ -1,8 +1,11 @@
 # scgd_general_wpf
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/xincheng213618/scgd_general_wpf)
+
 ## 项目简介
 
 ColrVision Inc 开发的一款 Windows WPF 应用程序，旨在提供先进的色彩管理和光电技术解决方案。
+
 
 
 ## 🖥️ 支持

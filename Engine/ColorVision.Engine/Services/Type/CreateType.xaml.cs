@@ -43,8 +43,12 @@ namespace ColorVision.Engine.Services.Types
                 return;
             }
 
+            SysResourceModel sysResource = new SysResourceModel();
+            sysResource.Name = CreateName.Text;
+            sysResource.Code = CreateCode.Text;
+            sysResource.Type = TypeService.SysDictionaryModel.Value;
+            sysResource.TenantId = UserConfig.Instance.TenantId;
 
-            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TypeService.SysDictionaryModel.Value, UserConfig.Instance.TenantId);
 
             TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };
 

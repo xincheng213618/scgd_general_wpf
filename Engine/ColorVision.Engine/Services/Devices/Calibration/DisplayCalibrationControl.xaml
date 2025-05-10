@@ -51,8 +51,8 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}"  Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="{x:Static properties:Resources.UnknownStatus}"  HorizontalAlignment="Center"/>
-                <TextBlock x:Name="TextBlockUnInit" Text="UnInit"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockUnInit" Text="服务已经关闭"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未授权或者相机许可证过期" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <TabControl BorderThickness="0" Background="Transparent">
                         <TabItem x:Name="RadioLocal" Background="Transparent" Header="{x:Static properties:Resources.Local}" >

@@ -5,6 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,8 +21,22 @@ namespace ColorVision.Engine.Templates.Jsons
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ITemplate));
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
+        public override int GetTemplateIndex(string templateName)
+        {
+            return TemplateParams
+                    .Select((template, index) => new { template, index })
+                    .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
+        }
+
+        public int TemplateDicId { get; set; }
+
+        public override List<string> GetTemplateNames()
+        {
+            return [.. TemplateParams.Select(a => a.Key)];
+        }
 
         public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
+
 
         public override Type GetTemplateType => typeof(T);
 
@@ -31,7 +46,6 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object GetValue() => TemplateParams;
 
-        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         public override object GetParamValue(int index) => TemplateParams[index].Value;
         public override object GetValue(int index) => TemplateParams[index];
 
@@ -43,7 +57,7 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public override object CreateDefault()
         {
-            var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
+            var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
             if (dictemplate ==null)
                 return new T();
 
@@ -58,15 +72,6 @@ namespace ColorVision.Engine.Templates.Jsons
             return CreateTemp ?? new T();
         }
 
-        public override string NewCreateFileName(string FileName)
-        {
-            for (int i = 1; i < 9999; i++)
-            {
-                if (!ExitsTemplateName($"{FileName}{i}"))
-                    return $"{FileName}{i}";
-            }
-            return FileName;
-        }
 
         public virtual void Save(TemplateModel<T> item)
         {
@@ -94,7 +99,9 @@ namespace ColorVision.Engine.Templates.Jsons
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var templates =  TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "code", Code } });
+                List<TemplateJsonModel> templates = new List<TemplateJsonModel>();
+                templates = TemplateJsonDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mm_id", TemplateDicId } ,{ "is_delete",0} });
+
                 foreach (var template in templates)
                 {
                     if (Activator.CreateInstance(typeof(T), [template]) is T t)
@@ -245,7 +252,7 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             T? AddParamMode()
             {
-                var dictemplate = DicTemplateJsonDao.Instance.GetByCode(Code);
+                var dictemplate = DicTemplateJsonDao.Instance.GetById(TemplateDicId);
 
                 if (dictemplate == null) return null;
                 TemplateJsonModel templateJson = new TemplateJsonModel();

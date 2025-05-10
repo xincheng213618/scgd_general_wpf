@@ -7,7 +7,7 @@ using System.Linq;
 namespace ColorVision.Engine.MySql.ORM
 {
 
-    public class BaseViewDao<T> : BaseDao1 where T : IPKModel
+    public class BaseViewDao<T> : BaseDao1 where T : IPKModel, new()
     {
         public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseViewDao<T>));
@@ -16,9 +16,10 @@ namespace ColorVision.Engine.MySql.ORM
             ViewName = viewName;
         }
 
-        public virtual DataRow Model2Row(T item, DataRow row) => row;
+        public virtual T? GetModelFromDataRow(DataRow item) => ReflectionHelper.GetModelFromDataRow<T>(item);
+        public virtual DataRow Model2Row(T item, DataRow row) => ReflectionHelper.Model2RowAuto(item, row);
+        public virtual DataTable CreateColumns(DataTable dataTable) => ReflectionHelper.CreateColumns<T>(dataTable);
 
-        public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
 
         public virtual int Save(T item)
         {
@@ -295,7 +296,6 @@ namespace ColorVision.Engine.MySql.ORM
             return list;
         }
 
-        public virtual T? GetModelFromDataRow(DataRow item) => default;
 
         public DataRow GetRow(T item, DataTable dataTable)
         {
