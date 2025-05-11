@@ -40,10 +40,27 @@ namespace ColorVision
 
 
 
+        public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
+            {
+                if (value)
+                {
+                    Tool.SwitchToWindows10ContextMenu();
+                }
+                else
+                {
+                    Tool.SwitchToWindows11ContextMenu();
+                }
+                NotifyPropertyChanged(nameof(IsWindows10ContextMenu));
+            } 
+        }
+
+
+
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            return new List<ConfigSettingMetadata>
+
+            var list = new List<ConfigSettingMetadata>
             {
                 new ConfigSettingMetadata
                 {
@@ -63,6 +80,20 @@ namespace ColorVision
                     Source = Instance
                 }
             };
+
+            if (Tool.IsWin11)
+            {
+                list.Add(new ConfigSettingMetadata
+                {
+                    Name = "Win10桌面经典菜单",
+                    Description = "",
+                    Order = 15,
+                    Type = ConfigSettingType.Bool,
+                    BindingName = nameof(IsWindows10ContextMenu),
+                    Source = this,
+                });
+            }
+            return list;
         }
     }
 

@@ -13,9 +13,63 @@ using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
 using System.Net.Sockets;
+using System.Windows.Input;
 
 namespace ColorVision.Common.Utilities
 {
+
+    public static partial class Tool
+    {
+        private const string KeyPath = @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
+
+        public static bool IsWindows11ContextMenu()
+        {
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(KeyPath))
+            {
+                if (key == null) return true;
+                string value = key.GetValue("") as string;
+                if (value == null) return true;
+                return !string.IsNullOrWhiteSpace(value);
+            }
+        }
+
+        public static void SwitchToWindows10ContextMenu()
+        {
+            using (RegistryKey key = Registry.CurrentUser.CreateSubKey(KeyPath))
+            {
+                key.SetValue("", "", RegistryValueKind.String);
+            }
+            RestartExplorer();
+        }
+
+        public static void SwitchToWindows11ContextMenu()
+        {
+            try
+            {
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(KeyPath, writable: true))
+                {
+                    if (key != null)
+                    {
+                        key.DeleteValue("", false);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static void RestartExplorer()
+        {
+            MessageBox.Show("切换状态需要重启桌面");
+            foreach (var process in Process.GetProcessesByName("explorer"))
+            {
+                process.Kill();
+            }
+            Process.Start("explorer");
+        }
+    }
+
 
     public static partial class Tool
     {
