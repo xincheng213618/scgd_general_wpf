@@ -1,0 +1,27 @@
+# xincheng213618-scgd_general_wpf-DeepWiki
+
+## Content Index
+
+- [Overview](Overview.md)
+- [Core-Architecture](Core-Architecture.md)
+- [Application-Structure](Application-Structure.md)
+- [Initialization-Process](Initialization-Process.md)
+- [Configuration-System](Configuration-System.md)
+- [Auto-Update-System](Auto-Update-System.md)
+- [UI-Framework](UI-Framework.md)
+- [Image-Editor](Image-Editor.md)
+- [Theme-System](Theme-System.md)
+- [Service-System](Service-System.md)
+- [Device-Services](Device-Services.md)
+- [MQTT-Communication](MQTT-Communication.md)
+- [Image-Processing](Image-Processing.md)
+- [Points-of-Interest-(POI)-System](Points-of-Interest-(POI)-System.md)
+- [Analysis-Algorithms](Analysis-Algorithms.md)
+- [Flow-Engine-System](Flow-Engine-System.md)
+- [Visual-Flow-Editor](Visual-Flow-Editor.md)
+- [Flow-Execution](Flow-Execution.md)
+- [Plugin-Architecture](Plugin-Architecture.md)
+- [Windows-Service-Plugin](Windows-Service-Plugin.md)
+- [Project-System](Project-System.md)
+- [Keyboard-Testing](Keyboard-Testing.md)
+- [Specialized-Projects](Specialized-Projects.md)
