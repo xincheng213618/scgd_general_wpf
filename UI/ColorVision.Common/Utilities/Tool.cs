@@ -11,9 +11,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
-using System.Windows.Forms;
 using System.Net.Sockets;
 using System.Windows.Input;
+using System.Windows;
+using System.Windows.Forms;
+using MessageBox = System.Windows.MessageBox;
 
 namespace ColorVision.Common.Utilities
 {
@@ -39,7 +41,14 @@ namespace ColorVision.Common.Utilities
             {
                 key.SetValue("", "", RegistryValueKind.String);
             }
-            RestartExplorer();
+            if (MessageBox.Show("切换到Win10的右键菜单需要重启桌面，才能生效","Windows",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                foreach (var process in Process.GetProcessesByName("explorer"))
+                {
+                    process.Kill();
+                }
+                Process.Start("explorer");
+            }
         }
 
         public static void SwitchToWindows11ContextMenu()
@@ -58,16 +67,6 @@ namespace ColorVision.Common.Utilities
             {
             }
         }
-
-        private static void RestartExplorer()
-        {
-            MessageBox.Show("切换状态需要重启桌面");
-            foreach (var process in Process.GetProcessesByName("explorer"))
-            {
-                process.Kill();
-            }
-            Process.Start("explorer");
-        }
     }
 
 
@@ -85,16 +84,7 @@ namespace ColorVision.Common.Utilities
 
         public static IntPtr GenerateRandomIntPtr()
         {
-            // 使用随机数生成器
-            Random random = new Random();
-
-            // 生成一个随机的整数值
-            int randomValue = random.Next();
-
-            // 将随机整数转换为 IntPtr
-            IntPtr randomIntPtr = new IntPtr(randomValue);
-
-            return randomIntPtr;
+            return new IntPtr(RandomInstance.Next());
         }
 
         /// <summary>
@@ -144,30 +134,19 @@ namespace ColorVision.Common.Utilities
             return systemHosts;
         }
 
+        private static readonly Random RandomInstance = new();
 
         public static bool PortInUse(int port)
         {
-            bool inUse = false;
             try
             {
-                IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
-                IPEndPoint[] ipEndPoints = ipProperties.GetActiveTcpListeners();
-
-                var lstIpEndPoints = new List<IPEndPoint>(IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners());
-
-                foreach (IPEndPoint endPoint in ipEndPoints)
-                {
-                    if (endPoint.Port == port)
-                    {
-                        inUse = true;
-                        break;
-                    }
-                }
+                var ipEndPoints = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
+                return Array.Exists(ipEndPoints, endPoint => endPoint.Port == port);
             }
-            catch 
+            catch
             {
+                return false;
             }
-            return inUse;
         }
 
         public static int GetFreePort(int defaultPort = 9090)
