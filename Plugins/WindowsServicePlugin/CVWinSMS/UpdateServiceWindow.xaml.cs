@@ -20,7 +20,6 @@ namespace WindowsServicePlugin.CVWinSMS
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
         private int _StepIndex = 1;
 
-
     }
 
 
@@ -36,7 +35,7 @@ namespace WindowsServicePlugin.CVWinSMS
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = UpdateServiceControl.
+
         }
     }
 }
