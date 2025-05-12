@@ -23,19 +23,19 @@ namespace ColorVision.UI.Shell
                 {
                     Name = "TrayIconShow",
                     Description = "TrayIconShow",
-                    Order = 19,
+                    Order = 99,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsShowTrayIcon),
-                    Source = this,
+                    Source = Instance,
                 },
                 new ConfigSettingMetadata()
                 {
                     Name = "TrayIconContentUseWPF",
                     Description = "TrayIconContentUseWPF",
-                    Order = 20,
+                    Order = 99,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsUseWPFContextMenu),
-                    Source = this,
+                    Source = Instance,
                 },
             };
         }
@@ -54,12 +54,20 @@ namespace ColorVision.UI.Shell
 
         public TrayIconManager()
         {
+            Initialized();
+            TrayIconConfig.Instance.PropertyChanged += (s, e) => Initialized();
+        }
+
+        public void Initialized()
+        {
+            _notifyIcon?.Dispose();
             if (TrayIconConfig.Instance.IsShowTrayIcon)
             {
                 InitializeNotifyIcon();
                 InitializeContextMenu();
             }
         }
+
 
         private void InitializeNotifyIcon()
         {
@@ -72,7 +80,6 @@ namespace ColorVision.UI.Shell
 
             if (TrayIconConfig.Instance.IsUseWPFContextMenu)
             {
-                //使用wpf 的ContextMenu
                 _notifyIcon.MouseUp += NotifyIcon_MouseUp;
             }
             else

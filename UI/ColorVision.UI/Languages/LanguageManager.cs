@@ -104,6 +104,8 @@ namespace ColorVision.UI.Languages
                 if (MessageBox.Show(Properties.Resources.LanguageResartSign, DefalutProcessName, MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                 {
                     Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(lang);
+                    LanguageConfig.Instance.UICulture = lang;
+                    ConfigService.Instance.SaveConfigs();
 
                     Process.Start(Application.ResourceAssembly.Location.Replace(".dll",".exe"),"-r");
 

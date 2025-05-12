@@ -1,6 +1,11 @@
 ﻿using System.Windows.Controls;
 namespace ColorVision.UI
 {
+    public static class ConfigSettingConstants
+    {
+        public const string Universal  = "Universal";
+    }
+
     public class ConfigSettingMetadata
     {
         public string Name { get; set; }
@@ -13,7 +18,7 @@ namespace ColorVision.UI
         /// </summary>
         public int Order { get; set; } = 999;
 
-        public string Group { get; set; } = "Deafult";
+        public string Group { get; set; } = ConfigSettingConstants.Universal;
 
         public ConfigSettingType Type { get; set; }
         /// <summary>

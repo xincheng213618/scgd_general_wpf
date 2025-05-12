@@ -41,8 +41,8 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
             return new List<ConfigSettingMetadata> {
                 new ConfigSettingMetadata
                 {
-                    Name = "BlackMuraConfig",
-                    Description = "BlackMuraConfig",
+                    Name = "BlackMura",
+                    Description = "BlackMura",
                     Order = 8,
                     Type = ConfigSettingType.Class,
                     BindingName =nameof(LvMaxScale),

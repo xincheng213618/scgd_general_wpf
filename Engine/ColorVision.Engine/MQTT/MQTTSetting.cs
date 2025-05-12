@@ -22,6 +22,7 @@ namespace ColorVision.Engine.MQTT
                     Description = "启用MQTT",
                     Order =1,
                     Type = ConfigSettingType.Bool,
+                    Group ="Engine",
                     BindingName = nameof(MQTTSetting.IsUseMQTT),
                     Source = MQTTSetting.Instance
                 },
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.MQTT
                 {
                     Name = "MQTT超时",
                     Description = "超时时间",
+                    Group ="Engine",
                     Order =1,
                     Type = ConfigSettingType.Text,
                     BindingName = nameof(MQTTSetting.DefaultTimeout),
