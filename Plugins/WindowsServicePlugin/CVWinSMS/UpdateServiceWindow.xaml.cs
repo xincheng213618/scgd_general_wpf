@@ -1,18 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using HandyControl.Controls;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace WindowsServicePlugin.CVWinSMS
 {
@@ -24,27 +11,20 @@ namespace WindowsServicePlugin.CVWinSMS
         /// <summary>
         ///     下一步
         /// </summary>
-        public RelayCommand<Panel> NextCmd => new RelayCommand(Next);
+        public RelayCommand NextCmd => new RelayCommand(a=> Next());
 
         /// <summary>
         ///     上一步
         /// </summary>
-        public RelayCommand<Panel> PrevCmd => new RelayCommand(Prev);
+        public RelayCommand PrevCmd => new RelayCommand(a => Next());
 
-        private void Next(Panel panel)
+        private void Next()
         {
-            foreach (var stepBar in panel.Children.OfType<StepBar>())
-            {
-                stepBar.Next();
-            }
+
         }
 
-        private void Prev(Panel panel)
+        private void Prev()
         {
-            foreach (var stepBar in panel.Children.OfType<StepBar>())
-            {
-                stepBar.Prev();
-            }
         }
 
 

@@ -110,24 +110,6 @@ namespace ColorVision.Engine.MySql
         }
 
         private bool IsRun { get; set; }
-        private void BackupDatabase()
-        {
-            if (IsRun)
-            {
-                MessageBox.Show("正在执行备份程序");
-                return;
-            }
-            Task.Run(() =>
-            {
-                IsRun = true;
-                BackupMysql();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
-                });
-                IsRun = false;
-            });
-        }
 
         private void BackupResources()
         {
