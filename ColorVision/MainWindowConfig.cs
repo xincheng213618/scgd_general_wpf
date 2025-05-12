@@ -42,14 +42,11 @@ namespace ColorVision
 
         public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
             {
+                if (value != Tool.IsWindows11ContextMenu()) return;
                 if (value)
-                {
                     Tool.SwitchToWindows10ContextMenu();
-                }
                 else
-                {
                     Tool.SwitchToWindows11ContextMenu();
-                }
                 NotifyPropertyChanged(nameof(IsWindows10ContextMenu));
             } 
         }
