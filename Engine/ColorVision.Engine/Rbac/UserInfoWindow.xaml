@@ -12,6 +12,7 @@
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,10">
@@ -24,19 +25,10 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Avatar with Default Image -->
-            <Border Width="150" Height="150" Margin="0,0,20,0">
-                <hc:Gravatar Grid.Column="1" Id="{Binding UserModel.UserName}" Height="180" Width="180" Margin="10"/>
-            </Border>
-
-            <!-- User Details -->
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{Binding UserModel.UserName}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                <TextBlock Text="{Binding UserDetailModel.Company}" Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding UserDetailModel.Gender}" Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding UserDetailModel.PermissionMode}" Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding UserDetailModel.Remark}" Margin="0,0,0,5"/>
+            
+            <StackPanel  Grid.Column="1" Margin="30" Orientation="Horizontal">
+                <hc:Gravatar Grid.Column="0" Id="{Binding UserModel.UserName}"/>
+                <TextBlock Margin="5" Text="{Binding UserModel.UserName}"/>
             </StackPanel>
         </Grid>
     </Grid>

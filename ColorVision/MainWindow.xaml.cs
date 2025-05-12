@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Rbac;
 using ColorVision.FloatingBall;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -26,6 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -77,7 +77,7 @@ namespace ColorVision
         /// Interaction logic for MainWindow.xaml
         /// </summary>
         /// 
-        public partial class MainWindow : Window
+    public partial class MainWindow : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
@@ -103,6 +103,7 @@ namespace ColorVision
             this.SizeChanged += (s, e) =>
             {
                 SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
+                RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
             };
 
             this.DataContext = Config;
@@ -161,7 +162,36 @@ namespace ColorVision
             var command = new RoutedCommand();
             command.InputGestures.Add(gesture);
             CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
+            InitRightMenuItemPanel();
         }
+
+        private void InitRightMenuItemPanel()
+        {
+            RightMenuItemPanel.Children.Clear();
+            var allSettings = new List<MenuItemMetadata>();
+
+            foreach (var item in AssemblyHandler.LoadImplementations<IRightMenuItemProvider>())
+            {
+                allSettings.AddRange(item.GetMenuItems());
+            }
+
+            foreach (var item in allSettings)
+            {
+                Button button = new Button
+                {
+                    Background = Brushes.Transparent,
+                    BorderThickness = new Thickness(0),
+                    Width = 20,
+                    Padding = new Thickness(0),
+                    Margin = new Thickness(0, 0, 5, 0)
+                };
+                button.Content = item.Icon;
+                button.Command = item.Command;
+                RightMenuItemPanel.Children.Add(button);
+            }
+        }
+
+
         private void FocusSearchBox(object sender, ExecutedRoutedEventArgs e)
         {
             Searchbox.Focus();
@@ -319,6 +349,7 @@ namespace ColorVision
                     }
                 }
             }
+
             // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
             var sortedSettings = allSettings
                 .GroupBy(setting => setting.Type)
@@ -437,12 +468,5 @@ namespace ColorVision
                 filteredResults[ListView1.SelectedIndex].Command?.Execute(this);
             }
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-           new UserInfoWindow().ShowDialog();
-        }
-
-
     }
 }
