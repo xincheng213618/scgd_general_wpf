@@ -1,32 +1,20 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace WindowsServicePlugin.CVWinSMS
 {
-    public class UpdateServiceControl : ViewModelBase
+    public class UpdateService : MenuItemBase
     {
-        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
-        private int _StepIndex = 1;
+        public override string OwnerGuid => "ServiceLog";
+        public override string Header => "更新服务";
+        public override int Order => 3;
 
-        /// <summary>
-        ///     下一步
-        /// </summary>
-        public RelayCommand NextCmd => new RelayCommand(a=> Next());
 
-        /// <summary>
-        ///     上一步
-        /// </summary>
-        public RelayCommand PrevCmd => new RelayCommand(a => Next());
-
-        private void Next()
+        public override void Execute()
         {
-
+            UpdateServiceWindow updateServiceWindow = new UpdateServiceWindow();
+            updateServiceWindow.Show();
         }
-
-        private void Prev()
-        {
-        }
-
 
     }
 
@@ -43,7 +31,7 @@ namespace WindowsServicePlugin.CVWinSMS
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-
+            this.DataContext = UpdateService1.Instance;
         }
     }
 }

@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:WindowsServicePlugin.CVWinSMS"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:UpdateServiceControl}"
+        d:DataContext="{d:DesignInstance local:UpdateService1}"
         Title="服务升级窗口" Height="450" Width="800" Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
@@ -22,7 +22,24 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
-        <Grid Margin="32" Name="PanelMain">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="当前服务版本："/>
+                <TextBlock Text="{Binding CurrentVerision}"/>
+                <TextBlock Text="可更新版本："/>
+                <TextBlock Text="{Binding Verision}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="新版本:"/>
+                <TextBlock Text="{Binding DownloadPath}"/>
+            </StackPanel>
+        </StackPanel>
+        
+        <Grid Grid.Row="1" Margin="32" Name="PanelMain">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -34,8 +51,8 @@
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
             <hc:StepBar Grid.ColumnSpan="2" StepIndex="{Binding StepIndex}">
-                <hc:StepBarItem Content="备份数据库"/>
                 <hc:StepBarItem Content="下载新版的服务"/>
+                <hc:StepBarItem Content="备份数据库"/>
                 <hc:StepBarItem Content="安装或者是更新服务"/>
                 <hc:StepBarItem Content="还原备份的数据库"/>
                 <hc:StepBarItem Content="完成"/>

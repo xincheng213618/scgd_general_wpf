@@ -1,43 +1,22 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using WindowsServicePlugin.CVWinSMS;
 
-namespace WindowsServicePlugin.Serv
+
+namespace WindowsServicePlugin.CVWinSMS
 {
-
-    public class UpdateService : MenuItemBase
+    public class UpdateService1 : ViewModelBase
     {
-        public override string OwnerGuid => "ServiceLog";
-        public override string Header => "更新服务";
-        public override int Order => 1;
-
-
-        public override void Execute()
-        {
-            UpdateServiceWindow updateServiceWindow = new UpdateServiceWindow();
-            updateServiceWindow.Show();
-        }
-
-    }
-
-
-    public class InstallService :  WizardStepBase, IMainWindowInitialized
-    {
-        public override int Order => 99;
-        public override string Header => "下载服务";
-
-        public override string Description => "下载最近的服务压缩包，安装服务时请先解压到需要安装的位置在下载服务管理工具，配置路径到该位置";
-
+        public static UpdateService1 Instance { get; set; } = new UpdateService1();
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
-        public InstallService()
+
+        public UpdateService1()
         {
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "下载最新的服务压缩包";
@@ -45,15 +24,32 @@ namespace WindowsServicePlugin.Serv
             {
                 
             }
+            Task.Run(Initialize);
         }
+        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
+        private int _StepIndex = 0;
+
 
         public static string LatestReleaseUrl => "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/LATEST_RELEASE";
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/CVWindowsService%5B2.7.0.402%5D-0402.zip";
+        private string url;
 
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
+        public string DownloadPath { get => _downloadPath; set { _downloadPath = value; NotifyPropertyChanged(); } }
 
-        public Version CurrentVerision { get; set; } = new Version();
+        private string _downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\";
+
+        public Version CurrentVerision { get => _CurrentVerision; set { _CurrentVerision = value; NotifyPropertyChanged(); } }
+        private Version _CurrentVerision = new Version();
+
+        public Version Verision { get => _Verision; set { _Verision = value; NotifyPropertyChanged(); } }
+        private Version _Verision = new Version();
+
+        public string RegistrationCenterService { get => _RegistrationCenterService; set { _RegistrationCenterService = value; NotifyPropertyChanged(); } }
+        private string _RegistrationCenterService = string.Empty;
+
+        public string? InstallPath { get => _InstallPath; set { _InstallPath = value; NotifyPropertyChanged(); } }
+        private string? _InstallPath = string.Empty;
+
 
         bool FindPath(string serviceName)
         {
@@ -68,11 +64,12 @@ namespace WindowsServicePlugin.Serv
                         str = str.Trim('"');
 
                         // 处理环境变量
-                        string expandedPath = Environment.ExpandEnvironmentVariables(str);
+                        RegistrationCenterService = Environment.ExpandEnvironmentVariables(str);
+                        InstallPath = Directory.GetParent(Directory.GetParent(RegistrationCenterService)?.FullName)?.FullName;
 
-                        if (File.Exists(expandedPath))
+                        if (File.Exists(RegistrationCenterService))
                         {
-                            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(expandedPath);
+                            FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(RegistrationCenterService);
                             CurrentVerision = new Version(versionInfo.FileVersion);
                             return true;
                         }
@@ -83,38 +80,33 @@ namespace WindowsServicePlugin.Serv
         }
         public async Task Initialize()
         {
-            // 如果是调试模式，不进行更新检测
-            //if (Debugger.IsAttached) return;
+            Execute();
 
-            if (CVWinSMSConfig.Instance.IsAutoUpdate)
-            {
-                Execute();
-            }
         }
 
 
 
-        public override async void Execute()
+        public async void Execute()
         {
-            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
-            if (version > CurrentVerision)
+            Verision = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
+            if (Verision > CurrentVerision)
             {
-                string filepath = $"CVWindowsService[{version}]-{version.Revision:D4}.zip";
+                string filepath = $"CVWindowsService[{Verision}]-{Verision.Revision:D4}.zip";
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     if (MessageBox.Show(Application.Current.GetActiveWindow(), $"服务{CurrentVerision}:找到新版本{filepath}，是否更新", $"{CurrentVerision}", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                     {
-                        downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{filepath}";
+                        DownloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{filepath}";
                         string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/CVWindowsService/{filepath}";
                         WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                        if (!File.Exists(downloadPath))
+                        if (!File.Exists(DownloadPath))
                         {
                             windowUpdate.Show();
                         }
                         Task.Run(async () =>
                         {
-                            if (!File.Exists(downloadPath))
+                            if (!File.Exists(DownloadPath))
                             {
                                 await DownloadFile.GetIsPassWorld();
                                 CancellationTokenSource _cancellationTokenSource = new();
@@ -122,19 +114,18 @@ namespace WindowsServicePlugin.Serv
                                 {
                                     windowUpdate.Show();
                                 });
-                                await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
+                                await DownloadFile.Download(url, DownloadPath, _cancellationTokenSource.Token);
                             }
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 windowUpdate.Close();
                             });
-
+                            StepIndex = 1;
                             try
                             {
-                                PlatformHelper.OpenFolderAndSelectFile(downloadPath);
+                                PlatformHelper.OpenFolderAndSelectFile(DownloadPath);
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), "更新前需要先备份数据库","3.0更新助手");
                                     string sql = "ALTER TABLE `t_scgd_algorithm_result_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `img_file_type`;";
                                     MySqlControl.GetInstance().ExecuteNonQuery(sql);
                                     string sql1 = "ALTER TABLE `t_scgd_sys_dictionary_mod_master`\r\nADD COLUMN `version` varchar(16) DEFAULT NULL COMMENT '版本号' AFTER `cfg_json`;";
@@ -145,8 +136,18 @@ namespace WindowsServicePlugin.Serv
                                         mySqlLocalServices.BackupMysqlResource();
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
-                                            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库备份完成，接下来请点击更新按钮");
+                                            StepIndex = 2;
+                                            Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService");
+                                            if (Directory.Exists(InstallPath))
+                                            {
+                                                if (MessageBox.Show(Application.Current.GetActiveWindow(), "全新安装需要源目录不存在文件，是否删除安装目录下的文件", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                                                {
+                                                    Directory.Delete(InstallPath, true);
+                                                }
+                                            }
+                                            ColorVision.Common.NativeMethods.Clipboard.SetText(DownloadPath);
                                             new InstallTool().Execute();
+                                            StepIndex = 3;
                                             MessageBox.Show(Application.Current.GetActiveWindow(), "更新完成后请点击恢复数据库");
                                             new ExportMySqlTool().Execute();
                                         });
@@ -160,7 +161,7 @@ namespace WindowsServicePlugin.Serv
                             catch (Exception ex)
                             {
                                 MessageBox.Show(ex.ToString());
-                                File.Delete(downloadPath);
+                                File.Delete(DownloadPath);
                             }
                         });
 
