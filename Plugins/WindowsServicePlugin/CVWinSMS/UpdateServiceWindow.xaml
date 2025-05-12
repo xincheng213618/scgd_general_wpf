@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:UpdateServiceControl}"
-        Title="更新装口" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="服务升级窗口" Height="450" Width="800" Initialized="Window_Initialized">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

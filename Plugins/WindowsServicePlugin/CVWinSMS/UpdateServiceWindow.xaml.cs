@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using HandyControl.Controls;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,33 @@ namespace WindowsServicePlugin.CVWinSMS
     {
         public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
         private int _StepIndex = 1;
+
+        /// <summary>
+        ///     下一步
+        /// </summary>
+        public RelayCommand<Panel> NextCmd => new RelayCommand(Next);
+
+        /// <summary>
+        ///     上一步
+        /// </summary>
+        public RelayCommand<Panel> PrevCmd => new RelayCommand(Prev);
+
+        private void Next(Panel panel)
+        {
+            foreach (var stepBar in panel.Children.OfType<StepBar>())
+            {
+                stepBar.Next();
+            }
+        }
+
+        private void Prev(Panel panel)
+        {
+            foreach (var stepBar in panel.Children.OfType<StepBar>())
+            {
+                stepBar.Prev();
+            }
+        }
+
 
     }
 

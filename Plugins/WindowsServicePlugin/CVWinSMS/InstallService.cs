@@ -24,8 +24,6 @@ namespace WindowsServicePlugin.Serv
         {
             UpdateServiceWindow updateServiceWindow = new UpdateServiceWindow();
             updateServiceWindow.Show();
-
-
         }
 
     }
