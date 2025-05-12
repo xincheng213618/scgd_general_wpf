@@ -32,6 +32,8 @@ namespace ColorVision
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
+
+        [JsonIgnore]
         public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
 
 
@@ -39,7 +41,7 @@ namespace ColorVision
         private int _LeftTabControlSelectedIndex = 1;
 
 
-
+        [JsonIgnore]
         public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
             {
                 if (value != Tool.IsWindows11ContextMenu()) return;
@@ -97,7 +99,7 @@ namespace ColorVision
     public class ExportMenuViewMax :MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "全屏";
+        public override string Header => ColorVision.ImageEditor.Properties.Resources.FullScreen;
 
         public override void Execute()
         {

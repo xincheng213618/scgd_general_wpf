@@ -4,6 +4,7 @@ namespace ColorVision.UI
     public static class ConfigSettingConstants
     {
         public const string Universal  = "Universal";
+
     }
 
     public class ConfigSettingMetadata
