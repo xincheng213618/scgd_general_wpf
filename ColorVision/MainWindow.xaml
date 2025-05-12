@@ -19,9 +19,12 @@
         </Grid.RowDefinitions>
         <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" WindowChrome.IsHitTestVisibleInChrome="True" Background="{DynamicResource GlobalBackground}" >
             <DockPanel>
-                <Grid DockPanel.Dock="Right" Margin="0,0,10,0">
-                    <Image Source="{DynamicResource DrawingImageUser}"  Width="20"/>
-                    <Button Background="Transparent" BorderThickness="0"  Width="20"/>
+                <Grid  DockPanel.Dock="Right" Margin="0,0,5,0">
+                    <StackPanel x:Name="RightMenuItemPanel" Orientation="Horizontal">
+                        <Button Background="Transparent" BorderThickness="0"  Width="20" Padding="0" Margin="0,0,5,0">
+                            <Image Source="{DynamicResource DrawingImageUser}" Width="20"/>
+                        </Button>
+                    </StackPanel>
                 </Grid>
                 <Menu x:Name="Menu1" Background="Transparent" HorizontalAlignment="Left" Padding="2"/>
                 <Grid x:Name="SearchGrid" Margin="10,1" Width="210" HorizontalAlignment="Left" VerticalAlignment="Center" >
