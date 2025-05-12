@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Rbac
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             MenuItemMetadata menuItemMetadata = new MenuItemMetadata();
-            menuItemMetadata.Command = new RelayCommand(a => new UserInfoWindow().ShowDialog());
+            menuItemMetadata.Command = new RelayCommand(a => new UserInfoWindow() {  Owner =Application.Current.GetActiveWindow(),WindowStartupLocation =WindowStartupLocation.CenterOwner}.ShowDialog() );
             menuItemMetadata.Icon = new Image()
             {
                 Source = (ImageSource)Application.Current.Resources["DrawingImageUser"],

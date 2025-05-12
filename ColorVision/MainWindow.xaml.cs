@@ -103,6 +103,7 @@ namespace ColorVision
             this.SizeChanged += (s, e) =>
             {
                 SearchGrid.Visibility = this.ActualWidth < 700 ? Visibility.Collapsed : Visibility.Visible;
+                RightMenuItemPanel.Visibility = this.ActualWidth < Menu1.ActualWidth + RightMenuItemPanel.ActualWidth + 100 ? Visibility.Collapsed : Visibility.Visible;
             };
 
             this.DataContext = Config;
