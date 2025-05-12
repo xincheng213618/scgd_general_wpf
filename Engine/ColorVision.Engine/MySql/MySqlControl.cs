@@ -124,38 +124,6 @@ namespace ColorVision.Engine.MySql
             return tableNames;
         }
 
-        public List<string> GetFilteredTableNames()
-        {
-            List<string> tableNames = new List<string>();
-
-            string connectionString = $"Server={MySqlSetting.Instance.MySqlConfig.Host};Database={MySqlSetting.Instance.MySqlConfig.Database};User ID={MySqlSetting.Instance.MySqlConfig.UserName};Password={MySqlSetting.Instance.MySqlConfig.UserPwd};";
-
-            string query = @"
-            SELECT TABLE_NAME 
-            FROM INFORMATION_SCHEMA.TABLES 
-            WHERE TABLE_SCHEMA = @databaseName AND TABLE_TYPE = 'BASE TABLE'";
-
-            using (MySqlCommand command = new MySqlCommand(query, MySqlConnection))
-            {
-                command.Parameters.AddWithValue("@databaseName", MySqlSetting.Instance.MySqlConfig.Database);
-
-                using (MySqlDataReader reader = command.ExecuteReader())
-                {
-                    while (reader.Read())
-                    {
-                        string tableName = reader.GetString(0);
-                        tableNames.Add(tableName);
-                    }
-                }
-            }
-            // 移除包含特定前缀的表
-            tableNames = tableNames
-                    .Where(name => !name.Contains("t_scgd_sys_config") && !name.Contains("t_scgd_rc"))
-                    .ToList();
-
-            return tableNames;
-        }
-
         public List<string> GetFilteredResourceTableNames()
         {
             List<string> tableNames = new List<string>();
@@ -180,7 +148,7 @@ namespace ColorVision.Engine.MySql
                     }
                 }
             }
-            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_dictionary", "t_scgd_algorithm_result", "t_scgd_sys_version" };
+            var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_dictionary", "t_scgd_sys_version" };
 
             tableNames = tableNames
                 .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix)))
