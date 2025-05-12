@@ -8,9 +8,10 @@
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:UserManager}"
-        Title="用户" Height="450" Width="500" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="用户" Height="350" Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
@@ -46,20 +47,11 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <StackPanel Margin="30">
+            
+            <StackPanel  Grid.Column="1" Margin="30" Orientation="Horizontal">
+                <hc:Gravatar Grid.Column="0" Id="{Binding UserModel.UserName}"/>
                 <TextBlock Margin="5" Text="{Binding UserModel.UserName}"/>
-                <TextBlock Margin="5" Text="{Binding UserDetailModel.Company}"/>
-                <TextBlock Margin="5" Text="{Binding UserDetailModel.Gender}"/>
-                <TextBlock Margin="5" Text="{Binding UserDetailModel.PermissionMode}"/>
-                <TextBlock Margin="5" Text="{Binding UserDetailModel.Remark}"/>
-
             </StackPanel>
-            <hc:Gravatar Grid.Column="1" Height="180" Width="180" Margin="10"/>
-
         </Grid>
-        <Border Grid.Row="2" Height="40" Margin="20">
-            <Button  Content="退出登录" Click="Button_Click_1" />
-        </Border>
-
     </Grid>
 </Window>
