@@ -40,7 +40,7 @@
                 <Button  Content="自动对齐" Click="AutoAlignment_Click" Width="70"/>
             </StackPanel>
             <Grid Grid.Column="2">
-                <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding STNodeEditorHelper.CanvasScale}" Maximum="3" Minimum="0.45" HorizontalAlignment="Right"/>
+                <Slider x:Name="ZoomSlider"  Width="200" Value="{Binding STNodeEditorHelper.CanvasScale}" Maximum="5" Minimum="0.2"  HorizontalAlignment="Right"/>
             </Grid>
         </Grid>
 
