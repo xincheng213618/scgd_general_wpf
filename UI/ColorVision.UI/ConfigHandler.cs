@@ -49,6 +49,24 @@ namespace ColorVision.UI
 
         public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
         public List<string> RemoveAssemblyNames { get; set; } = new List<string>();
+
+        public static List<T> LoadImplementations<T>() where T : class
+        {
+            var instances = new List<T>();
+
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is T instance)
+                    {
+                        instances.Add(instance);
+                    }
+                }
+            }
+
+            return instances;
+        }
     }
 
     public class ConfigHandler: IConfigService

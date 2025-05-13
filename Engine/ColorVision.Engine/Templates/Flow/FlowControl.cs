@@ -37,9 +37,6 @@ namespace ColorVision.Engine.Templates.Flow
     public class FlowControl : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
-
-        string svrName = "FlowControl";
-        string devName = "DEV01";
         private MQTTControl MQTTControl;
         private FlowEngineControl flowEngine;
 
@@ -85,20 +82,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Stop()
         {
-            if (flowEngine == null)
-            {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Stop", SerialNumber, string.Empty);
-
-                string Msg = JsonConvert.SerializeObject(baseEvent);
-                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
-
-            }
-            else
-            {
-                ClearEventHandler();
-                flowEngine.StopNode(SerialNumber);
-            }
+            ClearEventHandler();
+            flowEngine.StopNode(SerialNumber);
             IsFlowRun = false;
             FlowConfig.Instance.FlowRun = false;
         }
@@ -108,22 +93,11 @@ namespace ColorVision.Engine.Templates.Flow
             IsFlowRun = true;
             FlowConfig.Instance.FlowRun = true;
             SerialNumber = sn;
-            if (flowEngine == null)
-            {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Start", sn, string.Empty);
 
-                string Msg = JsonConvert.SerializeObject(baseEvent);
-                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-                Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
-
-            }
-            else
-            {
-                var tol = MqttRCService.GetInstance().ServiceTokens;
-                flowEngine.StartNode(sn, tol);
-                flowEngine.Finished -= Finished;
-                flowEngine.Finished += Finished;
-            }
+            var tol = MqttRCService.GetInstance().ServiceTokens;
+            flowEngine.Finished -= Finished;
+            flowEngine.Finished += Finished;
+            flowEngine.StartNode(sn, tol);
         }
         public void Finished(object sender, FlowEngineEventArgs e)
         {

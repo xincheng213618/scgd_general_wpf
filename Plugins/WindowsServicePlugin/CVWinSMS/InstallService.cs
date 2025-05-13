@@ -2,14 +2,35 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using WindowsServicePlugin.CVWinSMS;
 
 namespace WindowsServicePlugin.Serv
 {
+
+    public class UpdateService : MenuItemBase
+    {
+        public override string OwnerGuid => "ServiceLog";
+        public override string Header => "更新服务";
+        public override int Order => 1;
+
+
+        public override void Execute()
+        {
+            UpdateServiceWindow updateServiceWindow = new UpdateServiceWindow();
+            updateServiceWindow.Show();
+
+
+        }
+
+    }
+
+
     public class InstallService :  WizardStepBase, IMainWindowInitialized
     {
         public override int Order => 99;

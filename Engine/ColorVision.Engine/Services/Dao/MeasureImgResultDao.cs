@@ -52,27 +52,6 @@ namespace ColorVision.Engine.Services.Dao
 
         }
 
-        public override MeasureImgResultModel GetModelFromDataRow(DataRow item)
-        {
-            MeasureImgResultModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                BatchId = item.Field<int?>("batch_id") ?? -1,
-                RawFile = item.Field<string?>("raw_file"),
-                FileType = item.Field<sbyte?>("file_type"),
-                FileData = item.Field<string?>("file_data"),
-                ResultCode = item.Field<int>("result_code"),
-                TotalTime = item.Field<int>("total_time"),
-                ResultMsg = item.Field<string?>("result"),
-                ReqParams = item.Field<string?>("params"),
-                ImgFrameInfo = item.Field<string?>("file_data"),
-                FileUrl = item.Field<string?>("file_url"),
-                DeviceCode = item.Field<string?>("device_code"),
-                CreateDate = item.Field<System.DateTime?>("create_date"),
-            };
-            return model;
-        }
-
         public List<MeasureImgResultModel> GetAllDevice(string devcode,int limit) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } }, limit);
 
 

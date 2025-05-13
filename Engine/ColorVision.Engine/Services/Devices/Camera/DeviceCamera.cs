@@ -305,6 +305,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
+            this.PhyCamera?.ReleaseDeviceCamera();
+
             DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);

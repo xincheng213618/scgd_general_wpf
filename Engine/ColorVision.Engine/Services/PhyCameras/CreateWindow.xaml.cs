@@ -3,6 +3,7 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.UI;
 using cvColorVision;
@@ -179,8 +180,14 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
-                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, 101, UserConfig.Instance.TenantId);
+            {
+                sysResourceModel = new SysResourceModel();
+                sysResourceModel.Name = CreateConfig.CameraID;
+                sysResourceModel.Code = CreateConfig.Code;
+                sysResourceModel.Type = 101;
+                sysResourceModel.TenantId = UserConfig.Instance.TenantId;
 
+            }
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
             int ret = SysResourceDao.Instance.Save(sysResourceModel);
             if (ret < 0)

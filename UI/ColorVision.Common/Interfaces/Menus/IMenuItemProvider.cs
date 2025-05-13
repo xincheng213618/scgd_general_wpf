@@ -7,4 +7,9 @@ namespace ColorVision.UI.Menus
         IEnumerable<MenuItemMetadata> GetMenuItems();
     }
 
+    public interface IRightMenuItemProvider
+    {
+        IEnumerable<MenuItemMetadata> GetMenuItems();
+    }
+
 }

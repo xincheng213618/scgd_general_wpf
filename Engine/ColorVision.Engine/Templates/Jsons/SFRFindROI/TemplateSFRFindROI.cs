@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
         {
             Title = "SFR寻边模板管理";
             Code = "ARVR.SFR.FindROI";
+            TemplateDicId = 36;
             TemplateParams = Params;
             IsUserControl = true;
         }

@@ -105,7 +105,6 @@ namespace ColorVision.Engine.Services
             DisPlayManager.GetInstance().RestoreControl();
         }
 
-        private Dictionary<string, List<MQTTServiceBase>> svrDevices = new();
 
         public void LoadServices()
         {
@@ -124,26 +123,13 @@ namespace ColorVision.Engine.Services
 
 
             TerminalServices.Clear();
-            svrDevices.Clear();
 
-            List<SysResourceModel> sysResourceModelServices = VSysResourceDao.Instance.GetServices(UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {
-                var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
-                foreach (var sysResourceModel in sysResourceModels)
+                List<SysResourceModel> sysResourceModelServices = SysResourceDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "type",(int)typeService1.ServiceTypes },{ "tenant_id", UserConfig.TenantId }, { "is_delete", 0} });
+                foreach (var sysResourceModel in sysResourceModelServices)
                 {
                     TerminalService terminalService = new TerminalService(sysResourceModel);
-                    string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
-                   
-                    if (svrDevices.TryGetValue(svrKey, out var list ))
-                    {
-                        list.Clear();
-                    }
-                    else
-                    {
-                        svrDevices.Add(svrKey, new List<MQTTServiceBase>());
-                    }
-
                     typeService1.AddChild(terminalService);
                     TerminalServices.Add(terminalService);
                 }
@@ -205,19 +191,7 @@ namespace ColorVision.Engine.Services
                     {
                         terminalService.AddChild(deviceService);
                         DeviceServices.Add(deviceService);
-
-                        MQTTServiceBase svrObj = deviceService.GetMQTTService();
-
-                        string svrKey = GetServiceKey(terminalService.SysResourceModel.TypeCode ?? string.Empty, terminalService.SysResourceModel.Code ?? string.Empty);
-                        if (svrObj != null && svrDevices.TryGetValue(svrKey, out var list))
-                        {
-                            svrObj.ServiceName = terminalService.SysResourceModel.Code ?? string.Empty;
-                            list.Add(svrObj);
-                        }
                     }
-
-
-
                 }
             }
 

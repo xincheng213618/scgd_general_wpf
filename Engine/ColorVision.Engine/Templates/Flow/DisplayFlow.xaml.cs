@@ -97,7 +97,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private Timer timer;
         Stopwatch stopwatch = new Stopwatch();
-
         IPendingHandler handler { get; set; }
 
         public DisplayFlow()
