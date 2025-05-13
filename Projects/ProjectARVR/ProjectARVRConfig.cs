@@ -18,10 +18,7 @@ namespace ProjectARVR
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
         public RelayCommand OpenLogCommand { get; set; }
-        public RelayCommand OpenModbusCommand { get; set; }
         public RelayCommand OpenConfigCommand { get; set; }
-        public RelayCommand OpenSocketConfigCommand { get; set; }
-
         public RelayCommand OpenChangeLogCommand { get; set; }
         public RelayCommand OpenReadMeCommand { get; set; }
 
@@ -35,13 +32,6 @@ namespace ProjectARVR
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
-            OpenSocketConfigCommand = new RelayCommand(a => OepnSocketConfig());
-        }
-
-        public static void OepnSocketConfig()
-        {
-            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SocketConfig.Instance) { Owner = Application.Current.GetActiveWindow() };
-            propertyEditorWindow.Show();
         }
 
 

@@ -40,14 +40,6 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
-            SocketControl.GetInstance().StartServer();
-            SocketControl.GetInstance().StatusChanged += ServicesChanged;
-            this.Closed += (s, e) =>
-            {
-                SocketControl.GetInstance().StopServer();
-                SocketControl.GetInstance().StatusChanged -= ServicesChanged;
-
-            };
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
