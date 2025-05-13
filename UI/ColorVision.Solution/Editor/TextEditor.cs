@@ -1,4 +1,5 @@
 ﻿using ColorVision.UI;
+using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows.Controls;
 
@@ -13,9 +14,7 @@ namespace ColorVision.Solution.Editor
         {
             if (File.Exists(FilePath))
             {
-                AvalonEditWindow window1 = new AvalonEditWindow(FilePath);
-                window1.Show();
-                return new Control();
+                return new AvalonEditControll(FilePath);
             }
             return null;
         }
