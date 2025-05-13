@@ -108,8 +108,8 @@
                 </Grid>
             </Border>
             <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <Grid x:Name="ViewGrid" Background="{StaticResource TransparentGridBrush}"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                <Grid x:Name="SolutionGrid" Background="{StaticResource TransparentGridBrush}" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
             </Grid>
         </Grid>
         <StatusBar Grid.Row="2" Height="35" x:Name="StatusBarGrid" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"  Initialized="StatusBarGrid_Initialized" >

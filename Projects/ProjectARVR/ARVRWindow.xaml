@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:im="clr-namespace:ColorVision.ImageEditor;assembly=ColorVision.ImageEditor"
         xmlns:local="clr-namespace:ProjectARVR"
-        xmlns:properties ="clr-namespace:ProjectARVR.Properties"
+        xmlns:properties ="clr-namespace:ProjectARVR.Properties" xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRConfig}"
         Title="ARVR检测" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
@@ -170,8 +170,19 @@
                 </RichTextBox>
             </Grid>
         </Grid>
-        <StatusBar Grid.Row="2">
 
+        <Grid x:Name="DialogGrid" Grid.Row="1" Visibility="Collapsed"  >
+            <Border Background="{DynamicResource PrimaryTextBrush}" Opacity="0.2"/>
+            <Border CornerRadius="10" Background="{DynamicResource RegionBrush}" Height="247" Width="400">
+                <hc:SimplePanel>
+                    <TextBlock Style="{StaticResource TextBlockLargeBold}" Text="流程执行中"/>
+                    <Button Width="22" Height="22" Command="hc:ControlCommands.Close" Style="{StaticResource ButtonIcon}" Foreground="{DynamicResource PrimaryBrush}" hc:IconElement.Geometry="{StaticResource ErrorGeometry}" Padding="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0"/>
+                </hc:SimplePanel>
+            </Border>
+            
+        </Grid>
+        
+        <StatusBar Grid.Row="2">
             <StatusBarItem>
                 <Button Content="日志" Command="{Binding OpenLogCommand}"/>
             </StatusBarItem>
