@@ -84,7 +84,27 @@ namespace ProjectKB.Modbus
                         var master = factory.CreateMaster(client);
 
                         // Read register value
-                        ushort[] registers = await Task.Run(() => master.ReadHoldingRegisters(1, registerAddress, 1));
+                        // Read register value
+                        ushort[] registers = await Task.Run(() =>
+                        {
+                            ushort[] registers;
+                            try
+                            {
+                                registers = master.ReadHoldingRegisters(1, registerAddress, 1);
+                            }
+                            catch
+                            {
+                                registers = Array.Empty<ushort>();
+                            }
+                            return registers;
+                        });
+
+                        if (registers.Length == 0)
+                        {
+                            IsConnect = false;
+                            return IsConnect;
+                        }
+
                         ushort currentValue = registers[0];
                         log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
 
@@ -146,7 +166,25 @@ namespace ProjectKB.Modbus
                                     var master = factory.CreateMaster(client);
 
                                     // Read register value
-                                    ushort[] registers = await Task.Run(() => master.ReadHoldingRegisters(1, registerAddress, 1));
+                                    ushort[] registers = await Task.Run(() =>
+                                    {
+                                        ushort[] registers;
+                                        try
+                                        {
+                                            registers = master.ReadHoldingRegisters(1, registerAddress, 1);
+                                        }
+                                        catch
+                                        {
+                                            registers = Array.Empty<ushort>();
+                                        }
+                                        return registers;
+                                    });
+
+                                    if (registers.Length == 0)
+                                    {
+                                        IsConnect = false;
+                                    }
+
                                     ushort currentValue = registers[0];
                                     log.Debug($"{DateTime.Now} registerAddress{registerAddress}: currentValue:{currentValue}");
 
@@ -158,7 +196,6 @@ namespace ProjectKB.Modbus
                                             previousValue = currentValue;
                                         }
                                     });
-
                                     IsConnect = true;
                                 }
                             }

@@ -6,23 +6,24 @@ using System.Windows;
 
 namespace WindowsServicePlugin
 {
-    public class InstallWinrar : WizardStepBase
+
+    public partial class InstallEveryThing : WizardStepBase
     {
         public override int Order => 99;
-        public override string Header => "安装压缩软件";
+        public override string Header => "安装EveryThing";
 
         public DownloadFile DownloadFile { get; set; } = new DownloadFile();
 
-        public override string Description => "下载并安装Winrar7.0 作为默认的解压软件"; 
+        public override string Description => " Everything 1.4.1.1026";
 
-        public InstallWinrar()
+        public InstallEveryThing()
         {
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = "下载Winrar";
+            DownloadFile.DownloadTile = "下载 Everything 1.4.1.1026";
         }
 
-        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Winrar/winrar-x64-700sc.exe";
-        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\winrar-x64-700sc.exe";
+        private string url = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Tool/Everything/Everything-1.4.1.1026.x64-Setup.exe";
+        private string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + @"ColorVision\\Everything-1.4.1.1026.x64-Setup.exe";
 
         public override void Execute()
         {
@@ -70,9 +71,6 @@ namespace WindowsServicePlugin
                 }
             });
         }
-
     }
-
-
 
 }

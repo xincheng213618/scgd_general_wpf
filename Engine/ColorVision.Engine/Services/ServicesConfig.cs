@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Services
                 {
                     Name =   Properties.Resources.IsDefaultOpenService,
                     Description =  Properties.Resources.IsDefaultOpenService,
+                    Group ="Engine",
                     Order = 15,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(ServicesConfig.IsAutoConfig),
@@ -23,6 +24,7 @@ namespace ColorVision.Engine.Services
                 {
                     Name = Properties.Resources.IsRetorePlayControls,
                     Description = Properties.Resources.IsRetorePlayControls,
+                    Group ="Engine",
                     Order = 16,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(DisPlayManagerConfig.IsRetore),

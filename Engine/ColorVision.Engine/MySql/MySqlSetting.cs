@@ -19,6 +19,7 @@ namespace ColorVision.Engine.MySql
                             {
                                 Name = Properties.Resources.EnableDatabase,
                                 Description = Properties.Resources.EnableDatabase,
+                                Group ="Engine",
                                 Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
@@ -29,6 +30,7 @@ namespace ColorVision.Engine.MySql
                                 Name = "数据库超时重连检测",
                                 Description = "数据库超时重连检测",
                                 Order =1,
+                                Group ="Engine",
                                 Type = ConfigSettingType.Text,
                                 BindingName = nameof(MySqlSetting.ReConnectTime),
                                 Source = MySqlSetting.Instance

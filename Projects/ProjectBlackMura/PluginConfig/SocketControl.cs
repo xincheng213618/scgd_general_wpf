@@ -1,16 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.UI;
+﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI.SocketProtocol;
-using log4net;
-using ProjectARVR.PluginConfig;
-using System.ComponentModel;
-using System.Net;
+using ProjectBlackMura.PluginConfig;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 
-namespace ProjectARVR.Services
+namespace ProjectBlackMura.PluginConfig
 {
     public class FlowSocketMsgHandle : ISocketMsgHandle
     {
@@ -19,7 +14,7 @@ namespace ProjectARVR.Services
         public bool Handle(NetworkStream stream, string message)
         {
             var strings = message.Split(",");
-            if (strings.Length > 1 && strings[0] == "ProjectARVR")
+            if (strings.Length > 1 && strings[0] == "ProjectBlackMura")
             {
                 if (ProjectWindowInstance.WindowInstance != null)
                 {
@@ -45,7 +40,7 @@ namespace ProjectARVR.Services
                 }
                 else
                 {
-                    byte[] response = Encoding.ASCII.GetBytes($"ProjectARVR Wont Open");
+                    byte[] response = Encoding.ASCII.GetBytes($"ProjectBlackMuraWindow Wont Open");
                     stream.Write(response, 0, response.Length);
                     return true;
                 }

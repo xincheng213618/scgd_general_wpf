@@ -5,6 +5,7 @@ using ColorVision.Engine.Templates.Flow;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
+using HandyControl.Tools.Extension;
 using log4net;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
@@ -19,6 +20,7 @@ using System.Windows.Media;
 
 namespace ProjectARVR
 {
+
 
     public partial class ARVRWindow : Window,IDisposable
     {
@@ -40,14 +42,6 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
-            SocketControl.GetInstance().StartServer();
-            SocketControl.GetInstance().StatusChanged += ServicesChanged;
-            this.Closed += (s, e) =>
-            {
-                SocketControl.GetInstance().StopServer();
-                SocketControl.GetInstance().StatusChanged -= ServicesChanged;
-
-            };
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);

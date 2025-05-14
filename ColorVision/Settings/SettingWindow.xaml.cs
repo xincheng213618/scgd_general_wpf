@@ -47,6 +47,9 @@ namespace ColorVision.Settings
 
         public void LoadIConfigSetting()
         {
+            Dictionary<string,StackPanel> SettingStackPanels = new Dictionary<string, StackPanel>();
+            SettingStackPanels.Add(ConfigSettingConstants.Universal, UniversalStackPanel);
+
 
             void Add(ConfigSettingMetadata configSetting)
             {
@@ -59,7 +62,7 @@ namespace ColorVision.Settings
                     DockPanel.SetDock(toggleSwitch, Dock.Right);
                     dockPanel.Children.Add(toggleSwitch);
                     dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                    UniversalStackPanel.Children.Add(dockPanel);
+                    SettingStackPanels[configSetting.Group].Children.Add(dockPanel);
                 }
                 if (configSetting.Type == ConfigSettingType.ComboBox)
                 {
@@ -68,7 +71,7 @@ namespace ColorVision.Settings
                     DockPanel.SetDock(comboBox, Dock.Right);
                     dockPanel.Children.Add(comboBox);
                     dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                    UniversalStackPanel.Children.Add(dockPanel);
+                    SettingStackPanels[configSetting.Group].Children.Add(dockPanel);
                 }
                 if (configSetting.Type == ConfigSettingType.TabItem)
                 {
@@ -95,7 +98,7 @@ namespace ColorVision.Settings
                     DockPanel.SetDock(textBox, Dock.Right);
                     dockPanel.Children.Add(textBox);
                     dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                    UniversalStackPanel.Children.Add(dockPanel);
+                    SettingStackPanels[configSetting.Group].Children.Add(dockPanel);
                 }
                 else if (configSetting.Type == ConfigSettingType.Class)
                 {
@@ -124,6 +127,8 @@ namespace ColorVision.Settings
 
                 }
             }
+
+
             var allSettings = new List<ConfigSettingMetadata>();
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
@@ -140,6 +145,30 @@ namespace ColorVision.Settings
             var sortedSettings = allSettings
                 .GroupBy(setting => setting.Type)
                 .SelectMany(group => group.OrderBy(setting => setting.Order));
+
+            foreach (var group in sortedSettings) 
+            {
+                if (!SettingStackPanels.ContainsKey(group.Group))
+                {
+                    TabItem tabItem = new TabItem() { Header = group.Group, Background = Brushes.Transparent };
+                    Grid grid = new Grid();
+                    grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
+                    GroupBox groupBox = new GroupBox
+                    {
+                        Header = new TextBlock { Text = group.Group, FontSize = 20 },
+                        Background = Brushes.Transparent,
+                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
+                    };
+
+                    StackPanel stackPanel = new StackPanel() { Margin = new Thickness(10) };
+                    groupBox.Content = stackPanel;
+                    grid.Children.Add(groupBox);
+                    tabItem.Content = grid;
+                    TabControlSetting.Items.Add(tabItem);
+
+                    SettingStackPanels.Add(group.Group, stackPanel);
+                }
+            }
 
             // 将排序后的配置设置添加到集合中
             foreach (var item in sortedSettings)

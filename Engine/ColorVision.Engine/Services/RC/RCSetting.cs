@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Services.RC
                     Name = "启用RC",
                     Description = "启用RC",
                     Type = ConfigSettingType.Bool,
+                    Group ="Engine",
                     Order =10,
                     BindingName = nameof(RCSetting.IsUseRCService),
                     Source = RCSetting.Instance
