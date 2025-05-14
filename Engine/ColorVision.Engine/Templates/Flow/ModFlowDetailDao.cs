@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.Flow
         public int SysPid { get; set; }
         [Column("pid")]
         public int Pid { get; set; }
-        [Column("value")]
+        [Column("value"), ColumnIgnoreAttribute()]
         public string? Value { get; set; }
         [Column("value_a")]
         public string? ValueA { get; set; }
