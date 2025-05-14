@@ -230,6 +230,23 @@ COLORVISIONCORE_API int M_ConvertImage(HImage img, uchar** rowGrayPixels, int* l
 		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
 
+	if (mat.depth() == CV_16U) {
+
+		///2025.02.07 16为图像做直方图时，不做直方图均衡化，这会导致图像变形，这个效果可以通过调节Gammma实现
+		//// 应用自适应直方图均衡化
+		//cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+		////这里设置高了，四个角会被扩散掉，
+		//clahe->setClipLimit(1.0); // 设置对比度限制
+		//clahe->apply(image, image);
+
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+
+	if (mat.depth() == CV_32F) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
+
+
 	// 目标分辨率设置
 	int targetPixels = targetPixelsX * targetPixelsY; // 目标像素数（可以调整）
 	int originalWidth = mat.cols;

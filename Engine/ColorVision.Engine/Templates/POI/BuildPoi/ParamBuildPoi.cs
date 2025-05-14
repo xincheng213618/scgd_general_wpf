@@ -16,8 +16,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
 
         [Category("BuildPOI"), Description("POI布点范围类型")]
-        public POIPointTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
-        private POIPointTypes _POILayout = POIPointTypes.Rect;
+        public POILayoutTypes POILayout { get => GetValue(_POILayout); set { SetProperty(ref _POILayout, value); } }
+        private POILayoutTypes _POILayout = POILayoutTypes.Rect;
 
 
         [Category("BuildPOI"), Description("POI极坐标布点数量")]
@@ -38,8 +38,8 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         private int _LayoutCols = 3;
 
         [Category("BuildPOI"), Description("POI点类型")]
-        public RiPointTypes PointType { get => GetValue(_PointType); set { SetProperty(ref _PointType, value); } }
-        private RiPointTypes _PointType = RiPointTypes.Circle;
+        public POIPointTypes PointType { get => GetValue(_PointType); set { SetProperty(ref _PointType, value); } }
+        private POIPointTypes _PointType = POIPointTypes.Circle;
 
         [Category("BuildPOI"), Description("POI点位置")]
         public DrawingPOIPosition PointPosition { get => GetValue(_PointPosition); set { SetProperty(ref _PointPosition, value); } }
