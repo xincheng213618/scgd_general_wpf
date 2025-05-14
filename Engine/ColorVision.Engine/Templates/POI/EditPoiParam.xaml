@@ -110,6 +110,8 @@
                         <TextBlock Text="默认高度:" Width="55" Margin="5,0,0,0"/>
                         <TextBox Text="{Binding PoiConfig.DefalutHeight}"  Width="55"  />
                     </StackPanel>
+
+
                 </StackPanel>
             </Border>
 
@@ -122,6 +124,29 @@
                             <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
+
+
+                        <DockPanel  Margin="2">
+                            <TextBlock  Text="LeftTop"  MinWidth="70" />
+                            <TextBox  Text="{Binding  LeftTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding LeftTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="RightTop"   MinWidth="70"/>
+                            <TextBox  Text="{Binding RightTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding RightTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="LeftBottom"   MinWidth="70"/>
+                            <TextBox Text="{Binding LeftBottomX}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding LeftBottomY}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="RightBottom"  MinWidth="70"/>
+                            <TextBox  Text="{Binding RightBottomX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding RightBottomY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

@@ -52,9 +52,29 @@ namespace ColorVision.Engine.Templates.POI
             Width = dbModel.Width ?? 0;
             Height = dbModel.Height ?? 0;
             Type = dbModel.Type ?? 0;
+
             CfgJson = dbModel.CfgJson ?? string.Empty;
             PoiConfig.IsPoiCIEFile = dbModel.IsDynamics ??false;
+
+            LeftTopX = dbModel.LeftTopX;
+            LeftTopY = dbModel.LeftTopY;
+            RightTopX = dbModel.RightTopX;
+            RightTopY = dbModel.RightTopY;
+            RightBottomX = dbModel.RightBottomX;
+            RightBottomY = dbModel.RightBottomY;
+            LeftBottomX = dbModel.LeftBottomX;
+            LeftBottomY = dbModel.LeftBottomY;
         }
+
+        public int? LeftTopX { get; set; }
+        public int? LeftTopY { get; set; }
+        public int? RightTopX { get; set; }
+        public int? RightTopY { get; set; }
+        public int? RightBottomX { get; set; }
+        public int? RightBottomY { get; set; }
+        public int? LeftBottomX { get; set; }
+        public int? LeftBottomY { get; set; }
+
 
         public string CfgJson
         {
@@ -88,6 +108,11 @@ namespace ColorVision.Engine.Templates.POI
 
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
+
+
+
+
+
 
 
         /// <summary>
