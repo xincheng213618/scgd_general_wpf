@@ -153,12 +153,24 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
+                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
                             <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                                 <TextBlock Text="SN" Margin="0,0,5,0"/>
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
+                        <DockPanel  Margin="0,0,0,5">
+                            <ComboBox  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                            <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateLargeCommand}"/>
+                            </Grid>
+                            <Grid Width="30" >
+                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                                <Button Background="Transparent" BorderThickness="0" Command="{Binding OpenEditLargeCommand}"/>
+                            </Grid>
+                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" />
+                        </DockPanel>
                     </StackPanel>
                 </Grid>
                 <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
