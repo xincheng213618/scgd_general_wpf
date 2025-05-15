@@ -77,6 +77,10 @@ namespace ColorVision.Engine.Templates.Jsons
         {
             TemplateJsonDao.Instance.Save(item.Value.TemplateJsonModel);
         }
+        public virtual void Save(T item)
+        {
+            TemplateJsonDao.Instance.Save(item.TemplateJsonModel);
+        }
 
         public override void Save()
         {
