@@ -1,7 +1,10 @@
-﻿using ColorVision.Engine.MQTT;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -11,21 +14,30 @@ using Panuon.WPF.UI;
 using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ProjectARVR
 {
-
+    public class ProjectARVRReuslt:ViewModelBase
+    {
+        public int Id { get; set; }
+        public string FlowName { get; set; }
+        public DateTime CreateTime { get; set; } = DateTime.Now;
+    }
 
     public partial class ARVRWindow : Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
+
+        public ObservableCollection<ProjectARVRReuslt> ProjectARVRReuslts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
         public ARVRWindow()
         {
@@ -34,6 +46,8 @@ namespace ProjectARVR
             Config.SetWindow(this);
             SizeChanged += (s, e) => Config.SetConfig(this);
         }
+
+
 
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -78,6 +92,7 @@ namespace ProjectARVR
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
             };
+            listView1.ItemsSource = ProjectARVRReuslts;
 
         }
         private void ServicesChanged(object? sender, EventArgs e)
@@ -174,7 +189,33 @@ namespace ProjectARVR
         {
             RunTemplate();
         }
+        private void LargeTest_Click(object sender, RoutedEventArgs e)
+        {
+            if (CBLargeTemplate.SelectedValue is TJLargeFlowParam jLargeFlowParam)
+            {
+                var ListFlows = jLargeFlowParam.GetFlows();
+                if (ListFlows.Count == 0)
+                {
+                    log.Info("大流程没有配置距离的模板");
+                }
+                foreach (var item in ListFlows.Reverse())
+                {
+                    LargetStack.Push(item);
+                }
+                if (LargetStack.Count != 0)
+                {
+                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
+                    RunTemplate();
+                }
+
+            }
+        }
+
+        Stack<TemplateModel<FlowParam>> LargetStack = new Stack<TemplateModel<FlowParam>>();
+
         bool LastCompleted = true;
+
+        public FlowParam RunFlowParam { get; set; }
 
         public void RunTemplate()
         {
@@ -184,6 +225,7 @@ namespace ProjectARVR
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
                 return; 
             };
+            RunFlowParam = flowParam;
 
             string startNode = flowEngine.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
@@ -222,12 +264,15 @@ namespace ProjectARVR
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             flowControl.Stop();
+            LargetStack.Clear();
         }
 
+        private int id;
         private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
+            id++;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
             handler = null;
@@ -242,22 +287,37 @@ namespace ProjectARVR
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
+                        ProjectARVRReuslts.Add(new ProjectARVRReuslt() { Id = id, FlowName = RunFlowParam.Name });
+                        Task.Run(async () =>
+                        {
+                            await Task.Delay(100);
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                if (LargetStack.Count != 0)
+                                {
+                                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
+                                    RunTemplate();
+                                }
+                            });
+                        });
 
                     }
                     else
                     {
+                        LargetStack.Clear();
                         MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                     }
                 }
                 else
                 {
-
+                    LargetStack.Clear();
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                 }
 
             }
             else
             {
+                LargetStack.Clear();
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
@@ -325,5 +385,7 @@ namespace ProjectARVR
             timer?.Dispose();
             GC.SuppressFinalize(this);
         }
+
+
     }
 }

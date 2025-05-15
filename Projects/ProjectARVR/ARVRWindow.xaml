@@ -126,7 +126,27 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-
+                                <GridViewColumn Header="Id" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding Id}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="FlowName" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding FlowName}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Time" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding CreateTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
 
@@ -160,7 +180,7 @@
                             </DockPanel>
                         </DockPanel>
                         <DockPanel  Margin="0,0,0,5">
-                            <ComboBox  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                            <ComboBox x:Name="CBLargeTemplate"  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
                                 <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateLargeCommand}"/>
@@ -169,7 +189,7 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button Background="Transparent" BorderThickness="0" Command="{Binding OpenEditLargeCommand}"/>
                             </Grid>
-                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink" Click="TestClick" />
+                            <Button Content="大模板测试"  DockPanel.Dock="Right" Background="Pink" Click="LargeTest_Click" />
                         </DockPanel>
                     </StackPanel>
                 </Grid>

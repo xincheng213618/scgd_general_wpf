@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
             } }
 
 
-        public ObservableCollection<TemplateModel<FlowParam>> GetTemplateModels()
+        public ObservableCollection<TemplateModel<FlowParam>> GetFlows()
         {
             var templateModels = new ObservableCollection<TemplateModel<FlowParam>>();
             foreach (var flow in LargeFlowConfig.Flows)
