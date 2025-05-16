@@ -138,6 +138,7 @@ namespace ColorVision.Update
         public async Task ForceUpdate()
         {
             LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+            if (LatestVersion == new Version()) return;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 Update(LatestVersion, Path.GetTempPath());
@@ -151,6 +152,8 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion == new Version()) return;
+
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
@@ -222,6 +225,8 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion == new Version()) return;
+
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
@@ -288,6 +293,8 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion == new Version()) return;
+
                 var Version = Assembly.GetExecutingAssembly().GetName().Version;
                 if (LatestVersion > Version)
                 {
@@ -403,6 +410,7 @@ namespace ColorVision.Update
             catch(Exception ex)
             {
                 log.Error(ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 DownloadFileConfig.Instance.IsPassWorld = false;
                 return new Version();
             }
