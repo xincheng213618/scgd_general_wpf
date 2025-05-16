@@ -410,7 +410,7 @@ namespace ColorVision.Update
             catch(Exception ex)
             {
                 log.Error(ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                //MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
                 DownloadFileConfig.Instance.IsPassWorld = false;
                 return new Version();
             }
