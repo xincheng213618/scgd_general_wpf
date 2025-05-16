@@ -1,9 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Themes;
 using FlowEngineLib;
@@ -17,8 +21,10 @@ using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
@@ -28,8 +34,15 @@ namespace ProjectARVR
     public class ProjectARVRReuslt:ViewModelBase
     {
         public int Id { get; set; }
-        public string FlowName { get; set; }
+        public string Model { get; set; }
         public DateTime CreateTime { get; set; } = DateTime.Now;
+
+        public string FileName { get; set; }
+
+        public string SN { get; set; }
+
+        public bool Result { get; set; } = true;
+
     }
 
     public partial class ARVRWindow : Window,IDisposable
@@ -37,7 +50,7 @@ namespace ProjectARVR
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
 
-        public ObservableCollection<ProjectARVRReuslt> ProjectARVRReuslts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
+        public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
         public ARVRWindow()
         {
@@ -92,7 +105,7 @@ namespace ProjectARVR
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
             };
-            listView1.ItemsSource = ProjectARVRReuslts;
+            listView1.ItemsSource = ViewResluts;
 
         }
         private void ServicesChanged(object? sender, EventArgs e)
@@ -214,9 +227,6 @@ namespace ProjectARVR
         Stack<TemplateModel<FlowParam>> LargetStack = new Stack<TemplateModel<FlowParam>>();
 
         bool LastCompleted = true;
-
-        public FlowParam RunFlowParam { get; set; }
-
         public void RunTemplate()
         {
             if (flowControl!=null && flowControl.IsFlowRun) return;
@@ -225,8 +235,6 @@ namespace ProjectARVR
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
                 return; 
             };
-            RunFlowParam = flowParam;
-
             string startNode = flowEngine.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
             {
@@ -287,7 +295,15 @@ namespace ProjectARVR
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
-                        ProjectARVRReuslts.Add(new ProjectARVRReuslt() { Id = id, FlowName = RunFlowParam.Name });
+                        LastCompleted = true;
+                        try
+                        {
+                            Processing(FlowControlData.SerialNumber);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                        }
                         Task.Run(async () =>
                         {
                             await Task.Delay(100);
@@ -321,6 +337,55 @@ namespace ProjectARVR
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
             }
         }
+
+        private void Processing(string SerialNumber)
+        {
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            bool sucess = true;
+            var Batch = BatchResultMasterDao.Instance.GetByCode(SerialNumber);
+
+            if (Batch == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
+                return;
+            }
+
+            ProjectARVRReuslt result = new ProjectARVRReuslt();
+            result.Model = FlowTemplate.Text;
+            result.Id = Batch.Id;
+            result.SN = SNtextBox.Text;
+
+            var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+
+            if (values.Count > 0)
+            {
+                result.FileName = values[0].FileUrl;
+            }
+
+            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
+            {
+                if (item.ImgFileType == AlgorithmResultType.BlackMura_Caculate)
+                {
+                    List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
+                    if (AlgResultModels.Count > 0)
+                    {
+                        BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
+
+
+                        blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
+                        blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
+                        blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
+                        blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
+                    }
+                }
+            }
+
+            SNtextBox.Text = string.Empty;
+            ViewResluts.Add(result);
+        }
+
+
+
         private void GridSplitter_DragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
         {
             ProjectARVRConfig.Instance.Height = row2.ActualHeight;
@@ -339,9 +404,105 @@ namespace ProjectARVR
         {
             if (sender is ListView listView && listView.SelectedIndex >-1)
             {
+                var result = ViewResluts[listView.SelectedIndex];
+                GenoutputText(result);
+                Task.Run(async () =>
+                {
+                    if (File.Exists(result.FileName))
+                    {
+                        try
+                        {
+                            var fileInfo = new FileInfo(result.FileName);
+                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
+                            {
+                                log.Warn("文件可以读取，没有被占用。");
+                            }
+                            if (fileInfo.Length > 0)
+                            {
+                                _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                                {
+                                    ImageView.OpenImage(result.FileName);
+                                    ImageView.ImageShow.Clear();
+                                });
+                            }
+                        }
+                        catch
+                        {
+                            log.Warn("文件还在写入");
+                            await Task.Delay(ProjectARVRConfig.Instance.ViewImageReadDelay);
+                            _ = Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                ImageView.OpenImage(result.FileName);
+                                ImageView.ImageShow.Clear();
+                            });
+                        }
+                    }
+                });
 
             }
         }
+
+        public void GenoutputText(ProjectARVRReuslt kmitemmaster)
+        {
+
+            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Document.Blocks.Clear(); // 清除之前的内容
+
+            string outtext = string.Empty;
+            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
+            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
+            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
+
+            Run run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            var paragraph = new Paragraph();
+            paragraph.Inlines.Add(run);
+
+            outputText.Document.Blocks.Add(paragraph);
+            outtext = string.Empty;
+
+            paragraph = new Paragraph();
+
+            string title1 = "PT";
+            string title2 = "Lv";
+
+            string title5 = "Lc";
+            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+
+            paragraph.Inlines.Add(run);
+            outtext = string.Empty;
+
+            outputText.Document.Blocks.Add(paragraph);
+
+            //outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
+            //outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+
+            outtext += Environment.NewLine;
+            outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
+            //outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
+            //outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
+            //outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
+
+            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+            run = new Run(outtext);
+            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.FontSize += 1;
+            paragraph = new Paragraph(run);
+            outtext = string.Empty;
+            outputText.Document.Blocks.Add(paragraph);
+            SNtextBox.Focus();
+        }
+
 
 
 

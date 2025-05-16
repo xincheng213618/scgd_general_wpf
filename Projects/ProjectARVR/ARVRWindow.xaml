@@ -133,10 +133,17 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="FlowName" Width="150">
+                                <GridViewColumn Header="SN" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
-                                            <TextBlock Text="{Binding FlowName}" />
+                                            <TextBlock Text="{Binding SN}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Model" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding Model}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
