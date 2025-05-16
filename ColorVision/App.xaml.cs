@@ -30,16 +30,12 @@ namespace ColorVision
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             #endif
+
         }
-
-
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             log.Fatal(e.Exception);
-            //在命令行中不弹出消息提示窗口
-            if (ConfigHandler.GetInstance().IsAutoSave)
-                MessageBox.Show(e.Exception.Message);
-
+            MessageBox.Show(e.Exception.Message);
             //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
             e.Handled = true;
         }
@@ -48,6 +44,8 @@ namespace ColorVision
         {
             log.Fatal(e.ExceptionObject);
         }
+
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             bool IsDebug = Debugger.IsAttached;
