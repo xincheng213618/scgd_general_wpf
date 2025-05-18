@@ -1,137 +1,49 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Themes;
-using log4net;
+﻿using log4net;
 using log4net.Appender;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
-using Newtonsoft.Json;
+using Microsoft.VisualBasic.Logging;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
-namespace ColorVision.UI
+namespace ColorVision.UI.LogImp
 {
-
-    public class TextAppender : AppenderSkeleton
-    {
-        private LogStatusBarProvider LogStatusBarProvider;
-        public TextAppender(LogStatusBarProvider logStatusBarProvider)
-        {
-            LogStatusBarProvider = logStatusBarProvider;
-        }
-        protected override void Append(LoggingEvent loggingEvent)
-        {
-            var renderedMessage = RenderLoggingEvent(loggingEvent);
-            string messageToShow = renderedMessage.Length > 10 ? renderedMessage.Substring(0, 10) + "..." : renderedMessage;
-
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                LogStatusBarProvider.Log = messageToShow;
-            });
-        }
-    }
-
-    public class LogStatusBarProvider : ViewModelBase, IConfig,IStatusBarProvider
-    {
-        public static LogStatusBarProvider Instance => ConfigService.Instance.GetRequiredService<LogStatusBarProvider>();
-        private TextAppender _textAppender;
-        private Hierarchy _hierarchy;
-
-        public LogStatusBarProvider()
-        {
-            _hierarchy = (Hierarchy)LogManager.GetRepository();
-            _textAppender = new TextAppender(this);
-            _textAppender.Layout = new PatternLayout("%message");
-            if (IsShowLog)
-            {
-                _hierarchy.Root.AddAppender(_textAppender);
-                log4net.Config.BasicConfigurator.Configure(_hierarchy);
-            }
-        }
-        [JsonIgnore]
-        public string Log { get => _Log; set { _Log = value; NotifyPropertyChanged(); } }
-        private string _Log;
-
-        public bool IsShowLog
-        {
-            get => _IsShowLog;
-            set
-            {
-                if (_IsShowLog != value)
-                {
-                    _IsShowLog = value;
-                    NotifyPropertyChanged();
-
-                    if (_hierarchy == null)
-                        _hierarchy = (Hierarchy)LogManager.GetRepository();
-
-                    if (_textAppender == null)
-                    {
-                        _textAppender = new TextAppender(this);
-                        _textAppender.Layout = new PatternLayout("%message");
-                    }
-
-                    if (_IsShowLog)
-                    {
-                        if (!_hierarchy.Root.Appenders.Cast<IAppender>().Contains(_textAppender))
-                        {
-                            _hierarchy.Root.AddAppender(_textAppender);
-                        }
-                        log4net.Config.BasicConfigurator.Configure(_hierarchy);
-                    }
-                    else
-                    {
-                        _hierarchy.Root.RemoveAppender(_textAppender);
-                    }
-                }
-            }
-        }
-        private bool _IsShowLog;
-
-
-        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
-        {
-            return new List<StatusBarMeta>
-            {
-                new StatusBarMeta()
-                {
-                    Name = "Log",
-                    Description = "Log",
-                    Order = 11,
-                    Type = StatusBarType.Text,
-                    BindingName = nameof(Log),
-                    VisibilityBindingName = nameof(IsShowLog),
-                    Source = Instance
-                }
-            };
-        }
-    }
-
-
-
-
-
     /// <summary>
-    /// WindowLog.xaml 的交互逻辑
+    /// LogOutput.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowLog : Window
+    public partial class LogOutput : UserControl,IDisposable
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(WindowLog));
-
-        public WindowLog()
+        public LogOutput()
         {
             InitializeComponent();
-            this.ApplyCaption();
         }
         TextBoxAppender TextBoxAppender { get; set; }
         Hierarchy Hierarchy { get; set; }
-        private void Window_Initialized(object sender, EventArgs e)
+
+        public void Dispose()
+        {
+            Hierarchy.Root.RemoveAppender(TextBoxAppender);
+            log4net.Config.BasicConfigurator.Configure(Hierarchy);
+        }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
         {
             Hierarchy = (Hierarchy)LogManager.GetRepository();
             TextBoxAppender = new TextBoxAppender(logTextBox);
@@ -139,22 +51,14 @@ namespace ColorVision.UI
             Hierarchy.Root.AddAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
 
-            this.Closed += (s, e) =>
-            {
-                Hierarchy.Root.RemoveAppender(TextBoxAppender);
-                log4net.Config.BasicConfigurator.Configure(Hierarchy);
-            };
             this.DataContext = LogConfig.Instance;
 
             cmlog.ItemsSource = LogConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
-            SearchBar1Brush = SearchBar1.BorderBrush;
 
-            LoadLogHistory();
             Application.Current.Dispatcher.BeginInvoke(() =>
             {
                 logTextBox.ScrollToEnd();
             });
-
         }
         private static string? GetLogFilePath()
         {
@@ -168,7 +72,7 @@ namespace ColorVision.UI
         {
             if (LogConfig.Instance.LogLoadState == LogLoadState.None) return;
             logTextBox.Text = string.Empty;
-           var logFilePath = GetLogFilePath();
+            var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
                 try
@@ -206,7 +110,7 @@ namespace ColorVision.UI
                 string timestampLine = line;
                 string logContentLine = reader.ReadLine(); // 读取日志内容行
 
-                if (timestampLine.Length>23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
+                if (timestampLine.Length > 23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
                 {
                     if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
                     {
@@ -261,7 +165,6 @@ namespace ColorVision.UI
             {
                 hierarchy.Root.Level = selectedLevel.Key;
                 log4net.Config.BasicConfigurator.Configure(hierarchy);
-                log.Info("更新Log4Net 日志级别：" + selectedLevel.Value);
             }
         }
 
@@ -314,35 +217,6 @@ namespace ColorVision.UI
                 logTextBoxSerch.Visibility = Visibility.Collapsed;
                 logTextBox.Visibility = Visibility.Visible;
             }
-        }
-
-
-    }
-    public class TextBoxAppender : AppenderSkeleton
-    {
-        public TextBoxAppender(TextBox textBox)
-        {
-            _textBox = textBox;
-        }
-
-        private TextBox _textBox;
-        protected override void Append(LoggingEvent loggingEvent)
-        {
-            if (!LogConfig.Instance.AutoRefresh) return;
-            var renderedMessage = RenderLoggingEvent(loggingEvent);
-            Application.Current.Dispatcher.BeginInvoke(() =>
-            {
-                if (LogConfig.Instance.LogReserve)
-                {
-                    _textBox.Text = renderedMessage + _textBox.Text;
-                }
-                else
-                {
-                    _textBox.AppendText(renderedMessage);
-                    if (LogConfig.Instance.AutoScrollToEnd)  
-                        _textBox.ScrollToEnd();
-                }
-            });
         }
     }
 }

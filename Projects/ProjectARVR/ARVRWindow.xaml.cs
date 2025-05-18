@@ -104,6 +104,8 @@ namespace ProjectARVR
             {
                 timer.Change(Timeout.Infinite, 500); // 停止定时器
                 timer?.Dispose();
+
+                LogOutput1?.Dispose();
             };
             listView1.ItemsSource = ViewResluts;
 

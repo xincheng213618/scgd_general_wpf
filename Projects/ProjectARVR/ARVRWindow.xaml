@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectARVR.ARVRWindow"
+﻿<Window xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"  x:Class="ProjectARVR.ARVRWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -200,13 +200,21 @@
                         </DockPanel>
                     </StackPanel>
                 </Grid>
-                <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <FlowDocument>
-                        <Paragraph>
+                <Grid Grid.Row="1" Margin="5,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <RichTextBox x:Name="outputText"   Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <FlowDocument>
+                            <Paragraph>
 
-                        </Paragraph>
-                    </FlowDocument>
-                </RichTextBox>
+                            </Paragraph>
+                        </FlowDocument>
+                    </RichTextBox>
+                    <LogImp:LogOutput x:Name="LogOutput1"  Grid.Row="1" />
+                </Grid>
+
             </Grid>
         </Grid>
 
