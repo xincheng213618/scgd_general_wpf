@@ -69,8 +69,6 @@ namespace WindowsServicePlugin
                     File.Delete(downloadPath);
                 }
             });
-
-
         }
 
     }

@@ -20,11 +20,13 @@ using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
+using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -218,6 +220,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (reuslt?.PhyCamera!=null)
                     AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
+                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "HDR模板", new TemplateHDR());
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 
                 // Usage
@@ -386,6 +389,9 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.双目融合:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "双目融合", new TemplateBinocularFusion());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "AA布点", new TemplateAAFindPoints());
                             break;
                         default:
                             break;

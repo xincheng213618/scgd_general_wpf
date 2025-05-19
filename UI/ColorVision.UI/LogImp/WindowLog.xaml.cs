@@ -1,9 +1,11 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using log4net;
 using log4net.Appender;
 using log4net.Core;
 using log4net.Layout;
 using log4net.Repository.Hierarchy;
+using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -15,6 +17,106 @@ using System.Windows.Media;
 
 namespace ColorVision.UI
 {
+
+    public class TextAppender : AppenderSkeleton
+    {
+        private LogStatusBarProvider LogStatusBarProvider;
+        public TextAppender(LogStatusBarProvider logStatusBarProvider)
+        {
+            LogStatusBarProvider = logStatusBarProvider;
+        }
+        protected override void Append(LoggingEvent loggingEvent)
+        {
+            var renderedMessage = RenderLoggingEvent(loggingEvent);
+            string messageToShow = renderedMessage.Length > 10 ? renderedMessage.Substring(0, 10) + "..." : renderedMessage;
+
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                LogStatusBarProvider.Log = messageToShow;
+            });
+        }
+    }
+
+    public class LogStatusBarProvider : ViewModelBase, IConfig,IStatusBarProvider
+    {
+        public static LogStatusBarProvider Instance => ConfigService.Instance.GetRequiredService<LogStatusBarProvider>();
+        private TextAppender _textAppender;
+        private Hierarchy _hierarchy;
+
+        public LogStatusBarProvider()
+        {
+            _hierarchy = (Hierarchy)LogManager.GetRepository();
+            _textAppender = new TextAppender(this);
+            _textAppender.Layout = new PatternLayout("%message");
+            if (IsShowLog)
+            {
+                _hierarchy.Root.AddAppender(_textAppender);
+                log4net.Config.BasicConfigurator.Configure(_hierarchy);
+            }
+        }
+        [JsonIgnore]
+        public string Log { get => _Log; set { _Log = value; NotifyPropertyChanged(); } }
+        private string _Log;
+
+        public bool IsShowLog
+        {
+            get => _IsShowLog;
+            set
+            {
+                if (_IsShowLog != value)
+                {
+                    _IsShowLog = value;
+                    NotifyPropertyChanged();
+
+                    if (_hierarchy == null)
+                        _hierarchy = (Hierarchy)LogManager.GetRepository();
+
+                    if (_textAppender == null)
+                    {
+                        _textAppender = new TextAppender(this);
+                        _textAppender.Layout = new PatternLayout("%message");
+                    }
+
+                    if (_IsShowLog)
+                    {
+                        if (!_hierarchy.Root.Appenders.Cast<IAppender>().Contains(_textAppender))
+                        {
+                            _hierarchy.Root.AddAppender(_textAppender);
+                        }
+                        log4net.Config.BasicConfigurator.Configure(_hierarchy);
+                    }
+                    else
+                    {
+                        _hierarchy.Root.RemoveAppender(_textAppender);
+                    }
+                }
+            }
+        }
+        private bool _IsShowLog;
+
+
+        public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
+        {
+            return new List<StatusBarMeta>
+            {
+                new StatusBarMeta()
+                {
+                    Name = "Log",
+                    Description = "Log",
+                    Order = 11,
+                    Type = StatusBarType.Text,
+                    BindingName = nameof(Log),
+                    VisibilityBindingName = nameof(IsShowLog),
+                    Source = Instance
+                }
+            };
+        }
+    }
+
+
+
+
+
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.FloatingBall;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace ColorVision
 {
@@ -27,23 +29,55 @@ namespace ColorVision
         public Version? LastOpenVersion { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private Version? _Version = new Version(0, 0, 0, 0);
 
-        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); } }
+        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); FloatingBall(); } }
         private bool _OpenFloatingBall;
+
+        FloatingBallWindow floatingBallWindow;
+        private void FloatingBall()
+        {
+            if (OpenFloatingBall)
+            {
+                if (floatingBallWindow == null)
+                    floatingBallWindow = new FloatingBallWindow();
+                floatingBallWindow.Show();
+            }
+            else
+            {
+                if (floatingBallWindow != null)
+                {
+                    floatingBallWindow.Close();
+                    floatingBallWindow = null;
+                }
+            }
+        }
+
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
-        public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
-
 
         public int LeftTabControlSelectedIndex { get => _LeftTabControlSelectedIndex; set { _LeftTabControlSelectedIndex = value; NotifyPropertyChanged(); } }
         private int _LeftTabControlSelectedIndex = 1;
 
+        [JsonIgnore]
+        public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
 
+        [JsonIgnore]
+        public bool IsWindows10ContextMenu { get => !Tool.IsWindows11ContextMenu(); set
+            {
+                if (value != Tool.IsWindows11ContextMenu()) return;
+                if (value)
+                    Tool.SwitchToWindows10ContextMenu();
+                else
+                    Tool.SwitchToWindows11ContextMenu();
+                NotifyPropertyChanged(nameof(IsWindows10ContextMenu));
+            } 
+        }
 
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            return new List<ConfigSettingMetadata>
+
+            var list = new List<ConfigSettingMetadata>
             {
                 new ConfigSettingMetadata
                 {
@@ -56,6 +90,15 @@ namespace ColorVision
                 },
                 new ConfigSettingMetadata
                 {
+                    Name = "OpenFloatingBall",
+                    Description =  "OpenFloatingBall",
+                    Order = 15,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(OpenFloatingBall),
+                    Source = this,
+                },
+                new ConfigSettingMetadata
+                {
                     Name = Properties.Resources.StartRecoverUILayout,
                     Description = Properties.Resources.StartRecoverUILayout,
                     Type = ConfigSettingType.Bool,
@@ -63,13 +106,27 @@ namespace ColorVision
                     Source = Instance
                 }
             };
+
+            if (Tool.IsWin11)
+            {
+                list.Add(new ConfigSettingMetadata
+                {
+                    Name = "Win10桌面经典菜单",
+                    Description = "",
+                    Order = 15,
+                    Type = ConfigSettingType.Bool,
+                    BindingName = nameof(IsWindows10ContextMenu),
+                    Source = this,
+                });
+            }
+            return list;
         }
     }
 
     public class ExportMenuViewMax :MenuItemBase
     {
         public override string OwnerGuid => MenuItemConstants.View;
-        public override string Header => "全屏";
+        public override string Header => ColorVision.ImageEditor.Properties.Resources.FullScreen;
 
         public override void Execute()
         {

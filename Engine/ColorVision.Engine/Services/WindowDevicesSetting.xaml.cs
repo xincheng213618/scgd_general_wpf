@@ -173,12 +173,7 @@ namespace ColorVision.Engine.Services
         private void OK_Click(object sender, RoutedEventArgs e)
         {
             Close();
-        }
 
-
-
-        private void Button_Click_0(object sender, RoutedEventArgs e)
-        {
 
         }
     }

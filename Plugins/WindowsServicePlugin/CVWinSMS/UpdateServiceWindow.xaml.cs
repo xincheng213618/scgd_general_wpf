@@ -1,25 +1,20 @@
-﻿using ColorVision.Common.MVVM;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ColorVision.UI.Menus;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace WindowsServicePlugin.CVWinSMS
 {
-    public class UpdateServiceControl : ViewModelBase
+    public class UpdateService : MenuItemBase
     {
-        public int StepIndex { get => _StepIndex; set { _StepIndex = value; NotifyPropertyChanged(); } }
-        private int _StepIndex = 1;
+        public override string OwnerGuid => "ServiceLog";
+        public override string Header => "更新服务";
+        public override int Order => 3;
 
+
+        public override void Execute()
+        {
+            UpdateServiceWindow updateServiceWindow = new UpdateServiceWindow();
+            updateServiceWindow.Show();
+        }
 
     }
 
@@ -36,7 +31,7 @@ namespace WindowsServicePlugin.CVWinSMS
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = UpdateServiceControl.
+            this.DataContext = UpdateService1.Instance;
         }
     }
 }

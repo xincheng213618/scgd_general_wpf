@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw;
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -153,6 +154,28 @@ namespace ColorVision.Engine.Templates.POI
             }
         }
 
+        public int CheckNo()
+        {
+            No++;
+            if (DrawingVisualLists.Count >0 && DrawingVisualLists.Last() is DrawingVisualBase drawingVisual)
+            {
+                if (drawingVisual.ID != No - 1)
+                {
+                    No = drawingVisual.ID + 1;
+                    return No;
+                }
+                else
+                {
+
+                    return No;
+                }
+
+            }
+            else
+            {
+                return No;
+            }
+        }
         private void ImageShow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
@@ -193,13 +216,14 @@ namespace ColorVision.Engine.Templates.POI
 
                 if (ImageViewModel.DrawCircle)
                 {
-                    No++;
+                    int id = CheckNo();
+
                     DrawCircleCache = new DVCircleText() { AutoAttributeChanged = false };
-                    DrawCircleCache.Attribute.Id = No;
+                    DrawCircleCache.Attribute.Id = id;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiConfig.DefalutRadius;
-                    DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
+                    DrawCircleCache.Attribute.Text = "Point_" + id.ToString();
 
                     drawCanvas.AddVisual(DrawCircleCache);
 
@@ -210,10 +234,10 @@ namespace ColorVision.Engine.Templates.POI
                 }
                 if (ImageViewModel.DrawRect)
                 {
-                    No++;
+                    int id = CheckNo();
 
                     DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Id = No;
+                    DrawingRectangleCache.Attribute.Id = id;
 
                     if (PoiConfig.UseCenter)
                     {
@@ -225,7 +249,7 @@ namespace ColorVision.Engine.Templates.POI
                     }
 
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-                    DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
+                    DrawingRectangleCache.Attribute.Text = "Point_" + id.ToString();
 
                     drawCanvas.AddVisual(DrawingRectangleCache);
 

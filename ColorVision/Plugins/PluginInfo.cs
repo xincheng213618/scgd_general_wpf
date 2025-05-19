@@ -161,6 +161,8 @@ del ""%~f0"" & exit
                                     startInfo.Verb = "runas"; // 请求管理员权限
                                     startInfo.WindowStyle = ProcessWindowStyle.Normal;
                                 }
+                                Process.Start(startInfo);
+
                                 Environment.Exit(0);
                             }
                             catch (Exception ex)

@@ -76,7 +76,6 @@ namespace ColorVision.Engine.MySql
         public static MySqlLocalServicesManager GetInstance() { lock (_locker) { return _instance ??= new MySqlLocalServicesManager(); } }
 
         public RelayCommand RestoreSelectCommand { get; set; }
-        public RelayCommand BackupDatabaseCommand { get; set; }
         public RelayCommand BackupResourcesCommand { get; set; }
         public RelayCommand BackupAllResourcesCommand { get; set; }
 
@@ -105,31 +104,12 @@ namespace ColorVision.Engine.MySql
                 }
             }
             RestoreSelectCommand = new RelayCommand(a => RestoreSelect());
-            BackupDatabaseCommand = new RelayCommand(a => BackupDatabase());
             BackupResourcesCommand = new RelayCommand(a => BackupResources());
             BackupAllResourcesCommand = new RelayCommand(a => BackupAllMysql());
 
         }
 
         private bool IsRun { get; set; }
-        private void BackupDatabase()
-        {
-            if (IsRun)
-            {
-                MessageBox.Show("正在执行备份程序");
-                return;
-            }
-            Task.Run(() =>
-            {
-                IsRun = true;
-                BackupMysql();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "备份成功");
-                });
-                IsRun = false;
-            });
-        }
 
         private void BackupResources()
         {
@@ -254,26 +234,13 @@ namespace ColorVision.Engine.MySql
 
         public string MysqldumpPath { get; set; }
 
-        public void BackupMysql()
-        {
-            //备份的信息里应该只包含基础的信息不应该包含许多逻辑
-            string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredTableNames());
-
-            string BackUpSql = Path.Combine(BackupPath, $"{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
-            Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Backups.Add(new MysqlBack(BackUpSql));
-            });
-        }
         public void BackupAllMysql()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetTableNames());
 
             string BackUpSql = Path.Combine(BackupPath, $"All_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
+            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >\"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -286,7 +253,7 @@ namespace ColorVision.Engine.MySql
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >{BackUpSql}";
+            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -303,7 +270,7 @@ namespace ColorVision.Engine.MySql
                 MessageBox.Show("Backup file not found.");
                 return;
             }
-            string restoreCommand = $"{MysqlPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} < {backupFile}";
+            string restoreCommand = $"{MysqlPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} < \"{backupFile}\"";
             Common.Utilities.Tool.ExecuteCommandUI(restoreCommand);
         }
     }

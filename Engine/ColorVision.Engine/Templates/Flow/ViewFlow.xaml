@@ -103,7 +103,7 @@
 
                     </Grid>
 
-                    <Slider x:Name="ZoomSlider" Value="{Binding CanvasScale}" Maximum="3" Minimum="0.45" />
+                    <Slider x:Name="ZoomSlider" Value="{Binding CanvasScale}" Maximum="5" Minimum="0.2" />
                 </StackPanel>
             </Border>
 

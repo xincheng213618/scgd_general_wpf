@@ -65,6 +65,13 @@ namespace ColorVision.Solution.Searches
                             layoutDocument.Content = control;
                             LayoutDocumentPane.Children.Add(layoutDocument);
                             LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
+                            layoutDocument.Closing += (s, e) =>
+                            {
+                                if (control is IDisposable disposable)
+                                {
+                                    disposable.Dispose();
+                                }
+                            };
                         }
                     }
                 }

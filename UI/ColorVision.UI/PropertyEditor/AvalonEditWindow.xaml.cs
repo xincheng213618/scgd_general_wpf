@@ -40,8 +40,7 @@ namespace ColorVision.UI
 				GC.Collect();
 				GC.WaitForPendingFinalizers();
 			};
-			this.Closing += (s, e) => {
-			};
+			this.Closing += (s, e) => {	};
 		}
 
 		public AvalonEditWindow(string currentFileName)

@@ -312,6 +312,8 @@ namespace ProjectBlackMura
                     if (AlgResultModels.Count > 0)
                     {
                         BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
+
+
                         blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
                         blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
                         blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
