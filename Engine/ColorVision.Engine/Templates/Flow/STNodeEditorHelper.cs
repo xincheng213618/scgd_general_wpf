@@ -26,6 +26,7 @@ using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
 using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
+using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.Engine.Templates.Jsons.KB;
 using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using ColorVision.Engine.Templates.Jsons.SFRFindROI;
@@ -219,6 +220,7 @@ namespace ColorVision.Engine.Templates.Flow
                 if (reuslt?.PhyCamera!=null)
                     AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
+                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "HDR模板", new TemplateHDR());
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 
                 // Usage
