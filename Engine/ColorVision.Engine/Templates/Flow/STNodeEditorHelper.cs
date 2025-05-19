@@ -20,6 +20,7 @@ using ColorVision.Engine.Templates.Ghost;
 using ColorVision.Engine.Templates.ImageCropping;
 using ColorVision.Engine.Templates.JND;
 using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.AAFindPoints;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.Distortion2;
@@ -386,6 +387,9 @@ namespace ColorVision.Engine.Templates.Flow
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.双目融合:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "双目融合", new TemplateBinocularFusion());
+                            break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "AA布点", new TemplateAAFindPoints());
                             break;
                         default:
                             break;

@@ -110,6 +110,8 @@
                         <TextBlock Text="默认高度:" Width="55" Margin="5,0,0,0"/>
                         <TextBox Text="{Binding PoiConfig.DefalutHeight}"  Width="55"  />
                     </StackPanel>
+
+
                 </StackPanel>
             </Border>
 
@@ -122,6 +124,29 @@
                             <TextBox Text="{Binding PoiConfig.PoiFixFilePath}" Margin="2,0"  Width="90"/>
                             <Button DockPanel.Dock="Right" Margin="2,0" Content="设置" Click="PoiFix_Create_Click"/>
                         </StackPanel>
+
+
+                        <DockPanel  Margin="2">
+                            <TextBlock  Text="LeftTop"  MinWidth="70" />
+                            <TextBox  Text="{Binding  LeftTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding LeftTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="RightTop"   MinWidth="70"/>
+                            <TextBox  Text="{Binding RightTopX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding RightTopY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="LeftBottom"   MinWidth="70"/>
+                            <TextBox Text="{Binding LeftBottomX}" Width="80" Margin="5,0" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding LeftBottomY}" Width="80" Margin="5,0"   BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
+                        <DockPanel  Margin="2">
+                            <TextBlock Text="RightBottom"  MinWidth="70"/>
+                            <TextBox  Text="{Binding RightBottomX}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                            <TextBox   Text="{Binding RightBottomY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                        </DockPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -208,7 +233,7 @@
                                     <Grid >
                                         <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowPoiConfig_Click"/>
                                         <StackPanel  HorizontalAlignment="Right">
-                                            <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
+                                            <Button x:Name="ButtonImportMarin1" Content="边距设置" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
                                             <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
                                                     <StackPanel Margin="5">
@@ -254,28 +279,28 @@
                                     <Grid>
                                         <StackPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="X1"   MinWidth="20"/>
+                                                <TextBlock Text="左上"   MinWidth="20"/>
                                                 <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"   />
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="X2"  MinWidth="20"/>
+                                                <TextBlock Text="右上"  MinWidth="20"/>
                                                 <TextBox  Text="{Binding PoiConfig.Polygon2X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon2Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock  Text="X3"  MinWidth="20" />
+                                                <TextBlock  Text="右下"  MinWidth="20" />
                                                 <TextBox  Text="{Binding PoiConfig.Polygon3X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon3Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                <TextBlock Text="X4"   MinWidth="20"/>
+                                                <TextBlock Text="左下"   MinWidth="20"/>
                                                 <TextBox  Text="{Binding PoiConfig.Polygon4X}" Width="55" Margin="5,0"  />
                                                 <TextBox   Text="{Binding PoiConfig.Polygon4Y}" Width="55" Margin="5,0"  />
                                             </DockPanel>
                                         </StackPanel>
                                         <StackPanel  HorizontalAlignment="Right">
-                                            <Button x:Name="ButtonImportMarin" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
+                                            <Button x:Name="ButtonImportMarin" Content="边距设置" Margin="3" Height="25" Click="ButtonImportMarin_Click"/>
                                             <Popup  x:Name="ImportMarinPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin}">
                                                 <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
                                                     <StackPanel Margin="5">

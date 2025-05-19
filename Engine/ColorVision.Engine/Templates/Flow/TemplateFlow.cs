@@ -221,12 +221,12 @@ namespace ColorVision.Engine.Templates.Flow
                     SysResourceModel sysResourceModeldefault = VSysResourceDao.Instance.GetById(id);
                     if (sysResourceModeldefault != null)
                     {
-                        SysResourceModel sysResourceModel = new();
+                        SysResourceModel sysResourceModel = new SysResourceModel();
                         sysResourceModel.Name = flowMaster.Name;
-                        sysResourceModel.Code = sysResourceModeldefault.Code;
+                        sysResourceModel.Code = pkId.ToString()+ sysResourceModeldefault.Code;
                         sysResourceModel.Type = sysResourceModeldefault.Type;
                         sysResourceModel.Value = sysResourceModeldefault.Value;
-                        VSysResourceDao.Instance.Save(sysResourceModel);
+                        SysResourceDao.Instance.Save(sysResourceModel);
 
                         flowDetail[0].ValueA = sysResourceModel.Id.ToString();
                         ModFlowDetailDao.Instance.Save(flowDetail[0]);

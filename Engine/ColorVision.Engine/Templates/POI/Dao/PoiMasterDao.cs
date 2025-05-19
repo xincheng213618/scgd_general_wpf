@@ -45,6 +45,17 @@ namespace ColorVision.Engine.Templates.POI.Dao
             IsEnable = true;
             IsDelete = false;
             TenantId = 0;
+
+
+
+            LeftTopX = poiParam.LeftTopX;
+            LeftTopY = poiParam.LeftTopY;
+            RightTopX = poiParam.RightTopX;
+            RightTopY = poiParam.RightTopY;
+            RightBottomX = poiParam.RightBottomX;
+            RightBottomY = poiParam.RightBottomY;
+            LeftBottomX = poiParam.LeftBottomX;
+            LeftBottomY = poiParam.LeftBottomY;
         }
         public string? Name { get; set; }
         public int? Type { get; set; }
