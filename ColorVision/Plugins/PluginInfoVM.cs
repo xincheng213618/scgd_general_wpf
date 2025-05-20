@@ -4,6 +4,7 @@ using ColorVision.Properties;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
+using ScottPlot.Statistics;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -17,20 +18,23 @@ using System.Windows.Input;
 
 namespace ColorVision.Plugins
 {
-    public class PluginInfo:ViewModelBase
+    public class PluginInfoVM:ViewModelBase
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(PluginInfo));
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginInfoVM));
 
         public ContextMenu ContextMenu { get; set; }
+        public string? PackageName { get; set; }
+        public string Description { get; set; }
 
-        public IPlugin Plugin { get; set; }
+        public string? Name { get; set; }
         public Version? AssemblyVersion { get; set; }
         public DateTime? AssemblyBuildDate { get; set; }
         public string? AssemblyName { get; set; }
         public string? AssemblyPath { get; set; }
         public string? AssemblyCulture { get; set; }
         public string? AssemblyPublicKeyToken { get; set; }
-        public string? PackageName { get; set; }
+
+        public PluginInfo PluginInfo { get; set; }
 
         public Version LastVersion { get => _LastVersion; set { _LastVersion = value; NotifyPropertyChanged(); } }
         private Version _LastVersion;
@@ -38,12 +42,36 @@ namespace ColorVision.Plugins
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand UpdateCommand { get; set; }
         DownloadFile DownloadFile { get; set; }
-        public PluginInfo()
+        public PluginInfoVM(PluginInfo pluginInfo)
         {
+            PluginInfo = pluginInfo;
+            Name = pluginInfo.Name;
+            Description =pluginInfo.Description;
+            PackageName = pluginInfo.Manifest.Id;
+            AssemblyVersion = pluginInfo.AssemblyVersion;
+            AssemblyBuildDate = pluginInfo.AssemblyBuildDate;
+
+            DeleteCommand = new RelayCommand(a => Delete());
+            UpdateCommand = new RelayCommand(a => Update());
+            ContextMenu = new ContextMenu();
+
+            DownloadFile = new DownloadFile();
+            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name ;
+
+            if (PluginInfo.Enabled)
+            {
+                Task.Run(() => CheckVersion());
+            }
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
+
         }
-        public PluginInfo(IPlugin plugin, Assembly assembly)
+        public PluginInfoVM(IPlugin plugin, Assembly assembly)
         {
-            Plugin = plugin;
+            Name = plugin.Header;
+            Description = plugin.Description;
             try
             {
                 AssemblyName = assembly.GetName().Name;
@@ -65,7 +93,7 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
 
             DownloadFile = new DownloadFile();
-            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Plugin.Header;
+            DownloadFile.DownloadTile = ColorVision.Properties.Resources.Update + Name;
             Task.Run(() => CheckVersion());
 
             ContextMenu = new ContextMenu();
@@ -87,7 +115,7 @@ namespace ColorVision.Plugins
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Plugin.Header, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Name, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
                     string url = $"{UpdateUrl}/{PackageName}/{PackageName}-{version}.zip";
@@ -183,7 +211,7 @@ del ""%~f0"" & exit
 
         public void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Plugin.Header}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除插件{Name}", Resources.PluginManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
 
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))

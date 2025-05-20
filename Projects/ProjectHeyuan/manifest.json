@@ -1,0 +1,9 @@
+{
+  "manifest_version": 1,
+  "Id": "ProjectHeyuan",
+  "name": "ProjectHeyuan",
+  "version": "1.0",
+  "description": "",
+  "dllpath": "ProjectHeyuan.dll",
+  "requires": "1.2.4.23"
+} 

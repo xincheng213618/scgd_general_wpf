@@ -36,8 +36,6 @@ namespace ColorVision.Engine
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
-            PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             this.LoadHotKeyFromAssembly();
 
             Application.Current.MainWindow = this;

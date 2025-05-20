@@ -117,7 +117,7 @@ namespace ColorVision
                 UI.ACE.License.Create();
             }
 
-            PluginLoader.LoadPluginsAssembly("Plugins");
+            PluginManager.LoadPlugins("Plugins");
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
