@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Engine.DataHistory
+namespace ColorVision.Engine.Archive
 {
     /// <summary>
     /// HomePage.xaml 的交互逻辑

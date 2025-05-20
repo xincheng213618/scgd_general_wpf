@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Text.RegularExpressions;
 
-namespace ColorVision.Engine.DataHistory.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
 
     [DisplayName("归档配置")]

@@ -13,7 +13,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.DataHistory.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
     public class ArchivedDetailModel : PKModel
     {

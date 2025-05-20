@@ -7,7 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.DataHistory.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
 
 

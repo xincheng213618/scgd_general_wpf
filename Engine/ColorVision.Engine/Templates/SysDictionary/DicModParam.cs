@@ -13,12 +13,13 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.SysDictionary
 {
 
-    public class TemplateModParam : ITemplate<DicModParam>, IITemplateLoad
+    public class TemplateModParam : ITemplate<DicModParam>
     {
         public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
 
         public TemplateModParam()
         {
+            Name= "字典模板管理";
             Title = "DicModParam";
             TemplateParams = Params;
             IsUserControl = true;  

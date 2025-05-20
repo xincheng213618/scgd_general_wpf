@@ -7,7 +7,7 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.DataHistory.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
     public class MenuArchive : MenuItemBase
     {
@@ -15,6 +15,7 @@ namespace ColorVision.Engine.DataHistory.Dao
 
         public override string GuidId => nameof(MenuArchive);
 
+        public override int Order => 5;
         public override string Header => "归档";
     }
 

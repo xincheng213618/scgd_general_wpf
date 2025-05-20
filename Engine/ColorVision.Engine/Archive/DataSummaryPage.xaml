@@ -1,11 +1,11 @@
-﻿<Page x:Class="ColorVision.Engine.DataHistory.Dao.ArchiveDetailPage"
+﻿<Page x:Class="ColorVision.Engine.Archive.Dao.DataSummaryPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.DataHistory.Dao"
+             xmlns:local="clr-namespace:ColorVision.Engine.Archive.Dao"
              mc:Ignorable="d" 
-             Title="归档查询"  d:DesignHeight="450" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
+             Title="综合查询"  d:DesignHeight="450" d:DesignWidth="800" Loaded="Page_Loaded" Initialized="UserControl_Initialized">
     <Page.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -20,6 +20,11 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Grid>
+                <DockPanel Margin="5" >
+                    <Button  Content="全部归档" DockPanel.Dock="Right" Click="Save_Click" Margin="10,0"/>
+                    <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
+                    <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
+                </DockPanel>
             </Grid>
             <Border  Grid.Row="1"  CornerRadius="10" >
                 <ListView x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Background="Transparent" BorderThickness="0"    MouseDoubleClick="listView1_MouseDoubleClick" >
@@ -27,11 +32,6 @@
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
                     </ListView.Resources>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
@@ -39,43 +39,53 @@
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="Guid">
+                            <GridViewColumn  Header="序号" >
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
-                                        <TextBlock Text="{Binding Guid}"/>
+                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="设备名称">
+                            <GridViewColumn  Header="批次号">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
-                                        <TextBlock Text="{Binding DeviceCode}"/>
+                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding Batch}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="输入参数">
+                            <GridViewColumn  Header="BatchCode">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
-                                        <TextBlock Text="{Binding InputCfg}"/>
+                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding BatchCode}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="名称">
+                            <GridViewColumn  Header="测量时间">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
-                                        <TextBlock Text="{Binding PGuid}"/>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding CreateTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-
-                            <GridViewColumn  Header="Data"  Width="600">
+                            <GridViewColumn  Header="TotalTime">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ArchivedDetailModel}"  >
-                                        <TextBox IsReadOnly="True" BorderThickness="0" Text="{Binding OutputValue,Mode=OneWay}" Height="100" TextWrapping="WrapWithOverflow" />
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                        <TextBlock Text="{Binding TotalTime}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="归档" Width="100">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}">
+                                        <Grid>
+                                            <TextBlock Text="{Binding ArchiveStatus}" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                            <Button Content="归档" Click="Arch_Click" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter}}" Tag="{Binding .}"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

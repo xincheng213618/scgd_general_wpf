@@ -8,10 +8,9 @@ namespace ColorVision.Engine.Services.PhyCameras
 {
     public class ExportPhyCamerManager : MenuItemBase
     {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "PhyCamerManager";
+        public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => Properties.Resources.MenuPhyCameraManager;
-        public override int Order => 0;
+        public override int Order => 2;
 
         public override void Execute()
         {
@@ -25,10 +24,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public bool AllowCreate { get => _AllowCreate; set { _AllowCreate = value; NotifyPropertyChanged(); } }
         private bool _AllowCreate;
-
-
-
     }
+
     /// <summary>
     /// PhySpectrumManagerWindow.xaml 的交互逻辑
     /// </summary>

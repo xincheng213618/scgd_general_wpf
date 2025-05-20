@@ -14,7 +14,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.DataHistory.Dao
+namespace ColorVision.Engine.Archive.Dao
 {
 
     public enum ArchiveStatus
