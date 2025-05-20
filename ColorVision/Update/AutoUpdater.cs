@@ -431,11 +431,11 @@ namespace ColorVision.Update
         private string _SpeedValue;
 
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+        private string _RemainingTimeValue;
 
         public string DownloadTile { get => _DownloadTile; set{ _DownloadTile = value; NotifyPropertyChanged(); } }
         private string _DownloadTile = Resources.ColorVisionUpdater;
 
-        private string _RemainingTimeValue;
 
         private async Task DownloadAndUpdate(Version latestVersion, string downloadPath, CancellationToken cancellationToken, bool isIncrement = false)
         {
