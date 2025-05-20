@@ -2,15 +2,15 @@
 using System.ComponentModel;
 using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {
-    public class CameraExposureParam : ParamModBase
+    public class CameraRunParam : ParamModBase
     {
-        public CameraExposureParam() : base()
+        public CameraRunParam() : base()
         {
 
         }
-        public CameraExposureParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public CameraRunParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
 
         }

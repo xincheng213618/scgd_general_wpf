@@ -189,7 +189,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 CalibrationControl = new CalibrationControl(device);
             }
-            Name = device.Code + "calibration";
+            Name = $"camera,calibration,{device.Code}";
+
             Title = "校正参数设置";
             Device = device;
             IsUserControl = true;

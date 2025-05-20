@@ -100,28 +100,28 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public Rect ROIRect { get => new Rect(PointX, PointY, Width, Height); set { PointX = (int)value.X; PointY = (int)value.Y; Width = (int)value.Width; Height = (int)value.Height; NotifyPropertyChanged(nameof(ROIRect)); } }
           
         /// <summary>
-        /// ROI X
+        /// FindLightArea X
         /// </summary>
         [JsonProperty("ex")]
         [DisplayName("ROI X"),Browsable(false)]
         public int PointX { get => _PointX; set { _PointX = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointX;
         /// <summary>
-        /// ROI Y
+        /// FindLightArea Y
         /// </summary>
         [JsonProperty("ey")]
         [DisplayName("ROI Y"), Browsable(false)]
         public int PointY { get => _PointY; set { _PointY = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _PointY;
         /// <summary>
-        /// ROI W
+        /// FindLightArea W
         /// </summary>
         [JsonProperty("ew")]
         [DisplayName("ROI W"), Browsable(false)]
         public int Width { get => _Width; set { _Width = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ROIRect)); } }
         private int _Width;
         /// <summary>
-        /// ROI H
+        /// FindLightArea H
         /// </summary>
         [JsonProperty("eh")]
         [DisplayName("ROI H"), Browsable(false)]

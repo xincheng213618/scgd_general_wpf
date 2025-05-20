@@ -69,9 +69,9 @@ namespace ColorVision.Engine.Templates
                 }
             }
         }
-        public static Dictionary<string, ITemplateName> ITemplateNames { get; set; } = new Dictionary<string, ITemplateName>();
+        public static Dictionary<string, ITemplateMeta> ITemplateNames { get; set; } = new Dictionary<string, ITemplateMeta>();
 
-        public static void AddITemplateName(string code, ITemplateName templateName)
+        public static void AddITemplateMeta(string code, ITemplateMeta templateName)
         {
             if (!ITemplateNames.TryAdd(code, templateName))
             {
@@ -87,7 +87,7 @@ namespace ColorVision.Engine.Templates
                .ToList();
             return templateNames.Any(a => a.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         }
-        public static ITemplateName? FindDuplicateTemplate(string templateName)
+        public static ITemplateMeta? FindDuplicateTemplate(string templateName)
         {
             var duplicates = ITemplateNames.Values
                 .FirstOrDefault(item => item.GetTemplateNames()

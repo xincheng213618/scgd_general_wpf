@@ -7,7 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
@@ -114,7 +114,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         
         public static void EditCameraExpousure()
         {
-            var windowTemplate = new TemplateEditorWindow(new TemplateCameraExposure()) { Owner = Application.Current.GetActiveWindow() };
+            var windowTemplate = new TemplateEditorWindow(new TemplateCameraRunParam()) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
 

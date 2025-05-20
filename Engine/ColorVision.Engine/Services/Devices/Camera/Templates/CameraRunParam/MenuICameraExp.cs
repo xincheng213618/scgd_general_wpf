@@ -3,7 +3,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam
 {
 
     public class MenuICameraExp : MenuItemBase
@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new TemplateEditorWindow(new TemplateCameraExposure()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new TemplateEditorWindow(new TemplateCameraRunParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 

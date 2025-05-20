@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.ROI
+namespace ColorVision.Engine.Templates.FindLightArea
 {
     public class AlgorithmRoi : DisplayAlgorithmBase
     {

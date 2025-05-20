@@ -36,10 +36,13 @@ namespace ColorVision.Engine.Templates
         {
             InitializeComponent();
         }
-        List<KeyValuePair<string, ITemplateName>> keyValuePairs = new List<KeyValuePair<string, ITemplateName>>();
+        List<KeyValuePair<string, ITemplateMeta>> keyValuePairs = new List<KeyValuePair<string, ITemplateMeta>>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            keyValuePairs = TemplateControl.ITemplateNames.ToList();
+            keyValuePairs = TemplateControl.ITemplateNames
+                .OrderBy(x => x.Key)
+                .ToList();
+
             ListView2.ItemsSource = keyValuePairs;
         }
 

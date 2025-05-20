@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.ROI
+namespace ColorVision.Engine.Templates.FindLightArea
 {
     public class TemplateRoi : ITemplate<RoiParam>, IITemplateLoad
     {    
@@ -9,8 +9,9 @@ namespace ColorVision.Engine.Templates.ROI
 
         public TemplateRoi()
         {
+            Name = "FindLightArea";
             Title = "发光区检测模板管理";
-            Code = "OLED.GetROI";
+            Code = "FindLightArea";
             TemplateParams = Params;
         }
 

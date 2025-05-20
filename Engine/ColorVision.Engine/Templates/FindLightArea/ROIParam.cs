@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Engine.Templates.ROI
+namespace ColorVision.Engine.Templates.FindLightArea
 {
 
     public class RoiParam : ParamModBase

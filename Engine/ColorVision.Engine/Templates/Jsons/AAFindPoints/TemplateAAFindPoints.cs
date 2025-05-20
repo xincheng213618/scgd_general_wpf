@@ -32,7 +32,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         public TemplateAAFindPoints()
         {
             Title = "寻找AA区模板管理";
-            Code = "ARVR.AA.FindPoints";
+            Code = "BuildPOI";
             Name = "寻找AA区";
             TemplateDicId = 41;
             TemplateParams = Params;

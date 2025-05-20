@@ -7,7 +7,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Templates.ROI
+namespace ColorVision.Engine.Templates.FindLightArea
 {
     /// <summary>
     /// DisplaySFR.xaml 的交互逻辑
