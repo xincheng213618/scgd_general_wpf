@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Engine.Templates.Menus;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Templates.POI
 {

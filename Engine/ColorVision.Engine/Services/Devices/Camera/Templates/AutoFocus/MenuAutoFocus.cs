@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Menus;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
 {

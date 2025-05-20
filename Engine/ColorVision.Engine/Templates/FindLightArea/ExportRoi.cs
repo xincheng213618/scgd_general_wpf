@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.FindLightArea
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.FindLightArea
 {
     public class ExportRoi : MenuITemplateAlgorithmBase
     {

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
 {
     public class ExportBinocularFusion : MenuITemplateAlgorithmBase
     {

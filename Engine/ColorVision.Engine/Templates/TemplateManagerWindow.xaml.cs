@@ -1,25 +1,38 @@
-﻿using ColorVision.Engine.Services;
+﻿using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
 
     public class MenuTemplateManagerWindow : MenuItemBase
     {
-        public override string OwnerGuid => MenuItemConstants.Tool;
-        public override string Header => "模板管理";
-        public override int Order => 3;
+        public override string OwnerGuid => nameof(MenuTemplate);
+        public override string Header => ColorVision.Engine.Properties.Resources.Settings;
+
+        public override int Order => 999999;
+        public override object? Icon
+        {
+            get
+            {
+                TextBlock text = new()
+                {
+                    Text = "\uE713", // 使用Unicode字符
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 15,
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                return text;
+            }
+        }
 
         public override void Execute()
         {
@@ -36,14 +49,21 @@ namespace ColorVision.Engine.Templates
         {
             InitializeComponent();
         }
-        List<KeyValuePair<string, ITemplateMeta>> keyValuePairs = new List<KeyValuePair<string, ITemplateMeta>>();
+        List<KeyValuePair<string, ITemplate>> Templates  = new List<KeyValuePair<string, ITemplate>>();
         private void Window_Initialized(object sender, EventArgs e)
         {
-            keyValuePairs = TemplateControl.ITemplateNames
+            Templates  = TemplateControl.ITemplateNames
                 .OrderBy(x => x.Key)
                 .ToList();
 
-            ListView2.ItemsSource = keyValuePairs;
+            // 统计模板总数
+            int totalTemplateCount = Templates.Sum(x => x.Value.Count);
+
+            // 绑定到 ListView
+            ListView2.ItemsSource = Templates;
+
+            // 显示汇总信息
+            SummaryText.Text = $"共计{Templates.Count}类模板，{totalTemplateCount}个模板";
         }
 
         public ObservableCollection<ISearch> Searches { get; set; } = new ObservableCollection<ISearch>();
@@ -125,7 +145,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView2.SelectedIndex > -1)
             {
-                if (keyValuePairs[ListView2.SelectedIndex].Value is ITemplate template)
+                if (Templates [ListView2.SelectedIndex].Value is ITemplate template)
                 {
                     new TemplateEditorWindow(template) { Owner = Application.Current.GetActiveWindow() }.Show();
                 }

@@ -12,6 +12,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="0,2">
             <Grid x:Name="SearchGrid" Margin="10,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
@@ -95,6 +96,11 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Key}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                        <TextBlock Text="  " Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+
+                                        <TextBlock Text="{Binding Value.Title}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                        <TextBlock Text="  Count: " Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
+                                        <TextBlock Text="{Binding Value.Count}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -103,6 +109,7 @@
                 </ListView.View>
             </ListView>
         </Border>
+        <TextBlock x:Name="SummaryText" Grid.Row="2" Text="" Margin="10,0,10,5"/>
 
 
     </Grid>

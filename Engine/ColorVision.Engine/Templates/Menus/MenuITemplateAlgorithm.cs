@@ -1,6 +1,6 @@
 ﻿using ColorVision.UI.Menus;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine.Templates.Menus
 {
     public class MenuITemplateAlgorithm : MenuItemBase
     {

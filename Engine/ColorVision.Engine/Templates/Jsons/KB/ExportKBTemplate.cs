@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Jsons.KB
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Jsons.KB
 {
     public class ExportKBTemplate : MenuITemplateAlgorithmBase
     {

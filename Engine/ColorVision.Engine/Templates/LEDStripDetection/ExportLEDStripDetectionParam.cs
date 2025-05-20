@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.LEDStripDetection
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.LEDStripDetection
 {
     public class ExportLEDStripDetectionParam : MenuITemplateAlgorithmBase
     {

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.LedCheck
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.LedCheck
 {
     public class ExportLedCheckParam : MenuITemplateAlgorithmBase
     {

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Jsons.BlackMura
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Jsons.BlackMura
 {
     public class ExportBlackMura : MenuITemplateAlgorithmBase
     {

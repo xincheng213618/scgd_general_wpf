@@ -2,6 +2,7 @@
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Windows;

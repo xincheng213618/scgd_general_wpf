@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.SFR
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.SFR
 {
     public class ExportSFRParam : MenuITemplateAlgorithmBase
     {

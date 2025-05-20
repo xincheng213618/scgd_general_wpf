@@ -22,13 +22,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
-    public interface ITemplateMeta
-    {
-        public List<string> GetTemplateNames();
-    }
-
-
-    public class ITemplate: ITemplateMeta
+    public class ITemplate
     {
         public ITemplate()
         {
@@ -36,7 +30,7 @@ namespace ColorVision.Engine.Templates
             {
                 Name = Name?? Code ?? this.GetType().ToString();
 
-                TemplateControl.AddITemplateMeta(Name, this);
+                TemplateControl.AddITemplateInstance(Name, this);
             });
         }
         public int TemplateDicId { get; set; }

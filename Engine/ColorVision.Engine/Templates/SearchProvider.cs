@@ -1,7 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons.KB;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using System.Collections.Generic;
 using System.Linq;
