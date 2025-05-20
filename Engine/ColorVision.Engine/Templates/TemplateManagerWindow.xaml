@@ -76,7 +76,7 @@
 
         </Grid>
         <Border Grid.Row="1" Margin="5" Style="{StaticResource BorderModuleArea}">
-            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged">
+            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged" MouseDoubleClick ="ListView2_MouseDoubleCick">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="Background" Value="Transparent"/>
@@ -96,11 +96,6 @@
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="{Binding Key}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                        <TextBlock Text="  " Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-
-                                        <TextBlock Text="{Binding Value.Title}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                        <TextBlock Text="  Count: " Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
-                                        <TextBlock Text="{Binding Value.Count}" Foreground="{DynamicResource Foreground}" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="0,0,0,0"/>
                                     </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -109,7 +104,10 @@
                 </ListView.View>
             </ListView>
         </Border>
-        <TextBlock x:Name="SummaryText" Grid.Row="2" Text="" Margin="10,0,10,5"/>
+        <DockPanel Grid.Row="2" Margin="10,0,10,5" >
+            <TextBlock x:Name="SummaryText"  Text="" />
+            <TextBlock x:Name="SummaryText1"  Text=""  HorizontalAlignment="Right"/>
+        </DockPanel>
 
 
     </Grid>

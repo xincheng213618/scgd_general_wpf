@@ -145,7 +145,26 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView2.SelectedIndex > -1)
             {
-                if (Templates [ListView2.SelectedIndex].Value is ITemplate template)
+                if (Templates[ListView2.SelectedIndex].Value is ITemplate template)
+                {
+                    SummaryText1.Text = $"当前选择：{template.Title}，共计{template.Count}个模板";
+                }
+                else
+                {
+                    SummaryText1.Text = string.Empty;
+                }
+            }
+            else
+            {
+                SummaryText1.Text = string.Empty;
+            }
+        }
+
+        private void ListView2_MouseDoubleCick(object sender, MouseButtonEventArgs e)
+        {
+            if (ListView2.SelectedIndex > -1)
+            {
+                if (Templates[ListView2.SelectedIndex].Value is ITemplate template)
                 {
                     new TemplateEditorWindow(template) { Owner = Application.Current.GetActiveWindow() }.Show();
                 }
