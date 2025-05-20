@@ -153,8 +153,6 @@ namespace ColorVision
                     Interaction.GetBehaviors(StackPanelSPD).Add(fluidMoveBehavior);
                 });
             });
-            if (Config.OpenFloatingBall)
-                new FloatingBallWindow().Show();
             ProgramTimer.StopAndReport();
 
             // 设置快捷键 Ctrl + F

@@ -42,15 +42,17 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            foreach (var item in LargeFlowConfig.Flows)
+            var flowNames = new HashSet<string>(LargeFlowConfig.Flows);
+            var largeFlowParamsSet = new HashSet<TemplateModel<FlowParam>>();
+
+            foreach (var param in TemplateFlow.Params)
             {
-                if (TemplateFlow.Params.FirstOrDefault(x => x.Value.Name == item) is TemplateModel<FlowParam> templateModel)
-                LargeFlowParams.Add(templateModel);
-            }
-            foreach (var item in TemplateFlow.Params)
-            {
-                if (LargeFlowParams.Contains(item)) continue;
-                LargeFlowParamAll.Add(item);
+                if (flowNames.Contains(param.Value.Name))
+                {
+                    largeFlowParamsSet.Add(param);
+                    LargeFlowParams.Add(param);
+                }
+                LargeFlowParamAll.Add(param);
             }
 
             SeriesExportTreeView1.ItemsSource = LargeFlowParams;

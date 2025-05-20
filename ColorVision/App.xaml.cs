@@ -31,8 +31,6 @@ namespace ColorVision
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
             #endif
 
-
-
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {

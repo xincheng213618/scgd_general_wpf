@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
@@ -17,6 +18,10 @@ namespace ProjectARVR
         public static ProjectARVRConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRConfig>();
         public RelayCommand OpenTemplateCommand { get; set; }
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
+
+        public RelayCommand OpenTemplateLargeCommand { get; set; }
+        public RelayCommand OpenEditLargeCommand { get; set; }
+
         public RelayCommand OpenLogCommand { get; set; }
         public RelayCommand OpenConfigCommand { get; set; }
         public RelayCommand OpenChangeLogCommand { get; set; }
@@ -28,10 +33,16 @@ namespace ProjectARVR
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenFlowEngineToolCommand = new RelayCommand(a => OpenFlowEngineTool());
             TemplateItemSource = TemplateFlow.Params;
+
+            OpenTemplateLargeCommand = new RelayCommand(a => OpenTemplateLarge());
+            OpenEditLargeCommand = new RelayCommand(a => OpenEditLargeFlow());
+            TemplateLargeItemSource = TemplateLargeFlow.Params;
             OpenLogCommand = new RelayCommand(a => OpenLog());
             OpenConfigCommand = new RelayCommand(a => OpenConfig());
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
+
+
         }
 
 
@@ -127,6 +138,22 @@ namespace ProjectARVR
         {
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+
+        public ObservableCollection<TemplateModel<TJLargeFlowParam>> TemplateLargeItemSource { get => _TemplateLargeItemSource; set { _TemplateLargeItemSource = value; NotifyPropertyChanged(); } }
+        private ObservableCollection<TemplateModel<TJLargeFlowParam>> _TemplateLargeItemSource;
+        public int TemplateLargeSelectedIndex { get => _TemplateLargeSelectedIndex; set { _TemplateLargeSelectedIndex = value; NotifyPropertyChanged(); } }
+        private int _TemplateLargeSelectedIndex;
+        public void OpenTemplateLarge()
+        {
+            new TemplateEditorWindow(new TemplateLargeFlow(), TemplateLargeSelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        public void OpenEditLargeFlow()
+        {
+            new EditLargeFlow(TemplateLargeFlow.Params[TemplateLargeSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+
 
         [JsonIgnore]
         public string SN { get => _SN; set

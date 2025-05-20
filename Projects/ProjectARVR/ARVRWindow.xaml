@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectARVR.ARVRWindow"
+﻿<Window xmlns:LogImp="clr-namespace:ColorVision.UI.LogImp;assembly=ColorVision.UI"  x:Class="ProjectARVR.ARVRWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -126,7 +126,34 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-
+                                <GridViewColumn Header="Id" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding Id}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="SN" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding SN}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Model" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding Model}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Time" Width="150">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding CreateTime}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
                             </GridView>
                         </ListView.View>
 
@@ -153,21 +180,41 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
+                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
                             <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                                 <TextBlock Text="SN" Margin="0,0,5,0"/>
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
                         </DockPanel>
-                        <Button Content="Test KeyBorder"  DockPanel.Dock="Right" Background="Pink" Height="70" Click="TestClick" />
+                        <DockPanel  Margin="0,0,0,5">
+                            <ComboBox x:Name="CBLargeTemplate"  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                            <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                <Button  Width="30" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Command="{Binding  OpenTemplateLargeCommand}"/>
+                            </Grid>
+                            <Grid Width="30" >
+                                <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
+                                <Button Background="Transparent" BorderThickness="0" Command="{Binding OpenEditLargeCommand}"/>
+                            </Grid>
+                            <Button Content="大模板测试"  DockPanel.Dock="Right" Background="Pink" Click="LargeTest_Click" />
+                        </DockPanel>
                     </StackPanel>
                 </Grid>
-                <RichTextBox x:Name="outputText" Grid.Row="1" Margin="5,0"  Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <FlowDocument>
-                        <Paragraph>
+                <Grid Grid.Row="1" Margin="5,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <RichTextBox x:Name="outputText"   Background="White" FontFamily="Courier New" VerticalScrollBarVisibility="Auto" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <FlowDocument>
+                            <Paragraph>
 
-                        </Paragraph>
-                    </FlowDocument>
-                </RichTextBox>
+                            </Paragraph>
+                        </FlowDocument>
+                    </RichTextBox>
+                    <LogImp:LogOutput x:Name="LogOutput1"  Grid.Row="1" />
+                </Grid>
+
             </Grid>
         </Grid>
 

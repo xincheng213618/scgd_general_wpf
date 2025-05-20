@@ -1,8 +1,11 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
+using ColorVision.Engine.Templates.Flow;
 using log4net;
 using Newtonsoft.Json;
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {
@@ -37,6 +40,22 @@ namespace ColorVision.Engine.Templates.Jsons.LargeFlow
                 JsonValue = JsonConvert.SerializeObject(value);
                 NotifyPropertyChanged(); 
             } }
+
+
+        public ObservableCollection<TemplateModel<FlowParam>> GetFlows()
+        {
+            var templateModels = new ObservableCollection<TemplateModel<FlowParam>>();
+            foreach (var flow in LargeFlowConfig.Flows)
+            {
+                var templateModel = TemplateFlow.Params.FirstOrDefault(x => x.Value.Name == flow);
+                if (templateModel != null)
+                {
+                    templateModels.Add(templateModel);
+                }
+            }
+
+            return templateModels;
+        }
 
         public TJLargeFlowParam() : base()
         {

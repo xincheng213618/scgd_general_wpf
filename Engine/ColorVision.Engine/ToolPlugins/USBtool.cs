@@ -26,6 +26,5 @@ namespace ColorVision.Engine.ToolPlugins
     }
 
 
-    
 }
 
