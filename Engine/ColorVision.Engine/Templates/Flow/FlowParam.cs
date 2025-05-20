@@ -20,13 +20,12 @@ namespace ColorVision.Engine.Templates.Flow
     /// </summary>
     public class FlowParam : ParamModBase
     {
-        private static ModMasterDao masterFlowDao = new("flow");
         public static void Save2DB(FlowParam flowParam)
         {
             if (ModMasterDao.Instance.GetById(flowParam.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = flowParam.Name;
-                ModMasterDao modMasterDao = new(modMasterModel.Pcode);
+                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
                 modMasterDao.Save(modMasterModel);
             }
 

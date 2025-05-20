@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.BuzProduct
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.BuzProduct
 {
     public class MenuIBuzProduct : MenuItemTemplateBase
     {

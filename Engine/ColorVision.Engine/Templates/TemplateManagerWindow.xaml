@@ -12,6 +12,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Margin="0,2">
             <Grid x:Name="SearchGrid" Margin="10,1" HorizontalAlignment="Stretch" VerticalAlignment="Center" >
@@ -75,7 +76,7 @@
 
         </Grid>
         <Border Grid.Row="1" Margin="5" Style="{StaticResource BorderModuleArea}">
-            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged">
+            <ListView  x:Name="ListView2" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionChanged="ListView2_SelectionChanged" MouseDoubleClick ="ListView2_MouseDoubleCick">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
                         <Setter Property="Background" Value="Transparent"/>
@@ -103,6 +104,10 @@
                 </ListView.View>
             </ListView>
         </Border>
+        <DockPanel Grid.Row="2" Margin="10,0,10,5" >
+            <TextBlock x:Name="SummaryText"  Text="" />
+            <TextBlock x:Name="SummaryText1"  Text=""  HorizontalAlignment="Right"/>
+        </DockPanel>
 
 
     </Grid>

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.ImageCropping
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.ImageCropping
 {
     public class MenuImageCropping : MenuITemplateAlgorithmBase
     {

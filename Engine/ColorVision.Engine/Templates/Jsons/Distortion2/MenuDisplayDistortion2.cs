@@ -1,5 +1,7 @@
 ﻿
 
+using ColorVision.Engine.Templates.Menus;
+
 namespace ColorVision.Engine.Templates.Jsons.Distortion2
 {
     public class MenuDisplayDistortion2 : MenuITemplateAlgorithmBase

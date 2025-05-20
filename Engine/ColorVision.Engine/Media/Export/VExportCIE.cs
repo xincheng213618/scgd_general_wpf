@@ -16,6 +16,7 @@ namespace ColorVision.Engine.Media
         public static void SaveTo(VExportCIE export, Mat src, string fileName)
         {
             fileName = fileName + export.ExportImageFormat.ToString().ToLower(CultureInfo.CurrentCulture);
+            export.CoverFilePath = fileName;
             if (export.ExportImageFormat == ImageFormat.Tiff)
             {
                 if (export.Compression == 0)
@@ -178,6 +179,8 @@ namespace ColorVision.Engine.Media
         }
 
 
+
+        public string CoverFilePath { get; set; }
 
 
         public int Rows { get => _CVCIEFile.rows; }

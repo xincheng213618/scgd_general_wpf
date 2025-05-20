@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.POI
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.POI
 {
     public class MenuItemPoiParam : MenuItemTemplateBase
     {

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.MTF
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.MTF
 {
     public class ExportMenuItemMTF : MenuITemplateAlgorithmBase
     {

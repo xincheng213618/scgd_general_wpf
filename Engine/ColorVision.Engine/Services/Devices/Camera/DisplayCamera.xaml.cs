@@ -9,6 +9,7 @@ using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Jsons.HDR;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
@@ -58,6 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public int CalibrationTemplateIndex { get; set; }
         public int ExpTimeParamTemplateIndex { get; set; }
         public int ExpTimeParamTemplate1Index { get; set; }
+        public int HDRTemplateIndex { get; set; }
 
         public int AutoFocusTemplateIndex { get; set; }
 
@@ -132,6 +134,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboxAutoFocus.ItemsSource = TemplateAutoFocus.Params;
             ComboxAutoFocus.SelectedIndex = 0;
             ComboxAutoFocus.DataContext = DisplayCameraConfig;
+
+            ComboBoxHDRTemplate.ItemsSource = TemplateHDR.Params.CreateEmpty();
+            ComboBoxHDRTemplate.SelectedIndex = 0;
+            ComboBoxHDRTemplate.DataContext = DisplayCameraConfig;
 
             CBFilp.ItemsSource = from e1 in Enum.GetValues(typeof(CVImageFlipMode)).Cast<CVImageFlipMode>()
                                               select new KeyValuePair<CVImageFlipMode, string>(e1, e1.ToString());
@@ -294,7 +300,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
+
+            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+
+            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
 
             ButtonProgressBarGetData.Start();
             ButtonProgressBarGetData.TargetTime = Device.Config.ExpTime + DisplayCameraConfig.TakePictureDelay;
@@ -337,9 +346,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
-            return DService.GetData(expTime, param, autoExpTimeParam);
 
+            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return null;
 
+            return DService.GetData(expTime, param, autoExpTimeParam,HDRparamBase);
 
         }
 
@@ -352,7 +362,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             double[] expTime = null;
             if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
             else expTime = new double[] { Device.Config.ExpTime };
-            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
+
+
+            if (ComboBoxHDRTemplate.SelectedValue is not ParamBase HDRparamBase) return;
+
+            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam, HDRparamBase);
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
@@ -589,6 +603,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 Common.Utilities.DebounceTimer.AddOrResetTimer("SetGain", 500, () => DService.SetExp());
             }
+        }
+
+        private void EditHDRTemplate(object sender, RoutedEventArgs e)
+        {
+            var windowTemplate = new TemplateEditorWindow(new TemplateHDR(), ComboBoxHDRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates

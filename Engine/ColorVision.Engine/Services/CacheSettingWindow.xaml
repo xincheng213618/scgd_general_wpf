@@ -24,7 +24,6 @@
             <ListView x:Name="ListViewProjects" Background="Transparent" Margin="5,0,5,5" SelectionChanged="ListViewProjects_SelectionChanged" ItemsSource="{Binding CacheSettingInfos}" Grid.Row="1" Padding="2">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>

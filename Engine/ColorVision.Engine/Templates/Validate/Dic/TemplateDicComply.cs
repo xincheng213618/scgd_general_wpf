@@ -10,7 +10,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Validate.Dic
 {
-    public class TemplateDicComply : ITemplate<DicComplyParam>, IITemplateLoad
+    public class TemplateDicComply : ITemplate<DicComplyParam>
     {
         public static ObservableCollection<TemplateModel<DicComplyParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicComplyParam>>();
 

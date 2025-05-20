@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using CVCommCore;
@@ -292,7 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam,ParamBase HDRparamBase)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
@@ -331,6 +332,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = param.Name });
                 }
             }
+
+            if (HDRparamBase.Id == -1)
+            {
+                Params.Add("IsHDR", false);
+            }
+            else
+            {
+                Params.Add("IsHDR", true);
+                Params.Add("CamParamTemplate", new CVTemplateParam() { ID = HDRparamBase.Id, Name = HDRparamBase.Name });
+            }
+
 
             Params.Add("ScaleFactor", Config.ScaleFactor);
             Params.Add("Gain", Config.Gain);

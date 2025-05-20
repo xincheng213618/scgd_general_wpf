@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -13,6 +14,15 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
+    public class TemplateSetting : ViewModelBase, IConfig
+    {
+        public static TemplateSetting Instance => ConfigService.Instance.GetRequiredService<TemplateSetting>();
+
+        public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
+        private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+    }
 
 
     /// <summary>

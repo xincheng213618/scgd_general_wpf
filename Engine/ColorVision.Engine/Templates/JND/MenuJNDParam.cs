@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.JND
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.JND
 {
     public class MenuJNDParam : MenuITemplateAlgorithmBase
     {

@@ -2,6 +2,7 @@
 
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.Menus;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using System.Windows;

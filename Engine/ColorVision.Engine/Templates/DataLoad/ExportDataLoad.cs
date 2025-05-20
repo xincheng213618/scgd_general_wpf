@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.DataLoad
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.DataLoad
 {
     public class ExportDataLoad : MenuITemplateAlgorithmBase
     {
