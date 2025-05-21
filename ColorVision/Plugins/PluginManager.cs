@@ -286,14 +286,9 @@ del ""%~f0"" & exit
             });
         }
 
-
-
-
-
-
         public static void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");
+            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins");
         }
     }
 }

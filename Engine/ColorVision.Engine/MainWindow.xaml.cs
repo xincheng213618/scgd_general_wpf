@@ -13,7 +13,7 @@ using System.Windows;
 namespace ColorVision.Engine
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {

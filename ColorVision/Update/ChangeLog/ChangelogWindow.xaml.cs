@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
@@ -19,16 +20,33 @@ namespace ColorVision.Update
 
     public class ChangelogWindowConfig : WindowConfig
     {
+        [JsonIgnore]
         public RelayCommand EditCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand OpenInExplorerCommand { get; set; }
+
+        [JsonIgnore]
+        public RelayCommand OpenInWeview2Command { get; set; }
 
 
         public ChangelogWindowConfig()
         {
             EditCommand = new RelayCommand(a => new PropertyEditorWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             OpenInExplorerCommand = new RelayCommand(a => Common.Utilities.PlatformHelper.Open("CHANGELOG.md"));
+
+            OpenInWeview2Command = new RelayCommand(a => 
+            {
+                if (File.Exists("CHANGELOG.md"))
+                {
+                    string markdown = File.ReadAllText("CHANGELOG.md");
+                    string html = Markdig.Markdown.ToHtml(markdown);
+                    new MarkdownViewWindow(html) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+                }
+            }
+            );
         }
+
+
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
