@@ -1,3 +1,4 @@
+using ColorVision.Themes;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System;
@@ -60,23 +61,27 @@ namespace ColorVision.UI
         {
             string cssPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "css", "github-markdown.css");
             string cssContent = File.ReadAllText(cssPath);
+            webView.CoreWebView2.Profile.PreferredColorScheme =ThemeManager.Current.CurrentUITheme == Theme.Dark ? CoreWebView2PreferredColorScheme.Dark : CoreWebView2PreferredColorScheme.Light;
 
             string htmlContent = $@"
 <html>
 <head>
     <meta charset='utf-8'>
+    <meta name=""color-scheme"" content=""light dark"">
     <style>
         {cssContent}
         body {{
-            display: flex;
-            justify-content: center;
+				box-sizing: border-box;
+				min-width: 200px;
+				max-width: 980px;
+				margin: 0 auto;
+				padding: 45px;
         }}
-        .markdown-body {{
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 800px;
-            margin: 40px;
-        }}
+		@media (prefers-color-scheme: dark) {{
+				body {{
+					background-color: #0d1117;
+				}}
+			}}
     </style>
 </head>
 <body>

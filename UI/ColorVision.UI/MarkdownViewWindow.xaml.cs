@@ -1,3 +1,4 @@
+using ColorVision.Themes;
 using Markdig;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Win32;
@@ -22,6 +23,7 @@ namespace ColorVision.UI
         public MarkdownViewWindow(string html)
         {
             InitializeComponent();
+            this.ApplyCaption();
             Phrase(html);
         }
 
