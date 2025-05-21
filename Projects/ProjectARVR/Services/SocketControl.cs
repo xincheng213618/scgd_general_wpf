@@ -1,17 +1,20 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.Flow;
-using ColorVision.UI;
+﻿using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI.SocketProtocol;
-using log4net;
 using ProjectARVR.PluginConfig;
-using System.ComponentModel;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 
 namespace ProjectARVR.Services
 {
+    public class SocketControl
+    {
+        public static SocketControl Current { get; set; } = new SocketControl();
+        public NetworkStream Stream { get; set; }
+
+    }
+
+
     public class FlowSocketMsgHandle : ISocketMsgHandle
     {
         public int Order => 0;
@@ -21,6 +24,8 @@ namespace ProjectARVR.Services
             var strings = message.Split(",");
             if (strings.Length > 1 && strings[0] == "ProjectARVR")
             {
+                SocketControl.Current.Stream = stream;
+
                 if (ProjectWindowInstance.WindowInstance != null)
                 {
                     if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)

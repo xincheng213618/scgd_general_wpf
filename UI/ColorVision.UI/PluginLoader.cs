@@ -63,8 +63,6 @@ namespace ColorVision.UI
         public string? AssemblyCulture { get; set; }
         public string? AssemblyPublicKeyToken { get; set; }
 
-
-
         [JsonIgnore]
         public Assembly Assembly { get; set; }
         [JsonIgnore]

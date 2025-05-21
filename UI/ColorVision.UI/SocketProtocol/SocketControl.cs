@@ -1,13 +1,34 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ColorVision.UI.SocketProtocol
 {
+    public class SocketMessageBase
+    {
+        public string Version { get; set; }
+        public string MsgID { get; set; }
+        public string EventName { get; set; }
+        public string SerialNumber { get; set; }
+    }
+
+    public class SocketRequest : SocketMessageBase
+    {
+        public dynamic Params { get; set; }
+    }
+
+    public class SocketResponse : SocketMessageBase
+    {
+        public int Code { get; set; }
+        public string Msg { get; set; }
+        public dynamic Data { get; set; }
+    }
 
     public class SocketControl:ViewModelBase
     {
@@ -124,7 +145,30 @@ namespace ColorVision.UI.SocketProtocol
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    log.Info("Received message: " + message);
+                    log.Info("Received raw message: " + message);
+                    // 尝试作为SocketRequest解析
+                    SocketRequest? request = null;
+                    try
+                    {
+                        request = JsonConvert.DeserializeObject<SocketRequest>(message);
+                    }
+                    catch (Exception ex)
+                    {
+                        var response = new SocketResponse
+                        {
+                            Version = request?.Version ?? "1.0",
+                            MsgID = request?.MsgID ?? "",
+                            EventName = request?.EventName ?? "",
+                            SerialNumber = request?.SerialNumber ?? "",
+                            Code = -1,
+                            Msg = ex.Message,
+                            Data = null
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        byte[] respBytes = Encoding.UTF8.GetBytes(respString);
+                        stream.Write(respBytes, 0, respBytes.Length);
+                        continue;
+                    }
 
                     bool handled = false;
                     foreach (var handler in SocketMsgHandles)
@@ -138,17 +182,33 @@ namespace ColorVision.UI.SocketProtocol
 
                     if (!handled)
                     {
-                        byte[] response = Encoding.ASCII.GetBytes("Unhandled Function Call");
-                        stream.Write(response, 0, response.Length);
+                        // 构造标准响应
+                        var response = new SocketResponse
+                        {
+                            Version = request?.Version ?? "1.0",
+                            MsgID = request?.MsgID ?? "",
+                            EventName = request?.EventName ?? "",
+                            SerialNumber = request?.SerialNumber ?? "",
+                            Code = 404,
+                            Msg = "Unhandled Function Call",
+                            Data = null
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        byte[] respBytes = Encoding.UTF8.GetBytes(respString);
+                        stream.Write(respBytes, 0, respBytes.Length);
+                        log.Info("Sent unhandled response: " + respString);
                     }
-
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                log.Error("Client handling error: " + ex);
                 client?.Close();
             }
-            client?.Dispose();
+            finally
+            {
+                client?.Dispose();
+            }
         }
     }
 }

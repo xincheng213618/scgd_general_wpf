@@ -2,6 +2,7 @@
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.UI;
+using Markdig;
 using Newtonsoft.Json;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
@@ -75,7 +76,9 @@ namespace ProjectKB
                 using (StreamReader reader = new StreamReader(stream))
                 {
                     string content = reader.ReadToEnd();
-                    ShowChangeLogWindow(title,content);
+
+                    string html = Markdig.Markdown.ToHtml(content);
+                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
                 }
             }
         }
@@ -94,28 +97,7 @@ namespace ProjectKB
         }
 
 
-        private static void ShowChangeLogWindow(string title,string content)
-        {
-            // 创建一个新的窗口
-            Window window = new Window
-            {
-                Title = title,
-                Width = 600,
-                Height = 400,
-                Content = new System.Windows.Controls.TextBox
-                {
-                    Text = content,
-                    IsReadOnly = true,
-                    TextWrapping = TextWrapping.Wrap,
-                    VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                    BorderThickness = new Thickness(0),
-                    Margin = new Thickness(5)
-                }
-            };
 
-            // 显示窗口
-            window.ShowDialog();
-        }
 
         public static void OpenModbus()
         {
