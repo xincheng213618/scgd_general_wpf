@@ -3,72 +3,12 @@ using ColorVision.UI.Authorizations;
 using log4net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
 
 namespace ColorVision.UI
 {
-    public static class AssemblyHandlerExtension
-    {
-        public static void LoadImplementations<T>(this ObservableCollection<T> interfaces) 
-        {
-            interfaces.Clear();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is T imageEditorFunction)
-                    {
-                        interfaces.Add(imageEditorFunction);
-                    }
-                }
-            }
-        }
-    }
-
-    public class AssemblyHandler
-    {
-        private static ILog log = LogManager.GetLogger(typeof(AssemblyHandler));
-        private static AssemblyHandler _instance;
-        private static readonly object _locker = new();
-        public static AssemblyHandler GetInstance()
-        {
-            lock (_locker)
-            {
-                _instance ??= new AssemblyHandler();
-                return _instance;
-            }
-        }
-
-        public Assembly[] GetAssemblies()
-        {
-            return AppDomain.CurrentDomain.GetAssemblies();
-        }
-
-        public List<Assembly> RemoveAssemblies { get; set; } = new List<Assembly>();
-        public List<string> RemoveAssemblyNames { get; set; } = new List<string>();
-
-        public static List<T> LoadImplementations<T>() where T : class
-        {
-            var instances = new List<T>();
-
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is T instance)
-                    {
-                        instances.Add(instance);
-                    }
-                }
-            }
-
-            return instances;
-        }
-    }
-
     public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));

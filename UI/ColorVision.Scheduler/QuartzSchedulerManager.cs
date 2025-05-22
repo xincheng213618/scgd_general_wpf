@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using Quartz;
 using Quartz.Impl;
 using System.Collections.ObjectModel;
@@ -88,7 +89,7 @@ namespace ColorVision.Scheduler
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
                 {
                     foreach (var type in assembly.GetTypes())
                     {
