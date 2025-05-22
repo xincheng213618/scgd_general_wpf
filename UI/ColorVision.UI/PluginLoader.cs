@@ -63,6 +63,10 @@ namespace ColorVision.UI
         public string? AssemblyCulture { get; set; }
         public string? AssemblyPublicKeyToken { get; set; }
 
+        public string README { get; set; } = string.Empty;
+
+        public string ChangeLog { get; set; } = string.Empty;
+
         [JsonIgnore]
         public Assembly Assembly { get; set; }
         [JsonIgnore]
@@ -132,6 +136,13 @@ namespace ColorVision.UI
                         {
                             pluginInfo.Manifest = manifest; // 更新manifest
                         }
+                        string readmePath = Path.Combine(directory, "readme.md");
+                        if (File.Exists(readmePath))
+                            pluginInfo.README = File.ReadAllText(readmePath); ;
+
+                        string changelogPath = Path.Combine(directory, "changelog.md");
+                        if (File.Exists(changelogPath))
+                            pluginInfo.ChangeLog = File.ReadAllText(changelogPath); ;
 
                         if (!pluginInfo.Enabled)
                             continue;
