@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Templates.Jsons.HDR
             EditTemplateJson = EditTemplateJson ?? new EditTemplateJson(Description);
             return EditTemplateJson;
         }
-        public string Description { get; set; } = "";
+        public string Description { get; set; } = "{\r\n  \"Gain\": 10,//增益\r\n  \"AvgCount\": 1, //平均次数\r\n  \"ThLow\": 50,//饱和度下限\r\n  \"ThHigh\": 150,//饱和度上限\r\n  \"ExpTimes\": [ //曝光参数列表\r\n    10,\r\n    50,\r\n    100\r\n  ],\r\n  \"HDRExpTime\": 100 //合成后的曝光时间\r\n}";
 
         public override UserControl CreateUserControl() => new EditTemplateJson(Description);
         public override IMysqlCommand? GetMysqlCommand() => new MysqlHDR();
