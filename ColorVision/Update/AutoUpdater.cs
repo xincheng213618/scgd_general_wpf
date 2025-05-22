@@ -116,79 +116,6 @@ namespace ColorVision.Update
             });
         }
 
-        public async Task CheckAndUpdateV2()
-        {
-            // 获取本地版本
-            try
-            {
-                // 获取服务器版本
-                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
-                if (LatestVersion == new Version()) return;
-
-                var Version = Assembly.GetExecutingAssembly().GetName().Version;
-                if (LatestVersion > Version)
-                {
-                    bool IsIncrement = false;
-                    if (LatestVersion.Minor == Version.Minor)
-                        IsIncrement = true;
-                    bool IsSilence = false;
-
-                    if (IsIncrement && LatestVersion.Build != Version.Build)
-                    {
-                        LatestVersion = new Version(Version.Major, Version.Minor, Version.Build + 1, 1);
-                    }
-                    else
-                    {
-                        if (IsIncrement && LatestVersion.Revision != Version.Revision)
-                        {
-                            IsSilence = true;
-                        }
-                    }
-                    if (IsSilence)
-                    {
-                        CancellationTokenSource _cancellationTokenSource = new();
-
-                        AppDomain.CurrentDomain.ProcessExit += (s, e) => _cancellationTokenSource.Cancel();
-                        SilenceDownloadAndUpdate(LatestVersion, Path.GetTempPath(), _cancellationTokenSource.Token);
-                        return;
-                    }
-
-                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
-                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                    Match match = Regex.Match(CHANGELOG ?? string.Empty, versionPattern, RegexOptions.Singleline);
-                    if (match.Success)
-                    {
-                        // 如果找到匹配项，提取变更日志
-                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?", $"{Properties.Resources.NewVersionFound}{LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
-                            }
-                        });
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                            {
-                                Update(LatestVersion, Path.GetTempPath(), IsIncrement);
-                            }
-                        });
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LatestVersion = CurrentVersion ?? new Version();
-                MessageBox.Show(ex.Message);
-                log.Info(ex);
-            }
-        }
-
         public async Task CheckAndUpdateV1(bool detection = true)
         {
             // 获取本地版本
@@ -488,12 +415,6 @@ del ""%~f0"" & exit
                     MessageBox.Show($"更新失败: {ex.Message}");
                 }
             }
-
-            HandyControl.Controls.Growl.AskGlobal("检测到新版本！是否立即更新", isConfirmed =>
-            {
-                update();
-                return true;
-            });
             AppDomain.CurrentDomain.ProcessExit += (s, e) => update();
         }
 

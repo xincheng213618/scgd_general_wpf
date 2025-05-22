@@ -10,6 +10,7 @@ namespace ColorVision.Engine.Templates.SFR
         public TemplateSFR()
         {
             Title = "SFR模板管理";
+            TemplateDicId = 9;
             Code = "SFR";
             TemplateParams = Params;
             IsUserControl = true;

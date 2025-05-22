@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
             Name = "FindLightArea";
             Title = "发光区检测模板管理";
             Code = "FindLightArea";
+            TemplateDicId = 31;
             TemplateParams = Params;
         }
 

@@ -22,12 +22,10 @@ namespace ColorVision.Engine.Templates.Flow
     {
         public static void Save2DB(FlowParam flowParam)
         {
-            if (ModMasterDao.Instance.GetById(flowParam.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
-            {
-                modMasterModel.Name = flowParam.Name;
-                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                modMasterDao.Save(modMasterModel);
-            }
+            flowParam.ModMaster.Name = flowParam.Name;
+            ModMasterDao modMasterDao = new ModMasterDao(11);
+            modMasterDao.Save(flowParam.ModMaster);
+
 
             List<ModDetailModel> list = new();
             flowParam.GetDetail(list);
@@ -81,6 +79,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
         {
+            ModMaster = dbModel;
             Id = dbModel.Id;
             Name = dbModel.Name ?? string.Empty;
             List<ModDetailModel> modDetailModels = new();

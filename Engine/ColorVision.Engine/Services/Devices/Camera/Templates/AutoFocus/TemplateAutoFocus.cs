@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus
         public TemplateAutoFocus()
         {
             Name = "Camera,AutoFocus";
+            TemplateDicId = 200;
             Title = "自动聚焦模板设置";
             Code = "AutoFocus";
             TemplateParams = Params;

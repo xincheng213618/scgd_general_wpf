@@ -8,11 +8,11 @@ namespace ColorVision.Engine.Templates
 {
     public class ModMasterModel : PKModel
     {
-        public ModMasterModel() : this("", "", 0) { }
+        public ModMasterModel() : this(-1, "", 0) { }
 
-        public ModMasterModel(string pcode, string text, int tenantId)
+        public ModMasterModel(int pid, string text, int tenantId)
         {
-            Pcode = pcode;
+            Pid = pid;
             Name = text;
             TenantId = tenantId;
             CreateDate = DateTime.Now;

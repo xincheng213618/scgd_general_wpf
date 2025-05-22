@@ -40,31 +40,18 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             SensorParam? AddParamMode()
             {
-                ModMasterModel modMaster = new ModMasterModel(Code, templateName, UserConfig.Instance.TenantId);
-                SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
-                if (mod != null)
+                ModMasterModel modMaster = new ModMasterModel(TemplateDicId, templateName, UserConfig.Instance.TenantId);
+                ModMasterDao.Instance.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                if (CreateTemp != null)
                 {
-                    modMaster.Pid = mod.Id;
-                    ModMasterDao.Instance.Save(modMaster);
-                    List<ModDetailModel> list = new();
-                    if (CreateTemp != null)
+                    CreateTemp.GetDetail(list);
+                    foreach (var item in list)
                     {
-                        CreateTemp.GetDetail(list);
-                        foreach (var item in list)
-                        {
-                            item.Pid = modMaster.Id;
-                        }
+                        item.Pid = modMaster.Id;
                     }
-                    else
-                    {
-                        //List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id, true, false);
-                        //foreach (var item in sysDic)
-                        //{
-                        //    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                        //}
-                    }
-                    ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
                 }
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
                 if (modMaster.Id > 0)
                 {
                     ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);

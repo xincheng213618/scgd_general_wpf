@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
         public TemplateBuildPoi()
         {
             Title = "Poi布点模板设置";
+            TemplateDicId = 16;
             Code = "BuildPOI";
             TemplateParams = Params;
         }
