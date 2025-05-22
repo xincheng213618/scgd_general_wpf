@@ -8,7 +8,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <Company>Spectromer</Company>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
-    <VersionPrefix>1.0.0.3</VersionPrefix>
+    <VersionPrefix>1.0.0.4</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>

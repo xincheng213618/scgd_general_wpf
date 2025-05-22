@@ -49,37 +49,24 @@ namespace ColorVision.Engine.Templates.Flow
         }
     }
 
-    public class FlowSocketMsgHandle : ISocketMsgHandle
+    public class FlowSocketMsgHandle : ISocketEventHandler
     {
-        public int Order => 0;
-
-        public bool Handle(NetworkStream stream, string message)
+        public string EventName => "Flow";
+        public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            var strings = message.Split(",");
-            if (strings.Length > 1 && strings[0] == "Flow")
+            if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is FlowParam flowParam)
             {
-                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)
+                Application.Current.Dispatcher.BeginInvoke(() =>
                 {
-
-                    byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
-                    stream.Write(response1, 0, response1.Length);
-                    Application.Current.Dispatcher.BeginInvoke(() =>
-                    {
-                        DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
-                        DisplayFlow.GetInstance().RunFlow();
-                        byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
-                        stream.Write(response1, 0, response1.Length);
-                    });
-                    return true;
-                }
-                else
-                {
-                    byte[] response = Encoding.ASCII.GetBytes($"Cant Find Flow {strings[1]}");
-                    stream.Write(response, 0, response.Length);
-                }
-                return true;
+                    DisplayFlow.GetInstance().ComboBoxFlow.SelectedValue = flowParam;
+                    DisplayFlow.GetInstance().RunFlow();
+                });
+                return new SocketResponse { Code = 200, Msg = $"Run {request.Params}", EventName = EventName };
             }
-            return false;
+            else
+            {
+                return new SocketResponse { Code = -1, Msg = $"Cant Find Flow {request.Params}", EventName = EventName };
+            }
         }
     }
 

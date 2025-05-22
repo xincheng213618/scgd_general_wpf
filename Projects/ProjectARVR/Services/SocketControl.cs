@@ -11,51 +11,33 @@ namespace ProjectARVR.Services
     {
         public static SocketControl Current { get; set; } = new SocketControl();
         public NetworkStream Stream { get; set; }
-
     }
 
-
-    public class FlowSocketMsgHandle : ISocketMsgHandle
+    public class FlowSocketMsgHandle : ISocketEventHandler
     {
-        public int Order => 0;
-
-        public bool Handle(NetworkStream stream, string message)
+        public string EventName => "ProjectARVR";
+        public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            var strings = message.Split(",");
-            if (strings.Length > 1 && strings[0] == "ProjectARVR")
+            SocketControl.Current.Stream = stream;
+            if (ProjectWindowInstance.WindowInstance != null)
             {
-                SocketControl.Current.Stream = stream;
-
-                if (ProjectWindowInstance.WindowInstance != null)
+                if (TemplateFlow.Params.FirstOrDefault(a => a.Key == request.Params)?.Value is FlowParam flowParam)
                 {
-                    if (TemplateFlow.Params.FirstOrDefault(a => a.Key == strings[1])?.Value is FlowParam flowParam)
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
-
-                        byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
-                        stream.Write(response1, 0, response1.Length);
-                        Application.Current.Dispatcher.BeginInvoke(() =>
-                        {
-                            ProjectWindowInstance.WindowInstance.RunTemplate();
-                            byte[] response1 = Encoding.ASCII.GetBytes($"Run {strings[1]}");
-                            stream.Write(response1, 0, response1.Length);
-                        });
-                        return true;
-                    }
-                    else
-                    {
-                        byte[] response = Encoding.ASCII.GetBytes($"Cant Find Flow {strings[1]}");
-                        stream.Write(response, 0, response.Length);
-                    }
-                    return true;
+                        ProjectWindowInstance.WindowInstance.RunTemplate();
+                    });
+                    return new SocketResponse { Code = 0, Msg = $"Run {request.Params}", EventName = EventName };
                 }
                 else
                 {
-                    byte[] response = Encoding.ASCII.GetBytes($"ProjectARVR Wont Open");
-                    stream.Write(response, 0, response.Length);
-                    return true;
+                    return new SocketResponse { Code = -2, Msg = $"Cant Find Flow {request.Params}", EventName = EventName };
                 }
             }
-            return false;
+            else
+            {
+                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+            }
         }
     }
 }

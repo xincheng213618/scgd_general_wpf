@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Templates.Flow
         private bool _IsAutoEditSave = true;
         [DisplayName("自动适配")]
         public bool IsAutoSize { get => _IsAutoSize; set { _IsAutoSize = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoSize = true;
+        private bool _IsAutoSize;
 
         [DisplayName("硬盘警告")]
         public bool ShowWarning { get => _ShowWarning; set { _ShowWarning = value; NotifyPropertyChanged(); } }
