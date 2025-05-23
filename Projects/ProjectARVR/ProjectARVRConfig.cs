@@ -74,7 +74,9 @@ namespace ProjectARVR
                 using (StreamReader reader = new StreamReader(stream))
                 {
                     string content = reader.ReadToEnd();
-                    ShowChangeLogWindow(title,content);
+
+                    string html = Markdig.Markdown.ToHtml(content);
+                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
                 }
             }
         }
@@ -91,32 +93,6 @@ namespace ProjectARVR
             string resourceName = "ProjectKB.README.md";
             OpenResourceName("README",resourceName);
         }
-
-
-        private static void ShowChangeLogWindow(string title,string content)
-        {
-            // 创建一个新的窗口
-            Window window = new Window
-            {
-                Title = title,
-                Width = 600,
-                Height = 400,
-                Content = new System.Windows.Controls.TextBox
-                {
-                    Text = content,
-                    IsReadOnly = true,
-                    TextWrapping = System.Windows.TextWrapping.Wrap,
-                    VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                    BorderThickness = new Thickness(0),
-                    Margin = new Thickness(5)
-                }
-            };
-
-            // 显示窗口
-            window.ShowDialog();
-        }
-
-
         public static void OpenLog()
         {
             WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };

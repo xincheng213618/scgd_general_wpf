@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Plugins
 {
@@ -27,6 +28,9 @@ namespace ColorVision.Plugins
         public string Description { get; set; }
 
         public string? Name { get; set; }
+
+        public ImageSource? Icon { get; set; }
+
         public Version? AssemblyVersion { get; set; }
         public DateTime? AssemblyBuildDate { get; set; }
         public string? AssemblyName { get; set; }

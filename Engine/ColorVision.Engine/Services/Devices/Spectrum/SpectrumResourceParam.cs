@@ -56,7 +56,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             CalibrationParamModes.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                ModMasterDao masterFlowDao = new("SpectrumResource");
+                ModMasterDao masterFlowDao = new ModMasterDao(17);
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {

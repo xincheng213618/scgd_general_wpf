@@ -9,6 +9,7 @@ namespace ColorVision.Engine.Templates.Matching
         public TemplateMatch()
         {
             Title = "模板匹配模板管理";
+            TemplateDicId = 34;
             Code = "MatchTemplate";
             TemplateParams = Params;
         }

@@ -34,7 +34,7 @@ namespace ColorVision.Engine.Templates.Flow
             new FlowEngineToolWindow(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao("flow");
+        private static ModMasterDao masterFlowDao = new ModMasterDao(11);
         public override void Load()
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
@@ -198,7 +198,7 @@ namespace ColorVision.Engine.Templates.Flow
         }
         public FlowParam? AddFlowParam(string templateName)
         {
-            ModMasterModel flowMaster = new ModMasterModel("flow", templateName, UserConfig.Instance.TenantId);
+            ModMasterModel flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
             SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(flowMaster.Pcode ?? string.Empty, flowMaster.TenantId);
             if (mod != null)
             {

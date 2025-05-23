@@ -16,7 +16,7 @@ namespace ColorVision.Themes
         /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
 
-        public static void ApplyCaption(this Window window,bool Icon = true)
+        public static void ApplyCaption(this Window window,bool Icon = true)   
         {
             RoutedEventHandler routedEventHandler = null;  
             routedEventHandler = (s, e) =>

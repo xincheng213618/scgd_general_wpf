@@ -12,7 +12,6 @@ using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Themes;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using HandyControl.Tools.Extension;
 using log4net;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
@@ -22,12 +21,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ProjectARVR
 {
@@ -198,10 +197,15 @@ namespace ProjectARVR
             }
         }
 
-
-
         private void TestClick(object sender, RoutedEventArgs e)
         {
+            if (SocketControl.Current.Stream != null)
+            {
+                byte[] response1 = Encoding.ASCII.GetBytes($"Run 5555");
+                SocketControl.Current.Stream.Write(response1, 0, response1.Length);
+            }
+
+            
             RunTemplate();
         }
         private void LargeTest_Click(object sender, RoutedEventArgs e)

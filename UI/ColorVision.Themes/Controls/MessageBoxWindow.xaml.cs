@@ -3,6 +3,8 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Forms;
+using System.Windows.Interop;
 
 namespace ColorVision.Themes.Controls
 {
@@ -30,6 +32,8 @@ namespace ColorVision.Themes.Controls
         {
             InitializeComponent();
             this.ApplyCaption();
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            DockMsg.MaxHeight = screenHeight / 2;
             this.messageBoxText.Text = messageBoxText;
             this.Title = caption;
             switch (button)

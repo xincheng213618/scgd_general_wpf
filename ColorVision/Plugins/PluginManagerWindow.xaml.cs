@@ -1,4 +1,6 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI;
+using Markdig;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
@@ -16,7 +18,6 @@ namespace ColorVision.Plugins
         {
             InitializeComponent();
             this.ApplyCaption();
-            PluginWindowConfig.Instance.SetWindow(this);
             this.SizeChanged += (s, e) => PluginWindowConfig.Instance.SetConfig(this);
         }
 
@@ -32,7 +33,18 @@ namespace ColorVision.Plugins
         {
             if (ListViewPlugins.SelectedIndex > -1)
             {
-                BorderContent.DataContext = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                PluginInfoVM pluginInfoVM = PluginManager.GetInstance().Plugins[ListViewPlugins.SelectedIndex];
+                BorderContent.DataContext = pluginInfoVM;
+                Application.Current.Dispatcher.Invoke(async () =>
+                {
+                    string html = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.README ??string.Empty);
+                    await WebViewService.EnsureWebViewInitializedAsync(webViewReadMe);
+                    WebViewService.RenderMarkdown(webViewReadMe, html);
+
+                    string htm2 = Markdig.Markdown.ToHtml(pluginInfoVM.PluginInfo?.ChangeLog ?? string.Empty);
+                    await WebViewService.EnsureWebViewInitializedAsync(webViewChangeLog);
+                    WebViewService.RenderMarkdown(webViewChangeLog, htm2);
+                });
             }
         }
     }

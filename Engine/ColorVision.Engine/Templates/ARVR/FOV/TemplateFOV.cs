@@ -8,6 +8,7 @@ namespace ColorVision.Engine.Templates.FOV
         public TemplateFOV()
         {
             Title = "FOV模板管理";
+            TemplateDicId = 6;
             Code = "FOV";
             TemplateParams = Params;
         }

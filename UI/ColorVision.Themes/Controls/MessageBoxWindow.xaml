@@ -17,9 +17,9 @@
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="auto"></RowDefinition>
         </Grid.RowDefinitions>
-        <DockPanel HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="20,20,20,10">
+        <DockPanel x:Name="DockMsg" HorizontalAlignment="Left" VerticalAlignment="Center"  Margin="20,20,20,10">
             <Image x:Name="Imageicon" Visibility="Visible" Height="30" Width="30" Margin="0,0,15,0"/>
-            <TextBlock Name="messageBoxText"  VerticalAlignment="Center" TextWrapping="Wrap" ></TextBlock>
+            <TextBox Name="messageBoxText"  IsReadOnly="True" BorderThickness="0" Padding="0" VerticalScrollBarVisibility="Auto" VerticalAlignment="Center" TextWrapping="Wrap" ></TextBox>
         </DockPanel>
 
         <Grid Grid.Row="2" >

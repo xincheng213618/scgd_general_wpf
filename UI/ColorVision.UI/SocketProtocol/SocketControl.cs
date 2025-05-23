@@ -1,13 +1,70 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
+using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection.Metadata;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
+using System.Windows.Interop;
 
 namespace ColorVision.UI.SocketProtocol
 {
+    public class SocketMessageBase
+    {
+        public string Version { get; set; }
+        public string MsgID { get; set; }
+        public string EventName { get; set; }
+        public string SerialNumber { get; set; }
+    }
+
+    public class SocketRequest : SocketMessageBase
+    {
+        public string Params { get; set; }
+    }
+
+    public class SocketResponse : SocketMessageBase
+    {
+        public int Code { get; set; }
+        public string Msg { get; set; }
+        public dynamic Data { get; set; }
+    }
+
+
+    public class SocketEventDispatcher
+    {
+        private readonly Dictionary<string, ISocketEventHandler> _handlers = new();
+
+        public SocketEventDispatcher()
+        {
+            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketEventHandler).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is ISocketEventHandler handler)
+                    {
+                        if (!_handlers.ContainsKey(handler.EventName))
+                            _handlers[handler.EventName] = handler;
+                    }
+                }
+            }
+        }
+
+        public SocketResponse Dispatch(NetworkStream stream, SocketRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.EventName))
+                return new SocketResponse { Code = 400, Msg = "Invalid request" };
+
+            if (_handlers.TryGetValue(request.EventName, out var handler))
+                return handler.Handle(stream, request);
+
+            return new SocketResponse { Code = 404, Msg = "Handler not found for event: " + request.EventName };
+        }
+    }
+
 
     public class SocketControl:ViewModelBase
     {
@@ -19,24 +76,11 @@ namespace ColorVision.UI.SocketProtocol
         private static TcpListener tcpListener;
         public static SocketConfig Config => SocketConfig.Instance;
 
-        public List<ISocketMsgHandle> SocketMsgHandles { get; set; } = new List<ISocketMsgHandle>();
-
-
+        public SocketEventDispatcher Dispatcher { get; set; }
 
         public SocketControl()
         {
-            var hanles = new List<ISocketMsgHandle>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketMsgHandle).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is ISocketMsgHandle configSetting)
-                    {
-                        hanles.Add(configSetting);
-                    }
-                }
-            }
-            SocketMsgHandles = hanles.OrderBy(handler => handler.Order).ToList();
+            Dispatcher = new SocketEventDispatcher();
         }
 
 
@@ -124,31 +168,43 @@ namespace ColorVision.UI.SocketProtocol
                 while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    log.Info("Received message: " + message);
-
-                    bool handled = false;
-                    foreach (var handler in SocketMsgHandles)
+                    log.Info("Received raw message: " + message);
+                    SocketRequest? request = null;
+                    try
                     {
-                        if (handler.Handle(stream, message))
+                        request = JsonConvert.DeserializeObject<SocketRequest>(message);
+                        var response = Dispatcher.Dispatch(stream, request);
+                        string respString = JsonConvert.SerializeObject(response);
+                        stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
+                    catch (Exception ex)
+                    {
+                        var response = new SocketResponse
                         {
-                            handled = true;
-                            break;
-                        }
+                            Version = request?.Version ?? "1.0",
+                            MsgID = request?.MsgID ?? "",
+                            EventName = request?.EventName ?? "",
+                            SerialNumber = request?.SerialNumber ?? "",
+                            Code = -1,
+                            Msg = ex.Message,
+                            Data = null
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        byte[] respBytes = Encoding.UTF8.GetBytes(respString);
+                        stream.Write(respBytes, 0, respBytes.Length);
+                        continue;
                     }
-
-                    if (!handled)
-                    {
-                        byte[] response = Encoding.ASCII.GetBytes("Unhandled Function Call");
-                        stream.Write(response, 0, response.Length);
-                    }
-
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                log.Error("Client handling error: " + ex);
                 client?.Close();
             }
-            client?.Dispose();
+            finally
+            {
+                client?.Dispose();
+            }
         }
     }
 }

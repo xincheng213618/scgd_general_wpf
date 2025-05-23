@@ -17,10 +17,9 @@
 		<AssemblyCompany>ColorVision Corp.</AssemblyCompany>
 		<AssemblyCopyright>Copyright (C) 2025 ColorVision Corporation</AssemblyCopyright>
 		<AssemblyProduct>ColorVision</AssemblyProduct>
-		<VersionPrefix>1.2.4.24</VersionPrefix>
+		<VersionPrefix>1.2.4.31</VersionPrefix>
 		<Company>ColorVision</Company>
 		<NeutralLanguage>zh-CN</NeutralLanguage>
-		<NeutralLanguage>zh-CN</NeutralLanguage> 
 		<Authors>xincheng</Authors>
 	</PropertyGroup>
 </Project>  

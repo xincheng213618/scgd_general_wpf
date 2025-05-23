@@ -8,6 +8,7 @@ namespace ColorVision.Engine.Templates.DataLoad
         public TemplateDataLoad()
         {
             Title = "数据加载模板管理";
+            TemplateDicId = 22;
             Code = "DataLoad";
             TemplateParams = Params;
         }
