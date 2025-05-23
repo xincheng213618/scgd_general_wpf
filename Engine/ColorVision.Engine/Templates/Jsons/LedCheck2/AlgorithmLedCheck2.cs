@@ -13,6 +13,15 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LedCheck2
 {
+    public class PointVM:ViewModelBase
+    {
+        public double X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        private double _X;
+        public double Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private double _Y;
+    }
+
+
     public class AlgorithmLedCheck2 : DisplayAlgorithmBase
     {
 
@@ -41,14 +50,19 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         public FlowEngineLib.Algorithm.CVOLED_FDAType CVOLEDFDAType { get => _CVOLED_FDAType; set { _CVOLED_FDAType = value; NotifyPropertyChanged(); } }
         private FlowEngineLib.Algorithm.CVOLED_FDAType _CVOLED_FDAType;
 
-        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point1;
-        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point2;
-        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point3;
-        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point4;
+        public PointVM Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point1 = new PointVM();
+        public PointVM Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point2 = new PointVM();
+        public PointVM Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point3 = new PointVM();
+        public PointVM Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point4 = new PointVM();
+
+        public PointFloat ToPointFloat(PointVM point)
+        {
+            return new PointFloat() { X = (float)point.X, Y = (float)point.Y };
+        }
 
 
         public override UserControl GetUserControl()
@@ -72,7 +86,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             Params.Add("FDAType", CVOLEDFDAType);
 
 
-            PointFloat[] FixedLEDPoint = new PointFloat[] { Point1, Point2, Point3, Point4 };
+            PointFloat[] FixedLEDPoint = new PointFloat[] { ToPointFloat(Point1), ToPointFloat(Point2), ToPointFloat(Point3), ToPointFloat(Point4) };
             Params.Add("FixedLEDPoint", FixedLEDPoint);
 
             MsgSend msg = new()
