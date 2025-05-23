@@ -15,8 +15,8 @@ namespace ColorVision.Engine.Templates.Jsons.HDR
         public TemplateHDR()
         {
             Title = "HDR模板管理";
-            Code = "camera_exp_time";
-            Name = "相机参数";
+            Code = "Camera.RunParams";
+            Name = "Camera,HDR";
             TemplateDicId = 43;
             TemplateParams = Params;
             IsUserControl = true;

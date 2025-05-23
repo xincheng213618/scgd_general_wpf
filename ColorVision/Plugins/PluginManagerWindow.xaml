@@ -45,7 +45,7 @@
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="500"/>
+                <ColumnDefinition Width="520"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <ListView x:Name="ListViewPlugins" Background="Transparent" ItemsSource="{Binding Plugins}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
@@ -58,35 +58,42 @@
                     <GridView>
                         <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
-                                    <TextBlock  Text="{Binding Plugin.Header,Mode=OneWay}"/>
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                    <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="是否加载">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
+                                    <CheckBox IsChecked="{Binding PluginInfo.Enabled}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="{x:Static properties:Resources.Version}">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <TextBlock  Text="{Binding AssemblyVersion}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="{x:Static properties:Resources.BuildDate}">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <TextBlock  Text="{Binding AssemblyBuildDate,StringFormat=yyyy/MM/dd}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="新的版本" Width="80">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <TextBlock  Text="{Binding LastVersion}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="{x:Static properties:Resources.Command}">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:PluginInfo}">
+                                <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
                                     <StackPanel Orientation="Horizontal">
                                         <Button Content="{x:Static properties:Resources.Delete}" Command="{Binding DeleteCommand}"  Margin="0,0,5,0"/>
                                         <Button Content="{x:Static properties:Resources.Update}" Command="{Binding UpdateCommand}"  Margin="0,0,5,0"/>
@@ -98,14 +105,14 @@
                 </ListView.View>
             </ListView>
 
-            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:PluginInfo}" Grid.Column="1">
+            <Border x:Name="BorderContent" Style="{DynamicResource BorderModuleArea}" CornerRadius="5" Margin="0,0,5,5" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
                 <Grid Margin="5">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="40"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="60"/>
                     </Grid.RowDefinitions>
-                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Plugin.Header}" Grid.Row="0" HorizontalAlignment="Center"/>
+                    <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding  Description}" Grid.Row="0" HorizontalAlignment="Center"/>
                     <TextBox x:Name="TextBoxMsg" Grid.Row="1" TextWrapping="Wrap" VerticalAlignment="Top" AllowDrop="True" Text="{Binding Plugin.Description,Mode=OneWay}" VerticalContentAlignment="Top"  Background="Transparent" BorderThickness="0"/>
                 </Grid>
             </Border>

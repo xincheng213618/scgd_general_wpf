@@ -1,5 +1,7 @@
 ﻿
 
+using ColorVision.Engine.Templates.Menus;
+
 namespace ColorVision.Engine.Templates.Jsons.Ghost2
 {
     public class MenuGhost2 : MenuITemplateAlgorithmBase

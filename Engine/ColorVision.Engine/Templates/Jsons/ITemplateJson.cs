@@ -27,9 +27,6 @@ namespace ColorVision.Engine.Templates.Jsons
                     .Select((template, index) => new { template, index })
                     .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
         }
-
-        public int TemplateDicId { get; set; }
-
         public override List<string> GetTemplateNames()
         {
             return [.. TemplateParams.Select(a => a.Key)];

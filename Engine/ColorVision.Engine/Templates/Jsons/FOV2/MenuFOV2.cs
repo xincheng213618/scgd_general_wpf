@@ -1,5 +1,7 @@
 ﻿
 
+using ColorVision.Engine.Templates.Menus;
+
 namespace ColorVision.Engine.Templates.Jsons.FOV2
 {
     public class MenuFOV2 : MenuITemplateAlgorithmBase

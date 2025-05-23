@@ -1,4 +1,6 @@
 ﻿
+using ColorVision.Engine.Templates.Menus;
+
 namespace ColorVision.Engine.Templates.Matching
 {
     public class ExportMenuItemMatching : MenuITemplateAlgorithmBase

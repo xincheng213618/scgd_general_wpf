@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.Devices.SMU;
@@ -38,7 +38,7 @@ using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
-using ColorVision.Engine.Templates.ROI;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
 using FlowEngineLib.End;
@@ -219,7 +219,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
                 if (reuslt?.PhyCamera!=null)
                     AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
+                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraRunParam());
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "HDR模板", new TemplateHDR());
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 

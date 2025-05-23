@@ -88,12 +88,6 @@ namespace ColorVision.Engine.Templates
             return CreateTemplateModelEmpty(templateModels);
         }
 
-
-
-
-
-
-
         public static ObservableCollection<TemplateModel<T>> CreateTemplateModelEmpty<T>(ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
             var templateModels1 = new ObservableCollection<TemplateModel<T>>();

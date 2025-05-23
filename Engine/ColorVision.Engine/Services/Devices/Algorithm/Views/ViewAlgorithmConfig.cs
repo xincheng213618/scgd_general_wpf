@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         [DisplayName("显示侧边栏"), Category("Control")]
         public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
-        private bool _IsShowSideListView = true;
+        private bool _IsShowSideListView;
 
         [DisplayName("数据列保存路径"),PropertyEditorType(PropertyEditorType.TextSelectFolder)]
         public string SaveSideDataDirPath { get => _SaveSideDataDirPath; set { _SaveSideDataDirPath = value; NotifyPropertyChanged(); } }

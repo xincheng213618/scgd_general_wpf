@@ -1,0 +1,9 @@
+{
+  "manifest_version": 1,
+  "Id": "EventVWR",
+  "name": "事件插件",
+  "version": "1.0",
+  "description": "增强的异常管理,提供事件插件和Dump设置",
+  "dllpath": "EventVWR.dll",
+  "requires": "1.0.0.1"
+} 

@@ -34,13 +34,37 @@ namespace ColorVision.Engine.Templates
 
     public class ModMasterDao : BaseViewDao<ModMasterModel>
     {
-        public static ModMasterDao Instance { get; set; } = new ModMasterDao(string.Empty);
+        public static ModMasterDao Instance { get; set; } = new ModMasterDao();
+
+        private static Dictionary<string,int> keyValuePairs = new Dictionary<string,int>();
 
         public int Pid { get; set; }
+
+        public ModMasterDao() : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
+        {
+            Pid = -1;
+        }
+
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
-            Pid = string.IsNullOrWhiteSpace(code)? -1: SysDictionaryModMasterDao.Instance.GetByCode(code ,0)?.Id ?? -1;
+            if (keyValuePairs.TryGetValue(code, out int pid))
+            {
+                Pid = pid;
+            }
+            else
+            {
+                pid = string.IsNullOrWhiteSpace(code) ? -1 : SysDictionaryModMasterDao.Instance.GetByCode(code, 0)?.Id ?? -1;
+                keyValuePairs.Add(code, pid);
+                Pid = pid;
+            }
         }
+
+        public ModMasterDao(int pid) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
+        {
+            Pid = pid;
+        }
+
+
         public override DataTable GetTableAllByTenantId(int tenantId)
         {
 
@@ -54,7 +78,7 @@ namespace ColorVision.Engine.Templates
 
         public override ModMasterModel GetModelFromDataRow(DataRow item)
         {
-            ModMasterModel model = new()
+            ModMasterModel model = new ModMasterModel()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),

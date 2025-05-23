@@ -47,7 +47,7 @@ namespace ProjectBlackMura
     }
 
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
     public partial class MainWindow : Window, IDisposable
     {

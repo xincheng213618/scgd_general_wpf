@@ -15,7 +15,7 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Templates.Flow
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
     public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
     {

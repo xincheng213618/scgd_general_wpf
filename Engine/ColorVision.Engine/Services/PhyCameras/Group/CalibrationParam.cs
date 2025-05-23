@@ -189,7 +189,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             {
                 CalibrationControl = new CalibrationControl(device);
             }
-            Name = device.Code + "calibration";
+            Name = $"camera,calibration,{device.Code}";
+
             Title = "校正参数设置";
             Device = device;
             IsUserControl = true;
@@ -237,10 +238,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             if (!MySqlSetting.IsConnect)
                 return;
-
-            // Create a dictionary for efficient lookup of existing items
             var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
-            ModMasterDao masterFlowDao = new("calibration");
+            ModMasterDao masterFlowDao = new ModMasterDao(2);
+
             List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
 
             foreach (var dbModel in smus)

@@ -5,6 +5,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
+using Mysqlx;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -56,7 +57,7 @@ namespace ColorVision.Plugins
         private static PluginManager _instance;
         private static readonly object _locker = new();
         public static PluginManager GetInstance() { lock (_locker) { _instance ??= new PluginManager(); return _instance; } }
-        public ObservableCollection<PluginInfo> Plugins { get; private set; } = new ObservableCollection<PluginInfo>();
+        public ObservableCollection<PluginInfoVM> Plugins { get; private set; } = new ObservableCollection<PluginInfoVM>();
         public static PluginWindowConfig Config => PluginWindowConfig.Instance;
         public RelayCommand EditConfigCommand { get; set; }
 
@@ -68,23 +69,36 @@ namespace ColorVision.Plugins
         public PluginManager()
         {
             log.Info("正在检索是否存在附加项目");
+
+            foreach (var item in UI.PluginManager.Config.Plugins)
+            {
+                if (item.Value.Manifest != null)
+                {
+                    PluginInfoVM info = new PluginInfoVM(item.Value);
+                    Plugins.Add(info);
+                }
+            }
+
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IPlugin plugin)
                     {
-                        PluginInfo info = new PluginInfo(plugin, assembly);
+                        if (Plugins.Any(a => a.Name == plugin.Header))
+                            continue;
+                        PluginInfoVM info = new PluginInfoVM(plugin, assembly);
                         info.AssemblyVersion = assembly.GetName().Version;
                         info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-
                         Plugins.Add(info);
                         log.Info($"找到外加插件：{plugin} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
                                  $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
                                  $"公钥标记：{info.AssemblyPublicKeyToken}");
+
                     }
                 }
             }
+ 
             OpenStoreCommand = new RelayCommand(a => OpenStore());
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
@@ -272,14 +286,9 @@ del ""%~f0"" & exit
             });
         }
 
-
-
-
-
-
         public static void OpenStore()
         {
-            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects");
+            PlatformHelper.Open("http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins");
         }
     }
 }

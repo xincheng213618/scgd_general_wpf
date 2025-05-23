@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Ghost
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Ghost
 {
     public class MenuGhostParam : MenuITemplateAlgorithmBase
     {

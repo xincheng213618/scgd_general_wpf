@@ -45,20 +45,28 @@ namespace ColorVision.Projects
             log.Info("正在检索是否存在附加项目");
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
+                try
                 {
-                    if (Activator.CreateInstance(type) is IProject project)
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IProject).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        ProjectInfo info = new ProjectInfo(project, assembly);
-                        info.AssemblyVersion = assembly.GetName().Version;
-                        info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
+                        if (Activator.CreateInstance(type) is IProject project)
+                        {
+                            ProjectInfo info = new ProjectInfo(project, assembly);
+                            info.AssemblyVersion = assembly.GetName().Version;
+                            info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
 
-                        Projects.Add(info);
-                        log.Info($"找到外加项目：{project} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
-                                 $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
-                                 $"公钥标记：{info.AssemblyPublicKeyToken}");
+                            Projects.Add(info);
+                            log.Info($"找到外加项目：{project} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
+                                     $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
+                                     $"公钥标记：{info.AssemblyPublicKeyToken}");
+                        }
                     }
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
                 }
+
+
             }
             OpenStoreCommand = new RelayCommand(a => OpenStore());
             InstallPackageCommand = new RelayCommand(a => InstallPackage());
