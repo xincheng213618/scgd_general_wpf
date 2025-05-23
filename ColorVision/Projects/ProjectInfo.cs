@@ -78,7 +78,7 @@ namespace ColorVision.Projects
         }
         public async void Update()
         {
-            string LatestReleaseUrl = Project.UpdateUrl + "/LATEST_RELEASE";
+            string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/" + PackageName + "/LATEST_RELEASE";
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
             {
