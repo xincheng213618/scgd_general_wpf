@@ -20,7 +20,6 @@
 		<VersionPrefix>1.2.4.31</VersionPrefix>
 		<Company>ColorVision</Company>
 		<NeutralLanguage>zh-CN</NeutralLanguage>
-		<NeutralLanguage>zh-CN</NeutralLanguage> 
 		<Authors>xincheng</Authors>
 	</PropertyGroup>
 </Project>  
