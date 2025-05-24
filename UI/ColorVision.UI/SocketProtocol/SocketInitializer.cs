@@ -17,17 +17,17 @@
             if (SocketConfig.Instance.IsServerEnabled )
             {
                 _messageUpdater.Update("启动通讯协议");
-                SocketControl.GetInstance().StartServer();
+                SocketManager.GetInstance().StartServer();
             }
             SocketConfig.Instance.ServerEnabledChanged += (s, e) =>
             {
                 if (e)
                 {
-                    SocketControl.GetInstance().StartServer();
+                    SocketManager.GetInstance().StartServer();
                 }
                 else
                 {
-                    SocketControl.GetInstance().StopServer();
+                    SocketManager.GetInstance().StopServer();
                 }
             };
             return Task.CompletedTask;

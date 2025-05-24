@@ -2,14 +2,10 @@
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
-using System.Windows.Interop;
 
 namespace ColorVision.UI.SocketProtocol
 {
@@ -19,6 +15,8 @@ namespace ColorVision.UI.SocketProtocol
         public string MsgID { get; set; }
         public string EventName { get; set; }
         public string SerialNumber { get; set; }
+
+        public override string ToString() => JsonConvert.SerializeObject(this);
     }
 
     public class SocketRequest : SocketMessageBase
@@ -66,19 +64,19 @@ namespace ColorVision.UI.SocketProtocol
     }
 
 
-    public class SocketControl:ViewModelBase
+    public class SocketManager:ViewModelBase
     {
-        private static ILog log = LogManager.GetLogger(typeof(SocketControl));
-        private static SocketControl _instance;
+        private static ILog log = LogManager.GetLogger(typeof(SocketManager));
+        private static SocketManager _instance;
         private static readonly object _locker = new();
-        public static SocketControl GetInstance() { lock (_locker) { return _instance ??= new SocketControl(); } }
+        public static SocketManager GetInstance() { lock (_locker) { return _instance ??= new SocketManager(); } }
 
         private static TcpListener tcpListener;
         public static SocketConfig Config => SocketConfig.Instance;
 
         public SocketEventDispatcher Dispatcher { get; set; }
 
-        public SocketControl()
+        public SocketManager()
         {
             Dispatcher = new SocketEventDispatcher();
         }
@@ -122,6 +120,7 @@ namespace ColorVision.UI.SocketProtocol
         }
 
         public ObservableCollection<TcpClient> TcpClients { get; set; } = new ObservableCollection<TcpClient>();
+        public ObservableCollection<SocketMessageBase> SocketMessageBases { get; set; } = new ObservableCollection<SocketMessageBase>();
 
         public void CheckUpdate()
         {
@@ -137,7 +136,10 @@ namespace ColorVision.UI.SocketProtocol
                 while (true)
                 {
                     TcpClient client = tcpListener.AcceptTcpClient();
-                    TcpClients.Add(client);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        TcpClients.Add(client);
+                    });
                     Thread clientThread = new Thread(new ParameterizedThreadStart(HandleClient));
                     clientThread.Start(client);
                 }
@@ -173,7 +175,16 @@ namespace ColorVision.UI.SocketProtocol
                     try
                     {
                         request = JsonConvert.DeserializeObject<SocketRequest>(message);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            SocketMessageBases.Add(request);
+                        });
+
                         var response = Dispatcher.Dispatch(stream, request);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            SocketMessageBases.Add(response);
+                        });
                         string respString = JsonConvert.SerializeObject(response);
                         stream.Write(Encoding.UTF8.GetBytes(respString));
                     }
@@ -189,6 +200,11 @@ namespace ColorVision.UI.SocketProtocol
                             Msg = ex.Message,
                             Data = null
                         };
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            SocketMessageBases.Add(response);
+                        });
+
                         string respString = JsonConvert.SerializeObject(response);
                         byte[] respBytes = Encoding.UTF8.GetBytes(respString);
                         stream.Write(respBytes, 0, respBytes.Length);
@@ -203,6 +219,11 @@ namespace ColorVision.UI.SocketProtocol
             }
             finally
             {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TcpClients.Remove(client);
+                });
+
                 client?.Dispose();
             }
         }

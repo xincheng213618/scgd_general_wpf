@@ -110,6 +110,7 @@
                     </GridView>
                 </ListView.View>
             </ListView>
+       
         </Grid>
 
         <Border x:Name="BorderContent" CornerRadius="5" Margin="0,20,5,5" d:DataContext="{d:DesignInstance local:PluginInfoVM}" Grid.Column="1">
