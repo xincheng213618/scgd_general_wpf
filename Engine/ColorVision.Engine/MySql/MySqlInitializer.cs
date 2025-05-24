@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Media;
 using ColorVision.UI;
 using System;
+using System.IO;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,24 +32,39 @@ namespace ColorVision.Engine.MySql
 
                 if (!isConnect)
                 {
-                    if (MySqlControl.Config.Host == "127.0.0.1")
+                    if (MySqlControl.Config.Host == "127.0.0.1" || MySqlControl.Config.Host == "localhost")
                     {
                         try
                         {
-
-                            ServiceController ServiceController = new ServiceController("MySQL");
-                            if (ServiceController != null)
+                            ServiceController serviceController = new ServiceController("MySQL");
+                            try
                             {
-                                _messageUpdater.Update($"检测服务，状态{ServiceController.Status}，正在尝试启动服务");
+                                var status = serviceController.Status;
+                                _messageUpdater.Update($"检测服务，状态{status}，正在尝试启动服务");
                                 if (Tool.IsAdministrator())
                                 {
-                                    ServiceController.Start();
+                                    serviceController.Start();
                                     isConnect = await MySqlControl.GetInstance().Connect();
                                     if (isConnect) return;
                                 }
                                 else
                                 {
                                     if (Tool.ExecuteCommandAsAdmin("net start MySQL"))
+                                    {
+                                        isConnect = await MySqlControl.GetInstance().Connect();
+                                        if (isConnect) return;
+                                    }
+                                }
+                            }
+                            catch (InvalidOperationException)
+                            {
+                                // 服务不存在
+                                if (File.Exists(MySqlLocalConfig.Instance.MysqldPath))
+                                {
+                                    _messageUpdater.Update("MySQL服务未安装，请手动安装MySQL服务。");
+
+                                    string cmd = $"{MySqlLocalConfig.Instance.MysqldPath} --install MySQL&&net start MySQL";
+                                    if (Tool.ExecuteCommandAsAdmin(cmd))
                                     {
                                         isConnect = await MySqlControl.GetInstance().Connect();
                                         if (isConnect) return;

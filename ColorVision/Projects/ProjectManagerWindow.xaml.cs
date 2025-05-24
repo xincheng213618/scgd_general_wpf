@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.Themes;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,6 +14,7 @@ namespace ColorVision.Projects
         public ProjectManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
             ProjectManager.GetInstance().Config.SetWindow(this);
             this.SizeChanged += (s, e) => ProjectManager.GetInstance().Config.SetConfig(this);
         }

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
 using System;
@@ -13,6 +14,23 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.MySql
 {
+
+    public class MySqlLocalConfig : IConfig
+    {
+        public static MySqlLocalConfig Instance => ConfigService.Instance.GetRequiredService<MySqlLocalConfig>();
+        public string ServiceName { get; set; } = "MySql80";
+
+        public string ImagePath { get; set; }
+        public string MysqldPath { get; set; }
+
+        public string MysqlPath { get; set; }
+
+        public string MysqldumpPath { get; set; }
+
+
+    }
+
+
 
     public class MysqlBack : ViewModelBase
     {
@@ -74,6 +92,8 @@ namespace ColorVision.Engine.MySql
         private static MySqlLocalServicesManager _instance;
         private static readonly object _locker = new();
         public static MySqlLocalServicesManager GetInstance() { lock (_locker) { return _instance ??= new MySqlLocalServicesManager(); } }
+
+        public static MySqlLocalConfig Config => MySqlLocalConfig.Instance;
 
         public RelayCommand RestoreSelectCommand { get; set; }
         public RelayCommand BackupResourcesCommand { get; set; }
@@ -182,25 +202,25 @@ namespace ColorVision.Engine.MySql
             {
                 if (key != null)
                 {
-                    ServiceName = serviceName;
+                    Config.ServiceName = serviceName;
                     object imagePath = key.GetValue("ImagePath");
                     if (imagePath is string str)
                     {
-                        ImagePath = str;
-                        MysqldPath = ExtractExePath(ImagePath);
-                        if (File.Exists(MysqldPath))
+                        Config.ImagePath = str;
+                        Config.MysqldPath = ExtractExePath(Config.ImagePath);
+                        if (File.Exists(Config.MysqldPath))
                         {
-                            DirectoryInfo directory = Directory.GetParent(MysqldPath);
+                            DirectoryInfo directory = Directory.GetParent(Config.MysqldPath);
 
                             string mysqlPath = Path.Combine(directory.FullName, "mysql.exe");
                             if (File.Exists(mysqlPath))
                             {
-                                MysqlPath = mysqlPath;
+                                Config.MysqlPath = mysqlPath;
                             }
                             string mysqldumpPath = Path.Combine(directory.FullName, "mysqldump.exe");
                             if (File.Exists(mysqldumpPath))
                             {
-                                MysqldumpPath = mysqldumpPath;
+                                Config.MysqldumpPath = mysqldumpPath;
                             }
                             return true;
                         }
@@ -224,23 +244,13 @@ namespace ColorVision.Engine.MySql
             return null;
         }
 
-
-        public string ServiceName { get; set; } = "MySql80";
-
-        public string ImagePath { get; set; }
-        public string MysqldPath { get; set; }
-
-        public string MysqlPath { get; set; }
-
-        public string MysqldumpPath { get; set; }
-
         public void BackupAllMysql()
         {
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetTableNames());
 
             string BackUpSql = Path.Combine(BackupPath, $"All_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >\"{BackUpSql}\"";
+            string backCommnad = $"{Config.MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} >\"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -253,7 +263,7 @@ namespace ColorVision.Engine.MySql
             //备份的信息里应该只包含基础的信息不应该包含许多逻辑
             string BackTable = string.Join(" ", MySqlControl.GetInstance().GetFilteredResourceTableNames());
             string BackUpSql = Path.Combine(BackupPath, $"Res_{DateTime.Now:yyyyMMddHHmmss}.sql");
-            string backCommnad = $"{MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
+            string backCommnad = $"{Config.MysqldumpPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} {BackTable} > \"{BackUpSql}\"";
             Common.Utilities.Tool.ExecuteCommandUI(backCommnad);
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -270,7 +280,7 @@ namespace ColorVision.Engine.MySql
                 MessageBox.Show("Backup file not found.");
                 return;
             }
-            string restoreCommand = $"{MysqlPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} < \"{backupFile}\"";
+            string restoreCommand = $"{Config.MysqlPath} -u {MySqlSetting.Instance.MySqlConfig.UserName} -h {MySqlSetting.Instance.MySqlConfig.Host} -p{MySqlSetting.Instance.MySqlConfig.UserPwd} {MySqlSetting.Instance.MySqlConfig.Database} < \"{backupFile}\"";
             Common.Utilities.Tool.ExecuteCommandUI(restoreCommand);
         }
     }

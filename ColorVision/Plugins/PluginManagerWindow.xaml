@@ -68,7 +68,11 @@
                         <GridViewColumn Header="{x:Static properties:Resources.PluginName}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:PluginInfoVM}">
-                                    <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Source="{Binding Icon}" Width="20" Margin="0,0,10,0"/>
+                                        <TextBlock  Text="{Binding Name,Mode=OneWay}"/>
+                                    </StackPanel>
+
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -116,9 +120,9 @@
                 </Grid.RowDefinitions>
                 <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1 " Margin="0,0,0,2">
                     <DockPanel>
-                        <Image Source="{Binding Icon}" Width="70"/>
+                        <Image Source="{Binding Icon}" Width="50" Margin="10"/>
                         <StackPanel HorizontalAlignment="Left">
-                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Name}" FontWeight="Bold" FontSize="20" />
+                            <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding Name}" FontWeight="Bold" FontSize="20"  />
                             <StackPanel Orientation="Horizontal">
                                 <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding PackageName}" />
                                 <TextBox IsReadOnly="True" BorderThickness="0" Background="Transparent" Text="{Binding AssemblyVersion}" />

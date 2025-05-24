@@ -3,9 +3,12 @@ using log4net;
 using log4net.Plugin;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.UI
 {
@@ -68,6 +71,10 @@ namespace ColorVision.UI
         public string ChangeLog { get; set; } = string.Empty;
 
         [JsonIgnore]
+        public ImageSource? Icon { get; set; }
+
+
+        [JsonIgnore]
         public Assembly Assembly { get; set; }
         [JsonIgnore]
         public IPlugin IPlugin { get; set; }
@@ -97,6 +104,8 @@ namespace ColorVision.UI
             var plugins = PluginManagerConfig.Instance.Plugins;
             var discoveredIds = new HashSet<string>();
 
+
+            path = Path.GetFullPath(path); // 保证path是绝对路径
             foreach (var directory in Directory.GetDirectories(path))
             {
                 string manifestPath = Path.Combine(directory, "manifest.json");
@@ -144,6 +153,10 @@ namespace ColorVision.UI
                         if (File.Exists(changelogPath))
                             pluginInfo.ChangeLog = File.ReadAllText(changelogPath); ;
 
+                        string PackageIconPath = Path.Combine(directory, "PackageIcon.png");
+                        if (File.Exists(PackageIconPath))
+                            pluginInfo.Icon = new BitmapImage(new Uri(PackageIconPath));
+                       
                         if (!pluginInfo.Enabled)
                             continue;
 
