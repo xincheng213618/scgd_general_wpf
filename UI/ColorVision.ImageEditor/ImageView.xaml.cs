@@ -70,6 +70,7 @@ namespace ColorVision.ImageEditor
             }
             Config = imageViewConfig;
             this.DataContext = this;
+            AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;
             Zoombox1.DataContext = imageViewConfig;
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());

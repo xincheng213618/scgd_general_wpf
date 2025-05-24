@@ -431,7 +431,7 @@ namespace ColorVision.Engine.Templates
         }
 
 
-        public T? AddParamMode(string code, string Name, int resourceId = -1)
+        public T? AddParamMode(string Name, int resourceId = -1)
         {
             ModMasterModel modMaster = new ModMasterModel(TemplateDicId, Name, UserConfig.Instance.TenantId);
             if (resourceId > 0)

@@ -1,4 +1,4 @@
-﻿<Window x:Class="ProjectARVR.EditProjectKBConfig"
+﻿<Window x:Class="ProjectARVR.EditARVRConfig"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,7 +7,7 @@
         xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:ProjectARVRConfig}"
-        Title="KB配置编辑窗口" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="ARVR编辑窗口" Height="450" Width="600" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -133,9 +133,6 @@
         </ScrollViewer>
         <Grid Grid.Row="1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="5">
-                <Button Content="保存配置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="SaveSetting_Click" Margin="5,0,0,0"/>
-                <Button Content="加载配置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="LoadSetting_Click" Margin="5,0,0,0"/>
-
                 <Button Content="重置" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Reset_Click" Margin="5,0,0,0"/>
                 <Button Content="关闭" Foreground="White" Background="{StaticResource PrimaryBrush}" BorderThickness="0" Click="Close_Click" Margin="5,0,0,0"/>
             </StackPanel>
