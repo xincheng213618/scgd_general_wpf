@@ -65,7 +65,6 @@ namespace ColorVision.Projects
             CreateShortCutCommand = new RelayCommand(a => CreateShortCut());
             OpenInCmdCommand = new RelayCommand(a => OpenInCmd());
             DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new RelayCommand(a => Update());
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "打开", Command = OpenProjectCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "创建快捷方式", Command = CreateShortCutCommand });
