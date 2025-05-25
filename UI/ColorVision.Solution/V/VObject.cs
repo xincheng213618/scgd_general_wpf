@@ -206,6 +206,7 @@ namespace ColorVision.Solution.V
 
         public virtual void Open()
         {
+
         }
 
         public virtual void Copy()

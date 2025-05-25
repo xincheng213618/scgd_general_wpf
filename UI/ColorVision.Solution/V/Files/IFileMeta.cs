@@ -17,10 +17,6 @@ namespace ColorVision.Solution.V.Files
         string ToolTip { get;}
 
         ImageSource? Icon { get; set; }
-
-
-        void Open();
-
     }
 
 
@@ -32,10 +28,6 @@ namespace ColorVision.Solution.V.Files
         public FileInfo FileInfo { get; set; }
         public ImageSource? Icon { get; set; }
         public virtual string ToolTip { get;}
-        public virtual void Open()
-        {
-
-        }
 
         public virtual IEnumerable<MenuItemMetadata> GetMenuItems()
         {

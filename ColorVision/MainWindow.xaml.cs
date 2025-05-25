@@ -416,9 +416,35 @@ namespace ColorVision
                             Header = $"{Properties.Resources.Search} {searchtext}",
                             Command = new Common.MVVM.RelayCommand(a => Search())
                         };
-
                         filteredResults.Add(search);
                     }
+
+
+                    // 添加“在浏览器中搜索”选项
+                    void SearchInBrowser()
+                    {
+                        string url = $"https://www.baidu.com/s?wd={Uri.EscapeDataString(searchtext)}";
+                        try
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = url,
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                        }
+                    }
+
+                    SearchMeta browserSearch = new SearchMeta
+                    {
+                        GuidId = Guid.NewGuid().ToString(),
+                        Header = $"{Properties.Resources.Search} {searchtext}（百度搜索）",
+                        Command = new Common.MVVM.RelayCommand(a => SearchInBrowser())
+                    };
+                    filteredResults.Add(browserSearch);
 
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)

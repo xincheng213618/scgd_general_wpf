@@ -5,16 +5,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.Editor
 {
-    public class TextEditor : IEditorBase
-    {
-        public override string Extension => ".txt|.cs|.json|.java|.go|.md|.py|.dat";
+    using System.Windows.Controls;
 
+    // 标记本类支持的扩展名，并设为默认
+    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat", isDefault: true)]
+    public class TextEditor : EditorBase
+    {
         public override string Name => "文本编辑器";
-        public override Control? Open(string FilePath)
+
+        public override Control? Open(string filePath)
         {
-            if (File.Exists(FilePath))
+            if (File.Exists(filePath))
             {
-                return new AvalonEditControll(FilePath);
+                return new AvalonEditControll(filePath);
             }
             return null;
         }
