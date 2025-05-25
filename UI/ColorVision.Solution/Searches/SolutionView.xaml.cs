@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI.Views;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -53,6 +54,15 @@ namespace ColorVision.Solution.Searches
             }
             return null;
         }
+
+        public static SolutionView SolutionView { get; set; }
+
+        public static event  EventHandler<string>? ContentIdSelected;
+
+        public static void OnContentIdSelected(string contentId)
+        {
+            ContentIdSelected?.Invoke(SolutionView, contentId);
+        }
     }
 
 
@@ -65,6 +75,7 @@ namespace ColorVision.Solution.Searches
         public SolutionView()
         {
             InitializeComponent();
+            SolutionViewExtensions.SolutionView = this;
         }
         public View View { get; set; }
         public void SelectContentId(string ContentId)
@@ -87,6 +98,56 @@ namespace ColorVision.Solution.Searches
                 }
             }
         }
+        public void Open(string FullPath)
+        {
+            string GuidId = Tool.GetMD5(FullPath);
+            var existingDocument = SolutionViewExtensions.FindDocumentById(_layoutRoot, GuidId.ToString());
+
+            if (existingDocument != null)
+            {
+                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+                {
+                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
+                }
+                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
+                {
+                    var window = Window.GetWindow(layoutFloatingWindow);
+                    if (window != null)
+                    {
+                        window.Activate();
+                    }
+                }
+            }
+            else
+            {
+                var IEditor = EditorManager.Instance.OpenFile(FullPath);
+                if (IEditor != null)
+                {
+                    Control control = IEditor.Open(FullPath);
+                    if (control != null)
+                    {
+                        LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(FullPath) };
+                        layoutDocument.Content = control;
+                        LayoutDocumentPane.Children.Add(layoutDocument);
+                        LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
+                        layoutDocument.IsActiveChanged += (s, e) =>
+                        {
+                            if (layoutDocument.IsActive)
+                            {
+                                SolutionViewExtensions.OnContentIdSelected(FullPath);
+                            }
+                        };
+                        layoutDocument.Closing += (s, e) =>
+                        {
+                            if (control is IDisposable disposable)
+                            {
+                                disposable.Dispose();
+                            }
+                        };
+                    }
+                }
+            }
+        }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
@@ -103,52 +164,9 @@ namespace ColorVision.Solution.Searches
                 content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
                 BrowseForward.ContextMenu = content2;
             }
-
-            SolutionManager.GetInstance().OpenFilePath += (s, e) =>
-            {
-                string GuidId = Tool.GetMD5(e.FullPath);
-                var existingDocument = SolutionViewExtensions.FindDocumentById(_layoutRoot, GuidId.ToString());
-
-                if (existingDocument != null)
-                {
-                    if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
-                    {
-                        layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
-                    }
-                    else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
-                    {
-                        var window = Window.GetWindow(layoutFloatingWindow);
-                        if (window != null)
-                        {
-                            window.Activate();
-                        }
-                    }
-                }
-                else
-                {
-                    var IEditor = EditorManager.Instance.OpenFile(e.FullPath);
-                    if (IEditor != null)
-                    {
-                        Control control = IEditor.Open(e.FullPath);
-                        if (control != null)
-                        {
-                            LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = e.Name };
-                            layoutDocument.Content = control;
-                            LayoutDocumentPane.Children.Add(layoutDocument);
-                            LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
-                            layoutDocument.Closing += (s, e) =>
-                            {
-                                if (control is IDisposable disposable)
-                                {
-                                    disposable.Dispose();
-                                }
-                            };
-                        }
-                    }
-                }
-            };
         }
 
 
+        
     }
 }

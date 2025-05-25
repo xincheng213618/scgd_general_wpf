@@ -1,12 +1,9 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.PropertyEditor;
+﻿using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows.Controls;
 
-namespace ColorVision.Solution.Editor
+namespace ColorVision.Solution
 {
-    using System.Windows.Controls;
-
     // 标记本类支持的扩展名，并设为默认
     [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat", isDefault: true)]
     public class TextEditor : EditorBase
