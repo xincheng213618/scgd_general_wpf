@@ -45,10 +45,6 @@ namespace ColorVision.Engine.Rbac
         public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; NotifyPropertyChanged(); } }
         private PermissionMode _PermissionMode;
 
-        [Column("gender")]
-        public Gender Gender { get => _Gender; set { _Gender = value; NotifyPropertyChanged(); } }
-        private Gender _Gender;
-
         [Column("email")]
         public string Email { get => _Email; set { _Email = value; NotifyPropertyChanged(); } }
         private string _Email = string.Empty;

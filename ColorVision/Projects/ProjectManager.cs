@@ -54,11 +54,7 @@ namespace ColorVision.Projects
                             ProjectInfo info = new ProjectInfo(project, assembly);
                             info.AssemblyVersion = assembly.GetName().Version;
                             info.AssemblyBuildDate = File.GetLastWriteTime(assembly.Location);
-
                             Projects.Add(info);
-                            log.Info($"找到外加项目：{project} 名称：{info.AssemblyName} 版本：{info.AssemblyVersion} " +
-                                     $"日期：{info.AssemblyBuildDate} 路径：{info.AssemblyPath} 文化：{info.AssemblyCulture} " +
-                                     $"公钥标记：{info.AssemblyPublicKeyToken}");
                         }
                     }
                 }catch(Exception ex)
@@ -86,7 +82,7 @@ namespace ColorVision.Projects
 
         public async void DownloadPackage()
         {
-            string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/" + SearchName + "/LATEST_RELEASE";
+            string LatestReleaseUrl = "http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/" + SearchName + "/LATEST_RELEASE";
             DownloadFile.DownloadTile = "下载" + SearchName;
             Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
             if (version == new Version())
@@ -100,7 +96,7 @@ namespace ColorVision.Projects
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), $"找到项目{SearchName}，版本{version}，是否下载", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                 {
                     string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{SearchName}-{version}.zip";
-                    string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Projects/{SearchName}/{SearchName}-{version}.zip";
+                    string url = $"http://xc213618.ddns.me:9999/D%3A/ColorVision/Plugins/{SearchName}/{SearchName}-{version}.zip";
                     WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     if (File.Exists(downloadPath))
                     {

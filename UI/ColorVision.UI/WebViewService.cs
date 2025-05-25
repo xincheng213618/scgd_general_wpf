@@ -52,7 +52,7 @@ namespace ColorVision.UI
             var env = await GetOrCreateEnvironmentAsync();
             try
             {
-                await webView.EnsureCoreWebView2Async();
+                await webView.EnsureCoreWebView2Async(env);
             }
             catch (Exception ex)
             {
