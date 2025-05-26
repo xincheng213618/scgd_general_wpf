@@ -190,7 +190,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 CalibrationControl = new CalibrationControl(device);
             }
             Name = $"camera,calibration,{device.Code}";
-
+            TemplateDicId = 2;
             Title = "校正参数设置";
             Device = device;
             IsUserControl = true;
@@ -217,7 +217,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         }
         public override void Create(string templateName)
         {
-            CalibrationParam? param = AddParamMode(Code, templateName, Device.SysResourceModel.Id);
+            CalibrationParam? param = AddParamMode(templateName, Device.SysResourceModel.Id);
             if (param != null)
             {
                 var a = new TemplateModel<CalibrationParam>(templateName, param);

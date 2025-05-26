@@ -1,0 +1,70 @@
+﻿<Window x:Class="ColorVision.UI.SocketProtocol.SocketManagerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.UI.SocketProtocol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:SocketManager}"
+        Title="SocketManagerWindow" Height="450" Width="800" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="410"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <ListView x:Name="ListViewPlugins" Background="Transparent"  ItemsSource="{Binding TcpClients}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn Header="Tcp" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock  Text="{Binding  Client.LocalEndPoint,Mode=OneWay}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <ListView x:Name="ListViewMsg" Grid.Column="1" Background="Transparent"  ItemsSource="{Binding SocketMessageBases}" Margin="5,0,5,5"  SelectionChanged="ListViewPlugins_SelectionChanged" Grid.Row="1" Padding="2">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView>
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn Header="Tcp" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock  Text="{Binding .,Mode=OneWay}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>

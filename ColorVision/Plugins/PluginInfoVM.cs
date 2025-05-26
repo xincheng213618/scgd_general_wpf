@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Properties;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
@@ -16,6 +17,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Plugins
 {
@@ -55,6 +57,8 @@ namespace ColorVision.Plugins
             AssemblyVersion = pluginInfo.AssemblyVersion;
             AssemblyBuildDate = pluginInfo.AssemblyBuildDate;
 
+            Icon = pluginInfo.Icon ??= new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(ThemeManager.Current.CurrentUITheme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+
             DeleteCommand = new RelayCommand(a => Delete());
             UpdateCommand = new RelayCommand(a => Update());
             ContextMenu = new ContextMenu();
@@ -70,7 +74,6 @@ namespace ColorVision.Plugins
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Properties.Resources.Update, Command = UpdateCommand });
-
         }
         public PluginInfoVM(IPlugin plugin, Assembly assembly)
         {

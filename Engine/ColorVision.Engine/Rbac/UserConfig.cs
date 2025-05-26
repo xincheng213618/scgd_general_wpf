@@ -29,13 +29,6 @@ namespace ColorVision.Engine.Rbac
         private int _TenantId;
     }
 
-    public enum Gender
-    {
-        [Description("Male")]
-        Male,
-        [Description("Female")]
-        Female,
-    }
 
 
 }

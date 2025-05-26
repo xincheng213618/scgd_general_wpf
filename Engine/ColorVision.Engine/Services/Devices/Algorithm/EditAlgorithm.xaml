@@ -39,6 +39,10 @@
                             <TextBlock  Text="色温波长" Width="120"/>
                             <ui:ToggleSwitch IsChecked="{Binding IsCCTWave}"/>
                         </DockPanel>
+                        <DockPanel Margin="0,5,0,5">
+                            <TextBlock Text="POI最大数量"  Width="120"/>
+                            <TextBox Text="{Binding POI_DBMaxNum}" Style="{StaticResource TextBox.Small}"/>
+                        </DockPanel>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

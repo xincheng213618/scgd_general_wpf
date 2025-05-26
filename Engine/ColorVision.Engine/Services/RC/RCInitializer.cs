@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.UI;
+using System;
 using System.Collections.Generic;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -29,28 +30,59 @@ namespace ColorVision.Engine.Services.RC
 
             _messageUpdater.Update("正在尝试连接注册中心");
             bool isConnect = await MqttRCService.GetInstance().Connect();
-            if (!isConnect)
-            {
-                ServiceController ServiceController = new ServiceController("RegistrationCenterService");
-                if (ServiceController != null)
-                {
-                    _messageUpdater.Update("检测到本地注册中心配置,正在尝试启动");
-                    if (Tool.IsAdministrator())
-                    {
+            if (isConnect) return;
 
-                        ServiceController.Start();
-                        isConnect = await MqttRCService.GetInstance().Connect();
-                        if (isConnect) return;
-                    }
-                    else
+            try
+            {
+                ServiceController serviceController = new ServiceController("RegistrationCenterService");
+                try
+                {
+                    var status = serviceController.Status; // 如果服务不存在会抛出异常
+                    _messageUpdater.Update("检测到本地注册中心配置, 正在尝试启动");
+
+                    if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                     {
-                        if (Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
+                        if (Tool.IsAdministrator())
                         {
-                            isConnect = await MqttRCService.GetInstance().Connect();
-                            if (isConnect) return;
+                            serviceController.Start();
+                            serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(5));
+                        }
+                        else
+                        {
+                            if (!Tool.ExecuteCommandAsAdmin("net start RegistrationCenterService"))
+                            {
+                                _messageUpdater.Update("以管理员权限启动 RegistrationCenterService 服务失败。");
+                                ShowManualConnectDialog();
+                                return;
+                            }
                         }
                     }
+                    else if (status == ServiceControllerStatus.Running)
+                    {
+                        _messageUpdater.Update("RegistrationCenterService 服务已在运行。");
+                    }
+
+                    isConnect = await MqttRCService.GetInstance().Connect();
+                    if (isConnect) return;
                 }
+                catch (InvalidOperationException)
+                {
+                    _messageUpdater.Update("未检测到 RegistrationCenterService 服务，请确认已正确安装。");
+                    ShowManualConnectDialog();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                _messageUpdater.Update("查找服务时异常: " + ex.Message);
+                ShowManualConnectDialog();
+                return;
+            }
+
+            ShowManualConnectDialog();
+
+            void ShowManualConnectDialog()
+            {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     RCServiceConnect connect = new() { Owner = Application.Current.GetActiveWindow() };

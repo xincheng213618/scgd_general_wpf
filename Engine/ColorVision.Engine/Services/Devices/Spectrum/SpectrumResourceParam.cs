@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public TemplateSpectrumResourceParam()
         {
             IsUserControl = true;
+            TemplateDicId = 17; // SpectrumResourceParam
             Code = "SpectrumResource";
         }
 
@@ -36,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public override void Create(string templateName)
         {
-            SpectrumResourceParam? param = AddParamMode(Code, templateName, Device.SysResourceModel.Id);
+            SpectrumResourceParam? param = AddParamMode(templateName, Device.SysResourceModel.Id);
             if (param != null)
             {
                 var a = new TemplateModel<SpectrumResourceParam>(templateName, param);

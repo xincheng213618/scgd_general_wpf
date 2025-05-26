@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using ColorVision.UI.Shell;
+using ColorVision.Solution.Searches;
 
 namespace ColorVision.Solution
 {
@@ -76,15 +77,44 @@ namespace ColorVision.Solution
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;
+
+            SolutionViewExtensions.ContentIdSelected += (s, e) =>
+            {
+                SetSelected(SolutionExplorers[0],e);
+            };
         }
 
-
-        public event EventHandler<VObject> OpenFilePath;
-
-        public void OpenView(VObject vobject)
+        public bool SetSelected(VObject vObject, string fullpath)
         {
-            OpenFilePath?.Invoke(this, vobject);
+            // 1. 当前节点匹配
+            if (vObject.FullPath == fullpath)
+            {
+                vObject.IsSelected = true;
+                // 展开所有父节点
+                var parent = vObject.Parent;
+                while (parent != null)
+                {
+                    parent.IsExpanded = true;
+                    parent = parent.Parent;
+                }
+                // 目标已找到
+                return true;
+            }
+            // 2. 递归查找子节点
+            foreach (var child in vObject.VisualChildren)
+            {
+                if (SetSelected(child, fullpath))
+                {
+                    // 只要子节点中有一个命中，则本节点也要展开
+                    vObject.IsExpanded = true;
+                    return true;
+                }
+            }
+            // 没找到
+            return false;
         }
+
+
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
 

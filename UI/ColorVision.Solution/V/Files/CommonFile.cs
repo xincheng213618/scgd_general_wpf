@@ -16,12 +16,6 @@ namespace ColorVision.Solution.V.Files
             Icon = FileIcon.GetFileIconImageSource(fileInfo.FullName);
         }
 
-        public override void Open()
-        {
-            PlatformHelper.Open(FileInfo.FullName);
-
-        }
-
     }
 
 }

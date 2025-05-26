@@ -5,6 +5,7 @@ using ColorVision.Solution.Properties;
 using System.IO;
 using System.Windows;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.Searches;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -16,6 +17,9 @@ namespace ColorVision.Solution.V.Files
 
         public FileInfo FileInfo { get => FileMeta.FileInfo; set { FileMeta.FileInfo = value; } }
 
+
+        public RelayCommand OpenMethodCommand { get; set; }
+
         public VFile(IFileMeta fileMeta) :base()
         {
             FileMeta = fileMeta;
@@ -25,12 +29,32 @@ namespace ColorVision.Solution.V.Files
             FullPath = FileInfo.FullName;
             OpenContainingFolderCommand = new RelayCommand(a => PlatformHelper.OpenFolderAndSelectFile(FileInfo.FullName), a => FileInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(FileInfo.FullName), a => FileInfo.Exists);
+            OpenMethodCommand = new RelayCommand(a => OpenMethod());
         }
+
+        public void OpenMethod()
+        {
+            var ext = Path.GetExtension(FullPath);
+            var types = EditorManager.Instance.GetEditorsForExt(ext);
+            var current = EditorManager.Instance.GetDefaultEditorType(ext);
+
+            if (types.Count == 0) return;
+
+            int index = types.IndexOf(current);
+            int nextIndex = (index + 1) % types.Count;
+            var nextType = types[nextIndex];
+
+            EditorManager.Instance.SetDefaultEditor(ext, nextType);
+        }
+
+
         public override void InitMenuItem()
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FileMeta.GetMenuItems());
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
+
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = ColorVision.Solution.Properties.Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
         }
@@ -41,7 +65,7 @@ namespace ColorVision.Solution.V.Files
 
         public override void Open()
         {
-            SolutionManager.GetInstance().OpenView(this);
+            SolutionViewExtensions.SolutionView.Open(FileInfo.FullName);
         }
 
         public override void Delete()

@@ -1,6 +1,8 @@
 using ColorVision.Themes;
+using log4net;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using System;
 using System.IO;
 
 namespace ColorVision.UI
@@ -39,7 +41,8 @@ namespace ColorVision.UI
         {
             string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string userDataFolder = Path.Combine(appData, "ColorVision");
-            Directory.CreateDirectory(userDataFolder);
+            if (!Directory.Exists(userDataFolder))
+                Directory.CreateDirectory(userDataFolder);
 
             return await CoreWebView2Environment.CreateAsync(null, userDataFolder);
         }
@@ -47,7 +50,14 @@ namespace ColorVision.UI
         public static async Task EnsureWebViewInitializedAsync(WebView2 webView)
         {
             var env = await GetOrCreateEnvironmentAsync();
-            await webView.EnsureCoreWebView2Async(env);
+            try
+            {
+                await webView.EnsureCoreWebView2Async(env);
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger(typeof(WebViewService)).Error("WebView2 初始化失败", ex);
+            }
         }
 
         // 渲染 Markdown 到 WebView2

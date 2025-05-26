@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates.SysDictionary;
 using ColorVision.UI.Extension;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -199,19 +200,15 @@ namespace ColorVision.Engine.Templates.Flow
         public FlowParam? AddFlowParam(string templateName)
         {
             ModMasterModel flowMaster = new ModMasterModel(11, templateName, UserConfig.Instance.TenantId);
-            SysDictionaryModModel mod = SysDictionaryModMasterDao.Instance.GetByCode(flowMaster.Pcode ?? string.Empty, flowMaster.TenantId);
-            if (mod != null)
+            ModMasterDao.Instance.Save(flowMaster);
+            List<ModDetailModel> list = new();
+            List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
+            foreach (var item in sysDic)
             {
-                flowMaster.Pid = mod.Id;
-                ModMasterDao.Instance.Save(flowMaster);
-                List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(flowMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+                list.Add(new ModDetailModel(item.Id, flowMaster.Id, item.DefaultValue));
             }
+            ModDetailDao.Instance.SaveByPid(flowMaster.Id, list);
+
             int pkId = flowMaster.Id;
             if (pkId > 0)
             {

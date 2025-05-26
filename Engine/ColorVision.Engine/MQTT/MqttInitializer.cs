@@ -31,31 +31,43 @@ namespace ColorVision.Engine.MQTT
             _messageUpdater.Update($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
             if (isConnect) return;
 
-            if (MQTTControl.Config.Host == "127.0.0.1")
+            if (MQTTControl.Config.Host == "127.0.0.1" || MQTTControl.Config.Host == "localhost")
             {
                 _messageUpdater.Update("检测到配置本机服务，正在尝试查找本机服务mosquitto");
                 try
                 {
-
-                    ServiceController ServiceController = new ServiceController("Mosquitto Broker");
-                    if (ServiceController != null)
+                    ServiceController serviceController = new ServiceController("Mosquitto Broker");
+                    try
                     {
-                        _messageUpdater.Update("检测到本地注册中心配置,正在尝试启动");
-                        _messageUpdater.Update($"检测服务mosquitto，状态{ServiceController.Status}，正在尝试启动服务");
-                        if (Tool.IsAdministrator())
+                        var status = serviceController.Status; // 会抛异常: 服务不存在
+                        _messageUpdater.Update($"检测服务mosquitto，状态 {status}，正在尝试启动服务");
+
+                        if (status == ServiceControllerStatus.Stopped || status == ServiceControllerStatus.Paused)
                         {
-                            ServiceController.Start();
-                            isConnect = await MQTTControl.GetInstance().Connect();
-                            if (isConnect) return;
-                        }
-                        else
-                        {
-                            if (Tool.ExecuteCommandAsAdmin("net start mosquitto"))
+                            if (Tool.IsAdministrator())
                             {
-                                isConnect = await MQTTControl.GetInstance().Connect();
-                                if (isConnect) return;
+                                serviceController.Start();
+                            }
+                            else
+                            {
+                                if (!Tool.ExecuteCommandAsAdmin("net start mosquitto"))
+                                {
+                                    _messageUpdater.Update("以管理员权限启动 mosquitto 服务失败。");
+                                    return;
+                                }
                             }
                         }
+                        else if (status == ServiceControllerStatus.Running)
+                        {
+                            _messageUpdater.Update("mosquitto 服务已在运行。");
+                        }
+
+                        isConnect = await MQTTControl.GetInstance().Connect();
+                        if (isConnect) return;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        _messageUpdater.Update("未检测到 Mosquitto Broker 服务，请确认已正确安装。");
                     }
                 }
                 catch(Exception ex)

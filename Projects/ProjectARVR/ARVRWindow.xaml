@@ -126,14 +126,14 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="Id" Width="150">
+                                <GridViewColumn Header="Id" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                             <TextBlock Text="{Binding Id}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="SN" Width="150">
+                                <GridViewColumn Header="SN" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                             <TextBlock Text="{Binding SN}" />
@@ -147,6 +147,14 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="TestType" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding TestType}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                
                                 <GridViewColumn Header="Time" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
