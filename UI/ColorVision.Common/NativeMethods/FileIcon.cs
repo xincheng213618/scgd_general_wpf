@@ -105,7 +105,7 @@ namespace ColorVision.Common.NativeMethods
         {
             SHFILEINFO _SHFILEINFO = new();
             uint flag = (uint)(SHGFI.ICON | (smallIcon ? SHGFI.SMALLICON : SHGFI.LARGEICON));
-            IntPtr _IconIntPtr = SHGetFileInfo(@"", 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), flag);
+            IntPtr _IconIntPtr = SHGetFileInfo("C:\\windows", 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), flag);
             if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
             Icon _Icon = Icon.FromHandle(_SHFILEINFO.hIcon);
             return _Icon;

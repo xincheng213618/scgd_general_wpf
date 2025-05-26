@@ -6,7 +6,7 @@ using System.Windows.Controls;
 namespace ColorVision.Solution
 {
     // 标记本类支持的扩展名，并设为默认
-    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat", isDefault: true)]
+    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1", isDefault: true)]
     public class TextEditor : EditorBase
     {
         public override string Name => "文本编辑器";
