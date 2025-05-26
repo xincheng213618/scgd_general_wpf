@@ -118,7 +118,7 @@ namespace ColorVision.Solution
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
 
-            new CVSolutionConfig().ToJsonNFile(slnName);
+            new SolutionConfig().ToJsonNFile(slnName);
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);

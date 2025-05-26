@@ -11,7 +11,7 @@ namespace ColorVision.Solution.Editor
         public override string Name => "图片编辑器";
         public override Control? Open(string filePath)
         {
-            ImageView imageView = ImageView.GetInstance();
+            ImageView imageView = new ImageView();
             imageView.OpenImage(filePath);
             return imageView;
         }
