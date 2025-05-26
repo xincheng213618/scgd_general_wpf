@@ -1,15 +1,11 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

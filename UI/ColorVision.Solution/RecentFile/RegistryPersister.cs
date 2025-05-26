@@ -1,7 +1,7 @@
 ﻿using Microsoft.Win32;
 using System.Windows.Forms;
 
-namespace ColorVision.RecentFile
+namespace ColorVision.Solution.RecentFile
 {
     public class RegistryPersister : IRecentFile
     {

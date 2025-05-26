@@ -8,7 +8,6 @@ namespace ColorVision.Solution.FileMeta
 {
     public interface IFileMeta
     {
-        string Extension { get; }
         IEnumerable<MenuItemMetadata> GetMenuItems();
         int Order { get; }
         string Name { get; set; }
@@ -24,7 +23,6 @@ namespace ColorVision.Solution.FileMeta
     public abstract class FileMetaBase : ViewModelBase, IFileMeta
     {
         public virtual int Order { get; } = 1;
-        public abstract string Extension { get; }
         public virtual string Name { get; set; }
         public FileInfo FileInfo { get; set; }
         public ImageSource? Icon { get; set; }

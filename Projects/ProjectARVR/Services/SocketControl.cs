@@ -2,7 +2,6 @@
 using ColorVision.UI.SocketProtocol;
 using ProjectARVR.PluginConfig;
 using System.Net.Sockets;
-using System.Text;
 using System.Windows;
 
 namespace ProjectARVR.Services

@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.PropertyEditor;
+﻿using ColorVision.Solution.Editor;
+using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows.Controls;
 

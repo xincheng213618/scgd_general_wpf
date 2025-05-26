@@ -3,8 +3,6 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Interop;
 
 namespace ColorVision.Themes.Controls
 {

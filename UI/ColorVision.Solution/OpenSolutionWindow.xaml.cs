@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.RecentFile;
+using ColorVision.Solution.RecentFile;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus.Base;
 using ColorVision.UI.Menus.Base.File;

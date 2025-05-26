@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace ColorVision.Solution
+namespace ColorVision.Solution.Editor
 {
     public interface IEditor
     {

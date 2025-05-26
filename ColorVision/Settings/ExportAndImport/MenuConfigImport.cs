@@ -1,11 +1,4 @@
-﻿using ColorVision.UI;
-using ColorVision.UI.Menus;
-using ColorVision.Update;
-using System;
-using System.IO;
-using System.Reflection;
-
-namespace ColorVision.Settings.ExportAndImport
+﻿namespace ColorVision.Settings.ExportAndImport
 {
     //public class MenuConfigImport : MenuItemBase
     //{

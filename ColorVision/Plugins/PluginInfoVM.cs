@@ -5,7 +5,6 @@ using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
-using ScottPlot.Statistics;
 using System;
 using System.Diagnostics;
 using System.IO;

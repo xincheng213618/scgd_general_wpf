@@ -2,15 +2,14 @@
 using ColorVision.Solution.Properties;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
-using ColorVision.UI;
 using log4net;
 using System.Diagnostics;
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace ColorVision.Solution.V
 {
+
     public class VMUtil
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(VMUtil));
@@ -18,7 +17,7 @@ namespace ColorVision.Solution.V
 
         public VMUtil()
         {
-            GeneraFileTypes();
+            FileMetaRegistry.RegisterFileMetasFromAssemblies();
         }
 
         public static void CreatFolders(VObject vObject,string FullName)
@@ -99,33 +98,6 @@ namespace ColorVision.Solution.V
             }
         }
 
-
-
-
-        private static Regex WildcardToRegex(string pattern)
-        {
-            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
-        }
-        public Dictionary<string, Type> FileTypes { get; set; }
-
-        public void GeneraFileTypes()
-        {
-            FileTypes = new Dictionary<string, Type>();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface && !type.IsAbstract)
-                    {
-                        if (Activator.CreateInstance(type) is IFileMeta page)
-                        {
-                            FileTypes.Add(page.Extension, type);
-                        }
-                    }
-                }
-            }
-        }
-
         public void CreateFile(IObject vObject, FileInfo fileInfo)
         {
             if (fileInfo.Extension.Contains("cvsln")) return;
@@ -137,31 +109,10 @@ namespace ColorVision.Solution.V
                 extension = Path.GetExtension(targetPath);
                 fileInfo = new FileInfo(targetPath);
             }
-            List<Type> matchingTypes = new List<Type>();
-            if (FileTypes.TryGetValue(extension, out Type specificTypes))
+            var type = FileMetaRegistry.GetFileMetaTypeByExtension(extension);
+            if (type != null)
             {
-                matchingTypes.Add(specificTypes);
-            }
-            foreach (var key in FileTypes.Keys)
-            {
-                if (key.Contains(extension))
-                    matchingTypes.Add(FileTypes[key]);
-            }
-            foreach (var key in FileTypes.Keys)
-            {
-                var subKeys = key.Split('|');
-                foreach (var subKey in subKeys)
-                {
-                    if (WildcardToRegex(subKey).IsMatch(extension))
-                    {
-                        matchingTypes.Add(FileTypes[key]);
-                        break;
-                    }
-                }
-            }
-            if (matchingTypes.Count > 0)
-            {
-                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
+                if (Activator.CreateInstance(type, fileInfo) is IFileMeta file)
                 {
                     Application.Current.Dispatcher.BeginInvoke(() =>
                     {
@@ -169,7 +120,6 @@ namespace ColorVision.Solution.V
                         vObject.AddChild(vFile);
                     });
                 }
-
             }
 
         }

@@ -17,7 +17,6 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using ProjectKB.Config;
 using ProjectKB.Modbus;
-using ProjectKB.Services;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.ComponentModel;

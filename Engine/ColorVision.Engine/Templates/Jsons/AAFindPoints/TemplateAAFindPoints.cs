@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.MySql;
 using log4net;
-using Newtonsoft.Json;
-using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 

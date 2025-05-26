@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using System.Windows.Controls;
 
-namespace ColorVision.Solution
+namespace ColorVision.Solution.Editor
 {
     // 标记为通用编辑器
     [GenericEditor]

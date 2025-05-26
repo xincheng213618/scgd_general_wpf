@@ -1,4 +1,4 @@
-﻿namespace ColorVision.RecentFile
+﻿namespace ColorVision.Solution.RecentFile
 {
     public interface IRecentFile
     {

@@ -1,14 +1,14 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
-using ColorVision.RecentFile;
+using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Searches;
 using ColorVision.Solution.V;
+using ColorVision.UI.Extension;
+using ColorVision.UI.Shell;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using ColorVision.UI.Shell;
-using ColorVision.Solution.Searches;
 
 namespace ColorVision.Solution
 {

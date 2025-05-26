@@ -14,11 +14,10 @@ using ColorVision.Solution.FileMeta;
 
 namespace ColorVision.Engine.Impl.CVFile
 {
-
+    [FileExtension(".cvraw|.cvcie")]
     public class FileCVCIE : FileMetaBase
     {
         public override int Order => 99;
-        public override string Extension { get => ".cvraw|.cvcie"; }
         public override string Name { get; set; }
 
         public FileCVCIE()

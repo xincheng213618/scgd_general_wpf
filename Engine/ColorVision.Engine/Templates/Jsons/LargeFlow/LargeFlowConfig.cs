@@ -1,7 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Templates.POI;
-using Newtonsoft.Json;
-using System;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow 

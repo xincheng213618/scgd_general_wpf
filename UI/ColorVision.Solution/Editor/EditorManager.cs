@@ -1,8 +1,6 @@
-﻿using ColorVision.UI;
-using System;
-using System.Collections.Generic;
+﻿using ColorVision.Solution.Editor;
+using ColorVision.UI;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.Solution
 {

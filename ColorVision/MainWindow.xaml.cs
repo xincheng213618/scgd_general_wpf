@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.FloatingBall;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
@@ -18,7 +17,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

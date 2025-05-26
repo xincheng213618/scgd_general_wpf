@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace ColorVision
 {

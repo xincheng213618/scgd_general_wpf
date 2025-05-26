@@ -1,17 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.FileMeta;
 using System.IO;
 
-namespace ColorVision.Solution.Imp.CommonText
+namespace ColorVision.Solution.FileMeta
 {
+    [FileExtension(".txt|.cs")]
     public class FileText : FileMetaBase
     {
         public override int Order => 1;
         public FileText() { }
         public RelayCommand AttributesCommand { get; set; }
-        public override string Extension { get => ".txt|.cs"; }
-
         public FileText(FileInfo fileInfo)
         {
             FileInfo = fileInfo;

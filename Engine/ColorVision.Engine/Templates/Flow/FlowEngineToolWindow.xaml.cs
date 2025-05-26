@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;

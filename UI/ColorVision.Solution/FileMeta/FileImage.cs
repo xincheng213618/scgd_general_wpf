@@ -1,13 +1,12 @@
 ﻿using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.FileMeta;
 using ColorVision.UI.Menus;
 using System.IO;
 
-namespace ColorVision.Solution.Imp.CommonImage
+namespace ColorVision.Solution.FileMeta
 {
+    [FileExtension(".jpg|.png|.jpeg|.tif|.bmp|.tiff")]
     public class FileImage : FileMetaBase
     {
-        public override string Extension { get => ".jpg|.png|.jpeg|.tif|.bmp|.tiff|"; }
         public FileImage() { }
 
         public FileImage(FileInfo fileInfo)

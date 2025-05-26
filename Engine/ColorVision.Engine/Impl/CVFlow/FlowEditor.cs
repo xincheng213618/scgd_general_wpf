@@ -1,11 +1,10 @@
 ﻿using ColorVision.Engine.Templates.Flow;
-using ColorVision.Solution;
 using System.Windows;
-using System.Windows.Controls;
 
 
 namespace ColorVision.Engine.Impl.FileProcessor
 {
+    using ColorVision.Solution.Editor;
     using System.Windows.Controls;
 
     // 声明支持的扩展名，并设为默认
