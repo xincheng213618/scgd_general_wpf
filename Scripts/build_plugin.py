@@ -8,7 +8,7 @@ import pefile
 import time
 import argparse
 
-EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json"，"PackageIcon.png"]
+EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json","PackageIcon.png"]
 
 def get_file_version(file_path):
     """获取可执行文件的版本信息"""
