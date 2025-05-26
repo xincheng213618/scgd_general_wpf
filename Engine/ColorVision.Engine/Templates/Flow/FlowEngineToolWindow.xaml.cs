@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Media;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
@@ -14,6 +16,39 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+
+    public class FileProcessorFlow : IFileProcessor
+    {
+        public string GetExtension() => "stn|*.stn"; // "cvcie
+        public int Order => 1;
+
+        public bool CanProcess(string filePath)
+        {
+            return filePath.EndsWith("stn", StringComparison.OrdinalIgnoreCase);
+        }
+        public void Export(string filePath)
+        {
+          
+        }
+
+        public bool CanExport(string filePath)
+        {
+            return false;
+        }
+
+        public void Process(string filePath)
+        {
+            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow
+            {
+                Owner = System.Windows.Application.Current.GetActiveWindow()
+            };
+            flowEngineToolWindow.OpenFlow(filePath);
+            flowEngineToolWindow.Show();
+        }
+    }
+
+
+
     /// <summary>
     /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>

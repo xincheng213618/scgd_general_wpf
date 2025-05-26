@@ -15,8 +15,14 @@ namespace ColorVision.ImageEditor
 
         public ComponentManager()
         {
-            IImageComponents.LoadImplementations();
-            IImageOpens.LoadImplementations();
+            foreach (var item in AssemblyHandler.LoadImplementations<IImageComponent>())
+            {
+                IImageComponents.Add(item);
+            }
+            foreach (var item in AssemblyHandler.LoadImplementations<IImageOpen>())
+            {
+                IImageOpens.Add(item);
+            }
         }
     }
 }
