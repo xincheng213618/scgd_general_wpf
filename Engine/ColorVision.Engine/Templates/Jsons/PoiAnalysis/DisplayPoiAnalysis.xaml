@@ -1,18 +1,18 @@
-﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.MTF2.DisplayMTF2"
+﻿<UserControl x:Class="ColorVision.Engine.Templates.Jsons.PoiAnalysis.DisplayPoiAnalysis"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.MTF2"
+             xmlns:local="clr-namespace:ColorVision.Engine.Templates.Jsons.PoiAnalysis"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
-             d:DataContext="{d:DesignInstance local:AlgorithmMTF2}"
+             d:DataContext="{d:DesignInstance local:AlgorithmPoiAnalysis}"
              d:DesignHeight="300" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <Grid>
         <StackPanel>
             <DockPanel Margin="0,2">
                 <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="RunTemplate_Click" />
-                <TextBlock Text="DFOV" Width="60"/>
+                <TextBlock Text="PoiAnalysis" Width="60"/>
                 <ComboBox x:Name="ComboxTemplate"  SelectedIndex="{Binding TemplateSelectedIndex}" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key" />
                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
