@@ -56,7 +56,8 @@ namespace ColorVision.Solution.V
 
             OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
-            EditCommand = new RelayCommand(a => { new PropertyEditorWindow(this.Config).ShowDialog(); Config.ToJsonNFile(FullPath); });
+
+            EditCommand = new RelayCommand(a => { new PropertyEditorWindow(this.Config) { Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner }.ShowDialog(); Config.ToJsonNFile(FullPath); });
 
             DriveMonitor();
             if (DirectoryInfo !=null && DirectoryInfo.Exists)

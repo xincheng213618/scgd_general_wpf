@@ -1,7 +1,6 @@
 ﻿using ColorVision.Solution.FileMeta;
+using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
-using ColorVision.Solution.V.Files;
-using ColorVision.Solution.V.Folders;
 using log4net;
 using System.Diagnostics;
 using System.IO;

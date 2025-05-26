@@ -8,7 +8,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Searches;
 using ColorVision.Solution.FileMeta;
 
-namespace ColorVision.Solution.V.Files
+namespace ColorVision.Solution.V
 {
     public class VFile : VObject
     {
@@ -56,7 +56,7 @@ namespace ColorVision.Solution.V.Files
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Open", Order = 1, Command = OpenCommand, Header = Resources.MenuOpen, Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenMethod", Order = 2, Command = OpenMethodCommand, Header = "打开方式(_N)" });
 
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = ColorVision.Solution.Properties.Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
         }
         public override void ShowProperty()

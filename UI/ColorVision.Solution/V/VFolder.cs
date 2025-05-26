@@ -2,13 +2,14 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.FolderMeta;
 using ColorVision.Solution.Properties;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Solution.V.Folders
+namespace ColorVision.Solution.V
 {
     public class VFolder : VObject
     {
@@ -99,7 +100,7 @@ namespace ColorVision.Solution.V.Folders
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
-            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = ColorVision.Solution.Properties.Resources.MenuAdd });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" ,Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
@@ -140,8 +141,8 @@ namespace ColorVision.Solution.V.Folders
                     Directory.Move(DirectoryInfo.FullName, destinationDirectoryPath);
                     DirectoryInfo = new DirectoryInfo(destinationDirectoryPath);
 
-                    this.VisualChildren.Clear();
-                    VMUtil.Instance.GeneralChild(this,this.DirectoryInfo);
+                    VisualChildren.Clear();
+                    VMUtil.Instance.GeneralChild(this,DirectoryInfo);
                     if (FileSystemWatcher != null)
                     {
                         FileSystemWatcher.Path = DirectoryInfo.FullName;
@@ -160,7 +161,7 @@ namespace ColorVision.Solution.V.Folders
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),$"\"{Name}\"{ColorVision.Solution.Properties.Resources.FolderDeleteSign}","ColorVision",MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            if (MessageBox.Show(Application.Current.GetActiveWindow(),$"\"{Name}\"{Resources.FolderDeleteSign}","ColorVision",MessageBoxButton.OKCancel) == MessageBoxResult.OK)
             {
                 base.Delete();
             }

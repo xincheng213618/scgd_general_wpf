@@ -3,8 +3,9 @@ using System.IO;
 using ColorVision.UI.Menus;
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
+using ColorVision.Solution.V;
 
-namespace ColorVision.Solution.V.Folders
+namespace ColorVision.Solution.FolderMeta
 {
     public interface IFolderMeta
     {

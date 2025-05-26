@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.NativeMethods;
 using System.IO;
 
-namespace ColorVision.Solution.V.Folders
+namespace ColorVision.Solution.FolderMeta
 {
     public class BaseFolder : FolderMetaBase
     {

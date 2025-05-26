@@ -1,7 +1,4 @@
-﻿using ColorVision.Solution.V.Files;
-using ColorVision.Solution.V.Folders;
-
-namespace ColorVision.Solution.V
+﻿namespace ColorVision.Solution.V
 {
     public static class VObjectExtensions
     {
@@ -47,6 +44,36 @@ namespace ColorVision.Solution.V
             {
                 vObject.VisualChildren.Add(item);
             }
+        }
+
+        public static bool SetSelected(this VObject vObject, string fullpath)
+        {
+            // 1. 当前节点匹配
+            if (vObject.FullPath == fullpath)
+            {
+                vObject.IsSelected = true;
+                // 展开所有父节点
+                var parent = vObject.Parent;
+                while (parent != null)
+                {
+                    parent.IsExpanded = true;
+                    parent = parent.Parent;
+                }
+                // 目标已找到
+                return true;
+            }
+            // 2. 递归查找子节点
+            foreach (var child in vObject.VisualChildren)
+            {
+                if (SetSelected(child, fullpath))
+                {
+                    // 只要子节点中有一个命中，则本节点也要展开
+                    vObject.IsExpanded = true;
+                    return true;
+                }
+            }
+            // 没找到
+            return false;
         }
 
         public static IEnumerable<VObject> GetAllVisualChildren(this IEnumerable<VObject> visualChildren)

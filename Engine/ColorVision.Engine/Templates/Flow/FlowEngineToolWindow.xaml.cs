@@ -35,10 +35,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Process(string filePath)
         {
-            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow
-            {
-                Owner = System.Windows.Application.Current.GetActiveWindow()
-            };
+            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
             flowEngineToolWindow.OpenFlow(filePath);
             flowEngineToolWindow.Show();
         }
