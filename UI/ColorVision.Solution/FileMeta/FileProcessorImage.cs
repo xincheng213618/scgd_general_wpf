@@ -4,7 +4,7 @@ using ColorVision.UI;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Solution.Imp.CommonImage
+namespace ColorVision.Solution.FileMeta
 {
     [FileExtension(".jpg", ".png", ".jpeg", ".tif", ".bmp", ".tiff")]
     public class FileProcessorImage : IFileProcessor
