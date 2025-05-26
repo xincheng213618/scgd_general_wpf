@@ -11,10 +11,11 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using ColorVision.Solution.FileMeta;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Impl.CVFile
 {
-    [FileExtension(".cvraw|.cvcie")]
+    [FileExtension(".cvraw", ".cvcie")]
     public class FileCVCIE : FileMetaBase
     {
         public override int Order => 99;

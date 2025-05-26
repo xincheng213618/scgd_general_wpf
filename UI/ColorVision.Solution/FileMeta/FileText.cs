@@ -1,10 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
+using System.ComponentModel;
 using System.IO;
 
 namespace ColorVision.Solution.FileMeta
 {
-    [FileExtension(".txt|.cs")]
+    [FileExtension(".txt", ".cs")]
     public class FileText : FileMetaBase
     {
         public override int Order => 1;

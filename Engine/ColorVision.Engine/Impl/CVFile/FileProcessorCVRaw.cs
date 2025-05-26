@@ -4,15 +4,16 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
+using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Impl.SolutionImpl
 {
+    [FileExtension(".cvraw")]
     public class FileProcessorCVRaw : IFileProcessor
     {
-        public string GetExtension() => "cvraw|*.cvraw"; // "cvcie
         public int Order => 1;
 
         public bool CanProcess(string filePath)

@@ -758,9 +758,9 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                ImageViewModel.IImageOpen = ComponentManager.GetInstance().IImageOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (ImageViewModel.IImageOpen != null)
+                if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
                 {
+                    ImageViewModel.IImageOpen = imageOpen;
                     Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
                     ImageViewModel.IImageOpen.OpenImage(this, filePath);
                     return;

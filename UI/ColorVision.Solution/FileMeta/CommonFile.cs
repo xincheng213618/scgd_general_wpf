@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.NativeMethods;
+using System.ComponentModel;
 using System.IO;
 
 namespace ColorVision.Solution.FileMeta

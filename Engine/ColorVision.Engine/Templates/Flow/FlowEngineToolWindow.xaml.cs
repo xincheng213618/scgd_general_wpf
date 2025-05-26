@@ -14,10 +14,9 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
 {
-
+    [FileExtension(".stn", ".cvflow")]
     public class FileProcessorFlow : IFileProcessor
     {
-        public string GetExtension() => "stn|*.stn"; // "cvcie
         public int Order => 1;
 
         public bool CanProcess(string filePath)

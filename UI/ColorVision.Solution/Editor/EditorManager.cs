@@ -81,6 +81,8 @@ namespace ColorVision.Solution
                     }
                 }
             }
+      
+        
         }
 
         public List<Type> GetEditorsForExt(string extension)

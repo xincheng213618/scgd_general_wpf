@@ -1,14 +1,14 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
+using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.Solution.Imp.CommonImage
 {
+    [FileExtension(".jpg", ".png", ".jpeg", ".tif", ".bmp", ".tiff")]
     public class FileProcessorImage : IFileProcessor
     {
-        public string GetExtension() => "图像文件 (*.jpg;*.png;*.jpeg;*.tif;*.bmp)|*.jpg;*.png;*.jpeg;*.tif;*.bmp"; // "cvcie
-
         public int Order => 3;
 
         public bool CanProcess(string filePath)
