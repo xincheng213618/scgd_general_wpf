@@ -3,7 +3,8 @@ using System.IO;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Menus;
 
-namespace ColorVision.Solution.V.Files
+
+namespace ColorVision.Solution.FileMeta
 {
     public interface IFileMeta
     {

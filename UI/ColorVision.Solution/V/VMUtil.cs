@@ -1,4 +1,5 @@
-﻿using ColorVision.Solution.Properties;
+﻿using ColorVision.Solution.FileMeta;
+using ColorVision.Solution.Properties;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
 using ColorVision.UI;
@@ -99,6 +100,12 @@ namespace ColorVision.Solution.V
         }
 
 
+
+
+        private static Regex WildcardToRegex(string pattern)
+        {
+            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
+        }
         public Dictionary<string, Type> FileTypes { get; set; }
 
         public void GeneraFileTypes()
@@ -117,11 +124,6 @@ namespace ColorVision.Solution.V
                     }
                 }
             }
-        }
-
-        private static Regex WildcardToRegex(string pattern)
-        {
-            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
         }
 
         public void CreateFile(IObject vObject, FileInfo fileInfo)

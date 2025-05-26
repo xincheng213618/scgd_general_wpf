@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.FileMeta;
 using System.IO;
 
 namespace ColorVision.Solution.V.Files

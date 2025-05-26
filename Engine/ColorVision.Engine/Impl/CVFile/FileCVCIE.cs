@@ -3,7 +3,6 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Solution.V.Files;
 using ColorVision.UI.Menus;
 using OpenCvSharp;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using ColorVision.Solution.FileMeta;
 
 namespace ColorVision.Engine.Impl.CVFile
 {

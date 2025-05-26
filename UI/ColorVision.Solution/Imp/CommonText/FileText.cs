@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.V.Files;
+using ColorVision.Solution.FileMeta;
 using System.IO;
 
 namespace ColorVision.Solution.Imp.CommonText

@@ -6,6 +6,7 @@ using System.IO;
 using System.Windows;
 using ColorVision.Common.Utilities;
 using ColorVision.Solution.Searches;
+using ColorVision.Solution.FileMeta;
 
 namespace ColorVision.Solution.V.Files
 {
