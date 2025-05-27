@@ -1,5 +1,7 @@
 ﻿
 
+using ColorVision.Engine.Templates.Menus;
+
 namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
     public class MenuAAFindPoints : MenuITemplateAlgorithmBase

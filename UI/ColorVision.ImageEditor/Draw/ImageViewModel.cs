@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.ImageEditor.Draw.Special;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Draw.Special;
 using Gu.Wpf.Geometry;
@@ -18,6 +19,15 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Draw
 {
+
+    public interface IImageContentMenu
+    {
+        public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig config);
+    }
+
+
+
+
 
     public class ImageViewModel : ViewModelBase,IDisposable
     {
@@ -268,6 +278,12 @@ namespace ColorVision.ImageEditor.Draw
             MenuItemMetadatas.Clear();
             if (IImageOpen != null)
                 MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
+
+            foreach (var item in AssemblyHandler.LoadImplementations<IImageContentMenu>())
+            {
+                MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
+            }
+
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenImage", Order = 10, Header = ColorVision.ImageEditor.Properties.Resources.Open, Command = OpenImageCommand , Icon = MenuItemIcon.TryFindResource("DIOpen") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "ClearImage", Order = 11, Header = ColorVision.ImageEditor.Properties.Resources.Clear, Command = ClearImageCommand, Icon = MenuItemIcon.TryFindResource("DIDelete") });

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Distortion
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Distortion
 {
     public class ExportDistortionParam : MenuITemplateAlgorithmBase
     {

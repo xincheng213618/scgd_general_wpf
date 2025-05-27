@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Solution
+namespace ColorVision.Solution.RecentFile
 {
     public class MenuRecentFile : IMenuItemMeta
     {

@@ -4,16 +4,16 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Shell;
 using System;
+using System.ComponentModel;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Windows;
 
 namespace ColorVision.Engine.Impl.FileProcessor
 {
+    [FileExtension(".cvcie")]
     public class FileProcessorCVCIE : IFileProcessor
     {
-        public string GetExtension() => "cvcie|*.cvcie"; // "cvcie
-
         public int Order => 2;
 
         public bool CanProcess(string filePath)

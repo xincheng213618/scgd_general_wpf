@@ -126,14 +126,14 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn Header="Id" Width="150">
+                                <GridViewColumn Header="Id" Width="50">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                             <TextBlock Text="{Binding Id}" />
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn Header="SN" Width="150">
+                                <GridViewColumn Header="SN" Width="100">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
                                             <TextBlock Text="{Binding SN}" />
@@ -147,6 +147,14 @@
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
+                                <GridViewColumn Header="TestType" Width="100">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
+                                            <TextBlock Text="{Binding TestType}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                
                                 <GridViewColumn Header="Time" Width="150">
                                     <GridViewColumn.CellTemplate>
                                         <DataTemplate DataType="{x:Type local:ProjectARVRReuslt}">
@@ -198,6 +206,16 @@
                             </Grid>
                             <Button Content="大模板测试"  DockPanel.Dock="Right" Background="Pink" Click="LargeTest_Click" />
                         </DockPanel>
+                        <UniformGrid >
+                            <Button Content="切换白画面测试" Click="Button_Click_1"/>
+                            <Button Content="切换黑画面测试" Click="Button_Click_2"/>
+                            <Button Content="切换9点画面测试" Click="Button_Click_3"/>
+                            <Button Content="切换4*4 棋盘格测试" Click="Button_Click_4"/>
+                            <Button Content="切换水平MTF图卡测试" Click="Button_Click_5"/>
+                            <Button Content="切换垂直MTF图卡测试" Click="Button_Click_6"/>
+                            <Button Content="切换白画面图卡测试" Click="Button_Click_7" />
+                            <Button Content="切换网格图测试" Click="Button_Click_8"/>
+                        </UniformGrid>
                     </StackPanel>
                 </Grid>
                 <Grid Grid.Row="1" Margin="5,0">

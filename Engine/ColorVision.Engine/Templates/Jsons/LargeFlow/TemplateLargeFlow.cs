@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.POI;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Jsons.LargeFlow
 {

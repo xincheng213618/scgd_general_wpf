@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
@@ -7,12 +6,16 @@ using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
-using ColorVision.Engine.Templates.Jsons.BlackMura;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using ColorVision.Engine.Templates.MTF;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
+using ColorVision.UI.Extension;
+using ColorVision.UI.SocketProtocol;
+using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
-using HandyControl.Tools.Extension;
 using log4net;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
@@ -22,15 +25,29 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using static iText.StyledXmlParser.Jsoup.Select.Evaluator;
 
 namespace ProjectARVR
 {
+    public enum ARVRTestType
+    {
+        White =1,
+        Black =2,
+        DistortionGhost = 3,
+        Checkerboard = 4,
+        MTFH =5,
+        MTFV =6,
+        DefectDetection =7,
+        GridDiagram =8,
+    }
+
+
     public class ProjectARVRReuslt:ViewModelBase
     {
         public int Id { get; set; }
@@ -43,6 +60,17 @@ namespace ProjectARVR
 
         public bool Result { get; set; } = true;
 
+        public ARVRTestType TestType { get; set; }
+
+        public List<ViewResultMTF> MTFHs { get; set; } = new List<ViewResultMTF>();
+        public List<ViewResultMTF> MTFvs { get; set; } = new List<ViewResultMTF>();
+    }
+
+    public class SwitchPG
+    {
+        public string EventName { get; set; } = "SwitchPG";
+
+        public ARVRTestType ARVRTestType { get; set; }
     }
 
     public partial class ARVRWindow : Window,IDisposable
@@ -69,6 +97,8 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
+
+            ImageView.SetConfig(ProjectARVRConfig.Instance.ImageViewConfig);
 
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
@@ -198,10 +228,15 @@ namespace ProjectARVR
             }
         }
 
-
-
         private void TestClick(object sender, RoutedEventArgs e)
         {
+            if (SocketControl.Current.Stream != null)
+            {
+                byte[] response1 = Encoding.ASCII.GetBytes($"Run 5555");
+                SocketControl.Current.Stream.Write(response1, 0, response1.Length);
+            }
+
+            
             RunTemplate();
         }
         private void LargeTest_Click(object sender, RoutedEventArgs e)
@@ -300,7 +335,10 @@ namespace ProjectARVR
                         LastCompleted = true;
                         try
                         {
-                            Processing(FlowControlData.SerialNumber);
+                            Application.Current.Dispatcher.BeginInvoke(() =>
+                            {
+                                Processing(FlowControlData.SerialNumber);
+                            });
                         }
                         catch (Exception ex)
                         {
@@ -366,24 +404,69 @@ namespace ProjectARVR
 
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
             {
-                if (item.ImgFileType == AlgorithmResultType.BlackMura_Caculate)
+                if (result.Model.Contains("White"))
                 {
-                    List<BlackMuraModel> AlgResultModels = BlackMuraDao.Instance.GetAllByPid(item.Id);
-                    if (AlgResultModels.Count > 0)
+                    result.TestType = ARVRTestType.White;
+                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
+                    foreach (var poiResultDat1a in AlgResultMTFModels)
                     {
-                        BlackMuraView blackMuraView = new BlackMuraView(AlgResultModels[0]);
-
-
-                        blackMuraView.ResultJson.LvMax = blackMuraView.ResultJson.LvMax * BlackMuraConfig.Instance.LvMaxScale;
-                        blackMuraView.ResultJson.LvMin = blackMuraView.ResultJson.LvMin * BlackMuraConfig.Instance.LvMinScale;
-                        blackMuraView.ResultJson.ZaRelMax = blackMuraView.ResultJson.ZaRelMax * BlackMuraConfig.Instance.ZaRelMaxScale;
-                        blackMuraView.ResultJson.Uniformity = blackMuraView.ResultJson.LvMin / blackMuraView.ResultJson.LvMax * 100;
+                        ViewResultMTF poiResultData = new(poiResultDat1a);
+                        result.MTFHs.Add(poiResultData);
                     }
+                }
+                if (result.Model.Contains("Black"))
+                {
+                    result.TestType = ARVRTestType.Black;
+                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
+                    foreach (var poiResultDat1a in AlgResultMTFModels)
+                    {
+                        ViewResultMTF poiResultData = new(poiResultDat1a);
+                        result.MTFHs.Add(poiResultData);
+                    }
+                }
+                if (result.Model.Contains("Ghost"))
+                {
+                    result.TestType = ARVRTestType.DistortionGhost;
+                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
+                    foreach (var poiResultDat1a in AlgResultMTFModels)
+                    {
+                        ViewResultMTF poiResultData = new(poiResultDat1a);
+                        result.MTFHs.Add(poiResultData);
+                    }
+                }
+
+                if (result.Model.Contains("MTF_H"))
+                {
+                    result.TestType = ARVRTestType.MTFH;
+                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
+                    foreach (var poiResultDat1a in AlgResultMTFModels)
+                    {
+                        ViewResultMTF poiResultData = new(poiResultDat1a);
+                        result.MTFHs.Add(poiResultData);
+                    }
+                }
+
+                if (result.Model.Contains("MTF_V"))
+                {
+                    result.TestType = ARVRTestType.MTFV;
+                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
+                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
+                    foreach (var poiResultDat1a in AlgResultMTFModels)
+                    {
+                        ViewResultMTF poiResultData = new(poiResultDat1a);
+                        result.MTFvs.Add(poiResultData);
+                    }
+
                 }
             }
 
             SNtextBox.Text = string.Empty;
             ViewResluts.Add(result);
+            listView1.SelectedIndex = ViewResluts.Count - 1;
         }
 
 
@@ -408,6 +491,7 @@ namespace ProjectARVR
             {
                 var result = ViewResluts[listView.SelectedIndex];
                 GenoutputText(result);
+
                 Task.Run(async () =>
                 {
                     if (File.Exists(result.FileName))
@@ -415,29 +499,21 @@ namespace ProjectARVR
                         try
                         {
                             var fileInfo = new FileInfo(result.FileName);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
+                            log.Debug($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+                                log.Debug("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {
-                                _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                                {
-                                    ImageView.OpenImage(result.FileName);
-                                    ImageView.ImageShow.Clear();
-                                });
+                                OpenImage(result);
                             }
                         }
                         catch
                         {
-                            log.Warn("文件还在写入");
+                            log.Debug("文件还在写入");
                             await Task.Delay(ProjectARVRConfig.Instance.ViewImageReadDelay);
-                            _ = Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                ImageView.OpenImage(result.FileName);
-                                ImageView.ImageShow.Clear();
-                            });
+                            OpenImage(result);
                         }
                     }
                 });
@@ -445,21 +521,104 @@ namespace ProjectARVR
             }
         }
 
-        public void GenoutputText(ProjectARVRReuslt kmitemmaster)
+        public void OpenImage(ProjectARVRReuslt result)
+        {
+            _ = Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                ImageView.OpenImage(result.FileName);
+                ImageView.ImageShow.Clear();
+                if (result.TestType == ARVRTestType.MTFH)
+                {
+                    foreach (var poiResultData in result.MTFHs)
+                    {
+                        switch (poiResultData.Point.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new();
+                                Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
+                                Circle.Attribute.Radius = poiResultData.Point.Height / 2;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = poiResultData.Id;
+                                Circle.Attribute.Text = poiResultData.Name;
+                                Circle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new();
+                                Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = poiResultData.Id;
+                                Rectangle.Attribute.Text = poiResultData.Name;
+                                Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                if (result.TestType == ARVRTestType.MTFV)
+                {
+                    foreach (var poiResultData in result.MTFvs)
+                    {
+                        switch (poiResultData.Point.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new();
+                                Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
+                                Circle.Attribute.Radius = poiResultData.Point.Height / 2;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = poiResultData.Id;
+                                Circle.Attribute.Text = poiResultData.Name;
+                                Circle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new();
+                                Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = poiResultData.Id;
+                                Rectangle.Attribute.Text = poiResultData.Name;
+                                Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+
+                }
+
+
+            });
+
+        }
+
+        public void GenoutputText(ProjectARVRReuslt result)
         {
 
-            outputText.Background = kmitemmaster.Result ? Brushes.Lime : Brushes.Red;
+            outputText.Background = result.Result ? Brushes.Lime : Brushes.Red;
             outputText.Document.Blocks.Clear(); // 清除之前的内容
 
             string outtext = string.Empty;
-            outtext += $"Model:{kmitemmaster.Model}" + Environment.NewLine;
-            outtext += $"SN:{kmitemmaster.SN}" + Environment.NewLine;
-            outtext += $"Poiints of Interest: " + Environment.NewLine;
+            outtext += $"Model:{result.Model}" + Environment.NewLine;
+            outtext += $"SN:{result.SN}" + Environment.NewLine;
             outtext += $"{DateTime.Now:yyyy/MM//dd HH:mm:ss}" + Environment.NewLine;
 
             Run run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
+
+
 
             var paragraph = new Paragraph();
             paragraph.Inlines.Add(run);
@@ -469,35 +628,44 @@ namespace ProjectARVR
 
             paragraph = new Paragraph();
 
-            string title1 = "PT";
-            string title2 = "Lv";
-
-            string title5 = "Lc";
-            outtext += $"{title1,-20}   {title2,-10} {title5,10}" + Environment.NewLine;
-            run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
-            run.FontSize += 1;
-
-            paragraph.Inlines.Add(run);
             outtext = string.Empty;
 
             outputText.Document.Blocks.Add(paragraph);
 
-            //outtext += $"Min Lv= {kmitemmaster.MinLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Max Lv= {kmitemmaster.MaxLv:F2} cd/m2" + Environment.NewLine;
-            //outtext += $"Darkest Key= {kmitemmaster.DrakestKey}" + Environment.NewLine;
-            //outtext += $"Brightest Key= {kmitemmaster.BrightestKey}" + Environment.NewLine;
+            switch (result.TestType)
+            {
+                case ARVRTestType.White:
+                    outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+                    break;
+                case ARVRTestType.Black:
+                    outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
+                    break;
+                case ARVRTestType.MTFH:
+                    outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
+                    break;
+                case ARVRTestType.MTFV:
+                    outtext += $"垂直MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
+                    break;
+                case ARVRTestType.DistortionGhost:
+                    outtext += $"黑画面 测试项：自动AA区域定位算法+畸变算法+鬼影算法" + Environment.NewLine;
+                    break;
+                default:
+                    break;
+            }
+
+            //outtext += $"Min Lv= {result.MinLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Max Lv= {result.MaxLv:F2} cd/m2" + Environment.NewLine;
+            //outtext += $"Darkest Key= {result.DrakestKey}" + Environment.NewLine;
+            //outtext += $"Brightest Key= {result.BrightestKey}" + Environment.NewLine;
 
             outtext += Environment.NewLine;
             outtext += $"Pass/Fail Criteria:" + Environment.NewLine;
-            //outtext += $"NbrFail Points={kmitemmaster.NbrFailPoints}" + Environment.NewLine;
-            //outtext += $"Avg Lv={kmitemmaster.AvgLv:F2}" + Environment.NewLine;
-            //outtext += $"Lv Uniformity={kmitemmaster.LvUniformity * 100:F2}%" + Environment.NewLine;
 
-            outtext += kmitemmaster.Result ? "Pass" : "Fail" + Environment.NewLine;
+
+            outtext += result.Result ? "Pass" : "Fail" + Environment.NewLine;
 
             run = new Run(outtext);
-            run.Foreground = kmitemmaster.Result ? Brushes.Black : Brushes.White;
+            run.Foreground = result.Result ? Brushes.Black : Brushes.White;
             run.FontSize += 1;
             paragraph = new Paragraph(run);
             outtext = string.Empty;
@@ -549,6 +717,129 @@ namespace ProjectARVR
             GC.SuppressFinalize(this);
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
 
+
+
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Black } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+
+
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DistortionGhost } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFH } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_6(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFV } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_7(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DefectDetection } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_8(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
     }
 }

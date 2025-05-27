@@ -60,7 +60,7 @@ namespace CV_Spectrometer
 
 
     /// <summary>
-    /// MainWindow.xaml 的交互逻辑
+    /// MarkdownViewWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow : System.Windows.Window
     {

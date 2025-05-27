@@ -3,7 +3,6 @@
 using ColorVision.Engine.MySql.ORM;
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace ColorVision.Engine.Services.Dao
 {
@@ -64,7 +63,7 @@ namespace ColorVision.Engine.Services.Dao
             keyValuePairs.Add(">create_date", dateTimeSTART);
             keyValuePairs.Add("<create_date", dateTimeEnd);
             //业务要求，取图失败的时候的记录不显示
-            //keyValuePairs.Add("result_code", "0");
+            //Templates .Add("result_code", "0");
             return ConditionalQuery(keyValuePairs, limit);
         }
     }

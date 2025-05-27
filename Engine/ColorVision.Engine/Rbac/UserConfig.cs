@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using System.ComponentModel;
 
 namespace ColorVision.Engine.Rbac
 {
@@ -29,13 +28,6 @@ namespace ColorVision.Engine.Rbac
         private int _TenantId;
     }
 
-    public enum Gender
-    {
-        [Description("Male")]
-        Male,
-        [Description("Female")]
-        Female,
-    }
 
 
 }

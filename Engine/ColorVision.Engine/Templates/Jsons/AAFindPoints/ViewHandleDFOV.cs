@@ -1,18 +1,5 @@
 ﻿#pragma warning disable CS8602
 
-using ColorVision.Engine.Interfaces;
-using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using log4net;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Windows.Controls;
-using System.Windows.Data;
-
 namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
 {
 

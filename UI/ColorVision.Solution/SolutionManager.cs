@@ -1,13 +1,14 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
-using ColorVision.RecentFile;
+using ColorVision.Solution.RecentFile;
+using ColorVision.Solution.Searches;
 using ColorVision.Solution.V;
+using ColorVision.UI.Extension;
+using ColorVision.UI.Shell;
 using log4net;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution
 {
@@ -76,14 +77,8 @@ namespace ColorVision.Solution
             });
 
             SettingCommand = SolutionSetting.Instance.EditCommand;
-        }
 
-
-        public event EventHandler<VObject> OpenFilePath;
-
-        public void OpenView(VObject vobject)
-        {
-            OpenFilePath?.Invoke(this, vobject);
+            SolutionViewExtensions.ContentIdSelected += (s, e) => SolutionExplorers[0].SetSelected(e);
         }
 
         public SolutionEnvironments SolutionEnvironments { get; set; } = new SolutionEnvironments();
@@ -123,7 +118,7 @@ namespace ColorVision.Solution
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
 
-            new CVSolutionConfig().ToJsonNFile(slnName);
+            new SolutionConfig().ToJsonNFile(slnName);
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);

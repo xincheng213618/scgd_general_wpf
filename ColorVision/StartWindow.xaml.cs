@@ -61,7 +61,8 @@ namespace ColorVision
 
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                try {
+                try
+                {
                     foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
                     {
                         if (Activator.CreateInstance(type, this) is IInitializer componentInitialize)
@@ -76,7 +77,6 @@ namespace ColorVision
                 catch(Exception ex)
                 {
                     log.Error(ex);
-                    AssemblyHandler.GetInstance().RemoveAssemblies.Add(assembly);
                 }
             }
 

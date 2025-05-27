@@ -1,4 +1,5 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.NativeMethods;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
 using ColorVision.UI.Shell;
@@ -90,9 +91,13 @@ namespace ColorVision
                 {
                     return;
                 }
+                else
+                {
+                    MessageBox.Show("不支持的文件格式");
+                    Environment.Exit(0);
+                    return;
+                }
             }
-            ConfigHandler.GetInstance().IsAutoSave = true;
-
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
@@ -101,7 +106,37 @@ namespace ColorVision
                 {
                     return;
                 }
+                else
+                {
+                    MessageBox.Show("不支持的文件格式");
+                    Environment.Exit(0);
+                    return;
+                }
             }
+
+            ConfigHandler.GetInstance().IsAutoSave = true;
+            //单独处理文件的进程不需要关闭当前进程
+            mutex = new Mutex(true, "ColorVision", out bool ret);
+            if (!ret && !Debugger.IsAttached)
+            {
+                IntPtr hWnd = CheckAppRunning.Check("ColorVision");
+                if (hWnd != IntPtr.Zero)
+                {
+                    if (ArgumentParser.GetInstance().CommandLineArgs.Length > 0)
+                    {
+                        char separator = '\u0001';
+                        string combinedArgs = string.Join(separator.ToString(), ArgumentParser.GetInstance().CommandLineArgs);
+                        ushort atom = GlobalAddAtom(combinedArgs);
+                        //这里反了，不过没必要改了，都一样
+                        SendMessage(hWnd, WM_USER + 1, IntPtr.Zero, (IntPtr)atom);  // 发送消息
+                    }
+                    log.Info("程序已经打开");
+                    Environment.Exit(0);
+                }
+                ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
+                //Environment.Exit(0);
+            }
+
             if (!Debugger.IsAttached)
             {
                 //杀死僵尸进程
@@ -117,13 +152,15 @@ namespace ColorVision
                 UI.ACE.License.Create();
             }
 
-            PluginLoader.LoadPluginsAssembly("Plugins");
+            PluginManager.LoadPlugins("Plugins");
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             TrayIconManager.GetInstance();
+
+
             //代码先进入启动窗口
 
             bool IsReStart = parser.GetFlag("restart");

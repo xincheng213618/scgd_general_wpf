@@ -1,6 +1,8 @@
 ﻿using ColorVision.UI.Menus;
 using ColorVision.UI.Menus.Base.File;
+using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -33,7 +35,7 @@ namespace ColorVision.UI
         public override void Execute()
         {
             System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = FileProcessorFactory.GetInstance().GetCombinedExtensions() + "|所有文件 (*.*)|*.*";
+            openFileDialog.Filter = "所有文件 (*.*)|*.*";
             openFileDialog.FilterIndex = openFileDialog.Filter.Split('|').Length / 2; ;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -58,45 +60,67 @@ namespace ColorVision.UI
         private static readonly Lazy<FileProcessorFactory> _instance = new(() => new FileProcessorFactory());
         public static FileProcessorFactory GetInstance() => _instance.Value;
 
-        private readonly List<IFileProcessor> _fileProcessors;
+        private readonly Dictionary<string, List<Type>> _extTypeMap = new();
+        private Type? _genericType;
 
         private FileProcessorFactory()
         {
-            _fileProcessors = new List<IFileProcessor>();
-
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IFileProcessor).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IFileProcessor).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface))
                 {
-                    try
+                    // 检查是否是兜底处理器
+                    if (type.GetCustomAttribute<GenericFileAttribute>() != null)
                     {
-                        if (Activator.CreateInstance(type) is IFileProcessor fileHandler)
-                        {
-                            _fileProcessors.Add(fileHandler);
-                        }
+                        _genericType = type;
+                        continue;
                     }
-                    catch
+                    var extAttr = type.GetCustomAttribute<FileExtensionAttribute>();
+                    if (extAttr != null)
                     {
-                        // Log or handle the exception
+                        foreach (var ext in extAttr.Extensions)
+                        {
+                            var extKey = ext.ToLowerInvariant();
+                            if (!_extTypeMap.ContainsKey(extKey))
+                                _extTypeMap[extKey] = new List<Type>();
+                            _extTypeMap[extKey].Add(type);
+                        }
                     }
                 }
             }
-            _fileProcessors = _fileProcessors.OrderBy(handler => handler.Order).ToList();
-        }
-
-        public string GetCombinedExtensions()
-        {
-            var allExtensions = _fileProcessors
-                .Select(processor => processor.GetExtension())
-                .Where(ext => !string.IsNullOrWhiteSpace(ext))
-                .Distinct();
-
-            return string.Join("|", allExtensions);
         }
 
         public IFileProcessor? GetFileProcessor(string filePath)
         {
-            return _fileProcessors.FirstOrDefault(processor => processor.CanProcess(filePath));
+            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
+            List<Type>? typeList = null;
+            if (!string.IsNullOrWhiteSpace(ext))
+                _extTypeMap.TryGetValue(ext, out typeList);
+
+            var candidates = new List<IFileProcessor>();
+
+            if (typeList != null && typeList.Count > 0)
+            {
+                foreach (var t in typeList)
+                {
+                    if (Activator.CreateInstance(t) is IFileProcessor processor && processor.CanProcess(filePath))
+                    {
+                        candidates.Add(processor);
+                    }
+                }
+            }
+
+            // 如果有候选，取 Order 最大的
+            if (candidates.Count > 0)
+                return candidates.OrderByDescending(p => p.Order).First();
+
+            // 如果没有，尝试 fallback
+            if (_genericType != null)
+            {
+                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback && fallback.CanProcess(filePath))
+                    return fallback;
+            }
+            return null;
         }
 
         public bool HandleFile(string filePath)
@@ -114,11 +138,38 @@ namespace ColorVision.UI
         public bool ExportFile(string filePath)
         {
             if (!File.Exists(filePath)) return false;
-            foreach (var processor in _fileProcessors)
+            var ext = Path.GetExtension(filePath)?.ToLowerInvariant();
+            List<Type>? typeList = null;
+            if (!string.IsNullOrWhiteSpace(ext))
+                _extTypeMap.TryGetValue(ext, out typeList);
+
+            var candidates = new List<IFileProcessor>();
+
+            if (typeList != null && typeList.Count > 0)
             {
-                if (processor.CanExport(filePath))
+                foreach (var t in typeList)
                 {
-                    processor.Export(filePath);
+                    if (Activator.CreateInstance(t) is IFileProcessor processor && processor.CanExport(filePath))
+                    {
+                        candidates.Add(processor);
+                    }
+                }
+            }
+
+            // 先取 Order 最大的能导出的
+            if (candidates.Count > 0)
+            {
+                var best = candidates.OrderByDescending(p => p.Order).First();
+                best.Export(filePath);
+                return true;
+            }
+
+            // fallback
+            if (_genericType != null)
+            {
+                if (Activator.CreateInstance(_genericType) is IFileProcessor fallback && fallback.CanExport(filePath))
+                {
+                    fallback.Export(filePath);
                     return true;
                 }
             }

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
@@ -12,7 +11,7 @@ namespace ColorVision.Engine.Services
     {
         public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => Properties.Resources.MenuService;
-        public override int Order => 3;
+        public override int Order => 1;
 
         public override void Execute()
         {

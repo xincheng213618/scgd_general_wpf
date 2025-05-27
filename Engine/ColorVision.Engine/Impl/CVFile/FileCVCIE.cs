@@ -3,7 +3,6 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Solution.V.Files;
 using ColorVision.UI.Menus;
 using OpenCvSharp;
 using System.Collections.Generic;
@@ -11,14 +10,15 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using ColorVision.Solution.FileMeta;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Impl.CVFile
 {
-
+    [FileExtension(".cvraw", ".cvcie")]
     public class FileCVCIE : FileMetaBase
     {
         public override int Order => 99;
-        public override string Extension { get => ".cvraw|.cvcie"; }
         public override string Name { get; set; }
 
         public FileCVCIE()

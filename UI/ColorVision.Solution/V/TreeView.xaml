@@ -2,8 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:XSolution="clr-namespace:ColorVision.Solution" 
                     xmlns:V="clr-namespace:ColorVision.Solution.V"
-                    xmlns:Files="clr-namespace:ColorVision.Solution.V.Files"
-                    xmlns:Folders="clr-namespace:ColorVision.Solution.V.Folders"
                     xmlns:local="clr-namespace:ColorVision.Solution"
                     x:Class="ColorVision.Solution.V.TreeViewTextbox">
     
@@ -81,13 +79,13 @@
         </StackPanel>
     </HierarchicalDataTemplate>
 
-    <HierarchicalDataTemplate DataType="{x:Type Files:VFile}"   ItemsSource="{Binding VisualChildren}">
+    <HierarchicalDataTemplate DataType="{x:Type V:VFile}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}">
             <Image Source="{Binding Icon}" Height="14" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
         </StackPanel>
     </HierarchicalDataTemplate>
-    <HierarchicalDataTemplate DataType="{x:Type Folders:VFolder}"   ItemsSource="{Binding VisualChildren}">
+    <HierarchicalDataTemplate DataType="{x:Type V:VFolder}"   ItemsSource="{Binding VisualChildren}">
         <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
             <Image Source="{Binding Icon}" Height="15" Margin="0,0,1,0"/>
             <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using log4net;
@@ -36,10 +35,6 @@ namespace ColorVision.Engine.Rbac
 
         public UserManager()
         {
-
-            string sql = "CREATE TABLE IF NOT EXISTS `t_scgd_sys_user_detail` (\r\n  `id` int(11) NOT NULL AUTO_INCREMENT,\r\n  `user_id` int(11) NOT NULL,\r\n  `gender` varchar(10) DEFAULT NULL,\r\n  `email` varchar(255) DEFAULT NULL,\r\n  `phone` varchar(20) DEFAULT NULL,\r\n  `address` varchar(255) DEFAULT NULL,\r\n  `company` varchar(255) DEFAULT NULL,\r\n  `department` varchar(255) DEFAULT NULL,\r\n  `position` varchar(255) DEFAULT NULL,\r\n  `remark` varchar(256) DEFAULT NULL,\r\n  `user_image` varchar(255) DEFAULT 'Config\\\\user.jpg',\r\n  PRIMARY KEY (`id`) USING BTREE,\r\n  KEY `fk_user_id` (`user_id`),\r\n  CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `t_scgd_sys_user` (`id`) ON DELETE CASCADE\r\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=DYNAMIC COMMENT='用户详细信息表';";
-            MySqlControl.GetInstance().ExecuteNonQuery(sql);
-
             LoginCommand = new RelayCommand(a => new LoginWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
             SaveCommand = new RelayCommand(a => Save());
             EditCommand = new RelayCommand(a => Edit());

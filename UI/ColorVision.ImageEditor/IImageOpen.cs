@@ -6,8 +6,6 @@ namespace ColorVision.ImageEditor
 {
     public interface IImageOpen
     {
-        public List<string> Extension { get; }
-
         public List<MenuItemMetadata> GetContextMenuItems(ImageViewConfig imageView);
 
         public void OpenImage(ImageView imageView, string? filePath);

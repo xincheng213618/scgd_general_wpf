@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision.RecentFile
+namespace ColorVision.Solution.RecentFile
 {
     public class RecentFileList: INotifyPropertyChanged
     {

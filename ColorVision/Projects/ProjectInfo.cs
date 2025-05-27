@@ -1,15 +1,11 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -65,119 +61,14 @@ namespace ColorVision.Projects
             CreateShortCutCommand = new RelayCommand(a => CreateShortCut());
             OpenInCmdCommand = new RelayCommand(a => OpenInCmd());
             DeleteCommand = new RelayCommand(a => Delete());
-            UpdateCommand = new RelayCommand(a => Update());
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = "打开", Command = OpenProjectCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "创建快捷方式", Command = CreateShortCutCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "打开命令行", Command = OpenInCmdCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = "删除", Command = ApplicationCommands.Delete });
-            ContextMenu.Items.Add(new MenuItem() { Header = "更新", Command = UpdateCommand });
 
             DownloadFile = new DownloadFile();
             DownloadFile.DownloadTile = "更新" + Project.Header;
-        }
-        public async void Update()
-        {
-            string LatestReleaseUrl = Project.UpdateUrl + "/LATEST_RELEASE";
-            Version version = await DownloadFile.GetLatestVersionNumber(LatestReleaseUrl);
-            if (version == new Version())
-            {
-                MessageBox.Show("找不到版本");
-                return;
-            }
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否更新", Project.Header, MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-                {
-                    string downloadPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\" + $"ColorVision\\{PackageName}-{version}.zip";
-                    string url = $"{Project.UpdateUrl}/{PackageName}-{version}.zip";
-                    WindowUpdate windowUpdate = new WindowUpdate(DownloadFile) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                    if (File.Exists(downloadPath))
-                    {
-                        File.Delete(downloadPath);
-                    }
-                    if (!File.Exists(downloadPath))
-                    {
-                        windowUpdate.Show();
-                    }
-                    Task.Run(async () =>
-                    {
-                        if (!File.Exists(downloadPath))
-                        {
-                            await DownloadFile.GetIsPassWorld();
-                            CancellationTokenSource _cancellationTokenSource = new();
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                windowUpdate.Show();
-                            });
-                            await DownloadFile.Download(url, downloadPath, _cancellationTokenSource.Token);
-                        }
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            windowUpdate.Close();
-                        });
-
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-
-                            try
-                            {
-                                // 解压缩 ZIP 文件到临时目录
-                                string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
-                                if (Directory.Exists(tempDirectory))
-                                {
-                                    Directory.Delete(tempDirectory, true);
-                                }
-                                ZipFile.ExtractToDirectory(downloadPath, tempDirectory);
-
-                                // 创建批处理文件内容
-                                string batchFilePath = Path.Combine(tempDirectory, "update.bat");
-                                string programPluginsDirectory = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
-
-                                string targetPluginDirectory = Path.Combine(programPluginsDirectory, PackageName);
-
-                                string? executableName = Path.GetFileName(Environment.ProcessPath);
-
-                                string batchContent = $@"
-@echo off
-taskkill /f /im ""{executableName}""
-timeout /t 0
-xcopy /y /e ""{tempDirectory}\*"" ""{programPluginsDirectory}""
-start """" ""{Path.Combine(AppDomain.CurrentDomain.BaseDirectory, executableName)}"" -c MenuProjectManager
-rd /s /q ""{tempDirectory}""
-del ""%~f0"" & exit
-";
-                                File.WriteAllText(batchFilePath, batchContent);
-
-                                // 设置批处理文件的启动信息
-                                ProcessStartInfo startInfo = new()
-                                {
-                                    FileName = batchFilePath,
-                                    UseShellExecute = true,
-                                    WindowStyle = ProcessWindowStyle.Hidden
-                                };
-                                if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
-                                {
-                                    startInfo.Verb = "runas"; // 请求管理员权限
-                                    startInfo.WindowStyle = ProcessWindowStyle.Normal;
-                                }
-                                Process.Start(startInfo);
-                                Environment.Exit(0);
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"更新失败: {ex.Message}");
-                            }
-                        });
-
-                    });
-
-                };
-
-            });
-
-
-
         }
 
         public void Delete()

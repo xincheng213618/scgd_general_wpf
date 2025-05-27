@@ -8,7 +8,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <Company>Spectromer</Company>
     <TargetFrameworks>net8.0-windows</TargetFrameworks>
-    <VersionPrefix>1.0.0.2</VersionPrefix>
+    <VersionPrefix>1.0.0.4</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,9 +17,9 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-		<PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
 	</ItemGroup>
 	
@@ -61,17 +61,26 @@
     <None Update="Assets\Image\CIE-1976.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="CHANGELOG.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="manifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <None Update="README.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 	
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command=":: 定义变量&#xD;&#xA;set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;:: 创建目录（如果不存在）&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;:: 复制文件到目标目录&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;" />
+	  <Exec Command=":: 定义变量&#xD;&#xA;set DebugPluginsDir=$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;set ReleasePluginsDir=$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\Plugins\$(TargetName)&#xD;&#xA;&#xD;&#xA;:: 创建目录（如果不存在）&#xD;&#xA;if not exist &quot;%25DebugPluginsDir%25&quot; (mkdir &quot;%25DebugPluginsDir%25&quot;)&#xD;&#xA;if not exist &quot;%25ReleasePluginsDir%25&quot; (mkdir &quot;%25ReleasePluginsDir%25&quot;)&#xD;&#xA;&#xD;&#xA;:: 复制文件到目标目录&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)$(TargetName)$(TargetExt)&quot; &quot;%25ReleasePluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)manifest.json&quot; &quot;%25DebugPluginsDir%25&quot;&#xD;&#xA;copy &quot;$(OutDir)manifest.json&quot; &quot;%25ReleasePluginsDir%25&quot;" />
   </Target>
 
 </Project>

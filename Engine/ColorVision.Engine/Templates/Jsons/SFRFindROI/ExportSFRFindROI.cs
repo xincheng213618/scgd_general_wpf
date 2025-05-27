@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
+﻿using ColorVision.Engine.Templates.Menus;
+
+namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
     public class ExportSFRFindROI : MenuITemplateAlgorithmBase
     {

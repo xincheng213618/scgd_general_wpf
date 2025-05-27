@@ -340,7 +340,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             else
             {
                 Params.Add("IsHDR", true);
-                Params.Add("HDR", new CVTemplateParam() { ID = HDRparamBase.Id, Name = HDRparamBase.Name });
+                Params.Add("CamParamTemplate", new CVTemplateParam() { ID = HDRparamBase.Id, Name = HDRparamBase.Name });
             }
 
 

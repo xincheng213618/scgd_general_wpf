@@ -1,0 +1,9 @@
+{
+  "manifest_version": 1,
+  "Id": "ProjectARVR",
+  "name": "ProjectARVR",
+  "version": "1.0",
+  "description": "",
+  "dllpath": "ProjectARVR.dll",
+  "requires": "1.2.5.1"
+} 

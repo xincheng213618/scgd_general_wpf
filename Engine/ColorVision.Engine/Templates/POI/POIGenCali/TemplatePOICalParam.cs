@@ -11,6 +11,7 @@ namespace ColorVision.Engine.Templates.POI.POIGenCali
         public TemplatePoiGenCalParam()
         {
             Title = "Poi修正标定参数模板设置";
+            TemplateDicId = 25;
             Code = "POIGenCali";
             TemplateParams = Params;
             IsUserControl = true;

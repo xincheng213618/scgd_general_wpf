@@ -70,9 +70,6 @@ namespace ColorVision.Solution.V
         }
         private bool _IsEditMode ;
 
-        public virtual string ToolTip { get => _ToolTip; set { _ToolTip = value; NotifyPropertyChanged(); } }
-        private string _ToolTip = string.Empty;
-
         public virtual ImageSource? Icon { get; set; }
 
         public RelayCommand AddChildrenCommand { get; set; }
@@ -206,6 +203,7 @@ namespace ColorVision.Solution.V
 
         public virtual void Open()
         {
+
         }
 
         public virtual void Copy()

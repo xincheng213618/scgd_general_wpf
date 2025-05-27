@@ -32,6 +32,12 @@ namespace ColorVision.Engine.MySql
             {
                 timer.Change(0, MySqlSetting.Instance.ReConnectTime);
             };
+            Task.Run(async () => 
+            {
+                await Task.Delay(10000); // 等待配置加载完成
+                MySqlLocalServicesManager.GetInstance();
+            });
+
         }
         public void ReConnect(object? o)
         {

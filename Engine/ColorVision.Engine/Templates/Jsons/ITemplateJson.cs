@@ -5,7 +5,6 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,9 +26,6 @@ namespace ColorVision.Engine.Templates.Jsons
                     .Select((template, index) => new { template, index })
                     .FirstOrDefault(t => t.template.Key == templateName)?.index ?? -1;
         }
-
-        public int TemplateDicId { get; set; }
-
         public override List<string> GetTemplateNames()
         {
             return [.. TemplateParams.Select(a => a.Key)];

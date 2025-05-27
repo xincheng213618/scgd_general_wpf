@@ -4,6 +4,7 @@ using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -11,12 +12,9 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.ImageEditor.Tif
 {
+    [FileExtension(".tif", ".tiff")]
     public class Opentif : IImageOpen, IFileProcessor
     {
-        public string GetExtension() => "图像文件 (*.tif)|*.tif";
-
-        public List<string> Extension => new List<string>() { ".tif", ".tiff" };
-
         public int Order => -1;
 
         public bool CanExport(string filePath)
@@ -26,7 +24,7 @@ namespace ColorVision.ImageEditor.Tif
 
         public bool CanProcess(string filePath)
         {
-            return Extension.Contains(System.IO.Path.GetExtension(filePath).ToLower(System.Globalization.CultureInfo.CurrentCulture));
+            return true;
         }
 
         public void Process(string filePath)

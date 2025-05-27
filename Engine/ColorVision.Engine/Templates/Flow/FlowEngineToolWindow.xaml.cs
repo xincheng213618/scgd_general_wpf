@@ -14,8 +14,37 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.Flow
 {
+    [FileExtension(".stn", ".cvflow")]
+    public class FileProcessorFlow : IFileProcessor
+    {
+        public int Order => 1;
+
+        public bool CanProcess(string filePath)
+        {
+            return filePath.EndsWith("stn", StringComparison.OrdinalIgnoreCase);
+        }
+        public void Export(string filePath)
+        {
+          
+        }
+
+        public bool CanExport(string filePath)
+        {
+            return false;
+        }
+
+        public void Process(string filePath)
+        {
+            FlowEngineToolWindow flowEngineToolWindow = new FlowEngineToolWindow();
+            flowEngineToolWindow.OpenFlow(filePath);
+            flowEngineToolWindow.Show();
+        }
+    }
+
+
+
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
     public partial class FlowEngineToolWindow : Window,INotifyPropertyChanged
     {

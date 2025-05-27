@@ -8,6 +8,8 @@ import pefile
 import time
 import argparse
 
+EXTRA_FILES = ["README.md", "CHANGELOG.md", "manifest.json","PackageIcon.png"]
+
 def get_file_version(file_path):
     """获取可执行文件的版本信息"""
     pe = pefile.PE(file_path)
@@ -23,8 +25,31 @@ def get_file_version(file_path):
                             break
     return version_info
 
+def find_extra_files(base_path, type_name, project_name):
+    """
+    只返回 base_path, type, project 下每一层的 README.md、CHANGELOG.md、manifest.json 文件的绝对路径
+    """
+    extra_files = []
+    # base_path
+    for fname in EXTRA_FILES:
+        fpath = os.path.join(base_path, fname)
+        if os.path.isfile(fpath):
+            extra_files.append(fpath)
+    # base_path/type_name
+    type_dir = os.path.join(base_path, type_name)
+    for fname in EXTRA_FILES:
+        fpath = os.path.join(type_dir, fname)
+        if os.path.isfile(fpath):
+            extra_files.append(fpath)
+    # base_path/type_name/project_name
+    project_dir = os.path.join(type_dir, project_name)
+    for fname in EXTRA_FILES:
+        fpath = os.path.join(project_dir, fname)
+        if os.path.isfile(fpath):
+            extra_files.append(fpath)
+    return extra_files
 
-def compare_and_zip(src_dir, ref_dir, output_zip,project_name):
+def compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_name):
     temp_dir = 'temp_dir'
     if os.path.exists(temp_dir):
         shutil.rmtree(temp_dir)
@@ -33,20 +58,27 @@ def compare_and_zip(src_dir, ref_dir, output_zip,project_name):
     project_path = os.path.join(temp_dir, project_name)
     os.makedirs(project_path)
 
+    # 拷贝差异文件
     for root, _, files in os.walk(src_dir):
         for file in files:
             if file.endswith('.pdb'):
-                continue  # Skip .pdb files
+                continue
             src_file_path = os.path.join(root, file)
             ref_file_path = os.path.join(ref_dir, os.path.relpath(src_file_path, src_dir))
-
             if not os.path.exists(ref_file_path):
                 relative_path = os.path.relpath(src_file_path, src_dir)
                 dest_path = os.path.join(project_path, relative_path)
-
                 os.makedirs(os.path.dirname(dest_path), exist_ok=True)
                 shutil.copy2(src_file_path, dest_path)
 
+    # 拷贝额外文件：全部直接覆盖到 project_path 下
+    extra_files = find_extra_files(base_path, type_name, project_name)
+    for abs_path in extra_files:
+        fname = os.path.basename(abs_path)
+        dest_path = os.path.join(project_path, fname)
+        shutil.copy2(abs_path, dest_path)  # 覆盖同名
+
+    # 打包
     with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, _, files in os.walk(temp_dir):
             for file in files:
@@ -55,7 +87,6 @@ def compare_and_zip(src_dir, ref_dir, output_zip,project_name):
                 zipf.write(file_path, arcname)
 
     shutil.rmtree(temp_dir)
-
 
 def copy_with_progress(src, dst):
     if os.path.isdir(dst):
@@ -74,22 +105,16 @@ def copy_with_progress(src, dst):
             copied += len(chunk)
 
             elapsed_time = time.time() - start_time
-            if elapsed_time > 0:
-                speed = copied / elapsed_time
-            else:
-                speed = 0
-
+            speed = copied / elapsed_time if elapsed_time > 0 else 0
             progress = copied / file_size * 100
-
             remaining_bytes = file_size - copied
             remaining_time = remaining_bytes / speed if speed > 0 else 0
             remaining_time_hms = time.strftime('%H:%M:%S', time.gmtime(remaining_time))
-
             print(f"\rCopied {copied / (1024 * 1024):.2f} MB of {file_size / (1024 * 1024):.2f} MB "
                   f"({progress:.2f}%) at {speed / (1024 * 1024):.2f} MB/s, "
                   f"remaining time {remaining_time_hms}", end='')
-
         print()
+
 def version_tuple(version_string):
     return tuple(map(int, version_string.split('.')))
 
@@ -99,7 +124,6 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
             current_version = file.read().strip()
     except FileNotFoundError:
         current_version = '0.0.0.0'
-
     if version_tuple(latest_version) >= version_tuple(current_version):
         with open(latest_release_path, 'w') as file:
             file.write(latest_version)
@@ -112,17 +136,13 @@ def compare_and_write_version(latest_version, latest_release_path, latest_file, 
     else:
         print(f"The current version ({current_version}) is up to date.")
 
-
-
-
-def build_project(project_name,type):
+def build_project(project_name, type_name):
     print(f"Building project: {project_name}")
-    script_path =  os.path.abspath(os.path.dirname(__file__))
+    script_path = os.path.abspath(os.path.dirname(__file__))
     base_path = os.path.abspath(os.path.join(script_path, '..'))  # 获取 base_path 的父级节点
-    src_dir = os.path.join(base_path, type, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
+    src_dir = os.path.join(base_path, type_name, project_name, 'bin', 'x64', 'Release', 'net8.0-windows')
     ref_dir = os.path.join(base_path, 'ColorVision', 'bin', 'x64', 'Release', 'net8.0-windows')
-    target_dir = os.path.join("H:\\", 'ColorVision', type)
-
+    target_dir = os.path.join("H:\\", 'ColorVision', 'Plugins')
 
     # 获取 DLL 版本号
     dll_path = os.path.join(src_dir, f'{project_name}.dll')
@@ -133,7 +153,7 @@ def build_project(project_name,type):
     output_zip = f'{project_name}-{version}.zip'
 
     # 执行比较和打包
-    compare_and_zip(src_dir, ref_dir, output_zip,project_name)
+    compare_and_zip(src_dir, ref_dir, output_zip, project_name, base_path, type_name)
 
     # 定义目标目录和版本文件路径
     project_target_dir = os.path.join(target_dir, project_name)
@@ -145,12 +165,9 @@ def build_project(project_name,type):
     os.remove(output_zip)
     print(f'删除: {output_zip}')
 
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Build the specified project.')
-    parser.add_argument('-p','--project_name',nargs='?', default='ProjectBase', help='The name of the project to build')
-    parser.add_argument('-t','--type', nargs='?', default='Plugins', help='The name of the project to build')
-
+    parser.add_argument('-p', '--project_name', nargs='?', default='ProjectBase', help='The name of the project to build')
+    parser.add_argument('-t', '--type', nargs='?', default='Plugins', help='The name of the project type')
     args = parser.parse_args()
-    build_project(args.project_name,args.type)
+    build_project(args.project_name, args.type)

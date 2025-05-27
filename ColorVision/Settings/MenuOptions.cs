@@ -10,8 +10,7 @@ namespace ColorVision.Settings
 {
     public class MenuOptions : MenuItemBase, IHotKey
     {
-        public override string OwnerGuid => "Tool";
-        public override string GuidId => "MenuOptions";
+        public override string OwnerGuid => MenuItemConstants.Tool;
         public override string Header => Resources.MenuOptions;
         public override int Order => 100000;
         public override object? Icon

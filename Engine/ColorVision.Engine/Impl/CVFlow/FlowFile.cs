@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.NativeMethods;
-using ColorVision.Solution.V.Files;
+using ColorVision.Solution.FileMeta;
+using System.ComponentModel;
 using System.IO;
 
 namespace ColorVision.Engine.Impl.CVFlow
 {
+    [FileExtension(".stn", ".cvflow")]
     public class FlowFile : FileMetaBase
     {
-        public override string Extension { get => ".stn"; }
-        public FlowFile() { }
         public FlowFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;

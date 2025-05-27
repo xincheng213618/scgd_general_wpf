@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -31,17 +32,7 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IView,IDisposable
     {
         public static List<ImageView> Views { get; set; } = new List<ImageView>();
-        public static ImageView GetInstance()
-        {
-            foreach (var item in Views)
-            {
-                if (item.Parent == null)
-                    return item;
-            }
-            ImageView imageView = new ImageView();
-            Views.Add(imageView);
-            return imageView;
-        }
+
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageViewModel ImageViewModel { get; set; }
@@ -70,6 +61,7 @@ namespace ColorVision.ImageEditor
             }
             Config = imageViewConfig;
             this.DataContext = this;
+            AdvancedStackPanel.DataContext = this;
             ToolBarLeft.DataContext = Config;
             Zoombox1.DataContext = imageViewConfig;
             ImageViewModel.PropertyCommand = new RelayCommand(a => new DrawProperties(Config) { Owner = Window.GetWindow(Parent), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
@@ -757,9 +749,9 @@ namespace ColorVision.ImageEditor
                 bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
 
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                ImageViewModel.IImageOpen = ComponentManager.GetInstance().IImageOpens.FirstOrDefault(a => a.Extension.Any(b => ext.Contains(b)));
-                if (ImageViewModel.IImageOpen != null)
+                if (ComponentManager.GetInstance().IImageOpens.TryGetValue(ext, out var imageOpen))
                 {
+                    ImageViewModel.IImageOpen = imageOpen;
                     Config.AddProperties("ImageViewOpen", ImageViewModel.IImageOpen);
                     ImageViewModel.IImageOpen.OpenImage(this, filePath);
                     return;
@@ -1137,27 +1129,17 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    ImageViewModel.ClearImageEventHandler -= Clear;
-                    ImageViewModel.Dispose();
-                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
-                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
-                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
-                    PreviewKeyDown -= ImageView_PreviewKeyDown;
-                    Drop -= ImageView_Drop;
-                }
-                disposedValue = true;
-            }
-        }
         public void Dispose()
         {
-            Dispose(disposing: true);
+            Clear();
+            ImageViewModel.ClearImageEventHandler -= Clear;
+            ImageViewModel.Dispose();
+            Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+            ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+            ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+            PreviewKeyDown -= ImageView_PreviewKeyDown;
+            Drop -= ImageView_Drop;
+
             GC.SuppressFinalize(this);
         }
 

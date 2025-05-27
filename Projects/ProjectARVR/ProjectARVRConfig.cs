@@ -2,10 +2,10 @@
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
-using ProjectARVR.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
@@ -16,15 +16,21 @@ namespace ProjectARVR
     public class ProjectARVRConfig: ViewModelBase, IConfig
     {
         public static ProjectARVRConfig Instance => ConfigService.Instance.GetRequiredService<ProjectARVRConfig>();
+        [JsonIgnore]
         public RelayCommand OpenTemplateCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenFlowEngineToolCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand OpenTemplateLargeCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenEditLargeCommand { get; set; }
-
+        [JsonIgnore]
         public RelayCommand OpenLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenConfigCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenChangeLogCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand OpenReadMeCommand { get; set; }
 
 
@@ -46,9 +52,11 @@ namespace ProjectARVR
         }
 
 
+        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig() { IsLayoutUpdated = true };
+
         public static void OpenConfig()
         {
-            EditProjectKBConfig editProjectKBConfig = new EditProjectKBConfig() { Owner = Application.Current.GetActiveWindow() };
+            EditARVRConfig editProjectKBConfig = new EditARVRConfig() { Owner = Application.Current.GetActiveWindow() };
             editProjectKBConfig.ShowDialog();
         }
 
@@ -74,7 +82,9 @@ namespace ProjectARVR
                 using (StreamReader reader = new StreamReader(stream))
                 {
                     string content = reader.ReadToEnd();
-                    ShowChangeLogWindow(title,content);
+
+                    string html = Markdig.Markdown.ToHtml(content);
+                    new MarkdownViewWindow(html) { Title = title, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
                 }
             }
         }
@@ -82,41 +92,15 @@ namespace ProjectARVR
         public static void OpenChangeLog()
         {
             // 资源文件的完整名称
-            string resourceName = "ProjectKB.CHANGELOG.md";
+            string resourceName = "ProjectARVR.CHANGELOG.md";
             OpenResourceName("CHANGELOG", resourceName);
         }
         public static void OpenReadMe()
         {
             // 资源文件的完整名称
-            string resourceName = "ProjectKB.README.md";
+            string resourceName = "ProjectARVR.README.md";
             OpenResourceName("README",resourceName);
         }
-
-
-        private static void ShowChangeLogWindow(string title,string content)
-        {
-            // 创建一个新的窗口
-            Window window = new Window
-            {
-                Title = title,
-                Width = 600,
-                Height = 400,
-                Content = new System.Windows.Controls.TextBox
-                {
-                    Text = content,
-                    IsReadOnly = true,
-                    TextWrapping = System.Windows.TextWrapping.Wrap,
-                    VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                    BorderThickness = new Thickness(0),
-                    Margin = new Thickness(5)
-                }
-            };
-
-            // 显示窗口
-            window.ShowDialog();
-        }
-
-
         public static void OpenLog()
         {
             WindowLog windowLog = new WindowLog() { Owner = Application.Current.GetActiveWindow() };
@@ -139,7 +123,7 @@ namespace ProjectARVR
             new FlowEngineToolWindow(TemplateFlow.Params[TemplateSelectedIndex].Value) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
-
+        [JsonIgnore]
         public ObservableCollection<TemplateModel<TJLargeFlowParam>> TemplateLargeItemSource { get => _TemplateLargeItemSource; set { _TemplateLargeItemSource = value; NotifyPropertyChanged(); } }
         private ObservableCollection<TemplateModel<TJLargeFlowParam>> _TemplateLargeItemSource;
         public int TemplateLargeSelectedIndex { get => _TemplateLargeSelectedIndex; set { _TemplateLargeSelectedIndex = value; NotifyPropertyChanged(); } }

@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
-using ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure;
+using ColorVision.Engine.Services.Devices.Camera.Templates.CameraRunParam;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Services.Devices.SMU;
@@ -38,7 +38,7 @@ using ColorVision.Engine.Templates.POI.BuildPoi;
 using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Engine.Templates.POI.POIOutput;
 using ColorVision.Engine.Templates.POI.POIRevise;
-using ColorVision.Engine.Templates.ROI;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.SFR;
 using ColorVision.Engine.Templates.Validate;
 using FlowEngineLib.End;
@@ -55,6 +55,8 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -219,7 +221,7 @@ namespace ColorVision.Engine.Templates.Flow
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == commCaeraNode.DeviceCode);
                 if (reuslt?.PhyCamera!=null)
                     AddStackPanel(name => commCaeraNode.CalibTempName = name, commCaeraNode.CalibTempName, "校正", new TemplateCalibrationParam(reuslt.PhyCamera));
-                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraExposure());
+                AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "相机模板", new TemplateCameraRunParam());
                 AddStackPanel(name => commCaeraNode.CamTempName = name, commCaeraNode.CamTempName, "HDR模板", new TemplateHDR());
                 AddStackPanel(name => commCaeraNode.TempName = name, commCaeraNode.TempName, "曝光模板", new TemplateAutoExpTime());
 
@@ -316,7 +318,9 @@ namespace ColorVision.Engine.Templates.Flow
                     switch (algorithmNode2.Algorithm)
                     {
                         case FlowEngineLib.Algorithm.Algorithm2Type.MTF:
+                            AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "MTF2", new TemplateMTF2());
                             AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "MTF", new TemplateMTF());
+
                             break;
                         case FlowEngineLib.Algorithm.Algorithm2Type.SFR:
                             AddStackPanel(name => algorithmNode2.TempName = name, algorithmNode2.TempName, "SFR", new TemplateSFR());
@@ -353,6 +357,8 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         case FlowEngineLib.Algorithm.AlgorithmType.MTF:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF2", new TemplateMTF2());
+
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR:
@@ -430,6 +436,11 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => lcCameranode.POIFilterTempName = name, lcCameranode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => lcCameranode.POIReviseTempName = name, lcCameranode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
 
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIAnalysisNode PoiAnalysis)
+            {
+                AddStackPanel(name => PoiAnalysis.DeviceCode = name, PoiAnalysis.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => PoiAnalysis.TemplateName = name, PoiAnalysis.TemplateName, "PoiAnalysis", new TemplatePoiAnalysis());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
@@ -797,6 +808,82 @@ namespace ColorVision.Engine.Templates.Flow
             dockPanel.Children.Add(grid);
             SignStackPanel.Children.Add(dockPanel);
         }
+
+        void AddStackPanel<T>(Action<string> updateStorageAction, Action<int> updateTemmlateId, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
+        {
+            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
+            {
+                SelectedValuePath = "Value",
+                DisplayMemberPath = "Key",
+                Style = (Style)Application.Current.FindResource("ComboBoxPlus.Small"),
+                Width = 120
+            };
+
+            HandyControl.Controls.InfoElement.SetShowClearButton(comboBox, true);
+            comboBox.ItemsSource = template.TemplateParams;
+            var selectedItem = template.TemplateParams.FirstOrDefault(x => x.Key == tempName);
+            if (selectedItem != null)
+                comboBox.SelectedIndex = template.TemplateParams.IndexOf(selectedItem);
+
+            comboBox.SelectionChanged += (s, e) =>
+            {
+                string selectedName = string.Empty;
+
+                if (comboBox.SelectedValue is T templateModel)
+                {
+                    selectedName = templateModel.Name;
+                    updateTemmlateId(templateModel.Id);
+                    updateStorageAction(selectedName);
+                }
+                STNodePropertyGrid1.Refresh();
+            };
+
+
+            Grid grid = new Grid
+            {
+                Width = 20,
+                Margin = new Thickness(5, 0, 0, 0),
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Left
+            };
+
+            // 创建 TextBlock
+            TextBlock textBlock = new TextBlock
+            {
+                Text = "\uE713",
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 15,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            };
+
+            // 创建 Button
+            Button button = new Button
+            {
+                Width = 20,
+                BorderBrush = Brushes.Transparent,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+            };
+
+            button.Click += (s, e) =>
+            {
+                new TemplateEditorWindow(template, comboBox.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            };
+
+            // 将控件添加到 Grid
+            grid.Children.Add(textBlock);
+            grid.Children.Add(button);
+
+
+            dockPanel.Children.Add(comboBox);
+            dockPanel.Children.Add(grid);
+            SignStackPanel.Children.Add(dockPanel);
+        }
+
+
+
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {

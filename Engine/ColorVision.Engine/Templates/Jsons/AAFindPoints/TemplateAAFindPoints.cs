@@ -1,7 +1,5 @@
 ﻿using ColorVision.Engine.MySql;
 using log4net;
-using Newtonsoft.Json;
-using System;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
@@ -32,7 +30,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         public TemplateAAFindPoints()
         {
             Title = "寻找AA区模板管理";
-            Code = "ARVR.AA.FindPoints";
+            Code = "BuildPOI";
             Name = "寻找AA区";
             TemplateDicId = 41;
             TemplateParams = Params;

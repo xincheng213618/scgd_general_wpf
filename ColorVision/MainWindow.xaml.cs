@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.FloatingBall;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
@@ -18,7 +17,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,7 +72,7 @@ namespace ColorVision
 
 
         /// <summary>
-        /// Interaction logic for MainWindow.xaml
+        /// Interaction logic for MarkdownViewWindow.xaml
         /// </summary>
         /// 
     public partial class MainWindow : Window
@@ -132,9 +130,8 @@ namespace ColorVision
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
             
-            //Task.Run(CheckCertificate);
             SolutionTab1.Content = new TreeViewControl();
-            PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
+
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
 
@@ -417,9 +414,35 @@ namespace ColorVision
                             Header = $"{Properties.Resources.Search} {searchtext}",
                             Command = new Common.MVVM.RelayCommand(a => Search())
                         };
-
                         filteredResults.Add(search);
                     }
+
+
+                    // 添加“在浏览器中搜索”选项
+                    void SearchInBrowser()
+                    {
+                        string url = $"https://www.baidu.com/s?wd={Uri.EscapeDataString(searchtext)}";
+                        try
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = url,
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                        }
+                    }
+
+                    SearchMeta browserSearch = new SearchMeta
+                    {
+                        GuidId = Guid.NewGuid().ToString(),
+                        Header = $"{Properties.Resources.Search} {searchtext}（百度搜索）",
+                        Command = new Common.MVVM.RelayCommand(a => SearchInBrowser())
+                    };
+                    filteredResults.Add(browserSearch);
 
                     ListView1.ItemsSource = filteredResults;
                     if (filteredResults.Count > 0)

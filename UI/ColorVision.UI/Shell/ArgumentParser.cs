@@ -1,7 +1,4 @@
-﻿using System;
-using System.Security.Cryptography.X509Certificates;
-
-namespace ColorVision.UI.Shell
+﻿namespace ColorVision.UI.Shell
 {
     public class Argument
     {

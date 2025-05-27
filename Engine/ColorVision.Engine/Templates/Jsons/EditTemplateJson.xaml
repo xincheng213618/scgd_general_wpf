@@ -7,7 +7,7 @@
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:IEditTemplateJson}"
-             d:DesignHeight="450" d:DesignWidth="600" Height="450" Width="600">
+             d:DesignHeight="450" d:DesignWidth="400" Height="450" Width="400">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

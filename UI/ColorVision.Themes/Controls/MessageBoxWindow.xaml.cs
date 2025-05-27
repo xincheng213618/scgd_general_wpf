@@ -30,6 +30,8 @@ namespace ColorVision.Themes.Controls
         {
             InitializeComponent();
             this.ApplyCaption();
+            double screenHeight = SystemParameters.PrimaryScreenHeight;
+            DockMsg.MaxHeight = screenHeight / 2;
             this.messageBoxText.Text = messageBoxText;
             this.Title = caption;
             switch (button)

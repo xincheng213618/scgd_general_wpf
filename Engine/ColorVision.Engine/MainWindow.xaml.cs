@@ -6,14 +6,13 @@ using ColorVision.UI.Views;
 using HandyControl.Interactivity;
 using System;
 using System.Diagnostics;
-using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interaction logic for MarkdownViewWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -36,8 +35,6 @@ namespace ColorVision.Engine
             DisPlayManager.GetInstance().Init(this, StackPanelSPD);
 
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
-
-            PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             this.LoadHotKeyFromAssembly();
 
             Application.Current.MainWindow = this;
