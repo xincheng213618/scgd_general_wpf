@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<PackageReference Include="AvalonEdit" Version="6.3.1.120" />
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.7.25104.5739" />
+		<PackageReference Include="WPFHexaEditor" Version="2.1.7" />
 	</ItemGroup>
 
 	<ItemGroup>
