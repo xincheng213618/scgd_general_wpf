@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;

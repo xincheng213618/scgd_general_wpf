@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "CV_Spectrometer": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}

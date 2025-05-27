@@ -30,6 +30,7 @@ namespace ColorVision.UI.LogImp
         {
             Hierarchy.Root.RemoveAppender(TextBoxAppender);
             log4net.Config.BasicConfigurator.Configure(Hierarchy);
+            GC.SuppressFinalize(this);
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)

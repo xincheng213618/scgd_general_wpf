@@ -1,4 +1,4 @@
-﻿
+﻿#pragma warning disable CS1847,CS8625
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -95,8 +95,8 @@ namespace ColorVision.UI
             }
         }
 
-        bool isFormatted = false;
-		public string OriginalText;
+        bool isFormatted;
+		private string OriginalText;
 
         public void SetJsonText(string Text)
 		{
