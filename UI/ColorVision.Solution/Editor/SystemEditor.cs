@@ -4,11 +4,9 @@ using System.Windows.Controls;
 namespace ColorVision.Solution.Editor
 {
     // 标记为通用编辑器
-    [GenericEditor]
+    [GenericEditor("系统默认")]
     public class SystemEditor : EditorBase
     {
-        public override string Name => "系统默认打开";
-
         public override Control? Open(string filePath)
         {
             PlatformHelper.Open(filePath);

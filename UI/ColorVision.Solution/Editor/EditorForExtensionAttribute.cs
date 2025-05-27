@@ -4,11 +4,14 @@
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class EditorForExtensionAttribute : Attribute
     {
+        public string? Name { get; }
+
         public string[] Extensions { get; }
         public bool IsDefault { get; }
 
-        public EditorForExtensionAttribute(string extensions, bool isDefault = false)
+        public EditorForExtensionAttribute(string extensions,string? name =null, bool isDefault = false)
         {
+            Name = name;
             Extensions = extensions.Split('|');
             IsDefault = isDefault;
         }

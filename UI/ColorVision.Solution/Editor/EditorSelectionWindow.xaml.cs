@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+﻿using System.Windows;
 
 namespace ColorVision.Solution.Editor
 {
+    public class EditorTypeViewModel
+    {
+        public string Name { get; set; }
+        public Type Type { get; set; }
+
+        public EditorTypeViewModel(Type type)
+        {
+            Type = type;
+            Name = EditorManager.GetEditorName(type); // 你已实现的 Name 获取逻辑
+
+        }
+        public override string ToString() => Name;
+    }
+
     /// <summary>
     /// EditorSelectionWindow.xaml 的交互逻辑
     /// </summary>
@@ -21,16 +23,19 @@ namespace ColorVision.Solution.Editor
     {
         public Type SelectedEditorType { get; private set; }
 
+        public List<EditorTypeViewModel> EditorTypes { get; private set; }
+
         public EditorSelectionWindow(List<Type> types, Type currentType)
         {
             InitializeComponent();
-            EditorComboBox.ItemsSource = types;
-            EditorComboBox.SelectedItem = currentType;
+            EditorTypes = types.Select(t => new EditorTypeViewModel(t)).ToList();
+            ListEditorSelection.ItemsSource = EditorTypes;
+            ListEditorSelection.SelectedIndex = types.IndexOf(currentType);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectedEditorType = EditorComboBox.SelectedItem as Type;
+            SelectedEditorType = EditorTypes[ListEditorSelection.SelectedIndex].Type;
             this.DialogResult = true;
             this.Close();
         }
