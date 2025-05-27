@@ -4,6 +4,6 @@ namespace ColorVision.Solution.Editor
 {
     public interface IEditor
     {
-        Control? Open(string filePath);
+        void Open(string filePath);
     }
 }

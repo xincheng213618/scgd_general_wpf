@@ -7,10 +7,9 @@ namespace ColorVision.Solution.Editor
     [GenericEditor("系统默认")]
     public class SystemEditor : EditorBase
     {
-        public override Control? Open(string filePath)
+        public override void Open(string filePath)
         {
             PlatformHelper.Open(filePath);
-            return null;
         }
     }
 }

@@ -67,7 +67,8 @@ namespace ColorVision.Solution.V
 
         public override void Open()
         {
-            SolutionViewExtensions.SolutionView.Open(FileInfo.FullName);
+            var IEditor = EditorManager.Instance.OpenFile(FullPath);
+            IEditor?.Open(FullPath);
         }
 
         public override void Delete()
