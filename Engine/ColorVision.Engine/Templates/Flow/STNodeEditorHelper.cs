@@ -55,6 +55,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Templates.Jsons.MTF2;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -353,6 +354,8 @@ namespace ColorVision.Engine.Templates.Flow
                     {
                         case FlowEngineLib.Algorithm.AlgorithmType.MTF:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF", new TemplateMTF());
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "MTF2", new TemplateMTF2());
+
                             AddStackPanel(name => algorithmNode.POITempName = name, algorithmNode.POITempName, "POI", new TemplatePoi());
                             break;
                         case FlowEngineLib.Algorithm.AlgorithmType.SFR:
