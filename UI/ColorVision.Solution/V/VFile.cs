@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.UI.Menus;
+using ColorVision.Common.Utilities;
+using ColorVision.Solution.Editor;
+using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Properties;
+using ColorVision.Solution.Searches;
+using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
-using ColorVision.Common.Utilities;
-using ColorVision.Solution.Searches;
-using ColorVision.Solution.FileMeta;
 
 namespace ColorVision.Solution.V
 {
@@ -40,11 +41,12 @@ namespace ColorVision.Solution.V
 
             if (types.Count == 0) return;
 
-            int index = types.IndexOf(current);
-            int nextIndex = (index + 1) % types.Count;
-            var nextType = types[nextIndex];
-
-            EditorManager.Instance.SetDefaultEditor(ext, nextType);
+            var window = new EditorSelectionWindow(types, current);
+            if (window.ShowDialog() == true)
+            {
+                var selectedType = window.SelectedEditorType;
+                EditorManager.Instance.SetDefaultEditor(ext, selectedType);
+            }
         }
 
 
