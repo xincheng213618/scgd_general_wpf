@@ -1,16 +1,16 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Searches;
-using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows;
+using WpfHexaEditor.Core;
 using Xceed.Wpf.AvalonDock.Layout;
 
 namespace ColorVision.Solution
 {
     // 标记本类支持的扩展名，并设为默认
-    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1", "文本编辑器", isDefault: true)]
-    public class TextEditor : EditorBase
+    [GenericEditor("Hex文本编辑器")]
+    public class HexEditor : EditorBase
     {
         public override void Open(string filePath)
         {
@@ -36,10 +36,13 @@ namespace ColorVision.Solution
                 }
                 else
                 {
-                    var control = new AvalonEditControll(filePath);
-    
+                    var HexEditor = new WpfHexaEditor.HexEditor();
+                    HexEditor.PreloadByteInEditorMode = PreloadByteInEditor.MaxVisibleLineExtended;
+                    HexEditor.FileName = filePath;
+
+
                     LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
-                    layoutDocument.Content = control;
+                    layoutDocument.Content = HexEditor;
                     SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
                     SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);
                     layoutDocument.IsActiveChanged += (s, e) =>
@@ -51,10 +54,11 @@ namespace ColorVision.Solution
                     };
                     layoutDocument.Closing += (s, e) =>
                     {
-                        control.Dispose();
+                        HexEditor.CloseProvider(true);
+                        HexEditor.Dispose();
                     };
                 }
             }
         }
-    }  
+    }
 }

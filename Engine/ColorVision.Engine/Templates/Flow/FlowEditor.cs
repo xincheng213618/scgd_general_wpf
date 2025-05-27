@@ -3,7 +3,7 @@ using System.Windows;
 using ColorVision.Solution.Editor;
 
 
-namespace ColorVision.Engine.Impl.FileProcessor
+namespace ColorVision.Engine.Templates.Flow
 {
     // 声明支持的扩展名，并设为默认
     [EditorForExtension(".stn|.cvflow", "流程编辑器", isDefault: true)]

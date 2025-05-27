@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using System.Windows.Controls;
 
 namespace ColorVision.Solution.Editor
 {

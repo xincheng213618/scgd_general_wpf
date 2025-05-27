@@ -3,7 +3,7 @@ using ColorVision.Solution.FileMeta;
 using System.ComponentModel;
 using System.IO;
 
-namespace ColorVision.Engine.Impl.CVFlow
+namespace ColorVision.Engine.Templates.Flow
 {
     [FileExtension(".stn", ".cvflow")]
     public class FlowFile : FileMetaBase

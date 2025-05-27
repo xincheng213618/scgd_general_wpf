@@ -3,7 +3,6 @@ using ColorVision.ImageEditor;
 using ColorVision.Solution.Searches;
 using System.IO;
 using System.Windows;
-using System.Windows.Controls;
 using Xceed.Wpf.AvalonDock.Layout;
 
 
