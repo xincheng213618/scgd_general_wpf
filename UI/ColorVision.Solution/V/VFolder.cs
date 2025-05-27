@@ -25,9 +25,8 @@ namespace ColorVision.Solution.V
         public VFolder(IFolderMeta folder) :base()
         {
             FolderMeta = folder;
-            ToolTip = folder.ToolTip;
-            Name1 = folder.Name;
             FullPath = DirectoryInfo.FullName;
+            Name1 = DirectoryInfo.Name;
             if (DirectoryInfo != null && DirectoryInfo.Exists)
             {
                 FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName);

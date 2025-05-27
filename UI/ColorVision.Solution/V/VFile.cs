@@ -24,7 +24,6 @@ namespace ColorVision.Solution.V
         public VFile(IFileMeta fileMeta) :base()
         {
             FileMeta = fileMeta;
-            ToolTip = fileMeta.ToolTip;
             Name1 = fileMeta.Name;
             Icon = fileMeta.Icon;
             FullPath = FileInfo.FullName;

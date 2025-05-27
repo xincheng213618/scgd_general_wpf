@@ -8,7 +8,6 @@ namespace ColorVision.Solution.FolderMeta
         public BaseFolder(DirectoryInfo directoryInfo)
         {
             DirectoryInfo  = directoryInfo;
-            Name = directoryInfo.Name;
             Icon = FileIcon.GetDirectoryIconImageSource();
         }
 
