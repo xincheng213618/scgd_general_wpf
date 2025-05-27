@@ -41,7 +41,7 @@ namespace ColorVision.Solution.V
 
             if (types.Count == 0) return;
 
-            var window = new EditorSelectionWindow(types, current);
+            var window = new EditorSelectionWindow(types, current) { Owner = Application.Current.GetActiveWindow() , WindowStartupLocation =WindowStartupLocation.CenterScreen};
             if (window.ShowDialog() == true)
             {
                 var selectedType = window.SelectedEditorType;
