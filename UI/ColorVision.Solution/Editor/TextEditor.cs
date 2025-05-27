@@ -21,7 +21,7 @@ namespace ColorVision.Solution
         }
     }  
     // 标记本类支持的扩展名，并设为默认
-    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1", "Hex文本编辑器", isDefault: true)]
+    [GenericEditor("Hex文本编辑器")]
     public class HexEditor : EditorBase
     {
         public override Control? Open(string filePath)
