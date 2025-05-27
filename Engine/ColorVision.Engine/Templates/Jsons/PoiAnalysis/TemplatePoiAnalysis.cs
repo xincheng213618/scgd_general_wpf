@@ -12,36 +12,6 @@ namespace ColorVision.Engine.Templates.Jsons.PoiAnalysis
     {
         private static ILog log = LogManager.GetLogger(nameof(TJPoiAnalysisParam));
 
-        public FovJson Json
-        {
-            get
-            {
-                try
-                {
-                    FovJson kBJson = JsonConvert.DeserializeObject<FovJson>(JsonValue);
-                    if (kBJson == null)
-                    {
-                        kBJson = new FovJson();
-                        JsonValue = JsonConvert.SerializeObject(kBJson);
-                        return kBJson;
-                    }
-                    return kBJson;
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    FovJson kBJson = new FovJson();
-                    JsonValue = JsonConvert.SerializeObject(kBJson);
-                    return kBJson;
-                }
-            }
-            set
-            {
-                JsonValue = JsonConvert.SerializeObject(value);
-                NotifyPropertyChanged();
-            }
-        }
-
 
 
         public TJPoiAnalysisParam() : base()
