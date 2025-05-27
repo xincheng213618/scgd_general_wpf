@@ -17,9 +17,9 @@
 	
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.135" />
-		<PackageReference Include="OpenCvSharp4" Version="4.10.0.20241108" />
-		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241108" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20241108" />
+		<PackageReference Include="OpenCvSharp4" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.runtime.win" Version="4.11.0.20250507" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.11.0.20250507" />
 		<PackageReference Include="ScottPlot.WPF" Version="5.0.55" />
 	</ItemGroup>
 	
