@@ -14,8 +14,6 @@ namespace ColorVision.Solution.FileMeta
 
         public FileInfo FileInfo {get;set;}
 
-        string ToolTip { get;}
-
         ImageSource? Icon { get; set; }
     }
 
@@ -26,8 +24,6 @@ namespace ColorVision.Solution.FileMeta
         public virtual string Name { get; set; }
         public FileInfo FileInfo { get; set; }
         public ImageSource? Icon { get; set; }
-        public virtual string ToolTip { get;}
-
         public virtual IEnumerable<MenuItemMetadata> GetMenuItems()
         {
             return new List<MenuItemMetadata>();

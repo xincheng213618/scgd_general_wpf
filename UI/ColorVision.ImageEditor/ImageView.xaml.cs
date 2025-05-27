@@ -6,6 +6,7 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
+using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -31,17 +32,7 @@ namespace ColorVision.ImageEditor
     public partial class ImageView : UserControl, IView,IDisposable
     {
         public static List<ImageView> Views { get; set; } = new List<ImageView>();
-        public static ImageView GetInstance()
-        {
-            foreach (var item in Views)
-            {
-                if (item.Parent == null)
-                    return item;
-            }
-            ImageView imageView = new ImageView();
-            Views.Add(imageView);
-            return imageView;
-        }
+
         private static readonly ILog log = LogManager.GetLogger(typeof(ImageView));
 
         public ImageViewModel ImageViewModel { get; set; }
@@ -1138,27 +1129,17 @@ namespace ColorVision.ImageEditor
             }
         }
 
-        private bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    ImageViewModel.ClearImageEventHandler -= Clear;
-                    ImageViewModel.Dispose();
-                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
-                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
-                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
-                    PreviewKeyDown -= ImageView_PreviewKeyDown;
-                    Drop -= ImageView_Drop;
-                }
-                disposedValue = true;
-            }
-        }
         public void Dispose()
         {
-            Dispose(disposing: true);
+            Clear();
+            ImageViewModel.ClearImageEventHandler -= Clear;
+            ImageViewModel.Dispose();
+            Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+            ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+            ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+            PreviewKeyDown -= ImageView_PreviewKeyDown;
+            Drop -= ImageView_Drop;
+
             GC.SuppressFinalize(this);
         }
 

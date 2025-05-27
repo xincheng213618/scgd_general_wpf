@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.ImageEditor;
 using ColorVision.UI.Views;
 using System.IO;
 using System.Windows;
@@ -137,11 +138,27 @@ namespace ColorVision.Solution.Searches
                                 SolutionViewExtensions.OnContentIdSelected(FullPath);
                             }
                         };
+                        bool isclear = true;
                         layoutDocument.Closing += (s, e) =>
                         {
-                            if (control is IDisposable disposable)
+                            if (control is ImageView disposable && isclear)
                             {
-                                disposable.Dispose();
+                                isclear = false;
+                                disposable.ImageViewModel.ClearImageCommand.Execute(null);
+                                e.Cancel = true; // Prevent the document from closing immediately
+                                _=Task.Run(async () =>
+                                {
+                                    await Task.Delay(300);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        disposable.Dispose();
+                                        layoutDocument.Close();
+                                    });
+                                });
+                            }
+                            else
+                            {
+                                e.Cancel = false; // Prevent the document from closing immediately
                             }
                         };
                     }
