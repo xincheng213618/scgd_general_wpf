@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.FindLightArea
         {
             Name = "发光区检测";
             Order = 11;
-            Group = "定位算法";
+            Group = "FindLightArea";
 
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());

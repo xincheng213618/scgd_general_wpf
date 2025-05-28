@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
         {
             Name = "MTF2.0";
             Order = 53;
-            Group = "AR/VR算法";
+            Group = "MTF";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

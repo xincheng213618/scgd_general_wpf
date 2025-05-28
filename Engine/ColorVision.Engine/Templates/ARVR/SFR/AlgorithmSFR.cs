@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Templates.SFR
         {
             Name = "SFR";
             Order = 51;
-            Group = "AR/VR算法";
+            Group = "SFR";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());

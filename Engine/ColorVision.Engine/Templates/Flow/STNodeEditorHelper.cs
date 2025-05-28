@@ -416,6 +416,9 @@ namespace ColorVision.Engine.Templates.Flow
                         case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "AA布点", new TemplateAAFindPoints());
                             break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "图像裁剪", new TemplateImageCropping());
+                            break;
                         default:
                             break;
                     }

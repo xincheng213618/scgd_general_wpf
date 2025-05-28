@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.Ghost
         {
             Name = "鬼影";
             Order = 54;
-			Group = "AR/VR算法";
+			Group = "鬼影";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
