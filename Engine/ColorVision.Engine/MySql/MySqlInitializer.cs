@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.UI;
 using System;
 using System.IO;

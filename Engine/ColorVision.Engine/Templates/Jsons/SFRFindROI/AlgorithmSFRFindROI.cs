@@ -26,7 +26,8 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
         {
             Name = "SFR寻边";
             Order = 21;
-			Device = deviceAlgorithm;
+            Group = "SFR";
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
             OpenTemplatePoiCommand = new RelayCommand(a => OpenTemplatePoi());
         }

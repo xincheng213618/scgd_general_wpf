@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.Distortion2
         {
             Name = "畸变2.0";
             Order = 55;
-            Group = "AR/VR算法";
+            Group = "畸变评价";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

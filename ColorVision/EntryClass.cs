@@ -1,7 +1,6 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ColorVision.Common.NativeMethods;
 using ColorVision.UI.Shell;
 using log4net;
 using log4net.Config;
@@ -9,7 +8,6 @@ using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
-using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;

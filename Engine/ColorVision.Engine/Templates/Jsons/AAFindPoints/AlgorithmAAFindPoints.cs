@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
             Name = "寻找AA区";
             Order = 53;
-            Group = "AR/VR算法";
+            Group = "FindLightArea";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

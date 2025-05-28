@@ -6,7 +6,6 @@ using ColorVision.ImageEditor;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
-using ProjectARVR.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;

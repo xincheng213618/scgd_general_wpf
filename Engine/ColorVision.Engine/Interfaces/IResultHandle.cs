@@ -24,7 +24,6 @@ namespace ColorVision.Engine.Interfaces
         Compliance_Contrast = 14,
         Compliance_Contrast_CIE_XYZ = 15,
         Compliance_Contrast_CIE_Y = 16,
-
         LEDStripDetection = 17,
         RealPOI = 18,
         DataLoad = 19,
@@ -38,15 +37,20 @@ namespace ColorVision.Engine.Interfaces
         OLED_JND_CalVas = 27,
         POI_CAD_Mapping = 28,
         Image_Cropping = 29,
+        Calibration = 30,
         POIReviseGen = 31,
         OLED_RebuildPixelsMem = 32,
         BuildPOI_File = 33,
         Compliance_Math_JND = 34,
-        OLED_FindLedPosition = 35,
-        OLED_FindLedPosition_File = 36,
+        POI_CIE_File = 35,
+        FindLightArea = 36,
         OLED_FindDotsArrayByCornerPts = 37,
         OLED_FindDotsArrayByCornerPts_File = 38,
         AOI = 39,
+        ThirdPartyAlgorithms_File = 40,
+        ThirdPartyAlgorithms_RealParam = 41,
+        OLED_FindLedPosition = 42,
+        OLED_FindLedPosition_File = 43,
         KB = 50,
         KB_Raw = 51,
         KB_Output = 52,
@@ -55,10 +59,10 @@ namespace ColorVision.Engine.Interfaces
         KB_Output_Lv = 55,
         KB_Output_CIE = 56,
         ARVR_SFR_FindROI = 60,
+        ARVR_AAFindPoints = 61,
+        PoiAnalysis = 62,
         Math_DataConvert = 70,
-        GhostQK =76,
-        DFOV =77,
-        BlackMura_Caculate = 80
+        BlackMura_Calc = 80
     }
     public interface IResultHandle
     {

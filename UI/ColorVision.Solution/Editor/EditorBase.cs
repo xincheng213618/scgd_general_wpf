@@ -1,10 +1,9 @@
 ﻿using System.Windows.Controls;
 
-namespace ColorVision.Solution
+namespace ColorVision.Solution.Editor
 {
     public abstract class EditorBase : IEditor
     {
-        public virtual string Name { get; set; }
-        public abstract Control? Open(string filePath);
+        public abstract void Open(string filePath);
     }
 }

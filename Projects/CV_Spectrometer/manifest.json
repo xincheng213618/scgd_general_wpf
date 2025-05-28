@@ -1,9 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "CV_Spectrometer",
-  "name": "CV_Spectrometer",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "CV_Spectrometer.dll",
-  "requires": "1.2.4.23"
-} 

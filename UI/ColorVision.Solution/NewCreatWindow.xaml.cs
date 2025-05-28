@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.RecentFile;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Themes;
+using ColorVision.Solution.RecentFile;
 
 namespace ColorVision.Solution
 {

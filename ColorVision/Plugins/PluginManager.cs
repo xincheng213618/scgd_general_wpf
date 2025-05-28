@@ -5,7 +5,6 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using log4net;
 using Microsoft.Win32;
-using Mysqlx;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

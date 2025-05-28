@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
-using log4net.Plugin;
 using Newtonsoft.Json;
-using System.Collections.Concurrent;
-using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Windows;

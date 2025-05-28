@@ -10,6 +10,7 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -48,12 +49,10 @@ namespace ColorVision.Engine.Media
             return field;
         }
     }
-
+    [FileExtension(".cvraw", ".cvcie")]
     public class CVRawOpen : IImageOpen
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(CVRawOpen));
-
-        public List<string> Extension { get; } = new List<string> { ".cvraw",".cvcie" };
 
         public List<string> ComboBoxLayerItems { get; set; } = new List<string>() { "Src", "R", "G", "B" };
         public List<List<Point>> Points { get; set; } = new List<List<Point>>();

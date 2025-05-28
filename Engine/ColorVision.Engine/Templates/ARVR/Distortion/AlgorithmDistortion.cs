@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.Distortion
         {
             Name = "畸变评价";
             Order = 55;
-            Group = "AR/VR算法";
+            Group = "畸变评价";
 			Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

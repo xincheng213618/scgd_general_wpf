@@ -11,6 +11,8 @@ using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
+using ColorVision.UI.Extension;
+using ColorVision.UI.SocketProtocol;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
@@ -23,6 +25,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -36,9 +39,12 @@ namespace ProjectARVR
     {
         White =1,
         Black =2,
-        DistortionGhost =4,
+        DistortionGhost = 3,
+        Checkerboard = 4,
         MTFH =5,
         MTFV =6,
+        DefectDetection =7,
+        GridDiagram =8,
     }
 
 
@@ -58,6 +64,13 @@ namespace ProjectARVR
 
         public List<ViewResultMTF> MTFHs { get; set; } = new List<ViewResultMTF>();
         public List<ViewResultMTF> MTFvs { get; set; } = new List<ViewResultMTF>();
+    }
+
+    public class SwitchPG
+    {
+        public string EventName { get; set; } = "SwitchPG";
+
+        public ARVRTestType ARVRTestType { get; set; }
     }
 
     public partial class ARVRWindow : Window,IDisposable
@@ -704,6 +717,129 @@ namespace ProjectARVR
             GC.SuppressFinalize(this);
         }
 
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
 
+
+
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Black } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+
+
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DistortionGhost } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_5(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFH } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_6(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.MTFV } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_7(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DefectDetection } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_8(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
     }
 }

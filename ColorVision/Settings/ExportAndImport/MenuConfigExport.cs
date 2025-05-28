@@ -1,9 +1,4 @@
-﻿using System;
-using System.Windows;
-using ColorVision.UI;
-using ColorVision.UI.Menus;
-
-namespace ColorVision.Settings.ExportAndImport
+﻿namespace ColorVision.Settings.ExportAndImport
 {
     //public class MenuConfigExport : MenuItemBase
     //{

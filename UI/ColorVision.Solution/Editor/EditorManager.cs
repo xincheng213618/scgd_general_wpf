@@ -1,8 +1,6 @@
-﻿using ColorVision.UI;
-using System;
-using System.Collections.Generic;
+﻿using ColorVision.Solution.Editor;
+using ColorVision.UI;
 using System.IO;
-using System.Linq;
 
 namespace ColorVision.Solution
 {
@@ -83,6 +81,18 @@ namespace ColorVision.Solution
                     }
                 }
             }
+        }
+        public static string GetEditorName(Type type)
+        {
+            var attr = type.GetCustomAttributes(typeof(EditorForExtensionAttribute), false)
+                .Cast<EditorForExtensionAttribute>().FirstOrDefault();
+            if (attr != null && !string.IsNullOrWhiteSpace(attr.Name))
+                return attr.Name!;
+            var genericAttr = type.GetCustomAttributes(typeof(GenericEditorAttribute), false)
+                .Cast<GenericEditorAttribute>().FirstOrDefault();
+            if (genericAttr != null && !string.IsNullOrWhiteSpace(genericAttr.Name))
+                return genericAttr.Name!;
+            return type.Name;
         }
 
         public List<Type> GetEditorsForExt(string extension)

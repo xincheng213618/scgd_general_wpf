@@ -24,8 +24,8 @@ namespace ColorVision.Engine.Templates.FOV
         {
             Name = "FOV";
             Order = 53;
-			Group = "AR/VR算法";
-			Device = deviceAlgorithm;
+			Group = "FOV";
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 
