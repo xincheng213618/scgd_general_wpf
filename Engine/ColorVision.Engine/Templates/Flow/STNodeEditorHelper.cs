@@ -57,6 +57,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
+using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -184,8 +185,11 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode algorithmFindLightAreaNode)
             {
                 AddStackPanel(name => algorithmFindLightAreaNode.DeviceCode = name, algorithmFindLightAreaNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateAAFindPoints());
-                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateAAFindPoints());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "寻找AA区", new TemplateAAFindPoints());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateRoi());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "FocusPoints", new TemplateFocusPoints());
+
+                
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode algorithmFindLEDNode)
             {
@@ -460,6 +464,8 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => buidpoi.DeviceCode = name, buidpoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
+                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
+
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)

@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Archive.Dao
                 try
                 {
                     string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
-                    MySqlConnection = new MySqlConnection(connStr = connStr);
+                    MySqlConnection = new MySqlConnection(connStr);
                     MySqlConnection.Open();
                 }
                 catch (Exception ex)
