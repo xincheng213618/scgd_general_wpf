@@ -83,6 +83,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\UI\ColorVision.UI.SocketProtocol\ColorVision.UI.SocketProtocol.csproj" />
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
     <ProjectReference Include="..\CVImageChannelLib\CVImageChannelLib.csproj" />
