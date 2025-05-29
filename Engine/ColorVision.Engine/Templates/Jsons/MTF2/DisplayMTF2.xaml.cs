@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using System;
@@ -27,6 +28,9 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
             
             ComboxTemplate.ItemsSource = TemplateMTF2.Params;
             ComboxTemplate.SelectedIndex = 0;
+
+            ComboxPoiTemplate2.ItemsSource = TemplatePoi.Params;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             void UpdateCB_SourceImageFiles()
             {
