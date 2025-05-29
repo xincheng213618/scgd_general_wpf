@@ -1,4 +1,8 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Templates.Jsons.Ghost2;
+using Newtonsoft.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Templates.Jsons
 {
@@ -6,6 +10,25 @@ namespace ColorVision.Engine.Templates.Jsons
     {
         public string ResultFileName { get; set; }
     }
+
+    public class DetailViewReslut : IViewResult
+    {
+        public DetailCommonModel DetailCommonModel { get; set; }
+
+        public DetailViewReslut(DetailCommonModel detailCommonModel)
+        {
+            DetailCommonModel = detailCommonModel;
+
+            var restfile = JsonConvert.DeserializeObject<ResultFile>(detailCommonModel.ResultJson);
+            ResultFileName = restfile?.ResultFileName;
+        }
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("pid")]
+        public int PId { get; set; }
+        public string? ResultFileName { get; set; }
+    }
+
 
     [Table("t_scgd_algorithm_result_detail_common")]
     public class DetailCommonModel : PKModel
