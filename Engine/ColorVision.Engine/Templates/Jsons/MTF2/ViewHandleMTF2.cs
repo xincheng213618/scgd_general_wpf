@@ -6,7 +6,11 @@ using ColorVision.Engine.Interfaces;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
+using ColorVision.Engine.Templates.MTF;
+using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -16,14 +20,20 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
     public class MTFItem
     {
-        public int id { get; set; }
+        public string name { get; set; }
         public double mtfValue { get; set; }
+        public int x { get; set; }
+        public int y { get; set; }
+        public int w { get; set; }
+        public int h { get; set; }
+
     }
 
     public class MTFResult
@@ -124,12 +134,34 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
 
             Load(view, result);
 
+
+
             if (result.ViewResults.Count == 1)
             {
                 if (result.ViewResults[0] is MTFDetailViewReslut mTFDetailViewReslut)
                 {
-                    List<string> header = new() { "id", "mtfvalue" };
-                    List<string> bdHeader = new() { "id", "mtfValue" };
+                    int id = 0;
+                    if (mTFDetailViewReslut.MTFResult.result.Count != 0)
+                    {
+                        foreach (var item in mTFDetailViewReslut.MTFResult.result)
+                        {
+                            id++;
+                            DVRectangleText Rectangle = new();
+                            Rectangle.Attribute.Rect = new Rect(item.x,item.y,item.w,item.h);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Id = id;
+                            Rectangle.Attribute.Text = item.name;
+                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                            Rectangle.Render();
+                            view.ImageView.AddVisual(Rectangle);
+                        }
+                    }
+
+
+
+                    List<string> header = new() { "name", "x","y","w","h","mtfvalue" };
+                    List<string> bdHeader = new() { "name", "x", "y", "w", "h", "mtfValue" };
 
                     if (view.listViewSide.View is GridView gridView)
                     {
