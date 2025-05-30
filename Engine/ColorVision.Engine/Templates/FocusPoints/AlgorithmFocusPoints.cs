@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Templates.FocusPoints
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayFocusPoints(this);
             return UserControl;

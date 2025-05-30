@@ -40,6 +40,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
             IsUserControl = true;
         }
 
+
         public override void SetUserControlDataContext(int index)
         {
             EditTemplateJson.SetParam(TemplateParams[index].Value);

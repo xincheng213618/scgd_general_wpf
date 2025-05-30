@@ -158,6 +158,8 @@ namespace ColorVision
             command.InputGestures.Add(gesture);
             CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
             InitRightMenuItemPanel();
+
+            StartupRegistryChecker.Clear();
         }
 
         private void InitRightMenuItemPanel()
