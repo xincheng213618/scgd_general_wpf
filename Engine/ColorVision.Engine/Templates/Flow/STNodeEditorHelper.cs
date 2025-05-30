@@ -191,8 +191,9 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "寻找AA区", new TemplateAAFindPoints());
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateRoi());
                 AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "FocusPoints", new TemplateFocusPoints());
+                AddStackPanel(name => algorithmFindLightAreaNode.SavePOITempName = name, algorithmFindLightAreaNode.SavePOITempName, "保存POI", new TemplatePoi());
 
-                
+
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode algorithmFindLEDNode)
             {
@@ -201,6 +202,7 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => algorithmFindLEDNode.DeviceCode = name, algorithmFindLEDNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
                 AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "像素级灯珠检测", new TemplateLedCheck());
+
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
             {
@@ -492,9 +494,11 @@ namespace ColorVision.Engine.Templates.Flow
                 AddImagePath(name => buidpoi.ImgFileName = name, buidpoi.ImgFileName);
 
                 AddStackPanel(name => buidpoi.DeviceCode = name, buidpoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
+                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "布点模板", new TemplateBuildPoi());
                 AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
-
+                AddStackPanel(name => buidpoi.RePOITemplateName = name, buidpoi.RePOITemplateName, "RePOI", new TemplatePoi());
+                AddStackPanel(name => buidpoi.LayoutROITemplate = name, buidpoi.LayoutROITemplate, "布点ROI", new TemplatePoi());
+                AddStackPanel(name => buidpoi.SavePOITempName = name, buidpoi.SavePOITempName, "SavePOI", new TemplatePoi());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
@@ -718,7 +722,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -870,7 +874,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50  ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70  ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",
@@ -1018,7 +1022,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",

@@ -148,6 +148,29 @@
                             <TextBox   Text="{Binding RightBottomY}" Width="80" Margin="5,0"  BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                         </DockPanel>
                     </StackPanel>
+                    <CheckBox Content="启用发光区4个角点" IsChecked="{Binding PoiConfig.IsPointInt}" Margin="2"/>
+                    <StackPanel Visibility="{Binding PoiConfig.IsPointInt,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                            <TextBlock Text="左上"   MinWidth="20"/>
+                            <TextBox Text="{Binding PoiConfig.PointInt1.X}" Width="55" Margin="5,0" />
+                            <TextBox  Text="{Binding PoiConfig.PointInt1.Y}" Width="55" Margin="5,0"/>
+                        </DockPanel>
+                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                            <TextBlock Text="右上"  MinWidth="20"/>
+                            <TextBox  Text="{Binding PoiConfig.PointInt2.X}" Width="55" Margin="5,0"  />
+                            <TextBox   Text="{Binding PoiConfig.PointInt2.Y}" Width="55" Margin="5,0"  />
+                        </DockPanel>
+                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                            <TextBlock  Text="右下"  MinWidth="20" />
+                            <TextBox  Text="{Binding PoiConfig.PointInt3.X}" Width="55" Margin="5,0"  />
+                            <TextBox  Text="{Binding PoiConfig.PointInt3.Y}" Width="55" Margin="5,0"  />
+                        </DockPanel>
+                        <DockPanel Margin="2" HorizontalAlignment="Left">
+                            <TextBlock Text="左下"   MinWidth="20"/>
+                            <TextBox  Text="{Binding PoiConfig.PointInt4.X}" Width="55" Margin="5,0"  />
+                            <TextBox  Text="{Binding PoiConfig.PointInt4.Y}" Width="55" Margin="5,0"  />
+                        </DockPanel>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 
@@ -281,7 +304,7 @@
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
                                                 <TextBlock Text="左上"   MinWidth="20"/>
                                                 <TextBox Text="{Binding PoiConfig.Polygon1X}" Width="55" Margin="5,0" />
-                                                <TextBox   Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"   />
+                                                <TextBox  Text="{Binding PoiConfig.Polygon1Y}" Width="55" Margin="5,0"/>
                                             </DockPanel>
                                             <DockPanel Margin="2" HorizontalAlignment="Left">
                                                 <TextBlock Text="右上"  MinWidth="20"/>
