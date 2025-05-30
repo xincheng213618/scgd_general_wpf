@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0-windows</TargetFrameworks>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<VersionPrefix>1.2.4.1</VersionPrefix>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile></PackageReadmeFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageProjectUrl>https://github.com/xincheng213618/scgd_general_wpf</PackageProjectUrl>
+		<IncludeSymbols>True</IncludeSymbols>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -7,7 +7,7 @@ using System.Linq;
 namespace ColorVision.Engine.MySql.ORM
 {
 
-    public class BaseViewDao<T> : BaseDao1 where T : IPKModel, new()
+    public class  BaseViewDao<T> : BaseDao1 where T : IPKModel, new()
     {
         public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseViewDao<T>));

@@ -127,13 +127,35 @@ namespace ColorVision.Engine.MySql.ORM
         public List<T> GetAllByParam(Dictionary<string, object> param,int limit = -1)
         {
             string whereClause = string.Empty;
+            Dictionary<string, object> dbParams = new Dictionary<string, object>();
+
             if (param != null && param.Count > 0)
-                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            {
+                var conditions = new List<string>();
+                foreach (var p in param)
+                {
+                    if (p.Value == null)
+                    {
+                        conditions.Add($"{p.Key} IS NULL");
+                    }
+                    else
+                    {
+                        conditions.Add($"{p.Key} = @{p.Key}");
+                        dbParams.Add(p.Key, p.Value);
+                    }
+                }
+                whereClause = "WHERE " + string.Join(" AND ", conditions);
+            }
+            else
+            {
+                dbParams = param; // 为空也可以传回去
+            }
 
             string sql = $"SELECT * FROM {TableName} {whereClause} ";
             if (limit >= 1)
-                sql += $" ORDER BY id DESC  LIMIT {limit}";
-            DataTable d_info = GetData(sql, param);
+                sql += $" ORDER BY id DESC LIMIT {limit}";
+
+            DataTable d_info = GetData(sql, dbParams);
 
             List<T> list = new List<T>(d_info.Rows.Count);
             try
