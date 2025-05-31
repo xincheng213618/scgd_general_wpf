@@ -2,7 +2,7 @@
 using System;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Interfaces
+namespace ColorVision.Engine.Abstractions
 {
     public interface IDisplayAlgorithm
     {

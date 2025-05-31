@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.Jsons.Ghost2;
 using Newtonsoft.Json;

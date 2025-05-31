@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore;
 using Newtonsoft.Json;

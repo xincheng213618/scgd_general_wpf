@@ -2,7 +2,7 @@
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Interfaces
+namespace ColorVision.Engine.Abstractions
 {
     public enum AlgorithmResultType
     {

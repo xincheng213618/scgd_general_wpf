@@ -1,5 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;

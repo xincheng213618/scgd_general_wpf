@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8603
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
