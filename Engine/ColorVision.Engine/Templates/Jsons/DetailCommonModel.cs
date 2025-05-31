@@ -1,8 +1,6 @@
 ﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Templates.Jsons.Ghost2;
 using Newtonsoft.Json;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Engine.Templates.Jsons
 {

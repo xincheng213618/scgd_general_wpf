@@ -19,7 +19,6 @@ using ColorVision.UI;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Sorts;
 using ColorVision.Util.Draw.Rectangle;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;

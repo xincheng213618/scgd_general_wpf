@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
-using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;

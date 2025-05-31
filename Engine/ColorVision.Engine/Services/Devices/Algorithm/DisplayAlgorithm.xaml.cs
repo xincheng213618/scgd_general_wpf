@@ -86,6 +86,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
             };
 
+
+
             void CB_AlgorithmTypesChanged()
             {
                 if (CB_AlgorithmTypes.SelectedItem is string selectedGroup)
