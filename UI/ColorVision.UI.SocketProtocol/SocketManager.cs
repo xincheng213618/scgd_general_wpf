@@ -39,7 +39,7 @@ namespace ColorVision.UI.SocketProtocol
 
         public SocketEventDispatcher()
         {
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(ISocketEventHandler).IsAssignableFrom(t) && !t.IsAbstract))
                 {

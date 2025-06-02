@@ -3,7 +3,7 @@ using ColorVision.UI;
 using System.Windows;
 
 
-namespace ColorVision.Engine.Services
+namespace ColorVision.Engine.Abstractions
 {
     /// <summary>
     /// 配置视图的基类，提供通用配置选项

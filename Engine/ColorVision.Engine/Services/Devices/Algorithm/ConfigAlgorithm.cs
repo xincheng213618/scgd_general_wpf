@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Configs;
+﻿using ColorVision.Engine.Abstractions;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {

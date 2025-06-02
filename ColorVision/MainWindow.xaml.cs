@@ -167,7 +167,7 @@ namespace ColorVision
             RightMenuItemPanel.Children.Clear();
             var allSettings = new List<MenuItemMetadata>();
 
-            foreach (var item in AssemblyHandler.LoadImplementations<IRightMenuItemProvider>())
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IRightMenuItemProvider>())
             {
                 allSettings.AddRange(item.GetMenuItems());
             }
