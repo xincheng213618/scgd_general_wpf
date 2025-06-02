@@ -87,7 +87,15 @@ namespace ColorVision.Engine.MySql.ORM
                 {
                     DestinationTableName = dataTable.TableName
                 };
-                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+
+
+                int i = 0;
+                foreach (DataColumn col in dataTable.Columns)
+                {
+                    bulkCopy.ColumnMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                    i++;
+                }
+
                 try
                 {
 
@@ -108,17 +116,6 @@ namespace ColorVision.Engine.MySql.ORM
             return count;
         }
 
-        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
-        {
-            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new();
-            int i = 0;
-            foreach (DataColumn col in dataTable.Columns)
-            {
-                colMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
-                i++;
-            }
-            return colMappings;
-        }
 
 
 
@@ -258,22 +255,6 @@ namespace ColorVision.Engine.MySql.ORM
                 }
             }
             return list;
-        }
-
-        public int GetNextAvailableId()
-        {
-            int nextId = 1;
-            string query = $"SELECT MAX(id) FROM {TableName}";
-            MySqlCommand cmd = new MySqlCommand(query, MySqlControl.MySqlConnection);
-
-            object result = cmd.ExecuteScalar();
-            if (result != DBNull.Value && result != null)
-            {
-                int maxId = Convert.ToInt32(result);
-                nextId = maxId + 1;
-            }
-
-            return nextId;
         }
     }
 }
