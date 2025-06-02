@@ -20,13 +20,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 8.0.x
         
     - name: Restore dependencies
       run: dotnet restore build.sln
       
     - name: Setup MSBuild path
-      uses: microsoft/setup-msbuild@v1.1
+      uses: microsoft/setup-msbuild@v2
     
     - name: Build C++ project with MSBuild
       run: |
