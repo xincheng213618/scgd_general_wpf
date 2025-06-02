@@ -87,7 +87,7 @@ namespace ColorVision.ImageEditor
         {
             List<IToolCommand> IToolCommands = new List<IToolCommand>();
 
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IToolCommand).IsAssignableFrom(t) && !t.IsAbstract))
                 {

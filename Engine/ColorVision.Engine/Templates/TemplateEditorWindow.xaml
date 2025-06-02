@@ -10,7 +10,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
+        xmlns:commands="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
         ShowInTaskbar="False"
         d:DataContext="{d:DesignInstance local:TemplateSetting}"
         Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
