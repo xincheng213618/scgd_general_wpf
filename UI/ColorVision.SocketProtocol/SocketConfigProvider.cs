@@ -1,4 +1,6 @@
-﻿namespace ColorVision.UI.SocketProtocol
+﻿using ColorVision.UI;
+
+namespace ColorVision.SocketProtocol
 {
     public class SocketConfigProvider : IConfigSettingProvider
     {

@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System.ComponentModel;
 
-namespace ColorVision.UI.SocketProtocol
+namespace ColorVision.SocketProtocol
 {
     public class SocketConfig : ViewModelBase,IConfig
     {

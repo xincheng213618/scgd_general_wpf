@@ -3,7 +3,7 @@ using ColorVision.UI.Menus;
 using System.Net.Sockets;
 using System.Windows;
 
-namespace ColorVision.UI.SocketProtocol
+namespace ColorVision.SocketProtocol
 {
     public interface ISocketEventHandler
     {

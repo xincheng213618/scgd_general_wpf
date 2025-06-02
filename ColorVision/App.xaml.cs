@@ -69,8 +69,8 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
             if (File.Exists("ColorVision.Solution.dll"))
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
-            if (File.Exists("ColorVision.UI.SocketProtocol.dll"))
-                Assembly.LoadFrom("ColorVision.UI.SocketProtocol.dll"); ;
+            if (File.Exists("ColorVision.SocketProtocol.dll"))
+                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;

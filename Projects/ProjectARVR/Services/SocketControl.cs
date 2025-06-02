@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.Templates.Flow;
-using ColorVision.UI.SocketProtocol;
+using ColorVision.SocketProtocol;
 using ProjectARVR.PluginConfig;
 using System.Net.Sockets;
 using System.Windows;

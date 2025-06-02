@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.UI.SocketProtocol
+namespace ColorVision.SocketProtocol
 {
     public class MenuProjectManager : MenuItemBase
     {

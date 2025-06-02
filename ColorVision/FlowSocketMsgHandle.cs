@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CA1711
 using ColorVision.UI.Menus;
-using ColorVision.UI.SocketProtocol;
+using ColorVision.SocketProtocol;
 using System.Linq;
 using System.Net.Sockets;
 using System.Windows;

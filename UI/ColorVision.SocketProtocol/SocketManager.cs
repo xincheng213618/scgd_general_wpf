@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -8,7 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.UI.SocketProtocol
+namespace ColorVision.SocketProtocol
 {
     public class SocketMessageBase
     {

@@ -12,7 +12,7 @@ using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
-using ColorVision.UI.SocketProtocol;
+using ColorVision.SocketProtocol;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
