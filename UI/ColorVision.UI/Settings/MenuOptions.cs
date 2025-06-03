@@ -1,4 +1,4 @@
-﻿using ColorVision.Properties;
+﻿using ColorVision.UI.Properties;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System.Windows;

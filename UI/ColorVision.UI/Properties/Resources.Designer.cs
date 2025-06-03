@@ -160,6 +160,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 通用 的本地化字符串。
+        /// </summary>
+        public static string General {
+            get {
+                return ResourceManager.GetString("General", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通用设置 的本地化字符串。
+        /// </summary>
+        public static string GeneralSettings {
+            get {
+                return ResourceManager.GetString("GeneralSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 全局 的本地化字符串。
         /// </summary>
         public static string GlobalMode {

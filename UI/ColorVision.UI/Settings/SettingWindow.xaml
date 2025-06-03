@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.UI.Properties"
         mc:Ignorable="d"     
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
