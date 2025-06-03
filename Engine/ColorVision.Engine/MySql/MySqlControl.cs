@@ -23,15 +23,8 @@ namespace ColorVision.Engine.MySql
         public MySqlConnection MySqlConnection { get; set; }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
-
-        private Timer timer;
         public MySqlControl()
         {
-            timer = new Timer(ReConnect, null, 0, MySqlSetting.Instance.ReConnectTime);
-            MySqlSetting.Instance.ReConnectTimeChanged += (s, e) =>
-            {
-                timer.Change(0, MySqlSetting.Instance.ReConnectTime);
-            };
             Task.Run(async () => 
             {
                 await Task.Delay(10000); // 等待配置加载完成
@@ -103,6 +96,14 @@ namespace ColorVision.Engine.MySql
                 return Task.FromResult(false);
             }
         }
+        public MySqlConnection GetMySqlConnection()
+        {
+            MySqlConnection = new MySqlConnection() { ConnectionString = GetConnectionString(Config) };
+            MySqlConnection.Open();
+            return MySqlConnection;
+        }
+
+
         public List<string> GetTableNames()
         {
             List<string> tableNames = new List<string>();
@@ -340,7 +341,6 @@ namespace ColorVision.Engine.MySql
         public void Dispose()
         {
             MySqlConnection.Dispose();
-            timer?.Dispose();
             GC.SuppressFinalize(this);
         }
 

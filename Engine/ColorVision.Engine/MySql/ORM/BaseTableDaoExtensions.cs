@@ -1,5 +1,4 @@
 ﻿using MySql.Data.MySqlClient;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 
@@ -48,15 +47,15 @@ namespace ColorVision.Engine.MySql.ORM
         {
             int nextId = 1;
             string query = $"SELECT MAX(id) FROM {dao.TableName}";
-            MySqlCommand cmd = new MySqlCommand(query, dao.MySqlControl.MySqlConnection);
-
+            var conn = new MySqlConnection(MySqlControl.GetConnectionString());
+            conn.Open();
+            using MySqlCommand cmd = new MySqlCommand(query, conn);
             object result = cmd.ExecuteScalar();
             if (result != DBNull.Value && result != null)
             {
                 int maxId = Convert.ToInt32(result);
                 nextId = maxId + 1;
             }
-
             return nextId;
         }
 

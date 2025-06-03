@@ -24,17 +24,7 @@ namespace ColorVision.Engine.MySql
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
                                 Source = MySqlSetting.Instance
-                            },       
-                          new ConfigSettingMetadata
-                            {
-                                Name = "数据库超时重连检测",
-                                Description = "数据库超时重连检测",
-                                Order =1,
-                                Group ="Engine",
-                                Type = ConfigSettingType.Text,
-                                BindingName = nameof(MySqlSetting.ReConnectTime),
-                                Source = MySqlSetting.Instance
-                            }
+                            },
             };
         }
         public IEnumerable<StatusBarMeta> GetStatusBarIconMetadata()
@@ -70,12 +60,6 @@ namespace ColorVision.Engine.MySql
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
         public static bool IsConnect => MySqlControl.IsConnect;
-
-        public  int ReConnectTime { get => _ReConnectTime; set { _ReConnectTime = value; NotifyPropertyChanged(); ReConnectTimeChanged?.Invoke(this, new EventArgs()); } }
-        private int _ReConnectTime = 3600000;
-
-        public event  EventHandler ReConnectTimeChanged;
-
 
         public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
         private bool _IsUseMySql = true;

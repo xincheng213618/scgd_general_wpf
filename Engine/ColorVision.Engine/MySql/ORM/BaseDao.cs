@@ -15,7 +15,6 @@ namespace ColorVision.Engine.MySql.ORM
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
 
-        public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
         public string PKField { get { return _PKField; } set { _PKField = value; } }

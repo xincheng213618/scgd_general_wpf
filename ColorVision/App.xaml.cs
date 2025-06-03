@@ -179,7 +179,8 @@ namespace ColorVision
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            TrayIconManager.GetInstance();
+            //这里显示托盘控件
+            //TrayIconManager.GetInstance();
 
 
             //代码先进入启动窗口

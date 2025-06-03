@@ -17,6 +17,7 @@ namespace ColorVision.UI.Shell
 
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
+            if (!TrayIconManager.IsInitialized) return new List<ConfigSettingMetadata>();
             return new List<ConfigSettingMetadata>()
             {
                 new ConfigSettingMetadata()
@@ -44,6 +45,7 @@ namespace ColorVision.UI.Shell
 
     public class TrayIconManager : IDisposable
     {
+        public static bool IsInitialized { get; private set; }
         private static TrayIconManager _instance;
         private static readonly object _locker = new();
         public static TrayIconManager GetInstance() { lock (_locker) { return _instance ??= new TrayIconManager(); } }
@@ -56,6 +58,7 @@ namespace ColorVision.UI.Shell
         {
             Initialized();
             TrayIconConfig.Instance.PropertyChanged += (s, e) => Initialized();
+            IsInitialized = true;
         }
 
         public void Initialized()
