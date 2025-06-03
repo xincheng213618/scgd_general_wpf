@@ -199,15 +199,12 @@ namespace ColorVision.Engine.Archive.Dao
                 try
                 {
                     string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
-                    MySqlConnection = new MySqlConnection(connStr);
-                    MySqlConnection.Open();
+                    using MySqlConnection  connection = new MySqlConnection(connStr);
+                    connection.Open();
                 }
                 catch (Exception ex)
                 {
                     log.Error(ex);
-                    MySqlControl = MySqlControl.GetInstance();
-                    MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
-                    MySqlConnection = MySqlControl.MySqlConnection;
                 }
             }
         }

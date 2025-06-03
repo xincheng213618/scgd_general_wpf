@@ -35,26 +35,21 @@ namespace ColorVision.Engine.Archive.Dao
         private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedMasterDao));
 
         public static ArchivedMasterDao Instance { get; set; } = new ArchivedMasterDao();
-
-        public ArchivedMasterDao() : base("t_scgd_archived_master", "code")
+        public override MySqlConnection CreateConnection()
         {
             MySqlConfig MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
             {
-                try
-                {
-                    string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
-                    MySqlConnection = new MySqlConnection(connStr);
-                    MySqlConnection.Open();
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex);
-                    MySqlControl = MySqlControl.GetInstance();
-                    MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
-                    MySqlConnection = MySqlControl.MySqlConnection;
-                }
+                string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
+                var conn = new MySqlConnection(MySqlControl.GetConnectionString());
+                conn.Open();
+                return conn;
             }
+            return null;
+        }
+        public ArchivedMasterDao() : base("t_scgd_archived_master", "code")
+        {
+
 
 
         }

@@ -26,6 +26,10 @@
 
 12.mtf value fix 
 
+13.拆分SocketProtocol，现在只依赖common
+
+14.拆
+
 ## [1.3.1.1] 2025.05.28
 
 1.修复打开STN文件时，无法正确显示的问题

@@ -24,15 +24,7 @@ namespace ColorVision.Engine.Rbac
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             UserDao userDao = new UserDao();
-            if (userDao.Checklogin(Account1.Text, PasswordBox1.Password))
-            {
-                Close();
-            }
-            else
-            {
-                PasswordBox1.Password = "";
-                MessageBox.Show(Application.Current.MainWindow,"用户名或者密码不正确", "ColorVision");
-            }
+            MessageBox.Show(Application.Current.MainWindow, "用户名或者密码不正确", "ColorVision");
         }
     }
 }
