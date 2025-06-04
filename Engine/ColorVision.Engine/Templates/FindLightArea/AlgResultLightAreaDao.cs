@@ -56,7 +56,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)
             {

@@ -7,12 +7,11 @@ using System.Linq;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层
     /// </summary>
     public class BaseDao
-    {
+    {  
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
 
         public string TableName { get { return _TableName; } set { _TableName = value; } }
