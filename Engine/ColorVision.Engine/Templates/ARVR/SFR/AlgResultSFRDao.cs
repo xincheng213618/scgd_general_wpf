@@ -28,9 +28,5 @@ namespace ColorVision.Engine.Templates.SFR
     public class AlgResultSFRDao : BaseTableDao<AlgResultSFRModel>
     {
         public static AlgResultSFRDao Instance { get; set; } = new AlgResultSFRDao();
-
-        public AlgResultSFRDao() : base("t_scgd_algorithm_result_detail_sfr", "id")
-        {
-        }
     }
 }

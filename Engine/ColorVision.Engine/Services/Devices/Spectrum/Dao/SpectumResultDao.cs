@@ -8,14 +8,110 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
+    using System;
+    using System.ComponentModel.DataAnnotations.Schema;
+
+    [Table("t_scgd_measure_result_spectrometer")]
+    public class SpectumResultModel : PKModel
+    {
+        [Column("fIntTime")]
+        public float? IntTime { get; set; }
+
+        [Column("iAveNum")]
+        public int iAveNum { get; set; }
+
+        [Column("self_adaption_init_dark")]
+        public bool IsUseAutoIntTime { get; set; }
+
+        [Column("auto_init_dark")]
+        public bool IsUseAutoDark { get; set; }
+
+        [Column("pid")]
+        public int? Pid { get; set; }
+
+        [Column("batch_id")]
+        public int? BatchId { get; set; }
+
+        [Column("fPL")]
+        public string? fPL { get; set; }
+
+        [Column("fRi")]
+        public string? fRi { get; set; }
+
+        [Column("fx")]
+        public float? fx { get; set; }
+
+        [Column("fy")]
+        public float? fy { get; set; }
+
+        [Column("fu")]
+        public float? fu { get; set; }
+
+        [Column("fv")]
+        public float? fv { get; set; }
+
+        [Column("fCCT")]
+        public float? fCCT { get; set; }
+
+        [Column("dC")]
+        public float? dC { get; set; }
+
+        [Column("fLd")]
+        public float? fLd { get; set; }
+
+        [Column("fPur")]
+        public float? fPur { get; set; }
+
+        [Column("fLp")]
+        public float? fLp { get; set; }
+
+        [Column("fHW")]
+        public float? fHW { get; set; }
+
+        [Column("fLav")]
+        public float? fLav { get; set; }
+
+        [Column("fRa")]
+        public float? fRa { get; set; }
+
+        [Column("fRR")]
+        public float? fRR { get; set; }
+
+        [Column("fGR")]
+        public float? fGR { get; set; }
+
+        [Column("fBR")]
+        public float? fBR { get; set; }
+
+        [Column("fIp")]
+        public float? fIp { get; set; }
+
+        [Column("fPh")]
+        public float? fPh { get; set; }
+
+        [Column("fPhe")]
+        public float? fPhe { get; set; }
+
+        [Column("fPlambda")]
+        public float? fPlambda { get; set; }
+
+        [Column("fSpect1")]
+        public float? fSpect1 { get; set; }
+
+        [Column("fSpect2")]
+        public float? fSpect2 { get; set; }
+
+        [Column("fInterval")]
+        public float? fInterval { get; set; }
+
+        [Column("create_date")]
+        public DateTime? CreateDate { get; set; } = DateTime.Now;
+    }
+
+
     public class SpectumResultDao : BaseTableDao<SpectumResultModel>
     {
         public static SpectumResultDao Instance { get; set; } = new SpectumResultDao();
-
-        public SpectumResultDao() : base("t_scgd_measure_result_spectrometer", "id")
-        {
-
-        }
 
         public List<SpectumResultModel> selectBySN(string sn)
         {

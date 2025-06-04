@@ -27,9 +27,5 @@ namespace ColorVision.Engine.Templates.FOV
     public class AlgResultFOVDao : BaseTableDao<AlgResultFOVModel>
     {
         public static AlgResultFOVDao Instance { get; set; } = new AlgResultFOVDao();
-        public AlgResultFOVDao() : base("t_scgd_algorithm_result_detail_fov", "id") 
-        {
-
-        }
     }
 }

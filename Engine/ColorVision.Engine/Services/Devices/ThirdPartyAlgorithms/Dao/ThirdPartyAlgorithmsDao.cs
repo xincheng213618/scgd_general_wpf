@@ -55,10 +55,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
         public static ThirdPartyAlgorithmsDao Instance { get; set; } = new ThirdPartyAlgorithmsDao();
 
-        public ThirdPartyAlgorithmsDao() : base("t_scgd_sys_third_party_algorithms")
-        {
-
-        }
     }
 
 }

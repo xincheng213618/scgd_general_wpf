@@ -10,6 +10,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Sys.Dao
 {
+    [Table("t_scgd_sys_config_rc",PrimaryKey = "code")]
     public class SysConfigRcModel : VPKModel
     {
 
@@ -67,9 +68,6 @@ namespace ColorVision.Engine.Sys.Dao
     {
         public static SysConfigRcDao Instance { get; set; } = new SysConfigRcDao();
 
-        public SysConfigRcDao() : base("t_scgd_sys_config_rc", "code")
-        {
-        }
         public SysConfigRcModel GetByCode(string code)
         {
             return GetByParam(new Dictionary<string, object>() { { "code", code } });

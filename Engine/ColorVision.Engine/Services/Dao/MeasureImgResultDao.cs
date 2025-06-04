@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    [Table("t_scgd_measure_result_img")]
     public class MeasureImgResultModel : PKModel
     {
         [Column("batch_id")]
@@ -41,15 +42,12 @@ namespace ColorVision.Engine.Services.Dao
     }
 
 
+
     public class MeasureImgResultDao : BaseTableDao<MeasureImgResultModel>
     {
 
         public static MeasureImgResultDao Instance { get;} = new MeasureImgResultDao();
 
-        public MeasureImgResultDao() : base("t_scgd_measure_result_img", "id")
-        {
-
-        }
 
         public List<MeasureImgResultModel> GetAllDevice(string devcode,int limit) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } }, limit);
 

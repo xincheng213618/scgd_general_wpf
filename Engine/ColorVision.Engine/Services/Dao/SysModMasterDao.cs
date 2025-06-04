@@ -3,6 +3,7 @@ using System;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    [Table("t_scgd_sys_dictionary_mod_master")]
     public class SysModMasterModel : PKModel
     {
         [Column("name")]
@@ -24,7 +25,7 @@ namespace ColorVision.Engine.Services.Dao
     public class SysModMasterDao : BaseTableDao<SysModMasterModel>
     {
         public static SysModMasterDao Instance { get; set; } = new SysModMasterDao();
-        public SysModMasterDao() : base("t_scgd_sys_dictionary_mod_master", "id")
+        public SysModMasterDao() : base()
         {
         }
     }

@@ -2167,7 +2167,7 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 未知状态 的本地化字符串。
+        ///   查找类似 未知状态，请重启服务 的本地化字符串。
         /// </summary>
         public static string UnknownStatus {
             get {

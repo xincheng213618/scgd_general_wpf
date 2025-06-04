@@ -5,21 +5,19 @@ using System.Data;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    [Table("t_scgd_measure_batch")]
     public class BatchResultMasterModel : PKModel
     {
-        public BatchResultMasterModel() : this(null,-1)
+        public BatchResultMasterModel() 
         {
-
-        }
-        public BatchResultMasterModel(string? sn, int tenantId)
-        {
-            Name = sn;
-            Code = sn;
-            TenantId = tenantId;
+            Name = null;
+            Code = null;
+            TenantId = -1;
             TId = -1;
             CreateDate = DateTime.Now;
             TotalTime = 0;
         }
+
         [Column("t_id")]
         public int? TId { get; set; }
         [Column("name")]
@@ -43,10 +41,6 @@ namespace ColorVision.Engine.Services.Dao
     public class BatchResultMasterDao : BaseTableDao<BatchResultMasterModel>
     {
         public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
-
-        public BatchResultMasterDao() : base("t_scgd_measure_batch")
-        {
-        }
 
         public List<BatchResultMasterModel> ConditionalQuery(string batchCode)
         {

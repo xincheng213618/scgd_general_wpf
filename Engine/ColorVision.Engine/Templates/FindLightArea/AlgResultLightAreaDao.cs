@@ -14,7 +14,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
-    [Table("t_scgd_algorithm_result_detail_light_area", PrimaryKey = "id")]
+    [Table("t_scgd_algorithm_result_detail_light_area")]
     public class AlgResultLightAreaModel : PKModel, IViewResult
     {
         [Column("pid")]
@@ -31,9 +31,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
     {
         public static AlgResultLightAreaDao Instance { get; set; } = new AlgResultLightAreaDao();
 
-        public AlgResultLightAreaDao() : base("t_scgd_algorithm_result_detail_light_area")
-        {
-        }
     }
 
     public class ViewHandleFindLightArea : IResultHandleBase

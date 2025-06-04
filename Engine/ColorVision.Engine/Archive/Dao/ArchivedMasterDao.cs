@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Archive.Dao
 {
 
 
-
+    [Table("t_scgd_archived_master")]
     public class ArchivedMasterModel : PKModel
     {
         [Column("code"),DisplayName("Code")]
@@ -32,7 +32,6 @@ namespace ColorVision.Engine.Archive.Dao
     }
     public class ArchivedMasterDao : BaseTableDao<ArchivedMasterModel>
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedMasterDao));
 
         public static ArchivedMasterDao Instance { get; set; } = new ArchivedMasterDao();
         public override MySqlConnection CreateConnection()
@@ -47,12 +46,7 @@ namespace ColorVision.Engine.Archive.Dao
             }
             return null;
         }
-        public ArchivedMasterDao() : base("t_scgd_archived_master", "code")
-        {
 
-
-
-        }
 
         public List<ArchivedMasterModel> ConditionalQuery(string batchCode)
         {

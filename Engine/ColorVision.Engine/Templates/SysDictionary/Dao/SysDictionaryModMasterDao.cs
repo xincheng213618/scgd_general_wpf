@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
-
+    [Table("t_scgd_sys_dictionary_mod_master")]
     public class SysDictionaryModModel : ViewModelBase,IPKModel
     {
         [Column("id")]
@@ -37,9 +37,6 @@ namespace ColorVision.Engine.Templates.SysDictionary
     {
         public static SysDictionaryModMasterDao Instance { get; set; } = new SysDictionaryModMasterDao();
 
-        public SysDictionaryModMasterDao() : base("t_scgd_sys_dictionary_mod_master", "id")
-        {
-        }
 
         public SysDictionaryModModel? GetByCode(string code, int tenantId) => GetByParam( new Dictionary<string, object>() { { "is_delete",0 }, { "code", code }, { "tenant_id", tenantId } });
     }

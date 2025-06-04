@@ -1,8 +1,10 @@
-﻿using log4net;
+﻿using ColorVision.Engine.Services.Dao;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 
 namespace ColorVision.Engine.MySql.ORM
 {
@@ -10,7 +12,7 @@ namespace ColorVision.Engine.MySql.ORM
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
-        public BaseTableDao(string tableName, string pkField ="id") : base(tableName, pkField)
+        public BaseTableDao() : base(ReflectionHelper.GetTableName(typeof(T)), ReflectionHelper.GetPrimaryKey(typeof(T)))
         {
 
         }
@@ -21,6 +23,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         public DataTable SelectById(int id)
         {
+
             string sql = $"select * from {TableName} where id=@id";
             return GetData(sql, new Dictionary<string, object> { { "id", id } });
         }

@@ -9,12 +9,14 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Archive.Dao
 {
+    [Table("t_scgd_archived_detail",PrimaryKey = "guid")]
     public class ArchivedDetailModel : PKModel
     {
         public RelayCommand ExportCommand { get; set; }
@@ -190,8 +192,7 @@ namespace ColorVision.Engine.Archive.Dao
         private static readonly ILog log = LogManager.GetLogger(typeof(ArchivedDetailDao));
 
         public static ArchivedDetailDao Instance { get; set; } = new ArchivedDetailDao();
-
-        public ArchivedDetailDao() : base("t_scgd_archived_detail", "guid")
+        public override MySqlConnection CreateConnection()
         {
             MySqlConfig MySqlConfig = GlobleCfgdDao.Instance.GetArchMySqlConfig();
             if (MySqlConfig != null)
@@ -199,14 +200,18 @@ namespace ColorVision.Engine.Archive.Dao
                 try
                 {
                     string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={3};SSL Mode =None;Pooling=true";
-                    using MySqlConnection  connection = new MySqlConnection(connStr);
+                    using MySqlConnection connection = new MySqlConnection(connStr);
                     connection.Open();
+                    return connection;
+
                 }
                 catch (Exception ex)
                 {
                     log.Error(ex);
                 }
             }
+            return null;
+
         }
 
         public List<ArchivedDetailModel> ConditionalQuery(string batchCode)

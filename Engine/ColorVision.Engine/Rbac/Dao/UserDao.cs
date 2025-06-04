@@ -83,10 +83,6 @@ namespace ColorVision.Engine.Rbac
     {
         public static UserDetailDao Instance { get; set; } = new UserDetailDao();
 
-        public UserDetailDao() : base("t_scgd_sys_user_detail")
-        {
-
-        }
     }
 
 
@@ -96,9 +92,6 @@ namespace ColorVision.Engine.Rbac
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
         public static UserDao Instance { get; set; } = new UserDao();
 
-        public UserDao():base("t_scgd_sys_user")
-        {
 
-        }
     }
 }

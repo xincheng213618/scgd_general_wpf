@@ -52,11 +52,6 @@ namespace ColorVision.Engine.Templates.Jsons
     {
 
         public static DicTemplateJsonDao Instance { get; set; } = new DicTemplateJsonDao();
-
-        public DicTemplateJsonDao() : base("t_scgd_sys_dictionary_mod_master")
-        {
-
-        }
     }
 
 }

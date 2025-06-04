@@ -4,6 +4,7 @@ using System;
 
 namespace ColorVision.Engine.Templates.Validate
 {
+    [Table("t_scgd_rule_validate_template_master")]
     public class ValidateTemplateMasterModel : PKModel
     {
         [Column("dic_pid")]
@@ -25,7 +26,7 @@ namespace ColorVision.Engine.Templates.Validate
     {
         public static ValidateTemplateMasterDao Instance { get; set; } = new ValidateTemplateMasterDao();
 
-        public ValidateTemplateMasterDao() : base("t_scgd_rule_validate_template_master", "id")
+        public ValidateTemplateMasterDao() : base()
         {
 
         }

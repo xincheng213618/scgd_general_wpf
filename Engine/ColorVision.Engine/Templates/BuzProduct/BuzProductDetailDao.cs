@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.Templates.BuzProduct
 {
+    [Table("t_scgd_buz_product_detail")]
     public class BuzProductDetailModel : VPKModel
     {
         [Column("code")]
@@ -36,10 +37,5 @@ namespace ColorVision.Engine.Templates.BuzProduct
     public class BuzProductDetailDao : BaseTableDao<BuzProductDetailModel>
     {
         public static BuzProductDetailDao Instance { get; set; } = new BuzProductDetailDao();
-
-        public BuzProductDetailDao() : base("t_scgd_buz_product_detail", "id")
-        {
-
-        }
     }
 }

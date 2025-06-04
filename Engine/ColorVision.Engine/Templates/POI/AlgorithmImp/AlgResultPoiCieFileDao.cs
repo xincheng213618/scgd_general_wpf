@@ -10,7 +10,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
 
-    [Table("t_scgd_algorithm_result_detail_poi_cie_file", PrimaryKey = "id")]
+    [Table("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class AlgResultPoiCieFileModel : PKModel, IContextMenu, IViewResult
     {
         public ContextMenu ContextMenu { get; set; }
@@ -74,8 +74,5 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     {
         public static AlgResultPoiCieFileDao Instance { get; set; } = new AlgResultPoiCieFileDao();
 
-        public AlgResultPoiCieFileDao() : base("t_scgd_algorithm_result_detail_poi_cie_file")
-        {
-        }
     }
 }

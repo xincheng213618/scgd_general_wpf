@@ -28,7 +28,8 @@ namespace ColorVision.Engine.MySql.ORM
     public class TableAttribute : Attribute
     {
         public string TableName { get; set; }
-        public string PrimaryKey { get; set; }
+        //默认是id
+        public string PrimaryKey { get; set; } = "id";
 
         public TableAttribute(string tableName)
         {
@@ -135,7 +136,7 @@ namespace ColorVision.Engine.MySql.ORM
             return table;
         }
 
-        private static PropertyInfo[] GetProperties(Type type)
+        public static PropertyInfo[] GetProperties(Type type)
         {
             if (!PropertyCache.TryGetValue(type, out var properties))
             {
@@ -145,16 +146,21 @@ namespace ColorVision.Engine.MySql.ORM
             return properties;
         }
 
-        private static string GetColumnName(PropertyInfo prop)
+        public static string GetColumnName(PropertyInfo prop)
         {
             var attribute = prop.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
             return attribute?.Name ?? prop.Name;
         }
 
-        private static string GetTableName(Type type)
+        public static string GetTableName(Type type)
         {
             var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
             return attribute?.TableName ?? type.Name;
+        }
+        public static string GetPrimaryKey(Type type)
+        {
+            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
+            return attribute?.PrimaryKey ?? "id";
         }
 
         private static bool ShouldIgnoreProperty(PropertyInfo prop)

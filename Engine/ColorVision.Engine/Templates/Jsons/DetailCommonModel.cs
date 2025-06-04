@@ -41,9 +41,6 @@ namespace ColorVision.Engine.Templates.Jsons
     public class DeatilCommonDao : BaseTableDao<DetailCommonModel>
     {
         public static DeatilCommonDao Instance { get; set; } = new DeatilCommonDao();
-        public DeatilCommonDao() : base("t_scgd_algorithm_result_detail_common")
-        {
-        }
     }
 
 

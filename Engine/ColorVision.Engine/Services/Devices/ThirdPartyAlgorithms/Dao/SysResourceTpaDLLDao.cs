@@ -47,10 +47,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
         public static SysResourceTpaDLLDao Instance { get; set; } = new SysResourceTpaDLLDao();
 
-        public SysResourceTpaDLLDao() : base("t_scgd_sys_resource_tpa_dll")
-        {
-
-        }
     }
 
 }

@@ -15,10 +15,6 @@ namespace ColorVision.Engine.Rbac
     public class UserTenantDao : BaseTableDao<Tenant>
     {
         public static UserTenantDao Instance { get; set; } = new UserTenantDao();
-
-        public UserTenantDao() : base("t_scgd_sys_user2tenant")
-        {
-        }
     }
 
     [Table("t_scgd_sys_tenant")]
@@ -50,8 +46,5 @@ namespace ColorVision.Engine.Rbac
     {
         public static TenantDao Instance { get; set; } = new TenantDao();
 
-        public TenantDao() : base("t_scgd_sys_tenant")
-        {
-        }
     }
 }

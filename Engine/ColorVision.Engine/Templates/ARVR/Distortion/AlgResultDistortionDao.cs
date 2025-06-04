@@ -3,6 +3,7 @@ using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.Distortion
 {
+    [Table("t_scgd_algorithm_result_detail_distortion")]
     public class AlgResultDistortionModel : PKModel
     {
         [Column("pid")]
@@ -31,6 +32,5 @@ namespace ColorVision.Engine.Templates.Distortion
     public class AlgResultDistortionDao : BaseTableDao<AlgResultDistortionModel>
     {
         public static AlgResultDistortionDao Instance { get; set; } = new AlgResultDistortionDao();
-        public AlgResultDistortionDao() : base("t_scgd_algorithm_result_detail_distortion", "id") { }
     }
 }

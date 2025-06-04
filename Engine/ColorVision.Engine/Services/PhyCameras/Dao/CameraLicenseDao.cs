@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Dao
 {
+    [Table("t_scgd_camera_license")]
     public class ColorVisionLicense
     {
         [JsonProperty("authority_signature")]
@@ -76,11 +77,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
     public class CameraLicenseDao : BaseTableDao<LicenseModel>
     {
         public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
-
-        public CameraLicenseDao() : base("t_scgd_camera_license", "id")
-        {
-
-        }
 
         public LicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
     
