@@ -39,6 +39,7 @@ namespace ColorVision.UI.Menus
 
         public void RefreshMenuItemsByGuid(string ownerGuid)
         {
+            if (Menu == null) return;
             var parentMenuItem = FindMenuItemByGuid(ownerGuid, Menu.Items);
             if (parentMenuItem == null) return;
             parentMenuItem.Items.Clear();
@@ -89,6 +90,7 @@ namespace ColorVision.UI.Menus
                 InputGestureText = mi.InputGestureText,
                 Command = mi.Command,
                 Tag = mi,
+                IsChecked = mi.IsChecked ?? false,
                 Visibility = mi.Visibility,
             };
 

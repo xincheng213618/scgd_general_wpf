@@ -130,8 +130,11 @@ namespace ColorVision
         public override void Execute()
         {
             MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
         }
+        public override bool? IsChecked => MainWindowConfig.Instance.IsFull ? true : null;
     }
+
 
 
     public class ExportMenuViewStatusBar : MenuItemBase,IHotKey
@@ -144,7 +147,10 @@ namespace ColorVision
         public override void Execute()
         {
             MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
+
         }
+        public override bool? IsChecked => MainWindowConfig.Instance.IsOpenStatusBar ? true : null;
 
     }
     public class ExportMenuViewSidebar : MenuItemBase, IHotKey
@@ -156,7 +162,10 @@ namespace ColorVision
         public override void Execute()
         {
             MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(OwnerGuid);
         }
+        public override bool? IsChecked => MainWindowConfig.Instance.IsOpenSidebar ? true : null;
+
     }
 
 

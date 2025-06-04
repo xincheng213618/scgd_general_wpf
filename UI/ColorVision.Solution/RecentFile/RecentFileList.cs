@@ -3,14 +3,8 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision.Solution.RecentFile
 {
-    public class RecentFileList: INotifyPropertyChanged
+    public class RecentFileList
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        
-        
-        private static List<string> RegistryKeyList = RegistryPersister.RegistryKeyList;
-
         public IRecentFile Persister { get; set; }
 
         public int MaxNumberOfFiles { get; set; }
@@ -35,20 +29,27 @@ namespace ColorVision.Solution.RecentFile
             MenuItemFormatOneToNine = "_{0}:  {2}";
             MenuItemFormatTenPlus = "{0}:  {2}";
         }
+        public event EventHandler RecentFilesChanged;
 
         public List<string> RecentFiles { get => Persister.RecentFiles(MaxNumberOfFiles); } 
         public void RemoveFile(string filepath)
         {
             Persister.RemoveFile(filepath, MaxNumberOfFiles);
+            RecentFilesChanged?.Invoke(this, EventArgs.Empty);
         }
         public void InsertFile(string filepath)
         {
             Persister.InsertFile(filepath, MaxNumberOfFiles);
+            RecentFilesChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public void Clear() => Persister.Clear(); 
+        public void Clear()
+        {
+            Persister.Clear();
+            RecentFilesChanged?.Invoke(this, EventArgs.Empty);
+        }
 
-        
+
 
 
     }
