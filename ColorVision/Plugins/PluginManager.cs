@@ -26,8 +26,8 @@ namespace ColorVision.Plugins
             {
                  new ConfigSettingMetadata
                 {
-                    Name ="主动检测插件更新",
-                    Description =  "主动检测插件更新",
+                    Name ="检测插件更新",
+                    Description =  "检测插件更新",
                     Order = 999,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(PluginWindowConfig.IsAutoUpdate),

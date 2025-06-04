@@ -13,7 +13,7 @@ namespace ColorVision.Engine.MySql
     {
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportMySqlTool);
-        public override string Header => "MySqlTool";
+        public override string Header => "Mysql工具";
         public override int Order => 2;
 
         public override void Execute()

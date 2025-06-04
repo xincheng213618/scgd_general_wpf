@@ -70,8 +70,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         [CommandDisplay("ModifyConfiguration", Order = -99)]
         public RelayCommand EditCommand { get; set; }
         public RelayCommand CopyConfigCommand { get; set; }
-        [CommandDisplay("手册")]
-        public RelayCommand ProductBrochureCommand { get; set; }
         [CommandDisplay("打开配置文件")]
         public RelayCommand OpenSettingDirectoryCommand { get; set; }
 
@@ -133,13 +131,11 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
 
-            ProductBrochureCommand = new RelayCommand( a=> OpenProductBrochure(),a=> HaveProductBrochure());
-
             UploadLicenseNetCommand = new RelayCommand(a => Task.Run(() => UploadLicenseNet()),a=> AccessControl.Check(PermissionMode.SuperAdministrator));
             OpenSettingDirectoryCommand = new RelayCommand(a => OpenSettingDirectory(),a=> Directory.Exists(Path.Combine(Config.FileServerCfg.FileBasePath, Code ?? string.Empty)));
             UpdateMotorConfigCommand = new RelayCommand(a => UpdateMotorConfig());
             OpenLicenseCacheCommand = new RelayCommand(a => OpenLicenseCache());
-            new TemplateCalibrationParam(this);
+            //这里是为了加载对应的
         }
         public static void OpenLicenseCache()
         {
@@ -221,76 +217,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }
 
-        }
-
-        private string productBrochure;
-
-        private bool HaveProductBrochure()
-        {
-            if (CameraLicenseModel == null) return false;
-            if (CameraLicenseModel.Model == null) return false;
-            var model = CameraLicenseModel.Model;
-            if (model.Contains("BV", StringComparison.OrdinalIgnoreCase))
-            {
-                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-BV-2000.pdf";
-                    return true;
-                }
-                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-BV-2600.pdf";
-                    return true;
-                }
-                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-BV-6100.pdf";
-                    return true;
-                }
-            }
-            if (model.Contains("LV", StringComparison.OrdinalIgnoreCase))
-            {
-                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-LV-2000.pdf";
-                    return true;
-                }
-                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-LV-2600.pdf";
-                    return true;
-                }
-                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-LV-6100.pdf";
-                    return true;
-                }
-            }
-            if (model.Contains("CV", StringComparison.OrdinalIgnoreCase))
-            {
-                if (model.Contains("2000", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-CV-2000.pdf";
-                    return true;
-                }
-                if (model.Contains("2600", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-CV-2600.pdf";
-                    return true;
-                }
-                if (model.Contains("6100", StringComparison.OrdinalIgnoreCase))
-                {
-                    productBrochure = @"Assets\Catalog\Catalog-CV-6100.pdf";
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
-        private void OpenProductBrochure()
-        {
-            PlatformHelper.Open(productBrochure);
         }
 
         private void CalibrationTemplateOpen(object sender)
