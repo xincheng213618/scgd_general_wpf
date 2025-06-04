@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -158,7 +157,7 @@ namespace ColorVision.Engine.MySql
             var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_dictionary", "t_scgd_sys_version" };
 
             tableNames = tableNames
-                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix)))
+                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix,StringComparison.CurrentCulture)))
                 .ToList();
 
             return tableNames;
