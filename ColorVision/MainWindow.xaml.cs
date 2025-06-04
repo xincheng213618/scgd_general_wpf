@@ -383,9 +383,9 @@ namespace ColorVision
                     filteredResults = Searches
                         .OfType<ISearch>()
                         .Where(template => keywords.All(keyword =>
-                            template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
+                            (!string.IsNullOrEmpty(template.Header) && template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (template.GuidId != null && template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        ))
                         .ToList();
 
 

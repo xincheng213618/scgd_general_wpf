@@ -1,4 +1,4 @@
-﻿#pragma warning disable SYSLIB0014
+﻿#pragma warning disable SYSLIB0014,CA1401,CA1806,CA1838,CA2101
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
 using ColorVision.ImageEditor;

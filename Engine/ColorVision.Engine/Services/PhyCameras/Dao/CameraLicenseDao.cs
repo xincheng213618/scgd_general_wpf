@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.PhyCameras.Dao
 {
-    [Table("t_scgd_camera_license")]
     public class ColorVisionLicense
     {
         [JsonProperty("authority_signature")]
@@ -36,7 +35,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string LicenseeSignature { get; set; }
     }
 
-
+    [Table("t_scgd_camera_license")]
     public class LicenseModel : ViewModelBase,IPKModel, ISortID
     {
         [Column("id")]

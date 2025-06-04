@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA1720,CS8601
-
+﻿#pragma warning disable CA1720,CS8601,CS8602,CS8603
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;

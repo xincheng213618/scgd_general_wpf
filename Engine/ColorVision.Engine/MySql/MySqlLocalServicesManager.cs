@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8602,CA1822,CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using log4net;
@@ -118,7 +119,7 @@ namespace ColorVision.Engine.MySql
                 Directory.CreateDirectory(BackupPath);
             foreach (var item in Directory.GetFiles(BackupPath))
             {
-                if (item.EndsWith(".sql"))
+                if (item.EndsWith(".sql", StringComparison.CurrentCulture))
                 {
                     Backups.Add(new MysqlBack(item));
                 }

@@ -68,7 +68,7 @@ namespace ColorVision.Engine.Sys.Dao
     {
         public static SysConfigRcDao Instance { get; set; } = new SysConfigRcDao();
 
-        public SysConfigRcModel GetByCode(string code)
+        public SysConfigRcModel? GetByCode(string code)
         {
             return GetByParam(new Dictionary<string, object>() { { "code", code } });
         }

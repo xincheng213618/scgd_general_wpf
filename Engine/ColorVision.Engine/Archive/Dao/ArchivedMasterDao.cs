@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.MySql;
+﻿#pragma warning disable CS8603
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using log4net;
 using MySql.Data.MySqlClient;

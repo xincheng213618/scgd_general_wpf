@@ -237,6 +237,7 @@ namespace ColorVision.UI.PropertyEditor
             textEditor.Document = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.SuppressFinalize(this);
         }
     }
 }
