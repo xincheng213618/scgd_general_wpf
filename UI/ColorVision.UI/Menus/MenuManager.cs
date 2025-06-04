@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1720,CS8620,CA1822,CS8602
 using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
 using log4net;
 using System.Windows;
 using System.Windows.Controls;
@@ -42,16 +43,24 @@ namespace ColorVision.UI.Menus
             if (parentMenuItem == null) return;
             parentMenuItem.Items.Clear();
 
+            MenuItems = GetIMenuItemsFiltered();
             var refreshedItems = MenuItems
                 .Where(mi => mi.OwnerGuid == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
-                .OrderBy(mi => mi.Order);
+                .OrderBy(mi => mi.Order).ToList();
 
-            foreach (var mi in refreshedItems)
+            for (int i = 0; i < refreshedItems.Count; i++)
             {
+                var mi = refreshedItems[i];
                 var menuItem = CreateMenuItem(mi);
+                if (i > 0
+                    && mi.Order - refreshedItems[i - 1].Order > 4
+                    && menuItem.Visibility == Visibility.Visible)
+                {
+                    parentMenuItem.Items.Add(new Separator());
+                }
                 parentMenuItem.Items.Add(menuItem);
-                if (!string.IsNullOrEmpty(mi.GuidId))
-                    RefreshMenuItemsByGuid(mi.GuidId);
+                if (mi.GuidId != null)
+                    AddChildMenuItems(menuItem, mi.GuidId);
             }
         }
 
@@ -82,13 +91,16 @@ namespace ColorVision.UI.Menus
                 Tag = mi,
                 Visibility = mi.Visibility,
             };
-            if (mi.Command is RelayCommand relayCommand)
+
+            // 检查类型的RequiresPermissionAttribute
+
+            if (mi.GetType().GetCustomAttributes(typeof(RequiresPermissionAttribute), true).FirstOrDefault() is RequiresPermissionAttribute attr)
+            {
+                menuItem.Visibility = mi.Visibility == Visibility.Visible && Authorization.Instance.PermissionMode == attr.RequiredPermission ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else if (mi.Command is RelayCommand relayCommand)
             {
                 menuItem.Visibility = mi.Visibility == Visibility.Visible && relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed;
-                Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
-                {
-                    menuItem.Visibility = mi.Visibility == Visibility.Visible && relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed;
-                };
             }
             return menuItem;
         }
@@ -100,6 +112,13 @@ namespace ColorVision.UI.Menus
                 _menuBack = Menu.Items.OfType<MenuItem>().ToList();
                 foreach (var item in _menuBack)
                     Menu.Items.Remove(item);
+
+                // 只需注册一次
+                Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
+                {
+                    // 这里可以加防抖逻辑，避免重复刷新
+                    LoadMenuItemFromAssembly();
+                };
             }
 
             _initialized = true;
@@ -127,10 +146,17 @@ namespace ColorVision.UI.Menus
 
         private void AddChildMenuItems(MenuItem parent, string ownerGuid)
         {
-            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => mi.Order);
-            foreach (var mi in children)
+            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => mi.Order).ToList();
+            for (int i = 0; i < children.Count; i++)
             {
+                var mi = children[i];
                 var menuItem = CreateMenuItem(mi);
+                if (i > 0
+                    && mi.Order - children[i - 1].Order > 4
+                    && menuItem.Visibility == Visibility.Visible)
+                {
+                    parent.Items.Add(new Separator());
+                }
                 parent.Items.Add(menuItem);
                 if (mi.GuidId != null)
                     AddChildMenuItems(menuItem, mi.GuidId);
@@ -146,6 +172,7 @@ namespace ColorVision.UI.Menus
                     .Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract)
                     .Select(t => Activator.CreateInstance(t) as IMenuItem)
                     .Where(i => i != null && i.Command != null));
+
                 allMenuItems.AddRange(assembly.GetTypes()
                     .Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract)
                     .SelectMany(t => ((IMenuItemProvider)Activator.CreateInstance(t)).GetMenuItems())

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.Engine.Templates.Menus;
 using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Templates.SysDictionary
@@ -49,7 +50,7 @@ namespace ColorVision.Engine.Templates.SysDictionary
             }
 
             ITemplate.Create(CreateCode.Text,CreateName.Text);
-            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuTemplate));
             this.Close();
         }
 
