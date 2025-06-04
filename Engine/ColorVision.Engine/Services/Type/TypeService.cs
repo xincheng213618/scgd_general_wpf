@@ -68,17 +68,26 @@ namespace ColorVision.Engine.Services.Types
         {
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
-                CreateType createType = new(this);
-                createType.Owner = Application.Current.GetActiveWindow();
-                createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                createType.ShowDialog();
+                if (MessageBox.Show("如果非必要情况，请勿创建新的服务", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    CreateType createType = new CreateType(this);
+                    createType.Owner = Application.Current.GetActiveWindow();
+                    createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    createType.ShowDialog();
+                }
             });
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create ,Command = OpenCreateWindowCommand });
         }
 
-
+        public override void Delete()
+        {
+            if (MessageBox.Show("如果非必要情况，请勿删除服务","ColorVision",MessageBoxButton.YesNo)==MessageBoxResult.Yes)
+            {
+                base.Delete();
+            }
+        }
 
         public List<string> ServicesCodes
         { 
