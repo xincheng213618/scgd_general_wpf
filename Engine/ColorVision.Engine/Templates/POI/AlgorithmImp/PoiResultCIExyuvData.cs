@@ -174,13 +174,14 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
                 Wave = pOIDataCIExyuv.Wave;
 
                 //这里是因为输出不会小于0所以做一个置位
-                X = pOIDataCIExyuv.X >= 0 ? pOIDataCIExyuv.X : 0.001;
-                Y = pOIDataCIExyuv.Y >= 0 ? pOIDataCIExyuv.Y : 0.001;
-                Z = pOIDataCIExyuv.Z >= 0 ? pOIDataCIExyuv.Z : 0.001;
-                u = pOIDataCIExyuv.u >= 0 ? pOIDataCIExyuv.u : 0.001;
-                v = pOIDataCIExyuv.v >= 0 ? pOIDataCIExyuv.v : 0.001;
-                x = pOIDataCIExyuv.x >= 0 ? pOIDataCIExyuv.x : 0.001;
-                y = pOIDataCIExyuv.y >= 0 ? pOIDataCIExyuv.y : 0.001;
+                //老板说，先改成>0试试
+                X = pOIDataCIExyuv.X > 0 ? pOIDataCIExyuv.X : 0.0001;
+                Y = pOIDataCIExyuv.Y > 0 ? pOIDataCIExyuv.Y : 0.0001;
+                Z = pOIDataCIExyuv.Z > 0 ? pOIDataCIExyuv.Z : 0.0001;
+                u = pOIDataCIExyuv.u > 0 ? pOIDataCIExyuv.u : 0.0001;
+                v = pOIDataCIExyuv.v > 0 ? pOIDataCIExyuv.v : 0.0001;
+                x = pOIDataCIExyuv.x > 0 ? pOIDataCIExyuv.x : 0.0001;
+                y = pOIDataCIExyuv.y > 0 ? pOIDataCIExyuv.y : 0.0001;
             }
         }
 
