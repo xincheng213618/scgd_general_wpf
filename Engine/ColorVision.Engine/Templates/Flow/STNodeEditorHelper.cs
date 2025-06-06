@@ -206,6 +206,7 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
             {
+                AddStackPanel(name => realPOINode.DeviceCode = name, realPOINode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddStackPanel(name => realPOINode.FilterTemplateName = name, realPOINode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => realPOINode.ReviseTemplateName = name, realPOINode.OutputTemplateName, "POI修正", new TemplatePoiReviseParam());
@@ -259,6 +260,8 @@ namespace ColorVision.Engine.Templates.Flow
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node algorithmGhostNode)
             {
                 AddImagePath(name => algorithmGhostNode.ImgFileName = name, algorithmGhostNode.ImgFileName);
+
+                AddStackPanel(name => algorithmGhostNode.DeviceCode = name, algorithmGhostNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddStackPanel1(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK(), new TemplateGhost());
             }

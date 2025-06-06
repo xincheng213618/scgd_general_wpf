@@ -11,6 +11,50 @@ namespace ProjectARVR.Services
         public static SocketControl Current { get; set; } = new SocketControl();
         public NetworkStream Stream { get; set; }
     }
+    
+    public class FlowInit : ISocketEventHandler
+    {
+        public string EventName => "ProjectARVRInit";
+
+        public SocketResponse Handle(NetworkStream stream, SocketRequest request)
+        {
+            SocketControl.Current.Stream = stream;
+            if (ProjectWindowInstance.WindowInstance != null)
+            {
+                ProjectWindowInstance.WindowInstance.CurrentTestType = ARVRTestType.None;
+                return new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
+            }
+            else
+            {
+                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+            }
+        }
+    }
+
+    public class SwitchPGSocket: ISocketEventHandler
+    {
+        public string EventName => "SwitchPGCompleted";
+
+        public SocketResponse Handle(NetworkStream stream, SocketRequest request)
+        {
+            SocketControl.Current.Stream = stream;
+            if (ProjectWindowInstance.WindowInstance != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ProjectWindowInstance.WindowInstance.SwitchPGCompleted();
+                });
+                return null;
+            }
+            else
+            {
+                return new SocketResponse { Code = -3, Msg = $"ProjectARVR Wont Open", EventName = EventName };
+            }
+        }
+    }
+
+
+
 
     public class FlowSocketMsgHandle : ISocketEventHandler
     {
@@ -26,7 +70,8 @@ namespace ProjectARVR.Services
                     {
                         ProjectWindowInstance.WindowInstance.RunTemplate();
                     });
-                    return new SocketResponse { Code = 0, Msg = $"Run {request.Params}", EventName = EventName };
+
+                    return new SocketResponse { Code = 0, Msg = $"Run {request.Params}", EventName = EventName};
                 }
                 else
                 {

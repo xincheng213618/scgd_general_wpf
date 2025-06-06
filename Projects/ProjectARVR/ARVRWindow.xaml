@@ -215,6 +215,7 @@
                             <Button Content="切换垂直MTF图卡测试" Click="Button_Click_6"/>
                             <Button Content="切换白画面图卡测试" Click="Button_Click_7" />
                             <Button Content="切换网格图测试" Click="Button_Click_8"/>
+                            <Button Content="发送结果测试" Click="Button_Click_9"/>
                         </UniformGrid>
                     </StackPanel>
                 </Grid>

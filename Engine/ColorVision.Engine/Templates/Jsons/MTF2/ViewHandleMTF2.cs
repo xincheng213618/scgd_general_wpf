@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
     public class MTFItem
     {
         public string name { get; set; }
-        public double mtfValue { get; set; }
+        public double? mtfValue { get; set; }
         public int x { get; set; }
         public int y { get; set; }
         public int w { get; set; }

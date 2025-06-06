@@ -183,12 +183,16 @@ namespace ColorVision.SocketProtocol
                         });
 
                         var response = Dispatcher.Dispatch(stream, request);
-                        Application.Current.Dispatcher.Invoke(() =>
+
+                        if(response !=null)
                         {
-                            SocketMessageBases.Add(response);
-                        });
-                        string respString = JsonConvert.SerializeObject(response);
-                        stream.Write(Encoding.UTF8.GetBytes(respString));
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                SocketMessageBases.Add(response);
+                            });
+                            string respString = JsonConvert.SerializeObject(response);
+                            stream.Write(Encoding.UTF8.GetBytes(respString));
+                        }
                     }
                     catch (Exception ex)
                     {

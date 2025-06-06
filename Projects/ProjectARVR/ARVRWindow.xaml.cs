@@ -1,22 +1,35 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable
+using ColorVision.Common.Algorithms;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
+using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
+using ColorVision.Engine.Templates.Jsons;
+using ColorVision.Engine.Templates.Jsons.BinocularFusion;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
+using ColorVision.Engine.Templates.Jsons.MTF2;
+using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
 using ColorVision.Engine.Templates.MTF;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
+using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
+using ColorVision.SocketProtocol;
 using ColorVision.Themes;
 using ColorVision.UI.Extension;
-using ColorVision.SocketProtocol;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
 using Panuon.WPF.UI;
 using ProjectARVR.Config;
 using ProjectARVR.Services;
@@ -37,14 +50,51 @@ namespace ProjectARVR
 {
     public enum ARVRTestType
     {
+        None = 0,
+        /// <summary>
+        /// 白画面
+        /// </summary>
         White =1,
+        /// <summary>
+        /// 黑画面
+        /// </summary>
         Black =2,
-        DistortionGhost = 3,
-        Checkerboard = 4,
-        MTFH =5,
-        MTFV =6,
-        DefectDetection =7,
-        GridDiagram =8,
+        /// <summary>
+        /// 棋盘格
+        /// </summary>
+        Chessboard = 3,
+        /// <summary>
+        /// MTF 横
+        /// </summary>
+        MTFH = 4,
+        /// <summary>
+        /// MTF垂直
+        /// </summary>
+        MTFV = 5,
+        /// <summary>
+        /// 畸变
+        /// </summary>
+        Distortion = 6,
+        /// <summary>
+        /// 光轴偏角
+        /// </summary>
+        OpticCenter = 7,
+        /// <summary>
+        /// 鬼影
+        /// </summary>
+        Ghost = 8,
+        /// <summary>
+        /// 屏幕定位
+        /// </summary>
+        DotMatrix = 9,
+        /// <summary>
+        /// 白画面瑕疵检测
+        /// </summary>
+        WscreeenDefectDetection = 10,
+        /// <summary>
+        /// 黑画面瑕疵检测
+        /// </summary>
+        BKscreeenDefectDetection = 11
     }
 
 
@@ -62,14 +112,72 @@ namespace ProjectARVR
 
         public ARVRTestType TestType { get; set; }
 
-        public List<ViewResultMTF> MTFHs { get; set; } = new List<ViewResultMTF>();
-        public List<ViewResultMTF> MTFvs { get; set; } = new List<ViewResultMTF>();
+
+        public ViewResultWhite ViewResultWhite { get; set; } = new ViewResultWhite();
+        public ViewResultBlack ViewResultBlack { get; set; } = new ViewResultBlack();
+
+        public ViewReslutCheckerboard ViewReslutCheckerboard { get; set; } = new ViewReslutCheckerboard();
+
+        public ViewRelsultMTFH ViewRelsultMTFH { get; set; } = new ViewRelsultMTFH();
+
+        public ViewRelsultMTFV ViewRelsultMTFV { get; set; } = new ViewRelsultMTFV();
+
+        public ViewReslutDistortionGhost ViewReslutDistortionGhost { get; set; } = new ViewReslutDistortionGhost();
+
+        public ViewResultOpticCenter ViewResultOpticCenter { get; set; } = new ViewResultOpticCenter();
+
     }
+
+
+    public class ViewResultOpticCenter
+    {
+        public BinocularFusionModel BinocularFusionModel { get; set; }
+    }
+
+    public class ViewReslutDistortionGhost
+    {
+        public ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View Distortion2View { get; set; }
+
+    }
+
+    public class ViewRelsultMTFH
+    {
+        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
+
+    }
+    public class ViewRelsultMTFV
+    {
+        public MTFDetailViewReslut MTFDetailViewReslut { get; set; }
+
+    }
+
+    public class ViewResultBlack
+    {
+        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+
+        public double Contrast { get; set; }
+    }
+
+    public class ViewResultWhite
+    {
+        public List<AlgResultLightAreaModel> AlgResultLightAreaModels { get; set; }
+
+        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+
+        public double Luminance_uniformity { get; set; }
+        public double Color_uniformity { get; set; }
+    }
+
+    public class ViewReslutCheckerboard
+    {
+        public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+
+        public double Chessboard_Contrast { get; set; }
+    }
+
 
     public class SwitchPG
     {
-        public string EventName { get; set; } = "SwitchPG";
-
         public ARVRTestType ARVRTestType { get; set; }
     }
 
@@ -77,7 +185,6 @@ namespace ProjectARVR
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
         public static ARVRWindowConfig Config => ARVRWindowConfig.Instance;
-
         public ObservableCollection<ProjectARVRReuslt> ViewResluts { get; set; } = new ObservableCollection<ProjectARVRReuslt>();
 
         public ARVRWindow()
@@ -88,7 +195,57 @@ namespace ProjectARVR
             SizeChanged += (s, e) => Config.SetConfig(this);
         }
 
+        public ARVRTestType CurrentTestType = ARVRTestType.None;
 
+        public void SwitchPGCompleted()
+        {
+            log.Info("PG切换结束");
+            var values = Enum.GetValues(typeof(ARVRTestType));
+            int currentIndex = Array.IndexOf(values, CurrentTestType);
+            int nextIndex = (currentIndex + 1) % values.Length;
+            // 跳过 None（假设 None 是第一个）
+            if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
+                nextIndex = (nextIndex + 1) % values.Length;
+            CurrentTestType = (ARVRTestType)values.GetValue(nextIndex);
+
+            if(CurrentTestType == ARVRTestType.White)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("White")).Value;
+                RunTemplate();
+            }
+            if (CurrentTestType == ARVRTestType.Black)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Black")).Value;
+                RunTemplate();
+            }
+            if (CurrentTestType == ARVRTestType.Chessboard)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Chessboard")).Value;
+                RunTemplate();
+            }
+            if (CurrentTestType == ARVRTestType.MTFH)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_H")).Value;
+                RunTemplate();
+            }
+
+            if (CurrentTestType == ARVRTestType.MTFV)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("MTF_V")).Value;
+                RunTemplate();
+            }
+
+            if (CurrentTestType == ARVRTestType.Distortion)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("Distortion")).Value;
+                RunTemplate();
+            }
+            if (CurrentTestType == ARVRTestType.OpticCenter)
+            {
+                FlowTemplate.SelectedValue = TemplateFlow.Params.First(a => a.Key.Contains("OpticCenter")).Value;
+                RunTemplate();
+            }
+        }
 
         public STNodeEditor STNodeEditorMain { get; set; }
         private FlowEngineControl flowEngine;
@@ -97,6 +254,7 @@ namespace ProjectARVR
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = ProjectARVRConfig.Instance;
+
 
             ImageView.SetConfig(ProjectARVRConfig.Instance.ImageViewConfig);
 
@@ -230,13 +388,6 @@ namespace ProjectARVR
 
         private void TestClick(object sender, RoutedEventArgs e)
         {
-            if (SocketControl.Current.Stream != null)
-            {
-                byte[] response1 = Encoding.ASCII.GetBytes($"Run 5555");
-                SocketControl.Current.Stream.Write(response1, 0, response1.Length);
-            }
-
-            
             RunTemplate();
         }
         private void LargeTest_Click(object sender, RoutedEventArgs e)
@@ -295,13 +446,19 @@ namespace ProjectARVR
             flowControl.Start(sn);
             timer.Change(0, 500); // 启动定时器
             string name = string.Empty;
-
-            BatchResultMasterModel batch = new();
-            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-            batch.Code = sn;
-            batch.CreateDate = DateTime.Now;
-            batch.TenantId = 0;
-            BatchResultMasterDao.Instance.Save(batch);
+            try
+            {
+                BatchResultMasterModel batch = new BatchResultMasterModel();
+                batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+                batch.Code = sn;
+                batch.CreateDate = DateTime.Now;
+                batch.TenantId = 0;
+                BatchResultMasterDao.Instance.Save(batch);
+            }
+            catch(Exception ex)
+            {
+                log.Info(ex);
+            }
         }
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
@@ -389,84 +546,329 @@ namespace ProjectARVR
                 MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号，请检查流程配置", "ColorVision");
                 return;
             }
-
             ProjectARVRReuslt result = new ProjectARVRReuslt();
+
+            if (ViewResluts.FirstOrDefault(a => a.SN == SNtextBox.Text) is ProjectARVRReuslt result1)
+            {
+                result1.CopyTo(result);
+            }
+
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
             result.SN = SNtextBox.Text;
 
-            var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
-
-            if (values.Count > 0)
+            if (result.Model.Contains("White"))
             {
-                result.FileName = values[0].FileUrl;
-            }
+                log.Info("正在解析白画面的流程");
+                result.TestType = ARVRTestType.White;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists= AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+                log.Info($"AlgResultMasterlists count {AlgResultMasterlists.Count}");
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    {
+                        result.ViewResultWhite.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
 
-            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id))
-            {
-                if (result.Model.Contains("White"))
-                {
-                    result.TestType = ARVRTestType.White;
-                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
-                    foreach (var poiResultDat1a in AlgResultMTFModels)
-                    {
-                        ViewResultMTF poiResultData = new(poiResultDat1a);
-                        result.MTFHs.Add(poiResultData);
-                    }
-                }
-                if (result.Model.Contains("Black"))
-                {
-                    result.TestType = ARVRTestType.Black;
-                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
-                    foreach (var poiResultDat1a in AlgResultMTFModels)
-                    {
-                        ViewResultMTF poiResultData = new(poiResultDat1a);
-                        result.MTFHs.Add(poiResultData);
-                    }
-                }
-                if (result.Model.Contains("Ghost"))
-                {
-                    result.TestType = ARVRTestType.DistortionGhost;
-                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
-                    foreach (var poiResultDat1a in AlgResultMTFModels)
-                    {
-                        ViewResultMTF poiResultData = new(poiResultDat1a);
-                        result.MTFHs.Add(poiResultData);
-                    }
-                }
-
-                if (result.Model.Contains("MTF_H"))
-                {
-                    result.TestType = ARVRTestType.MTFH;
-                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
-                    foreach (var poiResultDat1a in AlgResultMTFModels)
-                    {
-                        ViewResultMTF poiResultData = new(poiResultDat1a);
-                        result.MTFHs.Add(poiResultData);
-                    }
-                }
-
-                if (result.Model.Contains("MTF_V"))
-                {
-                    result.TestType = ARVRTestType.MTFV;
-                    List<PoiPointResultModel> AlgResultMTFModels = PoiPointResultDao.Instance.GetAllByPid(item.Id);
-                    log.Debug($"AlgResultMTFModels Count={AlgResultMTFModels.Count} for {item.Id}");
-                    foreach (var poiResultDat1a in AlgResultMTFModels)
-                    {
-                        ViewResultMTF poiResultData = new(poiResultDat1a);
-                        result.MTFvs.Add(poiResultData);
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+                            result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
                     }
 
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FindLightArea)
+                    {
+                        result.ViewResultWhite.AlgResultLightAreaModels = AlgResultLightAreaDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                    }
+
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
+                    {
+                        if (AlgResultMaster.TName.Contains("Luminance_uniformity"))
+                        {
+                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            if (detailCommonModels.Count == 1)
+                            {
+                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                result.ViewResultWhite.Luminance_uniformity = viewReslut.PoiAnalysisResult.result.Value;
+                            }
+
+                        }
+                        if (AlgResultMaster.TName.Contains("Color_uniformity"))
+                        {
+                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            if (detailCommonModels.Count == 1)
+                            {
+                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                result.ViewResultWhite.Color_uniformity = viewReslut.PoiAnalysisResult.result.Value;
+                            }
+                        }
+                    }
                 }
             }
+            else if (result.Model.Contains("Black"))
+            {
+                log.Info("正在解析黑画面的流程");
+                result.TestType = ARVRTestType.Black;
 
-            SNtextBox.Text = string.Empty;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    {
+                        result.ViewResultBlack.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+                            result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+
+
+                        if (result.ViewResultWhite !=null&& result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count ==1)
+                        {
+                            result.ViewResultBlack.Contrast = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+                        }
+                    }
+
+
+                }
+
+
+            }
+            else if (result.Model.Contains("Chessboard"))
+            {
+                log.Info("正在解析棋盘格画面的流程");
+                result.TestType = ARVRTestType.Chessboard;
+
+
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.POI_XYZ)
+                    {
+                        result.ViewReslutCheckerboard.PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
+
+                        List<PoiPointResultModel> POIPointResultModels = PoiPointResultDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        int id = 0;
+                        foreach (var item in POIPointResultModels)
+                        {
+                            PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+                            result.ViewReslutCheckerboard.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                        }
+                    }
+
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.PoiAnalysis)
+                    {
+                        if (AlgResultMaster.TName.Contains("Chessboard_Contrast"))
+                        {
+                            List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                            if (detailCommonModels.Count == 1)
+                            {
+                                PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+                                result.ViewReslutCheckerboard.Chessboard_Contrast = viewReslut.PoiAnalysisResult.result.Value;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (result.Model.Contains("MTF_H"))
+            {
+                log.Info("正在解析MTF_H画面的流程");
+                result.TestType = ARVRTestType.MTFH;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.MTF && AlgResultMaster.version =="2.0")
+                    {
+
+                        List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        if (detailCommonModels.Count == 1)
+                        {
+                            MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
+                            result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresult;
+
+                        }
+
+                    }
+                }
+
+            }
+            else if (result.Model.Contains("MTF_V"))
+            {
+                log.Info("正在解析MTF_V画面的流程");
+                result.TestType = ARVRTestType.MTFV;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.MTF && AlgResultMaster.version == "2.0")
+                    {
+
+                        List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        if (detailCommonModels.Count == 1)
+                        {
+                            MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
+                            result.ViewRelsultMTFV.MTFDetailViewReslut = mtfresult;
+                        }
+
+                    }
+                }
+            }
+            else if (result.Model.Contains("Distortion"))
+            {
+                log.Info("正在解析Distortion画面的流程");
+                result.TestType = ARVRTestType.Distortion;
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.Distortion && AlgResultMaster.version == "2.0")
+                    {
+                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        if (AlgResultModels.Count == 1)
+                        {
+                            ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View blackMuraView = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
+                            result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
+                        }
+    
+                    }
+                }
+
+            }
+            else if (result.Model.Contains("OpticCenter"))
+            {
+                log.Info("正在解析OpticCenter画面的流程");
+                result.TestType = ARVRTestType.OpticCenter;
+
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+                var AlgResultMasterlists = AlgResultMasterDao.Instance.GetAllByBatchId(Batch.Id);
+
+
+                foreach (var AlgResultMaster in AlgResultMasterlists)
+                {
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.ARVR_BinocularFusion)
+                    {
+                        List<BinocularFusionModel> AlgResultModels = BinocularFusionDao.Instance.GetAllByPid(AlgResultMaster.Id);
+                        if (AlgResultModels.Count == 1)
+                        {
+                            result.ViewResultOpticCenter.BinocularFusionModel = AlgResultModels[0];
+                        }
+
+                    }
+                }
+
+            }
+            else
+            {
+                var values = MeasureImgResultDao.Instance.GetAllByBatchId(Batch.Id);
+                if (values.Count > 0)
+                {
+                    result.FileName = values[0].FileUrl;
+                }
+            }
             ViewResluts.Add(result);
+
             listView1.SelectedIndex = ViewResluts.Count - 1;
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                log.Info("连接的Socket ");
+                if (SocketControl.Current.Stream != null)
+                {
+                    var values = Enum.GetValues(typeof(ARVRTestType));
+                    int currentIndex = Array.IndexOf(values, CurrentTestType);
+                    int nextIndex = (currentIndex + 1) % values.Length;
+                    // 跳过 None（假设 None 是第一个）
+                    if ((ARVRTestType)values.GetValue(nextIndex) == ARVRTestType.None)
+                        nextIndex = (nextIndex + 1) % values.Length;
+                    ARVRTestType aRVRTestType = (ARVRTestType)values.GetValue(nextIndex);
+
+                    if(aRVRTestType == ARVRTestType.Ghost)
+                    {
+                        log.Info("测试完成");
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "ProjectARVRResult",
+                            Code = -1,
+                            Msg = "",
+                            Data = null
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
+                    else
+                    {
+
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "SwitchPG",
+                            Code = -1,
+                            Msg = "",
+                            Data = new SwitchPG
+                            {
+                                ARVRTestType = aRVRTestType
+                            },
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
+
+                }
+                else
+                {
+                    log.Info("Socket流为空，无法发送数据");
+                }
+            }
+            else
+            {
+                log.Info("找不到连接的Socket");
+            }
         }
 
 
@@ -527,76 +929,198 @@ namespace ProjectARVR
             {
                 ImageView.OpenImage(result.FileName);
                 ImageView.ImageShow.Clear();
-                if (result.TestType == ARVRTestType.MTFH)
+
+                if (result.TestType == ARVRTestType.White)
                 {
-                    foreach (var poiResultData in result.MTFHs)
+                    DVPolygon polygon = new DVPolygon();
+                    List<System.Windows.Point> point1s = new List<System.Windows.Point>();
+                    foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
                     {
-                        switch (poiResultData.Point.PointType)
+                        point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
+                    }
+                    foreach (var item in GrahamScan.ComputeConvexHull(point1s))
+                    {
+                        polygon.Attribute.Points.Add(new Point(item.X, item.Y));
+                    }
+                    polygon.Attribute.Brush = Brushes.Transparent;
+                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
+                    polygon.Attribute.Id = -1;
+                    polygon.IsComple = true;
+                    polygon.Render();
+                    ImageView.AddVisual(polygon);
+
+                    foreach (var poiResultCIExyuvData in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
                         {
                             case POIPointTypes.Circle:
-                                DVCircleText Circle = new();
-                                Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
-                                Circle.Attribute.Radius = poiResultData.Point.Height / 2;
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
                                 Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Circle.Attribute.Id = poiResultData.Id;
-                                Circle.Attribute.Text = poiResultData.Name;
-                                Circle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Circle.Render();
                                 ImageView.AddVisual(Circle);
                                 break;
                             case POIPointTypes.Rect:
-                                DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                                 Rectangle.Attribute.Brush = Brushes.Transparent;
                                 Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Rectangle.Attribute.Id = poiResultData.Id;
-                                Rectangle.Attribute.Text = poiResultData.Name;
-                                Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
                                 Rectangle.Render();
                                 ImageView.AddVisual(Rectangle);
                                 break;
                             default:
                                 break;
+                        }
+                    }
+                }
+
+                if (result.TestType == ARVRTestType.Black)
+                {
+
+                    foreach (var poiResultCIExyuvData in result.ViewResultBlack.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage(CVCIEShowConfig.Instance.Template, poiResultCIExyuvData);
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                if (result.TestType == ARVRTestType.Chessboard)
+                {
+                    foreach (var poiResultCIExyuvData in result.ViewReslutCheckerboard.PoiResultCIExyuvDatas)
+                    {
+                        var item = poiResultCIExyuvData.Point;
+                        switch (item.PointType)
+                        {
+                            case POIPointTypes.Circle:
+                                DVCircleText Circle = new DVCircleText();
+                                Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                                Circle.Attribute.Radius = item.Radius;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Circle.Attribute.Id = item.Id ?? -1;
+                                Circle.Attribute.Text = item.Name;
+                                Circle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                                break;
+                            case POIPointTypes.Rect:
+                                DVRectangleText Rectangle = new DVRectangleText();
+                                Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                                Rectangle.Attribute.Brush = Brushes.Transparent;
+                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                                Rectangle.Attribute.Id = item.Id ?? -1;
+                                Rectangle.Attribute.Text = item.Name;
+                                Rectangle.Attribute.Msg = PoiImageViewComponent.FormatMessage("Y:@Y:F2", poiResultCIExyuvData);
+                                Rectangle.Render();
+                                ImageView.AddVisual(Rectangle);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                if (result.TestType == ARVRTestType.MTFH)
+                {
+
+                    int id = 0;
+                    if (result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.result.Count != 0)
+                    {
+                        foreach (var item in result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.result)
+                        {
+                            id++;
+                            DVRectangleText Rectangle = new();
+                            Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Id = id;
+                            Rectangle.Attribute.Text = item.name;
+                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                            Rectangle.Render();
+                            ImageView.AddVisual(Rectangle);
                         }
                     }
                 }
                 if (result.TestType == ARVRTestType.MTFV)
                 {
-                    foreach (var poiResultData in result.MTFvs)
+                    int id = 0;
+                    if (result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult.result.Count != 0)
                     {
-                        switch (poiResultData.Point.PointType)
+                        foreach (var item in result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult.result)
                         {
-                            case POIPointTypes.Circle:
-                                DVCircleText Circle = new();
-                                Circle.Attribute.Center = new Point(poiResultData.Point.PixelX, poiResultData.Point.PixelY);
-                                Circle.Attribute.Radius = poiResultData.Point.Height / 2;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Circle.Attribute.Id = poiResultData.Id;
-                                Circle.Attribute.Text = poiResultData.Name;
-                                Circle.Attribute.Msg = poiResultData.Articulation.ToString();
-                                Circle.Render();
-                                ImageView.AddVisual(Circle);
-                                break;
-                            case POIPointTypes.Rect:
-                                DVRectangleText Rectangle = new();
-                                Rectangle.Attribute.Rect = new Rect(poiResultData.Point.PixelX - poiResultData.Point.Width / 2, poiResultData.Point.PixelY - poiResultData.Point.Height / 2, poiResultData.Point.Width, poiResultData.Point.Height);
-                                Rectangle.Attribute.Brush = Brushes.Transparent;
-                                Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
-                                Rectangle.Attribute.Id = poiResultData.Id;
-                                Rectangle.Attribute.Text = poiResultData.Name;
-                                Rectangle.Attribute.Msg = poiResultData.Articulation.ToString();
-                                Rectangle.Render();
-                                ImageView.AddVisual(Rectangle);
-                                break;
-                            default:
-                                break;
+                            id++;
+                            DVRectangleText Rectangle = new();
+                            Rectangle.Attribute.Rect = new Rect(item.x, item.y, item.w, item.h);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1);
+                            Rectangle.Attribute.Id = id;
+                            Rectangle.Attribute.Text = item.name;
+                            Rectangle.Attribute.Msg = item.mtfValue.ToString();
+                            Rectangle.Render();
+                            ImageView.AddVisual(Rectangle);
                         }
                     }
-
-
                 }
+
+                if (result.TestType == ARVRTestType.Distortion)
+                {
+                    if (result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion != null)
+                    {
+                        if (result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints != null)
+                        {
+                            foreach (var points in result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints)
+                            {
+                                DVCircleText Circle = new();
+                                Circle.Attribute.Center = new System.Windows.Point(points.X, points.Y);
+                                Circle.Attribute.Radius = 20 / ImageView.Zoombox1.ContentMatrix.M11;
+                                Circle.Attribute.Brush = Brushes.Transparent;
+                                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                                Circle.Attribute.Text = $"id:{points.Id}{Environment.NewLine} X:{points.X.ToString("F0")}{Environment.NewLine}Y:{points.Y.ToString("F0")}";
+                                Circle.Attribute.Id = points.Id;
+                                Circle.Render();
+                                ImageView.AddVisual(Circle);
+                            }
+                        }
+                    }
+                }
+
+
 
 
             });
@@ -636,18 +1160,90 @@ namespace ProjectARVR
             {
                 case ARVRTestType.White:
                     outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+
+                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
+                        {
+                            outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
+                        }
+                    }
+
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.Luminance_uniformity}" + Environment.NewLine;
+                    outtext += $"Color_uniformity:{result.ViewResultWhite.Color_uniformity}" + Environment.NewLine;
                     break;
                 case ARVRTestType.Black:
+                    outtext += $"白画面 测试项：自动AA区域定位算法+关注点算法+FOV算法+亮度均匀性+颜色均匀性算法+" + Environment.NewLine;
+
+                    if (result.ViewResultWhite.AlgResultLightAreaModels != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.AlgResultLightAreaModels)
+                        {
+                            outtext += $"AlgResultLightAreaModel:{item.PosX},{item.PosY}" + Environment.NewLine;
+                        }
+                    }
+
+                    if (result.ViewResultWhite.PoiResultCIExyuvDatas != null)
+                    {
+                        foreach (var item in result.ViewResultWhite.PoiResultCIExyuvDatas)
+                        {
+                            outtext += $"X:{item.X.ToString("F2")} Y:{item.Y.ToString("F2")} Z:{item.Z.ToString("F2")} x:{item.x.ToString("F2")} y:{item.y.ToString("F2")} u:{item.u.ToString("F2")} v:{item.v.ToString("F2")} cct:{item.CCT.ToString("F2")} wave:{item.Wave.ToString("F2")}{Environment.NewLine}";
+                        }
+                    }
+                    outtext += $"Luminance_uniformity:{result.ViewResultWhite.Luminance_uniformity}" + Environment.NewLine;
+                    outtext += $"Color_uniformity:{result.ViewResultWhite.Color_uniformity}" + Environment.NewLine;
+
                     outtext += $"黑画面 测试项：自动AA区域定位算法+关注点算法+序列对比度算法(中心亮度比值)" + Environment.NewLine;
+
+                    outtext += $"Contrast:{result.ViewResultBlack.Contrast}" + Environment.NewLine;
                     break;
                 case ARVRTestType.MTFH:
                     outtext += $"水平MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
+                    if (result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult != null)
+                    {
+                        foreach (var item in result.ViewRelsultMTFH.MTFDetailViewReslut.MTFResult.result)
+                        {
+                            outtext += $"{item.name},{item.mtfValue}" + Environment.NewLine;
+                        }
+                    }
+
                     break;
                 case ARVRTestType.MTFV:
                     outtext += $"垂直MTF 测试项：自动AA区域定位算法+关注点+MTF算法" + Environment.NewLine;
+                    if (result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult != null)
+                    {
+                        foreach (var item in result.ViewRelsultMTFV.MTFDetailViewReslut.MTFResult.result)
+                        {
+                            outtext += $"{item.name},{item.mtfValue}" + Environment.NewLine;
+                        }
+                    }
                     break;
-                case ARVRTestType.DistortionGhost:
-                    outtext += $"黑画面 测试项：自动AA区域定位算法+畸变算法+鬼影算法" + Environment.NewLine;
+                case ARVRTestType.Distortion:
+                    outtext += $"畸变鬼影 测试项：自动AA区域定位算法+畸变算法+鬼影算法" + Environment.NewLine;
+
+                    foreach (var item in result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.FinalPoints)
+                    {
+                        outtext += $"id:{item.Id} X:{item.X} Y:{item.Y}" + Environment.NewLine;
+                    }
+                    outtext += $"HorizontalRatio:{result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.HorizontalRatio}" + Environment.NewLine;
+                    outtext += $"VerticalRatio:{result.ViewReslutDistortionGhost.Distortion2View.DistortionReslut.TVDistortion.VerticalRatio}" + Environment.NewLine;
+
+                    break;
+                case ARVRTestType.Chessboard:
+                    outtext += $"棋盘格 测试项：" + Environment.NewLine;
+                    outtext += $"Chessboard_Contrast:{result.ViewReslutCheckerboard.Chessboard_Contrast}" + Environment.NewLine;
+                    break;
+                case ARVRTestType.OpticCenter:
+                    outtext += $"OpticCenter 测试项：" + Environment.NewLine;
+                    outtext += $"中心点x:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterX} 中心点y:{result.ViewResultOpticCenter.BinocularFusionModel.CrossMarkCenterY}" + Environment.NewLine;
+                    outtext += $"XDegree:{result.ViewResultOpticCenter.BinocularFusionModel.XDegree} YDegree:{result.ViewResultOpticCenter.BinocularFusionModel.YDegree} ZDegree:{result.ViewResultOpticCenter.BinocularFusionModel.ZDegree}" + Environment.NewLine;
                     break;
                 default:
                     break;
@@ -757,8 +1353,18 @@ namespace ProjectARVR
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DistortionGhost } };
-                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Distortion } };
+               
+                //string value = request.ToJsonN();
+                //var response = JsonConvert.DeserializeObject<SocketResponse>(value);
+
+                //if (response.EventName == "SwitchPG")
+                //{
+                //    var switchPg = (response.Data as JObject)?.ToObject<SwitchPG>();
+
+                //}
+
+              byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
                 tcpClient.GetStream().Write(response1, 0, response1.Length);
             }
             else
@@ -772,7 +1378,7 @@ namespace ProjectARVR
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Chessboard } };
                 byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
                 tcpClient.GetStream().Write(response1, 0, response1.Length);
             }
@@ -817,7 +1423,7 @@ namespace ProjectARVR
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.DefectDetection } };
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.BKscreeenDefectDetection } };
                 byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
                 tcpClient.GetStream().Write(response1, 0, response1.Length);
             }
@@ -832,7 +1438,22 @@ namespace ProjectARVR
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
                 TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
-                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Checkerboard } };
+                SocketResponse request = new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.Chessboard } };
+                byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
+                tcpClient.GetStream().Write(response1, 0, response1.Length);
+            }
+            else
+            {
+                MessageBox.Show("找不到链接的客户端");
+            }
+        }
+
+        private void Button_Click_9(object sender, RoutedEventArgs e)
+        {
+            if (SocketManager.GetInstance().TcpClients.Count > 0)
+            {
+                TcpClient tcpClient = SocketManager.GetInstance().TcpClients[0];
+                SocketResponse request = new SocketResponse() { EventName = "ProjectARVRResult", Data = new ProjectARVRReuslt() };
                 byte[] response1 = Encoding.UTF8.GetBytes(request.ToJsonN());
                 tcpClient.GetStream().Write(response1, 0, response1.Length);
             }
