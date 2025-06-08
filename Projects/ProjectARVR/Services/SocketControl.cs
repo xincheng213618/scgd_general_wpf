@@ -21,7 +21,8 @@ namespace ProjectARVR.Services
             SocketControl.Current.Stream = stream;
             if (ProjectWindowInstance.WindowInstance != null)
             {
-                ProjectWindowInstance.WindowInstance.CurrentTestType = ARVRTestType.None;
+                ProjectWindowInstance.WindowInstance.InitTest();
+                //现在先切换PG
                 return new SocketResponse() { EventName = "SwitchPG", Data = new SwitchPG() { ARVRTestType = ARVRTestType.White } };
             }
             else

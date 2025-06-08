@@ -13,6 +13,7 @@ using ColorVision.Engine.Templates.FindLightArea;
 using ColorVision.Engine.Templates.Flow;
 using ColorVision.Engine.Templates.Jsons;
 using ColorVision.Engine.Templates.Jsons.BinocularFusion;
+using ColorVision.Engine.Templates.Jsons.FOV2;
 using ColorVision.Engine.Templates.Jsons.LargeFlow;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
@@ -164,6 +165,8 @@ namespace ProjectARVR
 
         public List<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
 
+        public DFovView DFovView { get; set; }
+
         public double Luminance_uniformity { get; set; }
         public double Color_uniformity { get; set; }
     }
@@ -181,6 +184,10 @@ namespace ProjectARVR
         public ARVRTestType ARVRTestType { get; set; }
     }
 
+
+
+
+
     public partial class ARVRWindow : Window,IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
@@ -196,6 +203,13 @@ namespace ProjectARVR
         }
 
         public ARVRTestType CurrentTestType = ARVRTestType.None;
+
+        ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+        public void InitTest()
+        {
+            ObjectiveTestResult = new ObjectiveTestResult();
+            CurrentTestType = ARVRTestType.None;
+        }
 
         public void SwitchPGCompleted()
         {
@@ -579,6 +593,17 @@ namespace ProjectARVR
                         foreach (var item in POIPointResultModels)
                         {
                             PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+
+                            if (item.PoiName == "POI_5")
+                            {
+
+                                ObjectiveTestResult.CenterCorrelatedColorTemperature = new ObjectiveTestItem()
+                                {
+                                    Name = "CenterCorrelatedColorTemperature",
+                                    TestValue = poiResultCIExyuvData.CCT.ToString()
+                                };
+                            }
+
                             result.ViewResultWhite.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
                     }
@@ -597,6 +622,14 @@ namespace ProjectARVR
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
                                 result.ViewResultWhite.Luminance_uniformity = viewReslut.PoiAnalysisResult.result.Value;
+
+
+                                ObjectiveTestResult.LuminanceUniformity =  new ObjectiveTestItem()
+                                {
+                                    Name = "Luminance_uniformity(%)",
+                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value *100).ToString("F3")+"%"
+                                };
+
                             }
 
                         }
@@ -607,8 +640,42 @@ namespace ProjectARVR
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
                                 result.ViewResultWhite.Color_uniformity = viewReslut.PoiAnalysisResult.result.Value;
+
+                                ObjectiveTestResult.ColorUniformity = new ObjectiveTestItem()
+                                {
+                                    Name = "Color_uniformity",
+                                    TestValue = (viewReslut.PoiAnalysisResult.result.Value).ToString("F5")
+                                };
                             }
                         }
+                    }
+
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FOV && AlgResultMaster.version == "2.0")
+                    {
+                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
+                        if (AlgResultModels.Count == 1)
+                        {
+                            DFovView view1 = new DFovView(AlgResultModels[0]);
+                            result.ViewResultWhite.DFovView = view1;
+                            
+                            ObjectiveTestResult.DiagonalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                    Name = "DiagonalFieldOfViewAngle",
+                                    TestValue = view1.Result.result.D_Fov.ToString("F3")
+                            };
+                            ObjectiveTestResult.HorizontalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                Name = "HorizontalFieldOfViewAngle",
+                                TestValue = view1.Result.result.ClolorVisionH_Fov.ToString("F3")
+                            };
+                            ObjectiveTestResult.VerticalFieldOfViewAngle = new ObjectiveTestItem()
+                            {
+                                Name = "VerticalFieldOfViewAngle",
+                                TestValue = view1.Result.result.ClolorVisionV_Fov.ToString("F3")
+                            };
+
+                        }
+
                     }
                 }
             }
@@ -642,6 +709,12 @@ namespace ProjectARVR
                         if (result.ViewResultWhite !=null&& result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count ==1)
                         {
                             result.ViewResultBlack.Contrast = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                            ObjectiveTestResult.FOFOContrast = new ObjectiveTestItem()
+                            {
+                                Name = "FOFOContrast",
+                                TestValue = result.ViewResultBlack.Contrast.ToString("F2")
+                            };
                         }
                     }
 
@@ -686,7 +759,16 @@ namespace ProjectARVR
                             if (detailCommonModels.Count == 1)
                             {
                                 PoiAnalysisDetailViewReslut viewReslut = new PoiAnalysisDetailViewReslut(detailCommonModels[0]);
+
+    
                                 result.ViewReslutCheckerboard.Chessboard_Contrast = viewReslut.PoiAnalysisResult.result.Value;
+
+
+                                ObjectiveTestResult.ChessboardContrast = new ObjectiveTestItem()
+                                {
+                                    Name = "Chessboard_Contrast",
+                                    TestValue = result.ViewReslutCheckerboard.Chessboard_Contrast.ToString("F2")
+                                };
                             }
                         }
                     }
@@ -711,8 +793,34 @@ namespace ProjectARVR
                         List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (detailCommonModels.Count == 1)
                         {
-                            MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
-                            result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresult;
+                            MTFDetailViewReslut mtfresults = new MTFDetailViewReslut(detailCommonModels[0]);
+
+                            foreach (var mtf in mtfresults.MTFResult.result)
+                            {
+                                if (mtf.name == "Center_0F_H")
+                                    ObjectiveTestResult.MTF_H_Center_0F = new ObjectiveTestItem() { Name = "MTF_H_Center_0F", TestValue = mtf.mtfValue.ToString() };
+
+                                if (mtf.name == "LeftUp_0.5F_H")
+                                    ObjectiveTestResult.MTF_H_LeftUp_0_5F = new ObjectiveTestItem() { Name = "MTF_H_LeftUp_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightUp_0.5F_H")
+                                    ObjectiveTestResult.MTF_H_RightUp_0_5F = new ObjectiveTestItem() { Name = "MTF_H_RightUp_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "LeftDown_0.5F_H")
+                                    ObjectiveTestResult.MTF_H_LeftDown_0_5F = new ObjectiveTestItem() { Name = "MTF_H_LeftDown_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightDown_0.5F_H")
+                                    ObjectiveTestResult.MTF_H_RightDown_0_5F = new ObjectiveTestItem() { Name = "MTF_H_RightDown_0_5F", TestValue = mtf.mtfValue.ToString() };
+
+                                if (mtf.name == "LeftUp_0.8F_H")
+                                    ObjectiveTestResult.MTF_H_LeftUp_0_8F = new ObjectiveTestItem() { Name = "MTF_H_LeftUp_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightUp_0.8F_H")
+                                    ObjectiveTestResult.MTF_H_RightUp_0_8F = new ObjectiveTestItem() { Name = "MTF_H_RightUp_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "LeftDown_0.8F_H")
+                                    ObjectiveTestResult.MTF_H_LeftDown_0_8F = new ObjectiveTestItem() { Name = "MTF_H_LeftDown_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightDown_0.8F_H")
+                                    ObjectiveTestResult.MTF_H_RightDown_0_8F = new ObjectiveTestItem() { Name = "MTF_H_RightDown_0_8F", TestValue = mtf.mtfValue.ToString() };
+                            }
+
+
+                            result.ViewRelsultMTFH.MTFDetailViewReslut = mtfresults;
 
                         }
 
@@ -739,8 +847,33 @@ namespace ProjectARVR
                         List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (detailCommonModels.Count == 1)
                         {
-                            MTFDetailViewReslut mtfresult = new MTFDetailViewReslut(detailCommonModels[0]);
-                            result.ViewRelsultMTFV.MTFDetailViewReslut = mtfresult;
+                            MTFDetailViewReslut mtfresults = new MTFDetailViewReslut(detailCommonModels[0]);
+                            foreach (var mtf in mtfresults.MTFResult.result)
+                            {
+
+                                if (mtf.name == "Center_0F_H")
+                                    ObjectiveTestResult.MTF_V_Center_0F = new ObjectiveTestItem() { Name = "MTF_V_Center_0F", TestValue = mtf.mtfValue.ToString() };
+
+                                if (mtf.name == "LeftUp_0.5F_H")
+                                    ObjectiveTestResult.MTF_V_LeftUp_0_5F = new ObjectiveTestItem() { Name = "MTF_V_LeftUp_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightUp_0.5F_H")
+                                    ObjectiveTestResult.MTF_V_RightUp_0_5F = new ObjectiveTestItem() { Name = "MTF_V_RightUp_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "LeftDown_0.5F_H")
+                                    ObjectiveTestResult.MTF_V_LeftDown_0_5F = new ObjectiveTestItem() { Name = "MTF_V_LeftDown_0_5F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightDown_0.5F_H")
+                                    ObjectiveTestResult.MTF_V_RightDown_0_5F = new ObjectiveTestItem() { Name = "MTF_V_RightDown_0_5F", TestValue = mtf.mtfValue.ToString() };
+
+                                if (mtf.name == "LeftUp_0.8F_H")
+                                    ObjectiveTestResult.MTF_V_LeftUp_0_8F = new ObjectiveTestItem() { Name = "MTF_V_LeftUp_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightUp_0.8F_H")
+                                    ObjectiveTestResult.MTF_V_RightUp_0_8F = new ObjectiveTestItem() { Name = "MTF_V_RightUp_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "LeftDown_0.8F_H")
+                                    ObjectiveTestResult.MTF_V_LeftDown_0_8F = new ObjectiveTestItem() { Name = "MTF_V_LeftDown_0_8F", TestValue = mtf.mtfValue.ToString() };
+                                if (mtf.name == "RightDown_0.8F_H")
+                                    ObjectiveTestResult.MTF_V_RightDown_0_8F = new ObjectiveTestItem() { Name = "MTF_V_RightDown_0_8F", TestValue = mtf.mtfValue.ToString() };
+                            }
+
+                            result.ViewRelsultMTFV.MTFDetailViewReslut = mtfresults;
                         }
 
                     }
@@ -793,6 +926,10 @@ namespace ProjectARVR
                         if (AlgResultModels.Count == 1)
                         {
                             result.ViewResultOpticCenter.BinocularFusionModel = AlgResultModels[0];
+
+                            ObjectiveTestResult.XTilt = new ObjectiveTestItem() { Name = "XTilt", TestValue = result.ViewResultOpticCenter.BinocularFusionModel.XDegree.ToString("F4")};
+                            ObjectiveTestResult.YTilt = new ObjectiveTestItem() { Name = "YTilt", TestValue = result.ViewResultOpticCenter.BinocularFusionModel.YDegree.ToString("F4") };
+                            ObjectiveTestResult.Rotation = new ObjectiveTestItem() { Name = "Rotation", TestValue = result.ViewResultOpticCenter.BinocularFusionModel.ZDegree.ToString("F4") };
                         }
 
                     }
@@ -833,7 +970,7 @@ namespace ProjectARVR
                             EventName = "ProjectARVRResult",
                             Code = -1,
                             Msg = "",
-                            Data = null
+                            Data = ObjectiveTestResult
                         };
                         string respString = JsonConvert.SerializeObject(response);
                         log.Info(respString);
