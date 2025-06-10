@@ -60,9 +60,6 @@ namespace ProjectKB
             this.DataContext = ProjectKBConfig.Instance;
             listView1.ItemsSource = ViewResluts;
             InitFlow();
-
-            ImageView.Config.IsLayoutUpdated = false;
-
             Task.Run(async() =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)

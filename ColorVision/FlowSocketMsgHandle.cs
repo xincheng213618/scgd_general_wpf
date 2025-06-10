@@ -9,7 +9,7 @@ namespace ColorVision.UI
 {
     public class FlowSocketMsgHandle : ISocketEventHandler
     {
-        public string EventName => "Menu";
+        public string EventName => SocketConstants.Menu;
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
             

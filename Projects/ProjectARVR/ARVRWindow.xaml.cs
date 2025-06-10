@@ -205,10 +205,16 @@ namespace ProjectARVR
         public ARVRTestType CurrentTestType = ARVRTestType.None;
 
         ObjectiveTestResult ObjectiveTestResult { get; set; } = new ObjectiveTestResult();
+        Random Random = new Random();
         public void InitTest()
         {
             ObjectiveTestResult = new ObjectiveTestResult();
             CurrentTestType = ARVRTestType.None;
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                ProjectARVRConfig.Instance.SN = "SN" + Random.NextInt64(10000, 90000).ToString();
+            });
         }
 
         public void SwitchPGCompleted()
@@ -275,7 +281,6 @@ namespace ProjectARVR
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
-            ImageView.Config.IsLayoutUpdated = false;
             STNodeEditorMain = new STNodeEditor();
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
             flowEngine.AttachNodeEditor(STNodeEditorMain);
@@ -562,14 +567,14 @@ namespace ProjectARVR
             }
             ProjectARVRReuslt result = new ProjectARVRReuslt();
 
-            if (ViewResluts.FirstOrDefault(a => a.SN == SNtextBox.Text) is ProjectARVRReuslt result1)
+            if (ViewResluts.FirstOrDefault(a => a.SN == ProjectARVRConfig.Instance.SN) is ProjectARVRReuslt result1)
             {
                 result1.CopyTo(result);
             }
 
             result.Model = FlowTemplate.Text;
             result.Id = Batch.Id;
-            result.SN = SNtextBox.Text;
+            result.SN = ProjectARVRConfig.Instance.SN;
 
             if (result.Model.Contains("White"))
             {
@@ -650,9 +655,9 @@ namespace ProjectARVR
                         }
                     }
 
-                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FOV && AlgResultMaster.version == "2.0")
+                    if (AlgResultMaster.ImgFileType == ColorVision.Engine.Abstractions.AlgorithmResultType.FOV)
                     {
-                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
+                        List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(AlgResultMaster.Id);
                         if (AlgResultModels.Count == 1)
                         {
                             DFovView view1 = new DFovView(AlgResultModels[0]);
@@ -705,17 +710,24 @@ namespace ProjectARVR
                             result.ViewResultBlack.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                         }
 
-
-                        if (result.ViewResultWhite !=null&& result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count ==1)
+                        try
                         {
-                            result.ViewResultBlack.Contrast = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
-
-                            ObjectiveTestResult.FOFOContrast = new ObjectiveTestItem()
+                            if (result.ViewResultWhite != null && result.ViewResultWhite.PoiResultCIExyuvDatas.Count == 9 && result.ViewResultBlack.PoiResultCIExyuvDatas.Count == 1)
                             {
-                                Name = "FOFOContrast",
-                                TestValue = result.ViewResultBlack.Contrast.ToString("F2")
-                            };
+                                result.ViewResultBlack.Contrast = result.ViewResultWhite.PoiResultCIExyuvDatas[5].Y / result.ViewResultBlack.PoiResultCIExyuvDatas[0].Y;
+
+                                ObjectiveTestResult.FOFOContrast = new ObjectiveTestItem()
+                                {
+                                    Name = "FOFOContrast",
+                                    TestValue = result.ViewResultBlack.Contrast.ToString("F2")
+                                };
+                            }
                         }
+                        catch(Exception ex)
+                        {
+                            log.Info($"找不到白画面对应的黑画面{ex}");
+                        }
+
                     }
 
 
@@ -851,25 +863,25 @@ namespace ProjectARVR
                             foreach (var mtf in mtfresults.MTFResult.result)
                             {
 
-                                if (mtf.name == "Center_0F_H")
+                                if (mtf.name == "Center_0F_V")
                                     ObjectiveTestResult.MTF_V_Center_0F = new ObjectiveTestItem() { Name = "MTF_V_Center_0F", TestValue = mtf.mtfValue.ToString() };
 
-                                if (mtf.name == "LeftUp_0.5F_H")
+                                if (mtf.name == "LeftUp_0.5F_V")
                                     ObjectiveTestResult.MTF_V_LeftUp_0_5F = new ObjectiveTestItem() { Name = "MTF_V_LeftUp_0_5F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "RightUp_0.5F_H")
+                                if (mtf.name == "RightUp_0.5F_V")
                                     ObjectiveTestResult.MTF_V_RightUp_0_5F = new ObjectiveTestItem() { Name = "MTF_V_RightUp_0_5F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "LeftDown_0.5F_H")
+                                if (mtf.name == "LeftDown_0.5F_V")
                                     ObjectiveTestResult.MTF_V_LeftDown_0_5F = new ObjectiveTestItem() { Name = "MTF_V_LeftDown_0_5F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "RightDown_0.5F_H")
+                                if (mtf.name == "RightDown_0.5F_V")
                                     ObjectiveTestResult.MTF_V_RightDown_0_5F = new ObjectiveTestItem() { Name = "MTF_V_RightDown_0_5F", TestValue = mtf.mtfValue.ToString() };
 
-                                if (mtf.name == "LeftUp_0.8F_H")
+                                if (mtf.name == "LeftUp_0.8F_V")
                                     ObjectiveTestResult.MTF_V_LeftUp_0_8F = new ObjectiveTestItem() { Name = "MTF_V_LeftUp_0_8F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "RightUp_0.8F_H")
+                                if (mtf.name == "RightUp_0.8F_V")
                                     ObjectiveTestResult.MTF_V_RightUp_0_8F = new ObjectiveTestItem() { Name = "MTF_V_RightUp_0_8F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "LeftDown_0.8F_H")
+                                if (mtf.name == "LeftDown_0.8F_V")
                                     ObjectiveTestResult.MTF_V_LeftDown_0_8F = new ObjectiveTestItem() { Name = "MTF_V_LeftDown_0_8F", TestValue = mtf.mtfValue.ToString() };
-                                if (mtf.name == "RightDown_0.8F_H")
+                                if (mtf.name == "RightDown_0.8F_V")
                                     ObjectiveTestResult.MTF_V_RightDown_0_8F = new ObjectiveTestItem() { Name = "MTF_V_RightDown_0_8F", TestValue = mtf.mtfValue.ToString() };
                             }
 
@@ -899,8 +911,19 @@ namespace ProjectARVR
                         {
                             ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View blackMuraView = new ColorVision.Engine.Templates.Jsons.Distortion2.Distortion2View(AlgResultModels[0]);
                             result.ViewReslutDistortionGhost.Distortion2View = blackMuraView;
+
+                            ObjectiveTestResult.HorizontalTVDistortion = new ObjectiveTestItem()
+                            {
+                                Name = "HorizontalTVDistortion",
+                                TestValue = blackMuraView.DistortionReslut.TVDistortion.HorizontalRatio.ToString("F5")
+                            };
+                            ObjectiveTestResult.VerticalTVDistortion = new ObjectiveTestItem()
+                            {
+                                Name = "VerticalTVDistortion",
+                                TestValue = blackMuraView.DistortionReslut.TVDistortion.VerticalRatio.ToString("F5")
+                            };
                         }
-    
+
                     }
                 }
 

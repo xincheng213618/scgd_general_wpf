@@ -5,6 +5,12 @@ using System.Windows;
 
 namespace ColorVision.SocketProtocol
 {
+    public static class SocketConstants
+    {
+        public const string Menu = "Menu";
+    }
+
+
     public interface ISocketEventHandler
     {
         string EventName { get; }
