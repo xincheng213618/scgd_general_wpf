@@ -12,7 +12,6 @@ namespace ColorVision.UI
         public string EventName => SocketConstants.Menu;
         public SocketResponse Handle(NetworkStream stream, SocketRequest request)
         {
-            
             if (MenuManager.GetInstance().MenuItems.FirstOrDefault(a => a.Header == request.Params) is IMenuItem  menuItem)
             {
                 if (menuItem.Command != null)

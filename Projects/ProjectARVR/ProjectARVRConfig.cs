@@ -33,6 +33,8 @@ namespace ProjectARVR
         [JsonIgnore]
         public RelayCommand OpenReadMeCommand { get; set; }
 
+        [JsonIgnore]
+        public RelayCommand EditSPECConfigcommand { get; set; }
 
         public ProjectARVRConfig()
         {
@@ -48,7 +50,13 @@ namespace ProjectARVR
             OpenChangeLogCommand = new RelayCommand(a => OpenChangeLog());
             OpenReadMeCommand = new RelayCommand(a => OpenReadMe());
 
+            EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
+        }
 
+        public void EditSPECConfig()
+        {
+            PropertyEditorWindow propertyEditorWindow = new PropertyEditorWindow(SPECConfig ,false) { Owner = Application.Current.GetActiveWindow() };
+            propertyEditorWindow.ShowDialog();
         }
 
 

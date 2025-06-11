@@ -9,11 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="ColorVision.UI" Version="1.3.2.4" />
     <PackageReference Include="OpenAI" Version="2.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\UI\ColorVision.UI\ColorVision.UI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
