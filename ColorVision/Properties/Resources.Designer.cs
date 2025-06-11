@@ -484,15 +484,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 项目管理器窗口 的本地化字符串。
-        /// </summary>
-        public static string ProjectManagerWindow {
-            get {
-                return ResourceManager.GetString("ProjectManagerWindow", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 项目名称 的本地化字符串。
         /// </summary>
         public static string ProjectName {

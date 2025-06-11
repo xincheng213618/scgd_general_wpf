@@ -294,9 +294,6 @@
   <data name="MenuEdit" xml:space="preserve">
     <value>_Edit</value>
   </data>
-  <data name="ProjectManagerWindow" xml:space="preserve">
-    <value>ProjectManagerWindow</value>
-  </data>
   <data name="PluginManagerWindow" xml:space="preserve">
     <value>PluginManagerWindow</value>
   </data>

@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Engine.Properties;
 
 namespace ColorVision.Projects
 { 
@@ -73,7 +74,7 @@ namespace ColorVision.Projects
 
         public void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除项目{Project.Header}", Properties.Resources.ProjectManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否确认删除项目{Project.Header}", Resources.ProjectManagerWindow, MessageBoxButton.YesNo) == MessageBoxResult.No) return;
 
             string tempDirectory = Path.Combine(Path.GetTempPath(), "ColorVisionPluginsUpdate");
             if (Directory.Exists(tempDirectory))

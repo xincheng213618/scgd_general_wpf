@@ -841,4 +841,22 @@
   <data name="OpenInCalibTools" xml:space="preserve">
     <value>在 CalibTools 中打开</value>
   </data>
+  <data name="ProjectManagerWindow" xml:space="preserve">
+    <value>项目管理器窗口</value>
+  </data>
+  <data name="ReleaseDate" xml:space="preserve">
+    <value>发布日期</value>
+  </data>
+  <data name="BuildDate" xml:space="preserve">
+    <value>构建日期</value>
+  </data>
+  <data name="Version" xml:space="preserve">
+    <value>版本</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>命令</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>项目名称</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-﻿using ColorVision.Properties;
+﻿using ColorVision.Engine.Properties;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;

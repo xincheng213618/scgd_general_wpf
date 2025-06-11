@@ -223,6 +223,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 构建日期 的本地化字符串。
+        /// </summary>
+        public static string BuildDate {
+            get {
+                return ResourceManager.GetString("BuildDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 计算 的本地化字符串。
         /// </summary>
         public static string Calculate {
@@ -354,6 +363,15 @@ namespace ColorVision.Engine.Properties {
         public static string ColorVisionUpdater {
             get {
                 return ResourceManager.GetString("ColorVisionUpdater", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 命令 的本地化字符串。
+        /// </summary>
+        public static string Command {
+            get {
+                return ResourceManager.GetString("Command", resourceCulture);
             }
         }
         
@@ -1672,6 +1690,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 项目管理器窗口 的本地化字符串。
+        /// </summary>
+        public static string ProjectManagerWindow {
+            get {
+                return ResourceManager.GetString("ProjectManagerWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 项目名称 的本地化字符串。
+        /// </summary>
+        public static string ProjectName {
+            get {
+                return ResourceManager.GetString("ProjectName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 属性 的本地化字符串。
         /// </summary>
         public static string Property {
@@ -1722,6 +1758,15 @@ namespace ColorVision.Engine.Properties {
         public static string RegistryCenter {
             get {
                 return ResourceManager.GetString("RegistryCenter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发布日期 的本地化字符串。
+        /// </summary>
+        public static string ReleaseDate {
+            get {
+                return ResourceManager.GetString("ReleaseDate", resourceCulture);
             }
         }
         
@@ -2208,6 +2253,15 @@ namespace ColorVision.Engine.Properties {
         public static string UserPwd {
             get {
                 return ResourceManager.GetString("UserPwd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 版本 的本地化字符串。
+        /// </summary>
+        public static string Version {
+            get {
+                return ResourceManager.GetString("Version", resourceCulture);
             }
         }
         

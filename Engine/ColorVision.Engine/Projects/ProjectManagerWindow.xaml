@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Projects"
         d:DataContext="{d:DesignInstance local:ProjectManager}"
-        xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.ProjectManagerWindow}" Height="450" Width="900" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
