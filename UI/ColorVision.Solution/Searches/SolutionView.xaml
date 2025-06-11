@@ -32,54 +32,31 @@
                 <xcad:LayoutPanel Orientation="Horizontal" >
                     <xcad:LayoutDocumentPaneGroup>
                         <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
-                            <xcad:LayoutDocument ContentId="SolutionPage" Title="  主页   ">
-                                <Grid Background="{DynamicResource GlobalBackground}">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid Grid.Row="0" Height="40" >
-                                        <Border x:Name="MainSetting"  BorderBrush="{DynamicResource BorderBrush}" Background="#01FFFFFF" BorderThickness="0,0,0,1"/>
-                                        <StackPanel Height="40" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
-                                            <Button x:Name="BackStack"  Width="30" Background="#01FFFFFF" BorderThickness="0" Command="NavigationCommands.BrowseBack"  CommandTarget="{Binding ElementName=MainFrame}">
-                                                <Path Stretch="Uniform" Data="{StaticResource LeftGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
-                                            </Button>
-                                            <Button x:Name="BrowseForward" Width="30" Background="#01FFFFFF"  BorderThickness="0"  Command="NavigationCommands.BrowseForward"  CommandTarget="{Binding ElementName=MainFrame}">
-                                                <Path  Stretch="Uniform" Data="{StaticResource RightGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
-                                            </Button>
-                                            <Button x:Name="Refresh" Width="40"  Background="#01FFFFFF"  BorderThickness="0" Command="NavigationCommands.Refresh"  CommandTarget="{Binding ElementName=MainFrame}">
-                                                <Path  Stretch="Uniform" Data="{StaticResource RotateRightGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
-                                            </Button>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" >
-                                            <ComboBox x:Name="_themeCombo" SelectedIndex="0" Width="200"  VerticalAlignment="Center">
-                                                <ComboBoxItem Content="Generic" />
-                                                <ComboBoxItem Content="Aero">
-                                                    <ComboBoxItem.Tag>
-                                                        <xcad:AeroTheme/>
-                                                    </ComboBoxItem.Tag>
-                                                </ComboBoxItem>
-                                                <ComboBoxItem Content="VS2010">
-                                                    <ComboBoxItem.Tag>
-                                                        <xcad:VS2010Theme />
-                                                    </ComboBoxItem.Tag>
-                                                </ComboBoxItem>
-                                                <ComboBoxItem Content="Metro">
-                                                    <ComboBoxItem.Tag>
-                                                        <xcad:MetroTheme />
-                                                    </ComboBoxItem.Tag>
-                                                </ComboBoxItem>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </Grid>
-                                    <Frame x:Name="MainFrame" Grid.Row="1" Style="{StaticResource FrameBaseStyle}" BorderThickness="0" NavigationUIVisibility="Hidden"/>
-                                </Grid>
-                            </xcad:LayoutDocument>
                         </xcad:LayoutDocumentPane>
                     </xcad:LayoutDocumentPaneGroup>
                 </xcad:LayoutPanel>
             </xcad:LayoutRoot>
         </xcad:DockingManager>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,45,0" >
+            <ComboBox x:Name="_themeCombo" SelectedIndex="0" Width="100" BorderThickness="0"   VerticalAlignment="Center">
+                <ComboBoxItem Content="Generic" />
+                <ComboBoxItem Content="Aero">
+                    <ComboBoxItem.Tag>
+                        <xcad:AeroTheme/>
+                    </ComboBoxItem.Tag>
+                </ComboBoxItem>
+                <ComboBoxItem Content="VS2010">
+                    <ComboBoxItem.Tag>
+                        <xcad:VS2010Theme />
+                    </ComboBoxItem.Tag>
+                </ComboBoxItem>
+                <ComboBoxItem Content="Metro">
+                    <ComboBoxItem.Tag>
+                        <xcad:MetroTheme />
+                    </ComboBoxItem.Tag>
+                </ComboBoxItem>
+            </ComboBox>
+        </StackPanel>
 
     </Grid>
 </UserControl>

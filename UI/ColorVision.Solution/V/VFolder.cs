@@ -21,6 +21,7 @@ namespace ColorVision.Solution.V
         public RelayCommand AddDirCommand { get; set; }
         FileSystemWatcher FileSystemWatcher { get; set; }
         public bool HasFile { get => this.HasFile(); }
+        public RelayCommand OpenInCmdCommand { get; set; }
 
         public VFolder(IFolderMeta folder) :base()
         {
@@ -78,10 +79,15 @@ namespace ColorVision.Solution.V
             OpenFileInExplorerCommand = new RelayCommand(a => PlatformHelper.OpenFolder(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             AddDirCommand = new RelayCommand(a => VMUtil.CreatFolders(this, DirectoryInfo.FullName));
+            OpenInCmdCommand = new RelayCommand(a => System.Diagnostics.Process.Start("cmd.exe", $"/K cd \"{DirectoryInfo.FullName}\""), a => DirectoryInfo.Exists);
             Task.Run(() => GeneralChild());
             AddChildEventHandler +=(s,e) => NotifyPropertyChanged(nameof(HasFile));
         }
-
+        public override void Open()
+        {
+            var IEditor = EditorManager.Instance.OpenFolder(FullPath);
+            IEditor?.Open(FullPath);
+        }
         public virtual void GeneralChild()
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -99,10 +105,18 @@ namespace ColorVision.Solution.V
         {
             base.InitMenuItem();
             MenuItemMetadatas.AddRange(FolderMeta.GetMenuItems());
+            MenuItemMetadatas.Add(new MenuItemMetadata
+            {
+                GuidId = "Open",
+                Order = 1,
+                Header = Resources.MenuOpen,
+                Command = OpenCommand
+            });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "Add", Order = 10, Header = Resources.MenuAdd });
             MenuItemMetadatas.Add(new MenuItemMetadata() { OwnerGuid = "Add", GuidId = "AddFolder", Order = 1, Header = "添加文件夹",Command = AddDirCommand });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = "复制完整路径" ,Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "MenuOpenFileInExplorer", Order = 200, Command = OpenFileInExplorerCommand, Header = Resources.MenuOpenFileInExplorer });
+            MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenInCmdCommad", Order = 200, Header = "在终端中打开", Command = OpenInCmdCommand });
         }
 
         public override void ShowProperty()
@@ -111,11 +125,6 @@ namespace ColorVision.Solution.V
         }
 
         public override ImageSource Icon {get => FolderMeta.Icon; set { FolderMeta.Icon = value; NotifyPropertyChanged(); } }
-
-        public override void Open()
-        {
-
-        }
 
         public override bool ReName(string name)
         {

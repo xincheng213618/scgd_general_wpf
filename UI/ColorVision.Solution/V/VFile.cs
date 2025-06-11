@@ -58,6 +58,7 @@ namespace ColorVision.Solution.V
 
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "CopyFullPath", Order = 200, Command = CopyFullPathCommand, Header = Resources.MenuCopyFullPath , Icon = MenuItemIcon.TryFindResource("DICopy") });
             MenuItemMetadatas.Add(new MenuItemMetadata() { GuidId = "OpenContainingFolder", Order = 200, Header = Resources.MenuOpenContainingFolder, Command = OpenContainingFolderCommand });
+
         }
         public override void ShowProperty()
         {

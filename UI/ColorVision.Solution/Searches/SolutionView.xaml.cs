@@ -86,6 +86,8 @@ namespace ColorVision.Solution.Searches
         {
             ContentIdSelected?.Invoke(SolutionView, contentId);
         }
+
+        public static List <Action> DealyLoad { get; set; } = new List<Action>();
     }
 
 
@@ -101,26 +103,18 @@ namespace ColorVision.Solution.Searches
             SolutionViewExtensions.SolutionView = this;
             SolutionViewExtensions.layoutRoot = _layoutRoot;
             SolutionViewExtensions.LayoutDocumentPane = LayoutDocumentPane;
+
+
+            foreach (var action in SolutionViewExtensions.DealyLoad)
+            {
+                action();
+            }
+            SolutionViewExtensions.DealyLoad.Clear();
         }
         public View View { get; set; }
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
             View = new View();
-            MainFrame.Navigate(SolutionPageManager.Instance.GetPage("HomePage", MainFrame));
-
-            if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
-            {
-                ContextMenu content1 = new() { ItemContainerStyle = style };
-                content1.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("BackStack"), Source = MainFrame });
-                BackStack.ContextMenu = content1;
-
-                ContextMenu content2 = new() { ItemContainerStyle = style };
-                content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
-                BrowseForward.ContextMenu = content2;
-            }
-        }
-
-
-        
+        }  
     }
 }

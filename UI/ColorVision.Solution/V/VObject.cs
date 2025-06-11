@@ -82,8 +82,6 @@ namespace ColorVision.Solution.V
         public virtual bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded;
 
-        public virtual bool DisableExpanded { get => _DisableExpanded; set { _DisableExpanded = value; NotifyPropertyChanged(); } }
-        private bool _DisableExpanded;
 
         public virtual bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
