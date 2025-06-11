@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.ImageCropping
@@ -24,8 +24,5 @@ namespace ColorVision.Engine.Templates.ImageCropping
     {
         public static ResultImageDao Instance { get; set; } = new ResultImageDao();
 
-        public ResultImageDao() : base("t_scgd_algorithm_result_detail_image", "id")
-        {
-        }
     }
 }

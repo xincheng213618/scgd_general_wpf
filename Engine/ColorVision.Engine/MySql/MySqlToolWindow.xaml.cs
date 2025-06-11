@@ -13,7 +13,7 @@ namespace ColorVision.Engine.MySql
     {
         public override string OwnerGuid => nameof(ExportMySqlMenuItem);
         public override string GuidId => nameof(ExportMySqlTool);
-        public override string Header => "MySqlTool";
+        public override string Header => "Mysql工具";
         public override int Order => 2;
 
         public override void Execute()
@@ -68,13 +68,11 @@ namespace ColorVision.Engine.MySql
                     string trimmedSql = sql.Trim();
                     if (string.IsNullOrEmpty(trimmedSql))
                         continue;
-
-                    using (MySqlCommand command = new(trimmedSql, MySqlControl.MySqlConnection))
-                    {
-                        int count = command.ExecuteNonQuery();
-                        totalCount += count;
-                        SqlResultText.Text += $"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {trimmedSql}\n";
-                    }
+                    using var con = MySqlControl.GetMySqlConnection();
+                    using MySqlCommand command = new(trimmedSql, con);
+                    int count = command.ExecuteNonQuery();
+                    totalCount += count;
+                    SqlResultText.Text += $"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {trimmedSql}\n";
                 }
                 catch (Exception ex)
                 {

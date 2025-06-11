@@ -1,9 +1,10 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Engine.Templates.POI.AlgorithmImp
 {
+    [Table("t_scgd_algorithm_result_detail_poi_mtf")]
     public class PoiPointResultModel : PKModel,IViewResult
     {
         [Column("pid")]
@@ -33,9 +34,5 @@ namespace ColorVision.Engine.Templates.POI.AlgorithmImp
     public class PoiPointResultDao : BaseTableDao<PoiPointResultModel>
     {
         public static PoiPointResultDao Instance { get; set; } = new PoiPointResultDao();
-
-        public PoiPointResultDao() : base("t_scgd_algorithm_result_detail_poi_mtf", "id")
-        {
-        }
     }
 }

@@ -20,7 +20,7 @@ namespace ColorVision.ImageEditor
 
         public ComponentManager()
         {
-            foreach (var item in AssemblyHandler.LoadImplementations<IImageComponent>())
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageComponent>())
             {
                 IImageComponents.Add(item);
             }

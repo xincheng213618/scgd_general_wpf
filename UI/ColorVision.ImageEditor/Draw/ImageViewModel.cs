@@ -279,7 +279,7 @@ namespace ColorVision.ImageEditor.Draw
             if (IImageOpen != null)
                 MenuItemMetadatas.AddRange(IImageOpen.GetContextMenuItems(Config));
 
-            foreach (var item in AssemblyHandler.LoadImplementations<IImageContentMenu>())
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IImageContentMenu>())
             {
                 MenuItemMetadatas.AddRange(item.GetContextMenuItems(Config));
             }

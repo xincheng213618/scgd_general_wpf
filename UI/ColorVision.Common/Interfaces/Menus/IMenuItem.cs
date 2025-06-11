@@ -58,6 +58,7 @@ namespace ColorVision.UI.Menus
         public ICommand? Command { get; }
 
         public Visibility Visibility { get; }
+        public bool? IsChecked { get; } // 新增的属性
     }
 
 }

@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -57,8 +57,10 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             var restfile = JsonConvert.DeserializeObject<ResultFile>(detail.ResultJson);
             if (restfile != null)
             {
+                ResultFileName = restfile.ResultFileName;
                 if (File.Exists(restfile.ResultFileName))
                 {
+
                     string json = File.ReadAllText(restfile.ResultFileName);
                     Result = json;
                     GhostReslut = JsonConvert.DeserializeObject<GhostReslut>(json);
@@ -78,6 +80,8 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
 
         [Column("result")]
         public string Result { get; set; }
+
+        public string? ResultFileName { get; set; }
 
         public GhostReslut GhostReslut { get; set; }
     }

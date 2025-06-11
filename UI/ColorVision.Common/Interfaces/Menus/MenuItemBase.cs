@@ -19,6 +19,9 @@ namespace ColorVision.UI.Menus
         public virtual object? Icon { get; }
         public virtual ICommand? Command => RelayCommand;   
         public virtual RelayCommand RelayCommand => new(A => Execute(), b => AccessControl.Check(Execute));
+
+        public virtual bool? IsChecked {get;}
+
         public virtual void Execute()
         {
         }

@@ -158,6 +158,8 @@ namespace ColorVision
             command.InputGestures.Add(gesture);
             CommandBindings.Add(new CommandBinding(command, FocusSearchBox));
             InitRightMenuItemPanel();
+
+            StartupRegistryChecker.Clear();
         }
 
         private void InitRightMenuItemPanel()
@@ -165,7 +167,7 @@ namespace ColorVision
             RightMenuItemPanel.Children.Clear();
             var allSettings = new List<MenuItemMetadata>();
 
-            foreach (var item in AssemblyHandler.LoadImplementations<IRightMenuItemProvider>())
+            foreach (var item in AssemblyService.Instance.LoadImplementations<IRightMenuItemProvider>())
             {
                 allSettings.AddRange(item.GetMenuItems());
             }
@@ -381,9 +383,9 @@ namespace ColorVision
                     filteredResults = Searches
                         .OfType<ISearch>()
                         .Where(template => keywords.All(keyword =>
-                            template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                            ))
+                            (!string.IsNullOrEmpty(template.Header) && template.Header.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (template.GuidId != null && template.GuidId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        ))
                         .ToList();
 
 

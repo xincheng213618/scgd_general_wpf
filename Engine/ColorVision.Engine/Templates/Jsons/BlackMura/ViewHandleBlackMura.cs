@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8602
 
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Templates.Jsons.BlackMura
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ViewHandleBlackMura));
 
-        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BlackMura_Caculate};
+        public override List<AlgorithmResultType> CanHandle { get; } = new List<AlgorithmResultType>() { AlgorithmResultType.BlackMura_Calc};
 
         private static string EscapeCsvField(string field)
         {

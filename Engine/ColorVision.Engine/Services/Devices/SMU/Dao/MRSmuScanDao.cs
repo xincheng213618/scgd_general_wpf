@@ -37,11 +37,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Dao
 
     public class MRSmuScanDao : BaseTableDao<SmuScanModel>
     {
-        public MRSmuScanDao() : base("t_scgd_measure_result_smu_scan", "id")
-        {
-
-        }
-
+        public static MRSmuScanDao Instance { get; set; } = new MRSmuScanDao();
         public List<SmuScanModel> ConditionalQuery(string id, string batchid, DateTime? dateTimeSTART, DateTime? dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new();

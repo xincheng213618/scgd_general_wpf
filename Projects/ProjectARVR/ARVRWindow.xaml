@@ -30,53 +30,7 @@
                     <RowDefinition x:Name="row2" Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="col1" Width="Auto"/>
-                        <ColumnDefinition x:Name="col2"   Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid x:Name="SummaryGrid" Visibility="{Binding SummaryInfo.IsShowSummary,Converter={StaticResource bool2VisibilityConverter}}" Width="{Binding SummaryInfo.Width}">
-                        <StackPanel Margin="5">
-                            <TextBlock Text="Summary" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"  Margin="0,0,0,5"/>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="线别: "/>
-                                <TextBlock Text="{Binding SummaryInfo.LineNumber}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="工号: "/>
-                                <TextBlock Text="{Binding SummaryInfo.WorkerNumber}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="目标产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.TargetProduction}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="已经生产产量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.ActualProduction}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductCount}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="不良品数量: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductCount}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="良品率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.GoodProductRate, StringFormat={}{0:P1}}"/>
-                            </DockPanel>
-                            <DockPanel  Margin="0,0,0,5">
-                                <TextBlock Text="不良频率: "/>
-                                <TextBlock Text="{Binding SummaryInfo.DefectiveProductRate ,StringFormat={}{0:P1}}"/>
-                            </DockPanel>
-                        </StackPanel>
-
-                        <Border VerticalAlignment="Bottom">
-                            <TextBox x:Name="NGResult"  Text="" FontSize="80" HorizontalAlignment="Center"  BorderThickness="0"/>
-                        </Border>
-                    </Grid>
                     <im:ImageView Grid.Column="1" x:Name="ImageView" ></im:ImageView>
-                    <GridSplitter  Grid.Column="0"  Background="#1FFFFFFF" Panel.ZIndex="999" Width="2" HorizontalAlignment="Right"   DragCompleted="GridSplitter_DragCompleted1"  />
                 </Grid>
                 <Grid x:Name="Grid1" Grid.Row="1" Height="{Binding Height}">
                     <Grid.RowDefinitions>
@@ -188,13 +142,30 @@
                                 <Image Source="{StaticResource  DrawingImageEdit}" Width="15" Margin="0" />
                                 <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding OpenFlowEngineToolCommand}"/>
                             </Grid>
-                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
                             <DockPanel DockPanel.Dock="Left" HorizontalAlignment="Right" Margin="20,0,0,0">
                                 <TextBlock Text="SN" Margin="0,0,5,0"/>
                                 <TextBox x:Name="SNtextBox" Text="{Binding SN,UpdateSourceTrigger=PropertyChanged}" Width="140" FontFamily="Courier New"  AcceptsReturn="True" Style="{StaticResource TextBoxBaseStyle}"  PreviewKeyDown="SNtextBox_PreviewKeyDown"/>
                             </DockPanel>
+                            <Button  Command="{Binding EditSPECConfigcommand}"  DockPanel.Dock="Right"  Padding="0" Height="25" Width="25" Margin="5,0,0,0">
+                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="16" RenderTransformOrigin="0.5,0.5"  Foreground="{DynamicResource GlobalTextBrush}">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform101"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform101" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                            </Button>
+                            <Button Content="Test"  DockPanel.Dock="Right" Background="Pink"  Click="TestClick" />
+
                         </DockPanel>
-                        <DockPanel  Margin="0,0,0,5">
+                        <DockPanel  Margin="0,0,0,5" Visibility="Collapsed">
                             <ComboBox x:Name="CBLargeTemplate"  Height="10" SelectedIndex="{Binding TemplateLargeSelectedIndex}" ItemsSource="{Binding TemplateLargeItemSource}" SelectedValuePath="Value" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                             <Grid Width="30" Margin="5,0"  HorizontalAlignment="Left">
                                 <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="20" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -206,16 +177,6 @@
                             </Grid>
                             <Button Content="大模板测试"  DockPanel.Dock="Right" Background="Pink" Click="LargeTest_Click" />
                         </DockPanel>
-                        <UniformGrid >
-                            <Button Content="切换白画面测试" Click="Button_Click_1"/>
-                            <Button Content="切换黑画面测试" Click="Button_Click_2"/>
-                            <Button Content="切换9点画面测试" Click="Button_Click_3"/>
-                            <Button Content="切换4*4 棋盘格测试" Click="Button_Click_4"/>
-                            <Button Content="切换水平MTF图卡测试" Click="Button_Click_5"/>
-                            <Button Content="切换垂直MTF图卡测试" Click="Button_Click_6"/>
-                            <Button Content="切换白画面图卡测试" Click="Button_Click_7" />
-                            <Button Content="切换网格图测试" Click="Button_Click_8"/>
-                        </UniformGrid>
                     </StackPanel>
                 </Grid>
                 <Grid Grid.Row="1" Margin="5,0">

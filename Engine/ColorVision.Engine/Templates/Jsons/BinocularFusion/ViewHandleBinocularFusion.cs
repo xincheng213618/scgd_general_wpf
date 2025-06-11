@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8602
 
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System.Collections.Generic;
@@ -76,7 +76,7 @@ namespace ColorVision.Engine.Templates.Jsons.BinocularFusion
                 }
             }
 
-            List<string> header = new() { "中心点x", "中心点y", "x轴" , "y轴", "z轴" };
+            List<string> header = new() { "中心点x", "中心点y", "x Tilte(°)", "Y tilte(°)", "Rotation" };
             List<string> bdHeader = new() { "CrossMarkCenterX", "CrossMarkCenterY", "XDegree" , "YDegree", "ZDegree" };
 
             if (view.listViewSide.View is GridView gridView)

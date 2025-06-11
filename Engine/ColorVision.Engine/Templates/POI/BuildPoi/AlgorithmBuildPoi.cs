@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Templates.Jsons.LedCheck2;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
@@ -13,18 +14,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
-    public struct PointFloat
-    {
-        public float X { get; set; }
-
-        public float Y { get; set; }
-
-        public PointFloat(float x, float y)
-        {
-            X = x;
-            Y = y;
-        }
-    }
 
     public class AlgorithmBuildPoi : DisplayAlgorithmBase
     {
@@ -84,14 +73,14 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
 
         public bool IsPOIBuildCommon => POIBuildType == POIBuildType.Common;
 
-        public PointFloat Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point1;
-        public PointFloat Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point2;
-        public PointFloat Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point3;
-        public PointFloat Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
-        private PointFloat _Point4;
+        public PointVM Point1 { get => _Point1; set { _Point1 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point1;
+        public PointVM Point2 { get => _Point2; set { _Point2 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point2;
+        public PointVM Point3 { get => _Point3; set { _Point3 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point3;
+        public PointVM Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
+        private PointVM _Point4;
 
         public string CADPosFileName { get => _CADPosFileName; set { _CADPosFileName = value; NotifyPropertyChanged(); } }
         private string _CADPosFileName = string.Empty;
@@ -115,9 +104,10 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
                 pointInts.Add(new PointInt() { X = (int)Point3.X, Y = (int)Point3.Y });
                 pointInts.Add(new PointInt() { X = (int)Point4.X, Y = (int)Point4.Y });
 
-                Params.Add("LayoutPolygon", pointInts); 
+                Params.Add("LayoutPolygon", pointInts);
 
-                PointFloat[] ROI = new PointFloat[] { Point1, Point2, Point3, Point4 };
+                PointFloat[] ROI = new PointFloat[] { Point1.ToPointFloat(), Point2.ToPointFloat(), Point3.ToPointFloat(), Point4.ToPointFloat() };
+
                 Params.Add("CADMappingParam", new Dictionary<string, Object>() { { "CAD_MasterId", -1 },{ "ROI" , ROI },{ "CAD_PosFileName" , CADPosFileName } });
             }
 

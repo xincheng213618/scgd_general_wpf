@@ -28,7 +28,7 @@ namespace ColorVision.UI
         protected override void Append(LoggingEvent loggingEvent)
         {
             var renderedMessage = RenderLoggingEvent(loggingEvent);
-            string messageToShow = renderedMessage.Length > 10 ? renderedMessage.Substring(0, 10) + "..." : renderedMessage;
+            string messageToShow = renderedMessage.Length > 10 ? string.Concat(renderedMessage.AsSpan(0, 10), "...") : renderedMessage;
 
             Application.Current.Dispatcher.BeginInvoke(() =>
             {

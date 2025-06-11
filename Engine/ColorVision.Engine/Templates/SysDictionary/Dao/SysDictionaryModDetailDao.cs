@@ -4,6 +4,7 @@ using System.Data;
 
 namespace ColorVision.Engine.Templates.SysDictionary
 {
+    [Table("t_scgd_sys_dictionary_mod_item")]
     public class SysDictionaryModDetaiModel : VPKModel
     {
         [Column("pid")]
@@ -39,11 +40,5 @@ namespace ColorVision.Engine.Templates.SysDictionary
     public class SysDictionaryModDetailDao : BaseTableDao<SysDictionaryModDetaiModel>
     {
         public static SysDictionaryModDetailDao Instance { get; set; } = new SysDictionaryModDetailDao();
-
-        public SysDictionaryModDetailDao() : base("t_scgd_sys_dictionary_mod_item", "id")
-        {
-        }
-
-        public override DataRow Model2Row(SysDictionaryModDetaiModel item, DataRow row)=> ReflectionHelper.Model2Row(item, row);
     }
 }

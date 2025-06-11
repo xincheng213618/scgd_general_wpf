@@ -4,6 +4,7 @@ using ColorVision.Solution.RecentFile;
 using ColorVision.Solution.Searches;
 using ColorVision.Solution.V;
 using ColorVision.UI.Extension;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Shell;
 using log4net;
 using System.Collections.ObjectModel;
@@ -44,6 +45,8 @@ namespace ColorVision.Solution
 
         public SolutionManager()
         {
+            SolutionHistory.RecentFilesChanged +=(s,e) => MenuManager.GetInstance().RefreshMenuItemsByGuid(nameof(MenuRecentFile));
+
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
             bool su = false;
             var parser = ArgumentParser.GetInstance();

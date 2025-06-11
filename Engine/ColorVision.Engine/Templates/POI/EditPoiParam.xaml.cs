@@ -550,6 +550,28 @@ namespace ColorVision.Engine.Templates.POI
                             break;
                         case RiPointTypes.Mask:
                             break;
+                        case RiPointTypes.Point:
+                            if (item.Name == "PointInt1")
+                            {
+                                PoiConfig.PointInt1.X = (int)item.PixX;
+                                PoiConfig.PointInt1.Y = (int)item.PixY;
+                            }
+                            if (item.Name == "PointInt2")
+                            {
+                                PoiConfig.PointInt2.X = (int)item.PixX;
+                                PoiConfig.PointInt2.Y = (int)item.PixY;
+                            }
+                            if (item.Name == "PointInt3")
+                            {
+                                PoiConfig.PointInt3.X = (int)item.PixX;
+                                PoiConfig.PointInt3.Y = (int)item.PixY;
+                            }
+                            if (item.Name == "PointInt4")
+                            {
+                                PoiConfig.PointInt4.X = (int)item.PixX;
+                                PoiConfig.PointInt4.Y = (int)item.PixY;
+                            }
+                            break;
                     }
                 }
                 WaitControlProgressBar.Value = 99;
@@ -1352,6 +1374,22 @@ namespace ColorVision.Engine.Templates.POI
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
             }
+
+            if (PoiConfig.IsPointInt)
+            {
+                PoiPoint PointInt1 = new() { Id = -1, Name = "PointInt1", PointType = RiPointTypes.Point, PixX = PoiConfig.PointInt1.X, PixY = PoiConfig.PointInt1.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt2 = new() { Id = -2, Name = "PointInt2", PointType = RiPointTypes.Point, PixX = PoiConfig.PointInt2.X, PixY = PoiConfig.PointInt2.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt3 = new() { Id = -3, Name = "PointInt3", PointType = RiPointTypes.Point, PixX = PoiConfig.PointInt3.X, PixY = PoiConfig.PointInt3.Y, PixWidth = 1, PixHeight = 1, };
+                PoiPoint PointInt4 = new() { Id = -4, Name = "PointInt4", PointType = RiPointTypes.Point, PixX = PoiConfig.PointInt4.X, PixY = PoiConfig.PointInt4.Y, PixWidth = 1, PixHeight = 1, };
+
+                PoiParam.PoiPoints.Add(PointInt1);
+                PoiParam.PoiPoints.Add(PointInt2);
+                PoiParam.PoiPoints.Add(PointInt3);
+                PoiParam.PoiPoints.Add(PointInt4);
+            }
+
+
+
             WaitControl.Visibility = Visibility.Visible;
             WaitControlProgressBar.Visibility = Visibility.Collapsed;
             WaitControlText.Text = "数据正在保存";

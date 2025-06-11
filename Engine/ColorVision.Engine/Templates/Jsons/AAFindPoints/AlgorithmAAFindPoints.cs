@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Templates.Jsons.AAFindPoints
         {
             Name = "寻找AA区";
             Order = 53;
-            Group = "AR/VR算法";
+            Group = "FindLightArea";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }

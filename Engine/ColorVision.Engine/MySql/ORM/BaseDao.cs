@@ -7,27 +7,20 @@ using System.Linq;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层
     /// </summary>
     public class BaseDao
-    {
+    {  
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
 
-        public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
         public string PKField { get { return _PKField; } set { _PKField = value; } }
         private string _PKField;
-        public MySqlConnection MySqlConnection { get; set; } 
 
         public BaseDao(string tableName, string pkField)
         {
-            MySqlControl = MySqlControl.GetInstance();
-            MySqlControl.MySqlConnectChanged += (s, e) => MySqlConnection = MySqlControl.MySqlConnection;
-            MySqlConnection = MySqlControl.MySqlConnection;
-
             _TableName = tableName;
             _PKField = pkField;
         }
@@ -37,7 +30,8 @@ namespace ColorVision.Engine.MySql.ORM
             int count = -1;
             try
             {
-                MySqlCommand command = new(sql, MySqlConnection);
+                using var conn = CreateConnection();
+                using MySqlCommand command = new(sql, conn);
                 count = command.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -46,18 +40,27 @@ namespace ColorVision.Engine.MySql.ORM
             }
             return count;
         }
+        public virtual MySqlConnection CreateConnection()
+        {
+            // 假设 MySqlControl.ConnectionString 有连接串
+            var conn = new MySqlConnection(MySqlControl.GetConnectionString());
+            conn.Open();
+            return conn;
+        }
 
         public int ExecuteNonQuery(string sql, Dictionary<string, object> param)
         {
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, MySqlConnection);
+                using var conn = CreateConnection();
+                using MySqlCommand command = new MySqlCommand(sql, conn);
                 foreach (var item in param)
                 {
                     command.Parameters.AddWithValue(item.Key, item.Value);
                 }
                 count = command.ExecuteNonQuery();
+
             }
             catch (Exception ex)
             {
@@ -71,17 +74,18 @@ namespace ColorVision.Engine.MySql.ORM
         public DataTable GetData(string sql, Dictionary<string, object>? param)
         {
             DataTable dt = new();
-            if (!MySqlControl.IsConnect) return dt;
             try
             {
                 if (param == null || param.Count == 0)
                 {
-                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlConnection);
+                    using var conn = CreateConnection();
+                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, conn);
                     int count = adapter.Fill(dt);
                 }
                 else
                 {
-                    MySqlCommand command = new(sql, MySqlConnection);
+                    using var conn = CreateConnection();
+                    using MySqlCommand command = new(sql, conn);
                     foreach (var item in param)
                     {
                         command.Parameters.AddWithValue(item.Key, item.Value);
@@ -103,7 +107,8 @@ namespace ColorVision.Engine.MySql.ORM
             string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                using MySqlCommand cmd = new MySqlCommand(sqlStr, MySqlConnection);
+                using var conn = CreateConnection();
+                using MySqlCommand cmd = new MySqlCommand(sqlStr, conn);
                 using MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
                 dataAdapter.RowUpdated += DataAdapter_RowUpdated;
                 using MySqlCommandBuilder builder = new(dataAdapter);

@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using CVCommCore;
 using Newtonsoft.Json;
@@ -56,9 +56,6 @@ namespace ColorVision.Engine.Templates.Compliance
     public class ComplianceJNDDao : BaseTableDao<ComplianceJNDModel>
     {
         public static ComplianceJNDDao Instance { get; set; } = new ComplianceJNDDao();
-        public ComplianceJNDDao() : base("t_scgd_algorithm_result_detail_compliance_jnd")
-        {
-        }
     }
 
 }

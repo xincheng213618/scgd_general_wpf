@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.SFR
@@ -28,9 +28,5 @@ namespace ColorVision.Engine.Templates.SFR
     public class AlgResultSFRDao : BaseTableDao<AlgResultSFRModel>
     {
         public static AlgResultSFRDao Instance { get; set; } = new AlgResultSFRDao();
-
-        public AlgResultSFRDao() : base("t_scgd_algorithm_result_detail_sfr", "id")
-        {
-        }
     }
 }

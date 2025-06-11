@@ -1,4 +1,4 @@
-﻿
+﻿#pragma warning disable CA1847
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -172,7 +172,7 @@ namespace ColorVision.UI.PropertyEditor
         }
 
         #region Folding
-        FoldingManager foldingManager;
+        FoldingManager? foldingManager;
         object foldingStrategy;
 
         void HighlightingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -237,6 +237,7 @@ namespace ColorVision.UI.PropertyEditor
             textEditor.Document = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.SuppressFinalize(this);
         }
     }
 }

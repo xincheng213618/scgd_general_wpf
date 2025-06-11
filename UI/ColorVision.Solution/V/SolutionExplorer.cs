@@ -10,9 +10,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
-using System.Threading.Tasks;
-using System;
-using System.Linq;
 
 namespace ColorVision.Solution.V
 {

@@ -1,9 +1,10 @@
-﻿using log4net;
-using MySql.Data.MySqlClient;
+﻿using ColorVision.Engine.Services.Dao;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Reflection;
 
 namespace ColorVision.Engine.MySql.ORM
 {
@@ -11,7 +12,7 @@ namespace ColorVision.Engine.MySql.ORM
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
-        public BaseTableDao(string tableName, string pkField ="id") : base(tableName, pkField)
+        public BaseTableDao() : base(ReflectionHelper.GetTableName(typeof(T)), ReflectionHelper.GetPrimaryKey(typeof(T)))
         {
 
         }
@@ -22,6 +23,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         public DataTable SelectById(int id)
         {
+
             string sql = $"select * from {TableName} where id=@id";
             return GetData(sql, new Dictionary<string, object> { { "id", id } });
         }
@@ -87,7 +89,15 @@ namespace ColorVision.Engine.MySql.ORM
                 {
                     DestinationTableName = dataTable.TableName
                 };
-                bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
+
+
+                int i = 0;
+                foreach (DataColumn col in dataTable.Columns)
+                {
+                    bulkCopy.ColumnMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
+                    i++;
+                }
+
                 try
                 {
 
@@ -108,17 +118,6 @@ namespace ColorVision.Engine.MySql.ORM
             return count;
         }
 
-        private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
-        {
-            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new();
-            int i = 0;
-            foreach (DataColumn col in dataTable.Columns)
-            {
-                colMappings.Add(new MySqlConnector.MySqlBulkCopyColumnMapping(i, col.ColumnName));
-                i++;
-            }
-            return colMappings;
-        }
 
 
 
@@ -127,13 +126,35 @@ namespace ColorVision.Engine.MySql.ORM
         public List<T> GetAllByParam(Dictionary<string, object> param,int limit = -1)
         {
             string whereClause = string.Empty;
+            Dictionary<string, object> dbParams = new Dictionary<string, object>();
+
             if (param != null && param.Count > 0)
-                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            {
+                var conditions = new List<string>();
+                foreach (var p in param)
+                {
+                    if (p.Value == null)
+                    {
+                        conditions.Add($"{p.Key} IS NULL");
+                    }
+                    else
+                    {
+                        conditions.Add($"{p.Key} = @{p.Key}");
+                        dbParams.Add(p.Key, p.Value);
+                    }
+                }
+                whereClause = "WHERE " + string.Join(" AND ", conditions);
+            }
+            else
+            {
+                dbParams = param; // 为空也可以传回去
+            }
 
             string sql = $"SELECT * FROM {TableName} {whereClause} ";
             if (limit >= 1)
-                sql += $" ORDER BY id DESC  LIMIT {limit}";
-            DataTable d_info = GetData(sql, param);
+                sql += $" ORDER BY id DESC LIMIT {limit}";
+
+            DataTable d_info = GetData(sql, dbParams);
 
             List<T> list = new List<T>(d_info.Rows.Count);
             try
@@ -236,22 +257,6 @@ namespace ColorVision.Engine.MySql.ORM
                 }
             }
             return list;
-        }
-
-        public int GetNextAvailableId()
-        {
-            int nextId = 1;
-            string query = $"SELECT MAX(id) FROM {TableName}";
-            MySqlCommand cmd = new MySqlCommand(query, MySqlControl.MySqlConnection);
-
-            object result = cmd.ExecuteScalar();
-            if (result != DBNull.Value && result != null)
-            {
-                int maxId = Convert.ToInt32(result);
-                nextId = maxId + 1;
-            }
-
-            return nextId;
         }
     }
 }

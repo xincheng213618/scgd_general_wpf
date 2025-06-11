@@ -1,4 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
+using ColorVision.Engine.Abstractions;
 using ColorVision.ImageEditor;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;

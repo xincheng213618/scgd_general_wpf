@@ -6,7 +6,6 @@
         xmlns:local="clr-namespace:ColorVision.Wizards"
         xmlns:ui ="clr-namespace:ColorVision.UI;assembly=ColorVision.Common"
         xmlns:properties ="clr-namespace:ColorVision.Properties"
-        xmlns:settings ="clr-namespace:ColorVision.Settings"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:WizardWindowConfig}"
         Title="{x:Static properties:Resources.SetupWizard}"  Height="550" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">

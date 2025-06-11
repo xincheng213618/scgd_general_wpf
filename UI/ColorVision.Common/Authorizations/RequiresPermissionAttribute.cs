@@ -2,7 +2,7 @@
 
 namespace ColorVision.UI.Authorizations
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, Inherited = true, AllowMultiple = false)]
     public class RequiresPermissionAttribute : Attribute
     {
         public PermissionMode RequiredPermission { get; }

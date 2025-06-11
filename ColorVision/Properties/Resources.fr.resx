@@ -183,9 +183,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Réglages généraux</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Vérifier les mises à jour</value>
   </data>
@@ -194,9 +191,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>fenêtre transparente</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universel</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>projet</value>

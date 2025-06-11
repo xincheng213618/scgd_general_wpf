@@ -27,10 +27,5 @@ namespace ColorVision.Engine.Templates.Validate.Dic
     public class SysDictionaryModItemValidateDao : BaseTableDao<SysDictionaryModItemValidateModel>
     {
         public static SysDictionaryModItemValidateDao Instance { get; set; } = new SysDictionaryModItemValidateDao();
-
-        public SysDictionaryModItemValidateDao() : base("t_scgd_sys_dictionary_mod_item_validate", "id")
-        {
-
-        }
     }
 }

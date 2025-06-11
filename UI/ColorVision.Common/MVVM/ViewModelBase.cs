@@ -9,7 +9,7 @@ namespace ColorVision.Common.MVVM
     /// 实例化一个Mode
     /// </summary>'
     [Serializable]
-    public  class ViewModelBase :INotifyPropertyChanged
+    public class ViewModelBase :INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>

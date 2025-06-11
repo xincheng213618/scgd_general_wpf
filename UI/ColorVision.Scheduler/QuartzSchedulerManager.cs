@@ -7,13 +7,19 @@ using System.Windows;
 
 namespace ColorVision.Scheduler
 {
+    public class QuartzSchedulerConfig : IConfig
+    {
+        public static QuartzSchedulerConfig Instance => ConfigService.Instance.GetRequiredService<QuartzSchedulerConfig>();
+        public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
+
+    }
+
     public class QuartzSchedulerManager
     {
         private static QuartzSchedulerManager _instance;
         private static readonly object _locker = new();
         public static QuartzSchedulerManager GetInstance() { lock (_locker) { return _instance ??= new QuartzSchedulerManager(); } }
-        public ObservableCollection<SchedulerInfo> TaskInfos { get; set; } = new ObservableCollection<SchedulerInfo>();
-
+        public ObservableCollection<SchedulerInfo> TaskInfos => QuartzSchedulerConfig.Instance.TaskInfos;
         public IScheduler Scheduler { get; set; }
         public TaskExecutionListener Listener { get; set; }
 
@@ -87,19 +93,22 @@ namespace ColorVision.Scheduler
             Scheduler.ListenerManager.AddJobListener(Listener);
             Jobs = new Dictionary<string, Type>();
 
-            Application.Current.Dispatcher.Invoke(() =>
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
-                foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+                foreach (var type in assembly.GetTypes())
                 {
-                    foreach (var type in assembly.GetTypes())
+                    if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
                     {
-                        if (typeof(IJob).IsAssignableFrom(type) && !type.IsInterface)
-                        {
-                            Jobs.Add(type.Name, type);
-                        }
+                        Jobs.Add(type.Name, type);
                     }
                 }
-            });
+            }
+            //5s 后恢复任务
+            await Task.Delay(5000);
+            foreach (var item in QuartzSchedulerConfig.Instance.TaskInfos)
+            {
+                await CreateJob(item);
+            }
         }
         public async Task StopJob(string jobName, string groupName)
         {
@@ -210,7 +219,11 @@ namespace ColorVision.Scheduler
                 // 调度Job
                 await scheduler.ScheduleJob(job, trigger);
                 schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-                TaskInfos.Add(schedulerInfo);
+                if (!TaskInfos.Contains(schedulerInfo))
+                {
+                    TaskInfos.Add(schedulerInfo);
+
+                }
             }
         }
 

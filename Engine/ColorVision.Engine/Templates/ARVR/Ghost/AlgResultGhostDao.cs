@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -57,8 +57,5 @@ namespace ColorVision.Engine.Templates.Ghost
     {
         public static AlgResultGhostDao Instance { get; set; } = new AlgResultGhostDao();
 
-        public AlgResultGhostDao() : base("t_scgd_algorithm_result_detail_ghost", "id")
-        {
-        }
     }
 }

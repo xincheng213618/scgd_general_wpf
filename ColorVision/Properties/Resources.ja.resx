@@ -180,9 +180,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>ウィザード</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>一般設定</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>アップデートを確認</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>透明な窓</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>ユニバーサル</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>

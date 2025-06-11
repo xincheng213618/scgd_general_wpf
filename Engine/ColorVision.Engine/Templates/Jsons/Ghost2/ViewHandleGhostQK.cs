@@ -1,13 +1,17 @@
 ﻿#pragma warning disable CS8602
 
-using ColorVision.Engine.Interfaces;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.UI;
 using log4net;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
@@ -43,11 +47,28 @@ namespace ColorVision.Engine.Templates.Jsons.Ghost2
             if (result.ViewResults == null)
             {
                 result.ViewResults = new ObservableCollection<IViewResult>();
-                List<DetailCommonModel> AlgResultModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
-                foreach (var item in AlgResultModels)
+
+                List<DetailCommonModel> detailCommonModels = DeatilCommonDao.Instance.GetAllByPid(result.Id);
+                if (detailCommonModels.Count == 1)
                 {
-                    GhostView blackMuraView = new GhostView(item);
-                    result.ViewResults.Add(blackMuraView);
+                    GhostView ghostresult = new GhostView(detailCommonModels[0]);
+                    result.ViewResults.Add(ghostresult);
+
+                    RelayCommand SelectrelayCommand = new RelayCommand(a =>
+                    {
+                        PlatformHelper.OpenFolderAndSelectFile(ghostresult.ResultFileName);
+
+                    }, a => File.Exists(ghostresult.ResultFileName));
+
+                    RelayCommand OpenrelayCommand = new RelayCommand(a =>
+                    {
+                        AvalonEditWindow avalonEditWindow = new AvalonEditWindow(ghostresult.ResultFileName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                        avalonEditWindow.ShowDialog();
+                    }, a => File.Exists(ghostresult.ResultFileName));
+
+
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = "选中2.0结果集", Command = SelectrelayCommand });
+                    result.ContextMenu.Items.Add(new MenuItem() { Header = "打开2.0结果集", Command = OpenrelayCommand });
                 }
             }
         }

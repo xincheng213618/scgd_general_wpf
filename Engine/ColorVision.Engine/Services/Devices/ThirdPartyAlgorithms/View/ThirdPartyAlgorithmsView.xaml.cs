@@ -26,7 +26,7 @@ using ColorVision.ImageEditor;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.UI;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Views
 {

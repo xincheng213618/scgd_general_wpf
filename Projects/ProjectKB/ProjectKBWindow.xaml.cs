@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
@@ -60,9 +60,6 @@ namespace ProjectKB
             this.DataContext = ProjectKBConfig.Instance;
             listView1.ItemsSource = ViewResluts;
             InitFlow();
-
-            ImageView.Config.IsLayoutUpdated = false;
-
             Task.Run(async() =>
             {
                 if (ProjectKBConfig.Instance.AutoModbusConnect)

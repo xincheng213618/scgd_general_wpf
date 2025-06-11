@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace ColorVision.UI
 {
-    public class AssemblyHandler
+    public class AssemblyHandler: IAssemblyService
     {
         private static ILog log = LogManager.GetLogger(typeof(AssemblyHandler));
         private static AssemblyHandler _instance;
@@ -15,6 +15,7 @@ namespace ColorVision.UI
             lock (_locker)
             {
                 _instance ??= new AssemblyHandler();
+                AssemblyService.SetInstance(_instance);
                 return _instance;
             }
         }
@@ -117,7 +118,7 @@ namespace ColorVision.UI
         }
         private static readonly ConcurrentDictionary<Type, List<Type>> _cachedImplementingTypes = new ConcurrentDictionary<Type, List<Type>>();
 
-        public static List<T> LoadImplementations<T>( params object?[]? args) where T : class
+        public  List<T> LoadImplementations<T>( params object?[]? args) where T : class
         {
             var targetInterfaceType = typeof(T);
             // **新增检查：确保 T 是一个接口类型**

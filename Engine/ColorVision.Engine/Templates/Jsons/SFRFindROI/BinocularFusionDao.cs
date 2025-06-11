@@ -1,10 +1,10 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
 {
 
-    [Table("t_scgd_algorithm_result_detail_compliance_jnd")]
+    [Table("t_scgd_algorithm_result_detail_binocular_fusion")]
     public class BinocularFusionModel : PKModel, IViewResult
     {
         [Column("pid")]
@@ -29,9 +29,6 @@ namespace ColorVision.Engine.Templates.Jsons.SFRFindROI
     public class BinocularFusionDao : BaseTableDao<BinocularFusionModel>
     {
         public static BinocularFusionDao Instance { get; set; } = new BinocularFusionDao();
-        public BinocularFusionDao() : base("t_scgd_algorithm_result_detail_binocular_fusion")
-        {
-        }
     }
 
 

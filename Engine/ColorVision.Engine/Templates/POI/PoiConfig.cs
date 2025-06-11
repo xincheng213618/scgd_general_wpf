@@ -29,7 +29,8 @@ namespace ColorVision.Engine.Templates.POI
         Circle = 0,
         Rect = 1,
         Mask = 2,
-        Polygon =3
+        Point = 3,
+        Polygon = 4
     }
 
     public enum BorderType
@@ -67,6 +68,18 @@ namespace ColorVision.Engine.Templates.POI
         public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
         private float _Threshold = 50;
     }
+
+
+    public class PointInt : ViewModelBase
+    {
+        public int X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
+        private int _X;
+
+        public int Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
+        private int _Y;
+    }
+
+
 
     public class FindLuminousArea : ViewModelBase
     {
@@ -250,6 +263,22 @@ namespace ColorVision.Engine.Templates.POI
         public int Polygon4X { get => (int)Polygon4.X; set { Polygon4 = new Point(value, Polygon4.Y); NotifyPropertyChanged(); } }
         [JsonIgnore]
         public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
+
+        public bool IsPointInt { get => _IsPointInt; set { _IsPointInt = value; NotifyPropertyChanged(); } }
+        private bool _IsPointInt;
+
+        public PointInt PointInt1 { get => _PointInt1; set { _PointInt1 = value; } }
+        private PointInt _PointInt1 = new PointInt();
+
+        public PointInt PointInt2 { get => _PointInt2; set { _PointInt2 = value; } }
+        private PointInt _PointInt2 = new PointInt();
+        public PointInt PointInt3 { get => _PointInt3; set { _PointInt3 = value; } }
+        private PointInt _PointInt3 = new PointInt();
+
+        public PointInt PointInt4 { get => _PointInt4; set { _PointInt4 = value; } }
+        private PointInt _PointInt4 = new PointInt();
+
+
 
         public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 

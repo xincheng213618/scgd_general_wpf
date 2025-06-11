@@ -17,7 +17,13 @@ namespace ColorVision.Engine.Rbac
         }
     }
 
+    public class LoaclUserSave : IConfig
+    {
+        public static LoaclUserSave Instance =>ConfigService.Instance.GetRequiredService<LoaclUserSave>();
+        public UserModel? UserModel { get; set; }
 
+        public UserDetailModel UserDetailModel { get; set; }
+    }
 
     public class UserManager:ViewModelBase
     {
@@ -46,33 +52,19 @@ namespace ColorVision.Engine.Rbac
             Save();
         }
 
-        public UserModel? UserModel { get; set; }
+        public UserModel? UserModel { get; set; } = new UserModel();
 
-        public UserDetailModel UserDetailModel { get; set; }
+        public UserDetailModel UserDetailModel { get; set; } = new UserDetailModel();
 
         public void Load()
         {
-            IsLogin = UserDao.Instance.Checklogin(UserConfig.Instance.Account,UserConfig.Instance.UserPwd);
+            IsLogin = true;
+            LoaclUserSave.Instance.UserModel = LoaclUserSave.Instance.UserModel ?? new UserModel() { UserName = "admin", UserPwd = "admin" };
+            UserModel = LoaclUserSave.Instance.UserModel;
 
-            UserModel = UserDao.Instance.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "name","admin" } });
-            if (UserModel == null)
-            {
-                UserModel = new UserModel() { UserName = "admin", UserPwd = "admin" };
-                UserDao.Instance.Save(UserModel);
-                UserDetailModel = new UserDetailModel { UserId = UserModel.Id };
-                UserDetailDao.Instance.Save(UserDetailModel);
-            }
-            var  detailModel = UserDetailDao.Instance.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "user_id", UserModel.Id } });
-            if (detailModel !=null)
-            {
+            LoaclUserSave.Instance.UserDetailModel = LoaclUserSave.Instance.UserDetailModel ?? new UserDetailModel { UserId = UserModel.Id };
 
-                UserDetailModel = detailModel;
-            }
-            else
-            {
-                UserDetailModel = new UserDetailModel { UserId = UserModel.Id };
-                UserDetailDao.Instance.Save(UserDetailModel);
-            }
+            UserDetailModel = LoaclUserSave.Instance.UserDetailModel;
         }
 
 
@@ -83,7 +75,6 @@ namespace ColorVision.Engine.Rbac
 
         public void Save()
         {
-            UserDetailDao.Instance.Save(UserDetailModel);
             IsLogin = true;
             Authorization.Instance.PermissionMode = UserDetailModel.PermissionMode;
         }

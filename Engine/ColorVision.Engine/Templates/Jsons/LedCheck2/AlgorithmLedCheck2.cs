@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using CVCommCore.CVAlgorithm;
@@ -19,6 +19,11 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         private double _X;
         public double Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }
         private double _Y;
+
+        public  PointFloat ToPointFloat()
+        {
+            return new PointFloat() { X = (float)X, Y = (float)Y };
+        }
     }
 
 
@@ -59,10 +64,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
         public PointVM Point4 { get => _Point4; set { _Point4 = value; NotifyPropertyChanged(); } }
         private PointVM _Point4 = new PointVM();
 
-        public PointFloat ToPointFloat(PointVM point)
-        {
-            return new PointFloat() { X = (float)point.X, Y = (float)point.Y };
-        }
+
 
 
         public override UserControl GetUserControl()
@@ -86,7 +88,7 @@ namespace ColorVision.Engine.Templates.Jsons.LedCheck2
             Params.Add("FDAType", CVOLEDFDAType);
 
 
-            PointFloat[] FixedLEDPoint = new PointFloat[] { ToPointFloat(Point1), ToPointFloat(Point2), ToPointFloat(Point3), ToPointFloat(Point4) };
+            PointFloat[] FixedLEDPoint = new PointFloat[] { Point1.ToPointFloat(), Point2.ToPointFloat(), Point3.ToPointFloat(), Point4.ToPointFloat() };
             Params.Add("FixedLEDPoint", FixedLEDPoint);
 
             MsgSend msg = new()

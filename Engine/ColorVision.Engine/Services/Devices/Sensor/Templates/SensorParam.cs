@@ -1,7 +1,9 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.SysDictionary;
 using MQTTMessageLib.Sensor;
 using System;
 using System.Collections.Generic;
@@ -22,6 +24,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         public TemplateSensor(string code)
         {
             Code = code;
+            TemplateDicId = SysDictionaryModMasterDao.Instance.GetByCode(code, 0).Id;
+
             if (Params.TryGetValue(Code, out var templatesParams))
             {
                 TemplateParams = templatesParams;
@@ -32,6 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 TemplateParams = templatesParams;
                 Params.Add(Code, templatesParams);
             }
+
             IsUserControl = true;
         }
         //这里创建模板的时候默认不启用

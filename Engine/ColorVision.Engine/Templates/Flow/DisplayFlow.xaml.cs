@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Scheduler;
 using ColorVision.UI;
-using ColorVision.UI.SocketProtocol;
+using ColorVision.SocketProtocol;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;

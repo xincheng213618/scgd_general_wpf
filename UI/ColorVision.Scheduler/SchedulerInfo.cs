@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System.ComponentModel;
 
 namespace ColorVision.Scheduler
@@ -42,9 +43,13 @@ namespace ColorVision.Scheduler
 
     public class SchedulerInfo: ViewModelBase
     {
+        [JsonIgnore]
         public RelayCommand PausedCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand DeleteCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand RunCommand { get; set; }
+        [JsonIgnore]
         public RelayCommand ResumeJobCommand { get; set; }
 
         public SchedulerInfo()
@@ -134,6 +139,7 @@ namespace ColorVision.Scheduler
 
         public string CronExpression { get => _CronExpression;set { _CronExpression = value; NotifyPropertyChanged(); } }
         private string _CronExpression;
+
         public Type JobType { get => _JobType; set { _JobType = value; NotifyPropertyChanged(); } }
         private Type _JobType;
 

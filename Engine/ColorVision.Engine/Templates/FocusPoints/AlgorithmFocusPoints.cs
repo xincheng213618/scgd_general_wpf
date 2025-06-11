@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -11,11 +12,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.FocusPoints
 {
-    public class AlgorithmFocusPoints : ViewModelBase
+    public class AlgorithmFocusPoints : DisplayAlgorithmBase
     {
-        public string Name { get; set; } = "发光区1";
-        public int Order { get; set; } = 12;
-
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.DService; }
 
@@ -23,6 +21,9 @@ namespace ColorVision.Engine.Templates.FocusPoints
 
         public AlgorithmFocusPoints(DeviceAlgorithm deviceAlgorithm)
         {
+            Name = "发光区1";
+            Order = 12;
+            Group = "数据提取算法";
             Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
@@ -36,7 +37,7 @@ namespace ColorVision.Engine.Templates.FocusPoints
         private int _TemplateSelectedIndex;
 
 
-        public UserControl GetUserControl()
+        public override UserControl GetUserControl()
         {
             UserControl ??= new DisplayFocusPoints(this);
             return UserControl;

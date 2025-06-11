@@ -1,7 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.Algorithms;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor;
@@ -216,27 +215,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             switch (result.ResultType)
             {
-                case AlgorithmResultType.LightArea:
-                    result.ViewResults ??= new ObservableCollection<IViewResult>(AlgResultLightAreaDao.Instance.GetAllByPid(result.Id));
-                    DVPolygon polygon = new DVPolygon();
-                    List<System.Windows.Point> point1s = new List<System.Windows.Point>();
-                    foreach (var item in result.ViewResults.ToSpecificViewResults<AlgResultLightAreaModel>())
-                    {
-                        point1s.Add(new System.Windows.Point((int)item.PosX, (int)item.PosY));
-                    }
-                    foreach (var item in GrahamScan.ComputeConvexHull(point1s))
-                    {
-                        polygon.Attribute.Points.Add(new Point(item.X, item.Y));
-                    }
-                    polygon.Attribute.Brush = Brushes.Transparent;
-                    polygon.Attribute.Pen = new Pen(Brushes.Blue, 1);
-                    polygon.Attribute.Id = -1;
-                    polygon.IsComple = true;
-                    polygon.Render();
-                    ImageView.AddVisual(polygon);
-                    header = new List<string> { "PosX", "PosY" };
-                    bdHeader = new List<string> { "PosX", "PosY" };
-                    break;
                 case AlgorithmResultType.POI_XYZ_File:
                 case AlgorithmResultType.POI_Y_File:
                     header = new List<string> { "file_name", "FileUrl", "FileType" };

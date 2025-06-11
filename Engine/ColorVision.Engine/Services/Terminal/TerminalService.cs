@@ -115,7 +115,7 @@ namespace ColorVision.Engine.Services.Terminal
 
         public override void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(),"是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(),"非必要情况下请勿删除,是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
             Parent.RemoveChild(this);
             if (SysResourceModel != null)

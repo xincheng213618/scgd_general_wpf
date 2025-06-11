@@ -4,7 +4,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Properties;
-using ColorVision.Solution.Searches;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;
@@ -67,7 +66,8 @@ namespace ColorVision.Solution.V
 
         public override void Open()
         {
-            SolutionViewExtensions.SolutionView.Open(FileInfo.FullName);
+            var IEditor = EditorManager.Instance.OpenFile(FullPath);
+            IEditor?.Open(FullPath);
         }
 
         public override void Delete()

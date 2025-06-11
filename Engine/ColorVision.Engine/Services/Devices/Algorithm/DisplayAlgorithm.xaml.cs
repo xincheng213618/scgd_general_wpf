@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.UI;
 using CVCommCore;
 using log4net;
@@ -85,6 +85,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     CB_StackPanel.Children.Add(algorithm.GetUserControl());
                 }
             };
+
+
 
             void CB_AlgorithmTypesChanged()
             {

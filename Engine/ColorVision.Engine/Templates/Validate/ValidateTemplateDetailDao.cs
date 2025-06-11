@@ -4,17 +4,26 @@ using System.Data;
 
 namespace ColorVision.Engine.Templates.Validate
 {
+    [Table("t_scgd_rule_validate_template_detail")]
     public class ValidateTemplateDetailModel : PKModel
-    {        public int DicPid { get; set; }
-
+    {
+        [Column("dic_pid")]
+        public int DicPid { get; set; }
+        [Column("pid")]
         public int Pid { get; set; }
 
+        [Column("code")]
         public string Code { get; set; }
-
+        [Column("val_max")]
         public float ValMax { get; set; }
+
+        [Column("val_min")]
         public float ValMin { get; set; }
+        [Column("val_equal")]
         public string ValEqual { get; set; }
+        [Column("val_radix")]
         public short ValRadix { get; set; }
+        [Column("val_type")]
         public short ValType { get; set; }
     }
 
@@ -24,47 +33,8 @@ namespace ColorVision.Engine.Templates.Validate
     {
         public static ValidateTemplateDetailDao Instance { get; set; } = new ValidateTemplateDetailDao();
 
-        public ValidateTemplateDetailDao() : base("t_scgd_rule_validate_template_detail", "id")
+        public ValidateTemplateDetailDao() : base()
         {
         }
-
-        public override ValidateTemplateDetailModel GetModelFromDataRow(DataRow item)
-        {
-            ValidateTemplateDetailModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                DicPid = item.Field<int>("dic_pid"),
-                Pid = item.Field<int>("pid"),
-                Code = item.Field<string>("code"),
-                ValMax = item.Field<float>("val_max"),
-                ValMin = item.Field<float>("val_min"),
-                ValEqual = item.Field<string>("val_equal"),
-                ValRadix = item.Field<short>("val_radix"),
-                ValType = item.Field<short>("val_type"),
-            };
-
-            return model;
-        }
-
-        public override DataRow Model2Row(ValidateTemplateDetailModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                if (item.Id > 0) row["id"] = item.Id;
-                row["dic_pid"] = item.DicPid;
-                row["pid"] = item.Pid;
-                if (item.Code != null)
-                    row["code"] = item.Code;
-                row["val_max"] = item.ValMax;
-                row["val_min"] = item.ValMin;
-                if (item.ValEqual != null)
-                    row["val_equal"] = item.ValEqual;
-                row["val_radix"] = item.ValRadix;
-                row["val_type"] = item.ValType;
-            }
-            return row;
-        }
-
-
     }
 }

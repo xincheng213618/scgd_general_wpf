@@ -9,6 +9,10 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
+    /// <summary>
+    /// 加载插件
+    /// </summary>
+
     public class ConfigHandler: IConfigService
     {
         private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
@@ -20,6 +24,7 @@ namespace ColorVision.UI
             {
                 _instance ??= new ConfigHandler();
                 ConfigService.SetInstance(_instance);
+                AssemblyHandler.GetInstance();
                 return _instance; 
             }
         }

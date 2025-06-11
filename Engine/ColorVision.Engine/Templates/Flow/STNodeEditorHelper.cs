@@ -57,6 +57,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Engine.Templates.Jsons.MTF2;
 using ColorVision.Engine.Templates.Jsons.PoiAnalysis;
+using ColorVision.Engine.Templates.Jsons.BuildPOIAA;
+using System.IO;
 
 namespace ColorVision.Engine.Templates.Flow
 {
@@ -180,8 +182,32 @@ namespace ColorVision.Engine.Templates.Flow
             {
                 AddStackPanel(name => pgnode.DeviceCode = name, pgnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
             }
+
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLightAreaNode algorithmFindLightAreaNode)
+            {
+                AddImagePath(name => algorithmFindLightAreaNode.ImgFileName = name, algorithmFindLightAreaNode.ImgFileName);
+
+                AddStackPanel(name => algorithmFindLightAreaNode.DeviceCode = name, algorithmFindLightAreaNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "寻找AA区", new TemplateAAFindPoints());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "发光区定位", new TemplateRoi());
+                AddStackPanel(name => algorithmFindLightAreaNode.TempName = name, algorithmFindLightAreaNode.TempName, "FocusPoints", new TemplateFocusPoints());
+                AddStackPanel(name => algorithmFindLightAreaNode.SavePOITempName = name, algorithmFindLightAreaNode.SavePOITempName, "保存POI", new TemplatePoi());
+
+
+            }
+            if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmFindLEDNode algorithmFindLEDNode)
+            {
+                AddImagePath(name => algorithmFindLEDNode.ImgFileName = name, algorithmFindLEDNode.ImgFileName);
+
+                AddStackPanel(name => algorithmFindLEDNode.DeviceCode = name, algorithmFindLEDNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+                AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "亚像素灯珠检测", new TemplateLedCheck2());
+                AddStackPanel(name => algorithmFindLEDNode.TempName = name, algorithmFindLEDNode.TempName, "像素级灯珠检测", new TemplateLedCheck());
+
+            }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.RealPOINode realPOINode)
             {
+                AddStackPanel(name => realPOINode.DeviceCode = name, realPOINode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
                 AddStackPanel(name => realPOINode.FilterTemplateName = name, realPOINode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => realPOINode.ReviseTemplateName = name, realPOINode.OutputTemplateName, "POI修正", new TemplatePoiReviseParam());
                 AddStackPanel(name => realPOINode.OutputTemplateName = name, realPOINode.OutputTemplateName, "文件输出模板", new TemplatePoiOutputParam());
@@ -229,21 +255,31 @@ namespace ColorVision.Engine.Templates.Flow
                 AddStackPanel(name => commCaeraNode.POITempName = name, commCaeraNode.POITempName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => commCaeraNode.POIFilterTempName = name, commCaeraNode.POIFilterTempName, "POI过滤", new TemplatePoiFilterParam());
                 AddStackPanel(name => commCaeraNode.POIReviseTempName = name, commCaeraNode.POIReviseTempName, "POI修正", new TemplatePoiReviseParam());
+
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmGhostV2Node algorithmGhostNode)
             {
+                AddImagePath(name => algorithmGhostNode.ImgFileName = name, algorithmGhostNode.ImgFileName);
+
+                AddStackPanel(name => algorithmGhostNode.DeviceCode = name, algorithmGhostNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
+
                 AddStackPanel1(name => algorithmGhostNode.TempName = name, algorithmGhostNode.TempName, "Ghost", new TemplateGhostQK(), new TemplateGhost());
             }
 
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmBlackMuraNode algorithmBlackMuraNode)
             {
+                AddImagePath(name => algorithmBlackMuraNode.ImgFileName = name, algorithmBlackMuraNode.ImgFileName);
+
                 AddStackPanel(name => algorithmBlackMuraNode.DeviceCode = name, algorithmBlackMuraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => algorithmBlackMuraNode.TempName = name, algorithmBlackMuraNode.TempName, "BlackMura", new TemplateBlackMura());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmKBNode kbnode)
             {
+                AddImagePath(name => kbnode.ImgFileName = name, kbnode.ImgFileName);
+
+
                 AddStackPanel(name => kbnode.DeviceCode = name, kbnode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddStackPanelKB(name => kbnode.TempName = name, kbnode.TempName, "KB", new TemplateKB());
@@ -253,6 +289,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Algorithm.CalibrationNode calibrationNode)
             {
+                AddImagePath(name => calibrationNode.ImgFileName = name, calibrationNode.ImgFileName);
+
                 AddStackPanel(name => calibrationNode.DeviceCode = name, calibrationNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCalibration>().ToList().Find(a => a.Code == calibrationNode.DeviceCode);
@@ -263,6 +301,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgorithmOLEDNode olednode)
             {
+                AddImagePath(name => olednode.ImgFileName = name, olednode.ImgFileName);
+
                 AddStackPanel(name => olednode.DeviceCode = name, olednode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => olednode.TempName = name, olednode.TempName, "亚像素", new TemplateLedCheck2());
             }
@@ -272,6 +312,8 @@ namespace ColorVision.Engine.Templates.Flow
                 void Refesh()
                 {
                     SignStackPanel.Children.Clear();
+                    AddImagePath(name => algorithmNode1.ImgFileName = name, algorithmNode1.ImgFileName);
+
                     AddStackPanel(name => algorithmNode1.DeviceCode = name, algorithmNode1.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                     switch (algorithmNode1.Algorithm)
@@ -305,7 +347,6 @@ namespace ColorVision.Engine.Templates.Flow
                 algorithmNode1.nodeEvent -= (s, e) => Refesh();
                 algorithmNode1.nodeEvent += (s, e) => Refesh();
                 Refesh();
-
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.OLED.Algorithm2InNode algorithmNode2)
@@ -351,6 +392,8 @@ namespace ColorVision.Engine.Templates.Flow
                 void Refesh()
                 {
                     SignStackPanel.Children.Clear();
+                    AddImagePath(name => algorithmNode.ImgFileName =name, algorithmNode.ImgFileName);
+
                     AddStackPanel(name => algorithmNode.DeviceCode = name, algorithmNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                     switch (algorithmNode.Algorithm)
@@ -399,6 +442,9 @@ namespace ColorVision.Engine.Templates.Flow
                         case FlowEngineLib.Algorithm.AlgorithmType.AA布点:
                             AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "AA布点", new TemplateAAFindPoints());
                             break;
+                        case FlowEngineLib.Algorithm.AlgorithmType.图像裁剪:
+                            AddStackPanel(name => algorithmNode.TempName = name, algorithmNode.TempName, "图像裁剪", new TemplateImageCropping());
+                            break;
                         default:
                             break;
                     }
@@ -412,6 +458,7 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.CVCameraNode cvCameraNode)
             {
+
                 AddStackPanel(name => cvCameraNode.DeviceCode = name, cvCameraNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList());
 
                 var reuslt = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList().Find(a => a.Code == cvCameraNode.DeviceCode);
@@ -439,18 +486,28 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.POI.POIAnalysisNode PoiAnalysis)
             {
+
+
                 AddStackPanel(name => PoiAnalysis.DeviceCode = name, PoiAnalysis.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => PoiAnalysis.TemplateName = name, PoiAnalysis.TemplateName, "PoiAnalysis", new TemplatePoiAnalysis());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.BuildPOINode buidpoi)
             {
+                AddImagePath(name => buidpoi.ImgFileName = name, buidpoi.ImgFileName);
+
                 AddStackPanel(name => buidpoi.DeviceCode = name, buidpoi.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
-                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "POI模板", new TemplateBuildPoi());
+                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "布点模板", new TemplateBuildPoi());
+                AddStackPanel(name => buidpoi.TemplateName = name, buidpoi.TemplateName, "ABuildPOIAAA", new TemplateBuildPOIAA());
+                AddStackPanel(name => buidpoi.RePOITemplateName = name, buidpoi.RePOITemplateName, "RePOI", new TemplatePoi());
+                AddStackPanel(name => buidpoi.LayoutROITemplate = name, buidpoi.LayoutROITemplate, "布点ROI", new TemplatePoi());
+                AddStackPanel(name => buidpoi.SavePOITempName = name, buidpoi.SavePOITempName, "SavePOI", new TemplatePoi());
             }
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.Node.Algorithm.AlgDataLoadNode algDataLoadNode)
             {
+
+
                 AddStackPanel(name => algDataLoadNode.DeviceCode = name, algDataLoadNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
 
                 AddStackPanel(name => algDataLoadNode.TempName = name, algDataLoadNode.TempName, "模板", new TemplateDataLoad());
@@ -462,6 +519,9 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (STNodeEditor.ActiveNode is FlowEngineLib.POINode poinode)
             {
+                AddImagePath(name => poinode.ImgFileName = name, poinode.ImgFileName);
+
+
                 AddStackPanel(name => poinode.DeviceCode = name, poinode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceAlgorithm>().ToList());
                 AddStackPanel(name => poinode.TemplateName = name, poinode.TemplateName, "POI模板", new TemplatePoi());
                 AddStackPanel(name => poinode.FilterTemplateName = name, poinode.FilterTemplateName, "POI过滤", new TemplatePoiFilterParam());
@@ -471,6 +531,8 @@ namespace ColorVision.Engine.Templates.Flow
 
             if (STNodeEditor.ActiveNode is FlowEngineLib.CommonSensorNode commonsendorNode)
             {
+
+
                 AddStackPanel(name => commonsendorNode.DeviceCode = name, commonsendorNode.DeviceCode, "", ServiceManager.GetInstance().DeviceServices.OfType<DeviceSensor>().ToList());
                 AddStackPanel(name => commonsendorNode.TempName = name, commonsendorNode.TempName, "模板名称", TemplateSensor.AllParams);
             }
@@ -496,6 +558,81 @@ namespace ColorVision.Engine.Templates.Flow
                 algComplianceMathNode.nodeEvent += (s, e) => Refesh();
                 Refesh();
             }
+        }
+
+        void AddImagePath(Action<string> updateStorageAction, string filename)
+        {
+            var dockPanel = new DockPanel { Margin = new Thickness(0, 0, 0, 2) };
+            dockPanel.Children.Add(new TextBlock
+            {
+                Text = "图像",
+                Width = 50,
+                Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"]
+            });
+
+            // 文本框
+            var textBox = new TextBox
+            {
+                Width = 150,
+                Margin = new Thickness(0, 0, 0, 0),
+                HorizontalAlignment =HorizontalAlignment.Left,
+                Style = (Style)Application.Current.FindResource("TextBox.Small"),
+                Text = filename
+            };
+            textBox.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Enter)
+                {
+                    Common.NativeMethods.Keyboard.PressKey(0x09);
+                    e.Handled = true;
+                }
+            };
+
+            // 绑定变更事件
+            textBox.TextChanged += (s, e) =>
+            {
+                updateStorageAction?.Invoke(textBox.Text);
+            };
+
+            // 选择文件按钮
+            var selectButton = new Button
+            {
+                Content = "...",
+                Margin = new Thickness(5, 0, 0, 0)
+            };
+            selectButton.Click += (s, e) =>
+            {
+                var openFileDialog = new Microsoft.Win32.OpenFileDialog();
+#if NET8_0
+                if (File.Exists(textBox.Text))
+                {
+                    openFileDialog.DefaultDirectory = Path.GetDirectoryName(textBox.Text);
+                }
+#endif
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    textBox.Text = openFileDialog.FileName;
+                }
+            };
+            DockPanel.SetDock(selectButton, Dock.Right);
+
+            // 打开文件夹按钮
+            var openFolderButton = new Button
+            {
+                Content = "🗁",
+                Margin = new Thickness(5, 0, 0, 0)
+            };
+            openFolderButton.Click += (s, e) =>
+            {
+                Common.Utilities.PlatformHelper.OpenFolder(textBox.Text);
+            };
+            DockPanel.SetDock(openFolderButton, Dock.Right);
+
+            dockPanel.Children.Add(openFolderButton);
+            dockPanel.Children.Add(selectButton);
+            dockPanel.Children.Add(textBox);
+
+            SignStackPanel.Children.Add(dockPanel);
         }
 
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, List<T> itemSource) where T : DeviceService
@@ -588,7 +725,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ObservableCollection<TemplateModel<T>> itemSource) where T : ParamModBase
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
 
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
@@ -740,7 +877,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplateJson<T> template) where T : TemplateJsonParam, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50  ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70  ,Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",
@@ -888,7 +1025,7 @@ namespace ColorVision.Engine.Templates.Flow
         void AddStackPanel<T>(Action<string> updateStorageAction, string tempName, string signName, ITemplate<T> template) where T : ParamModBase, new()
         {
             DockPanel dockPanel = new DockPanel() { Margin = new Thickness(0, 0, 0, 2) };
-            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 50, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
+            dockPanel.Children.Add(new TextBlock() { Text = signName, Width = 70, Foreground = (Brush)Application.Current.Resources["GlobalTextBrush"] });
             HandyControl.Controls.ComboBox comboBox = new HandyControl.Controls.ComboBox()
             {
                 SelectedValuePath = "Value",

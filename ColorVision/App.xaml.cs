@@ -69,6 +69,8 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
             if (File.Exists("ColorVision.Solution.dll"))
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
+            if (File.Exists("ColorVision.SocketProtocol.dll"))
+                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;
@@ -145,20 +147,40 @@ namespace ColorVision
 
             log.Info($"程序打开{Assembly.GetExecutingAssembly().GetName().Version}");
 
+
+
+
+
             log.Info(UI.ACE.License.GetMachineCode());
             if (!UI.ACE.License.Check())
             {
                 log.Info("检测不到许可证，正在创建许可证");
                 UI.ACE.License.Create();
             }
+            bool result = StartupRegistryChecker.CheckAndSet();
+            if (!result)
+            {
+                if (MessageBox.Show("检测到软件上次没有成功打开，是否禁用插件", "ColorVision", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
 
-            PluginManager.LoadPlugins("Plugins");
+                }
+                else
+                {
+                    PluginManager.LoadPlugins("Plugins");
+                }
+            }
+            else
+            {
+                PluginManager.LoadPlugins("Plugins");
+            }
+
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            TrayIconManager.GetInstance();
+            //这里显示托盘控件
+            //TrayIconManager.GetInstance();
 
 
             //代码先进入启动窗口
@@ -206,14 +228,14 @@ namespace ColorVision
             }
         }
 
-
         /// <summary>
         /// Application DelayClose
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
-
+            //正常结束时清除标志位
+            StartupRegistryChecker.Clear();
             //Environment.Exit(0);
         }
     }

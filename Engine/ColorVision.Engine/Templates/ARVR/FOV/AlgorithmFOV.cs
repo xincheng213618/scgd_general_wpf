@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.Services.Devices.Algorithm;
 using MQTTMessageLib;
@@ -24,8 +24,8 @@ namespace ColorVision.Engine.Templates.FOV
         {
             Name = "FOV";
             Order = 53;
-			Group = "AR/VR算法";
-			Device = deviceAlgorithm;
+			Group = "FOV";
+            Device = deviceAlgorithm;
             OpenTemplateCommand = new RelayCommand(a => OpenTemplate());
         }
 

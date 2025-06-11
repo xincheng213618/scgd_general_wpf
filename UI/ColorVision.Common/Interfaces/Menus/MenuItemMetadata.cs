@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace ColorVision.UI.Menus
 {
-    public  class MenuItemMetadata : IMenuItem
+    public class MenuItemMetadata : IMenuItem
     {
         public string? OwnerGuid { get; set; } = MenuItemConstants.Menu;
 
@@ -20,6 +20,8 @@ namespace ColorVision.UI.Menus
 
         public ICommand? Command { get; set; }
         public Visibility Visibility { get; set; }
+        public bool? IsChecked { get; set; }
+
     }
 
 }
