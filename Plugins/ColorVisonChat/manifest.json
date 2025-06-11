@@ -1,9 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ColorVisonChat",
-  "name": "ColorVisonChat",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "ColorVisonChat.dll",
-  "requires": "1.0.0.0"
-} 

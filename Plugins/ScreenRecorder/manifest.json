@@ -1,9 +1,0 @@
-{
-  "manifest_version": 1,
-  "Id": "ScreenRecorder",
-  "name": "录像插件",
-  "version": "1.0",
-  "description": "",
-  "dllpath": "ScreenRecorder.dll",
-  "requires": "1.0.0.0"
-} 
