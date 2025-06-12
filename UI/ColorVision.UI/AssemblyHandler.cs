@@ -32,7 +32,7 @@ namespace ColorVision.UI
             string[] excludedPrefixes = {
                 "System", "Microsoft", "netstandard", "WindowsBase",
                 "PresentationCore", "PresentationFramework", "mscorlib",
-                "Newtonsoft", "EntityFramework","log4net"
+                "Newtonsoft", "EntityFramework","log4net","Wpf.Ui","HandyControl"
             };
             if (excludedPrefixes.Any(prefix => name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
             {

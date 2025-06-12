@@ -63,6 +63,7 @@ namespace ColorVision.Plugins
         public RelayCommand OpenStoreCommand { get;  set; }
         public RelayCommand InstallPackageCommand { get; set; }
         public RelayCommand DownloadPackageCommand { get; set; }
+        public RelayCommand OpenViewDllViersionCommand { get; set; }
 
         private DownloadFile DownloadFile { get; set; }
         public PluginManager()
@@ -103,6 +104,13 @@ namespace ColorVision.Plugins
             DownloadPackageCommand = new RelayCommand(a => DownloadPackage());
             DownloadFile = new DownloadFile();
             EditConfigCommand = new RelayCommand(a => new PropertyEditorWindow(Config) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+            OpenViewDllViersionCommand = new RelayCommand(a => OpenViewDllViersion());
+        }
+
+
+        public void OpenViewDllViersion()
+        {
+            new ViewDllVersionsWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
         public string SearchName { get => _SearchName; set { _SearchName = value; NotifyPropertyChanged(); }}

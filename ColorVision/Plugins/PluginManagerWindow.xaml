@@ -25,8 +25,9 @@
                 <StackPanel Orientation="Horizontal" Margin="5">
                     <Button Content="仓库" Command="{Binding OpenStoreCommand}" Margin="0,0,5,0"/>
                     <Button Content="安装包" Command="{Binding InstallPackageCommand}" Margin="0,0,5,0"/>
-                    <hc:ComboBox x:Name="DefalutSearchComboBox" Width="200" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
+                    <hc:ComboBox x:Name="DefalutSearchComboBox" Width="160" HorizontalAlignment="Left"  IsEditable="True" Margin="0,0,5,0" Text="{Binding SearchName, UpdateSourceTrigger=PropertyChanged}" hc:InfoElement.ShowClearButton="True"/>
                     <Button Content="安装" Command="{Binding DownloadPackageCommand}" Margin="0,0,5,0"/>
+                    <Button Content="View" Command="{Binding OpenViewDllViersionCommand}" Margin="0,0,5,0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
                     <Button  Command="{Binding EditConfigCommand}" Padding="2" Height="27" Width="27" >
