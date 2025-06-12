@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1847
+using ICSharpCode.AvalonEdit;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -32,6 +33,8 @@ namespace ColorVision.UI.PropertyEditor
 
             textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
             textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
+            textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+
             SearchPanel.Install(textEditor);
 
             DispatcherTimer foldingUpdateTimer = new DispatcherTimer();
@@ -156,6 +159,10 @@ namespace ColorVision.UI.PropertyEditor
                 };
             }
         }
+        private void Caret_PositionChanged(object? sender, EventArgs e)
+        {
+            StatusText.Text = $"{Properties.Resources.Line}:{textEditor.TextArea.Caret.Line} {Properties.Resources.Column}:{textEditor.TextArea.Caret.Column}";
+        }
 
         void textEditor_TextArea_TextEntering(object sender, TextCompositionEventArgs e)
         {
@@ -238,6 +245,11 @@ namespace ColorVision.UI.PropertyEditor
             GC.Collect();
             GC.WaitForPendingFinalizers();
             GC.SuppressFinalize(this);
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

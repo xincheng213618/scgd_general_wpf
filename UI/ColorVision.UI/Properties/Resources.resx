@@ -271,4 +271,10 @@
   <data name="General" xml:space="preserve">
     <value>通用</value>
   </data>
+  <data name="Line" xml:space="preserve">
+    <value>行</value>
+  </data>
+  <data name="Column" xml:space="preserve">
+    <value>Column</value>
+  </data>
 </root>

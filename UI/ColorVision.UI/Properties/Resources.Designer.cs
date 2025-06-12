@@ -115,6 +115,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Column 的本地化字符串。
+        /// </summary>
+        public static string Column {
+            get {
+                return ResourceManager.GetString("Column", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前速度： 的本地化字符串。
         /// </summary>
         public static string CurrentSpeed {
@@ -273,6 +282,15 @@ namespace ColorVision.UI.Properties {
         public static string LanguageResartSign {
             get {
                 return ResourceManager.GetString("LanguageResartSign", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 行 的本地化字符串。
+        /// </summary>
+        public static string Line {
+            get {
+                return ResourceManager.GetString("Line", resourceCulture);
             }
         }
         
