@@ -32,9 +32,5 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     {
         public static ThirdPartyAlgorithmsResultDao Instance { get; set; } = new ThirdPartyAlgorithmsResultDao();
 
-        public ThirdPartyAlgorithmsResultDao() : base("t_scgd_measure_result_third_party_algorithm")
-        {
-
-        }
     }
 }

@@ -285,4 +285,10 @@
   <data name="SocketBufferSize" xml:space="preserve">
     <value>버퍼 크기</value>
   </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>일반 설정</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>만능인</value>
+  </data>
 </root>

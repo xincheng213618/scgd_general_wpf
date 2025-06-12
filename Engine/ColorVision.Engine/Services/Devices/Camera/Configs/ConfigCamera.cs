@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Configs;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoFocus;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.PhyCameras.Configs;

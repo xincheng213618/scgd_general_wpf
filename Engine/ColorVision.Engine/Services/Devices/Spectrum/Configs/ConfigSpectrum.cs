@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services.Core;
 using Newtonsoft.Json;
 using System.ComponentModel;

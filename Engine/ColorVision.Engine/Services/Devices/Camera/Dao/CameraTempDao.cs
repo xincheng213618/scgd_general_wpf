@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    [Table("t_scgd_camera_temp")]
     public class CameraTempModel : VPKModel
     {
         [Column("temp_value")]
@@ -23,10 +24,6 @@ namespace ColorVision.Engine.Services.Dao
     public class CameraTempDao : BaseTableDao<CameraTempModel>
     {
         public static CameraTempDao Instance { get; set; } = new CameraTempDao();
-
-        public CameraTempDao() : base("t_scgd_camera_temp", "id")
-        {
-        }
 
         public CameraTempModel? GetLatestCameraTemp(int? resId = null)
         {

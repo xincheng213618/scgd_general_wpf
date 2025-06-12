@@ -180,9 +180,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>волшебник</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Общие настройки</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Проверьте наличие обновлений</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>прозрачное окно</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Универсальный</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>проект</value>

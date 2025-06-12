@@ -180,9 +180,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>마법사</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>일반 설정</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>업데이트 확인</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>투명한 창</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>만능인</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>

@@ -183,9 +183,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>向导</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>通用设置</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>检查更新</value>
   </data>
@@ -194,9 +191,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>透明窗口</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>通用</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>工程</value>

@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CS8603,CS8602
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using Newtonsoft.Json;
@@ -8,7 +9,7 @@ using System.Text.RegularExpressions;
 namespace ColorVision.Engine.Archive.Dao
 {
 
-    [DisplayName("归档配置")]
+    [DisplayName("归档配置"),Table("t_scgd_sys_config_archived")]
     public class ConfigArchivedModel : ViewModelBase, IPKModel
     {
         [Column("id"), Browsable(false)]
@@ -42,17 +43,10 @@ namespace ColorVision.Engine.Archive.Dao
     {
         public static ConfigArchivedDao Instance { get; set; } = new ConfigArchivedDao();
 
-        public ConfigArchivedDao() : base("t_scgd_sys_config_archived")
-        {
-        }
     }
     public class GlobleCfgdDao : BaseTableDao<GlobleCfgdModel>
     {
         public static GlobleCfgdDao Instance { get; set; } = new GlobleCfgdDao();
-
-        public GlobleCfgdDao() : base("t_scgd_sys_globle_cfg")
-        {
-        }
 
         public GlobleCfgdModel? GetArchDB()
         {
@@ -70,7 +64,7 @@ namespace ColorVision.Engine.Archive.Dao
     }
 
 
-    [DisplayName("数据库配置")]
+    [DisplayName("数据库配置"),Table("t_scgd_sys_globle_cfg")]
     public class GlobleCfgdModel : ViewModelBase, IPKModel
     {
         [Column("id"), Browsable(false)]

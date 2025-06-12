@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -243,7 +243,7 @@ namespace ColorVision.Engine.Services
 
         public override void Delete()
         {
-            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "非必要情况下请勿删除,是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
 
             Parent.RemoveChild(this);

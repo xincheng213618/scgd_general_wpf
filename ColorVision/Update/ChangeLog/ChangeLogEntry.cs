@@ -26,7 +26,7 @@ namespace ColorVision.Update
             }
         }
 
-        private string _ChangeLog = null;
+        private string _ChangeLog;
         public RelayCommand UpdateCommand { get; set; }
 
         public bool IsUpdateAvailable => AutoUpdater.IsUpdateAvailable(Version);

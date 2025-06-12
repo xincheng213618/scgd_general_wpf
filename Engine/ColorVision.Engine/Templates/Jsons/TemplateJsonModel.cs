@@ -52,8 +52,5 @@ namespace ColorVision.Engine.Templates.Jsons
 
         public static TemplateJsonDao Instance { get; set; } = new TemplateJsonDao();
 
-        public TemplateJsonDao() : base("t_scgd_mod_param_master")
-        {
-        }
     }
 }

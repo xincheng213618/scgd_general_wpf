@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -23,15 +22,8 @@ namespace ColorVision.Engine.MySql
         public MySqlConnection MySqlConnection { get; set; }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig;
-
-        private Timer timer;
         public MySqlControl()
         {
-            timer = new Timer(ReConnect, null, 0, MySqlSetting.Instance.ReConnectTime);
-            MySqlSetting.Instance.ReConnectTimeChanged += (s, e) =>
-            {
-                timer.Change(0, MySqlSetting.Instance.ReConnectTime);
-            };
             Task.Run(async () => 
             {
                 await Task.Delay(10000); // 等待配置加载完成
@@ -103,6 +95,14 @@ namespace ColorVision.Engine.MySql
                 return Task.FromResult(false);
             }
         }
+        public MySqlConnection GetMySqlConnection()
+        {
+            MySqlConnection = new MySqlConnection() { ConnectionString = GetConnectionString(Config) };
+            MySqlConnection.Open();
+            return MySqlConnection;
+        }
+
+
         public List<string> GetTableNames()
         {
             List<string> tableNames = new List<string>();
@@ -157,7 +157,7 @@ namespace ColorVision.Engine.MySql
             var prefixes = new[] { "t_scgd_sys_config", "t_scgd_sys_globle_cfg", "t_scgd_rc", "t_scgd_sys_dictionary", "t_scgd_sys_version" };
 
             tableNames = tableNames
-                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix)))
+                .Where(name => !prefixes.Any(prefix => name.StartsWith(prefix,StringComparison.CurrentCulture)))
                 .ToList();
 
             return tableNames;
@@ -340,7 +340,6 @@ namespace ColorVision.Engine.MySql
         public void Dispose()
         {
             MySqlConnection.Dispose();
-            timer?.Dispose();
             GC.SuppressFinalize(this);
         }
 

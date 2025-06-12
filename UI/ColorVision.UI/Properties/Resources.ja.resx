@@ -285,4 +285,10 @@
   <data name="SocketBufferSize" xml:space="preserve">
     <value>バッファサイズ</value>
   </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>一般設定</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>ユニバーサル</value>
+  </data>
 </root>

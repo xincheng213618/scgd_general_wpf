@@ -6,6 +6,7 @@ using System.Linq;
 
 namespace ColorVision.Engine.Services.Dao
 {
+    [Table("t_scgd_sys_resource")]
     public class SysResourceModel : PKModel
     {
         public SysResourceModel(SysDeviceModel sysDeviceModel)
@@ -44,7 +45,9 @@ namespace ColorVision.Engine.Services.Dao
     public class SysResourceDao : BaseTableDao<SysResourceModel>
     {
         public static SysResourceDao Instance { get; set; } =  new SysResourceDao();
-        public SysResourceDao() : base("t_scgd_sys_resource", "id") { }
+        public SysResourceDao() : base() 
+        {
+        }
 
         public void ADDGroup(int groupId ,int resourceId)
         {

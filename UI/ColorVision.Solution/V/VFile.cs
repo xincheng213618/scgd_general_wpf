@@ -4,7 +4,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.FileMeta;
 using ColorVision.Solution.Properties;
-using ColorVision.Solution.Searches;
 using ColorVision.UI.Menus;
 using System.IO;
 using System.Windows;

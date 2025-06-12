@@ -2,6 +2,7 @@
 
 namespace ColorVision.Engine.Templates.POI.Dao
 {
+    [Table("t_scgd_algorithm_poi_template_detail")]
     public class PoiDetailModel : PKModel
     {
         [Column("name")]
@@ -43,9 +44,5 @@ namespace ColorVision.Engine.Templates.POI.Dao
     public class PoiDetailDao : BaseTableDao<PoiDetailModel>
     {
         public static PoiDetailDao Instance { get; } = new PoiDetailDao();
-
-        public PoiDetailDao() : base("t_scgd_algorithm_poi_template_detail", "id")
-        {
-        }
     }
 }

@@ -265,4 +265,10 @@
   <data name="SocketBufferSize" xml:space="preserve">
     <value>缓冲区大小</value>
   </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>通用设置</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>通用</value>
+  </data>
 </root>

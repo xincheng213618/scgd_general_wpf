@@ -1,9 +1,9 @@
-﻿using ColorVision.Engine.Interfaces;
+﻿using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.Matching
 {
-    [Table("t_scgd_algorithm_result_detail_aoi", PrimaryKey = "id")]
+    [Table("t_scgd_algorithm_result_detail_aoi")]
     public class AlgResultAoiModel : VPKModel, IViewResult
     {
         [Column("pid")]
@@ -65,8 +65,5 @@ namespace ColorVision.Engine.Templates.Matching
     {
         public static AlgResultAoiDao Instance { get; set; } = new AlgResultAoiDao();
 
-        public AlgResultAoiDao() : base("t_scgd_algorithm_result_detail_aoi")
-        {
-        }
     }
 }

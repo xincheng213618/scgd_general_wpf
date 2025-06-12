@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using MySql.Data.MySqlClient;
+using System;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.MySql.ORM
 {
@@ -39,6 +41,22 @@ namespace ColorVision.Engine.MySql.ORM
         public static List<T> GetAllByBatchId<T>(this BaseTableDao<T> dao, int batchid) where T : IPKModel, new()
         {
             return dao.GetAllByParam(new Dictionary<string, object> { { "batch_id", batchid } });
+        }
+
+        public static int GetNextAvailableId<T>(this BaseTableDao<T> dao) where T : IPKModel, new()
+        {
+            int nextId = 1;
+            string query = $"SELECT MAX(id) FROM {dao.TableName}";
+            var conn = new MySqlConnection(MySqlControl.GetConnectionString());
+            conn.Open();
+            using MySqlCommand cmd = new MySqlCommand(query, conn);
+            object result = cmd.ExecuteScalar();
+            if (result != DBNull.Value && result != null)
+            {
+                int maxId = Convert.ToInt32(result);
+                nextId = maxId + 1;
+            }
+            return nextId;
         }
 
     }

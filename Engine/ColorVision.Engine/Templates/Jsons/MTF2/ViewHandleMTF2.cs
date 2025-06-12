@@ -2,26 +2,20 @@
 
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
-using ColorVision.Engine.Templates.Jsons.Ghost2;
-using ColorVision.Engine.Templates.MTF;
-using ColorVision.Engine.Templates.POI.AlgorithmImp;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.UI;
-using ColorVision.UI.Extension;
 using log4net;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Engine.Templates.Jsons.MTF2
 {
@@ -133,8 +127,6 @@ namespace ColorVision.Engine.Templates.Jsons.MTF2
                 view.ImageView.OpenImage(result.FilePath);
 
             Load(view, result);
-
-
 
             if (result.ViewResults.Count == 1)
             {

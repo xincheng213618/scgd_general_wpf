@@ -94,7 +94,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_helper", "Core\openc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "opencv_opengl", "Core\opencv_opengl\opencv_opengl.vcxproj", "{C2909378-C660-4852-8A29-E2C5E7FBC48C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.UI.SocketProtocol", "UI\ColorVision.UI.SocketProtocol\ColorVision.UI.SocketProtocol.csproj", "{70F1E145-B0F9-4D7D-8557-D9996B45EC2A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.SocketProtocol", "UI\ColorVision.SocketProtocol\ColorVision.SocketProtocol.csproj", "{70F1E145-B0F9-4D7D-8557-D9996B45EC2A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

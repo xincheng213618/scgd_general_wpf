@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1708,CS8604,CS8602
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;

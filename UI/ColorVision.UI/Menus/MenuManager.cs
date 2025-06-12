@@ -1,8 +1,9 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1720,CS8620,CA1822,CS8602
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
 using log4net;
 using System.Windows;
 using System.Windows.Controls;
-
 
 namespace ColorVision.UI.Menus
 {
@@ -14,185 +15,187 @@ namespace ColorVision.UI.Menus
         public static MenuManager GetInstance() { lock (_locker) { return _instance ??= new MenuManager(); } }
 
         public Menu Menu { get; set; }
+        public List<IMenuItem> MenuItems { get; private set; } = new();
+        public HashSet<string> FilteredGuids { get; } = new();
 
-        public MenuManager()
+        private bool _initialized;
+        private List<MenuItem> _menuBack = new();
+
+        private MenuManager() { }
+
+        public void AddFilteredGuid(string guid) => FilteredGuids.Add(guid);
+        public void AddFilteredGuids(IEnumerable<string> guids)
         {
-            MenuItems = new List<IMenuItem>();
+            if (guids == null) return;
+            foreach (var guid in guids)
+                FilteredGuids.Add(guid);
+        }
+        public void AddFilteredGuids(params string[] guids)
+        {
+            if (guids == null) return;
+            foreach (var guid in guids)
+                FilteredGuids.Add(guid);
         }
 
-        public List<IMenuItem> GetIMenuItem()
+        public void RefreshMenuItemsByGuid(string ownerGuid)
         {
-            MenuItems.Clear();
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            var parentMenuItem = FindMenuItemByGuid(ownerGuid, Menu.Items);
+            if (parentMenuItem == null) return;
+            parentMenuItem.Items.Clear();
+
+            MenuItems = GetIMenuItemsFiltered();
+            var refreshedItems = MenuItems
+                .Where(mi => mi.OwnerGuid == ownerGuid && (mi.GuidId == null || !FilteredGuids.Contains(mi.GuidId)))
+                .OrderBy(mi => mi.Order).ToList();
+
+            for (int i = 0; i < refreshedItems.Count; i++)
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                var mi = refreshedItems[i];
+                var menuItem = CreateMenuItem(mi);
+                if (i > 0
+                    && mi.Order - refreshedItems[i - 1].Order > 4
+                    && menuItem.Visibility == Visibility.Visible)
                 {
-                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem && iMenuItem.Command !=null)
-                    {
-                        MenuItems.Add(iMenuItem);
-                    }
+                    parentMenuItem.Items.Add(new Separator());
                 }
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                parentMenuItem.Items.Add(menuItem);
+                if (mi.GuidId != null)
+                    AddChildMenuItems(menuItem, mi.GuidId);
+            }
+        }
+
+        private static MenuItem? FindMenuItemByGuid(string guid, ItemCollection items)
+        {
+            foreach (var obj in items)
+            {
+                if (obj is MenuItem mi && mi.Tag is IMenuItem iMenuItem && iMenuItem.GuidId == guid)
+                    return mi;
+
+                if (obj is MenuItem mi2)
                 {
-                    if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
-                    {
-                        foreach (var item in itemProvider.GetMenuItems())
-                        {
-                            if (item.Command != null && item.Header !=null)
-                            {
-                                MenuItems.Add(item);
-                            }
-                        }
-                    }
+                    var found = FindMenuItemByGuid(guid, mi2.Items);
+                    if (found != null) return found;
                 }
             }
-            return MenuItems;
+            return null;
         }
 
-        public List<IMenuItem> MenuItems { get; set; }
+        private MenuItem CreateMenuItem(IMenuItem mi)
+        {
+            var menuItem = new MenuItem
+            {
+                Header = mi.Header,
+                Icon = mi.Icon,
+                InputGestureText = mi.InputGestureText,
+                Command = mi.Command,
+                Tag = mi,
+                Visibility = mi.Visibility,
+            };
 
-        private bool Initialized;
-        private List<MenuItem> MenuBack;
+            // 检查类型的RequiresPermissionAttribute
+
+            if (mi.GetType().GetCustomAttributes(typeof(RequiresPermissionAttribute), true).FirstOrDefault() is RequiresPermissionAttribute attr)
+            {
+                menuItem.Visibility = mi.Visibility == Visibility.Visible && Authorization.Instance.PermissionMode == attr.RequiredPermission ? Visibility.Visible : Visibility.Collapsed;
+            }
+            else if (mi.Command is RelayCommand relayCommand)
+            {
+                menuItem.Visibility = mi.Visibility == Visibility.Visible && relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed;
+            }
+            return menuItem;
+        }
+
         public void LoadMenuItemFromAssembly()
         {
-            if (!Initialized)
+            if (!_initialized)
             {
-                MenuBack = new List<MenuItem>();
-                foreach (var item in Menu.Items.OfType<MenuItem>().ToList())
-                {
+                _menuBack = Menu.Items.OfType<MenuItem>().ToList();
+                foreach (var item in _menuBack)
                     Menu.Items.Remove(item);
-                    MenuBack.Add(item);
-                }
+
+                // 只需注册一次
+                Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
+                {
+                    // 这里可以加防抖逻辑，避免重复刷新
+                    LoadMenuItemFromAssembly();
+                };
             }
 
-
-            Initialized = true;
-            log.Info("LoadMenuItemFromAssembly");
+            _initialized = true;
+            log.Info("LoadMenuItemsFromAssembly");
             Menu.Items.Clear();
-            var menuItems = new Dictionary<string, MenuItem>();
-            MenuItems.Clear();
-            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
-            {
-                var iMenuItems1 = MenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
-                for (int i = 0; i < iMenuItems1.Count; i++)
-                {
-                    var iMenuItem = iMenuItems1[i];
-                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                    MenuItem menuItem;
-                    if (iMenuItem is IMenuItemMeta menuItemMeta)
-                    {
-                        menuItem = menuItemMeta.MenuItem;
-                    }
-                    else
-                    {
-                        menuItem = new MenuItem
-                        {
-                            Header = iMenuItem.Header,
-                            Icon = iMenuItem.Icon,
-                            InputGestureText = iMenuItem.InputGestureText,
-                            Command = iMenuItem.Command,
-                            Tag = iMenuItem,
-                            Visibility = iMenuItem.Visibility,
-                        };
-                        if (iMenuItem.Command is RelayCommand relayCommand)
-                        {
-                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
-                            Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
-                            {
-                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? relayCommand.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
-                            };
-                        }
-                    }
+            MenuItems = GetIMenuItemsFiltered();
 
-                    CreateMenu(menuItem, GuidId);
-                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
-                    {
-                        parentMenuItem.Items.Add(new Separator());
-                    }
-                    parentMenuItem.Items.Add(menuItem);
-                }
-                foreach (var item in iMenuItems1)
-                {
-                    MenuItems.Remove(item);
-                }
+            // 构建一级菜单
+            var rootMenuItems = MenuItems.Where(mi => mi.OwnerGuid == "Menu").OrderBy(mi => mi.Order);
+            foreach (var mi in rootMenuItems)
+            {
+                var menuItem = CreateMenuItem(mi);
+                Menu.Items.Add(menuItem);
+                if (mi.GuidId != null)  
+                    AddChildMenuItems(menuItem, mi.GuidId);
             }
-         
+
+            // 恢复备份项
+            foreach (var item in _menuBack)
+            {
+                if (!Menu.Items.OfType<MenuItem>().Any(m => m.Header?.ToString() == item.Header?.ToString()))
+                    Menu.Items.Add(item);
+            }
+        }
+
+        private void AddChildMenuItems(MenuItem parent, string ownerGuid)
+        {
+            var children = MenuItems.Where(mi => mi.OwnerGuid == ownerGuid).OrderBy(mi => mi.Order).ToList();
+            for (int i = 0; i < children.Count; i++)
+            {
+                var mi = children[i];
+                var menuItem = CreateMenuItem(mi);
+                if (i > 0
+                    && mi.Order - children[i - 1].Order > 4
+                    && menuItem.Visibility == Visibility.Visible)
+                {
+                    parent.Items.Add(new Separator());
+                }
+                parent.Items.Add(menuItem);
+                if (mi.GuidId != null)
+                    AddChildMenuItems(menuItem, mi.GuidId);
+            }
+        }
+
+        private List<IMenuItem> GetIMenuItemsFiltered()
+        {
+            var allMenuItems = new List<IMenuItem>();
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
-                    {
-                        MenuItems.Add(iMenuItem);
-                    }
-                }
+                allMenuItems.AddRange(assembly.GetTypes()
+                    .Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract)
+                    .Select(t => Activator.CreateInstance(t) as IMenuItem)
+                    .Where(i => i != null && i.Command != null));
 
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
-                    {
-                        MenuItems.AddRange(itemProvider.GetMenuItems());
-                    }
-                }
+                allMenuItems.AddRange(assembly.GetTypes()
+                    .Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract)
+                    .SelectMany(t => ((IMenuItemProvider)Activator.CreateInstance(t)).GetMenuItems())
+                    .Where(i => i.Command != null && i.Header != null));
             }
+            var allFilteredGuids = GetAllFilteredGuids(allMenuItems, FilteredGuids);
+            return allMenuItems.Where(mi => mi.GuidId == null || !allFilteredGuids.Contains(mi.GuidId)).ToList();
+        }
 
-            foreach (var item in MenuItems.Where(a=>a.OwnerGuid == "Menu").OrderBy(item => item.Order).ToList())
+        private static HashSet<string> GetAllFilteredGuids(IEnumerable<IMenuItem> allMenuItems, IEnumerable<string> initialGuids)
+        {
+            var result = new HashSet<string>(initialGuids ?? Enumerable.Empty<string>());
+            bool added;
+            do
             {
-                if (item.OwnerGuid == "Menu" && item.Header !=null)
+                added = false;
+                foreach (var item in allMenuItems)
                 {
-                    MenuItem menuItem = new()
-                    {
-                        Header = item.Header,
-                        Icon = item.Icon,
-                        InputGestureText = item.InputGestureText,
-                        Command = item.Command,
-                        Tag = item,
-                        Visibility = item.Visibility,
-                    };
-                    menuItems.Add(item.GuidId ?? Guid.NewGuid().ToString(), menuItem);  
-                    Menu.Items.Add(menuItem);
-                    MenuItems.Remove(item);
+                    if (item.OwnerGuid != null && result.Contains(item.OwnerGuid) && item.GuidId != null && result.Add(item.GuidId))
+                        added = true;
                 }
-            }
-
-            foreach (var keyValuePair in menuItems)
-            {
-                CreateMenu(keyValuePair.Value, keyValuePair.Key);
-            }
-            
-            MenuItems = MenuItems.OrderBy(item => item.Order).ToList();
-            foreach (var iMenuItem in MenuItems)
-            {
-                string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                MenuItem menuItem = new()
-                {
-                    Header = iMenuItem.Header,
-                    Icon = iMenuItem.Icon,
-                    InputGestureText = iMenuItem.InputGestureText,
-                    Command = iMenuItem.Command,
-                    Tag = iMenuItem,
-                    Visibility = iMenuItem.Visibility,
-                };
-                Menu.Items.Add(menuItem);
-            }
-            var list = Menu.Items.OfType<MenuItem>().ToList();
-            foreach (var item in MenuBack)
-            {
-                var men = list.FirstOrDefault(a => a.Header!=null && a.Header.ToString() == item.Header.ToString());
-                if (men is null)
-                {
-                    Menu.Items.Add(item);
-                }
-                else
-                {
-                    foreach (var item1 in item.Items.OfType<MenuItem>().ToList())
-                    {
-                        item.Items.Remove(item1);
-                        men.Items.Add(item1);
-                    }
-                }
-            }
-
+            } while (added);
+            return result;
         }
     }
 }

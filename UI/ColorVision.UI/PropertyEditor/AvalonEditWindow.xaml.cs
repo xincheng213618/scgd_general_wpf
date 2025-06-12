@@ -104,7 +104,7 @@ namespace ColorVision.UI
             try
             {
                 var parsedJson = JToken.Parse(Text);
-                isFormatted = Text.Contains("\n") || Text.Contains("\t");
+                isFormatted = Text.Contains('\n') || Text.Contains('\t');
                 textEditor.Text = parsedJson.ToString(Formatting.Indented);
             }
             catch (JsonReaderException)

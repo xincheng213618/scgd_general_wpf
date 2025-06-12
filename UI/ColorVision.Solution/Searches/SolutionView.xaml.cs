@@ -1,7 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.ImageEditor;
-using ColorVision.UI.Views;
-using System.IO;
+﻿using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;

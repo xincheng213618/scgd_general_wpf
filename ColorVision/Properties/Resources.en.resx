@@ -180,9 +180,6 @@
   <data name="Wizard" xml:space="preserve">
     <value>Wizard</value>
   </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>General</value>
-  </data>
   <data name="CheckForUpdates" xml:space="preserve">
     <value>Check for updates</value>
   </data>
@@ -191,9 +188,6 @@
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>Transparent window</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universal</value>
   </data>
   <data name="Project" xml:space="preserve">
     <value>Project</value>

@@ -52,7 +52,7 @@ namespace ColorVision.Engine.Rbac
 
         public void Load()
         {
-            IsLogin = UserDao.Instance.Checklogin(UserConfig.Instance.Account,UserConfig.Instance.UserPwd);
+            IsLogin = true;
 
             UserModel = UserDao.Instance.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "name","admin" } });
             if (UserModel == null)

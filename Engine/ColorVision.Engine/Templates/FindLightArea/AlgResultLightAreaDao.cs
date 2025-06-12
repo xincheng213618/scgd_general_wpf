@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Algorithms;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.ImageEditor.Draw;
@@ -14,7 +14,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates.FindLightArea
 {
-    [Table("t_scgd_algorithm_result_detail_light_area", PrimaryKey = "id")]
+    [Table("t_scgd_algorithm_result_detail_light_area")]
     public class AlgResultLightAreaModel : PKModel, IViewResult
     {
         [Column("pid")]
@@ -31,9 +31,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
     {
         public static AlgResultLightAreaDao Instance { get; set; } = new AlgResultLightAreaDao();
 
-        public AlgResultLightAreaDao() : base("t_scgd_algorithm_result_detail_light_area")
-        {
-        }
     }
 
     public class ViewHandleFindLightArea : IResultHandleBase
@@ -56,7 +53,6 @@ namespace ColorVision.Engine.Templates.FindLightArea
 
         public override void Handle(AlgorithmView view, AlgorithmResult result)
         {
-
             view.ImageView.ImageShow.Clear();
             if (result.ResultCode != 0)
             {

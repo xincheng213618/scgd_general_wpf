@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS8601,CS8603
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using System;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+    [Table("t_scgd_algorithm_result_master")]
     public class AlgResultMasterModel : PKModel
     {
         public AlgResultMasterModel() { }
@@ -54,12 +55,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
     public class AlgResultMasterDao : BaseTableDao<AlgResultMasterModel>
     {
         public static AlgResultMasterDao Instance { get; set; } = new AlgResultMasterDao();
-
-        public AlgResultMasterDao() : base("t_scgd_algorithm_result_master", "id")
-        {
-        }
-
-
         public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName, DateTime? dateTimeStart, DateTime? dateTimeEnd,int limit)
         {
             Dictionary<string, object> keyValuePairs = new(0);

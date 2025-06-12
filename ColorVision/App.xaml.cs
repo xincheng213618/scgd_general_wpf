@@ -69,8 +69,8 @@ namespace ColorVision
                 Assembly.LoadFrom("ColorVision.ImageEditor.dll"); ;
             if (File.Exists("ColorVision.Solution.dll"))
                 Assembly.LoadFrom("ColorVision.Solution.dll"); ;
-            if (File.Exists("ColorVision.UI.SocketProtocol.dll"))
-                Assembly.LoadFrom("ColorVision.UI.SocketProtocol.dll"); ;
+            if (File.Exists("ColorVision.SocketProtocol.dll"))
+                Assembly.LoadFrom("ColorVision.SocketProtocol.dll"); ;
 
             ConfigHandler.GetInstance();
             ConfigHandler.GetInstance().IsAutoSave = false;
@@ -174,11 +174,13 @@ namespace ColorVision
                 PluginManager.LoadPlugins("Plugins");
             }
 
+
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
-            TrayIconManager.GetInstance();
+            //这里显示托盘控件
+            //TrayIconManager.GetInstance();
 
 
             //代码先进入启动窗口

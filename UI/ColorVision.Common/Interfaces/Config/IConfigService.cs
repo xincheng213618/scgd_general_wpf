@@ -1,4 +1,7 @@
-﻿namespace ColorVision.UI
+﻿using System.Collections.Generic;
+using System.Reflection;
+
+namespace ColorVision.UI
 {
     public interface IConfigService
     {
@@ -7,5 +10,6 @@
         public void LoadConfigs();
 
     }
+
 
 }

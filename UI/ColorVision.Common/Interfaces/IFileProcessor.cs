@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace ColorVision.UI
+﻿namespace ColorVision.UI
 {
     public interface IFileProcessor
     {

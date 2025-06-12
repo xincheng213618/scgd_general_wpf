@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604
+﻿#pragma warning disable CS8604,CA1822
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
@@ -42,7 +42,6 @@ namespace ColorVision.Projects
         private DownloadFile DownloadFile { get; set; }
         public ProjectManager()
         {
-            log.Info("正在检索是否存在附加项目");
             foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
             {
                 try

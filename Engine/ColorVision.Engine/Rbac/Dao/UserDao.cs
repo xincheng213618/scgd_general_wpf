@@ -83,10 +83,6 @@ namespace ColorVision.Engine.Rbac
     {
         public static UserDetailDao Instance { get; set; } = new UserDetailDao();
 
-        public UserDetailDao() : base("t_scgd_sys_user_detail")
-        {
-
-        }
     }
 
 
@@ -96,55 +92,6 @@ namespace ColorVision.Engine.Rbac
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
         public static UserDao Instance { get; set; } = new UserDao();
 
-        public UserDao():base("t_scgd_sys_user")
-        {
 
-        }
-
-        public void GetAllUser()
-        {
-            string query = "SELECT * FROM t_scgd_sys_user WHERE 1=1";
-
-            using var command = new MySqlCommand(query, MySqlConnection);
-            using var reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                Console.WriteLine(reader.GetString(0));
-            }
-        }
-
-        // 其他属性和方法...
-
-        public bool Checklogin(string account, string password)
-        {
-            if (!MySqlControl.IsConnect) return false;
-
-            bool isValidUser = false; 
-
-            string query = "SELECT COUNT(1) FROM Users WHERE Account = @Account AND UserPwd = @UserPwd";
-
-            using (var command = new MySqlCommand(query, MySqlConnection))
-            {
-                command.Parameters.AddWithValue("@Account", account);
-                command.Parameters.AddWithValue("@UserPwd", password);
-
-                try
-                {
-                    object result = command.ExecuteScalar();
-                    if (result != null)
-                    {
-                        string hashedPassword = Convert.ToString(result);
-                        return string.Equals(password, hashedPassword, StringComparison.Ordinal);
-                    }
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("An error occurred: " + ex.Message);
-                }
-            }
-
-            return isValidUser;
-        }
     }
 }

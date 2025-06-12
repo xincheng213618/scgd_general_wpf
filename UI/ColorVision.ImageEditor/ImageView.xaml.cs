@@ -6,7 +6,6 @@ using ColorVision.ImageEditor.Draw.Ruler;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
-using Gu.Wpf.Geometry;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -88,7 +87,7 @@ namespace ColorVision.ImageEditor
         {
             List<IToolCommand> IToolCommands = new List<IToolCommand>();
 
-            foreach (var assembly in AssemblyHandler.GetInstance().GetAssemblies())
+            foreach (var assembly in AssemblyService.Instance.GetAssemblies())
             {
                 foreach (Type type in assembly.GetTypes().Where(t => typeof(IToolCommand).IsAssignableFrom(t) && !t.IsAbstract))
                 {

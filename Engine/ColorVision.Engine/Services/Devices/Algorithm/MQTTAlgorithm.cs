@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8602
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Messages;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
 using CVCommCore;

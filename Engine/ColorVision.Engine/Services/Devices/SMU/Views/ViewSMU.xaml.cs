@@ -433,11 +433,10 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         }
 
 
-        MRSmuScanDao MRSmuScanDao = new();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in MRSmuScanDao.GetAll())
+            foreach (var item in MRSmuScanDao.Instance.GetAll())
             {
                 ViewResultSMU viewResultSMU = new(item);
                 ViewResults.Add(viewResultSMU);
@@ -450,7 +449,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             ViewResults.Clear();
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && SearchTimeSart.SelectedDateTime==DateTime.MinValue)
             {
-                foreach (var item in MRSmuScanDao.GetAll())
+                foreach (var item in MRSmuScanDao.Instance.GetAll())
                 {
                     ViewResultSMU viewResultSMU = new(item);
                     ViewResults.Add(viewResultSMU);
@@ -459,7 +458,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
             else
             {
 
-                var list = MRSmuScanDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text ,SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
+                var list = MRSmuScanDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text ,SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
                 foreach (var item in list)
                 {
                     ViewResultSMU viewResultSMU = new(item);

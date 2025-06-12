@@ -1,12 +1,13 @@
 ﻿#pragma warning disable CS0618
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Interfaces;
+using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Sorts;
 
 namespace ColorVision.Engine.Templates.POI.BuildPoi
 {
 
+    [Table("t_scgd_algorithm_result_detail_poi_cie_file")]
     public class PoiCieFileModel : ViewModelBase,IPKModel, ISortID, IViewResult
     {
         [Column("id")]
@@ -28,9 +29,5 @@ namespace ColorVision.Engine.Templates.POI.BuildPoi
     {
         public static PoiCieFileDao Instance { get; set; } = new PoiCieFileDao();
 
-        public PoiCieFileDao() : base("t_scgd_algorithm_result_detail_poi_cie_file", "id")
-        {
-
-        }    
     }
 }
