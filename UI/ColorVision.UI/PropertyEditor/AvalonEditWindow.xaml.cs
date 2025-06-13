@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS1847,CS8625
+using ColorVision.Themes;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
 using ICSharpCode.AvalonEdit.Highlighting;
@@ -25,10 +26,13 @@ namespace ColorVision.UI
 		{
 		
 			InitializeComponent();
-			this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
+            this.ApplyCaption();
+            this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
 			textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
 			textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
-			SearchPanel.Install(textEditor);		
+            textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+
+            SearchPanel.Install(textEditor);		
 			DispatcherTimer foldingUpdateTimer = new DispatcherTimer();
 			foldingUpdateTimer.Interval = TimeSpan.FromSeconds(2);
 			foldingUpdateTimer.Tick += delegate { UpdateFoldings(); };
@@ -46,11 +50,13 @@ namespace ColorVision.UI
 		public AvalonEditWindow(string currentFileName)
 		{
             InitializeComponent();
-
+			this.ApplyCaption();
             this.SetValue(TextOptions.TextFormattingModeProperty, TextFormattingMode.Display);
 
             textEditor.TextArea.TextEntering += textEditor_TextArea_TextEntering;
             textEditor.TextArea.TextEntered += textEditor_TextArea_TextEntered;
+            textEditor.TextArea.Caret.PositionChanged += Caret_PositionChanged;
+
             SearchPanel.Install(textEditor);
 
             DispatcherTimer foldingUpdateTimer = new DispatcherTimer();
@@ -97,7 +103,10 @@ namespace ColorVision.UI
 
         bool isFormatted;
 		private string OriginalText;
-
+        private void Caret_PositionChanged(object? sender, EventArgs e)
+        {
+            StatusText.Text = $"{Properties.Resources.Line}:{textEditor.TextArea.Caret.Line} {Properties.Resources.Column}:{textEditor.TextArea.Caret.Column}";
+        }
         public void SetJsonText(string Text)
 		{
 			OriginalText = Text;
