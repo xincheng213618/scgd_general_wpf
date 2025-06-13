@@ -1,12 +1,9 @@
-﻿using AvalonDock;
-using AvalonDock.Layout;
+﻿using AvalonDock.Layout;
 using ColorVision.Themes;
 using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using Xceed.Wpf.AvalonDock.Layout;
 
 namespace ColorVision.Solution.Searches
 {

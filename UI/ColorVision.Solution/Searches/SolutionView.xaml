@@ -6,7 +6,6 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml" 
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              x:Class="ColorVision.Solution.Searches.SolutionView"
-             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:xcad="https://github.com/Dirkster99/AvalonDock"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
