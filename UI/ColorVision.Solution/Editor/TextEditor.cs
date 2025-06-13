@@ -9,7 +9,7 @@ using Xceed.Wpf.AvalonDock.Layout;
 namespace ColorVision.Solution
 {
     // 标记本类支持的扩展名，并设为默认
-    [EditorForExtension(".txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1", "文本编辑器", isDefault: true)]
+    [EditorForExtension(".dat|.ini|.txt|.cs|.json|.java|.go|.md|.py|.dat|.js|.xml|.xaml|.cpp|.c|.bat|.sql|.css|.ps1", "文本编辑器", isDefault: true)]
     public class TextEditor : EditorBase
     {
         public override void Open(string filePath)

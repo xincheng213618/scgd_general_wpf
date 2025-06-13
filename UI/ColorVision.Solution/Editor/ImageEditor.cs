@@ -63,7 +63,7 @@ namespace ColorVision.Solution.Editor
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 imageView.Dispose();
-                                layoutDocument.Close();
+                                layoutDocument?.Close();
                             });
                         });
                     }

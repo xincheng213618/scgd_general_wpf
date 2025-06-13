@@ -3,6 +3,7 @@ using ColorVision.Solution.Searches;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Xceed.Wpf.AvalonDock.Layout;
 
 
@@ -56,6 +57,7 @@ namespace ColorVision.Solution.Editor
                 };
 
                 LayoutDocument layoutDocument = new LayoutDocument() { ContentId = GuidId, Title = Path.GetFileName(filePath) };
+
                 layoutDocument.Content = userControl;
                 SolutionViewExtensions.LayoutDocumentPane.Children.Add(layoutDocument);
                 SolutionViewExtensions.LayoutDocumentPane.SelectedContentIndex = SolutionViewExtensions.LayoutDocumentPane.IndexOf(layoutDocument);

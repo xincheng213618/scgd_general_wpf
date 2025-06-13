@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using Xceed.Wpf.AvalonDock.Layout;
 
 namespace ColorVision.Solution.Searches
@@ -30,6 +31,33 @@ namespace ColorVision.Solution.Searches
             }
             return null;
         }
+
+
+
+        public static LayoutDocument? FindDocumentActive(object parent)
+        {
+            if (parent is ILayoutContainer container)
+            {
+                foreach (var child in container.Children)
+                {
+                    if (child is LayoutDocument document && document.IsActive)
+                    {
+
+                        return document;
+                    }
+                    else
+                    {
+                        var found = FindDocumentActive(child);
+                        if (found != null)
+                        {
+                            return found;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
         public static ILayoutContainer? FindParentContainer(object parent, LayoutDocument targetDocument)
         {
             if (parent is ILayoutContainer container)
@@ -103,7 +131,8 @@ namespace ColorVision.Solution.Searches
             SolutionViewExtensions.SolutionView = this;
             SolutionViewExtensions.layoutRoot = _layoutRoot;
             SolutionViewExtensions.LayoutDocumentPane = LayoutDocumentPane;
-
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Close, (sender, e) => Colsed()));
+            InputBindings.Add(new KeyBinding(ApplicationCommands.Close, new KeyGesture(Key.W, ModifierKeys.Control)));
 
             foreach (var action in SolutionViewExtensions.DealyLoad)
             {
@@ -111,6 +140,14 @@ namespace ColorVision.Solution.Searches
             }
             SolutionViewExtensions.DealyLoad.Clear();
         }
+
+        public void Colsed()
+        {
+            var pannel = SolutionViewExtensions.FindDocumentActive(LayoutDocumentPane);
+            pannel.Close();
+        }
+
+
         public View View { get; set; }
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
