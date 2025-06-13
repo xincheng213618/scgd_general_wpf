@@ -1,10 +1,10 @@
-﻿using ColorVision.Common.Utilities;
+﻿using AvalonDock.Layout;
+using ColorVision.Common.Utilities;
 using ColorVision.Solution.Editor;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.PropertyEditor;
 using System.IO;
 using System.Windows;
-using Xceed.Wpf.AvalonDock.Layout;
 
 namespace ColorVision.Solution
 {

@@ -1,4 +1,7 @@
-﻿using ColorVision.UI.Views;
+﻿using AvalonDock;
+using AvalonDock.Layout;
+using ColorVision.Themes;
+using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -152,6 +155,22 @@ namespace ColorVision.Solution.Searches
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
             View = new View();
+
+            void ThemeChange(Theme theme)
+            {
+                if (theme == Theme.Dark)
+                {
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013DarkTheme();
+                }
+                else
+                {
+                    DockingManager1.Theme = new AvalonDock.Themes.Vs2013LightTheme();
+                }
+            };
+
+            ThemeManager.Current.CurrentUIThemeChanged += ThemeChange;
+            ThemeChange(ThemeManager.Current.CurrentUITheme);
+
         }  
     }
 }
