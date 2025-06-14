@@ -48,6 +48,58 @@ using System.Windows.Media;
 
 namespace ProjectARVR
 {
+    public static class ObjectiveTestResultCsvExporter
+    {
+        public static void ExportToCsv(List<ObjectiveTestResult> results, string filePath)
+        {
+            // 获取所有 ObjectiveTestItem 类型的属性
+            var itemProps = typeof(ObjectiveTestResult).GetProperties()
+                .Where(p => p.PropertyType == typeof(ObjectiveTestItem))
+                .ToList();
+
+            // CSV 列头（每项后缀可自定义，比如 TestValue/Name/LowLimit/UpLimit/TestResult 均输出）
+            var headers = new List<string>();
+            foreach (var prop in itemProps)
+            {
+                headers.Add($"{prop.Name}_TestValue");
+                headers.Add($"{prop.Name}_TestResult");
+                headers.Add($"{prop.Name}_LowLimit");
+                headers.Add($"{prop.Name}_UpLimit");
+            }
+            headers.Add("TotalResult");
+            headers.Add("TotalResultString");
+
+            var sb = new StringBuilder();
+            sb.AppendLine(string.Join(",", headers));
+
+            foreach (var result in results)
+            {
+                var row = new List<string>();
+                foreach (var prop in itemProps)
+                {
+                    var item = (ObjectiveTestItem)prop.GetValue(result);
+                    row.Add(item?.TestValue ?? "");
+                    row.Add(item?.TestResult.ToString() ?? "");
+                    row.Add(item?.LowLimit ?? "");
+                    row.Add(item?.UpLimit ?? "");
+                }
+                row.Add(result.TotalResult.ToString());
+                row.Add(result.TotalResultString);
+                sb.AppendLine(string.Join(",", row.Select(EscapeCsv)));
+            }
+            File.WriteAllText(filePath, sb.ToString(), Encoding.UTF8);
+        }
+
+        // 防止逗号、引号等导致格式问题
+        private static string EscapeCsv(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            return value;
+        }
+    }
+
     public class ObjectiveTestItem
     {
         public string Name { get; set; }         // 项目名称

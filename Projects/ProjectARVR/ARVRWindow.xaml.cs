@@ -186,8 +186,6 @@ namespace ProjectARVR
 
 
 
-
-
     public partial class ARVRWindow : Window, IDisposable
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(ARVRWindow));
@@ -1171,7 +1169,12 @@ namespace ProjectARVR
 
                         ObjectiveTestResult.TotalResult = true;
                         ObjectiveTestResult.TotalResultString = ObjectiveTestResult.TotalResult ? "PASS" : "Fail";
+                        string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                        string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 
+                        List<ObjectiveTestResult> objectiveTestResults = new List<ObjectiveTestResult>();
+                        objectiveTestResults.Add(ObjectiveTestResult);
+                        ObjectiveTestResultCsvExporter.ExportToCsv(objectiveTestResults, filePath);
                         var response = new SocketResponse
                         {
                             Version = "1.0",
