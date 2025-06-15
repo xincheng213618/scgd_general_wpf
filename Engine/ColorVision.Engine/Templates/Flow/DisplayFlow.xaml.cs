@@ -219,7 +219,7 @@ namespace ColorVision.Engine.Templates.Flow
 
         bool LastCompleted = true;
 
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
@@ -227,23 +227,21 @@ namespace ColorVision.Engine.Templates.Flow
 
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
-            if (sender is FlowControlData FlowControlData)
-            {
-                ButtonRun.Visibility = Visibility.Visible;
-                ButtonStop.Visibility = Visibility.Collapsed;
 
-                if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
-                {
-                    ErrorSign();
-                }
-                if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                }
-                else
-                {
-                    LastCompleted = true;
-                }
+            ButtonRun.Visibility = Visibility.Visible;
+            ButtonStop.Visibility = Visibility.Collapsed;
+
+            if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+            {
+                ErrorSign();
+            }
+            if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
+            }
+            else
+            {
+                LastCompleted = true;
             }
         }
 

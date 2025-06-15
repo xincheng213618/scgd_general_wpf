@@ -110,12 +110,12 @@ namespace ColorVision.Engine.Templates.Flow
             data.EventName = e.Status.ToString();
             data.Params = e.Message;
             data.SerialNumber =e.SerialNumber;
-            Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(data, new EventArgs()));
+            Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(this,data));
             FlowConfig.Instance.FlowRun = false;
         }
 
 
-        public event EventHandler? FlowCompleted;
+        public event EventHandler<FlowControlData> FlowCompleted;
         public event EventHandler? FlowMsg;
         public event EventHandler? FlowData;
 
@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Templates.Flow
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(json, new EventArgs()));
                     if (json.EventName == "Completed" || json.EventName == "Canceled" || json.EventName == "OverTime" || json.EventName == "Failed")
                     {
-                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(json, new EventArgs()));
+                         Application.Current.Dispatcher.Invoke(() => FlowCompleted?.Invoke(this,json));
                     }
                     FlowConfig.Instance.FlowRun = false;
                     return Task.CompletedTask;

@@ -459,7 +459,7 @@ namespace ProjectARVR
 
         private FlowControl flowControl;
 
-        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -467,63 +467,61 @@ namespace ProjectARVR
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             ProjectARVRConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms"); 
-            if (sender is FlowControlData FlowControlData)
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
+
+            if (FlowControlData.EventName == "Completed")
             {
-                if (FlowControlData.EventName == "Completed")
+                LastCompleted = true;
+                try
                 {
-                    LastCompleted = true;
-                    try
+                    Application.Current.Dispatcher.BeginInvoke(() =>
                     {
+                        Processing(FlowControlData.SerialNumber);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                }
+                TryCount = 0;
+            }
+            else if (FlowControlData.EventName == "OverTime")
+            {
+                log.Info("流程运行超时，正在重新尝试");
+                if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
+                {
+                    Task.Delay(1000).ContinueWith(t =>
+                    {
+                        log.Info("重新尝试运行流程");
                         Application.Current.Dispatcher.BeginInvoke(() =>
                         {
-                            Processing(FlowControlData.SerialNumber);
+                            RunTemplate();
                         });
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                    }
-                    TryCount = 0;
+                    });
+                    return;
                 }
-                else if (FlowControlData.EventName == "OverTime")
+                TryCount = 0;
+            }
+            else
+            {
+                log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
                 {
-                    log.Info("流程运行超时，正在重新尝试");
-                    if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
+                    ObjectiveTestResult.TotalResult = false;
+                    var response = new SocketResponse
                     {
-                        Task.Delay(1000).ContinueWith(t =>
-                        {
-                            log.Info("重新尝试运行流程");
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                RunTemplate();
-                            });
-                        });
-                        return;
-                    }
-                    TryCount = 0;
+                        Version = "1.0",
+                        MsgID = "",
+                        EventName = "ProjectARVRResult",
+                        Code = -1,
+                        Msg = "ARVR Test Fail",
+                        Data = ObjectiveTestResult
+                    };
+                    string respString = JsonConvert.SerializeObject(response);
+                    log.Info(respString);
+                    SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
                 }
-                else
-                {
-                    log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
-                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
-                    {
-                        ObjectiveTestResult.TotalResult = false;
-                        var response = new SocketResponse
-                        {
-                            Version = "1.0",
-                            MsgID = "",
-                            EventName = "ProjectARVRResult",
-                            Code = -1,
-                            Msg = "ARVR Test Fail",
-                            Data = ObjectiveTestResult
-                        };
-                        string respString = JsonConvert.SerializeObject(response);
-                        log.Info(respString);
-                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
-                    }
 
-                }
             }
         }
 
