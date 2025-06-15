@@ -34,6 +34,7 @@ using Panuon.WPF.UI;
 using ProjectARVR.Config;
 using ProjectARVR.Services;
 using ST.Library.UI.NodeEditor;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -80,8 +81,8 @@ namespace ProjectARVR
                     var item = (ObjectiveTestItem)prop.GetValue(result);
                     row.Add(item?.TestValue ?? "");
                     row.Add(item?.TestResult.ToString() ?? "");
-                    row.Add(item?.LowLimit ?? "");
-                    row.Add(item?.UpLimit ?? "");
+                    row.Add(item?.LowLimit.ToString());
+                    row.Add(item?.UpLimit.ToString());
                 }
                 row.Add(result.TotalResult.ToString());
                 row.Add(result.TotalResultString);
@@ -103,10 +104,25 @@ namespace ProjectARVR
     public class ObjectiveTestItem
     {
         public string Name { get; set; }         // 项目名称
+
+        //这里有可能添加符号
         public string TestValue { get; set; }    // 测试值
-        public string LowLimit { get; set; }     // 下限
-        public string UpLimit { get; set; }      // 上限
-        public bool TestResult { get; set; } = true;   // 结果
+        public double Value { get; set; }    // 测试值
+
+        public double LowLimit { get; set; }     // 下限
+        public double UpLimit { get; set; }      // 上限
+
+        public bool TestResult {
+            get
+            {
+                // 判断是否低于下限
+                bool isAboveLowLimit = LowLimit == 0 || Value >= LowLimit;
+                // 判断是否高于上限
+                bool isBelowUpLimit = UpLimit == 0 || Value <= UpLimit;
+                // 只有同时满足上下限才返回 true
+                return isAboveLowLimit && isBelowUpLimit;
+            } 
+        }
     }
 
     /// <summary>
