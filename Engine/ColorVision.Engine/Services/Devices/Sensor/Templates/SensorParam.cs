@@ -25,7 +25,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
             Code = code;
             TemplateDicId = SysDictionaryModMasterDao.Instance.GetByCode(code, 0).Id;
-
             if (Params.TryGetValue(Code, out var templatesParams))
             {
                 TemplateParams = templatesParams;

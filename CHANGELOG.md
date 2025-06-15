@@ -16,7 +16,7 @@
 
 7.移除原来的Aceed AvalonDock 改用  Dirkster99  AvalonDock，主题默认切换到VS2013
 
-## [1.3.2.8] 2025.06.05
+## [1.3.3.1] 2025.06.05
 
 1.重构Mysql ORM的逻辑 ,改为直接使用Mysql的连接池和命令执行
 
