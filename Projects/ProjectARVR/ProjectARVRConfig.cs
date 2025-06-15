@@ -7,6 +7,7 @@ using ColorVision.UI;
 using Newtonsoft.Json;
 using ProjectARVR.Config;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Windows;
@@ -52,6 +53,11 @@ namespace ProjectARVR
 
             EditSPECConfigcommand = new RelayCommand(a => EditSPECConfig());
         }
+
+        [DisplayName("重试次数")]
+        public int TryCountMax { get => _TryCountMax; set { _TryCountMax = value; NotifyPropertyChanged(); } }
+        private int _TryCountMax = 2;
+
 
         public void EditSPECConfig()
         {

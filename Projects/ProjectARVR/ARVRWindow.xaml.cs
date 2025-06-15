@@ -23,6 +23,7 @@ using ColorVision.Engine.Templates.POI.Image;
 using ColorVision.ImageEditor.Draw;
 using ColorVision.SocketProtocol;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Extension;
 using CVCommCore.CVAlgorithm;
 using FlowEngineLib;
@@ -109,6 +110,8 @@ namespace ProjectARVR
 
         public string SN { get; set; }
 
+        public string Code { get; set; }
+
         public bool Result { get; set; } = true;
 
         public ARVRTestType TestType { get; set; }
@@ -185,6 +188,10 @@ namespace ProjectARVR
     }
 
 
+    public class ARVRWindowConfig : WindowConfig
+    {
+        public static ARVRWindowConfig Instance => ConfigService.Instance.GetRequiredService<ARVRWindowConfig>();
+    }
 
     public partial class ARVRWindow : Window, IDisposable
     {
@@ -408,77 +415,39 @@ namespace ProjectARVR
         {
             RunTemplate();
         }
-        private void LargeTest_Click(object sender, RoutedEventArgs e)
-        {
-            if (CBLargeTemplate.SelectedValue is TJLargeFlowParam jLargeFlowParam)
-            {
-                var ListFlows = jLargeFlowParam.GetFlows();
-                if (ListFlows.Count == 0)
-                {
-                    log.Info("大流程没有配置距离的模板");
-                }
-                foreach (var item in ListFlows.Reverse())
-                {
-                    LargetStack.Push(item);
-                }
-                if (LargetStack.Count != 0)
-                {
-                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
-                    RunTemplate();
-                }
 
-            }
-        }
 
-        Stack<TemplateModel<FlowParam>> LargetStack = new Stack<TemplateModel<FlowParam>>();
-
+        ProjectARVRReuslt CurrentFlowResult { get; set; }
         bool LastCompleted = true;
+        int TryCount = 0;
         public void RunTemplate()
         {
             if (flowControl != null && flowControl.IsFlowRun) return;
-            if (FlowTemplate.SelectedValue is not FlowParam flowParam)
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
-                return;
-            }
-            ;
-            string startNode = flowEngine.GetStartNodeName();
-            if (string.IsNullOrWhiteSpace(startNode))
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                return;
-            }
-            ;
+
+            TryCount++;
+
+            CurrentFlowResult = new ProjectARVRReuslt();
+            CurrentFlowResult.SN = SNtextBox.Name;
+            CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
             if (!LastCompleted)
-            {
                 Refresh();
-            }
+
             LastCompleted = false;
+
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
-            handler = PendingBox.Show(this, "TTL:" + "0", "流程运行", true);
+            handler = PendingBox.Show(this, "流程", "流程启动", true);
             handler.Cancelling -= Handler_Cancelling;
             handler.Cancelling += Handler_Cancelling;
             flowControl.FlowCompleted += FlowControl_FlowCompleted;
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+
             stopwatch.Reset();
             stopwatch.Start();
-            flowControl.Start(sn);
+
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = CurrentFlowResult.SN, Code = CurrentFlowResult.Code, CreateDate = DateTime.Now });
+            flowControl.Start(CurrentFlowResult.Code);
             timer.Change(0, 500); // 启动定时器
-            string name = string.Empty;
-            try
-            {
-                BatchResultMasterModel batch = new BatchResultMasterModel();
-                batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-                batch.Code = sn;
-                batch.CreateDate = DateTime.Now;
-                batch.TenantId = 0;
-                BatchResultMasterDao.Instance.Save(batch);
-            }
-            catch (Exception ex)
-            {
-                log.Info(ex);
-            }
         }
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
@@ -486,72 +455,75 @@ namespace ProjectARVR
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             flowControl.Stop();
-            LargetStack.Clear();
         }
 
-        private int id;
         private FlowControl flowControl;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
-            id++;
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
             handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
             ProjectARVRConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
-            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
-
+            log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms"); 
             if (sender is FlowControlData FlowControlData)
             {
-                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                if (FlowControlData.EventName == "Completed")
                 {
-                    if (FlowControlData.EventName == "Completed")
+                    LastCompleted = true;
+                    try
                     {
-                        LastCompleted = true;
-                        try
+                        Application.Current.Dispatcher.BeginInvoke(() =>
                         {
+                            Processing(FlowControlData.SerialNumber);
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
+                    }
+                    TryCount = 0;
+                }
+                else if (FlowControlData.EventName == "OverTime")
+                {
+                    log.Info("流程运行超时，正在重新尝试");
+                    if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
+                    {
+                        Task.Delay(1000).ContinueWith(t =>
+                        {
+                            log.Info("重新尝试运行流程");
                             Application.Current.Dispatcher.BeginInvoke(() =>
                             {
-                                Processing(FlowControlData.SerialNumber);
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message);
-                        }
-                        Task.Run(async () =>
-                        {
-                            await Task.Delay(100);
-                            Application.Current.Dispatcher.BeginInvoke(() =>
-                            {
-                                if (LargetStack.Count != 0)
-                                {
-                                    FlowTemplate.SelectedValue = LargetStack.Pop().Value; ;
-                                    RunTemplate();
-                                }
+                                RunTemplate();
                             });
                         });
-
+                        return;
                     }
-                    else
-                    {
-                        LargetStack.Clear();
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                    }
+                    TryCount = 0;
                 }
                 else
                 {
-                    LargetStack.Clear();
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
-                }
+                    log.Info("流程运行失败" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params);
+                    if (SocketManager.GetInstance().TcpClients.Count > 0 && SocketControl.Current.Stream != null)
+                    {
+                        ObjectiveTestResult.TotalResult = false;
+                        var response = new SocketResponse
+                        {
+                            Version = "1.0",
+                            MsgID = "",
+                            EventName = "ProjectARVRResult",
+                            Code = -1,
+                            Msg = "ARVR Test Fail",
+                            Data = ObjectiveTestResult
+                        };
+                        string respString = JsonConvert.SerializeObject(response);
+                        log.Info(respString);
+                        SocketControl.Current.Stream.Write(Encoding.UTF8.GetBytes(respString));
+                    }
 
-            }
-            else
-            {
-                LargetStack.Clear();
-                MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行异常", "ColorVision");
+                }
             }
         }
 
@@ -1152,7 +1124,7 @@ namespace ProjectARVR
             listView1.SelectedIndex = ViewResluts.Count - 1;
             if (SocketManager.GetInstance().TcpClients.Count > 0)
             {
-                log.Info("连接的Socket ");
+                log.Info("Socket已经链接 ");
                 if (SocketControl.Current.Stream != null)
                 {
                     var values = Enum.GetValues(typeof(ARVRTestType));
@@ -1168,7 +1140,6 @@ namespace ProjectARVR
                         log.Info("ARVR测试完成");
 
                         ObjectiveTestResult.TotalResult = true;
-                        ObjectiveTestResult.TotalResultString = ObjectiveTestResult.TotalResult ? "PASS" : "Fail";
                         string timeStr = DateTime.Now.ToString("yyyyMMdd_HHmmss");
                         string filePath = Path.Combine(ProjectARVRConfig.Instance.ResultSavePath, $"ObjectiveTestResults_{timeStr}.csv");
 

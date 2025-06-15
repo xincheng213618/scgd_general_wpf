@@ -112,7 +112,7 @@ namespace ProjectARVR
     /// <summary>
     /// 表示一组客观测试项的测试结果，每个属性对应一个具体的测试项目，包含测试值、上下限、结果等信息。
     /// </summary>
-    public class ObjectiveTestResult
+    public class ObjectiveTestResult:ViewModelBase
     {
         /// <summary>
         /// 亮度均匀性(%) 测试项
@@ -277,11 +277,12 @@ namespace ProjectARVR
         /// <summary>
         /// 总体测试结果（true表示通过，false表示不通过）
         /// </summary>
-        public bool TotalResult { get; set; } = true;
+        public bool TotalResult { get => _TotalResult; set { _TotalResult = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(TotalResultString)); } } 
+        private bool _TotalResult = false;
 
         /// <summary>
         /// 总体测试结果字符串（如“pass”或“fail”）
         /// </summary>
-        public string TotalResultString { get; set; } = "PASS";
+        public string TotalResultString => TotalResult?"PASS":"Fail";
     }
 }

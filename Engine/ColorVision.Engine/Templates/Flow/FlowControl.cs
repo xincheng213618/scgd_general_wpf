@@ -82,7 +82,11 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void Stop()
         {
-            ClearEventHandler();
+            FlowCompleted = null;
+            FlowMsg = null;
+            FlowData = null;
+            flowEngine.Finished -= Finished;
+
             flowEngine.StopNode(SerialNumber);
             IsFlowRun = false;
             FlowConfig.Instance.FlowRun = false;
@@ -115,20 +119,12 @@ namespace ColorVision.Engine.Templates.Flow
         public event EventHandler? FlowMsg;
         public event EventHandler? FlowData;
 
-        public void ClearEventHandler()
-        {
-            FlowCompleted = null;
-            FlowMsg = null;
-            FlowData = null;
-            flowEngine.Finished -= Finished;
-        }
-
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-                log.Debug(Msg);
+                log.Info(Msg);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 try
                 {
@@ -149,7 +145,6 @@ namespace ColorVision.Engine.Templates.Flow
                     MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }
-
             return Task.CompletedTask;
         }
     }
