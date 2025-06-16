@@ -4,9 +4,10 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates.FOV;
 using ColorVision.Scheduler;
-using ColorVision.UI;
 using ColorVision.SocketProtocol;
+using ColorVision.UI;
 using FlowEngineLib;
 using FlowEngineLib.Base;
 using log4net;
@@ -120,7 +121,12 @@ namespace ColorVision.Engine.Templates.Flow
             ComboBoxFlow.SelectionChanged += (s, e) =>
             {
                 if (ComboBoxFlow.SelectedValue is FlowParam flowParam)
+                {
                     FlowConfig.Instance.LastSelectFlow = flowParam.Id;
+                    if (FlowConfig.Instance.FlowRunTime.TryGetValue(flowParam.Name, out long time))
+                        LastFlowTime = time;
+
+                }
                 Refresh();
             };
             MqttRCService.GetInstance().ServiceTokensInitialized +=(s,e) => Refresh();
@@ -223,7 +229,8 @@ namespace ColorVision.Engine.Templates.Flow
         {
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            FlowConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
+            FlowConfig.Instance.FlowRunTime[ComboBoxFlow.Text] = stopwatch.ElapsedMilliseconds;
 
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
@@ -264,6 +271,8 @@ namespace ColorVision.Engine.Templates.Flow
             }
         }
 
+        private long LastFlowTime;
+
         string Msg1;
         private void UpdateMsg(object? sender)
         {
@@ -274,17 +283,17 @@ namespace ColorVision.Engine.Templates.Flow
                 TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                 string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                 string msg;
-                if (FlowConfig.Instance.LastFlowTime == 0 || FlowConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                 {
                     msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                 }
                 else
                 {
-                    long remainingMilliseconds = FlowConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                    long remainingMilliseconds =LastFlowTime - elapsedMilliseconds;
                     TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                     string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{FlowConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                    msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
                 }
                 try
                 {
@@ -394,9 +403,11 @@ namespace ColorVision.Engine.Templates.Flow
                 log.Info("流程正在运行");
                 return;
             }
-
             CheckDiskSpace("C");
             CheckDiskSpace("D");
+
+            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
+
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (!string.IsNullOrWhiteSpace(startNode))
             {
@@ -431,10 +442,11 @@ namespace ColorVision.Engine.Templates.Flow
                         foreach (var item in View.FlowRecords)
                         {
                             item.IsSelected = false;
-                            var time = DateTime.Now;
-                            item.DateTimeFlowRun = time;
-                            item.DateTimeRun = time;
-                            item.DateTimeStop = time;
+
+                            var now = DateTime.Now;
+                            item.DateTimeFlowRun = now;
+                            item.DateTimeRun = now;
+                            item.DateTimeStop = now;
                         }
                     }
 

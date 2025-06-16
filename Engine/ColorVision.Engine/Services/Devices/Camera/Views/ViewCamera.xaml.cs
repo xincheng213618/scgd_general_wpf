@@ -135,6 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             switch (arg.EventName)
             {
                 case MQTTCameraEventEnum.Event_GetData:
+                    if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
                     List<MeasureImgResultModel> resultMaster = null;
                     if (masterId > 0)

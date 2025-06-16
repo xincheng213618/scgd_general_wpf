@@ -364,6 +364,7 @@ namespace ProjectARVR
         IPendingHandler handler { get; set; }
 
         string Msg1;
+        private long LastFlowTime;
         private void UpdateMsg(object? sender)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>
@@ -376,17 +377,17 @@ namespace ProjectARVR
                         TimeSpan elapsed = TimeSpan.FromMilliseconds(elapsedMilliseconds);
                         string elapsedTime = $"{elapsed.Minutes:D2}:{elapsed.Seconds:D2}:{elapsed.Milliseconds:D4}";
                         string msg;
-                        if (ProjectARVRConfig.Instance.LastFlowTime == 0 || ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds < 0)
+                        if (LastFlowTime == 0 || LastFlowTime - elapsedMilliseconds < 0)
                         {
                             msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}";
                         }
                         else
                         {
-                            long remainingMilliseconds = ProjectARVRConfig.Instance.LastFlowTime - elapsedMilliseconds;
+                            long remainingMilliseconds = LastFlowTime - elapsedMilliseconds;
                             TimeSpan remaining = TimeSpan.FromMilliseconds(remainingMilliseconds);
                             string remainingTime = $"{remaining.Minutes:D2}:{remaining.Seconds:D2}:{elapsed.Milliseconds:D4}";
 
-                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{ProjectARVRConfig.Instance.LastFlowTime} ms, 预计还需要：{remainingTime}";
+                            msg = Msg1 + Environment.NewLine + $"已经执行：{elapsedTime}, 上次执行：{LastFlowTime} ms, 预计还需要：{remainingTime}";
                         }
                         if (flowControl.IsFlowRun)
                             handler.UpdateMessage(msg);
@@ -425,6 +426,7 @@ namespace ProjectARVR
             if (flowControl != null && flowControl.IsFlowRun) return;
 
             TryCount++;
+            LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
@@ -466,7 +468,9 @@ namespace ProjectARVR
             handler = null;
             stopwatch.Stop();
             timer.Change(Timeout.Infinite, 500); // 停止定时器
-            ProjectARVRConfig.Instance.LastFlowTime = stopwatch.ElapsedMilliseconds;
+
+            FlowConfig.Instance.FlowRunTime[FlowTemplate.Text] = stopwatch.ElapsedMilliseconds;
+
             log.Info($"流程执行Elapsed Time: {stopwatch.ElapsedMilliseconds} ms");
 
             if (FlowControlData.EventName == "Completed")

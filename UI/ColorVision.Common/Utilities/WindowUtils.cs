@@ -26,6 +26,9 @@ namespace ColorVision.Common.Utilities
         public static void DelayClearImage(this Window window, Action action, int delay = 100)
         {
             IntPtr handle = new WindowInteropHelper(window).Handle;
+            //这里不知道为什么有时候会是空
+            if (handle == IntPtr.Zero) return;
+
             bool canClose = false;
 
             // Using a local function for the hook to avoid creating a new delegate each time.

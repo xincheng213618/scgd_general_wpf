@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 
@@ -48,9 +49,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
 
+        public Dictionary<string, long> FlowRunTime { get; set; } = new Dictionary<string, long>();
 
         public long Capacity { get; set; } = 10L * 1024 * 1024 * 1024; //10GB
 

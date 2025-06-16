@@ -174,12 +174,8 @@ namespace ProjectARVR
         public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUploadSn;
 
-        public long LastFlowTime { get => _LastFlowTime; set { _LastFlowTime = value; NotifyPropertyChanged(); } }
-        private long _LastFlowTime;
-       
         public string ResultSavePath { get => _ResultSavePath; set { _ResultSavePath = value; NotifyPropertyChanged(); } }
         private string _ResultSavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-
 
 
         public string ResultSavePath1 { get => _ResultSavePath1; set { _ResultSavePath1 = value; NotifyPropertyChanged(); } }
@@ -189,10 +185,6 @@ namespace ProjectARVR
         private double _Height = 300;
         public bool AutoModbusConnect { get => _AutoModbusConnect; set { _AutoModbusConnect = value; NotifyPropertyChanged(); } }
         private bool _AutoModbusConnect = true;
-
-
-        public double KBLVSacle { get => _KBLVSacle; set { _KBLVSacle = value; NotifyPropertyChanged(); } }
-        private double _KBLVSacle = 0.006583904;
 
         public int ViewImageReadDelay { get => _ViewImageReadDelay; set { _ViewImageReadDelay = value; NotifyPropertyChanged(); } }
         private int _ViewImageReadDelay = 1000;

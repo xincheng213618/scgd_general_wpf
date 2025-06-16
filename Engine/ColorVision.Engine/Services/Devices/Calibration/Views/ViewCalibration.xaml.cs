@@ -85,6 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             switch (arg.EventName)
             {
                 case MQTTCalibrationEventEnum.Event_GetData:
+                    if (arg.Data == null) return;
                     int masterId = Convert.ToInt32(arg.Data.MasterId);
                     List<MeasureImgResultModel> resultMaster = null;
                     if (masterId > 0)
