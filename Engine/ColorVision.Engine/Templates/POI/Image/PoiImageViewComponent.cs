@@ -58,18 +58,32 @@ namespace ColorVision.Engine.Templates.POI.Image
 
             async Task LoadMysql(ImageView imageView)
             {
-                await Task.Delay(100);
-                await MySqlControl.GetInstance().Connect();
-                Application.Current.Dispatcher.Invoke(() =>
+                if (MySqlControl.GetInstance().IsConnect)
                 {
-                    if (MySqlControl.GetInstance().IsConnect)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
                         new TemplatePoi().Load();
                         imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
                         imageView.ComboxPOITemplate.SelectedIndex = 0;
                         imageView.ToolBarAl.Visibility = Visibility.Visible;
-                    }
-                });
+                    });
+                }
+                else
+                {
+                    await Task.Delay(100);
+                    await MySqlControl.GetInstance().Connect();
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        if (MySqlControl.GetInstance().IsConnect)
+                        {
+                            new TemplatePoi().Load();
+                            imageView.ComboxPOITemplate.ItemsSource = TemplatePoi.Params.CreateEmpty();
+                            imageView.ComboxPOITemplate.SelectedIndex = 0;
+                            imageView.ToolBarAl.Visibility = Visibility.Visible;
+                        }
+                    });
+                }
+
 
             }
 

@@ -227,10 +227,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         try
                         {
                             var fileInfo = new FileInfo(data.FileUrl);
-                            log.Warn($"fileInfo.Length{fileInfo.Length}");
                             using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.None))
                             {
-                                log.Warn("文件可以读取，没有被占用。");
+                                log.Info("文件可以读取，没有被占用。");
                             }
                             if (fileInfo.Length > 0)
                             {
@@ -242,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                         catch
                         {
-                            log.Warn("文件还在写入");
+                            log.Info("文件还在写入");
                             await Task.Delay(Config.ViewImageReadDelay);
                             Application.Current.Dispatcher.Invoke(() =>
                             {

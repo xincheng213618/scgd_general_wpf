@@ -51,7 +51,26 @@ namespace WindowsServicePlugin
 
                 string DirPath = dic["BaseLocation"];
 
-                SetServiceConfig(DirPath, "RegWindowsService");
+                //这两个更新注册中心就可以了，启动时，Reg会先读取
+                string serviceDir = Path.Combine(DirPath, "RegWindowsService");
+                if (!Directory.Exists(serviceDir)) return;
+
+                string mysqlConfigPath = Path.Combine(serviceDir, "cfg", "MySql.config");
+                if (!File.Exists(mysqlConfigPath)) return;
+
+                UpdateMysqlConfig(mysqlConfigPath);
+
+                string mqttConfigPath = Path.Combine(serviceDir, "cfg", "MQTT.config");
+                if (!File.Exists(mqttConfigPath)) return;
+
+                UpdateMqttConfig(mqttConfigPath);
+
+                string WinServiceConfigPath = Path.Combine(serviceDir, "cfg", "WinService.config");
+                if (!File.Exists(WinServiceConfigPath)) return;
+
+                UpdateRCWinServiceConfig(WinServiceConfigPath);
+
+
                 SetServiceConfig(DirPath,"CVMainWindowsService_x86");
                 SetServiceConfig(DirPath,"CVMainWindowsService_x64");
                 SetServiceConfig(DirPath,"TPAWindowsService");
@@ -59,12 +78,14 @@ namespace WindowsServicePlugin
                 SetServiceConfig(DirPath,"CVFlowWindowsService");
                 SetServiceConfig(DirPath,"CVMainWindowsService_dev");
 
+
                 MessageBox.Show("CFG配置成功，正在重启服务");
                 if (Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService"))
                 {
-                    MessageBox.Show("CFG配置成功，重启服务");
+                    MessageBox.Show("重启服务完成");
                 }
-                else {
+                else
+                {
                     MessageBox.Show("CFG配置成功，请手动重启服务");
                 }
             }
@@ -74,28 +95,10 @@ namespace WindowsServicePlugin
             string serviceDir = Path.Combine(dirPath, serviceName);
             if (!Directory.Exists(serviceDir)) return;
 
-            string mysqlConfigPath = Path.Combine(serviceDir, "cfg", "MySql.config");
-            if (!File.Exists(mysqlConfigPath)) return;
-
-            UpdateMysqlConfig(mysqlConfigPath);
-
-            string mqttConfigPath = Path.Combine(serviceDir, "cfg", "MQTT.config");
-            if (!File.Exists(mqttConfigPath)) return;
-
-            UpdateMqttConfig(mqttConfigPath);
-
-
-
             string WinServiceConfigPath = Path.Combine(serviceDir, "cfg", "WinService.config");
             if (!File.Exists(WinServiceConfigPath)) return;
-            if (serviceName == "RegWindowsService")
-            {
-                UpdateRCWinServiceConfig(WinServiceConfigPath);
-            }
-            else
-            {
-                UpdateWinServiceConfig(WinServiceConfigPath);
-            }
+
+            UpdateWinServiceConfig(WinServiceConfigPath);
         }
 
         private void UpdateRCWinServiceConfig(string mysqlConfigPath)

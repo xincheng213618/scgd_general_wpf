@@ -67,6 +67,7 @@ namespace ColorVision.Engine.MySql
             }
         }
 
+        public string ConnectionString { get; private set; }
 
         public Task<bool> Connect()
         {
@@ -76,15 +77,18 @@ namespace ColorVision.Engine.MySql
                 IsConnect = false;
                 MySqlConnection = new MySqlConnection() { ConnectionString = connStr  };
                 MySqlConnection.Open();
-                
+
                 ///https://blog.csdn.net/a79412906/article/details/8971534
                 ///https://bugs.mysql.com/bug.php?Id=2400
                 //BatchExecuteQuery("SET SESSION  interactive_timeout=31536000;SET SESSION  wait_timeout=2147424;");
 
                 //BatchExecuteQuery("SHOW VARIABLES LIKE 'interactive_timeout';SHOW VARIABLES LIKE 'wait_timeout';");
-
-                Application.Current.Dispatcher.Invoke(() => MySqlConnectChanged?.Invoke(MySqlConnection, new EventArgs()));
                 IsConnect = true;
+                if (ConnectionString != connStr)
+                {
+                    Application.Current.Dispatcher.BeginInvoke(() => MySqlConnectChanged?.Invoke(MySqlConnection, new EventArgs()));
+                }
+                ConnectionString = connStr;
                 log.Info($"数据库连接成功:{connStr}");
                 return Task.FromResult(true);
             }
@@ -97,7 +101,7 @@ namespace ColorVision.Engine.MySql
         }
         public MySqlConnection GetMySqlConnection()
         {
-            MySqlConnection = new MySqlConnection() { ConnectionString = GetConnectionString(Config) };
+            MySqlConnection = new MySqlConnection() { ConnectionString = ConnectionString };
             MySqlConnection.Open();
             return MySqlConnection;
         }
@@ -175,7 +179,7 @@ namespace ColorVision.Engine.MySql
         public static bool TestConnect(MySqlConfig MySqlConfig)  
         {
             MySqlConnection MySqlConnection;
-            string connStr = GetConnectionString(MySqlConfig,1);
+            string connStr = GetConnectionString(MySqlConfig,2);
             try
             {
                 log.Info($"Test数据库连接信息:{connStr}");
