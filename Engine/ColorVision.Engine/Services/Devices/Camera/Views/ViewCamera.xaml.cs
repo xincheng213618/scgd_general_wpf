@@ -269,7 +269,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ViewResultCamera result = new(model);
 
             ViewResults.AddUnique(result, Config.InsertAtBeginning);
-            if (Config.AutoRefreshView && (!FlowConfig.Instance.FlowRun || FlowConfig.Instance.AutoRefreshView))
+            if (Config.AutoRefreshView)
             {
                 if (listView1.Items.Count > 0) listView1.SelectedIndex = Config.InsertAtBeginning ? 0 : listView1.Items.Count - 1;
                 listView1.ScrollIntoView(listView1.SelectedItem);

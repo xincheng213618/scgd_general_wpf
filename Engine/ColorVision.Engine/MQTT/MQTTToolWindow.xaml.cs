@@ -52,7 +52,7 @@ namespace ColorVision.Engine.MQTT
                 {
 
                 }
-                if (MQTTSetting.Instance.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
+                if (MQTTSetting.Instance.ShowSelect && !resultData_MQTT.Topic.ToString().Contains(TextBoxSubscribe1.Text))
                 {
                     return;
                 }

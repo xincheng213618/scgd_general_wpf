@@ -427,6 +427,7 @@ namespace ProjectARVR
 
             TryCount++;
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
+            LastCompleted = FlowConfig.Instance.FlowRunComplete.TryGetValue(FlowTemplate.Text, out bool completed) ? completed : false;
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;

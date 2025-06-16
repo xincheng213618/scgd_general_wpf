@@ -32,10 +32,6 @@ namespace ColorVision.Engine.Templates.Flow
         public bool IsShowNickName  {   get => _IsShowNickName; set { _IsShowNickName = value; NotifyPropertyChanged(); }  }
         private bool _IsShowNickName;
 
-        [DisplayName("显示流程详细")]
-        public bool IsShowDetailFlow { get => _IsShowDetailFlow; set { _IsShowDetailFlow = value; NotifyPropertyChanged(); } }
-        private bool _IsShowDetailFlow ;
-
         [DisplayName("流程运行时自动刷新")]
         public bool AutoRefreshView { get => _AutoRefreshView; set { _AutoRefreshView = value; NotifyPropertyChanged(); } }
         private bool _AutoRefreshView;
@@ -44,14 +40,13 @@ namespace ColorVision.Engine.Templates.Flow
         public bool FlowPreviewMsg { get => _FlowPreviewMsg; set { _FlowPreviewMsg = value; NotifyPropertyChanged(); } }
         private bool _FlowPreviewMsg = true;
 
-        public bool FlowRun { get => _FlowRun; set { _FlowRun = value; NotifyPropertyChanged(); } }
-        private bool _FlowRun;
-
         public int LastSelectFlow { get => _LastSelectFlow; set { _LastSelectFlow = value; NotifyPropertyChanged(); } }
         private int _LastSelectFlow;
 
         public Dictionary<string, long> FlowRunTime { get; set; } = new Dictionary<string, long>();
 
+        //这里没必要持久化
+        [JsonIgnore]
         public Dictionary<string, bool> FlowRunComplete { get; set; } = new Dictionary<string, bool>();
 
         public long Capacity { get; set; } = 10L * 1024 * 1024 * 1024; //10GB

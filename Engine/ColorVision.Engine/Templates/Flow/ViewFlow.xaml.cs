@@ -25,11 +25,10 @@ namespace ColorVision.Engine.Services.Flow
 
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get; set; }
         public View View { get; set; }
-        public ObservableCollection<FlowRecord> FlowRecords { get; set; } = new ObservableCollection<FlowRecord>();
-
         public RelayCommand AutoSizeCommand { get; set; }
 
         public event EventHandler RefreshFlow;
+
         public RelayCommand RefreshCommand { get; set; }
 
         public RelayCommand ClearCommand { get; set; }
@@ -159,7 +158,6 @@ namespace ColorVision.Engine.Services.Flow
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
-            listViewRecord.ItemsSource = FlowRecords;
             STNodeTreeView1.LoadAssembly("FlowEngineLib.dll");
 
             STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
