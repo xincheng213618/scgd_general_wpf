@@ -160,7 +160,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         private void Refresh()
         {
-
             if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
             {
                 MqttRCService.GetInstance().QueryServices();
@@ -185,9 +184,15 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
                 }
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
 
-                View.FlowEngineControl.LoadFromBase64(string.Empty);
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
+                for (int i = 0; i < 20; i++)
+                {
+                    if (View.FlowEngineControl.IsReady)
+                        break;
+                     Thread.Sleep(10);
+                }
+
                 View.FlowParam = flowParam;
                 foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
                 {
@@ -204,6 +209,7 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show(ex.Message);
                 View.FlowEngineControl.LoadFromBase64(string.Empty);
             }
+            return;
         }
 
         public event RoutedEventHandler Selected;
@@ -214,7 +220,6 @@ namespace ColorVision.Engine.Templates.Flow
 
         public FlowControl flowControl { get; set; }
 
-        bool LastCompleted = true;
 
         private void FlowControl_FlowCompleted(object? sender, FlowControlData FlowControlData)
         {
@@ -232,7 +237,6 @@ namespace ColorVision.Engine.Templates.Flow
             if (FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
                 ErrorSign();
-                FlowConfig.Instance.FlowRunComplete[ComboBoxFlow.Text] = false;
             }
 
             if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
@@ -241,10 +245,6 @@ namespace ColorVision.Engine.Templates.Flow
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
                 });
-            }
-            else
-            {
-                FlowConfig.Instance.FlowRunComplete[ComboBoxFlow.Text] = true;
             }
         }
 
@@ -367,16 +367,21 @@ namespace ColorVision.Engine.Templates.Flow
 
         public void RunFlow()
         {
+
             if (flowControl.IsFlowRun)
             {
                 log.Info("流程正在运行");
                 return;
             }
+            log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+            if (!View.FlowEngineControl.IsReady)
+            {
+                Refresh();
+                log.Info($"IsReady{View.FlowEngineControl.IsReady}");
+            }
             CheckDiskSpace("C");
             CheckDiskSpace("D");
-
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
-            LastCompleted = FlowConfig.Instance.FlowRunComplete.TryGetValue(ComboBoxFlow.Text, out bool completed) ? completed : false;
 
             string startNode = View.FlowEngineControl.GetStartNodeName();
             if (string.IsNullOrWhiteSpace(startNode))
@@ -390,27 +395,21 @@ namespace ColorVision.Engine.Templates.Flow
                 MessageBox.Show("Token为空，正在刷新token,请重试");
                 return;
             }
-            if (!LastCompleted)
-            {
-                Refresh();
-            }
-            else
-            {
-                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
-                {
-                    if (MarkColorProperty == null)
-                    {
-                        Type type = typeof(STNode);
-                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                    }
-                    // 设置值
-                    if (MarkColorProperty != null)
-                    {
-                        MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
-                    }
-                }
 
+            foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+            {
+                if (MarkColorProperty == null)
+                {
+                    Type type = typeof(STNode);
+                    MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                }
+                // 设置值
+                if (MarkColorProperty != null)
+                {
+                    MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
+                }
             }
+
 
             if (FlowConfig.Instance.FlowPreviewMsg)
             {

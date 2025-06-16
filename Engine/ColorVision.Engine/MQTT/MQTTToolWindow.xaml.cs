@@ -90,7 +90,12 @@ namespace ColorVision.Engine.MQTT
                 {
                     textBox.ContextMenu = null;
                 }
-                StackPanelText.Children.Insert(0,textBox);
+                const int MaxLogs = 500;
+                StackPanelText.Children.Insert(0, textBox);
+                if (StackPanelText.Children.Count > MaxLogs)
+                {
+                    StackPanelText.Children.RemoveAt(StackPanelText.Children.Count - 1);
+                }
             }));
         }
 

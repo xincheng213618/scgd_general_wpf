@@ -341,10 +341,15 @@ namespace ProjectARVR
             {
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent -= UpdateMsg;
-                flowEngine.LoadFromBase64(string.Empty);
 
                 flowEngine.LoadFromBase64(TemplateFlow.Params[FlowTemplate.SelectedIndex].Value.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
+                for (int i = 0; i < 20; i++)
+                {
+                    if (flowEngine.IsReady)
+                        break;
+                    Thread.Sleep(10);
+                }
                 foreach (var item in STNodeEditorMain.Nodes.OfType<CVCommonNode>())
                     item.nodeRunEvent += UpdateMsg;
             }
@@ -419,7 +424,6 @@ namespace ProjectARVR
 
 
         ProjectARVRReuslt CurrentFlowResult { get; set; }
-        bool LastCompleted = true;
         int TryCount = 0;
         public void RunTemplate()
         {
@@ -427,16 +431,19 @@ namespace ProjectARVR
 
             TryCount++;
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(FlowTemplate.Text, out long time) ? time : 0;
-            LastCompleted = FlowConfig.Instance.FlowRunComplete.TryGetValue(FlowTemplate.Text, out bool completed) ? completed : false;
 
             CurrentFlowResult = new ProjectARVRReuslt();
             CurrentFlowResult.SN = SNtextBox.Name;
             CurrentFlowResult.Code = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             if (string.IsNullOrWhiteSpace(flowEngine.GetStartNodeName())) { log.Info( "找不到完整流程，运行失败");return; }
-            if (!LastCompleted)
-                Refresh();
 
-            LastCompleted = false;
+            log.Info($"IsReady{flowEngine.IsReady}");
+            if (!flowEngine.IsReady)
+            {
+                Refresh();
+                log.Info($"IsReady{flowEngine.IsReady}");
+            }
+
 
             flowControl ??= new FlowControl(MQTTControl.GetInstance(), flowEngine);
 
@@ -476,7 +483,6 @@ namespace ProjectARVR
 
             if (FlowControlData.EventName == "Completed")
             {
-                LastCompleted = true;
                 try
                 {
                     Application.Current.Dispatcher.BeginInvoke(() =>
@@ -495,7 +501,7 @@ namespace ProjectARVR
                 log.Info("流程运行超时，正在重新尝试");
                 if (TryCount < ProjectARVRConfig.Instance.TryCountMax)
                 {
-                    Task.Delay(1000).ContinueWith(t =>
+                    Task.Delay(200).ContinueWith(t =>
                     {
                         log.Info("重新尝试运行流程");
                         Application.Current.Dispatcher.BeginInvoke(() =>
