@@ -244,11 +244,12 @@ namespace ColorVision.Engine.Templates.Flow
             }
             if (FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
             {
+                FlowConfig.Instance.FlowRunComplete[ComboBoxFlow.Text] = false;
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName + Environment.NewLine + FlowControlData.Params, "ColorVision");
             }
             else
             {
-                LastCompleted = true;
+                FlowConfig.Instance.FlowRunComplete[ComboBoxFlow.Text] = true;
             }
         }
 
@@ -407,81 +408,70 @@ namespace ColorVision.Engine.Templates.Flow
             CheckDiskSpace("D");
 
             LastFlowTime = FlowConfig.Instance.FlowRunTime.TryGetValue(ComboBoxFlow.Text, out long time) ? time : 0;
+            LastCompleted = FlowConfig.Instance.FlowRunComplete.TryGetValue(ComboBoxFlow.Text, out bool completed) ? completed : false;
 
             string startNode = View.FlowEngineControl.GetStartNodeName();
-            if (!string.IsNullOrWhiteSpace(startNode))
+            if (string.IsNullOrWhiteSpace(startNode))
             {
-                if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
-                {
-                    MqttRCService.GetInstance().QueryServices();
-                    MessageBox.Show("Token为空，正在刷新token");
-                    return;
-                }
-                if (!LastCompleted)
-                {
-                    Refresh();
-                }
-                else
-                {
-                    foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
-                    {
-                        if (MarkColorProperty == null)
-                        {
-                            Type type = typeof(STNode);
-                            MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
-                        }
-                        // 设置值
-                        if (MarkColorProperty != null)
-                        {
-                            MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
-                        }
-                    }
-                    if (FlowConfig.Instance.IsShowDetailFlow)
-                    {
-                        View.FlowRecords.Sort((x, y) => x.FlowTime.CompareTo(y.FlowTime));
-                        foreach (var item in View.FlowRecords)
-                        {
-                            item.IsSelected = false;
-
-                            var now = DateTime.Now;
-                            item.DateTimeFlowRun = now;
-                            item.DateTimeRun = now;
-                            item.DateTimeStop = now;
-                        }
-                    }
-
-                }
-                LastCompleted = false;
-                if (FlowConfig.Instance.FlowPreviewMsg)
-                {
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    handler.Cancelling -= Handler_Cancelling; ;
-                    handler.Cancelling += Handler_Cancelling; ;
-                }
-
-                flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                ButtonRun.Visibility = Visibility.Collapsed;
-                ButtonStop.Visibility = Visibility.Visible;
-                stopwatch.Restart();
-                stopwatch.Start();
-                timer.Change(0, 500); // 启动定时器
-                flowControl.Start(sn);
-                string name = string.Empty;
-                if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-
-                BatchResultMasterModel batch = new();
-                batch.Name = string.IsNullOrEmpty(name) ? sn : name;
-                batch.Code = sn;
-                batch.CreateDate = DateTime.Now;
-                batch.TenantId = 0;
-                BatchResultMasterDao.Instance.Save(batch);
-                this.Focus();
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到流程启动结点，运行失败", "ColorVision");
+                return;
+            }
+            if (MqttRCService.GetInstance().ServiceTokens.Count == 0)
+            {
+                MqttRCService.GetInstance().QueryServices();
+                MessageBox.Show("Token为空，正在刷新token");
+                return;
+            }
+            if (!LastCompleted)
+            {
+                Refresh();
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
+                foreach (var item in View.STNodeEditorMain.Nodes.OfType<CVBaseServerNode>())
+                {
+                    if (MarkColorProperty == null)
+                    {
+                        Type type = typeof(STNode);
+                        MarkColorProperty = type.GetProperty("TitleColor", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+                    }
+                    // 设置值
+                    if (MarkColorProperty != null)
+                    {
+                        MarkColorProperty.SetValue(item, System.Drawing.Color.Blue);
+                    }
+                }
+                if (FlowConfig.Instance.IsShowDetailFlow)
+                {
+                    View.FlowRecords.Sort((x, y) => x.FlowTime.CompareTo(y.FlowTime));
+                    foreach (var item in View.FlowRecords)
+                    {
+                        item.IsSelected = false;
+
+                        var now = DateTime.Now;
+                        item.DateTimeFlowRun = now;
+                        item.DateTimeRun = now;
+                        item.DateTimeStop = now;
+                    }
+                }
             }
+
+            if (FlowConfig.Instance.FlowPreviewMsg)
+            {
+                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+                handler.Cancelling -= Handler_Cancelling; ;
+                handler.Cancelling += Handler_Cancelling; ;
+            }
+
+            flowControl.FlowCompleted += FlowControl_FlowCompleted;
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            ButtonRun.Visibility = Visibility.Collapsed;
+            ButtonStop.Visibility = Visibility.Visible;
+            stopwatch.Restart();
+            stopwatch.Start();
+            timer.Change(0, 500); // 启动定时器
+            BatchResultMasterDao.Instance.Save(new BatchResultMasterModel() { Name = sn, Code = sn, CreateDate = DateTime.Now });
+            flowControl.Start(sn);
         }
 
 

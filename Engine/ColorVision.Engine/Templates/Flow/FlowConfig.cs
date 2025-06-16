@@ -52,6 +52,8 @@ namespace ColorVision.Engine.Templates.Flow
 
         public Dictionary<string, long> FlowRunTime { get; set; } = new Dictionary<string, long>();
 
+        public Dictionary<string, bool> FlowRunComplete { get; set; } = new Dictionary<string, bool>();
+
         public long Capacity { get; set; } = 10L * 1024 * 1024 * 1024; //10GB
 
         [JsonIgnore]
