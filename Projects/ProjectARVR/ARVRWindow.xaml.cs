@@ -1,6 +1,7 @@
 ﻿#pragma warning disable
 using ColorVision.Common.Algorithms;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Abstractions;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MQTT;
@@ -322,7 +323,24 @@ namespace ProjectARVR
             };
             listView1.ItemsSource = ViewResluts;
 
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = listView1.SelectedIndex > -1));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.SelectAll, (s, e) => listView1.SelectAll(), (s, e) => e.CanExecute = true));
+            listView1.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ListViewUtils.Copy, (s, e) => e.CanExecute = true));
         }
+
+        public void Delete()
+        {
+            if (listView1.SelectedIndex < 0) return;
+            var item = listView1.SelectedItem as ProjectARVRReuslt;
+            if (item == null) return;
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除 {item.SN} 测试结果？", "ColorVision", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+            {
+                ViewResluts.Remove(item);
+                BatchResultMasterDao.Instance.DeleteById(item.Id);
+                log.Info($"删除测试结果 {item.SN}");
+            }
+        }
+
         private void ServicesChanged(object? sender, EventArgs e)
         {
             Application.Current.Dispatcher.BeginInvoke(() =>

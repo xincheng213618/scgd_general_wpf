@@ -184,7 +184,7 @@ namespace ColorVision.Engine.Templates.Flow
                     item.nodeRunEvent -= UpdateMsg;
                     item.nodeEndEvent -= nodeEndEvent;
                 }
-                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
+                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, MqttRCService.GetInstance().ServiceTokens);
 
                 for (int i = 0; i < 20; i++)
                 {
